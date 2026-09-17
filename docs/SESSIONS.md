@@ -23,8 +23,10 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   recording ids.
 - **Released when:** the comparison is reported and its PR lands.
 
-### Mac/unsup-rigid-shift-report-residuals — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-rigid-shift-report/`
-- **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony ruled on 2026-09-17,
+### Mac/unsup-rigid-shift-report-residuals — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-rigid-shift-report/`
+- **Status:** **RELEASED — the folder holds everything and PR #603 landed (`59262d5`), so both
+  release conditions are met and nobody holds it.** Was ACTIVE (bugarach-smoked-ratchet), claimed
+  before writing. Tony ruled on 2026-09-17,
   after the report's fourth blind murderboard, that the real-derived outputs of the rigid-shift run
   leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real recordings stays
   machine-local, with no slice ids).
@@ -38,9 +40,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Holds:** written 2026-09-17, about 10 MB — `real_compare/` (the rerun's `events.json` and all
   120 checkpoints), `superseded_run/real_compare/` (the copies removed from the repo tree),
   `figures/` (six PNGs), `report-README.md` and `summary.json`. The repo tree now keeps
-  `real_compare/summary.json` alone. Also wrote one PNG to
-  `darkroom/unsup-rigid-shift-report-residuals/` via `tools/show.py`, which names its folder after
-  the worktree, to put the real-recordings figure in front of Tony.
+  `real_compare/summary.json` alone.
+- ⚠ **One PNG went to the darkroom ROOT and has been cleaned up.** `tools/show.py` names its folder
+  from the git toplevel, which in a worktree is the worktree, so it wrote
+  `<darkroom>/unsup-rigid-shift-report-residuals/` — outside this claim and outside bugarach's own
+  folder. Tony caught it. The duplicate was deleted, and two older strays of the same kind
+  (`unsup-rule-as-code`, `turbo-takes-the-width`, holding bugarach figures including a real-recording
+  lanes figure) were moved to `bugarach/strays-from-the-darkroom-root/` with their names kept. Other
+  repositories' empty folders were left alone. Reported upstream as syncytium2/armory issue #15 and
+  blocked locally by sapper SAP016
+  ([todo](todo/2026-09-03-show-derives-the-project-from-the-worktree.md)).
 - ⚠ **The files being moved are also in git history on `main`** since PR #588. Moving them out of the
   tree is not a retraction, and this claim does not say it is.
 - **Touches:** `docs/learned/tube_self_supervised/` (branch `unsup/rigid-shift-report-residuals`,
