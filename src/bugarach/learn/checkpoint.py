@@ -59,6 +59,38 @@ ENCODING = {
 }
 
 
+def canonical(value):
+    """A config in one spelling: numbers as floats (so ``8`` and ``8.0`` are one setting),
+    tuples as lists, keys sorted when serialised. Booleans stay booleans."""
+    if isinstance(value, bool) or value is None or isinstance(value, str):
+        return value
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, dict):
+        return {str(k): canonical(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [canonical(v) for v in value]
+    return str(value)
+
+
+def config_key(arch: str, cfg: dict, training: dict | None = None) -> str:
+    """A stable name for *what to build and how to fit it*, independent of any result.
+
+    The key a tuning run files a configuration under, and the key that ties a fitted file
+    back to the configuration it came from. It hashes the architecture name, the full
+    as-built ``cfg`` and the training settings that are choices (optimiser settings, crop,
+    batch, number of training recordings), and deliberately NOT the training seed, the
+    thread count or the torch version, which say how one fit of the configuration was run.
+    """
+    import hashlib
+
+    choice = {k: v for k, v in (training or {}).items()
+              if k in ("optimizer", "lr", "steps", "crop_frames", "batch", "n_train")}
+    doc = json.dumps({"arch": arch, "cfg": canonical(cfg), "training": canonical(choice)},
+                     sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(doc.encode("utf-8")).hexdigest()[:16]
+
+
 def _tensor_out(t):
     return {"shape": list(t.shape), "data": [float(x) for x in t.flatten().tolist()]}
 
@@ -80,12 +112,31 @@ def save(trained, path, *, trained_on=None, train_seed=None, steps=None,
             f"{trained.name!r} is not a registered architecture, so nothing could "
             f"rebuild this file. Registered: {', '.join(sorted(ARCHITECTURES))}")
     state = {k: _tensor_out(v) for k, v in trained.model.state_dict().items()}
+    # The config AS BUILT, not the registry's current defaults. Until 2026-09-16 this line
+    # wrote `dict(arch.cfg)` under that same comment, because nothing carried the overrides
+    # a fit was made with: a model fitted at `n_scales=6` wrote a file that refused to load,
+    # and one fitted at `max_ratio=80` wrote a file that loaded as `max_ratio=40` and said
+    # nothing. Where the fit recorded no config, the defaults are written and SAID to be.
+    if trained.cfg is not None:
+        cfg, cfg_source = dict(trained.cfg), "as built"
+        rebuilt = arch.make(**cfg).state_dict()
+        mismatch = sorted(k for k, v in trained.model.state_dict().items()
+                          if k not in rebuilt or tuple(rebuilt[k].shape) != tuple(v.shape))
+        if mismatch or set(rebuilt) != set(trained.model.state_dict()):
+            raise ValueError(
+                f"the config recorded for this {trained.name!r} does not rebuild the model "
+                f"it is saved with (tensors {mismatch or 'differ in name'}); refusing to "
+                f"write a file that would not load as itself.")
+    else:
+        cfg = dict(arch.cfg)
+        cfg_source = ("registry defaults at save time: whatever made this model did not "
+                      "record the config it was built with")
     doc = {
         "format": FORMAT,
         "version": VERSION,
         "arch": trained.name,
-        # The config AS BUILT, not the registry's current defaults.
-        "cfg": dict(arch.cfg),
+        "cfg": cfg,
+        "config_key": config_key(trained.name, cfg, trained.training),
         "operating_point": {
             "threshold": float(trained.threshold),
             "merge_gap_frames": int(trained.merge_gap_frames),
@@ -93,7 +144,11 @@ def save(trained, path, *, trained_on=None, train_seed=None, steps=None,
         },
         "encoding": dict(ENCODING),
         "n_params": int(trained.n_params),
+        # How it was fitted, kept apart from `cfg` (what to build) and from `provenance`
+        # (where the data came from). `None` when the fit did not record it.
+        "training": dict(trained.training) if trained.training is not None else None,
         "provenance": {
+            "cfg_source": cfg_source,
             "trained_on": trained_on,
             "train_seed": train_seed,
             "steps": steps,
@@ -200,4 +255,6 @@ def load(path):
         merge_gap_frames=int(op["merge_gap_frames"]),
         train_seconds=float(prov.get("train_seconds") or 0.0),
         threads=int(prov.get("threads") or 0),
+        cfg=dict(doc.get("cfg") or {}),
+        training=doc.get("training"),
     )

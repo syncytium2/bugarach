@@ -354,7 +354,9 @@ Added 2026-09-10, when that plan's review found them used undefined.
   learns the leak instead of coordination. The known one: uniform per-onset
   dither's sub-floor intervals.
 - ***J*** — jitter radius: how far a dither may move one onset, ± seconds. Other
-  surrogates' parameters are matched to it by root-mean-square displacement.
+  surrogates' parameters are matched to it by root-mean-square displacement. For
+  **rigid shift** it is the radius of each ROI's whole-train offset, and some pages call
+  it the displacement or shift radius.
 - **dead time, τ** — the shortest within-ROI interval the producer's event
   extractor can emit; the producer's to declare. ⚠ **Not SPIKE-synch's τ**, which
   is a coincidence window (see **ISI-adaptive**).
@@ -372,7 +374,7 @@ Added 2026-09-10, when that plan's review found them used undefined.
   no regions), and a 60-second cut of it, the unit its statistics are computed on.
   "Analysis window" here is the 60-second cut, not the producer's
   `analysis_start_sec`/`analysis_end_sec` span.
-- **rigid shift** — a surrogate that slides each ROI's **whole** train by one offset
+- **rigid shift** — a surrogate that slides each ROI's **whole** train by its own offset
   drawn in ±*J*, keeping that ROI's rate and intervals while destroying alignment
   between ROIs. Published as whole-train shifting (Pipa, Riehle & Grün 2007; Pipa
   et al. 2008; Louis, Borgelt & Grün 2010). ⚠ The published form **wraps** the
@@ -390,6 +392,55 @@ Added 2026-09-10, when that plan's review found them used undefined.
 - **oracle threshold** — the F1-best threshold chosen **on planted truth**: a
   comparison ceiling, never a usable rule. ⚠ Distinct from the parity **oracle**
   under *validation vocabulary*, which is a MATLAB reference output.
+
+**Shared-activity vocabulary** — added 2026-09-17 with
+[`learned/slow_comodulation/`](learned/slow_comodulation/README.md).
+
+- **shared modulation (co-modulation)** — every ROI's onset rate rising and falling
+  together without any two onsets being aligned. Distinct from a **coordinated event**,
+  where onsets align within a fraction of a second.
+- **drift** — shared modulation over a minute or more. Whether it is coordination,
+  background or a producer question is an open decision.
+- **excess coincidence** — onset pairs between distinct ROIs at a given lag *ℓ* (not τ,
+  which is the dead time above), pooled over
+  ROI pairs and recordings, divided by the count expected if each pair fired
+  independently at its observed totals, minus one. 0 means no more than chance at the
+  window's average rates; summed over every lag to the window's length it is zero by
+  construction. The **population cross-correlogram** is excess coincidence against lag
+  (Perkel, Gerstein & Moore 1967).
+- **peak / shoulder / dip** — on that correlogram: a narrow excess at sub-second lags, a
+  broad low excess out to tens of seconds or minutes, and a **dip**, fewer pairs than
+  chance at a given lag. Each is a shape, not a cause: what produces it is argued
+  separately, and the zero-sum construction above means a peak somewhere forces a
+  deficit elsewhere.
+- **arm** — one treatment of the same recording measured the same way: the recording as
+  it is, a surrogate of it, or the recording with something removed. Every arm is
+  divided by a **null** chosen to share everything with it but the structure under test.
+- **count-variance ratio** — the variance of the population onset count (onsets summed
+  over ROIs in a bin) divided by its variance after a **circular shift of the same
+  onsets**; 1 means no shared structure at that bin width. What a detector that counts
+  lit ROIs responds to. Schluter's (1984) variance ratio; it grows with the number of
+  ROIs for the same pairwise correlation.
+- **circular shift** — each ROI's whole train slid by its own lag, wrapping around the
+  window: removes every relation between ROIs at every timescale. The assessor's null.
+- **block control** — the circular shift done inside each fixed block (2 minutes on the
+  slow co-modulation page) separately. Keeps every ROI's count per block, so it keeps
+  shared change in block counts **from any source, events included**. In the code,
+  `surrogates.window_circular_shift`, registered as a known-bad control. A variant of
+  interval jitter, which re-places onsets independently inside fixed windows.
+- **promiscuity probe** — the benchmark generator's whole-field dense block
+  (`hot_window` in `generator_spec.json`, 1,200–1,500 s): every ROI's rate raised at
+  once, so it is also shared drift.
+- **lit** — an ROI with at least one onset in the bin being counted. "Share of ROIs lit"
+  is a count of ROIs, never of onsets.
+- **mask-matched null** — the null for an arm with stretches of time cut out of it.
+  Deleting onsets inside detected episodes cuts gaps that are shared across ROIs, so the
+  null has to carry the same gaps or they are scored as shared change. Built by shifting
+  each ROI circularly **inside the surviving stretches**, which keeps its onset count and
+  leaves the gaps where the arm has them.
+- **effective mice** — Kish's effective sample size on the weights a pooled number
+  actually uses, so a count of animals cannot stand in for how many the estimate leans
+  on. Fewer than the animals counted whenever the weights are uneven.
 
 Added 2026-09-16, with the label-free detector work:
 
