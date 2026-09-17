@@ -174,6 +174,14 @@ windows, so any shift in the fitted values can be attributed.
   in `bench` (for example `bench.FULL_GRIDS`) and have `search_all_settings.py` and WSMIP064's
   `tune_learned_vs_coact.py` both import it. Two copies of a grid are how the two machines came to
   tune different things on 2026-09-16.
+  ⚠ **WSMIP064 asks, before these grids are declared** (2026-09-17; its session cannot reach this
+  machine directly, so the question travels through `main`): the grids are a **coordinate search's**,
+  and goal 2 scores the coded side under **nested cross-validation**, where every candidate is scored
+  on each outer fold's training recordings. Every knob as a product is not runnable, and
+  `tune_learned_vs_coact.py` refuses a product over 5,000 configurations rather than guess. Three
+  options, and 064's recommendation (run this search inside each outer fold), are in
+  [`docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md`](docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md).
+  **Deciding after the grids are declared means declaring them twice.**
 - **Replace the silent extension cap.** An optimum still at an edge after the last extension is
   reported as `EdgeOfRange`, the bench's own refusal, and never written as a result.
 - **Categorical settings** (`detection_mode`, `guard_norm`, `null_context_mode`, `threshold_mode`,
