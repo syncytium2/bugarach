@@ -713,6 +713,16 @@ held-out score):
 | declared grid | 0.7124 / 0.7124 | 0.6924 / 0.7028 |
 | wider grid | **0.7225 / 0.7225** | 0.6924 / 0.7028 |
 
+⚠ **The run is about four times slower than the floor, and will take roughly a day and a half.** The
+first 22 `chorus_norm` fits ran 3.8 to 4.4 times their lone-fit time (median 4.0), untuned-size
+configurations included. Each worker holds one physical core at 100% with one thread, no core shared,
+nothing on the Windows side competing; the cores run at about 3.1 GHz under full load (125% of the
+2.5 GHz base, against the single-core turbo a lone fit gets), and the rest is most likely memory
+bandwidth. Priority order holds: at that rate `chorus_norm` should finish inner fits, both selections
+and refits around 09:30 on 2026-09-17, `tube` by about 10:30, `chorus_gain_norm` around 23:00, and
+`line_length` around 11:00 on 2026-09-18, all before the larger configurations' extra cost. Wall times
+per fit in the readout are concurrent times, about four times a lone fit; say so. Whether fewer jobs
+would give the same throughput is unmeasured.
 **For Gate 3, not decided:** the wider grid is the reference that brackets its optimum, so it is the
 fair one to compare the learned models against; the declared grid's numbers stay in the record beside
 it. Both chosen contexts are 240 s against the home spec's 171 s minimum event spacing, which the
