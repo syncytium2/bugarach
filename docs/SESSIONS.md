@@ -38,7 +38,9 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Holds:** written 2026-09-17, about 10 MB — `real_compare/` (the rerun's `events.json` and all
   120 checkpoints), `superseded_run/real_compare/` (the copies removed from the repo tree),
   `figures/` (six PNGs), `report-README.md` and `summary.json`. The repo tree now keeps
-  `real_compare/summary.json` alone.
+  `real_compare/summary.json` alone. Also wrote one PNG to
+  `darkroom/unsup-rigid-shift-report-residuals/` via `tools/show.py`, which names its folder after
+  the worktree, to put the real-recordings figure in front of Tony.
 - ⚠ **The files being moved are also in git history on `main`** since PR #588. Moving them out of the
   tree is not a retraction, and this claim does not say it is.
 - **Touches:** `docs/learned/tube_self_supervised/` (branch `unsup/rigid-shift-report-residuals`,
