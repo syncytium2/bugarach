@@ -815,5 +815,18 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   decision 4 anchors the budget to `bench.OPERATING_POINTS` as the run finds it, **a full bench run now
   refuses to start** unless the reference is sliding, or `--allow-binned-reference` is passed and the
   readout says which reference it used.
-- **Still waiting on goal 1:** #619 to merge, then sliding and the every-knob CoactDetect values in
-  `OPERATING_POINTS`.
+- **#619 merged** (`6054bc6`): `FULL_GRIDS`, `choose_settings`, the sliding detectors and the
+  sliding-vs-binned comparison are on `main`, and this branch carries `main` rather than 065's branch.
+- ⚠ **Long windows are the thing to watch in the readout.** 064's ungated quick search walked
+  CoactDetect's integration window and context to the top of their grids; 065's own 2026-09-16 search
+  walked the context to 240 s independently, **and that winner lost 0.022 mean F1 on crowded
+  recordings** (events 6 s apart against the bench's 120 s). 064's gated search lands at 120 s with no
+  edge. Two machines, two objectives, the same drift, and the only measurement says the bench's
+  spacing flatters it. Goal 1 will not ship a window-shaped winner that fails the crowded check
+  whatever it scores; goal 2 reports `edge_flags` and the chosen parameters in `results.json` so an
+  edge is visible without opening a selection file. **If a gated selection lands on the top of
+  `int_win_sec` (5.0 s), tell 065**: the axis widens in goal 1's search, where the value ships, and
+  never per fold here.
+- **Still waiting on goal 1:** step 3's every-knob values in `OPERATING_POINTS`, which is what the
+  budget's reference anchors to and what the refuse-to-start guard waits for. 065 treats goal 2 as
+  blocked on it and Tony knows.

@@ -1427,6 +1427,13 @@ def summarize(plan, out) -> dict:
                 p = pooled([r for _, r in items], d)
                 entry[w] = dict(config_key=sel["config_key"], f1=objective(items, d),
                                 f1_was_nan=not np.isfinite(p.f1),
+                                # Window-shaped settings are the ones the bench's event spacing can
+                                # flatter, and both machines' searches drift towards long windows
+                                # (WSMIP065, 2026-09-17: its 240 s context winner lost 0.022 mean F1
+                                # on crowded recordings). Carried here so a readout sees an edge
+                                # without opening the selection file.
+                                edge_flags=sel.get("edge_flags"),
+                                chosen_params=read_json(config_path(out, d, sel["config_key"]))["params"],
                                 f1_by_background={reg: f1_or_zero(pooled(rows, d))
                                                   for reg, rows in by_regime(items).items()},
                                 recall=p.recall, precision=p.precision,
