@@ -447,9 +447,14 @@ anyone has asked the producer, or the Dard et al. authors, about shared slow cha
   shapes across folders, not lags to the second.
 - **The field-step exclusion leaves a 4 s gap across all ROIs** where a step fell inside a baseline
   window: three recordings, 12 s in 27 hours. Those gaps are shared across ROIs and the circular
-  shift does not carry them, which is the same mismatch the removal arms' null was built to fix —
-  but at 12 s in 27 hours, 0.01 % of the analysed time, it cannot move these numbers. It is named
-  because the same shape at a larger scale would.
+  shift does not carry them, which is the same mismatch the removal arms' null was built to fix. A
+  gap of width *g* removes pairs at every lag up to about *g*, so a 4 s gap acts in the same band as
+  the slow stream's 2.7–5.4 s dip — **the reason it is not the explanation there is the amount, not
+  the shape**: 12 s in 27 hours is 0.01 % of the analysed time, against a dip of −0.56 pooled over
+  84 recordings. What decides whether such a gap matters is the width of the measure's own window,
+  not the share of time it occupies: a measure counting coincidences within a fraction of a second,
+  or scoring crops a few minutes long, would feel one 4 s shared gap far more than the minute-scale
+  ratios here do.
 - **Baseline only, by rule.** Nothing here says what treatment does.
 
 ## Published lineage
