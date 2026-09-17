@@ -1,4 +1,4 @@
-# HANDOFF: goal 1, every knob of the coded detectors, and what the tuning relaunch needs from it
+# HANDOFF: goal 1, every knob of the coded detectors, and what the next comparison needs from it
 
 **Written 2026-09-17 on WSMIP065**, at Tony's request: *"create a revised handoff file recognizing you
 probably have context to handle a good chunk of it. prepare to relaunch the tuning run."* It
@@ -10,7 +10,9 @@ that file moves to `docs/handoffs/`.
 > the list of what goals 2 and 3 need from it. Where this file and that section disagree, the section
 > wins.
 >
-> **Working material, not murderboarded.** Every restated number links to the file that owns it.
+> **Working material, not murderboarded, and not final.** Tony, 2026-09-17: *"none of this is final.
+> we're still troubleshooting and figuring out what models/detectors to keep."* A detector in scope
+> below may be dropped. Every restated number links to the file that owns it.
 
 Abbreviations: **F1**, harmonic mean of recall and precision; **ROI**, region of interest (one imaged
 cell); **FA**, false alarm; **CV**, cross-validation; **GPU**, graphics processor.
@@ -26,10 +28,10 @@ bottom, newest last.
 | # | goal | owner | this file's part |
 |---|---|---|---|
 | 1 | Full tuning of the coded detectors, every knob, all six | **WSMIP065** | all of §3 |
-| 2 | A fair comparison of the coded detectors against the nets | WSMIP064 | §4: what the relaunch needs from goal 1 |
+| 2 | A fair comparison of the coded detectors against the nets | WSMIP064 | §4: what the next comparison needs from goal 1 |
 | 3 | "Final" supervised-learning results on the current best simulation | WSMIP064 | §4 |
 
-The binding decisions, in short (full text in the goals README):
+The decisions, in short (full text in the goals README; they hold until Tony changes them):
 
 - **Real data: only `dataset.current("steps_excluded")`**, 84 recordings. The senktide and TTX
   recordings are inside it. Never the declared `senktide` or `ttx` roles, the `.mat` stores, `default`
@@ -115,6 +117,13 @@ CLAUDE.md names. Point it at `dataset.current("steps_excluded")`. It already han
 uncertainty, change the provenance strings only. If they move, the bench moves, every bench number
 before it is superseded, and **Tony hears it before anything is retuned on it**. The 2026-08-28 bench
 revision set that precedent.
+
+**And make it impossible to miss again** (Tony, 2026-09-17: *"not sure how to keep an eye on
+that"*). Prose did not catch it. Record the source folder beside each measured value (for example a
+`MEASURED_FOLDER` constant naming `2026-09-03_revised_2v_long_STEPS_EXCLUDED`), and add a test that
+fails when that name differs from what `current_export.toml` declares for `steps_excluded`. Then a
+new export, or a value fitted anywhere else, turns the suite red instead of passing silently. Also
+make `fit_background_shape.py` refuse any input but `dataset.current("steps_excluded")`.
 
 ⚠ The field-step exclusion removed 381 events in 9 recordings. Report how many fell in baseline
 windows, so any shift in the fitted values can be attributed.
@@ -209,14 +218,15 @@ folder path (`bugarach detect` / `detect_folder`). Real treatment rasters go to 
 Steps 1, 3, 4 and 5 again on the slow stream. Step 1 fits a slow-stream bench, which does not exist
 yet.
 
-## 4. What WSMIP064's relaunch needs from goal 1
+## 4. What WSMIP064's next comparison needs from goal 1
 
-WSMIP064's own plan is `HANDOFF-workstation-tuning.md` on `tune-learned-vs-coact`: the GPU
-correctness check, merging the wider reference grid, then a Task Scheduler launch after its elevation
-lapses. **Today's decisions change what that run declares.** Nothing below edits WSMIP064's branch. It
-all arrives through `main`.
+**WSMIP064's tuning run is running again as of 2026-09-17** (Tony), as declared on
+`tune-learned-vs-coact` (`HANDOFF-workstation-tuning.md` there). **It is not stopped or changed by
+anything here.** It is exploratory, like everything in this program. The table below is what differs
+for the *next* comparison, once goal 1 has delivered and Tony has decided which models and detectors
+to keep. Nothing below edits WSMIP064's branch. It all arrives through `main`.
 
-| the run as declared on `tune-learned-vs-coact` | as of 2026-09-17 | who |
+| the run as declared on `tune-learned-vs-coact` | the next comparison | who |
 |---|---|---|
 | Simulation: `docs/learned/generator_spec.json` (32 ROIs, home spec) | **the bench's fitted field, re-derived in §3 step 1.** The tool reads a spec and calls `simulate_coordination(seed, **spec)`, and so does `bench.make_recording`, so the switch is a matter of spec, not simulator. Open for WSMIP064: how the two regimes split across the four folds, and what `_null_twin`'s quiet-field factor 0.54 means on the bench, where the quiet regime already is baseline's lower quartile | 065 supplies the bench; 064 redeclares |
 | Reference detectors: CoactDetect and LoCo, three axes each (plus the wider grid) | **all six coded detectors, every knob**, from the one grid declaration on `main` (§3 step 3). Goal 2 says *the coded detectors*. The coded side's nested CV costs seconds per configuration on the CPU | 065 declares; 064 imports |
@@ -225,20 +235,17 @@ all arrives through `main`.
 | One stream (the home spec's) | **fast stream**, named in every table | both |
 | The untuned table on the home spec (`chorus_norm` +0.103 F1 over CoactDetect, and so on) | **kept as the record**. It is not the comparison goal 2 reports | 064 |
 
-**Order, so neither machine waits longer than it must:**
+**Order:**
 
 1. **065, today:** this file and the goals README on `main` (the decisions reach WSMIP064 when it
    fetches). Then §3 step 1 (the bench re-derivation), and the grid declaration from §3 step 3 as its
    own small PR, before the search runs.
-2. **064, meanwhile:** the GPU correctness check it had planned needs none of this. Adapting the
-   tool to a bench spec and to six imported grids can start once step 1's values are on `main`.
+2. **064, meanwhile:** its current run continues untouched. Adapting the tool to a bench spec and to
+   six imported grids can start once step 1's values are on `main`.
 3. **065:** the every-knob search (§3 step 3), then landing (§3 step 4).
-4. **064: relaunch** once the bench, the grids and sliding are all on `main`. Native Windows,
-   GPU, Task Scheduler, not from an elevated session.
-
-⚠ **For Tony, not decided here:** this order puts the relaunch after goal 1's search, a delay of
-hours rather than days if step 1's values do not move. Relaunching sooner means comparing against
-coded detectors tuned on a partial grid, which is the unfairness goal 2 exists to remove.
+4. **064: the next comparison**, once the bench, the grids and sliding are all on `main`, with
+   whatever models and detectors Tony keeps. Native Windows, GPU, Task Scheduler, not from an
+   elevated session.
 
 ## 5. Traps already paid for
 

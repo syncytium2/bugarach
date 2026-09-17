@@ -1,11 +1,13 @@
 # Goals — one page per thing we are trying to achieve
 
-## The current program — set by Tony on 2026-09-17, binding on every page below
+## The current program — set by Tony on 2026-09-17, and not final
 
 **Read this before any goal page.** Tony, 2026-09-17: *"we're experiencing a lot of drift in goals
-across sessions."* Three goals are current, and five decisions hold for all of them. A goal page
-or handoff that disagrees with this section is out of date. Fix it in the same change as whatever
-you were doing.
+across sessions."* Three goals are current, and five decisions hold for all of them **until Tony
+changes them**. **None of this is final** (Tony, the same day): *"we're still troubleshooting and
+figuring out what models/detectors to keep."* So no result under this program is a final result
+yet, and a detector or model that is in scope today may be dropped. A goal page or handoff that
+disagrees with this section is out of date. Fix it in the same change as whatever you were doing.
 
 | # | goal | page | machine |
 |---|---|---|---|
@@ -27,14 +29,23 @@ not fair, and that was the objection to the untuned bake-off in the first place.
    baseline and run on the full slice."* Simulation parameters come from the folder's **baseline**
    windows only (FOUNDATIONS §9). The tuned detectors and trained nets are then run on each
    recording's full extent: baseline, treatment and everything else in `regions.csv`.
+   **What `regions.csv` is:** the folder's table of periods, one row per period of each recording.
+   interface2's `generate_export_folder.m` wrote it (`PROVENANCE.md` in the folder). It holds a
+   period's label, when the period began and ended (`start_sec`/`end_sec`: the raw, untrimmed period
+   from the lab's db4 record), and the part to score (`analysis_start_sec`/`analysis_end_sec`: the
+   `long_window_20` windows Tony chose at export). Rules: [`export_folder_spec.md`](../export_folder_spec.md),
+   `regions.csv`; the windowing regime:
+   [`exports/2026-09-03_handoff_from_interface2_draft_final_run.md`](../exports/2026-09-03_handoff_from_interface2_draft_final_run.md) §2.
 3. **The simulation is the bench's fitted field** (`bench.BENCH_RECORDING` and its two `REGIMES`),
    for all three goals. `docs/learned/generator_spec.json` (the "home spec", derived from the closed
    `.mat` store and marked superseded in [`MILESTONES.md`](../MILESTONES.md)) is **retired for this
-   program**: the nets' tuning relaunch moves onto the bench's recordings. ⚠ The bench's own measured
-   values do not yet come from `steps_excluded` either. `MEASURED_RATE_SHAPE` and
+   program**. WSMIP064's tuning run, running on 2026-09-17 as declared on its branch
+   (`tune-learned-vs-coact`), is not stopped by this. Its results are exploratory, and the switch
+   applies to what the nets are tuned on next. ⚠ The
+   bench's own measured values do not yet come from `steps_excluded` either. `MEASURED_RATE_SHAPE` and
    `MEASURED_BURST_SHAPE` were fitted by `tools/fit_background_shape.py` on the `.mat` archive, and
    `MEASURED_PROVENANCE` is a MATLAB summary over 84 baseline windows. Re-deriving them from the folder
-   is goal 1's first step, and the relaunch waits for it.
+   is goal 1's first step.
 4. **Fast stream first, then slow.** All three goals are finished on the **fast** stream before any
    of them is repeated for slow. The bench's measured values are fast-stream values already. Every
    result names its stream (FOUNDATIONS §9: under TTX the streams move in opposite directions).
@@ -47,7 +58,7 @@ not fair, and that was the objection to the untuned bake-off in the first place.
 
 **Division of labour.** WSMIP065 owns goal 1. It lands sliding LoCo and CoactDetect, re-derives the
 bench from the folder, and supplies the every-knob reference grids. WSMIP064 owns goals 2 and 3: the
-GPU relaunch of the nested tuning and the fair comparison. WSMIP065 runs no net fits. The machines
+nested tuning (running again as of 2026-09-17, per Tony) and the fair comparison. WSMIP065 runs no net fits. The machines
 share nothing but `origin`, so **everything one needs from the other goes through `main`**: this
 section, the goal pages, and the handoff files at the root.
 

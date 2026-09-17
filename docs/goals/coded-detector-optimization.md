@@ -58,7 +58,9 @@ search has to hand them admissible values before they can merge.
 
 **Next, 2026-09-17:** re-derive the bench from `steps_excluded`, fast stream, baseline windows. Then
 search every parameter (not just the declared ones) with grids that extend until bracketed, and land
-sliding at the chosen values. WSMIP064's tuning relaunch (goals 2 and 3) waits on those three.
+sliding at the chosen values. WSMIP064's tuning run (goals 2 and 3) is running and does not wait on
+these. Its next comparison uses them. None of it is final: Tony is still deciding which detectors
+and models to keep.
 
 ## What is settled
 
@@ -112,8 +114,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 
 - **Land sliding LoCo and CoactDetect**, taking admissible values from the search — held-out and
   under all three budgets — and setting them in `OPERATING_POINTS` before merging. The learned-model
-  tuning (WSMIP064) already runs this sliding code. What it needs is the **values**, and it relaunches
-  after they land: [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4.
+  tuning (WSMIP064) already runs this sliding code. Its next comparison needs the **values**: [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4.
   Branch `sliding-loco-coact`.
 - **The browser still runs both of them binned** — `loco.js` and `coact.js`. Owed the moment the
   sliding versions land, or the two surfaces disagree about what a call is.
