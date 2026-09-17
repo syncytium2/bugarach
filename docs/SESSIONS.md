@@ -10,6 +10,19 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/unsup-slow-comodulation — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-slow-comodulation/`
+- **Status:** ACTIVE (bugarach-quiet-raven). Tony: *"i think i need a figure or a doc to explain
+  this slow co-modulation. i've been trying to ignore it so far, but now i feel i cannot."*
+- **Writes:** one new folder only — the explainer page, its figures and the measurement's
+  `results.json`. Nothing existing in the darkroom is touched; the 2026-09-15 and 2026-09-16
+  rigid-shift folders are read-only from here.
+- **Touches:** new `docs/learned/slow_comodulation/`, `tools/measure_slow_comodulation.py`,
+  `tools/make_slow_comodulation_figure.py`, a test, and at landing a goal-page pointer and a
+  `docs/INDEX.md` row. ⚠ Near PR #603 (`unsup/rigid-shift-report-residuals`), which will link to
+  this page rather than carry the explanation; no shared files.
+- **Goal:** unsupervised-learning.
+- **Released when:** the reviewed page and figures are in the folder and on a PR.
+
 ### Mac/tube-ssl-report — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-tube-self-supervised/`
 - **Status:** **RELEASED — the two rebuilt figures and the real-recording lanes figure (two views,
   HTML and PNG) are in the folder; repo copies of the two synthetic-derived figures are on the PR.**
