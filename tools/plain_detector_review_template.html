@@ -46,8 +46,8 @@ how we tested them, and why they sometimes disagree with your own eyes.</p>
   <li>A real recording has no answer key: nobody knows for certain which moments are real. So we also
   <b>simulate</b> recordings — we produce them ourselves, choosing in advance when the neurons act
   together — and check what each program finds against what we put in.</li>
-  <li>On simulated recordings, several programs score about the same. None of them is clearly
-  best.</li>
+  <li>On simulated recordings, CoactDetect and LoCo score highest, and we cannot tell those two apart. Neither
+  is best at everything: both miss most real coordinated events hidden inside busy stretches.</li>
   {{PROSE:short_real}}
 </ul>
 </div>
@@ -105,7 +105,7 @@ rest is the whole job.</p>
 <figcaption><b>Figure {{NUM:fig_problem}}. Different answers from different programs on the same data.</b> {{PROSE:problem_caption}}
 Each colored row above the raster belongs to one program, and each colored mark is one moment that
 program picked out. The names are labels for now; Section {{SEC:algorithms}} explains what each program does. The
-top bar shows the part of the experiment (gray: before the drug; orange: the drug senktide). The thin
+top bar shows the part of the experiment ({{T.prob_bar_words}}). The thin
 black line under it marks the stretches the lab studies.</figcaption></figure>
 <p>The six programs in this document, by name: <b>rate+context</b>, <b>CoactDetect</b>, <b>LoCo</b>,
 <b>binned SCE</b>, <b>locust</b> and <b>SPIKE-synch</b>. Who made each one is in the table in Section
@@ -379,16 +379,14 @@ again.</figcaption></figure>
 
 <h3>locust</h3>
 <figure>{{FIG:fig_alg_cicada}}
-<figcaption><b>Figure {{NUM:fig_alg_cicada}}. locust.</b> ⚠ Each event switches its neuron "on" for a fixed
-{{T.cicada_on}} second here. locust is meant to be a duration-based program: the lab measures how long
-each calcium event lasts, and the program can hold each neuron on for that neuron's own measured time. Every
-number in this document was produced with the fixed second instead, and the bar was tuned to match it.
-Which of the two should stand is an open question for the project. The count is how many neurons are on at once. The bar comes from {{T.cicada_ns}}
+<figcaption><b>Figure {{NUM:fig_alg_cicada}}. locust.</b> Each event switches its neuron "on" for as long as
+that event lasted: the lab's event list gives each calcium event's duration, and simulated recordings draw
+their durations from the lab's measurements. The count is how many neurons are on at once. The bar comes from {{T.cicada_ns}}
 shifted copies of the whole recording and is set so that only 1 frame in 100,000 goes over. A: the real
 event passes the bar. B: the bar does not rise in the busy minute, so the count keeps reaching it.
 locust is this project's modified copy of the coordinated-event detector in CICADA, from the Cossart lab:
-we feed it the lab's own list of event times instead of letting CICADA find events for itself, we hold
-each neuron on for a fixed time, and the bar was re-chosen here. Nobody has compared locust's results with
+we feed it the lab's own list of events, with their durations, instead of letting CICADA find events for
+itself, and the bar was re-chosen here. Nobody has compared locust's results with
 CICADA's own (see Sources).</figcaption></figure>
 
 <h3>SPIKE-synch</h3>
@@ -405,7 +403,7 @@ than {{T.sync_max3}}.</figcaption></figure>
 <figure>{{FIG:fig_simulator}}
 <figcaption><b>Figure {{NUM:fig_simulator}}. One whole simulated recording.</b> Above the raster: where
 the planted events are (▼, colored by how many neurons take part), the decoys (▽) and the busy stretch.
-This is the recording used in Figures {{NUM:fig_orient}} to {{NUM:fig_alg_sync}}.</figcaption></figure>
+This is the recording used in Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}}.</figcaption></figure>
 <p>Section {{SEC:problem}} left us with the problem that a real recording has no answer key. Here is the way around
 it. We <b>simulate</b> recordings: a program of our own writes out lists of event times in the same form
 the lab's event-finder produces, and we choose in advance when the neurons act together. Since we put
@@ -499,44 +497,36 @@ counted on their own (Figure {{NUM:fig_busy}}, B). That stretch is busier than {
 lab's {{T.cnt_n_real}} untreated recordings, and folded into the score it would mostly measure how hard the
 test was set. The cost is that the overall score cannot see a program that calls all the way through a busy
 stretch, so that has to be checked separately (Figure {{NUM:fig_count_bar}}, B).</p>
-<p>Most programs have one main setting that raises or lowers their bar. To choose it fairly, we made
-{{T.n_recordings_scored}} test recordings and split them into {{T.n_tests}} groups of {{T.per_test}}. For
-each group, we picked the best setting using the other {{T.n_choose}} recordings, then scored the program
-on the {{T.per_test}} it had never seen.</p>
-<p><b>Those rounds happen only in Figure {{NUM:fig_scores}}.</b> Apart from that one figure, each program
-runs at a single stored value for its main setting — the same value on every recording, real or
-simulated, and the one that produced every call this project has ever reported. Figure
-{{NUM:fig_scores}} sets that stored value aside and lets each round pick its own; nothing else does.</p>
-<p><b>So why not keep the settings the rounds picked?</b> Because the rounds do not produce
-<i>a</i> setting. They produce {{T.n_tests}} of them, one per round, and for {{T.n_setting_disagree}} of
-the six programs those {{T.n_tests}} answers disagree with each other. locust is the clearest case: its
-rounds picked {{T.cicada_pick_lo}} and {{T.cicada_pick_hi}}, a thousandfold apart, from the same
-{{T.n_recordings_scored}} recordings. There is no single value there to install.</p>
-<p>That disagreement is not a flaw in the rounds; it is what they were built to reveal. A round answers a
-narrow question — <i>how well does this program do when its setting was picked without seeing the
-recordings it is graded on?</i> — and the answer is a score, not a value. Two further reasons not to
-install one: any setting picked this way is picked against the simulator, whose faults Section
-{{SEC:sim}} lists, and real recordings have no answer key, so nothing can be tuned on them at all.</p>
-<p><b>Those stored values did not all arrive the same way.</b> For CoactDetect, LoCo and locust, somebody
-ran the program on simulated recordings and kept the value that scored best. CoactDetect's ended up a
-hundred times stricter than the value the program was first written with. For rate+context, binned SCE
-and SPIKE-synch, the stored value <i>is</i> the value the program was first written with — nobody has
-tuned it. So half of the six carry a tuned value and half do not, and the tuned three were tuned on
-recordings from the same simulator that made every test recording here.</p>
+<p><b>How each program's main setting was chosen.</b> Most programs have one main setting that raises or
+lowers their bar. On {{T.retune_date}} all six went through the same search. Each program's main setting
+was tried at a range of values on {{T.n_retune}} simulated recordings of each background. A value was
+allowed only if the program stayed under two limits on false alarms: one for the busy stretch, where
+nothing is planted, and one for a whole simulated recording with nothing planted anywhere. Of the values
+allowed, the one with the best overall score across both backgrounds won, but it replaced the value
+already stored only if its gain was larger than the scores' own variation between recordings. The value
+moved for {{T.retune_moved}}; for {{T.retune_kept}} the value already stored was the best.</p>
+<p><b>Each program then runs at that one stored value</b>, the same on every recording, real or simulated.
+Every score in this document was measured on {{T.n_recordings_scored}} other simulated recordings that the
+search never saw, so no score comes from the recordings its setting was picked on.</p>
+<p><b>What the search did not do.</b> It searched only each program's main setting; the others keep the
+values the programs were written with. Every value was chosen against the simulator, whose faults Section
+{{SEC:sim}} lists, and real recordings have no answer key, so nothing can be tuned on them at all.
+CoactDetect and LoCo count neurons in fixed bins, which can split a coordinated event across a bin edge
+(Section {{SEC:count}}); versions of both that slide instead of stepping are being tested, and are not the
+ones in this document.</p>
 
 <h2 id="s10">{{SEC:scores}}. Scores on the simulated recordings</h2>
 <figure>{{FIG:fig_scores}}
-<figcaption><b>Figure {{NUM:fig_scores}}. Overall scores on recordings each program never saw.</b> Each dot
-is the average over the {{T.n_tests}} groups; the line runs from the lowest to the highest group.
-<b>binned SCE has two dots</b> because it can be scored two ways: the left one is how the project's
-standard run scores it, and the right one scores each of its calls over the whole 10-second bin the call
-came from. The difference is in how the call's time is reported, not in what the program found, and the
-right-hand dot is the fairer of the two.</figcaption></figure>
-<p>On the quiet background, three programs scored about the same (Figure {{NUM:fig_scores}}): CoactDetect
-{{T.f1q_coact}}, LoCo {{T.f1q_loco}} and rate+context {{T.f1q_rate}}. The best possible was about {{T.ceiling}}. With this many test recordings we cannot say
-that any one of them is truly better than the others. binned SCE looks worse ({{T.f1q_sce}}), but most of
-that comes from how its calls are timed: when we score it over its whole 10-second bins, it reaches
-{{T.sce_fair_quiet}}. locust ({{T.f1q_cicada}}) and SPIKE-synch ({{T.f1q_sync}}) scored lower.</p>
+<figcaption><b>Figure {{NUM:fig_scores}}. Overall scores at the stored settings, on recordings no setting was
+chosen on.</b> Each dot is the score over all {{T.n_recordings_scored}} test recordings; the line runs from
+the lowest to the highest of {{T.n_tests}} groups of {{T.per_test}} recordings. binned SCE is scored over
+the whole 10-second bin each call came from, because that is the stretch the call is about.</figcaption></figure>
+<p>On the quiet background CoactDetect ({{T.f1q_coact}}) and LoCo ({{T.f1q_loco}}) scored highest, then
+rate+context ({{T.f1q_rate}}) (Figure {{NUM:fig_scores}}). The best possible was about {{T.ceiling}}. With this
+many test recordings we cannot say that CoactDetect is truly better than LoCo. binned SCE
+({{T.f1q_sce}}) and locust ({{T.f1q_cicada}}) scored lower, and SPIKE-synch ({{T.f1q_sync}}) lowest. On the busy
+background every score drops a little: CoactDetect {{T.f1b_coact}}, LoCo {{T.f1b_loco}}, rate+context
+{{T.f1b_rate}}, binned SCE {{T.f1b_sce}}, locust {{T.f1b_cicada}} and SPIKE-synch {{T.f1b_sync}}.</p>
 <figure>{{FIG:fig_busy}}
 <figcaption><b>Figure {{NUM:fig_busy}}. Finding real events inside a busy stretch.</b> A: the share of
 planted events each program found, counting only the events joined by {{T.mid_cells}} of the
@@ -544,8 +534,7 @@ planted events each program found, counting only the events joined by {{T.mid_ce
 outside the busy stretch, orange inside it. The gray tick shows what calling at random would find inside.
 B: the calls a program made inside the busy stretch with no planted event near them — its false alarms —
 counted per minute, on a scale where each step is ten times more. Every program here runs at its stored
-setting (Section {{SEC:grading}}), not at the setting a round picked in Figure
-{{NUM:fig_scores}}.</figcaption></figure>
+setting (Section {{SEC:grading}}).</figcaption></figure>
 <p><b>Busy stretches are where the programs split apart</b> (Figure {{NUM:fig_busy}}). The recordings
 above never put a coordinated event inside the busy stretch, so a program that goes quiet there looks
 good even if it has gone blind. To find out which, we made {{T.block_recordings}} new recordings with
@@ -570,8 +559,8 @@ coordinated events planted <i>inside</i> the busy stretch.</p>
 recordings as the six programs and graded the same way, at every bar from {{T.cnt_x_lo}} to {{T.cnt_x_hi}}
 neurons. A: the overall score. B: how much of the busy stretch, where nothing is planted, sits under a call or
 within {{T.tol}} seconds of one. Rings mark the bar with the best score on each background. Dashed teal lines:
-CoactDetect at its stored setting on the same recordings; in B, CoactDetect and LoCo both call less than 1% of
-the stretch.</figcaption></figure>
+CoactDetect at its stored setting on the same recordings; in B, on the busy background, CoactDetect calls
+{{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}.</figcaption></figure>
 <p><b>With the right bar, the rule scores about as well as the best programs.</b> With a bar of
 {{T.cnt_best_quiet}} neurons it scored {{T.cnt_f1_best_quiet}} on the quiet background; CoactDetect scored
 {{T.cnt_coact_f1_quiet}} on the same recordings (Figure {{NUM:fig_count_bar}}, A). That is a real result. It
@@ -585,8 +574,8 @@ the busy one.</p>
 <p><b>And the bar that scores best calls most of the busy stretch, where nothing was planted</b> (Figure
 {{NUM:fig_count_bar}}, B). At its best bar, the rule called {{T.cnt_empty_best_quiet}} of that stretch on the
 quiet background and {{T.cnt_empty_best_busy}} on the busy one. On the busy background, CoactDetect called
-{{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}. A 10-second interval did no
-better: its best bars ({{T.cnt10_best_quiet}} neurons on the quiet background, {{T.cnt10_best_busy}} on the
+{{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}. A 10-second interval did not
+escape this: its best bars ({{T.cnt10_best_quiet}} neurons on the quiet background, {{T.cnt10_best_busy}} on the
 busy one) scored {{T.cnt10_f1_quiet}} and {{T.cnt10_f1_busy}}, and called at least {{T.cnt10_empty}} of the
 stretch. Herbison's rule, run exactly as published, called at least {{T.herb_empty_busy}} of it and scored
 {{T.herb_f1_quiet}} on the quiet background and {{T.herb_f1_busy}} on the busy one — though our simulated
@@ -602,12 +591,10 @@ buys.</p>
 <h2 id="s11">{{SEC:real}}. Detection on real recordings</h2>
 <p><b>A real recording has no answer key.</b> The figures in this section show where each program made
 calls. No figure here can show whether a call is right.</p>
-<p><b>Four extra rows, and they are not part of this review.</b> The figures in this section and the next
-carry {{T.n_learned}} rows whose names begin with <b>tube</b>. Those are <b>learned models</b> — programs
-that were shown examples and worked out their own rule, rather than following steps somebody wrote. They
-are still being built, none of this document's {{T.n_coded}} algorithms is one of them, and nothing here
-tests or judges them. They are drawn only so the rows are not silently missing. Treat them as work in
-progress; a separate document covers them.</p>
+<p><b>Learned models are left out.</b> The project is also building <b>learned models</b>, whose names begin
+with <b>tube</b>: programs that were shown examples and worked out their own rule, rather than following
+steps somebody wrote. They are still being built, none of this document's {{T.n_coded}} algorithms is one of
+them, and they are not drawn or judged here; a separate document covers them.</p>
 <p>The lab tests two drugs. <b>TTX</b> (tetrodotoxin) blocks the fast electrical signals most nerve neurons
 use. <b>Senktide</b> switches on a sensor these neurons carry, the neurokinin 3 receptor
 (<a href="https://doi.org/10.1523/JNEUROSCI.1569-09.2009">Navarro and others, 2009</a>). Many
@@ -645,7 +632,9 @@ raster would call those stripes.</p>
 
 <h2 id="s13">{{SEC:means}}. What this means</h2>
 <ul>
-  <li><b>No program is shown to be best.</b> On simulated recordings, five score about the same.</li>
+  <li><b>No program is shown to be best.</b> On simulated recordings CoactDetect and LoCo score highest and
+  cannot be told apart, and both miss most real coordinated events inside busy stretches, where rate+context
+  finds most of them.</li>
   <li><b>Busy neurons change every program's answer.</b> Some go blind in busy stretches, some call all through
   them. A drug that makes neurons busier can change the calls even if teamwork between neurons has not
   changed. Any study of a drug has to separate the two.</li>
@@ -712,7 +701,7 @@ raster would call those stripes.</p>
   <a href="https://doi.org/10.5281/zenodo.10041433">doi.org/10.5281/zenodo.10041433</a>; source code at
   <a href="https://gitlab.com/cossartlab/cicada">gitlab.com/cossartlab/cicada</a>, now continued at
   <a href="https://gitlab.com/cossartlab/cicada_analysis">gitlab.com/cossartlab/cicada_analysis</a>.
-  locust is fed the lab's own event list, holds each event on for a fixed time, and uses its own bar, so its
+  locust is fed the lab's own event list, holds each event on for its measured duration, and uses its own bar, so its
   results are its own; nobody has compared them with CICADA's.</li>
   <li><b>SPIKE-synch</b> uses the measure its authors call "SPIKE-synchronization": Kreuz T., Mulansky M., Bozanic N. (2015).
   SPIKY. <i>J Neurophysiol</i> 113:3432–3445,

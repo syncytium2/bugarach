@@ -213,8 +213,12 @@ def stage_models(work: Path, workers: int) -> None:
 
 
 def load_models(work: Path) -> dict:
+    """The learned checkpoints that exist. A rebuild of the hand-written detectors alone (a
+    work folder with no ``models/``) gets none, and carries the learned results over from an
+    earlier build with ``--carry-learned`` — they do not depend on the detectors' settings."""
     from bugarach.learn.checkpoint import load
-    return {n: load(work / "models" / f"{n}.json") for n in LEARNED}
+    return {n: load(work / "models" / f"{n}.json") for n in LEARNED
+            if (work / "models" / f"{n}.json").exists()}
 
 
 # ----------------------------------------------------------------------- shared pieces
@@ -1243,6 +1247,49 @@ def stage_shipped(work: Path, workers: int = 12) -> None:
     print("  wrote shipped.json")
 
 
+def _stored_one(job):
+    det, regime, seed = job
+    from bugarach import bench
+    from bugarach.score import score_stream
+    s, gt = bench.make_recording(regime, seed)
+    return (det, regime, seed), score_stream(gt, bench.run_detector(det, s))
+
+
+def stage_stored(work: Path, workers: int = 12) -> None:
+    """Each hand-written detector at its stored setting, on the 24 recordings the rounds
+    score (seeds 1000-1023), pooled over all 24 and, for the spread, over each group of six.
+
+    No setting was chosen on these recordings: ``tools/retune_operating_points.py`` chose
+    the 2026-09-16 values on seeds 1-48. So unlike ``shipped``, which reports the same run
+    beside the rounds, this is the score to quote for the settings as they stand."""
+    from bugarach import bench
+    split = bench.fold_split(n_folds=4, seeds_per_fold=6)
+    regimes = ("baseline_quiet", "baseline_busy")
+    jobs = [(d, r, s) for r in regimes for d in CODED for s in split.seeds]
+    with ProcessPoolExecutor(workers) as ex:
+        res = dict(ex.map(_stored_one, jobs))
+    per = split.seeds_per_fold
+    for r in regimes:
+        for d in CODED:
+            scores = [res[(d, r, s)] for s in split.seeds]
+            pooled = bench.pool_scores(scores, detector=d, regime=r, seeds=split.seeds)
+            groups = [bench.pool_scores(scores[i * per:(i + 1) * per], detector=d, regime=r,
+                                        seeds=split.seeds[i * per:(i + 1) * per])
+                      for i in range(split.n_folds)]
+            op = bench.OPERATING_POINTS[d]
+            put(work, f"stored_{r}_{d}", dict(
+                f1=pooled.f1, f1_min=min(g.f1 for g in groups), f1_max=max(g.f1 for g in groups),
+                recall=pooled.recall, precision=pooled.precision,
+                probe_per_min=pooled.hot_fa_per_min,
+                probe_max_group=max(g.hot_fa_per_min for g in groups),
+                recall_by_pct={f"p{round(k * 100)}": pooled.recall_at(k) for k in pooled.by_frac},
+                knob=op.knob, value=op.params[op.knob]))
+            print(f"  {r:15s} {d:7s} F1 {pooled.f1:.3f} ({min(g.f1 for g in groups):.3f}"
+                  f"–{max(g.f1 for g in groups):.3f})  empty-stretch {pooled.hot_fa_per_min:.2f}/min")
+    put(work, "stored_rounds", dict(n_recordings=len(split.seeds), n_groups=split.n_folds,
+                                    per_group=per, seeds=[split.seeds[0], split.seeds[-1]]))
+
+
 #: Recordings no setting and no model has seen: the rounds use seeds 1000-1023.
 BLOCK_SEEDS = tuple(range(2000, 2024))
 BLOCK_SIZES = (0.30, 0.18, 0.10)
@@ -1294,7 +1341,7 @@ def _blockrecall_one(job):
                              params={}, distractors=[])
     models = load_models(Path(work))
     out = {}
-    for det in list(CODED) + [n for n in LEARNED if n not in CONTROLS]:
+    for det in list(CODED) + [n for n in LEARNED if n not in CONTROLS and n in models]:
         r = bench.run_detector(det, s) if det in CODED else models[det].predict(s)[0]
         on, wd = ((r.onset_sec, r.width_sec) if hasattr(r, "onset_sec") else (r.locs, r.widths))
         if det == "sce":   # score each call over its own bin (see _sce_rescore_one)
@@ -1338,6 +1385,10 @@ def stage_blockrecall(work: Path, workers: int = 12) -> None:
         jobs = [(seed, f, str(work), hot) for seed in BLOCK_SEEDS for f in BLOCK_SIZES]
         with ProcessPoolExecutor(workers) as ex:
             got = dict(ex.map(_blockrecall_one, jobs))
+        if CARRY is not None:
+            old = json.loads((CARRY / name).read_text())
+            for k, v in got.items():
+                v.update({d: r for d, r in old[k].items() if d in LEARNED and d not in v})
         cache.write_text(json.dumps(got, indent=1))
         return got
 
@@ -1941,7 +1992,8 @@ def _detect_real(job):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         s = next(x for x in load_folder(dataset.current(role)) if x.slice_id == slice_id)
-        models = [load(Path(model_dir) / f"{n}.json") for n in LEARNED]
+        models = [load(Path(model_dir) / f"{n}.json") for n in LEARNED
+                  if (Path(model_dir) / f"{n}.json").exists()]
         events, windows = detect_slice(s, models=models)
     rows = [dict(stream=e.stream, detector=e.detector, onset=float(e.onset_sec),
                  width=float(e.width_sec) if e.width_sec is not None else 0.0,
@@ -1959,6 +2011,15 @@ def _real_detections(work: Path, workers: int = 8) -> dict:
             for label, role in REAL_ROLES for s in picks[label]["members"]]
     with ProcessPoolExecutor(min(workers, len(jobs))) as ex:
         det = dict(ex.map(_detect_real, jobs))
+    if CARRY is not None:
+        old = json.loads((CARRY / "real_detections.json").read_text())
+        for k, v in det.items():
+            key = "|".join(k)
+            if key not in old:
+                raise SystemExit(f"--carry-learned: {key} is not in the earlier build")
+            have = {r["detector"] for r in v["rows"]}
+            v["rows"] += [r for r in old[key]["rows"] if r["detector"] in LEARNED
+                          and r["detector"] not in have]
     cache.write_text(json.dumps({"|".join(k): v for k, v in det.items()}))
     return det
 
@@ -2146,8 +2207,13 @@ def stage_page(work: Path, bakeoff, dest: Path) -> None:
 
 # ----------------------------------------------------------------------- main
 STAGE_ORDER = ["models", "real", "problem", "surrogates", "mechanism", "learned", "generator",
-               "sweeps", "shipped", "blockrecall", "sce_rescore", "optimization", "performance",
-               "page"]
+               "sweeps", "shipped", "stored", "blockrecall", "sce_rescore", "optimization",
+               "performance", "page"]
+
+#: ``--carry-learned``: an earlier build's ``measurements/``, whose learned-model results are
+#: merged into a rebuild that has no checkpoints. Learned results do not read the hand-written
+#: detectors' settings, so a settings rebuild leaves them as they were.
+CARRY: Path | None = None
 
 
 def main(argv=None) -> int:
@@ -2161,7 +2227,12 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, default=None,
                     help=f"destination (default: <darkroom>/{FOLDER_NAME})")
     ap.add_argument("--workers", type=int, default=6)
+    ap.add_argument("--carry-learned", type=Path, default=None,
+                    help="an earlier build's measurements/ to take learned-model results from, "
+                         "when this build has no model checkpoints")
     a = ap.parse_args(argv)
+    global CARRY
+    CARRY = a.carry_learned
 
     if a.out:
         dest = a.out.expanduser()
@@ -2179,7 +2250,7 @@ def main(argv=None) -> int:
         t0 = time.time()
         print(f"stage {st}")
         fn = globals()[f"stage_{st}"]
-        if st in ("models", "sweeps", "shipped", "blockrecall", "sce_rescore", "real"):
+        if st in ("models", "sweeps", "shipped", "stored", "blockrecall", "sce_rescore", "real"):
             fn(work, a.workers)
         elif st in ("optimization", "performance"):
             fn(work, a.bakeoff)

@@ -10,8 +10,9 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### WSMIP065/plain-review-best-settings — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-15-detector-review-plain/`
-- **Status:** **ACTIVE — claimed before writing.** Tony, 2026-09-17: the overnight searches all failed,
+### WSMIP065/plain-review-best-settings — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-15-detector-review-plain/`
+- **Status:** **RELEASED — the rebuilt page, docx, figures and `_review_best/` are in the folder; builders
+  pushed on `detector-review-doc`.** Was ACTIVE, claimed before writing. Tony, 2026-09-17: the overnight searches all failed,
   and the Word version of the plain review is to be completed on the current best settings (#597's).
   Every settings-dependent number and figure is rebuilt: scores at the stored settings on the 24 test
   recordings (none used to choose them), the busy-stretch test, the real-recording calls and their four

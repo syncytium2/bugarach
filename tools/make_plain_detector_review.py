@@ -463,6 +463,20 @@ def _stripes(trains, n):
     return need, [(a, k) for _, k, a in found]
 
 
+#: Figure 2's minutes, from the drug's arrival, and how many clear stripes its recording must hold there.
+PROBLEM_MIN = (-3, 10)
+PROBLEM_STRIPES = 2
+
+
+def _measured(review: Path, name: str) -> Path:
+    """A measurement file of a first-review build: its published ``measurements/``, or the ``_work/``
+    of a rebuild that was never published as a page (``make_detector_review.py --carry-learned``)."""
+    for sub in ("measurements", "_work"):
+        if (review / sub / name).exists():
+            return review / sub / name
+    raise SystemExit(f"no {name} under {review}/measurements or {review}/_work")
+
+
 def stage_real(work: Path, review: Path) -> None:
     """Where the eye and the detectors disagree, on the first review's eight recordings."""
     from bugarach import dataset
@@ -471,7 +485,9 @@ def stage_real(work: Path, review: Path) -> None:
 
     if review is None:
         raise SystemExit("--from-review is required for the real stage")
-    det = json.loads((review / "measurements" / "real_detections.json").read_text())
+    det = json.loads(_measured(review, "real_detections.json").read_text())
+    from bugarach import bench
+    sce_bin = float(bench.OPERATING_POINTS["sce"].params["bin_width_sec"])
     rec = {}
     for label, role in (("TTX", "ttx"), ("senktide", "senktide")):
         with warnings.catch_warnings():
@@ -488,7 +504,9 @@ def stage_real(work: Path, review: Path) -> None:
                 trains = [np.asarray(v, float) for v in s.streams[stream].t50rise]
                 n = len(trains)
                 need, st = _stripes(trains, n)
-                calls = {dd: [(r["onset"], r["width"]) for r in d["rows"]
+                # binned SCE's call covers its bin, as the scorer reads it (score.EXTENT_FIELD, 2026-09-16);
+                # its reported width is the spread of the events inside, which can end before a stripe
+                calls = {dd: [(r["onset"], sce_bin if dd == "sce" else r["width"]) for r in d["rows"]
                               if r["detector"] == dd and r["stream"] == stream] for dd in ALL10}
                 stripes = []
                 for a, k in st:
@@ -512,7 +530,7 @@ def stage_real(work: Path, review: Path) -> None:
         for sp in r["stripes"]:
             n_stripes += 1
             n_in += sp["in_window"]
-            few = len(sp["called_by"]) <= 3
+            few = sum(dd in CODED for dd in sp["called_by"]) <= 3      # of the six programs
             n_few += few
             n_few_out += few and not sp["in_window"]
             for dd in ALL10:
@@ -580,17 +598,49 @@ def stage_real(work: Path, review: Path) -> None:
     close["orient"] = closeup(ko_, t0, t0 + 600.0, "orient")
     kw, t0 = best_weak()
     close["weak"] = closeup(kw, t0, t0 + 60, "weak")
-    # the first review's Figure 1A: the recording where the six disagree most
-    pa = json.loads((review / "measurements" / "numbers.json").read_text())["prob_a"]
-    kp = f"{pa['drug']}|{pa['group']}|fast"
+    # Figure 2, by a stated rule. It used to be the recording where the six disagree MOST, and Tony
+    # (2026-09-16): "figure 2 makes it look like nothing works". Now: brief events, the minutes from
+    # PROBLEM_MIN[0] to PROBLEM_MIN[1] around the drug's arrival; among the recordings with at least
+    # PROBLEM_STRIPES clear stripes there, the one whose disagreement is the median (lower median).
+    cands = []
+    for k, r in rec.items():
+        if r["stream"] != "fast":
+            continue
+        a = r["anchor"]
+        t0, t1 = a + 60 * PROBLEM_MIN[0], a + 60 * PROBLEM_MIN[1]
+        counts = {dd: sum(1 for on, _ in r["calls"][dd] if t0 <= on < t1) for dd in CODED}
+        cands.append(dict(key=k, label=r["label"], group=r["group"],
+                          stripes=sum(1 for sp in r["stripes"] if t0 <= sp["t"] < t1), counts=counts,
+                          spread=(max(counts.values()) + 1) / (min(counts.values()) + 1)))
+    ok = sorted((c for c in cands if c["stripes"] >= PROBLEM_STRIPES), key=lambda c: (c["spread"], c["key"]))
+    if not ok:
+        raise SystemExit(f"no recording has {PROBLEM_STRIPES} clear stripes in Figure 2's minutes")
+    pick = ok[(len(ok) - 1) // 2]
+    put(work, "problem", dict(pick=pick, candidates=cands, n_eligible=len(ok), minutes=list(PROBLEM_MIN),
+                              min_stripes=PROBLEM_STRIPES))
+    print("  Figure 2 candidates (key, clear stripes, spread):",
+          [(c["key"], c["stripes"], round(c["spread"], 1)) for c in sorted(cands, key=lambda c: c["spread"])])
+    kp = pick["key"]
     a = rec[kp]["anchor"]
-    close["problem"] = closeup(kp, a + 60 * pa["minutes"][0], a + 60 * pa["minutes"][1], "problem")
-    # ...and its busiest 90 s inside a marked window: where locust calls most
-    rp = rec[kp]
-    lc = np.array([on for on, _ in rp["calls"]["cicada"]
-                   if any(w0 <= on <= w1 for _, w0, w1 in rp["windows"])])
-    t0 = max(lc, key=lambda s_: int(np.sum((lc >= s_) & (lc < s_ + 90)))) if lc.size else a
-    close["busy"] = closeup(kp, float(t0), float(t0) + 90, "busy")
+    close["problem"] = closeup(kp, a + 60 * PROBLEM_MIN[0], a + 60 * PROBLEM_MIN[1], "problem")
+    # A busy stretch with nothing the eye would call: of every brief-event recording, the 90 s inside
+    # a marked window, holding no clear stripe, where locust calls most. It used to be taken from
+    # Figure 2's recording, and when that recording changed its busiest 90 s held two clear stripes.
+    best = None
+    for kb, rb in rec.items():
+        if rb["stream"] != "fast":
+            continue
+        lc = np.array([on for on, _ in rb["calls"]["cicada"]
+                       if any(w0 <= on <= w1 for _, w0, w1 in rb["windows"])])
+        st_t = np.array([sp["t"] for sp in rb["stripes"]])
+        for s_ in lc:
+            if st_t.size and np.any((st_t >= s_) & (st_t <= s_ + 90)):
+                continue
+            n_ = int(np.sum((lc >= s_) & (lc < s_ + 90)))
+            if best is None or n_ > best[0]:
+                best = (n_, kb, float(s_))
+    _, kb, t0 = best
+    close["busy"] = closeup(kb, t0, t0 + 90, "busy")
     c = close["busy"]
     put(work, "busy_counts", {dd: sum(1 for on, _ in c["calls"][dd] if t0 <= on <= t0 + 90) for dd in ALL10})
     # Whole recordings, for the overview figures. The first review's four PNGs are not reused
@@ -600,6 +650,11 @@ def stage_real(work: Path, review: Path) -> None:
     overview = {}
     for k, r in rec.items():
         a = r["anchor"]
+        # events per neuron per hour inside each marked window, for the captions
+        win_rate = {}
+        for wname, w0, w1 in r["windows"]:
+            n_ev = sum(int(np.sum((v >= w0) & (v <= w1))) for v in r["trains"])
+            win_rate[wname] = round(3600 * n_ev / (len(r["trains"]) * (w1 - w0)))
         lo = min([float(np.min(v)) for v in r["trains"] if len(v)] + [a])
         hi = max([float(np.max(v)) for v in r["trains"] if len(v)] + [a])
         overview[k] = dict(
@@ -611,12 +666,13 @@ def stage_real(work: Path, review: Path) -> None:
             in_window={dd: sum(1 for on, _ in r["calls"][dd]
                                if any(w0 <= on <= w1 for _, w0, w1 in r["windows"]))
                        for dd in CODED},
+            window_rate_per_hour=win_rate,
             stripes=[dict(t=sp["t"], cells=sp["cells"]) for sp in r["stripes"]])
     out = dict(n_stripes=n_stripes, n_in=n_in, n_few=n_few, n_few_out=n_few_out, tally=tally,
                close=close, stripe_frac=STRIPE_FRAC, stripe_s=STRIPE_S, weak_cells=WEAK_CELLS,
                n_recordings=len({v["slice"] for v in rec.values()}), overview=overview)
     put(work, "real", out)
-    print(f"  real: {n_stripes} stripes, {n_in} inside windows, {n_few} called by <=3 of 10, "
+    print(f"  real: {n_stripes} stripes, {n_in} inside windows, {n_few} called by <=3 of the six, "
           f"{n_few_out} of those outside")
     for k, v in close.items():
         print("   close-up", k, v["key"], [round((x - v["anchor"]) / 60, 2) for x in v["win"]])
@@ -1267,7 +1323,7 @@ STEPS = {
             "Pool every bin from every copy. The bar is the count that only 1 bin in {sce_1in} goes over. "
             "It is one bar for the whole stretch.",
             "Call a bin if its count is over the bar and at least 3 neurons take part."],
-    "cicada": ["Switch each neuron on for a fixed {on:g} second after each of its events (see the caption).",
+    "cicada": ["Switch each neuron on at each of its events, for as long as that event lasted.",
                "Count how many neurons are on in every 0.1-second frame.",
                "Make {ns} shifted copies of the whole recording. The bar is the count that only 1 frame "
                "in {cic_1in} goes over.",
@@ -1297,7 +1353,7 @@ def _fill(st):
     return dict(ctx=ctx, half=float(ctx) / 2, win=st.get("rate_win", 1.0),
                 ex=st.get("excess_threshold_hz", 5), bin=st.get("int_win_sec", st.get("bin_width_sec", 1)),
                 ns=st.get("n_surrogates", 100), step=st.get("thr_step_sec", 15),
-                on=st.get("active_duration_sec", 1), tau=st.get("tau_max", 0.25),
+                tau=st.get("tau_max", 0.25),
                 bar=st.get("C_threshold", 0.1), cmin=st.get("C_min", 0.1), gap=st.get("max_gap", 0.5),
                 merge=st.get("merge_gap_sec", 2.0), alpha_1in=f"{round(1 / alpha):,}",
                 z=NormalDist().inv_cdf(1 - alpha),
@@ -1336,7 +1392,7 @@ def _settings_rows(det, st):
                 (f"1 in {v['sce_1in']}", "chance allowed per bin (sets the bar)"),
                 (f"{v['ns']}", "shifted copies of the whole stretch"),
                 ("3 neurons", "fewest neurons a call needs")],
-        "cicada": [(f"{v['on']:g} s", "each event keeps its neuron on (fixed)"),
+        "cicada": [("measured", "how long each event keeps its neuron on"),
                    ("0.1 s", "frame length"),
                    (f"1 in {v['cic_1in']}", "chance allowed per frame (sets the bar)"),
                    (f"{v['ns']}", "shifted copies of the whole recording")],
@@ -1771,28 +1827,23 @@ def fig_scores(W, numbers, dets=CODED):
         f.line(Xc, 36, Xc, 376, color=BARC, dash="5 4", width=1.5)
         f.text(Xc, 392 + 14 * 0, "", size=1)
         for i, d in enumerate(dets):
-            v = numbers[f"perf_{reg}_{d}"]
+            # the six programs: their stored settings, on recordings none was chosen on (binned SCE is
+            # scored over its bins by the scorer itself since 2026-09-16, so it has one dot, not two);
+            # the learned models: the rounds they were trained and scored in
+            v = numbers[f"stored_{reg}_{d}"] if d in CODED else numbers[f"perf_{reg}_{d}"]
             Y = float(p.py(i))
             f.line(float(p.px(v["f1_min"])), Y, float(p.px(v["f1_max"])), Y, color=COLORS[d], width=3)
             f.add(f"<circle cx='{float(p.px(v['f1'])):.1f}' cy='{Y:.1f}' r='6' fill='{COLORS[d]}'/>")
-            if d == "sce":
-                # binned SCE's second score, SAID rather than coded as a hollow marker. A
-                # second symbol makes the reader carry a key across the page to find out
-                # that it is the same program measured a second way (Tony, 2026-09-16:
-                # "the open symbol is confusing"). An arrow and four words do not.
-                fb = numbers["sce_rescore"]["quiet" if "quiet" in reg else "busy"]["full_bin"]["tuned_f1"]
-                xf = float(p.px(fb))
-                f.line(float(p.px(v["f1"])) + 8, Y, xf - 8, Y, color=COLORS[d], width=1,
-                       dash="2 3")
-                f.add(f"<circle cx='{xf:.1f}' cy='{Y:.1f}' r='6' fill='{COLORS[d]}'/>")
-                f.text(Xc - 10, Y + 20, "both dots are binned SCE (see the text)",
-                       size=10, anchor="end", color=COLORS[d])
             if j == 0:
                 f.text(X - 10, Y + 4, NAMES[d], size=13, anchor="end", color=INK_T)
         p.xaxis_values([0, 0.2, 0.4, 0.6, 0.8, 1.0], label="overall score (0 to 1; higher is better)")
-    f.rich(170, 440, [("●", dict(color=INK_T, weight=700)), (" average   ", dict(color=MUTED)),
+    coded = all(d in CODED for d in dets)
+    sr = numbers["stored_rounds"]
+    f.rich(170, 440, [("●", dict(color=INK_T, weight=700)),
+                      (f" all {sr['n_recordings']} recordings   " if coded else " average   ", dict(color=MUTED)),
                       ("━", dict(color=INK_T, weight=700)),
-                      (" lowest to highest across the 4 tests   ", dict(color=MUTED)),
+                      (f" lowest to highest of {sr['n_groups']} groups of {sr['per_group']}   " if coded else
+                       " lowest to highest across the 4 tests   ", dict(color=MUTED)),
                       ("┄", dict(color=BARC, weight=700)),
                       (f" best possible ({ceil:.2f})", dict(color=MUTED))], size=12)
     f.h = 460
@@ -2209,11 +2260,11 @@ def fig_problem(W):
     c = W["real"]["close"]["problem"]
     f = Figure(1000, 420)
     # height from the content: a fixed 420 cut off the x-axis label (render_check, 2026-09-16)
-    f.h = _closeup(f, c, 190, 20, 780, title="", dets=CODED, raster_h=230, stripe_marks=False) + 6
+    f.h = _closeup(f, c, 190, 20, 780, title="", dets=CODED, raster_h=230, stripe_marks=True) + 6
     return f
 
 
-def fig_eye(W, figs_real="18 to 21", dets=CODED):
+def fig_eye(W, dets=CODED):
     from svgfig import Figure, MUTED
     R = W["real"]
     C = R["close"]
@@ -2227,7 +2278,8 @@ def fig_eye(W, figs_real="18 to 21", dets=CODED):
                  title="C · calls with no stripe under them (red box: a coordinated event of 3 or fewer neurons)")
     # D: the tallies
     y += 10
-    f.text(200, y, f"D · all {R['n_recordings']} recordings of Figures {figs_real}, both kinds of events",
+    # no figure numbers inside a figure: they move whenever a figure is added (this said "18 to 21" at 21-24)
+    f.text(200, y, f"D · all {R['n_recordings']} real recordings of the previous four figures, both kinds of events",
            size=13, weight=600)
     T = R["tally"]
     dets = list(dets)
@@ -2283,7 +2335,7 @@ def _render(figs: dict, work: Path, dest: Path) -> dict:
 
 def stage_figures(work: Path, review: Path) -> None:
     W = json.loads((work / "plain.json").read_text())
-    numbers = json.loads((review / "measurements" / "numbers.json").read_text())
+    numbers = json.loads(_measured(review, "numbers.json").read_text())
     figs = {"fig_orient": fig_orient(W), "fig_problem": fig_problem(W), "fig_chance": fig_chance(W),
             "fig_chance_steps": fig_chance_steps(W), "fig_shift_shuffle": fig_shift_shuffle(W, numbers)}
     for d in CODED:
@@ -2307,28 +2359,17 @@ def stage_figures(work: Path, review: Path) -> None:
 
 
 # ----------------------------------------------------------------------- page
-#: The first review's real-recording figures, reused as they are: one recording per group
-#: of mice, per drug, per kind of event.
-OLD_REAL = (("real_ttx_brief", "fig15_real_TTX_fast.png"), ("real_ttx_long", "fig16_real_TTX_slow.png"),
-            ("real_senk_brief", "fig17_real_senktide_fast.png"), ("real_senk_long", "fig18_real_senktide_slow.png"))
 
 
 def _pct(v, nd=0):
     return f"{100 * v:.{nd}f}%"
 
 
-def _round_disagreement(N) -> dict:
-    """How many detectors' rounds picked different settings, and locust's spread.
-
-    The document has to answer "why not just keep the tuned setting?", and the honest
-    answer is that there is no single one: each round picks its own, and most detectors'
-    rounds disagree. Derived here rather than written into the prose so the claim cannot
-    outlive the measurement.
-    """
-    picks = {d: N[f"opt_quiet_{d}"]["picks"] for d in CODED}
-    lo, hi = (sorted(picks["cicada"], key=lambda s: float(s.replace(",", "")))[i] for i in (0, -1))
-    return dict(n_setting_disagree=sum(1 for p in picks.values() if len(set(p)) > 1),
-                cicada_pick_lo=lo, cicada_pick_hi=hi)
+#: How the stored settings were chosen: tools/retune_operating_points.py, 2026-09-16 (bench.RETUNE),
+#: on simulated recordings 1-48 of each background. The scores the page quotes are on recordings
+#: 1000-1023, which that search never saw.
+RETUNE_DATE = "16 September 2026"
+RETUNE_RECORDINGS = 48
 
 
 def _count_values(W) -> dict:
@@ -2413,7 +2454,7 @@ def _display_values(W, N) -> dict:
         real_over_shift_8=N["sur_fast_real_over_shift"]["n8"],
         rate_ex=f"{st['rate']['excess_threshold_hz']:g}", coact_ns=st["coact"]["n_surrogates"],
         loco_ns=st["loco"]["n_surrogates"], sce_ns=st["sce"]["n_surrogates"],
-        cicada_ns=st["cicada"]["n_surrogates"], cicada_on=f"{st['cicada']['active_duration_sec']:g}",
+        cicada_ns=st["cicada"]["n_surrogates"],
         sync_tau=f"{st['sync']['tau_max']:g}", sync_bar=f"{st['sync']['C_threshold']:g}",
         sync_max3=f"{2 / (sim['n_roi'] - 1):.2f}", sync_max_event=f"{(sim['event']['n_part'] - 1) / (sim['n_roi'] - 1):.2f}",
         tube_threshold=f"{tube['threshold']:.2f}", tube_params=f"{tube['n_params']:,}",
@@ -2427,9 +2468,10 @@ def _display_values(W, N) -> dict:
         real_p25_per_hour=per_hour(N["gen_real_rate_percentiles_mhz"]["p25"]),
         real_p75_per_hour=per_hour(N["gen_real_rate_percentiles_mhz"]["p75"]),
         tol=f"{N['tol_s']:g}", ceiling=f"{N['f1_ceiling']:.2f}",
-        n_recordings_scored=N["rounds"]["n_recordings"], n_tests=N["rounds"]["n_folds"],
-        n_choose=N["rounds"]["n_choose"], per_test=N["rounds"]["per_fold"],
-        sce_fair_quiet=f"{N['sce_rescore']['quiet']['full_bin']['tuned_f1']:.2f}",
+        # the scores quoted are the stored settings' on recordings none of them was chosen on
+        # (make_detector_review.py, stage `stored`); the settings were chosen on RETUNE_RECORDINGS others
+        n_recordings_scored=N["stored_rounds"]["n_recordings"], n_tests=N["stored_rounds"]["n_groups"],
+        per_test=N["stored_rounds"]["per_group"], n_retune=RETUNE_RECORDINGS, retune_date=RETUNE_DATE,
         block_recordings=N["blockrecall"]["n_recordings"], block_hot3=f"{N['blockrecall_hot3x']['block_mhz'] * 3.6:.0f}",
         n_stripes=real["n_stripes"], n_stripes_in=real["n_in"], n_stripes_out=real["n_stripes"] - real["n_in"],
         n_few=real["n_few"], n_few_out=real["n_few_out"], n_real_recordings=real["n_recordings"],
@@ -2442,13 +2484,12 @@ def _display_values(W, N) -> dict:
         mid_cells=int(round(0.18 * N["bench_n_roi"])),
         small_cells=int(round(0.10 * N["bench_n_roi"])),
         n_coded=len(CODED), n_learned=len(LEARNED4),
-        #: The rounds do not yield a deployable setting: they yield one per round, and most
-        #: detectors' rounds disagree. Tony asked why the stored value is not replaced by
-        #: "the tuned one" — this is the answer, and it has to come from the data.
-        **_round_disagreement(N),
     )
     for reg, tag in (("baseline_quiet", "q"), ("baseline_busy", "b")):
-        for d in CODED + LEARNED4:
+        for d in CODED:
+            T[f"f1{tag}_{d}"] = f"{N[f'stored_{reg}_{d}']['f1']:.2f}"
+            T[f"fa{tag}_{d}"] = f"{N[f'stored_{reg}_{d}']['probe_per_min']:.1f}"
+        for d in LEARNED4:          # the learned page keeps the rounds it was trained and scored in
             T[f"f1{tag}_{d}"] = f"{N[f'perf_{reg}_{d}']['f1']:.2f}"
     for d in CODED + LEARNED4:
         b = N["blockrecall"]["per_detector"][d]
@@ -2459,17 +2500,57 @@ def _display_values(W, N) -> dict:
         T[f"stripe_in_{d}"] = _pct(t["called_in"] / max(t["stripes_in"], 1))
         T[f"weak_{d}"] = _pct(t["weak"] / max(t["calls"], 1))
         T[f"busy_{d}"] = W.get("busy_counts", {}).get(d, "")
-    for d, v in N["prob_a"]["counts"].items():
+    # which settings the 2026-09-16 search moved, read off bench.OPERATING_POINTS' own provenance:
+    # a moved value's source opens "<RETUNE>: old -> new", a kept one says "Confirmed by <RETUNE>"
+    from bugarach import bench
+    moved = [d for d in CODED if bench.OPERATING_POINTS[d].source.startswith(bench.RETUNE + ":")]
+    kept = [d for d in CODED if d not in moved and bench.RETUNE in bench.OPERATING_POINTS[d].source]
+    if len(moved) + len(kept) != len(CODED):
+        raise SystemExit("a stored setting's source does not name the 2026-09-16 search; reword Section grading")
+    words = lambda ds: ", ".join(NAMES[d] for d in ds[:-1]) + f" and {NAMES[ds[-1]]}"   # noqa: E731
+    T["retune_moved"], T["retune_kept"] = words(moved), words(kept)
+    P = W["problem"]
+    for d, v in P["pick"]["counts"].items():
         T[f"prob_{d}"] = v
-    T["prob_minutes"] = f"{N['prob_a']['minutes'][1] - N['prob_a']['minutes'][0]:g}"
-    # the first review's real-recording counts, for the captions of its four figures
-    for label in ("TTX", "senktide"):
-        for stream in ("fast", "slow"):
-            for g, v in N.get(f"real_{label}_{stream}", {}).items():
-                for d, n in v["calls_in_windows"].items():
-                    T[f"rw_{label}_{stream}_{g}_{d}"] = n
-                for w, mhz in v["window_rate_mhz"].items():
-                    T[f"rate_{label}_{stream}_{g}_{w.replace(' ', '').replace('+', 'plus')}"] = f"{mhz * 3.6:.0f}"
+    T["prob_minutes"] = f"{P['minutes'][1] - P['minutes'][0]:g}"
+    T["prob_before"], T["prob_after"] = f"{-P['minutes'][0]:g}", f"{P['minutes'][1]:g}"
+    T["prob_drug"], T["prob_group"] = P["pick"]["label"], P["pick"]["group"]
+    T["prob_stripes"] = P["pick"]["stripes"]
+    T["prob_min_stripes"] = P["min_stripes"]
+    T["prob_n_eligible"] = P["n_eligible"]
+    T["prob_n_candidates"] = len(P["candidates"])
+    # the colors of the parts of the experiment that Figure 2's minutes actually show
+    cp_ = real["close"]["problem"]
+    shown = [nm for nm, r0, r1 in cp_["regions"] if r0 < cp_["win"][1] and r1 > cp_["win"][0]]
+    color_words = {"baseline": "gray: before the drug", "TTX": "blue: the drug TTX",
+                   "senktide": "orange: the drug senktide", "high K+": "dark gray: high potassium"}
+    T["prob_bar_words"] = "; ".join(color_words[nm] for nm in shown)
+    T["prob_fewest"], T["prob_most"] = min(P["pick"]["counts"].values()), max(P["pick"]["counts"].values())
+    T["prob_rule_words"] = ("the one where the programs' call counts differ less" if P["n_eligible"] == 2 else
+                            "the one where the programs' call counts differ by the middle amount (the median)"
+                            if P["n_eligible"] > 2 else "that one")
+    ins = {d: real["tally"][d]["called_in"] / max(real["tally"][d]["stripes_in"], 1) for d in CODED}
+    T["stripe_in_lo"], T["stripe_in_hi"] = _pct(min(ins.values())), _pct(max(ins.values()))
+    # who calls each of Figure 2's clear stripes, most-agreed first, in words
+    cp = real["close"]["problem"]
+    six = ["none of the six programs", "only {}", "two programs", "three programs", "four programs",
+           "five programs", "all six programs"]
+    parts = []
+    for sp in sorted(cp["stripes"], key=lambda s_: -sum(d in s_["called_by"] for d in CODED)):
+        who = [d for d in CODED if d in sp["called_by"]]
+        m = (sp["t"] - cp["anchor"]) / 60
+        when = f"as {cp['label']} arrives" if abs(m) < 0.25 else f"at minute {m:.1f}"
+        verb = "calls" if len(who) == 1 else "call"
+        parts.append(f"{six[len(who)].format(*(NAMES[d] for d in who[:1]))} {verb} the one {when}")
+    T["problem_stripes_detail"] = (", ".join(parts[:-1]) + (", and " if len(parts) > 2 else " and ") + parts[-1]
+                                   if len(parts) > 1 else (parts[0] if parts else ""))
+    # real-recording counts for the captions of the four overview figures
+    for k, v in W["real"]["overview"].items():
+        label, g, stream = k.split("|")
+        for d, n in v["in_window"].items():
+            T[f"rw_{label}_{stream}_{g}_{d}"] = n
+        for w, per_h in v["window_rate_per_hour"].items():
+            T[f"rate_{label}_{stream}_{g}_{w.replace(' ', '').replace('+', 'plus')}"] = f"{per_h:.0f}"
     # how bunched the busiest cells are, counted in 30 s stretches: 1 means as even as
     # chance allows. The simulator's busiest cells are the defect Section 7 owns up to.
     T["bunch_real_busy"] = f"{N['gen_real_fano_by_rate']['over_100']['w30']:.1f}"
@@ -2499,6 +2580,12 @@ def _display_values(W, N) -> dict:
         T[f"{close}_from"] = f"{(c['win'][0] - a) / 60:.1f}"
         T[f"{close}_to"] = f"{(c['win'][1] - a) / 60:.1f}"
         T[f"{close}_n_roi"] = c["n_roi"]
+        T[f"{close}_drug"], T[f"{close}_group"] = c["label"], c["group"]
+        # which part of the experiment the close-up sits in, for the caption
+        mid = (c["win"][0] + c["win"][1]) / 2
+        part = next((nm for nm, r0, r1 in c["regions"] if r0 <= mid <= r1), "")
+        T[f"{close}_part"] = {"baseline": "before the drug", "high K+": "during high potassium"}.get(
+            part, f"during {part}")
         T[f"{close}_n_stripes"] = len(c["stripes"])
         for d in ALL10:
             T[f"{close}_calls_{d}"] = sum(1 for on, _ in c["calls"][d] if c["win"][0] <= on <= c["win"][1])
@@ -2515,13 +2602,7 @@ def _display_values(W, N) -> dict:
 
 
 def stage_page(work: Path, review: Path) -> None:
-    import base64
-    old = dict(OLD_REAL)
-
     def figure(name):
-        if name in old:
-            b64 = base64.b64encode((review / old[name]).read_bytes()).decode()
-            return f"<img alt='' src='data:image/png;base64,{b64}'>"
         svg = work / f"{name}.svg"
         if not svg.exists():
             raise SystemExit(f"no figure {name}: run --stages figures")
@@ -2549,7 +2630,7 @@ def _assemble_review(work: Path, review: Path, figure):
     apart in wording or numbering; `figure(name)` returns each figure's markup for its format.
     Returns (page, figure order, the token filler)."""
     W = json.loads((work / "plain.json").read_text())
-    N = json.loads((review / "measurements" / "numbers.json").read_text())
+    N = json.loads(_measured(review, "numbers.json").read_text())
     prose_file = work.parent / "real_prose.json"
     if not prose_file.exists():
         raise SystemExit(f"{prose_file} is missing: the sentences about real recordings live there, "
@@ -2706,11 +2787,10 @@ def _reference_docx(pandoc: str, out: Path) -> Path:
 
 def stage_docx(work: Path, review: Path) -> None:
     import subprocess
-    old = dict(OLD_REAL)
     dest = work.parent
 
     def figure(name):
-        png = review / old[name] if name in old else dest / f"{name}.png"
+        png = dest / f"{name}.png"
         if not png.exists():
             raise SystemExit(f"no figure {png.name}: run --stages figures")
         w, h = _png_size(png)
