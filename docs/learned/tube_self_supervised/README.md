@@ -628,8 +628,8 @@ commit, with no uncommitted changes, on one Mac (Python 3.14.5, torch 2.14.0, El
 | label-free training | `tools/tube_self_supervised.py --out <dir>/training --jobs 12` | `training/` | `28ea5ad` |
 | real recordings | `tools/tube_ssl_real_compare.py --out <dir>/real_compare --checkpoints <dir>/real_compare/checkpoints --jobs 12` | `real_compare/` | `28ea5ad` |
 | models on synthetic twins | `tools/check_small_j_mixes_events.py --out <dir>/small_j_check --twins 30 --draws 2 --jobs 12 --checkpoints <all 120 checkpoints> --supervised-seeds 0 --untrained-seeds 0` | `small_j_check/` | `f55db21` |
-| every quoted result | `tools/summarize_tube_self_supervised.py --run <dir>` | `summary.json` | this page's commit |
-| figures | `tools/make_surrogate_schematic_figure.py`, `make_rigid_shift_gates_figure.py --run <dir>`, and `make_line_sensors_figure.py`, `make_tube_ssl_figure.py`, `make_tube_real_summary_figure.py` with `--summary <dir>/summary.json`; each writes to the darkroom unless given `--out`, and `--also` keeps a second copy | `*_fig.png` | this page's commit |
+| every quoted result | `tools/summarize_tube_self_supervised.py --run <dir>` | `summary.json` | recorded in its `provenance` key |
+| figures | `tools/make_surrogate_schematic_figure.py`, `make_rigid_shift_gates_figure.py --run <dir>`, and `make_line_sensors_figure.py`, `make_tube_ssl_figure.py`, `make_tube_real_summary_figure.py` with `--summary <dir>/summary.json`; each writes to the darkroom unless given `--out`, and `--also` keeps a second copy | `*_fig.png` | rebuilt pixel-identical from that summary |
 
 ⚠ **What the records can and cannot show.** The aggregate leak test, training, real-recordings and
 twin-check outputs carry a provenance stamp with the commit and `git_dirty: false`. The bake-off
