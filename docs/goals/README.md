@@ -25,10 +25,17 @@ not fair, and that was the objection to the untuned bake-off in the first place.
    the steps excluded folder. it is terrifying that you might use other data."* The senktide and
    TTX recordings are **inside** that folder. The separately declared roles `senktide` and `ttx`,
    the `.mat` stores, `default` and `pensub` are **not** used for this program.
-2. **Train on the baseline, run on the full slice.** Tony: *"our original goal was to train on the
-   baseline and run on the full slice."* Simulation parameters come from the folder's **baseline**
-   windows only (FOUNDATIONS §9). The tuned detectors and trained nets are then run on each
-   recording's full extent: baseline, treatment and everything else in `regions.csv`.
+2. **Train on the baseline, run on the full slice — but this run is baseline only.** Tony:
+   *"our original goal was to train on the baseline and run on the full slice."* Simulation
+   parameters come from the folder's **baseline** windows only (FOUNDATIONS §9). Running on the
+   full extent — baseline, treatment and everything else in `regions.csv` — is the goal and is
+   **held**: Tony, 2026-09-17, *"for this training run use only baseline."* So nothing in the
+   current program scores a treatment window, and the full-slice run waits for his word.
+   **A baseline window shorter than 15 minutes is not measured at all** (`bench.MIN_BASELINE_SEC`;
+   Tony, 2026-09-17: *"baselines shorter than 15 minutes should be ignored. they probably should
+   not have been exported."*). Nothing in today's folder is affected — its shortest baseline is
+   17.0 minutes — so it is a guard against the next folder, and the right place for it is the
+   exporter rather than here.
    **What `regions.csv` is:** the folder's table of periods, one row per period of each recording.
    interface2's `generate_export_folder.m` wrote it (`PROVENANCE.md` in the folder). It holds a
    period's label, when the period began and ended (`start_sec`/`end_sec`: the raw, untrimmed period
