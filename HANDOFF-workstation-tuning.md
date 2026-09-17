@@ -698,6 +698,25 @@ CoactDetect, not tuned. The hand-written grids take seconds, so a widened, separ
 be run in the morning into its own folder without disturbing anything. Not done, because it changes
 the declaration: Tony's call. The 240 s context caution above (the home spec's 171 s spacing) applies to
 any wider context too.
+**The wider grid, run 22:15-22:21 on Tony's word** (*"run the wider grid when you can"*): branch
+`tune-wider-reference-grid` (`314a887`, `--hand-grid wide`, declared before its first result; one
+widening round), into `~/runs/tune-wider-reference-grid/`, 600 configurations, no errors, budgets
+identical to the overnight run's. **No choice sits at an edge any more.** CoactDetect chooses one
+configuration in all four folds and both selections: `alpha` 1e-7 (grid now to 1e-12), window 1.0 s (now
+from 0.25 s), context 240 s (now to 960 s). LoCo's choices are unchanged: 480 s and 960 s did not win, so
+240 s is interior. Held-out F1, mean over the four folds (sliding, 18 training recordings choose, 6
+held-out score):
+
+| reference | CoactDetect, ungated / gated | LoCo, ungated / gated |
+|---|---|---|
+| shipped, untuned | 0.6672 | — |
+| declared grid | 0.7124 / 0.7124 | 0.6924 / 0.7028 |
+| wider grid | **0.7225 / 0.7225** | 0.6924 / 0.7028 |
+
+**For Gate 3, not decided:** the wider grid is the reference that brackets its optimum, so it is the
+fair one to compare the learned models against; the declared grid's numbers stay in the record beside
+it. Both chosen contexts are 240 s against the home spec's 171 s minimum event spacing, which the
+full-search run found to favour bench recordings over crowded ones.
 `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.
