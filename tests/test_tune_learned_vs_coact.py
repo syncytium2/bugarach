@@ -1,11 +1,12 @@
-"""The tuning tool's guarantees, on one ``--quick`` run of ``tube`` and CoactDetect.
+"""The tuning tool's guarantees, on one ``--quick`` run of ``tube`` and CoactDetect on the bench.
 
 ``tools/tune_learned_vs_coact.py`` runs overnight with nobody watching, and a defect in it
 would cost the night and possibly the comparison. Each test is one requirement from
-``HANDOFF-workstation-tuning.md`` (*Gate 2*) or from the storage rule the Mac unsupervised
+``HANDOFF-workstation-tuning.md`` (*Gate 2*), from the storage rule the Mac unsupervised
 session carried from Tony on 2026-09-16 (tuned parameters stored persistently, rationally and
-separably). The run is made once, by the command line, because the tool's workers are spawned
-processes that must import it as a script.
+separably), or from the four decisions for goal 2's next comparison on the bench
+(``docs/goals/learned-model-family.md``, Tony, 2026-09-17). The run is made once, by the command
+line, because the tool's workers are spawned processes that must import it as a script.
 """
 
 from __future__ import annotations
@@ -40,7 +41,7 @@ T = _load_tool()
 def _run_cli(out: Path) -> str:
     env = dict(os.environ, PYTHONPATH=str(REPO / "src"))
     res = subprocess.run([sys.executable, str(TOOL), "--out", str(out), "--jobs", "4", "--quick",
-                          "--models", "tube", "--detectors", "coact"],
+                          "--models", "tube", "--detectors", "coact", "--simulation", "bench"],
                          capture_output=True, text=True, env=env, cwd=REPO, timeout=600)
     assert res.returncode == 0, res.stdout + res.stderr
     return res.stdout
@@ -50,7 +51,7 @@ def _run_cli(out: Path) -> str:
 def run(tmp_path_factory):
     out = tmp_path_factory.mktemp("tune") / "run"
     first = _run_cli(out)
-    plan = T.Plan(quick=True, models=("tube",), detectors=("coact",))
+    plan = T.Plan(quick=True, models=("tube",), detectors=("coact",), simulation="bench")
     return dict(out=out, plan=plan, first=first)
 
 
@@ -58,17 +59,21 @@ def _json(p):
     return json.loads(Path(p).read_text())
 
 
+def _seeds(names):
+    return {T.seed_of(n) for n in names}
+
+
 def test_no_held_out_recording_or_its_twin_reaches_a_fit_a_threshold_a_budget_or_a_selection(run):
     out, plan = run["out"], run["plan"]
     offset = T.NULL_SEED_OFFSET
     for rp in (out / "fits").rglob("*.run.json"):
         r = _json(rp)
-        assert set(r["fitted_recordings"]) <= set(r["recording_seeds"])
-        assert set(r["threshold_recordings"]) <= set(r["recording_seeds"])
+        assert set(r["fitted_recordings"]) <= set(r["recordings"])
+        assert set(r["threshold_recordings"]) <= set(r["recordings"])
         stem = rp.name[: -len(".run.json")]
         for sp in (out / "scores" / rp.parent.relative_to(out / "fits")).glob(f"{stem}__fold*.json"):
-            scored = {int(s) for s in _json(sp)["rows"]}
-            assert scored and not scored & set(r["recording_seeds"]), sp
+            scored = _seeds(_json(sp)["rows"])
+            assert scored and not scored & _seeds(r["recordings"]), sp
     meta = _json(out / "meta.json")
     for h in plan.folds():
         test = set(plan.split.test(h))
@@ -78,7 +83,7 @@ def test_no_held_out_recording_or_its_twin_reaches_a_fit_a_threshold_a_budget_or
         for w in T.SELECTIONS:
             for name in ("tube", "coact"):
                 pooled = _json(T.selection_path(out, w, h, name))["pooled"]
-                used = set(pooled["recording_seeds"]) | set(pooled.get("fitted_on", []))
+                used = set(pooled["recording_seeds"]) | _seeds(pooled.get("fitted_on", []))
                 assert not used & test, (w, h, name)
                 assert all(s >= offset for s in pooled["twin_seeds"]), "twin seeds carry the offset"
                 assert not {s - offset for s in pooled["twin_seeds"]} & test, (w, h, name)
@@ -111,7 +116,7 @@ def test_an_inner_fit_reached_from_two_outer_folds_is_trained_once_and_scored_tw
         assert len(list(folder.glob(f"{stem}.json"))) == 1
         scores = list((out / "scores" / folder.relative_to(out / "fits")).glob(f"{stem}__fold*.json"))
         assert len(scores) == 2, (stem, scores)
-    fold0 = plan.fold_seeds([0])
+    fold0 = plan.fold_recordings([0])
     readers = [h for h in plan.folds()
                if set(fold0) <= set(_json(T.selection_path(out, "ungated", h, "tube"))["pooled"]["fitted_on"])]
     assert readers == [1, 2]
@@ -122,7 +127,7 @@ def test_decoding_at_the_fits_own_threshold_reproduces_trained_predict(run):
 
     ck = next(p for p in (run["out"] / "fits").rglob("*.json") if not p.name.endswith(".run.json"))
     tr = checkpoint.load(ck)
-    sl, _ = T._make_recording(run["plan"].spec, 1000)
+    sl, _ = T._planted(run["plan"].sim, "busy:1000")
     p, enc = T.probabilities(tr, sl)
     mine = T.decode_at(tr, p, enc, tr.threshold)
     theirs, _ = tr.predict(sl)
@@ -137,13 +142,13 @@ def test_pooling_stored_rows_equals_pooling_live_scores(run):
     out, plan = run["out"], run["plan"]
     conf = plan.hand["coact"][0]
     doc = _json(T.hand_score_path(out, "coact", conf["config_key"]))
-    seeds = list(plan.split.seeds)
+    names = plan.recordings(plan.split.seeds)
     live = []
-    for s in seeds:
-        sl, gt = T._make_recording(plan.spec, s)
+    for rid in names:
+        sl, gt = T._planted(plan.sim, rid)
         live.append(score_stream(gt, run_detector("coact", sl, **conf["params"])))
     a = pool_scores(live, detector="coact", regime="tuning")
-    b = T.pooled([doc["rows"][str(s)] for s in seeds], "coact")
+    b = T.pooled([doc["rows"][rid] for rid in names], "coact")
     for field in ("n_planted", "n_detected", "n_hit", "n_fa", "hot_fa", "distractor_hits"):
         assert getattr(a, field) == getattr(b, field), field
     assert a.by_frac == b.by_frac
@@ -190,21 +195,21 @@ def test_a_chosen_checkpoint_reloaded_in_a_fresh_process_reproduces_its_held_out
     sel = _json(T.selection_path(out, "gated", h, "tube"))
     assert sel["config_key"]
     chosen = T.chosen_path(out, "gated", h, "tube", seed)
-    recs = plan.fold_seeds(plan.training_folds(h))
+    recs = plan.fold_recordings(plan.training_folds(h))
     stored = _json(T.score_path(out, "tube", sel["config_key"], seed, recs, h))
     code = (
-        "import json, sys\n"
-        "sys.path.insert(0, 'tools')\n"
-        "from fair_bakeoff import _make_recording\n"
+        "import json\n"
+        "from bugarach.bench import make_recording\n"
         "from bugarach.learn import checkpoint\n"
         "from bugarach.score import score_stream\n"
-        f"spec = json.loads(open({str(REPO / T.SPEC_PATH)!r}).read())['generator']\n"
+        f"regimes = {T.BENCH_REGIMES!r}\n"
         f"tr = checkpoint.load({str(chosen)!r})\n"
         "rows = {}\n"
-        f"for s in {list(plan.split.test(h))!r}:\n"
-        "    sl, gt = _make_recording(spec, s)\n"
+        f"for rid in {plan.recordings(plan.split.test(h))!r}:\n"
+        "    background, seed = rid.split(':')\n"
+        "    sl, gt = make_recording(regimes[background], int(seed))\n"
         "    sc = score_stream(gt, tr.predict(sl)[0])\n"
-        "    rows[str(s)] = dict(n_planted=sc.n_planted, n_detected=sc.n_detected, n_hit=sc.n_hit,\n"
+        "    rows[rid] = dict(n_planted=sc.n_planted, n_detected=sc.n_detected, n_hit=sc.n_hit,\n"
         "                        n_fa=sc.n_fa, hot_fa=sc.hot_fa, distractor_hits=sc.distractor_hits)\n"
         "print(json.dumps(rows))\n")
     res = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=REPO,
@@ -232,3 +237,67 @@ def test_a_chosen_settings_file_round_trips_the_sliding_parameters(run):
         assert got["window_mode"] == "sliding"
         (prov,) = provenance.values()
         assert prov["fitted_config_key"] == sel["config_key"]
+
+
+# ---- goal 2's next comparison on the bench (Tony, 2026-09-17) ----------------------------------
+
+def test_training_is_half_quiet_half_busy_and_the_threshold_pair_is_one_of_each():
+    """Decision 2, checked at full size: quick mode fits on one recording and cannot show it."""
+    from bugarach.learn.train import TRAIN_SEED_BLOCK, VAL_SEED_BLOCK, fold_maker
+
+    plan = T.Plan(quick=False, models=("tube",), detectors=("coact",), simulation="bench")
+    for train_folds in ([0, 1], [0, 1, 2]):                 # an inner fit, and an outer refit
+        recs = plan.fold_recordings(train_folds)
+        mk, n_fit, n_val = fold_maker(lambda r: (r, None), recs)
+        picked = {mk(VAL_SEED_BLOCK + i)[0] for i in range(4)}
+        assert sorted(T.regime_of(r) for r in picked) == ["busy", "quiet"], picked
+        for seed in plan.refit_seeds:
+            fitted = [mk(TRAIN_SEED_BLOCK + seed * 1000 + i)[0] for i in range(plan.n_train)]
+            counts = {b: sum(T.regime_of(r) == b for r in fitted) for b in ("quiet", "busy")}
+            assert counts == {"quiet": 5, "busy": 5}, (train_folds, seed, fitted)
+            assert not set(fitted) & picked
+
+
+def test_the_score_is_each_backgrounds_pooled_f1_averaged():
+    """Decision 1: goal 1's rule. A model perfect on quiet and blind on busy scores one half."""
+    def row(n_hit, n_detected):
+        return dict(n_planted=10, n_detected=n_detected, n_hit=n_hit, n_fa=n_detected - n_hit,
+                    hot_fa=0, distractor_hits=0, by_frac={}, tol_sec=None)
+    items = [("quiet:1000", row(10, 10)), ("busy:1000", row(0, 0)),
+             ("quiet:1001", row(10, 10)), ("busy:1001", row(0, 0))]
+    assert T.objective(items) == pytest.approx(0.5)
+    assert T.objective([("1000", row(10, 10)), ("1001", row(0, 0))]) == \
+        pytest.approx(T.f1_or_zero(T.pooled([row(10, 10), row(0, 0)])))   # home: pooled, as before
+
+
+def test_the_probe_budget_holds_at_every_background(run):
+    """Decision 3: the bench's probe, per background; one background over budget refuses."""
+    meta = _json(run["out"] / "meta.json")
+    for h, b in meta["budgets"].items():
+        assert set(b["probe_per_hour"]) == {"quiet", "busy"}
+        assert b["gate_empty_recording"] == "null_quiet"
+        ok = {k: v * 0.5 for k, v in b["probe_per_hour"].items()}
+        assert T.within(b, ok, 0.0)
+        assert not T.within(b, dict(ok, busy=b["probe_per_hour"]["busy"] * 2), 0.0)
+        assert not T.within(b, ok, b["quiet_per_hour"] * 2)
+
+
+def test_the_declaration_writes_out_the_backgrounds_the_empty_recordings_and_the_reference(run):
+    """Decisions 1, 3 and 4 as the run recorded them, before any fit."""
+    from bugarach import bench
+
+    d = _json(run["out"] / "meta.json")["declaration"]
+    assert d["simulation"] == "bench"
+    assert {b: v["bg_rate_hz"] for b, v in d["backgrounds"].items()} == \
+        {b: bench.REGIMES[r]["bg_rate_hz"] for b, r in T.BENCH_REGIMES.items()}
+    assert d["gate_empty_recording"] == "null_quiet" and d["reported_only_empty_recordings"] == ["null_busy"]
+    assert d["empty_recordings"]["null_quiet"]["bg_rate_hz"] == bench.NULL_RECORDING["bg_rate_hz"]
+    assert d["reference"]["params"] == json.loads(json.dumps(bench.OPERATING_POINTS["coact"].params))
+    score = next((run["out"] / "scores" / "tube").rglob("*__fold*.json"))
+    assert {T.regime_of(r) for r in _json(score)["rows"]} == {"quiet", "busy"}
+
+
+def test_a_home_spec_plan_still_names_recordings_by_seed():
+    plan = T.Plan(quick=True, models=("tube",), detectors=("coact",), simulation="home")
+    assert plan.recordings([1001, 1000]) == ["1000", "1001"]
+    assert plan.gate_key == "0.54" and plan.regimes == ("home",)

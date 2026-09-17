@@ -1,11 +1,21 @@
 #!/usr/bin/env python3
 """Tune the leading learned detectors and CoactDetect/LoCo under nested cross-validation.
 
-    python tools/tune_learned_vs_coact.py --out ~/runs/tune-learned-vs-coact --jobs 22
+    python tools/tune_learned_vs_coact.py --out %USERPROFILE%\\runs\\<name> --device cuda --gpu-jobs 2 --jobs 12
     python tools/tune_learned_vs_coact.py --out <scratch> --jobs 4 --quick
 
 The plan this implements, and every decision behind it, is ``HANDOFF-workstation-tuning.md``;
 this docstring only says how the code maps onto it.
+
+**Which simulation.** ``--simulation bench`` (the default) is goal 2's next comparison, as Tony
+decided it on 2026-09-17 (``docs/goals/learned-model-family.md``): the bench's fitted field at its
+two backgrounds, every seed at both, scored on each background's pooled F1 averaged over the two
+(goal 1's rule); training half quiet, half busy; the gate's empty recording is the bench's own
+(``bench.make_null_recording``), a busy-rate one reported only; the budget's reference is
+CoactDetect at ``bench.OPERATING_POINTS`` as the run finds it. ``--simulation home`` is the retired
+home spec the 2026-09-16 design was declared on. Below, "recording" means a named recording
+(``quiet:1000``, or ``1000`` on the home spec), and "empty recording" the home spec's null twins or
+the bench's null recordings.
 
 **Nothing about a configuration is chosen with the fold it is scored on.** The bake-off folds
 (``bench.fold_split``, recording seeds 1000-1023) are the outer loop. For held-out fold *h*, a
@@ -87,6 +97,17 @@ from fair_bakeoff import NULL_SEED_OFFSET, _make_recording, _null_twin  # noqa: 
 # ---- the declaration (HANDOFF-workstation-tuning.md, *Search spaces* and decisions 1-8) ---------
 
 SPEC_PATH = "docs/learned/generator_spec.json"
+SIMULATIONS = ("bench", "home")
+# Goal 2's next comparison (docs/goals/learned-model-family.md, Tony, 2026-09-17). Decision 1: the
+# bench's two backgrounds, the same as goal 1, every seed at both, scored on the mean of the two.
+BENCH_REGIMES = {"quiet": "baseline_quiet", "busy": "baseline_busy"}
+# Decision 3: the bench's own empty recording (bench.make_null_recording) at the quiet rate gates;
+# the same at the busy rate is reported and never selects.
+BENCH_NULLS = {"null_quiet": "baseline_quiet", "null_busy": "baseline_busy"}
+BENCH_GATE_NULL = "null_quiet"
+MAX_HAND_CONFIGS = 5000   # a full product past this is not what a coordinate-search grid means
+GPU_LONE_FIT_SEC = {"tube": 4.2, "chorus_norm": 6.4, "chorus_gain_norm": 6.4,
+                    "line_length": 10.4}   # WSMIP064, RTX A4000, untuned 900 steps, one process
 MODELS = ("chorus_norm", "tube", "chorus_gain_norm", "line_length")   # priority order
 HAND = ("coact", "loco")
 N_FOLDS, SEEDS_PER_FOLD = 4, 6
@@ -187,25 +208,78 @@ def hand_config(det: str, grid_values: dict | None, *, index) -> dict:
                 config_key=config_key(det, params))
 
 
+def hand_axes(det: str, quick: bool) -> tuple[list, str]:
+    """A coded detector's grid, and where it came from.
+
+    Goal 1 (WSMIP065) declares every knob's grid once, in ``bench.FULL_GRIDS``, for this tool and
+    its own search to import (``HANDOFF-coded-detectors.md`` §3 step 3). Until that lands, the
+    grids written out here for CoactDetect and LoCo stand in, and the declaration says which.
+    """
+    from bugarach import bench
+
+    full = getattr(bench, "FULL_GRIDS", None)
+    if full is not None and det in full:
+        g = full[det]
+        axes, source = [(a, list(v)) for a, v in (g.items() if isinstance(g, dict) else g)], \
+            "bench.FULL_GRIDS"
+    elif det in HAND_AXES:
+        axes, source = HAND_AXES[det], "tune_learned_vs_coact.HAND_AXES (bench.FULL_GRIDS not on this tree)"
+    else:
+        raise SystemExit(f"{det}: no grid. bench.FULL_GRIDS does not declare it and this tool has "
+                         "none of its own; goal 1 supplies every coded detector's grid.")
+    if quick:
+        axes = [(a, [v[0], v[-1]]) for a, v in axes]
+    n = math.prod(len(v) for _, v in axes)
+    if n > MAX_HAND_CONFIGS:
+        raise SystemExit(f"{det}: {n} configurations as a full product ({source}). A grid that "
+                         "size is a coordinate search's, and nested CV over a coordinate search is "
+                         "not implemented here: decide how the coded side is searched first.")
+    return axes, source
+
+
 class Plan:
-    """What this invocation runs: the declaration, shrunk by ``--quick`` or subset flags."""
+    """What this invocation runs: the declaration, shrunk by ``--quick`` or subset flags.
+
+    **Recordings are named.** On the home spec a recording is its seed (``"1000"``); on the bench it
+    is its background and seed (``"quiet:1000"``, ``"busy:1000"``), because every seed is simulated at
+    both. :meth:`recordings` lists a set of seeds' recordings with the backgrounds ALTERNATING, and
+    that order is what makes training mixed (decision 2): ``fold_maker`` takes the last two as the
+    threshold block (one quiet, one busy) and ``train`` fits on a contiguous run of the rest, which in
+    an alternating list is half of each.
+    """
 
     def __init__(self, *, quick: bool, models=MODELS, detectors=HAND, spec_path=SPEC_PATH,
-                 device: str = "cpu"):
+                 device: str = "cpu", simulation: str = "bench"):
+        from bugarach import bench
         from bugarach.bench import fold_split
 
+        assert simulation in SIMULATIONS, simulation
         self.quick = quick
         self.device = device   # where learned fits train and score; part of the declaration
+        self.simulation = simulation
         self.models = tuple(models)
         self.detectors = tuple(detectors)
-        self.spec_path = spec_path
-        self.spec = json.loads((REPO / spec_path).read_text())["generator"]
+        self.spec_path = spec_path if simulation == "home" else None
+        if simulation == "home":
+            self.spec = json.loads((REPO / spec_path).read_text())["generator"]
+            hot = self.spec["hot_window"]
+            self.regimes = ("home",)
+            self.twin_keys = [f"{f:g}" for f in TWIN_FACTORS]
+            self.gate_key = f"{GATE_TWIN:g}"
+        else:
+            self.spec = None
+            hot = bench.BENCH_RECORDING["hot_window"]
+            self.regimes = tuple(BENCH_REGIMES)
+            self.twin_keys = list(BENCH_NULLS)
+            self.gate_key = BENCH_GATE_NULL
+        # What a worker needs to rebuild any recording; picklable, and nothing else.
+        self.sim = dict(simulation=simulation, spec=self.spec)
         self.n_folds, self.seeds_per_fold = (3, 2) if quick else (N_FOLDS, SEEDS_PER_FOLD)
         self.split = fold_split(n_folds=self.n_folds, seeds_per_fold=self.seeds_per_fold)
         self.tune_seeds = (0,) if quick else TUNE_SEEDS
         self.refit_seeds = (0, 1) if quick else REFIT_SEEDS
         self.n_train = 1 if quick else N_TRAIN
-        self.busy_sec = float(self.spec["hot_window"][1] - self.spec["hot_window"][0])
+        self.busy_sec = float(hot[1] - hot[0])
         self.configs = {}
         for m in self.models:
             d = draw(m)
@@ -213,12 +287,15 @@ class Plan:
             self.configs[m] = [learned_config(m, d[i], index=i, is_untuned=(i == len(d) - 1),
                                               steps=100 if quick else None, n_train=self.n_train)
                                for i in idx]
-        self.hand = {}
+        self.hand, self.hand_axes, self.hand_grid_source = {}, {}, {}
         for det in self.detectors:
-            axes = [(a, [v[0], v[-1]] if quick else v) for a, v in HAND_AXES[det]]
+            axes, source = hand_axes(det, quick)
+            self.hand_axes[det], self.hand_grid_source[det] = axes, source
             names = [a for a, _ in axes]
             self.hand[det] = [hand_config(det, dict(zip(names, vals)), index=i) for i, vals in
                               enumerate(itertools.product(*[v for _, v in axes]))]
+        # Decision 4: the budget's reference is CoactDetect at OPERATING_POINTS as this code finds it,
+        # which is goal 1's landed values once they land; the declaration writes the parameters out.
         shipped_in_grid = [c for c in self.hand.get("coact", []) if c["is_shipped"]]
         self.reference = (shipped_in_grid[0] if shipped_in_grid
                           else hand_config("coact", None, index=None))
@@ -229,8 +306,25 @@ class Plan:
     def fold_seeds(self, folds) -> list[int]:
         return sorted(s for s in self.split.seeds if self.split.fold_of(s) in set(folds))
 
+    def recordings(self, seeds) -> list[str]:
+        """The named recordings of these seeds, backgrounds alternating (see the class docstring)."""
+        if self.simulation == "home":
+            return [str(s) for s in sorted(seeds)]
+        return [f"{r}:{s}" for s in sorted(seeds) for r in self.regimes]
+
+    def fold_recordings(self, folds) -> list[str]:
+        return self.recordings(self.fold_seeds(folds))
+
     def training_folds(self, h):
         return [f for f in self.folds() if f != h]
+
+
+def seed_of(rid) -> int:
+    return int(str(rid).rsplit(":", 1)[-1])
+
+
+def regime_of(rid) -> str:
+    return str(rid).split(":", 1)[0] if ":" in str(rid) else "home"
 
 
 # ---- files --------------------------------------------------------------------------------------
@@ -303,8 +397,35 @@ def f1_or_zero(p) -> float:
     return float(p.f1) if np.isfinite(p.f1) else 0.0
 
 
-def busy_rate(rows, plan) -> float:
-    return sum(r["hot_fa"] for r in rows) / (len(rows) * plan.busy_sec / 3600.0)
+def by_regime(items) -> dict:
+    """``(recording name, row)`` pairs grouped by background: ``{"quiet": [rows], "busy": [rows]}``."""
+    groups: dict = {}
+    for rid, row in items:
+        groups.setdefault(regime_of(rid), []).append(row)
+    return groups
+
+
+def objective(items, name="tuning") -> float:
+    """The score every selection maximises: each background's pooled F1, averaged over backgrounds.
+
+    Goal 1's search uses the same rule (decision 1). On the home spec there is one background, so it
+    is the pooled F1 it always was.
+    """
+    groups = by_regime(items)
+    return float(np.mean([f1_or_zero(pooled(rows, name)) for rows in groups.values()]))
+
+
+def probe_rates(items, plan) -> dict:
+    """False alarms per hour inside the probe (the busy stretch with nothing planted), per background.
+
+    Per background because the bench's own probe budget must hold at both ends of the rate axis."""
+    return {reg: sum(r["hot_fa"] for r in rows) / (len(rows) * plan.busy_sec / 3600.0)
+            for reg, rows in by_regime(items).items()}
+
+
+def within(budget, probes: dict, quiet: float) -> bool:
+    return (all(v <= budget["probe_per_hour"][reg] for reg, v in probes.items())
+            and quiet <= budget["quiet_per_hour"])
 
 
 def quiet_rate(twins, index=None) -> float:
@@ -317,11 +438,33 @@ def quiet_rate(twins, index=None) -> float:
 _RECORDINGS: dict = {}
 
 
-def _recording(spec, seed, factor=None):
-    k = (seed, factor)
+def _planted(sim, rid):
+    """A named recording with planted events: ``"1000"`` on the home spec, ``"quiet:1000"`` on the bench."""
+    k = ("planted", sim["simulation"], str(rid))
     if k not in _RECORDINGS:
-        _RECORDINGS[k] = (_make_recording(spec, seed) if factor is None
-                          else _make_recording(_null_twin(spec, factor), seed + NULL_SEED_OFFSET))
+        if sim["simulation"] == "home":
+            _RECORDINGS[k] = _make_recording(sim["spec"], seed_of(rid))
+        else:
+            from bugarach.bench import make_recording
+            _RECORDINGS[k] = make_recording(BENCH_REGIMES[regime_of(rid)], seed_of(rid))
+    return _RECORDINGS[k]
+
+
+def _empty(sim, key, seed):
+    """The recording with nothing planted that belongs to ``seed``, at seed + NULL_SEED_OFFSET.
+
+    Home spec: the null twin at ``key`` times its background rate. Bench: ``bench.make_null_recording``
+    at the named background's rate (``null_quiet`` is exactly the bench's own empty recording).
+    """
+    k = ("empty", sim["simulation"], key, int(seed))
+    if k not in _RECORDINGS:
+        if sim["simulation"] == "home":
+            _RECORDINGS[k] = _make_recording(_null_twin(sim["spec"], float(key)),
+                                             int(seed) + NULL_SEED_OFFSET)
+        else:
+            from bugarach.bench import REGIMES, make_null_recording
+            _RECORDINGS[k] = make_null_recording(int(seed) + NULL_SEED_OFFSET,
+                                                 **REGIMES[BENCH_NULLS[key]])
     return _RECORDINGS[k]
 
 
@@ -345,14 +488,14 @@ def torch_version() -> str:
     return torch.__version__
 
 
-def run_job(job, out, spec, spec_path):
+def run_job(job, out, sim, spec_path):
     """Run one job in a worker process. Never raises: an exception becomes an error file."""
     t0 = time.perf_counter()
     try:
         if job["kind"] == "hand":
-            _run_hand(job, spec)
+            _run_hand(job, sim)
         else:
-            _run_fit(job, Path(out), spec, spec_path)
+            _run_fit(job, Path(out), sim, spec_path)
         return dict(key=job["key"], status="ok", seconds=time.perf_counter() - t0)
     except Exception:  # noqa: BLE001 -- recorded, listed in results.json, never retried silently
         write_json(error_path(Path(out), job["key"]),
@@ -362,19 +505,20 @@ def run_job(job, out, spec, spec_path):
         return dict(key=job["key"], status="error", seconds=time.perf_counter() - t0)
 
 
-def _run_hand(job, spec):
+def _run_hand(job, sim):
     from bugarach.bench import run_detector
     from bugarach.score import score_stream
 
     det, params = job["det"], job["params"]
     t0 = time.perf_counter()
-    rows, twins = {}, {f"{f:g}": {} for f in job["twins"]}
+    rows, twins = {}, {key: {} for key in job["twins"]}
+    for rid in job["recordings"]:
+        sl, gt = _planted(sim, rid)
+        rows[rid] = score_row(score_stream(gt, run_detector(det, sl, **params)))
     for sd in job["seeds"]:
-        sl, gt = _recording(spec, sd)
-        rows[str(sd)] = score_row(score_stream(gt, run_detector(det, sl, **params)))
-        for f in job["twins"]:
-            tsl, tgt = _recording(spec, sd, f)
-            twins[f"{f:g}"][str(sd)] = dict(
+        for key in job["twins"]:
+            tsl, tgt = _empty(sim, key, sd)
+            twins[key][str(sd)] = dict(
                 twin_seed=sd + NULL_SEED_OFFSET, duration_sec=float(tgt.params["duration_sec"]),
                 n_detected=int(score_stream(tgt, run_detector(det, tsl, **params)).n_detected))
     write_json(Path(job["outputs"][0]),
@@ -383,7 +527,7 @@ def _run_hand(job, spec):
                     host=socket.gethostname()))
 
 
-def _run_fit(job, out, spec, spec_path):
+def _run_fit(job, out, sim, spec_path):
     import warnings
 
     from bugarach.learn import checkpoint
@@ -391,8 +535,8 @@ def _run_fit(job, out, spec, spec_path):
     from bugarach.score import score_stream
 
     conf = read_json(config_path(out, job["model"], job["config_key"]))
-    seed, recs = int(job["seed"]), job["train_seeds"]
-    mk, n_fit, n_val = fold_maker(lambda s: _recording(spec, s), recs)
+    seed, recs = int(job["seed"]), job["train_recordings"]   # backgrounds alternating: see Plan
+    mk, n_fit, n_val = fold_maker(lambda r: _planted(sim, r), recs)
     n_train = int(conf["training"]["n_train"])
     assert n_train <= n_fit, f"n_train {n_train} exceeds the {n_fit} fitting recordings"
     fit_pool, val_pool = recs[:-n_val], recs[-n_val:]
@@ -414,20 +558,21 @@ def _run_fit(job, out, spec, spec_path):
 
     stem = fit_stem(out, job["model"], job["config_key"], seed, recs)
     t1 = time.perf_counter()
-    for fold, seeds in job["score_folds"].items():
-        assert not set(seeds) & set(recs), "a scored recording was fitted on"
+    for fold, rids in job["score_folds"].items():
+        assert not {seed_of(r) for r in rids} & {seed_of(r) for r in recs}, \
+            "a scored recording's seed was fitted on"
         rows = {}
-        for sd in seeds:
-            sl, gt = _recording(spec, sd)
+        for rid in rids:
+            sl, gt = _planted(sim, rid)
             p, enc = probabilities(tr, sl)
-            rows[str(sd)] = [score_row(score_stream(gt, decode_at(tr, p, enc, t))) for t in grid]
+            rows[rid] = [score_row(score_stream(gt, decode_at(tr, p, enc, t))) for t in grid]
         twins = {}
-        for f in job["twins"]:
-            twins[f"{f:g}"] = {}
-            for sd in seeds:
-                tsl, tgt = _recording(spec, sd, f)
+        for key in job["twins"]:
+            twins[key] = {}
+            for sd in sorted({seed_of(r) for r in rids}):
+                tsl, tgt = _empty(sim, key, sd)
                 p, enc = probabilities(tr, tsl)
-                twins[f"{f:g}"][str(sd)] = dict(
+                twins[key][str(sd)] = dict(
                     twin_seed=sd + NULL_SEED_OFFSET, duration_sec=float(tgt.params["duration_sec"]),
                     n_detected=[int(score_stream(tgt, decode_at(tr, p, enc, t)).n_detected)
                                 for t in grid])
@@ -439,7 +584,8 @@ def _run_fit(job, out, spec, spec_path):
 
     ck = stem.with_suffix(".json")
     tmp = ck.with_name(ck.name + f".tmp{os.getpid()}")
-    checkpoint.save(tr, tmp, trained_on=(f"{spec_path}: fitted on recordings {fitted} (fitting "
+    where = spec_path if sim["simulation"] == "home" else "bugarach.bench.make_recording"
+    checkpoint.save(tr, tmp, trained_on=(f"{where}: fitted on recordings {fitted} (fitting "
                                          f"pool {fit_pool}); threshold picked on {picked}"),
                     train_seed=seed, steps=int(conf["training"]["steps"]), n_fit=n_fit,
                     n_threshold_val=n_val, note=f"tune_learned_vs_coact {job['role']} fit")
@@ -452,7 +598,7 @@ def _run_fit(job, out, spec, spec_path):
     os.replace(tmp, ck)
     write_json(stem.with_suffix(".run.json"),
                dict(fit=str(ck.relative_to(out)), role=job["role"], train_folds=job["train_folds"],
-                    recording_seeds=recs, fitted_recordings=fitted, threshold_recordings=picked,
+                    recordings=recs, fitted_recordings=fitted, threshold_recordings=picked,
                     own_index=own, train_sec=train_sec, score_sec=score_sec,
                     warnings=[str(w.message) for w in caught], torch=torch_version(),
                     host=socket.gethostname()))
@@ -462,15 +608,15 @@ def _run_fit(job, out, spec, spec_path):
 
 def fit_job(plan, out, model, ci, seed, train_folds, score_folds, role, priority):
     conf = plan.configs[model][ci]
-    recs = plan.fold_seeds(train_folds)
+    recs = plan.fold_recordings(train_folds)
     stem = fit_stem(out, model, conf["config_key"], seed, recs)
     return dict(kind="fit", role=role, key=f"fit/{model}/{conf['config_key']}/{stem.name}",
                 model=model, ci=ci, config_key=conf["config_key"], seed=seed,
                 # None on the CPU, so a CPU fit calls `train` exactly as it did before --device
                 device=None if plan.device == "cpu" else plan.device,
-                train_folds=sorted(train_folds), train_seeds=recs,
-                score_folds={int(f): plan.fold_seeds([f]) for f in sorted(score_folds)},
-                twins=list(TWIN_FACTORS) if role == "outer" else [GATE_TWIN],
+                train_folds=sorted(train_folds), train_recordings=recs,
+                score_folds={int(f): plan.fold_recordings([f]) for f in sorted(score_folds)},
+                twins=list(plan.twin_keys) if role == "outer" else [plan.gate_key],
                 outputs=[str(score_path(out, model, conf["config_key"], seed, recs, f))
                          for f in sorted(score_folds)]
                 + [str(stem.with_suffix(".json")), str(stem.with_suffix(".run.json"))],
@@ -481,7 +627,8 @@ def hand_job(plan, out, conf, priority):
     det = conf["detector"]
     return dict(kind="hand", key=f"hand/{det}/{conf['config_key']}", det=det,
                 params=conf["params"], config_key=conf["config_key"],
-                seeds=list(plan.split.seeds), twins=list(TWIN_FACTORS),
+                recordings=plan.recordings(plan.split.seeds), seeds=list(plan.split.seeds),
+                twins=list(plan.twin_keys),
                 outputs=[str(hand_score_path(out, det, conf["config_key"]))], priority=priority)
 
 
@@ -524,15 +671,19 @@ def budgets(plan, out) -> dict:
     res = {}
     for h in plan.folds():
         seeds = list(plan.split.train(h))
-        rows = [ref["rows"][str(s)] for s in seeds]
-        tw = [ref["twins"][f"{GATE_TWIN:g}"][str(s)] for s in seeds]
-        busy_h = len(seeds) * plan.busy_sec / 3600.0
+        items = [(rid, ref["rows"][rid]) for rid in plan.recordings(seeds)]
+        tw = [ref["twins"][plan.gate_key][str(s)] for s in seeds]
+        probe = probe_rates(items, plan)
+        probe_h = {reg: len(rows) * plan.busy_sec / 3600.0 for reg, rows in by_regime(items).items()}
         quiet_h = sum(t["duration_sec"] for t in tw) / 3600.0
         res[str(h)] = dict(
             reference_config_key=plan.reference["config_key"], recording_seeds=seeds,
-            twin_seeds=[t["twin_seed"] for t in tw],
-            reference_busy_per_hour=busy_rate(rows, plan), reference_quiet_per_hour=quiet_rate(tw),
-            busy_per_hour=max(BUDGET_MARGIN * busy_rate(rows, plan), 1.0 / busy_h),
+            recordings=[rid for rid, _ in items], twin_seeds=[t["twin_seed"] for t in tw],
+            gate_empty_recording=plan.gate_key,
+            reference_probe_per_hour=probe, reference_quiet_per_hour=quiet_rate(tw),
+            # Floor: never below one false alarm in the measured time, so a reference that fired
+            # zero times does not refuse everything.
+            probe_per_hour={reg: max(BUDGET_MARGIN * v, 1.0 / probe_h[reg]) for reg, v in probe.items()},
             quiet_per_hour=max(BUDGET_MARGIN * quiet_rate(tw), 1.0 / quiet_h))
     return res
 
@@ -549,7 +700,7 @@ def _inner(plan, out, model, ci, h):
     key = plan.configs[model][ci]["config_key"]
     got, missing = [], []
     for j in plan.training_folds(h):
-        recs = plan.fold_seeds([f for f in plan.training_folds(h) if f != j])
+        recs = plan.fold_recordings([f for f in plan.training_folds(h) if f != j])
         for seed in plan.tune_seeds:
             sp = score_path(out, model, key, seed, recs, j)
             ck = fit_stem(out, model, key, seed, recs).with_suffix(".json")
@@ -575,32 +726,34 @@ def select_learned(plan, out, model, h, budget) -> dict:
             continue
         for sc, _, recs in files:
             audit["fitted"].update(recs)
-            audit["scored"].update(int(s) for s in sc["rows"])
-            audit["twin"].update(int(t["twin_seed"]) for t in sc["twins"][f"{GATE_TWIN:g}"].values())
+            audit["scored"].update(sc["rows"])
+            audit["twin"].update(int(t["twin_seed"]) for t in sc["twins"][plan.gate_key].values())
         n_params, steps = files[0][1], conf["training"]["steps"]
-        own_rows = [r[sc["own_index"]] for sc, _, _ in files for r in sc["rows"].values()]
-        f1 = f1_or_zero(pooled(own_rows, model))
+        own_items = [(rid, r[sc["own_index"]]) for sc, _, _ in files for rid, r in sc["rows"].items()]
+        f1 = objective(own_items, model)
         rank = (f1, -n_params, -steps, -ci)
         if best["ungated"] is None or rank > best["ungated"][0]:
             best["ungated"] = (rank, dict(ci=ci, inner_f1=f1))
         for ti, thr in enumerate(grid):
-            rows = [r[ti] for sc, _, _ in files for r in sc["rows"].values()]
-            tw = [t for sc, _, _ in files for t in sc["twins"][f"{GATE_TWIN:g}"].values()]
-            busy, quiet = busy_rate(rows, plan), quiet_rate(tw, ti)
-            if busy > budget["busy_per_hour"] or quiet > budget["quiet_per_hour"]:
+            items = [(rid, r[ti]) for sc, _, _ in files for rid, r in sc["rows"].items()]
+            tw = [t for sc, _, _ in files for t in sc["twins"][plan.gate_key].values()]
+            probe, quiet = probe_rates(items, plan), quiet_rate(tw, ti)
+            if not within(budget, probe, quiet):
                 continue
             n_adm += 1
-            f1t = f1_or_zero(pooled(rows, model))
+            f1t = objective(items, model)
             rank = (f1t, -n_params, -steps, thr, -ci)
             if best["gated"] is None or rank > best["gated"][0]:
                 best["gated"] = (rank, dict(ci=ci, inner_f1=f1t, threshold=thr, threshold_index=ti,
-                                            inner_busy_per_hour=busy, inner_quiet_per_hour=quiet))
-    audit_twin_sources = {s - NULL_SEED_OFFSET for s in audit["twin"]}
-    leak = sorted((audit["fitted"] | audit["scored"] | audit_twin_sources) & test)
+                                            inner_probe_per_hour=probe, inner_quiet_per_hour=quiet))
+    audit_seeds = ({seed_of(r) for r in audit["fitted"]} | {seed_of(r) for r in audit["scored"]}
+                   | {s - NULL_SEED_OFFSET for s in audit["twin"]})
+    leak = sorted(audit_seeds & test)
     assert not leak, f"{model}, outer fold {h}: held-out recordings reached the selection: {leak}"
     common = dict(model=model, outer_fold=h, budget=f"meta.json budgets[{h}]",
                   pooled=dict(training_seeds=list(plan.tune_seeds),
-                              recording_seeds=sorted(audit["scored"]),
+                              recordings=sorted(audit["scored"]),
+                              recording_seeds=sorted({seed_of(r) for r in audit["scored"]}),
                               fitted_on=sorted(audit["fitted"]), twin_seeds=sorted(audit["twin"])),
                   n_configurations=len(plan.configs[model]), missing_configurations=missing)
     out_ = {}
@@ -621,7 +774,7 @@ def select_learned(plan, out, model, h, budget) -> dict:
         if w == "gated":
             doc.update(threshold=c["threshold"], threshold_index=c["threshold_index"],
                        threshold_at_grid_edge=c["threshold_index"] in (0, len(grid) - 1),
-                       inner_busy_per_hour=c["inner_busy_per_hour"],
+                       inner_probe_per_hour=c["inner_probe_per_hour"],
                        inner_quiet_per_hour=c["inner_quiet_per_hour"], n_admissible=n_adm)
         out_[w] = doc
     return out_
@@ -638,19 +791,19 @@ def select_hand(plan, out, det, h, budget) -> dict:
             missing.append(conf["config_key"])
             continue
         doc = read_json(path)
-        rows = [doc["rows"][str(s)] for s in seeds]
-        tw = [doc["twins"][f"{GATE_TWIN:g}"][str(s)] for s in seeds]
-        f1, busy, quiet = f1_or_zero(pooled(rows, det)), busy_rate(rows, plan), quiet_rate(tw)
+        items = [(rid, doc["rows"][rid]) for rid in plan.recordings(seeds)]
+        tw = [doc["twins"][plan.gate_key][str(s)] for s in seeds]
+        f1, probe, quiet = objective(items, det), probe_rates(items, plan), quiet_rate(tw)
         rank = (f1, -conf["grid_index"])
         if best["ungated"] is None or rank > best["ungated"][0]:
             best["ungated"] = (rank, dict(conf=conf, inner_f1=f1))
-        if busy <= budget["busy_per_hour"] and quiet <= budget["quiet_per_hour"]:
+        if within(budget, probe, quiet):
             n_adm += 1
             if best["gated"] is None or rank > best["gated"][0]:
-                best["gated"] = (rank, dict(conf=conf, inner_f1=f1, inner_busy_per_hour=busy,
+                best["gated"] = (rank, dict(conf=conf, inner_f1=f1, inner_probe_per_hour=probe,
                                             inner_quiet_per_hour=quiet))
     common = dict(detector=det, outer_fold=h, budget=f"meta.json budgets[{h}]",
-                  pooled=dict(recording_seeds=seeds,
+                  pooled=dict(recording_seeds=seeds, recordings=plan.recordings(seeds),
                               twin_seeds=[s + NULL_SEED_OFFSET for s in seeds]),
                   n_configurations=len(plan.hand[det]), missing_configurations=missing)
     out_ = {}
@@ -664,9 +817,9 @@ def select_hand(plan, out, det, h, budget) -> dict:
         doc = dict(common, selection=w, config_key=c["conf"]["config_key"],
                    config=f"configs/{det}/{c['conf']['config_key']}.json",
                    grid_index=c["conf"]["grid_index"], inner_f1=c["inner_f1"],
-                   edge_flags=edge_flags(c["conf"]["params"], HAND_AXES[det]))
+                   edge_flags=edge_flags(c["conf"]["params"], plan.hand_axes[det]))
         if w == "gated":
-            doc.update(inner_busy_per_hour=c["inner_busy_per_hour"],
+            doc.update(inner_probe_per_hour=c["inner_probe_per_hour"],
                        inner_quiet_per_hour=c["inner_quiet_per_hour"], n_admissible=n_adm)
         out_[w] = doc
     return out_
@@ -722,21 +875,55 @@ def machine() -> dict:
             "numpy": np.__version__, "gpu": gpu()}
 
 
-def estimate(plan, jobs: int) -> dict:
-    cpu = 0.0
+def estimate(plan, jobs: int, gpu_jobs: int = 1) -> dict:
+    on_gpu = plan.device != "cpu"
+    lone = GPU_LONE_FIT_SEC if on_gpu else LONE_FIT_SEC
+    parallel = gpu_jobs if on_gpu else jobs
+    total = 0.0
     n_pairs = len(list(itertools.combinations(plan.folds(), plan.n_folds - 2)))
     for m in plan.models:
-        t = LONE_FIT_SEC.get(m, 200.0)
+        t = lone.get(m, 200.0)
         ratios = [c["training"]["steps"] / 900.0 for c in plan.configs[m]]
         inner = sum(ratios) * n_pairs * len(plan.tune_seeds)
         outer = 3 * plan.n_folds * len(plan.refit_seeds) * float(np.mean(ratios))
-        cpu += (inner + outer) * t
-    return dict(training_cpu_hours_floor=cpu / 3600.0, jobs=jobs,
-                training_wall_hours_floor=cpu / 3600.0 / jobs, lone_fit_sec=LONE_FIT_SEC,
-                basis="Gate 1 lone untuned fit times on this machine, scaled by each drawn "
-                      "configuration's steps; ignores the larger configurations' cost per step, "
-                      "concurrency, scoring and the hand-written grids. A floor, and not a gate "
-                      "(decision 8).")
+        total += (inner + outer) * t
+    return dict(training_device_hours_floor=total / 3600.0, jobs=jobs, gpu_jobs=gpu_jobs if on_gpu else None,
+                training_wall_hours_floor=total / 3600.0 / parallel, lone_fit_sec=lone,
+                basis=("lone untuned fit times on this machine's " + ("GPU" if on_gpu else "CPU")
+                       + ", scaled by each drawn configuration's steps; ignores the larger "
+                       "configurations' cost per step, contention between concurrent fits, "
+                       "scoring and the hand-written grids. A floor, and not a gate (decision 8)."))
+
+
+def simulation_declaration(plan) -> dict:
+    """What the recordings are, written out so the declaration does not move if the bench does."""
+    if plan.simulation == "home":
+        return dict(simulation="home", spec=plan.spec_path, spec_generator=plan.spec,
+                    empty_recordings={f"{f:g}": f"_null_twin(spec, {f:g}) at seed + {NULL_SEED_OFFSET}"
+                                      for f in TWIN_FACTORS},
+                    gate_empty_recording=plan.gate_key, backgrounds=["home"])
+    from bugarach import bench
+    return dict(
+        simulation="bench",
+        decisions="docs/goals/learned-model-family.md, 'How the next comparison runs on the bench' "
+                  "(Tony, 2026-09-17)",
+        bench_recording=bench.BENCH_RECORDING,
+        backgrounds={r: dict(regime=BENCH_REGIMES[r], **bench.REGIMES[BENCH_REGIMES[r]])
+                     for r in plan.regimes},
+        recording_names="'<background>:<seed>', every seed at every background",
+        score="each background's pooled F1, averaged over backgrounds (goal 1's rule)",
+        training_mix="the training folds' recordings alternate backgrounds; fold_maker's threshold "
+                     "block is the last two (one of each), and train fits on a contiguous run of "
+                     "the rest (half of each)",
+        probe="the bench's hot window, counted per background; admissible only if within budget "
+              "at every background",
+        empty_recordings={k: dict(builder="bench.make_null_recording", seed=f"seed + {NULL_SEED_OFFSET}",
+                                  **bench.REGIMES[BENCH_NULLS[k]]) for k in BENCH_NULLS},
+        null_recording=bench.NULL_RECORDING,
+        gate_empty_recording=plan.gate_key,
+        reported_only_empty_recordings=[k for k in plan.twin_keys if k != plan.gate_key],
+        measured_record=getattr(bench, "MEASURED_RECORD", None),
+        measured_outside_interval=getattr(bench, "MEASURED_OUTSIDE_INTERVAL", None))
 
 
 def declaration(plan) -> dict:
@@ -744,20 +931,22 @@ def declaration(plan) -> dict:
     from bugarach.learn.train import THRESHOLD_GRID
 
     return dict(
-        spec=plan.spec_path, spec_generator=plan.spec, quick=plan.quick,
+        **simulation_declaration(plan), quick=plan.quick,
         folds=plan.n_folds, seeds_per_fold=plan.seeds_per_fold,
         recording_seeds=list(plan.split.seeds), tune_seeds=list(plan.tune_seeds),
         refit_seeds=list(plan.refit_seeds), models=list(plan.models),
         learned_axes={m: LEARNED_AXES[m] for m in plan.models},
         untuned={m: UNTUNED[m] for m in plan.models}, draw_seed=DRAW_SEED,
         configurations={m: [c["config_key"] for c in plan.configs[m]] for m in plan.models},
-        detectors=list(plan.detectors), hand_axes={d: HAND_AXES[d] for d in plan.detectors},
+        detectors=list(plan.detectors), hand_axes=dict(plan.hand_axes),
+        hand_grid_source=dict(plan.hand_grid_source),
         hand_configurations={d: [c["config_key"] for c in plan.hand[d]] for d in plan.detectors},
-        reference=dict(config_key=plan.reference["config_key"],
-                       note="sliding CoactDetect at OPERATING_POINTS as of this commit, the "
-                            "binned-tuned values (decision 7); not a calibrated sliding point"),
-        budget_margin=BUDGET_MARGIN, gate_twin_factor=GATE_TWIN, twin_factors=list(TWIN_FACTORS),
-        busy_window_sec=plan.busy_sec, threshold_grid=[float(t) for t in THRESHOLD_GRID],
+        reference=dict(config_key=plan.reference["config_key"], params=plan.reference["params"],
+                       note="CoactDetect at bench.OPERATING_POINTS as this code found it (goal 2 "
+                            "decision 4: goal 1's landed every-knob values once they land); the "
+                            "parameters above are the ones the budget was measured with"),
+        budget_margin=BUDGET_MARGIN, busy_window_sec=plan.busy_sec,
+        threshold_grid=[float(t) for t in THRESHOLD_GRID],
         tie_rules=TIE_RULES, registered=sorted(ARCHITECTURES),
         registered_but_not_run=sorted(set(ARCHITECTURES) - set(plan.models)),
         device=dict(learned=plan.device, hand="cpu",
@@ -765,7 +954,15 @@ def declaration(plan) -> dict:
                          "one device; on CUDA, train.deterministic_cuda makes a rerun fit identical"))
 
 
-def write_declaration(plan, out, jobs) -> dict:
+def min_sep_sec(plan):
+    """The least spacing between planted events, which a context window can straddle."""
+    if plan.simulation == "home":
+        return plan.spec.get("min_sep_sec")
+    from bugarach.bench import BENCH_RECORDING
+    return BENCH_RECORDING.get("min_sep_sec")
+
+
+def write_declaration(plan, out, jobs, gpu_jobs=1) -> dict:
     """meta.json and configs/, before any job. A declaration on disk never changes."""
     from bugarach.learn.checkpoint import canonical
 
@@ -794,7 +991,7 @@ def write_declaration(plan, out, jobs) -> dict:
     else:
         for p, c in configs.items():
             write_json(p, c)
-        meta = dict(declaration=decl, started=now, estimate=estimate(plan, jobs),
+        meta = dict(declaration=decl, started=now, estimate=estimate(plan, jobs, gpu_jobs),
                     gate1_reproduction=GATE1_FACTS, sliding_branch="sliding-loco-coact 005ae98",
                     checkpoint_format_branch=dict(
                         branch="learn-checkpoint-records-what-it-built", commit="36dc5ab",
@@ -803,10 +1000,10 @@ def write_declaration(plan, out, jobs) -> dict:
                                      "commit's format"),
                     storage_rule="Tony, 2026-09-16, via the Mac unsupervised session: tuned "
                                  "parameters stored persistently, rationally and separably",
-                    home_spec_event_spacing=dict(
-                        min_sep_sec=plan.spec.get("min_sep_sec"),
-                        note="planted events are at least this far apart; a chosen 240 s LoCo "
-                             "context spans more than one spacing and is flagged in the readout"))
+                    event_spacing=dict(
+                        min_sep_sec=min_sep_sec(plan),
+                        note="planted events are at least this far apart; a chosen context longer "
+                             "than this spans more than one spacing and is flagged in the readout"))
     write_json(path, meta)
     return meta
 
@@ -830,10 +1027,17 @@ def write_progress(out, state, git):
 
 # ---- the driver --------------------------------------------------------------------------------------
 
-def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int | None = None) -> dict:
-    """``gpu_jobs`` caps how many learned fits run at once when they train on a GPU: one GPU is
-    the limit there, and on WSMIP064 more than one ``chorus_norm`` process at a time LOST about 30%
-    of fits per hour. The remaining ``jobs`` slots still run hand-written configurations on the CPU."""
+def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int = 1) -> dict:
+    """With a GPU, learned fits run in their OWN pool of ``gpu_jobs`` worker processes, and the
+    ``jobs`` CPU workers run only hand-written configurations.
+
+    One pool used to serve both, capped by counting running fits. Any of the 12 CPU workers could
+    then pick up a GPU fit, and each worker that had kept its CUDA context and cached memory: on the
+    2026-09-17 shakedown GPU memory climbed from 2.8 to 9.1 GB of 16 in its first hour. A GPU pool
+    of its own caps the contexts at ``gpu_jobs``. One GPU is the limit on fits: on WSMIP064 more
+    than one ``chorus_norm`` process at a time lost about 30% of fits per hour on the training loop.
+    """
+    import contextlib
     import multiprocessing as mp
 
     out = Path(out)
@@ -841,7 +1045,8 @@ def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int | 
     if retry_errors and (out / "errors").exists():
         for p in (out / "errors").glob("*.json"):
             p.unlink()
-    meta = write_declaration(plan, out, jobs)
+    assert gpu_jobs >= 1
+    meta = write_declaration(plan, out, jobs, gpu_jobs)
     git = git_state()
     ran = []
     state = dict(pending={}, running={}, finished=[], errors=set(), stages={}, seen=set())
@@ -891,26 +1096,33 @@ def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int | 
                         enqueue(fit_job(plan, out, m, ci, seed, plan.training_folds(h), [h],
                                         "outer", (2, rank, 1, seed, h)))
 
-    with ProcessPoolExecutor(max_workers=jobs, mp_context=mp.get_context("spawn")) as ex:
+    with contextlib.ExitStack() as stack:
+        ctx = mp.get_context("spawn")
+        pools = {"cpu": stack.enter_context(ProcessPoolExecutor(max_workers=jobs, mp_context=ctx))}
+        caps = {"cpu": jobs}
+        if plan.device != "cpu":
+            pools["gpu"] = stack.enter_context(ProcessPoolExecutor(max_workers=gpu_jobs, mp_context=ctx))
+            caps["gpu"] = gpu_jobs
         futures = {}
 
-        cap = gpu_jobs if plan.device != "cpu" else None
+        def pool_of(job):
+            return "gpu" if "gpu" in pools and job["kind"] == "fit" else "cpu"
 
         def startable(k):
-            if cap is None or state["pending"][k]["kind"] != "fit":
-                return True
-            return sum(1 for j in futures.values() if j["kind"] == "fit") < cap
+            p = pool_of(state["pending"][k])
+            return sum(1 for j in futures.values() if pool_of(j) == p) < caps[p]
 
         def drain():
             while state["pending"] or futures:
-                while state["pending"] and len(futures) < jobs:
+                while state["pending"]:
                     ready = [k for k in state["pending"] if startable(k)]
                     if not ready:
                         break
                     key = min(ready, key=lambda k: state["pending"][k]["priority"])
                     job = state["pending"].pop(key)
                     state["running"][key] = job
-                    futures[ex.submit(run_job, job, str(out), plan.spec, plan.spec_path)] = job
+                    futures[pools[pool_of(job)].submit(run_job, job, str(out), plan.sim,
+                                                       plan.spec_path)] = job
                 done, _ = wait(list(futures), return_when=FIRST_COMPLETED)
                 for fu in done:
                     job = futures.pop(fu)
@@ -971,13 +1183,13 @@ def write_chosen(plan, out) -> None:
                 write_detector_settings({(d, STREAM): {
                     **params, "fitted_config_key": sel["config_key"], "fitted_selection": w,
                     "fitted_outer_fold": h,
-                    "fitted_on": f"simulated recordings {sel['pooled']['recording_seeds']}"}}, p)
+                    "fitted_on": f"simulated recordings {sel['pooled']['recordings']}"}}, p)
             for m in plan.models:
                 sp = selection_path(out, w, h, m)
                 if not sp.exists() or read_json(sp)["config_key"] is None:
                     continue
                 sel = read_json(sp)
-                recs = plan.fold_seeds(plan.training_folds(h))
+                recs = plan.fold_recordings(plan.training_folds(h))
                 for seed in plan.refit_seeds:
                     ck = fit_stem(out, m, sel["config_key"], seed, recs).with_suffix(".json")
                     dst = chosen_path(out, w, h, m, seed)
@@ -1001,30 +1213,32 @@ def write_chosen(plan, out) -> None:
 def gated_note(plan, out, h, sel) -> str:
     """Enough to trace a gated threshold without the selection file beside the checkpoint."""
     b = read_json(Path(out) / "meta.json")["budgets"][str(h)]
+    probe = ", ".join(f"{reg} <= {v:.4g}/h" for reg, v in b["probe_per_hour"].items())
     return (f"; operating point is the gated threshold {sel['threshold']:.6g}, not the fit's own. "
-            f"It is the highest pooled inner F1 among (configuration, threshold) candidates within "
-            f"outer fold {h}'s budget: busy-window false alarms <= {b['busy_per_hour']:.4g}/h and "
-            f"quiet-field ({GATE_TWIN:g} twin) <= {b['quiet_per_hour']:.4g}/h, which is "
-            f"{BUDGET_MARGIN:g} x sliding CoactDetect {b['reference_config_key']}'s own rates on "
-            f"training recordings {b['recording_seeds']}; inner scores pooled training seeds "
-            f"{list(plan.tune_seeds)}")
+            f"It is the best inner score among (configuration, threshold) candidates within outer "
+            f"fold {h}'s budget: probe false alarms {probe}, and on the empty recording "
+            f"({b['gate_empty_recording']}) <= {b['quiet_per_hour']:.4g}/h, which is "
+            f"{BUDGET_MARGIN:g} x CoactDetect {b['reference_config_key']}'s own rates on training "
+            f"recordings {b['recordings']}; inner scores pooled training seeds {list(plan.tune_seeds)}")
 
 
 def _heldout(plan, out, model, key, h, seed, index=None):
-    recs = plan.fold_seeds(plan.training_folds(h))
+    recs = plan.fold_recordings(plan.training_folds(h))
     sp = score_path(out, model, key, seed, recs, h)
     run_p = fit_stem(out, model, key, seed, recs).with_suffix(".run.json")
     if not (sp.exists() and run_p.exists()):
         return None
     sc, run_ = read_json(sp), read_json(run_p)
     ti = sc["own_index"] if index is None else index
-    rows = [r[ti] for r in sc["rows"].values()]
-    p = pooled(rows, model)
+    items = [(rid, r[ti]) for rid, r in sc["rows"].items()]
+    p = pooled([r for _, r in items], model)
     from bugarach.learn.train import THRESHOLD_GRID
     thr = float(THRESHOLD_GRID[ti])
-    return dict(seed=seed, f1=f1_or_zero(p), f1_was_nan=not np.isfinite(p.f1),
+    return dict(seed=seed, f1=objective(items, model), f1_was_nan=not np.isfinite(p.f1),
+                f1_by_background={reg: f1_or_zero(pooled(rows, model))
+                                  for reg, rows in by_regime(items).items()},
                 recall=p.recall, precision=p.precision, threshold_index=ti,
-                busy_per_hour=busy_rate(rows, plan),
+                probe_per_hour=probe_rates(items, plan),
                 quiet_per_hour={f: quiet_rate(list(sc["twins"][f].values()), ti)
                                 for f in sc["twins"]},
                 train_sec=run_["train_sec"],
@@ -1064,20 +1278,22 @@ def summarize(plan, out) -> dict:
                     continue
                 doc = read_json(hand_score_path(out, d, sel["config_key"]))
                 seeds = plan.split.test(h)
-                rows = [doc["rows"][str(x)] for x in seeds]
-                p = pooled(rows, d)
-                entry[w] = dict(config_key=sel["config_key"], f1=f1_or_zero(p),
-                                f1_was_nan=not np.isfinite(p.f1), recall=p.recall,
-                                precision=p.precision, busy_per_hour=busy_rate(rows, plan),
-                                quiet_per_hour={f: quiet_rate([doc["twins"][f][str(x)]
+                items = [(rid, doc["rows"][rid]) for rid in plan.recordings(seeds)]
+                p = pooled([r for _, r in items], d)
+                entry[w] = dict(config_key=sel["config_key"], f1=objective(items, d),
+                                f1_was_nan=not np.isfinite(p.f1),
+                                f1_by_background={reg: f1_or_zero(pooled(rows, d))
+                                                  for reg, rows in by_regime(items).items()},
+                                recall=p.recall, precision=p.precision,
+                                probe_per_hour=probe_rates(items, plan),
+                                quiet_per_hour={k: quiet_rate([doc["twins"][k][str(x)]
                                                                for x in seeds])
-                                                for f in doc["twins"]},
+                                                for k in doc["twins"]},
                                 over_budget=None)
                 if w == "gated":
                     b = meta["budgets"][str(h)]
-                    entry[w]["over_budget"] = (entry[w]["busy_per_hour"] > b["busy_per_hour"] or
-                                               entry[w]["quiet_per_hour"][f"{GATE_TWIN:g}"] >
-                                               b["quiet_per_hour"])
+                    entry[w]["over_budget"] = not within(
+                        b, entry[w]["probe_per_hour"], entry[w]["quiet_per_hour"][plan.gate_key])
             res["hand"][d].append(entry)
     for m in plan.models:
         res["learned"][m] = []
@@ -1103,8 +1319,8 @@ def summarize(plan, out) -> dict:
                 if w == "gated" and per:
                     b = meta["budgets"][str(h)]
                     entry[w]["seeds_over_budget"] = sum(
-                        1 for x in per if x["busy_per_hour"] > b["busy_per_hour"]
-                        or x["quiet_per_hour"][f"{GATE_TWIN:g}"] > b["quiet_per_hour"])
+                        1 for x in per
+                        if not within(b, x["probe_per_hour"], x["quiet_per_hour"][plan.gate_key]))
             res["learned"][m].append(entry)
 
     def column(entries, w, field):
@@ -1136,18 +1352,25 @@ def main(argv=None) -> int:
                    help="where learned fits train and score: cpu (default) or cuda. Declared: a "
                         "run cannot be resumed on the other device")
     p.add_argument("--gpu-jobs", type=int, default=1,
-                   help="with --device cuda, how many learned fits run at once (default 1)")
+                   help="with --device cuda, how many learned fits run at once, in a pool of their "
+                        "own (default 1)")
+    p.add_argument("--simulation", choices=SIMULATIONS, default="bench",
+                   help="bench (default): the bench's fitted field at its two backgrounds, goal 2's "
+                        "next comparison. home: the retired home spec, docs/learned/generator_spec.json")
     a = p.parse_args(argv)
     models = tuple(x for x in a.models.split(",") if x)
     dets = tuple(x for x in a.detectors.split(",") if x)
-    assert set(models) <= set(MODELS) and set(dets) <= set(HAND)
+    from bugarach.bench import DETECTORS
+    assert set(models) <= set(MODELS), f"unknown models {sorted(set(models) - set(MODELS))}"
+    assert set(dets) <= set(DETECTORS), f"unknown detectors {sorted(set(dets) - set(DETECTORS))}"
     assert "coact" in dets, "the budget's reference is CoactDetect"
     if a.device != "cpu":
         import torch
         if not torch.cuda.is_available():
             raise SystemExit(f"--device {a.device}: torch {torch.__version__} sees no CUDA device. "
                              "See docs/windows_workstation_setup.md, section 4.")
-    plan = Plan(quick=a.quick, models=models, detectors=dets, device=a.device)
+    plan = Plan(quick=a.quick, models=models, detectors=dets, device=a.device,
+                simulation=a.simulation)
     t0 = time.time()
     r = run(plan, a.out.expanduser(), a.jobs, retry_errors=a.retry_errors, gpu_jobs=a.gpu_jobs)
     n_ok = sum(1 for x in r["ran"] if x["status"] == "ok")

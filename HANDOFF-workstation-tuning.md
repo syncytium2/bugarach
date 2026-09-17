@@ -769,3 +769,34 @@ learned F1, and CoactDetect runs on the CPU either way, so it shrinks the margin
 conservative direction. Every fit in the run is on one device, so tuned against untuned is unaffected.
 **Next:** Tony's go on the GPU; merge the wider reference grid (`tune-wider-reference-grid`); then launch
 from Task Scheduler, not before the elevation's sign-out (about 12:09).
+**Later on 2026-09-17:**
+- **The elevation expired at about 12:09 with no sign-out** (armory `FINDINGS.md` §20, added the same
+  day).
+- **The home-spec run relaunched at 12:42 as a GPU SHAKEDOWN, not a result** (Tony: *"launch it"*), from
+  branch `tune-learned-vs-coact` @ `a2496c9`, via Task Scheduler task `bugarach-tune-gpu-shakedown`,
+  `--device cuda --gpu-jobs 2 --jobs 12`, into `%USERPROFILE%\runs\tune-gpu-shakedown\`. It gives way
+  when the next comparison needs the GPU, and no readout is planned. **What it has shown:** GPU memory
+  climbed from 2.8 to 9.1 GB of 16 in its first hour, because any of the 12 CPU workers could take a GPU
+  fit and keep its CUDA context; 90 fits per hour at about 69 s of training each; the GPU at 86 °C.
+- **The next comparison is designed** (Tony's four decisions, `docs/goals/learned-model-family.md` on
+  `main`, #611), and **goal 1 re-measured the bench on `steps_excluded`: it does not move** (7 of 8
+  values inside their intervals; participation waits on Tony).
+- **The tool is adapted, on branch `tune-bench-comparison`** (off this branch, with `main` merged in):
+  - `--simulation bench` is the default, and `home` stays available.
+  - Recordings are named by background and seed (`quiet:1000`). Every seed is simulated at both
+    backgrounds.
+  - The score is each background's pooled F1, averaged.
+  - Training folds alternate backgrounds, so each fit trains on half of each and picks its threshold
+    on one of each.
+  - The probe budget holds per background. The gate's empty recording is `bench.make_null_recording`
+    at the quiet rate; the busy-rate one is reported only.
+  - The reference's parameters are written into the declaration.
+  - Coded-detector grids come from `bench.FULL_GRIDS` once goal 1 lands it, and until then from this
+    tool's own grids for CoactDetect and LoCo. A grid larger than 5,000 configurations as a full
+    product is refused, because nested CV over a coordinate search is not built.
+  - **GPU fits run in their own pool** of `--gpu-jobs` workers.
+  - 15 tests pass (5 new, one per decision plus the home spec). A bench `--quick` run finished 23 of 23
+    jobs on the CPU (36 s) and on the GPU (48 s).
+- **Still waiting on goal 1:** `bench.FULL_GRIDS`, sliding on `main`, and the every-knob CoactDetect
+  values. **Open question for goal 1 and Tony:** if the every-knob grids are a coordinate search rather
+  than a product, how the coded side is searched inside nested CV.
