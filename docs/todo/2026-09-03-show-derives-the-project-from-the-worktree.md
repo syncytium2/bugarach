@@ -88,6 +88,35 @@ page is excluded from the rule, because it is where the wrong form is shown as w
 The prose caution above still holds for the *next* workaround: when upstream lands the
 `--git-common-dir` fix, SAP016 and the `CLAUDE.md` sentence come out together.
 
+## Reported upstream, 2026-09-17: syncytium2/armory issue #15
+
+Tony's instruction — report it to armory so the fix is redistributed rather than patched
+per consumer. Filed with both defects, the `proj` trace, the estate-wide evidence (five
+folders at the darkroom root, one of them from armory's **own** worktree), the consumer
+list (12 repositories vendor this file) and the fix in code form. armory is private but
+its issues are reachable from this account, which is how the report exists.
+
+**A correction was posted to that issue an hour later, and it is the part worth reading
+here.** The report claimed the vendored header misroutes consumer findings, because it
+says *"there is nowhere to send a patch"*. armory's own board records that wording as a
+**deliberate trade**: it is accurate for the four **public** consumers, of which bugarach
+is one — the file cannot point a public reader at a private tracker — and one wording
+across all ten consumers is intentional, because a stamp that differs per consumer is a
+stamp nobody can verify. So the wording is not the defect. What remains is only the
+observable: this page existed for two weeks and did not reach upstream.
+
+**Redistribution is upstream's to sequence, not ours.** `show.py` is pinned across ten
+consumers at three shas, and the stamp is what makes a pin checkable, so a fix in armory
+reaches bugarach only when someone re-vendors on purpose. Our copy is stamped `e8ffaa3`;
+armory's trunk was `548f734` when this was filed, so this repo is already behind by
+commits that have nothing to do with this bug. Re-vendoring is a separate decision —
+`bash tools/check_vendor_freshness.sh` is the check, and `CLAUDE.md` says never to edit a
+vendored file in place.
+
+**What closes this page:** upstream fixes `project_name()` (and, ideally, the copy guard),
+bugarach re-vendors, `tests/test_sapper.py` loses SAP016, and the `CLAUDE.md` sentence
+about `--project bugarach` comes out with it. Until then the local check is what holds.
+
 ---
 
 # Second defect: `show.py` dies on a file that is already in the darkroom
