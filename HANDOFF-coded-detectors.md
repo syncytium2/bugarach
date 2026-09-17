@@ -223,12 +223,16 @@ windows, so any shift in the fitted values can be attributed.
 4. The browser's `loco.js` and `coact.js` are still binned. They are owed a port once sliding is on
    `main`.
 
-### Step 5: run on the full slice, fast stream
+### Step 5: run on the full slice, fast stream — ⚠ HELD
 
-The tuned six on every `steps_excluded` recording's full extent, fast stream, through the existing
-folder path (`bugarach detect` / `detect_folder`). Real treatment rasters go to the darkroom only
-(FOUNDATIONS §5). **Treatment effects are `fireflies`' to interpret, not this repo's** (FOUNDATIONS
-§9). This step produces the calls; it does not claim what TTX or senktide does.
+**Tony, 2026-09-17: *"for this training run use only baseline."*** This step does not run yet, and
+nothing in the current program scores a treatment window. It stays written down because it is what
+the program is aimed at, not because it is next.
+
+When the hold lifts: the tuned six on every `steps_excluded` recording's full extent, fast stream,
+through the existing folder path (`bugarach detect` / `detect_folder`). Real treatment rasters go to
+the darkroom only (FOUNDATIONS §5). **Treatment effects are `fireflies`' to interpret, not this
+repo's** (FOUNDATIONS §9). This step produces the calls; it does not claim what TTX or senktide does.
 
 ### Then: slow stream
 

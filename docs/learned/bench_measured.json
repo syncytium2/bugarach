@@ -1,10 +1,11 @@
 {
  "all_inside": false,
  "bootstrap_draws": 200,
- "commit": "c370dd6",
+ "commit": "6054bc6",
  "folder": "2026-09-03_revised_2v_long_STEPS_EXCLUDED",
  "k": 4,
  "measured_on": "2026-09-17",
+ "min_baseline_sec": 900.0,
  "recordings_in_shape_fits": 80,
  "recordings_measured": 84,
  "role": "steps_excluded",

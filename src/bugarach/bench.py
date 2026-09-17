@@ -106,6 +106,28 @@ MEASURED_RECORD = "docs/learned/bench_measured.json"
 its 95% bootstrap interval, and whether the constant in this module sits inside it.
 Written by ``tools/remeasure_bench.py``."""
 
+MIN_BASELINE_SEC = 900.0
+"""A baseline window shorter than **15 minutes** is not measured. Tony, 2026-09-17:
+*"baselines shorter than 15 minutes should be ignored. they probably should not have been
+exported."*
+
+**It is a ruling, not a filter this repo derived**, and the distinction is the one CLAUDE.md
+draws in terms: which recordings are analysable is the producer's call, and a consumer that
+re-derives an exclusion has already made the error that once dropped a recording the lab had
+not withdrawn. So this threshold is Tony's, recorded where the code can apply it, and the
+place it really belongs is the exporter — *"they probably should not have been exported"*.
+He also said not to dwell on it, so nothing here goes looking through the folder for more.
+
+**Nothing in the current folder is affected.** Every baseline in the declared
+``steps_excluded`` folder is at least 17.0 minutes, raw period and scored window alike, so
+applying this changes no number measured before 2026-09-17. It is a guard against the next
+folder, and a tool that drops a window under it says which and why rather than quietly
+measuring fewer recordings.
+
+Not to be confused with ``region_min_sec`` in the detectors' own signatures, which is the
+MATLAB windowing rule for store input (FOUNDATIONS §4) and happens to carry the same 900 s.
+"""
+
 MEASURED_OUTSIDE_INTERVAL: dict[str, str] = {
     "participation": (
         "2026-09-17, awaiting Tony. The bench holds 0.18; steps_excluded measures 0.1905 "
