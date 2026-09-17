@@ -170,10 +170,19 @@ windows, so any shift in the fitted values can be attributed.
 
 **How to search**, reusing `tools/search_all_settings.py` rather than writing a new tool:
 
-- **One declaration of the grids, on `main`, imported by both machines.** Put the every-knob grids
-  in `bench` (for example `bench.FULL_GRIDS`) and have `search_all_settings.py` and WSMIP064's
-  `tune_learned_vs_coact.py` both import it. Two copies of a grid are how the two machines came to
-  tune different things on 2026-09-16.
+- **One declaration of the grids, on `main`, imported by both machines.** ✅ Landed 2026-09-17:
+  `bench.FULL_GRIDS` (per axis, never a product), `bench.FULL_GRID_PAIRS` and
+  `bench.settings_are_valid`, read by `search_all_settings.py` here and by
+  `tune_learned_vs_coact.py` on WSMIP064. Two copies of a grid are how the two machines came to
+  tune different things on 2026-09-16. **The axes are still the declared settings**; widening them
+  to the inventory above is the rest of this step, and the shape callers bind to does not change.
+  **Goal 2 searches them per outer fold** through
+  `search_all_settings.choose_settings(detector, *, score, admissible=None, …)`, a callable over
+  the caller's own callbacks — it never sees a recording, a budget or a pooling rule, so nothing
+  about a configuration can be chosen with the fold it is scored on. Inside a fold the declared
+  grid stays fixed and an edge is returned as data; goal 1's own search keeps extending until the
+  optimum is bracketed. The decision and its options:
+  [`docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md`](docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md).
   ⚠ **WSMIP064 asks, before these grids are declared** (2026-09-17; its session cannot reach this
   machine directly, so the question travels through `main`): the grids are a **coordinate search's**,
   and goal 2 scores the coded side under **nested cross-validation**, where every candidate is scored

@@ -51,6 +51,7 @@ before anyone adopts it.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import datetime
 import itertools
 import json
@@ -59,6 +60,8 @@ import sys
 import time
 from multiprocessing import Pool
 from pathlib import Path
+
+from bugarach import bench as _bench
 
 REGIMES = ("baseline_quiet", "baseline_busy")
 NULL = "null"
@@ -76,45 +79,14 @@ BOOTSTRAP = 400
 BOOTSTRAP_SEED = 20260917
 
 #: Grids per declared setting. The shipped value is added if missing.
-SPACE = {
-    "loco": {
-        "threshold_pctile": [97.0, 98.0, 99.0, 99.5, 99.9, 99.99],
-        "bin_width_sec": [0.5, 1.0, 2.0, 3.0, 5.0],
-        "context_win_sec": [30.0, 60.0, 120.0, 240.0, 480.0],
-        "merge_gap_sec": [0.5, 1.0, 2.0, 4.0, 8.0],
-    },
-    "sync": {
-        "C_threshold": [0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16],
-        "C_min": [0.02, 0.05, 0.1, 0.15, 0.2],
-        "tau_max": [0.1, 0.25, 0.5, 1.0, 2.0],
-        "max_gap": [0.1, 0.25, 0.5, 1.0, 2.0],
-    },
-    "coact": {
-        "alpha": [1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6],
-        "int_win_sec": [0.5, 1.0, 2.0, 3.0, 5.0],
-        "context_win_sec": [20.0, 30.0, 60.0, 120.0, 240.0],
-    },
-    "rate": {
-        "excess_threshold_hz": [3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0],
-        "context_win": [20.0, 30.0, 60.0, 120.0, 240.0],
-        "rate_win": [0.5, 1.0, 2.0, 3.0, 5.0],
-    },
-    "sce": {
-        "threshold_pctile": [70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5],
-        "bin_width_sec": [2.0, 5.0, 10.0, 15.0, 20.0, 30.0],
-    },
-    "cicada": {
-        "sce_percentile": [99.9, 99.95, 99.99, 99.995, 99.999, 99.9995, 99.9999],
-        "n_synchronous_frames": [1, 2, 3, 5, 10],
-        "sce_min_distance_frames": [1, 2, 4, 8, 16],
-    },
-}
-#: Pairs searched as full two-setting grids.
-PAIRS = {
-    "sce": ("threshold_pctile", "bin_width_sec"),
-    "loco": ("threshold_pctile", "context_win_sec"),
-    "cicada": ("sce_percentile", "n_synchronous_frames"),
-}
+#:
+#: **Declared in `bugarach.bench.FULL_GRIDS`** since 2026-09-17, so goal 2's nested
+#: cross-validation searches the same axes this search does rather than a second copy of
+#: them. Kept under the old name here because this module's own stages read it.
+SPACE = {d: {k: list(v) for k, v in axes.items()}
+         for d, axes in _bench.FULL_GRIDS.items()}
+#: Pairs searched as full two-setting grids (`bench.FULL_GRID_PAIRS`).
+PAIRS = dict(_bench.FULL_GRID_PAIRS)
 PERCENTILE = {"threshold_pctile", "sce_percentile"}
 INTEGER = {"n_synchronous_frames", "sce_min_distance_frames"}
 FRACTION = {"C_threshold", "C_min"}
@@ -135,18 +107,9 @@ def shipped_value(det: str, setting: str):
     return inspect.signature(fn).parameters[setting].default
 
 
-def valid(det: str, p: dict) -> bool:
-    """Settings that make sense together. Rejects a window shorter than what fills it."""
-    if det == "loco":
-        return (p["bin_width_sec"] * 4 <= p["context_win_sec"]
-                and p["merge_gap_sec"] < p["context_win_sec"])
-    if det == "coact":
-        return p["int_win_sec"] * 4 <= p["context_win_sec"]
-    if det == "rate":
-        return p["rate_win"] * 4 <= p["context_win"]
-    if det == "sync":
-        return p["C_min"] <= p["C_threshold"]
-    return True
+#: Settings that make sense together — `bench.settings_are_valid`, which both this search
+#: and goal 2's per-fold search read, so neither admits a combination the other rejects.
+valid = _bench.settings_are_valid
 
 
 def extend(setting: str, grid: list, low_end: bool):
@@ -252,7 +215,8 @@ def admissible(det: str, s: dict) -> bool:
 # ------------------------------------------------------------------ the search
 
 def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
-                      is_valid=lambda d, p: True, log=print):
+                      is_valid=lambda d, p: True, log=print,
+                      max_rounds=None, max_extensions=None, min_gain=None):
     """Stage 1, with the evaluator injected so the logic is testable without detectors.
 
     ``evaluate(points)`` fills results for a batch of (det, params); ``summarize(det,
@@ -265,8 +229,18 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
     # Per setting over the WHOLE search, not per round: reset each round, a setting whose
     # score keeps rising with its value doubled thirteen times in the test that caught it.
     extensions = {(d, k): 0 for d in dets for k in space[d]}
+    # `max_extensions=0` keeps the declared grid fixed. Goal 2 searches inside each outer
+    # fold and needs that: a grid that grows per fold makes the candidate set differ
+    # between folds, and then `meta.json` no longer describes what ran (WSMIP064,
+    # 2026-09-17). Goal 1's own search still extends until the optimum is bracketed.
+    max_rounds = MAX_ROUNDS if max_rounds is None else max_rounds
+    max_extensions = MAX_EXTENSIONS if max_extensions is None else max_extensions
+    # MOVE_EPS is an F1-sized epsilon: a move has to be worth more than the noise between
+    # two settings. A caller scoring something else needs its own, or the search silently
+    # never moves — which is what a test caught on 2026-09-17.
+    min_gain = MOVE_EPS if min_gain is None else min_gain
     active = set(dets)
-    for rnd in range(1, MAX_ROUNDS + 1):
+    for rnd in range(1, max_rounds + 1):
         if not active:
             break
         moved = set()
@@ -293,7 +267,7 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
                     best_v, best_s = max(ok, key=lambda vs: vs[1]["mean_f1"])
                     grid = space[d][setting]
                     at_edge = best_v in (min(grid), max(grid)) and len(grid) > 1
-                    if at_edge and extensions[(d, setting)] < MAX_EXTENSIONS:
+                    if at_edge and extensions[(d, setting)] < max_extensions:
                         new = extend(setting, grid, low_end=(best_v == min(grid)))
                         if new is not None:
                             grid.append(new)
@@ -304,7 +278,7 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
                             continue
                     current = summarize(d, state[d])
                     if best_v != state[d][setting] and \
-                            best_s["mean_f1"] > current["mean_f1"] + MOVE_EPS:
+                            best_s["mean_f1"] > current["mean_f1"] + min_gain:
                         log(f"  round {rnd} {d}.{setting}: {state[d][setting]:g} -> {best_v:g} "
                             f"(mean F1 {current['mean_f1']:.3f} -> {best_s['mean_f1']:.3f})")
                         history[d].append(dict(round=rnd, setting=setting,
@@ -317,6 +291,119 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
         log(f"round {rnd}: moved {sorted(moved) or 'nothing'}")
         active = moved
     return state, history, space
+
+
+@dataclasses.dataclass(frozen=True)
+class ChosenSettings:
+    """What :func:`choose_settings` chose, and everything a readout needs to say about it."""
+
+    detector: str
+    params: dict
+    """The chosen settings: every parameter of the starting point, with what moved moved."""
+    score: float
+    """``score(params)`` at the chosen settings."""
+    moves: list
+    """One entry per accepted move: round, setting, old, new, and both scores."""
+    edges: dict
+    """``{setting: "low" | "high"}`` for every axis whose chosen value sits at an end of its
+    declared grid. **Data, not a refusal** — a refusal inside one fold of a cross-validation
+    kills the fold, and a fold counted as zero says more about the grid than the detector
+    (WSMIP064, 2026-09-17). Goal 1's own search still treats an edge as unfinished."""
+    n_scored: int
+    """Distinct settings ``score`` was called on. The cost, for a readout to quote."""
+    n_refused: int
+    """Settings ``admissible`` rejected. Zero when no gate was given."""
+    grids: dict
+    """The grids actually walked, so a caller can record what the search could have chosen."""
+
+
+def choose_settings(detector, *, score, admissible=None, grids=None, start=None,
+                    pairs=False, max_rounds=None, extend_ranges=False, min_gain=None,
+                    is_valid=None, log=lambda _msg: None) -> ChosenSettings:
+    """Search one detector's settings against a caller's own objective.
+
+    **The search never sees a recording.** ``score(params) -> float`` (higher is better)
+    and ``admissible(params) -> bool`` are the caller's; everything about which recordings
+    are scored, how they are pooled and what budget applies stays on the caller's side.
+    That is what lets goal 2 call this inside each outer fold of its nested
+    cross-validation without this search ever being able to touch the held-out fold —
+    the guarantee the whole comparison rests on, kept by construction rather than by care
+    (option A of
+    ``docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md``,
+    decided 2026-09-17; the interface is WSMIP064's).
+
+    ``admissible=None`` means an ungated selection: every setting in the grid is a
+    candidate. Goal 2 calls this twice per detector and fold, once each way.
+
+    ``extend_ranges`` is **off** here and on in this module's own search. Goal 1 grows a
+    range until the optimum is bracketed, because it ships the value. Inside a fold that
+    would make the candidate set differ per fold, and the declaration on `main` would stop
+    describing what ran, so the declared grid stays fixed and the edge is reported instead.
+
+    ``pairs`` walks :data:`PAIRS` for this detector as a full two-setting grid after the
+    rounds. It is a product, so it is off by default; goal 2 leaves it off.
+
+    ``min_gain`` is how much better a setting has to be before the search moves to it, and
+    it defaults to :data:`MOVE_EPS`, which is **F1-sized**. A caller whose objective is not
+    an F1 must pass its own, or the search will find nothing worth moving to and return the
+    starting point without saying anything was wrong.
+    """
+    grids = {k: list(v) for k, v in (grids or _bench.FULL_GRIDS[detector]).items()}
+    start = dict(start if start is not None else
+                 {k: shipped_value(detector, k) for k in grids})
+    for k, values in grids.items():
+        if start[k] not in values:
+            grids[k] = sorted(values + [start[k]])
+    is_valid = is_valid or (lambda d, p: _bench.settings_are_valid(d, p))
+
+    cache: dict = {}
+    refused: set = set()
+
+    def _score(params):
+        key = tuple(sorted(params.items()))
+        if key not in cache:
+            cache[key] = float(score(dict(params)))
+        return cache[key]
+
+    def evaluate(points):
+        for _d, p in points:
+            _score(p)
+
+    def summarize(_d, params):
+        return {"mean_f1": _score(params), "params": dict(params)}
+
+    def is_admissible(_d, summary):
+        if admissible is None:
+            return True
+        ok = bool(admissible(dict(summary["params"])))
+        if not ok:
+            refused.add(tuple(sorted(summary["params"].items())))
+        return ok
+
+    state, history, grown = coordinate_rounds(
+        [detector], {detector: start}, {detector: grids}, evaluate, summarize,
+        is_admissible, is_valid, log, max_rounds=max_rounds,
+        max_extensions=None if extend_ranges else 0, min_gain=min_gain)
+    chosen = state[detector]
+
+    if pairs and detector in PAIRS:
+        got = pair_grids([detector], {detector: chosen}, grown, PAIRS, evaluate,
+                         summarize, is_admissible, is_valid)
+        best = got[detector]["best"]
+        if best is not None and _score(best) > _score(chosen) + (MOVE_EPS if min_gain is None
+                                                                 else min_gain):
+            history[detector].append(dict(round="pair", setting="+".join(PAIRS[detector]),
+                                          old=None, new=None,
+                                          old_f1=_score(chosen), new_f1=_score(best)))
+            chosen = best
+
+    edges = {}
+    for k, values in grown[detector].items():
+        if len(values) > 1 and chosen[k] in (min(values), max(values)):
+            edges[k] = "low" if chosen[k] == min(values) else "high"
+    return ChosenSettings(detector=detector, params=chosen, score=_score(chosen),
+                          moves=history[detector], edges=edges, n_scored=len(cache),
+                          n_refused=len(refused), grids=grown[detector])
 
 
 def pair_grids(dets, start, space, pairs, evaluate, summarize, is_admissible,
