@@ -104,25 +104,52 @@ measures how quickly reviewers stopped finding things, not whether anything rema
 
 ## Adjudication
 
-Pending Tony's ruling on scope (below). Proposed, per cluster:
+**Tony ruled on all three open questions on 2026-09-17, and the rulings are carried out on this
+branch.**
 
-- **Fix and rerun** (tool defects): score shift events against the shifted trains, on a fresh shift the
-  threshold never saw; add the localization measures Reviewer 2 used; correct `J`, the chance
-  comparison, parameter counts, slow-stream displacements, twin counts, the `slow_modulation` zero, the
-  per-ROI test's exposure to the ends, and every other number the roles flagged.
-- **Soften or harden** the twin check, per Tony.
-- **File, not fix here**: the bake-off harness's shared folds (`fold_maker`) and the encoder's
-  truncating frame mapping (`bugarach.learn.encode`, Reinventing the Wheel) are project-wide and change
-  every learned number on `main`; each needs its own todo and review.
-- **Tony**: the FOUNDATIONS §5 question about committed real-derived event times and checkpoints.
-- **Apply** all attribution and presentation findings.
-- **Not accepted as written**: none so far.
+- **Scope: fix, rerun and deliver, with no fifth round.** So: the scoring bug is fixed
+  (`tools/tube_ssl_real_compare.py`, `95ec229`), the real-recordings stage reran with shift events
+  scored against the shifted onsets on a **fresh** shift no threshold saw, Reviewer 2's localization
+  measures (empty spans, nearness to a co-active frame at 1 s and 3 s, a mouse-clustered interval on
+  the excess over activity-weighted chance, and a per-group breakdown) are measured and drawn, and
+  every number, citation and presentation finding below is applied. The page ships **unconverged**,
+  says so in its own status note, and keeps its residual ⚠ flags.
+- **The twin check is softened, not hardened:** presented as described rather than tested, with its
+  limits beside it and its own figure (Figure 5, the twin check). What would test it is listed on the
+  page.
+- **The bake-off harness's shared folds are filed, not fixed here**
+  ([todo](../todo/2026-09-17-two-bake-off-folds-train-the-same-model.md)): the page states the shared
+  fits and that the corrected intervals assume distinct training sets. The encoder's truncating frame
+  mapping was already filed and gained this round's measurement
+  ([todo](../todo/2026-09-11-the-encoder-truncates-frame-positions.md)).
+- **FOUNDATIONS §5: the real-derived outputs move to the darkroom.** `real_compare/events.json` and
+  the checkpoints trained on real recordings leave the repo tree, on this branch and on `main`
+  through this pull request, into the claimed folder `bugarach/2026-09-17-rigid-shift-report/`
+  (`docs/SESSIONS.md`). The repo keeps `real_compare/summary.json`, which is what the page quotes.
+  ⚠ Git history still holds the old copies, so this is a removal, not a retraction.
+- **Not accepted as written:** none.
+
+What was **not** done, and is left as work rather than answered: harder twins with intervals and
+several supervised seeds; a direct localization test on twins with known event times; justification
+or sensitivity checks for the constants Reviewer 2 listed; the code-reuse items from Reinventing the
+Wheel (checkpoint metadata, the probe calling `fit_supervised`, `bugarach.time_axis` in the
+schematic, the draw-for-draw equivalence test for `rigid_frames`).
 
 ## Residual ⚠ for Tony
 
-- Whether to fix, rerun and deliver unconverged, run a fifth round, or park the report.
-- FOUNDATIONS §5 and `real_compare/events.json` and the checkpoints, including what is already on `main`.
-- The bake-off harness's shared folds, which touch every published bake-off number.
+Three of the five below were ruled on the same day and are recorded under *Adjudication*; what
+remains open is listed here.
+
+- ~~Whether to fix, rerun and deliver unconverged, run a fifth round, or park the report.~~ Ruled:
+  fix, rerun, deliver unconverged, no fifth round. **The page therefore ships without a blind pass
+  over its repaired text**, which is the one thing a review record cannot make up for later.
+- ~~FOUNDATIONS §5 and the committed real-derived outputs.~~ Ruled: move to the darkroom; the old
+  copies stay in git history.
+- ~~The bake-off harness's shared folds.~~ Ruled: filed as its own todo. **Still open there**, and it
+  touches every published bake-off number, including rows in `docs/MILESTONES.md` section C.
+- The four decisions the page itself puts to Tony (which build stays; whether slow shared modulation
+  counts as coordination; whether the objective is worth another attempt as built; which event rate
+  the label-free threshold should target).
 - Human-only questions from DOI or Die: the exact date of Kreuz's reply and which paper he pointed to;
   whether anyone has asked Pipa or Grün where whole-train shifting began; whether Dard or the Cossart
   lab have trained detectors against circular-shift surrogates.

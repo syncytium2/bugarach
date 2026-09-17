@@ -217,10 +217,32 @@ baseline at ±1 s does not belong under a ±2-frame column.
 **Gate — a window-edge check.** Histogram detections by distance to the nearer window edge against
 the uniform expectation, for every detector including the references.
 
+**Gate — score a surrogate's detections against the surrogate, on a shift no threshold saw.** A
+detector run on a rigid shift has to be measured against the *shifted* onsets; measured against the
+recording's, its events look empty whatever they contain. And the shifts a label-free threshold was
+set on are in-sample, so their event rate is capped by construction — draw a fresh one.
+
+**Gate — group-dependence is not optional** (FOUNDATIONS §9). Effects run in opposite directions by
+group, so a pooled real-recording number is not admissible on its own: report the breakdown, or say
+why not.
+
+**Gate — real-derived outputs stay machine-local.** FOUNDATIONS §5 covers anything derived from real
+recordings, not only images: per-recording event times keyed by recording id, and model parameters
+fitted on real recordings, go to a claimed darkroom folder. The repo keeps the summary the report
+quotes.
+
 > *The incident:* the ±1 s chance row was copied into the ±2-frame column, inflating that baseline
 > two- to threefold and making a rigid-shift row read as at-chance when it sat above it. And the
 > edge shares were wrong at both ends, in both windows, with the mechanism attributed to a stage
 > only one architecture has.
+>
+> *The second incident, 2026-09-17:* the fix for the first one added a rigid-shift row for every
+> detector and scored it against the unshifted recording, so "a rigid shift removes the co-activity
+> these detectors call" was an artifact of the comparison; measured against the shifted onsets, those
+> events hold three or more ROIs about half the time. A check added in answer to a review is new code,
+> and it gets the least scrutiny of anything in the run. The same round found `real_compare/events.json`
+> and checkpoints trained on real recordings committed to the repo, which is what the machine-local
+> gate above now covers.
 
 ## Stage 7 — Figures, before the prose
 
