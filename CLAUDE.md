@@ -79,6 +79,14 @@ figure, show it, and let the prose point at what to look at. Flagging something
 for Tony's attention and then explaining it in paragraphs is the failure mode
 he has called out (2026-08-13) — the text arrives, the evidence doesn't.
 
+**Always lead with the figure** (Tony, 2026-09-16). A term that names something
+visible gets its picture **first**, then its name, then its definition — never
+the other way round, and never a bolded term whose figure is sections away. The
+plain-language detector review put *clear stripes* in bold in its opening
+summary and showed one only in Figure 21; *call* was used in that summary and
+defined a section later. Both read as jargon arriving from nowhere. Inside a
+section the same order holds: heading, figure, then the prose pointing at it.
+
 This repo can already draw. `tools/make_diagnostic.py` renders detector lanes,
 the ROI raster and per-detector analysis traces to PNG through Playwright
 chromium; `bugarach.ui.diagnostic` is the figure itself. Reuse them rather than

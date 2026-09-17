@@ -10,6 +10,43 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/plain-review-best-settings — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-15-detector-review-plain/`
+- **Status:** **RELEASED — the rebuilt page, docx, figures and `_review_best/` are in the folder; builders
+  pushed on `detector-review-doc`.** Was ACTIVE, claimed before writing. Tony, 2026-09-17: the overnight searches all failed,
+  and the Word version of the plain review is to be completed on the current best settings (#597's).
+  Every settings-dependent number and figure is rebuilt: scores at the stored settings on the 24 test
+  recordings (none used to choose them), the busy-stretch test, the real-recording calls and their four
+  figures, Figure 2's recording by a stated rule, then the `.docx`.
+- **Writes:** inside that one folder only — the rebuilt page, docx and figures, `_work/`, and a new
+  `_review_best/` holding the first review's measurements rebuilt at the stored settings (the first
+  review's own folder, `2026-09-15-detector-review/`, is read and not touched).
+- ⚠ **Holds real treatment rasters**, so everything stays in the darkroom (FOUNDATIONS §5).
+- **Touches:** `tools/make_plain_detector_review.py`, `tools/plain_detector_review_template.html`,
+  `tools/make_detector_review.py`.
+- **Released when:** the rebuilt `.docx` is in the folder and the builders are pushed on `detector-review-doc`.
+
+### WSMIP065/why-not-count — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-15-detector-review-plain/` (reopened); `bugarach/2026-09-16-why-not-count/` never created
+- **Status:** **RELEASED — the section, its four figures and the `count` measurements are in the
+  plain-review folder; the builder is pushed on the `detector-review-doc` PR.** Tony asked "why not just
+  count events in a time bin?" and chose to answer it as a section of the plain-language review rather
+  than a page of its own, so the writes went to that review's existing folder. The folder first claimed
+  here was never created.
+- **Wrote:** `fig_count_*.png`, the rebuilt `detector_review_plain.html`, and a `count` key in
+  `_work/plain.json` — nothing outside `2026-09-15-detector-review-plain/`.
+- ⚠ **Holds real-recording figures** (the untreated-baseline bar figure), so the page stays in the
+  darkroom (FOUNDATIONS §5).
+
+### WSMIP065/detector-review-plain — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-detector-review-plain/`
+- **Status:** **RELEASED — `detector_review_plain.html`, its figures, `real_prose.json` and `_work/`
+  are in the folder; the builder is on the `detector-review-doc` PR.** Was ACTIVE, claimed before
+  writing. Tony's verdict on the first detector review was that it did not meet the
+  ask: figures and sixth-grade text for a reader with no background. This session rebuilds it as a
+  plain-language page with step-by-step figures, and looks closely at real calls that disagree with
+  the eye. Not murderboarded, by Tony's instruction.
+- **Writes:** one new folder only — the page, its figures, `real_prose.json`, and the builder's
+  `_work/` measurements. It reads, and does not touch, `bugarach/2026-09-15-detector-review/`.
+- ⚠ **Holds real treatment rasters**, so the page stays in the darkroom (FOUNDATIONS §5).
+- **Released when:** the page is in the folder and the builder is pushed on the `detector-review-doc` PR.
 ### Mac/tube-ssl-report — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-tube-self-supervised/`
 - **Status:** **RELEASED — the two rebuilt figures and the real-recording lanes figure (two views,
   HTML and PNG) are in the folder; repo copies of the two synthetic-derived figures are on the PR.**
@@ -65,8 +102,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   `README.html` and `.Rhistory` in the look folder are Tony's and are not touched.
 - **Released when:** the look folder matches the repo copy and the stray folder is gone.
 
-### WSMIP065/detector-review-doc — DARKROOM claim ACTIVE 2026-09-15: `bugarach/2026-09-15-detector-review/`
-- **Status:** **ACTIVE — claimed before writing.** Tony asked for a document for external review:
+### WSMIP065/detector-review-doc — DARKROOM claim RELEASED 2026-09-15: `bugarach/2026-09-15-detector-review/`
+- **Status:** **RELEASED — `detector_review.html`, its 19 figures, `real_prose.json`, the
+  measurements (`measurements/`) and the verbatim role reports of all three murderboard rounds
+  (`reviews/`) are in the folder; the builder, template, public review copies and run record are on
+  the `detector-review-doc` PR.** The run stopped at the round cap, unconverged; open items are in
+  `docs/reviews/detector_review_2026-09-15.md`. Tony asked for a document for external review:
   every detector (coded and learned) with a figure of how it decides, surrogates, the simulator,
   the optimization procedure, and real TTX and senktide rasters; HTML only; full murderboard.
 - **Writes:** one new folder only — the page, its figures, the fresh bench run's JSON, and the

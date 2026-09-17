@@ -1,0 +1,844 @@
+<title>Finding Neurons That Act Together</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#555; --rule:#e3e3e3; --accent:#8B1A1A; --bg:#ffffff; --soft:#f6f6f4; }
+  body { background:var(--bg); color:var(--ink); }
+  main { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 80px;
+         font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  h1 { font-size: 34px; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 24px; margin: 52px 0 10px; padding-top: 14px; border-top: 1px solid var(--rule); }
+  h3 { font-size: 19px; margin: 30px 0 6px; }
+  p, li { max-width: 72ch; }
+  .lede { font-size: 19px; color: var(--muted); margin: 0 0 22px; }
+  .box { background: var(--soft); border-radius: 8px; padding: 14px 20px; margin: 18px 0; }
+  .box h3 { margin-top: 6px; }
+  figure { margin: 22px 0 30px; }
+  figure svg, figure img { display: block; width: 100%; height: auto; }
+  .scroll { overflow-x: auto; }
+  figcaption { font-size: 15px; color: var(--muted); max-width: 80ch; margin-top: 8px; }
+  figcaption b { color: var(--ink); }
+  a { color: #1f5fa8; }
+  table { border-collapse: collapse; font-size: 15px; margin: 12px 0; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-weight: 600; }
+  .refs li { margin-bottom: 8px; font-size: 15px; }
+  dl.words dt { font-weight: 600; margin-top: 10px; }
+  dl.words dd { margin: 0 0 0 0; max-width: 72ch; }
+  nav ol { columns: 2; font-size: 15px; }
+  @media (max-width: 640px) { nav ol { columns: 1; } h1 { font-size: 27px; } main { font-size: 16px; }
+    /* the six-program table is wider than a phone; let it scroll on its own, never the page */
+    table { display: block; overflow-x: auto; white-space: normal; } }
+</style>
+<main>
+<h1>Finding neurons that act together</h1>
+<p class="lede">How six computer programs decide when many neurons have calcium events at the same time,
+how we tested them, and why they sometimes disagree with your own eyes.</p>
+
+<div class="box">
+<h3>The short version</h3>
+<ul>
+  <li>The lab records calcium signals in neurons using a microscope and a digital camera, and writes down
+  the times of the <b>calcium events</b> in those signals. We want to ask whether calcium events happen in
+  <b>many neurons at around the same time</b>, which this document calls a <b>coordinated event</b>. Computer
+  programs have to find those moments, because there are far too many recordings to go through by hand.</li>
+  <li>Neurons have calcium events on their own as well, so some coordinated events happen <b>just by chance</b>. Every program has
+  to separate the coordinated events chance explains from the ones it does not, and each program uses a different set of steps to do
+  that.</li>
+  <li>A real recording has no answer key: nobody knows for certain which moments are real. So we also
+  <b>simulate</b> recordings — we produce them ourselves, choosing in advance when the neurons act
+  together — and check what each program finds against what we put in.</li>
+  <li>On simulated recordings, CoactDetect and LoCo do best on that test, and we cannot tell those two apart.
+  Neither is best at everything: when we plant coordinated events inside a stretch where every neuron is
+  busy, both miss most of them.</li>
+  {{PROSE:short_real}}
+</ul>
+</div>
+
+<nav><ol>
+  <li><a href="#s1">What the lab records</a></li>
+  <li><a href="#s2">The problem</a></li>
+  <li><a href="#s3">Coordinated events happen by chance</a></li>
+  <li><a href="#s14">Why not just ask for a minimum number of events in an interval?</a></li>
+  <li><a href="#s4">Measuring chance with shifted copies</a></li>
+  <li><a href="#s5">Why shift, not shuffle</a></li>
+  <li><a href="#s6">The six algorithms</a></li>
+  <li><a href="#s8">Simulated recordings, where we know the answer</a></li>
+  <li><a href="#s9">How we grade a program</a></li>
+  <li><a href="#s10">Scores on the simulated recordings</a></li>
+  <li><a href="#s11">Detection on real recordings</a></li>
+  <li><a href="#s12">Where your eye and the programs disagree</a></li>
+  <li><a href="#s13">What this means</a></li>
+  <li><a href="#refs">Where the ideas come from</a></li>
+  <li><a href="#words">Word list</a></li>
+</ol></nav>
+
+<h2 id="s1">{{SEC:records}}. What the lab records</h2>
+<figure>{{FIG:fig_orient}}
+<figcaption><b>Figure {{NUM:fig_orient}}. How to read a raster.</b> A: ten minutes of one real recording
+of {{T.orient_n_roi}} neurons. Each row is one neuron, and each tick is one calcium event in that neuron. Where
+the ticks stack into a narrow vertical stripe, many neurons had calcium events at nearly the same moment; a ▼
+above the raster points down at each one our rule counts (Section {{SEC:eye}}), {{T.orient_n_stripes}} of
+them in these ten minutes, the largest joined by {{T.orient_biggest}} of the {{T.orient_n_roi}} neurons.
+B: 20 seconds of the recording in A, around one of them, so a single tick is visible.</figcaption></figure>
+<p>Figure {{NUM:fig_orient}} is the picture everything else in this document is built on: the stripes are
+what we are trying to find.</p>
+<p>The lab records a group of neurons called <b>KNDy neurons</b> in thin slices of mouse brain kept alive in
+a dish, through a microscope with a digital camera, about ten pictures a second.</p>
+<p>What makes a neuron visible? These mice carry an extra gene, so the neurons build a fluorescent protein of
+their own called <b>GCaMP6f</b>. Nothing is added to them; they make it themselves. The protein gives off
+more light when <b>calcium</b> is around it, so the camera sees each neuron's brightness follow the calcium
+inside it.</p>
+<p>A <b>calcium event</b> is an increase followed by a decrease in one neuron's brightness. It is the whole of
+what we observe, and from here on this document calls it a calcium event, or just an event. It says the
+calcium inside that neuron went up. It does not say why, and this document does not assume why — which
+matters later, because one of the drugs in Section {{SEC:real}} blocks the electrical signals that are
+usually behind a calcium rise, and the events carry on regardless.</p>
+<p>A separate program goes through the pictures, finds each calcium event and writes down the moment it
+happened. That program keeps two lists: one for <b>brief events</b> and one for much <b>longer
+events</b>.</p>
+<p>Those lists of moments are all the programs in this document ever see. None of them looks at the
+pictures. We draw a list as a <b>raster</b>, the picture above: one row per neuron, one tick per event.
+A narrow, vertical stripe in a raster means many neurons had calcium events at nearly the same moment. That is a
+<b>coordinated event</b>. Some coordinated events happen by chance alone, and telling those apart from the
+rest is the whole job.</p>
+
+<h2 id="s2">{{SEC:problem}}. The problem</h2>
+<figure class="scroll">{{FIG:fig_problem}}
+<figcaption><b>Figure {{NUM:fig_problem}}. Different answers from different programs on the same data.</b> {{PROSE:problem_caption}}
+Each colored row above the raster belongs to one program, and each colored mark is one moment that
+program picked out. The names are labels for now; Section {{SEC:algorithms}} explains what each program does. The
+colored strip at the top shows the part of the experiment ({{T.prob_bar_words}}). The thin
+black line under it marks the stretches the lab studies. The number beside each name counts that program's
+calls in all {{T.prob_minutes}} minutes shown.</figcaption></figure>
+<p>The six programs in this document, by name: <b>rate+context</b>, <b>CoactDetect</b>, <b>LoCo</b>,
+<b>binned SCE</b>, <b>locust</b> and <b>SPIKE-synch</b>. Who made each one is in the table in Section
+{{SEC:algorithms}}. Four of the six were built in this lab. <b>locust</b> is this project's modified version of the
+coordinated-event detector inside <b>CICADA</b>, a published analysis package from the Cossart lab
+(<a href="https://doi.org/10.5281/zenodo.10041433">Denis and others, 2020</a>); ours is fed the lab's own
+list of event times and makes its own decisions, so its results are ours and not CICADA's.
+<b>SPIKE-synch</b> is built on a published mathematical measure of how closely in time events in different
+neurons follow one another (<a href="https://doi.org/10.1152/jn.00848.2014">Kreuz and others, 2015</a>).</p>
+<p>Figure {{NUM:fig_problem}} is a real recording. All six programs were given the same list of event
+times — the same raster, drawn at the bottom — and each program marked the moments where that program
+judged that neurons had acted together. <b>One such mark is a call.</b> A call is a claim by a program, not a fact
+about the neurons: it can be right or wrong, and nothing in the recording says which.</p>
+<p>{{PROSE:problem_text}} A real recording has no answer key, so we cannot look up who is right.</p>
+<p><b>Why it matters.</b> A study of a drug compares calls before and during the drug. If the programs do not
+agree on what counts, a drug that only makes neurons busier can look as if it changes how they work
+together. So we also test the programs on <b>simulated</b> recordings, which we build ourselves with the
+coordinated events put in on purpose, so the answer is known (Section {{SEC:sim}}).</p>
+
+<h2 id="s3">{{SEC:chance}}. Coordinated events happen by chance</h2>
+<figure>{{FIG:fig_chance}}
+<figcaption><b>Figure {{NUM:fig_chance}}. Busy neurons produce coordinated events by chance.</b> Two minutes of a simulated
+recording, so we know what was put in. The bars below each raster count how many neurons have a calcium event in each
+2-second bin. A: quiet neurons, with one planted coordinated event (▼, put in on purpose). B: a stretch of the same
+recording where every neuron was made busier and <b>nothing was put in</b>.</figcaption></figure>
+<p>Why is finding coordinated events hard? Because neurons have calcium events on their own all the time, and when
+they have them often, some of them land close together by luck alone.</p>
+<p>To count that, cut the recording into short stretches of equal length — a <b>bin</b> is one of those
+stretches, 2 seconds long in Figure {{NUM:fig_chance}} — and count how many different neurons had an event
+inside each one. Most programs in this document work from a count like that, and they differ in how long
+they make their bins. In Figure {{NUM:fig_chance}}B nothing at all was put in, and yet {{T.busy_max}}
+neurons still had events inside the same 2-second bin.</p>
+<p>So counting neurons is not enough. A program has to ask a harder question: <b>does this coordinated event hold
+more neurons than chance alone would produce?</b> To answer it, the program needs to know what chance
+looks like in this particular recording.</p>
+
+<h2 id="s14">{{SEC:count}}. Why not just ask for a minimum number of events in an interval?</h2>
+<figure>{{FIG:fig_count_rule}}
+<figcaption><b>Figure {{NUM:fig_count_rule}}. The interval rule.</b> The numbered steps say what it does. A and B: the same two
+simulated minutes as Figure {{NUM:fig_chance}}. Above each raster: the planted coordinated event (▼) and the
+rule's calls. Below: at each moment, how many different neurons have an event in the {{T.cnt_w}} seconds that
+follow, and a bar of {{T.cnt_one_bar}} neurons — the single bar that scores best on the simulated recordings
+every program in this document is tested on (Section {{SEC:scores}}).</figcaption></figure>
+<p>Figure {{NUM:fig_chance}} shows the difficulty: coordinated events happen by chance, and more often when
+neurons are busy. The simplest answer ignores chance: call a coordinated event whenever at least a set
+number of neurons have calcium events within a short interval of each other (Figure
+{{NUM:fig_count_rule}}). Each neuron counts once, however many events it has inside the interval. The number
+of neurons a rule asks for is its <b>bar</b>: the count that has to be reached before it calls a coordinated
+event. So why not use it?</p>
+<p>Labs that study these same neurons use rules like it. Allan Herbison's lab, recording brain slices as this
+lab does, calls a <b>"miniature synchronization event"</b> whenever the event peaks of at least 2 neurons
+fall within 10 seconds of each other, and adds any further neuron whose peak falls within 10 seconds of the
+one before (<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others, 2023</a>). The same rule,
+still at 2 neurons, is used in the lab's slice papers through 2026
+(<a href="https://doi.org/10.1210/endocr/bqad167">Morris and Herbison, 2023</a>;
+<a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Aleisha Moore and coworkers,
+recording these neurons in living mice, called an episode a "synchronized episode" when every recorded neuron
+had a calcium event (<a href="https://doi.org/10.1073/pnas.2117767119">Moore, Coolen and Lehman, 2022</a>).
+This section asks how much chance such a rule lets through, with an interval of {{T.cnt_w}} seconds and with
+Herbison's rule. How the rule scores against the six programs comes later (Section {{SEC:scores}}), once the
+programs and the scoring have been explained.</p>
+
+<h3>Why an interval and not a bin</h3>
+<figure>{{FIG:fig_count_edge}}
+<figcaption><b>Figure {{NUM:fig_count_edge}}. What a bin edge costs.</b> Every coordinated event joined by 6
+neurons that we planted in simulated recordings ({{T.edge_n}} events; Section {{SEC:sim}} describes the
+recordings), grouped by how far it fell from the nearest edge of a bin, and the share each rule found.
+Counting within a sliding {{T.edge_bin}}-second window and counting in fixed {{T.edge_bin}}-second bins use
+the same bar ({{T.edge_x}} neurons), so the bin edge is the only difference between them. CoactDetect and
+LoCo, two of the programs in Section {{SEC:algorithms}}, count in fixed 2-second and 1-second bins; each is
+measured against its own bins. The bar equals the event's size here, the case where a split costs the most.</figcaption></figure>
+<p>An even simpler version of the rule cuts the recording into fixed bins and counts the neurons in each. It
+has a flaw of its own: a coordinated event that falls across the edge between two bins is split, some of its
+neurons landing in one bin and the rest in the next, so neither bin may reach the bar. With a bar of
+{{T.edge_x}} neurons, fixed {{T.edge_bin}}-second bins found {{T.edge_bin_at}} of the 6-neuron events that fell
+close to an edge (within an eighth of a bin), against {{T.edge_bin_mid}} of those in the middle of a bin. A
+window that slides along with the events cannot split one, and found {{T.edge_int_at}} of them wherever they
+fell (Figure {{NUM:fig_count_edge}}). Herbison's rule slides in this way, which is one thing it gets right.
+Three of the six programs count in fixed bins. Two of them pay a smaller price for it: CoactDetect found
+{{T.edge_coact_at}} of the events at an edge against {{T.edge_coact_mid}} mid-bin, and LoCo
+{{T.edge_loco_at}} against {{T.edge_loco_mid}}. The third, binned SCE, uses 10-second bins and was not
+measured this way.</p>
+
+<h3>On real recordings, no single bar fits</h3>
+<figure>{{FIG:fig_count_slices}}
+<figcaption><b>Figure {{NUM:fig_count_slices}}. The bar each real recording needs.</b> One dot for each of
+the lab's {{T.cnt_n_real}} untreated recordings: the stretch before any drug, brief events. For each one we
+made {{T.cnt_draws}} shifted copies (Section {{SEC:copies}} explains them) and found the smallest bar, in
+neurons within {{T.cnt_w}} seconds, that chance reaches less than once every 10 minutes (counting separate
+{{T.cnt_w}}-second windows). Orange: recordings where chance reaches the bar of {{T.cnt_one_bar}} neurons from
+Figure {{NUM:fig_count_rule}} more often than that. Dotted line: how busy the busy stretch in our simulated
+recordings is (Section {{SEC:sim}}), busier than {{T.cnt_block_slower}} of the {{T.cnt_n_real}} real
+recordings.</figcaption></figure>
+<p>Real recordings differ a great deal from one another. Across the lab's {{T.cnt_n_real}} untreated
+recordings, neurons had between {{T.cnt_rate_min}} and {{T.cnt_rate_max}} events per neuron per minute on
+average — between {{T.cnt_rate_p10}} and {{T.cnt_rate_p90}} in eight recordings out of ten — and a recording
+held {{T.cnt_cells_min}} to {{T.cnt_cells_max}} neurons. The bar that holds chance to less than once in 10
+minutes climbs with how busy the neurons are, from {{T.cnt_need_min}} neurons to {{T.cnt_need_max}} (Figure
+{{NUM:fig_count_slices}}). A bar of {{T.cnt_one_bar}} neurons lets chance through in {{T.cnt_n_loose}} of the
+{{T.cnt_n_real}} recordings — in one of them {{T.cnt_loose_max}} times every 10 minutes — while in
+{{T.cnt_n_strict}} recordings a bar of 3 neurons would already have been enough.</p>
+<p>That is the real trouble with a fixed bar. A drug that gives neurons more calcium events moves a recording
+to the right in Figure {{NUM:fig_count_slices}}. With a fixed bar, that recording then gets more coordinated
+events called, even if nothing about how the neurons work together has changed.</p>
+
+<h3>At the published rate, what does chance give?</h3>
+<figure>{{FIG:fig_count_published}}
+<figcaption><b>Figure {{NUM:fig_count_published}}. The published rule, on neurons whose calcium events are
+independent.</b> Simulated neurons that each have calcium events at random, at a steady rate, with no link
+to one another, run through Herbison's rule (at least 2 neurons, each peak within 10 seconds of the one
+before), for {{T.pub_cells_lo}} to {{T.pub_cells_hi}} neurons, {{T.pub_hours}} simulated hours for each number
+of neurons. A: events of the rule per neuron per hour — the number of those events divided by the number
+of neurons and hours (one of the two readings of the papers' unit; see the text). B: the average number of
+neurons in each event, over every event the simulation produced. The paper's 3.7 is not a whole number
+because it is an average over slices (3.7 ± 0.2 neurons, mean ± standard error). Shaded: the
+{{T.pub_field_lo}} to {{T.pub_field_hi}} neurons reported by Eddleston, Morris and Herbison (2026),
+<i>GABA receptor modulation of arcuate kisspeptin neuron bursting and synchronization activity in female
+mice</i>, <a href="https://doi.org/10.1111/jne.70170">J Neuroendocrinol 38:e70170</a>. Dashed red: the
+averages that paper reports. The dark curve uses that paper's own event rate, so it is the one to read
+against the dashed line.</figcaption></figure>
+<p>Two of these papers show that drugs blocking glutamate signals between neurons cut the number of these
+events sharply (<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others, 2023</a>;
+<a href="https://doi.org/10.1210/endocr/bqad167">Morris and Herbison, 2023</a>), which is good evidence
+that many of them are not chance. None compares the rule's count with what neurons would produce if their
+calcium events were independent, so we made the simplest version of that comparison (Figure
+{{NUM:fig_count_published}}). In the most recent paper, neurons had {{T.pub_rep_rate}} calcium events per
+neuron per hour, and the paper reports {{T.pub_rep_mse}} miniature synchronization events per neuron per hour,
+each joined by {{T.pub_rep_cells}} neurons ({{T.pub_rep_share}}% of the neurons in view) on average
+(<a href="https://doi.org/10.1111/jne.70170">Eddleston and others, 2026</a>). Independent neurons at that
+rate, in a field of {{T.pub_field}} neurons — about the average those two numbers imply — meet the rule
+{{T.pub_chance_mse}} times per neuron per hour, with {{T.pub_chance_cells}} neurons in each.</p>
+<p><b>"Per neuron per hour" can be read two ways, and the papers do not settle which.</b> They divide the
+count by the number of neurons, and one of them describes the result as how often each neuron takes part in
+an event (<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others, 2023</a>). Read as a count
+divided by neurons, as Figure {{NUM:fig_count_published}} does, independent neurons give {{T.pub_chance_mse}}
+against the paper's {{T.pub_rep_mse}}. Read as how often each neuron takes part, they give
+{{T.pub_chance_part}} against {{T.pub_rep_mse}}. Either way, independent neurons at the paper's rate meet the
+rule at least as often as the paper reports, in smaller events: the events the paper found hold more
+neurons than chance events do. Real neurons do not have events at a steady rate, and none of the paper's data
+went into this, so it is not a verdict on its findings. It shows why a count needs a chance comparison
+beside it.</p>
+
+<h3>What this means</h3>
+<p>Asking for a minimum number of neurons within an interval is not wrong. What a fixed bar cannot do is tell
+a busy recording from a coordinated one, because the bar does not move when the neurons get busier, and on
+real recordings the bar that chance allows moves a long way. Counting in fixed bins instead of a sliding
+interval adds a second problem, the bin edge. The shifted copies of the next section let a program set its
+bar from the recording's own chance instead.</p>
+
+<h2 id="s4">{{SEC:copies}}. Measuring chance with shifted copies</h2>
+<figure>{{FIG:fig_chance_steps}}
+<figcaption><b>Figure {{NUM:fig_chance_steps}}. How shifted copies measure chance, in four steps.</b>
+Each event is labeled by its order in its own neuron: the first is 1, the second 2, and so on. Shifting a
+row does not change that order, unless an event runs off one end and comes back in at the other — which is
+why a shifted row can read 3, 4, 1, 2. A small simulated example: {{T.steps_cells}} neurons over one minute,
+with one {{T.steps_bin}}-second bin picked out for testing. {{T.steps_observed}} of the {{T.steps_cells}}
+neurons have an event inside that bin. The slide given to each row is printed beside it. Of {{T.steps_copies}} shifted copies, {{T.steps_share}}
+reach {{T.steps_observed}} neurons in that bin. The simulated recording is small enough to read; the
+programs do the same thing on recordings of {{T.n_cells_sim}} neurons and more.</figcaption></figure>
+<p>Four of the six programs measure chance the same basic way, the way Figure {{NUM:fig_chance_steps}}
+shows. The program makes <b>shifted copies</b> of the recording. To make one copy, it slides each neuron's
+whole row of events left or right by that neuron's own random amount; events pushed off one end come back
+in at the other end.</p>
+<p>A shifted copy keeps everything about each neuron on its own: how many events that neuron has, and whether
+its events come in bursts or at a steady beat. What a shift destroys is <b>the timing between neurons</b>.
+So a coordinated event that survives in a copy is, as far as the shift can tell, one that chance can produce.
+Counting coordinated events in many copies (100 or 200, depending on the program) tells the program how high
+a count has to be before it means anything.</p>
+<p><b>This is called a circular shift in the literature.</b> "Shift" because each row slides; "circular"
+because the recording is treated as a loop, so what falls off one end comes back at the other. If you go
+looking for the papers behind these programs — they are listed at the end, under <a href="#refs">Where the
+ideas come from</a> — that is the phrase to search for.</p>
+
+<h2 id="s5">{{SEC:shuffle}}. Why shift, not shuffle</h2>
+<figure>{{FIG:fig_shift_shuffle}}
+<figcaption><b>Figure {{NUM:fig_shift_shuffle}}. A shuffle gets chance wrong both ways; a shift gets
+it closer.</b> A and B: six simulated neurons over 20 seconds, with the tested 2-second bin marked in
+blue above each raster. Each row shows the recording, one shifted copy and one shuffled copy, then two bar
+charts that count, over 5,000 copies, how many neurons landed in the bin (across: number of neurons; up:
+number of copies).
+The ▼ marks the recording's own count. "Called" means fewer than 5 copies in 100 reached that
+count. C: the same comparison on the lab's own untreated recordings (brief events).</figcaption></figure>
+<p>There is another common way to make a chance copy: <b>shuffle</b> the recording. A shuffle keeps the
+number of events each neuron has, but drops every one of them at a brand-new random time. That sounds
+fair, and it is not: a shuffle also destroys each neuron's own pattern, and then the chance bar comes out
+wrong. Figure {{NUM:fig_shift_shuffle}} shows the bar going wrong in <b>both directions</b>.</p>
+<ul>
+  <li><b>Neurons that have events in bursts</b> (A). A shuffle breaks each burst apart and spreads the events out.
+  Now more neurons land in any given bin by chance, so the bar comes out <b>too high</b>. A real burst of
+  {{T.bursty_cells}} neurons, which shifted copies reach only {{T.bursty_shift}} of the time, is reached by
+  {{T.bursty_shuffle}} of shuffled copies. The shuffle calls it chance and <b>misses an event that was put in</b>.</li>
+  <li><b>Neurons that have events at a steady beat</b> (B). A shuffle lets a neuron's events pile up in some bins
+  and leave others empty. Now fewer neurons reach any bin by chance, so the bar comes out <b>too
+  low</b>. Here {{T.even_cells}} neurons land in one bin purely by luck. Shifted copies do that
+  {{T.even_shift}} of the time, so the shift correctly says "chance". Shuffled copies do it only
+  {{T.even_shuffle}} of the time, so the shuffle <b>calls a coordinated event that is only chance</b>.</li>
+</ul>
+<p>The lab's own brief events are like the steady-beat neurons in one way: a neuron rarely has two of them
+close together (C). In {{T.n_baselines}} untreated recordings, a shuffle drops {{T.doubles_shuffle}} of every
+1,000 events into a 2-second bin their own neuron had already filled, against {{T.doubles_real}} in the real
+recording and {{T.doubles_shift}} after a shift. As a result, shuffled copies say 6 or more neurons have events
+together in {{T.n6_shuffle}} of bins and shifted copies say {{T.n6_shift}}, while the recordings themselves
+have {{T.n6_real}}. A bar built from shuffles would sit lower still. That is why every program here that makes
+copies uses the shift instead.</p>
+<h3>The shift is better than a shuffle, and still not exact</h3>
+<p>It would be convenient if a shifted copy were a real recording with the coordination taken out and
+nothing else changed. It is not.</p>
+<ul>
+  <li><b>Real recordings hold more large coordinated events than the shift expects.</b> Coordinated
+  events of eight or more neurons happen about {{T.real_over_shift_8}} times as often in the recordings as in their shifted
+  copies. Some of that is probably slow rises and falls that many neurons share, which a shift breaks along
+  with everything else.</li>
+  <li><b>A shifted copy carries traces of having been shifted.</b> In this project's own tests, a learned
+  program (one that works out its own rule from examples) trained to tell a real recording from a shifted copy
+  of it can sometimes do so. The shift leaves a signature of its own.</li>
+</ul>
+<p>So treat the shift as an idea that clearly helps and beats the obvious alternative, not as a solved
+problem. The bar of every program that makes copies rests on it, and that is a limit on the numbers that
+follow.</p>
+
+<h2 id="s6">{{SEC:algorithms}}. The six algorithms</h2>
+<p>An <b>algorithm</b> is a fixed list of steps, written out by a person, that the computer carries out
+in the same order every time. All six programs here are algorithms of this kind, and all six ask the same
+question, <i>does this coordinated event hold more neurons than chance explains?</i>, but the steps differ. The
+difference that matters most is <b>where each program looks to learn what chance is</b>:</p>
+<table>
+<tr><th>algorithm</th><th>what it counts</th><th>where it learns what chance looks like</th><th>where it comes from</th></tr>
+<tr><td>rate+context</td><td>events per second, from all neurons added up</td><td>the average of the nearby minute (no copies)</td><td>written in this lab by R. DeFazio</td></tr>
+<tr><td>CoactDetect</td><td>neurons with an event in each 2-second bin</td><td>shifted copies of the nearby minute</td><td>R. DeFazio's design, built for this project</td></tr>
+<tr><td>LoCo</td><td>neurons with an event in each 1-second bin</td><td>shifted copies of the minute before and the minute after</td><td>R. DeFazio's design, built for this project</td></tr>
+<tr><td>binned SCE</td><td>neurons with an event in each 10-second bin</td><td>shifted copies of the whole stretch being studied</td><td>adapted from the rule of Cossart, Aronov and Yuste (2003), who shuffled the gaps between each neuron's events, counted neurons in each picture of their movie, and set one bar for the whole movie; written here</td></tr>
+<tr><td>locust</td><td>neurons "switched on" after each of their events</td><td>shifted copies of the whole recording</td><td>the coordinated-event stage of CICADA, from the Cossart lab, modified here</td></tr>
+<tr><td>SPIKE-synch</td><td>how close each event is to events in other neurons</td><td>no copies: each neuron's own gaps between events</td><td>Kreuz and colleagues' published measure, with a rule written in this lab (R. DeFazio) added to turn its scores into calls</td></tr>
+</table>
+<p>The third column, where each program learns what chance looks like, decides how that program behaves
+when the neurons get busy.</p>
+<p><b>CoactDetect, LoCo and rate+context work from the surrounding seconds.</b> Each of them measures
+chance from the minute around the moment it is testing — by making shifted copies of that minute, or, for
+rate+context, by averaging it. When the neurons in that minute have events more often, those copies (or that
+average) give bigger counts, and the count a bin has to beat is computed from them, so it goes up as well. A coordinated
+event that chance produces inside a busy stretch therefore fails to beat it. The cost is that a small coordinated event that is really
+there has to beat that raised count too, and often cannot.</p>
+<p><b>binned SCE and locust work from long stretches at once.</b> Each of them measures chance one
+time, from copies of the entire stretch it was given (for binned SCE, each stretch the lab studies; for
+locust, the whole recording), and uses the single count that comes out of it
+everywhere. That count was fixed before the busy stretch arrived and does not move when it does, so
+every bin in the busy stretch can beat it, one after another.</p>
+<p>Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}} show each program's steps on the same simulated
+recording. Each figure has two views: a quiet minute holding one planted coordinated event (A), and a
+minute inside a busy stretch where nothing was put in, so every call there is a mistake (B).</p>
+
+<h3>rate+context</h3>
+<figure>{{FIG:fig_alg_rate}}
+<figcaption><b>Figure {{NUM:fig_alg_rate}}. rate+context.</b> The blue line is the number of events from
+every neuron, added up. The bar (dashed) is the gray local average plus {{T.rate_ex}} events per second. A: the planted event
+pushes the count over the bar. B: in the busy minute the average rises, but the count jumps around
+more, so it sometimes crosses the bar by chance.</figcaption></figure>
+<p>Every step of rate+context in plain language, with each step linked to its code:
+<a href="https://github.com/syncytium2/bugarach/blob/main/docs/detectors/rate_context_steps.md">rate+context, step by step</a>.</p>
+
+<h3>CoactDetect</h3>
+<figure>{{FIG:fig_alg_coact}}
+<figcaption><b>Figure {{NUM:fig_alg_coact}}. CoactDetect.</b> For each 2-second bin with at least 3
+neurons, CoactDetect makes {{T.coact_ns}} shifted copies of the minute around it. The two small bar charts under the settings: the copies'
+counts in a quiet minute and in a busy one. The "1 in {{T.coact_alpha_1in}}" in its settings is nominal: the
+bar is the copies' average plus a set number of spreads, which gives that rate only if the counts follow a
+bell curve, and with small counts chance crosses it more often. In the quiet minute the bar is {{T.coact_bar_quiet}} neurons and the real
+event has {{T.coact_obs}}. In the busy minute the bar rises to about {{T.coact_bar_busy}} neurons, so even the
+busiest bin ({{T.coact_obs_busy}} neurons) is not called.</figcaption></figure>
+
+<h3>LoCo</h3>
+<figure>{{FIG:fig_alg_loco}}
+<figcaption><b>Figure {{NUM:fig_alg_loco}}. LoCo.</b> The bar is set again every 15 seconds from
+{{T.loco_ns}} shifted copies of the minute before and the minute after. LoCo takes whichever side gives the
+higher bar, so the bar goes up as soon as either side gets busy. The two small bar charts under the settings: the copies' counts on each
+side of the planted event (the up-and-down scale grows a hundred times at each labelled step).</figcaption></figure>
+
+<h3>binned SCE</h3>
+<figure>{{FIG:fig_alg_sce}}
+<figcaption><b>Figure {{NUM:fig_alg_sce}}. binned SCE</b> ("SCE" stands for "synchronous calcium event", the Cossart lab's later name for it).
+It makes {{T.sce_ns}} shifted copies of the whole stretch and sets one bar for all of it. A: the planted
+event's 10-second bin counts exactly as many neurons as the bar but does not go over, so it is missed. B: the bar was set mostly by quiet minutes, so the busy minute passes it again and
+again.</figcaption></figure>
+
+<h3>locust</h3>
+<figure>{{FIG:fig_alg_cicada}}
+<figcaption><b>Figure {{NUM:fig_alg_cicada}}. locust.</b> Each event switches its neuron "on" for as long as
+that event lasted: the lab's event list gives each calcium event's duration, and simulated recordings draw
+their durations from the lab's measurements. The count is how many neurons are on at once. The bar comes from {{T.cicada_ns}}
+shifted copies of the whole recording and is set so that only 1 copied frame in 100,000 goes over. A: the
+planted event reaches the bar. B: the bar does not rise in the busy minute, so the count keeps reaching it.
+locust is this project's modified copy of the coordinated-event detector in CICADA, from the Cossart lab:
+we feed it the lab's own list of events, with their durations, instead of letting CICADA find events for
+itself, and the bar was re-chosen here. Nobody has compared locust's results with
+CICADA's own (see <a href="#refs">Where the ideas come from</a>).</figcaption></figure>
+
+<h3>SPIKE-synch</h3>
+<figure>{{FIG:fig_alg_sync}}
+<figcaption><b>Figure {{NUM:fig_alg_sync}}. SPIKE-synch.</b> It makes no copies. The per-event score is a
+published measure of how closely events in different neurons follow one another. The scores are averaged in
+0.1-second frames, and a call is a run of frames that starts above {{T.sync_bar}} and holds at least 3
+events; a single frame above the bar with fewer events is not a call (B). With {{T.n_cells_sim}} neurons, an
+event joined by {{T.event_cells}} neurons can score at most {{T.sync_max_event}}, and the neurons in a planted
+event do not start at exactly the same moment, so here the score stays just under the bar and the event is
+missed (A). An event joined by 3 neurons can never score more than {{T.sync_max3}}.</figcaption></figure>
+
+<h2 id="s8">{{SEC:sim}}. Simulated recordings, where we know the answer</h2>
+<figure>{{FIG:fig_simulator}}
+<figcaption><b>Figure {{NUM:fig_simulator}}. One whole simulated recording.</b> Above the raster: where
+the planted events are (▼, colored by how many neurons take part), the decoys (▽) and the busy stretch.
+This is the recording used in Figures {{NUM:fig_alg_rate}} to {{NUM:fig_alg_sync}}.</figcaption></figure>
+<p>Section {{SEC:problem}} left us with the problem that a real recording has no answer key. Here is the way around
+it. We <b>simulate</b> recordings: a program of our own writes out lists of event times in the same form
+the lab's event-finder produces, and we choose in advance when the neurons act together. Since we put
+those moments in, we know where every one of them is, and we can check what each program finds against
+what we put in.</p>
+<p>The program that writes them is the <b>simulator</b>. Each simulated recording has
+{{T.n_cells_sim}} neurons and lasts {{T.minutes}} minutes (Figure {{NUM:fig_simulator}}), and it is built in
+layers:</p>
+<ul>
+  <li><b>Background:</b> each neuron has calcium events on its own, at its own rate. A few neurons are busy and many are
+  nearly silent, as in real recordings. We made two versions: a <b>quiet background</b> (about
+  {{T.quiet_per_hour}} events per neuron per hour, as set) and a <b>busy background</b> (about {{T.busy_per_hour}}).
+  Those match the quieter and busier untreated recordings in the lab's data ({{T.real_p25_per_hour}} and
+  {{T.real_p75_per_hour}} per hour).</li>
+  <li><b>Planted events:</b> {{T.n_planted}} coordinated events that we put in on purpose. They come in
+  three sizes, counted by how many of the {{T.bench_n_roi}} neurons join in: {{T.big_cells}} neurons,
+  {{T.mid_cells}} neurons, or {{T.small_cells}} neurons. <b>{{T.mid_cells}} neurons is the size that
+  matters most</b>: it is the typical size one analysis of the lab's real recordings estimated, though that
+  estimate rests on choices the analyst made, and the stripes you can see in this document's real figures
+  are often much larger. The
+  {{T.small_cells}}-neuron size is the hardest case any program is asked to handle; three of the six will
+  not call a coordinated event smaller than that at all. The neurons in one event start a little apart, not at exactly
+  the same moment. Planted events are at least {{T.min_sep_min}} minutes apart.</li>
+  <li><b>A busy stretch:</b> from minute {{T.hot_from}} to minute {{T.hot_to}}, every neuron gets about
+  {{T.hot_per_hour}} extra random events per hour. Nothing is planted there, so any call there is a
+  false alarm.</li>
+  <li><b>Decoys:</b> {{T.n_decoys}} coordinated events built exactly like planted events, and deliberately left off
+  the answer key.</li>
+</ul>
+<h3>Why we plant coordinated events and then refuse to count them</h3>
+<p>A program that marked every coordinated event it saw would find all {{T.n_planted}} planted events and
+look excellent, while telling us nothing about whether it can separate coordination from coincidence.
+Decoys make that cost something: they look exactly like planted events, so calling everything now costs a
+wrong answer for every decoy.</p>
+<p>They also stand for something in real recordings. Some coordinated events there are coincidence — neurons
+that happen to have events together, or that share a slow drift in how often they have events, with nothing
+coordinating them. Decoys put coordinated events that look real but should not count into the test.</p>
+<p>The price: <b>a program that sees only event times cannot tell a decoy from a
+planted event.</b> They are built the same way. So the test has a ceiling — the best possible overall
+score is about {{T.ceiling}} instead of 1.0, and no program in this document could reach the top no
+matter how good it was. That ceiling is deliberate. It is the part of the problem that no cleverness
+inside a program can solve, and keeping it in the test stops us from reading a high score as a solved
+problem.</p>
+<h3>What the simulator gets wrong, and why it is still wrong</h3>
+<p>Four things, and the reasons they have not been fixed are four different reasons.</p>
+<ol>
+  <li><b>Its busiest neurons bunch their events together far more than real busy neurons do.</b> Count each
+  neuron's events in 30-second stretches and see how much those counts vary: 1 means as even as chance
+  allows. Real busy neurons sit near {{T.bunch_real_busy}}; the simulator's sit near {{T.bunch_sim_busy}}.
+  <i>Why it stands:</i> we know the cause — the simulator makes each neuron's rate rise and fall by the same
+  relative swing, so the busier the neuron, the wilder the swing — and a better background model is open
+  work. It is not a patch, because every score in this document was measured against this background, so
+  changing it means running the whole test again.</li>
+  <li><b>Its large coordinated events are rarer than real ones.</b> In real recordings, coordinated events of 8 or more neurons happen about
+  {{T.real_over_shift_8}} times as often as in their shifted copies; the simulator does not reproduce that.
+  <i>Why it stands:</i> this is the hard one. The simulator can only contain coordination we already know
+  how to describe — so many neurons, starting within so many tenths of a second. Whatever produces the big
+  coordinated events in real recordings has not been described yet. Building it into the simulator would mean
+  already knowing the answer these programs are supposed to find.</li>
+  <li><b>Every simulated recording has {{T.n_cells_sim}} neurons</b>, while real ones hold
+  {{T.cnt_cells_min}} to {{T.cnt_cells_max}}, and several of the programs have rules that depend on how many
+  neurons there are.
+  <i>Why it stands:</i> this one is easy — the count is a setting. It has not been changed
+  because changing it would make these scores incomparable with the ones before them. The right fix is to
+  run the whole test at several neuron counts and report the spread, which costs computer time rather than
+  new ideas.</li>
+  <li><b>How far apart the neurons in a real coordinated event start is not well measured.</b>
+  <i>Why it stands:</i> the measurement does not yet work. Run it on a simulated recording built with a
+  known spread and it does not return that spread, so there is nothing trustworthy to copy from the real
+  recordings. A better estimator has to come first.</li>
+</ol>
+<p>Underneath the second and fourth is the same limit: <b>a simulator can only hold what we already know
+how to write down.</b> The parts of a real recording we most want to test a program against are exactly
+the parts nobody can describe yet. Simulated recordings are still the only place an answer key exists, but
+a good score here is not a promise about real recordings, which is why Section {{SEC:real}} exists.</p>
+
+<h2 id="s9">{{SEC:grading}}. How we grade a program</h2>
+<figure>{{FIG:fig_grading}}
+<figcaption><b>Figure {{NUM:fig_grading}}. Hits, misses and false alarms,</b> on a simulated minute drawn
+to show the rule.</figcaption></figure>
+<p>Grading compares each program's calls with the answer key. A call that lands within {{T.tol}} seconds
+of a planted event is a <b>hit</b>. Each planted event can be claimed by only one call, so a second call on
+the same event is a false alarm. A planted event with no call near it is a <b>miss</b>. Every other call is
+a <b>false alarm</b>, including a call on a decoy.</p>
+<p>From those we get two numbers: the share of planted events a program <b>found</b>, and the share of
+its calls that were <b>right</b>. The <b>overall score</b> combines them into one number from 0 to 1. It
+is high only when both are high. (Its technical name is the F1 score.)</p>
+<p>Calls inside the busy stretch are false alarms too, but they are kept out of the "right" share and
+counted on their own (Figure {{NUM:fig_busy}}, B). That stretch is busier than {{T.cnt_block_slower}} of the
+lab's {{T.cnt_n_real}} untreated recordings, and folded into the score it would mostly measure how hard the
+test was set. The cost is that the overall score cannot see a program that calls all the way through a busy
+stretch, so that has to be checked separately (Figure {{NUM:fig_busy}}, B, and Figure
+{{NUM:fig_count_bar}}, B).</p>
+<p><b>How each program's main setting was chosen.</b> Most programs have one main setting that raises or
+lowers their bar. On {{T.retune_date}} all six went through the same search procedure. Each program's main
+setting was tried at a range of values on {{T.n_retune}} simulated recordings of each background. The one
+with the best overall score across both backgrounds won, but it replaced the value already stored only if
+its gain was clearly larger than chance variation between recordings (a 95% range for the gain that
+excludes zero). The value moved for {{T.retune_moved}}; for {{T.retune_kept}} nothing beat the stored value by
+more than that.</p>
+<p><b>A value was also allowed only if the program stayed under its own two limits on false alarms, and those
+limits differ from program to program.</b> Each was set from how often that program called where nothing was
+planted before the search, with some room added, so it stops a program from getting worse rather than holding
+all six to one standard. In the busy stretch the limit runs from {{T.lim_probe_lo}} call per minute
+({{T.lim_probe_lo_who}}) to {{T.lim_probe_hi}} ({{T.lim_probe_hi_who}}); on a whole recording with nothing
+planted, from {{T.lim_null_lo}} call per hour ({{T.lim_null_lo_who}}) to {{T.lim_null_hi}}
+({{T.lim_null_hi_who}}). For binned SCE the limit decided the result: a much looser bar (1 bin in
+{{T.sce_loose_1in}}) scored {{T.sce_loose_f1}} on average, against {{T.sce_stored_f1}} at the stored 1 in
+{{T.sce_stored_1in}}, but made {{T.sce_loose_null}} calls an hour on the empty recording, where its limit is
+{{T.sce_null_limit}} and the stored value makes {{T.sce_stored_null}}. Whether that trade is worth making is
+an open decision for the project.</p>
+<p><b>Each program then runs at that one stored value</b>, the same on every recording, real or simulated.
+Every score in this document was measured on {{T.n_recordings_scored}} other simulated recordings that the
+search never saw, so no score comes from the recordings its setting was picked on.</p>
+<p><b>What the search did not do.</b> It searched only each program's main setting; the others keep the
+values the programs were written with. Every value was chosen against the simulator, whose faults Section
+{{SEC:sim}} lists, and real recordings have no answer key, so nothing can be tuned on them at all.
+CoactDetect and LoCo count neurons in fixed bins, which can split a coordinated event across a bin edge
+(Section {{SEC:count}}); versions of both that slide instead of stepping are being tested, and are not the
+ones in this document.</p>
+
+<h2 id="s10">{{SEC:scores}}. Scores on the simulated recordings</h2>
+<figure>{{FIG:fig_scores}}
+<figcaption><b>Figure {{NUM:fig_scores}}. Overall scores at the stored settings, on test recordings the
+settings search never saw.</b> Each dot is the score over all {{T.n_recordings_scored}} test recordings; the line runs from
+the lowest to the highest of {{T.n_tests}} groups of {{T.per_test}} recordings. binned SCE is scored over
+the whole 10-second bin each call came from, because that is the stretch the call is about.</figcaption></figure>
+<p>On the quiet background CoactDetect ({{T.f1q_coact}}) and LoCo ({{T.f1q_loco}}) scored highest, then
+rate+context ({{T.f1q_rate}}) (Figure {{NUM:fig_scores}}). The best possible was about {{T.ceiling}}. With this
+many test recordings we cannot say that CoactDetect is truly better than LoCo. binned SCE
+({{T.f1q_sce}}) and locust ({{T.f1q_cicada}}) scored lower, and SPIKE-synch ({{T.f1q_sync}}) lowest. On the busy
+background every score drops a little: CoactDetect {{T.f1b_coact}}, LoCo {{T.f1b_loco}}, rate+context
+{{T.f1b_rate}}, binned SCE {{T.f1b_sce}}, locust {{T.f1b_cicada}} and SPIKE-synch {{T.f1b_sync}}.</p>
+<figure>{{FIG:fig_busy}}
+<figcaption><b>Figure {{NUM:fig_busy}}. Finding planted events inside a busy stretch.</b> A: the share of
+planted events each program found, counting only the events joined by {{T.mid_cells}} of the
+{{T.bench_n_roi}} neurons (Section {{SEC:sim}}). Black is outside the busy stretch, orange inside it. The gray
+tick is how much of the busy stretch lies within {{T.tol}} seconds of that program's own calls: what its calls
+would "find" there by luck alone.
+B: the calls a program made inside the busy stretch with no planted event near them — its false alarms —
+counted per minute, on a scale where each step is ten times more. Every program here runs at its stored
+setting (Section {{SEC:grading}}).</figcaption></figure>
+<p><b>Busy stretches are where the programs split apart</b> (Figure {{NUM:fig_busy}}). The
+{{T.n_recordings_scored}} test recordings never put a coordinated event inside the busy stretch, so a program that goes quiet there looks
+good even if it has gone blind. To find out which, we made {{T.block_recordings}} new recordings with
+coordinated events planted <i>inside</i> the busy stretch.</p>
+<ul>
+  <li>CoactDetect and LoCo, which judge chance from nearby time, stay quiet in the busy stretch, but they
+  also miss most planted events there: CoactDetect found {{T.out_coact}} of the {{T.mid_cells}}-neuron events
+  outside it and {{T.in_coact}} inside, LoCo {{T.out_loco}} and {{T.in_loco}}.</li>
+  <li>locust and binned SCE, which judge chance from long stretches, keep calling in the busy stretch:
+  about {{T.fa_cicada}} and {{T.fa_sce}} false alarms per minute. binned SCE calls all the way through it,
+  so its calls there tell us nothing.</li>
+  <li>rate+context did both jobs fairly well at this level of busyness ({{T.in_rate}} found inside,
+  {{T.fa_rate}} false alarms per minute). When we made the stretch three times busier, none of the programs
+  held up: CoactDetect found {{T.in3_coact}} of the planted events there and LoCo {{T.in3_loco}}, and
+  rate+context found {{T.in3_rate}} only by calling {{T.fa3_rate}} times a minute where nothing was planted.</li>
+</ul>
+
+<h3>How the interval rule scores</h3>
+<figure>{{FIG:fig_count_bar}}
+<figcaption><b>Figure {{NUM:fig_count_bar}}. What the bar does.</b> The interval rule from Section
+{{SEC:count}}, with a {{T.cnt_w}}-second interval, run on the same {{T.n_recordings_scored}} simulated
+recordings as the six programs and graded the same way, at every bar from {{T.cnt_x_lo}} to {{T.cnt_x_hi}}
+neurons. A: the overall score. B: how much of the busy stretch, where nothing is planted, sits under a call or
+within {{T.tol}} seconds of one. Rings mark the bar with the best score on each background. Dashed teal lines:
+CoactDetect at its stored setting on the same recordings; in B, on the busy background, CoactDetect calls
+{{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}.</figcaption></figure>
+<p><b>With the right bar, the rule scores about as well as the best programs.</b> With a bar of
+{{T.cnt_best_quiet}} neurons it scored {{T.cnt_f1_best_quiet}} on the quiet background; CoactDetect scored
+{{T.cnt_coact_f1_quiet}} on the same recordings (Figure {{NUM:fig_count_bar}}, A). That result
+flatters the rule a little, because its bar was picked on these very recordings, with the answers in
+hand.</p>
+<p><b>But the right bar depends on the recording.</b> On the busy background the best bar is
+{{T.cnt_best_busy}} neurons. Use the quiet background's bar of {{T.cnt_best_quiet}} there and the score falls
+to {{T.cnt_quiet_bar_on_busy}}. The one bar that does best on both backgrounds together,
+{{T.cnt_one_bar}} neurons, scores {{T.cnt_f1_one_quiet}} on the quiet background and {{T.cnt_f1_one_busy}} on
+the busy one.</p>
+<p><b>And the bar that scores best calls most of the busy stretch, where nothing was planted</b> (Figure
+{{NUM:fig_count_bar}}, B). At its best bar, the rule called {{T.cnt_empty_best_quiet}} of that stretch on the
+quiet background and {{T.cnt_empty_best_busy}} on the busy one. On the busy background, CoactDetect called
+{{T.cnt_coact_empty_busy}} of the stretch and LoCo {{T.cnt_loco_empty_busy}}. A 10-second interval did not
+escape this: its best bars ({{T.cnt10_best_quiet}} neurons on the quiet background, {{T.cnt10_best_busy}} on the
+busy one) scored {{T.cnt10_f1_quiet}} and {{T.cnt10_f1_busy}}, and called at least {{T.cnt10_empty}} of the
+stretch. Herbison's rule, as published but applied to our event lists (without its step that ignores a
+neuron's own repeat events within 10 seconds), called at least {{T.herb_empty_busy}} of it and scored
+{{T.herb_f1_quiet}} on the quiet background and {{T.herb_f1_busy}} on the busy one — though our simulated
+recordings hold {{T.n_cells_sim}} neurons, more than the 8 to 29 in view in that lab's slices, and a rule
+built for fewer neurons is reached more easily with more.</p>
+<p>The overall score did not show this, because calls inside the busy stretch are kept out of it and counted
+on their own (Section {{SEC:grading}}). Two of the six programs have the same weakness: binned SCE, which
+counts neurons in bins and sets one bar for each long stretch it studies, called {{T.cnt_sce_empty_busy}} of the
+stretch, and locust called {{T.cnt_cicada_empty_busy}}. CoactDetect and LoCo avoid it by setting their bar
+from the minutes around each moment, so a busy stretch raises its own bar. That is what the extra work
+buys.</p>
+
+<h2 id="s11">{{SEC:real}}. Detection on real recordings</h2>
+<p><b>A real recording has no answer key.</b> The figures in this section show where each program made
+calls. No figure here can show whether a call is right.</p>
+<p><b>Learned models are left out.</b> The project is also building learned models, programs that work out
+their own rule from examples; they are not drawn or judged here, and a separate document covers them.</p>
+<p>The lab tests two drugs. <b>TTX</b> (tetrodotoxin) blocks the fast electrical signals most neurons
+use. <b>Senktide</b> switches on a sensor these neurons carry, the neurokinin 3 receptor
+(<a href="https://doi.org/10.1523/JNEUROSCI.1569-09.2009">Navarro and others, 2009</a>). Many
+recordings end with <b>high potassium</b>, which makes healthy neurons produce calcium events, so a neuron
+with no events through it was probably never going to show us anything. One might expect TTX to stop all
+coordination between neurons, which would give us a ready-made answer key, and in the Herbison lab's slices
+TTX stopped all calcium events (<a href="https://doi.org/10.1016/j.celrep.2022.111914">Han and others,
+2023</a>). In this lab's recordings it does not: calcium events continue under TTX, and so do coordinated
+events. Measured on brief events, coordination falls, to about half its level before the drug in the typical
+recording; measured on long events it continues, and in close to half of the recordings it is at or above
+its level before the drug. So a TTX recording cannot serve as a "no coordination" test here.</p>
+<p>The lab marks <b>analysis windows</b>: the stretches of each recording it studies. Four of the six
+programs run only inside those windows. LoCo and locust run on the whole recording.</p>
+<p>{{PROSE:real_overview}}</p>
+<figure class="scroll">{{FIG:real_ttx_brief}}
+<figcaption><b>Figure {{NUM:real_ttx_brief}}. TTX recordings, brief events.</b> {{PROSE:cap_ttx_brief}}</figcaption></figure>
+<figure class="scroll">{{FIG:real_ttx_long}}
+<figcaption><b>Figure {{NUM:real_ttx_long}}. TTX recordings, long events.</b> {{PROSE:cap_ttx_long}}</figcaption></figure>
+<figure class="scroll">{{FIG:real_senk_brief}}
+<figcaption><b>Figure {{NUM:real_senk_brief}}. Senktide recordings, brief events.</b> {{PROSE:cap_senk_brief}}</figcaption></figure>
+<figure class="scroll">{{FIG:real_senk_long}}
+<figcaption><b>Figure {{NUM:real_senk_long}}. Senktide recordings, long events.</b> {{PROSE:cap_senk_long}}</figcaption></figure>
+
+<h2 id="s12">{{SEC:eye}}. Where your eye and the programs disagree</h2>
+<p>Two things stand out in Figures {{NUM:real_ttx_brief}} to {{NUM:real_senk_long}}. Sharp stripes that
+anyone can see are sometimes missed by most programs, and some calls sit where the raster shows nothing
+special. Figure {{NUM:fig_eye}} looks closely at both.</p>
+<figure class="scroll">{{FIG:fig_eye}}
+<figcaption><b>Figure {{NUM:fig_eye}}. Close-ups of real recordings.</b> Above each raster: the part of the
+experiment (colored bar), the analysis windows (black line), each program's calls, and a ▼ over every
+<b>clear stripe</b> — our name for a coordinated event anyone can see on the raster, counted where at least
+{{T.stripe_pct}} of the neurons (and at least 5) start an event within 1 second <i>and</i> at least twice as many neurons take
+part as in the busiest seconds of the two minutes around it. {{PROSE:cap_eye}}</figcaption></figure>
+<p>The second half of that rule keeps the ▼ marks off busy stretches, where coordinated events joined by a
+quarter of the neurons often happen by chance alone (Section {{SEC:chance}}). It has a cost: inside a busy
+stretch the rule can hardly mark anything, so a call there is unjudged, not shown to be wrong. The rule is
+our own and no person has rated its marks. Its numbers (a quarter of the neurons, 1 second, twice the busiest
+seconds of 2 minutes) are our choice and were not tested against anyone's marks, and it is close in spirit to
+rate+context's own test, so rate+context agreeing with it is partly built in.</p>
+{{PROSE:eye_findings}}
+
+<h2 id="s13">{{SEC:means}}. What this means</h2>
+<ul>
+  <li><b>No program is shown to be best.</b> On simulated recordings CoactDetect and LoCo score highest and
+  cannot be told apart, and both miss most planted coordinated events inside busy stretches, where
+  rate+context finds most of them at the cost of about {{T.fa_rate}} false alarms a minute.</li>
+  <li><b>Busy neurons change every program's answer.</b> Some go blind in busy stretches, some call all through
+  them. A drug that makes neurons busier can change the calls even if coordination between neurons has not
+  changed. Any study of a drug has to separate the two.</li>
+  <li><b>A call means "unusual for this recording", not "big".</b> In a quiet recording, a coordinated event of 3 neurons can
+  be rare enough to call. That is correct for the math and unconvincing to the eye.</li>
+  {{PROSE:meaning_real}}
+</ul>
+<h3>What could be wrong here</h3>
+<ul>
+  <li>Every score comes from simulated recordings, and the simulator is imperfect (Section {{SEC:sim}}).</li>
+  <li>The bars of the four programs that make copies come from shifted copies, and a shifted copy is not a
+  perfect stand-in for a recording with the coordination removed (Section {{SEC:shuffle}}).</li>
+  <li>The chance levels in the programs' settings ("1 in 10,000" and so on) are nominal. Each program tests
+  many bins, and none corrects for that, so some chance calls are built into every recording.</li>
+  <li>Each program's own false-alarm limits kept it from getting worse during the settings search; they are
+  not one standard for all six (Section {{SEC:grading}}).</li>
+  <li>We ran no statistical test between the top programs, and the decoys cap every score.</li>
+  <li>The "clear stripe" rule in Section {{SEC:eye}} is our own. A person may see stripes it misses, or miss some it
+  counts.</li>
+  <li>The real recordings shown are one per group of mice, per drug. That is too few to say how common any
+  of this is.</li>
+  <li>Planted events are always at least {{T.min_sep_min}} minutes apart. That hides a known weakness of the
+  programs that judge chance from nearby time: two coordinated events close together can raise each other's
+  bar, and a single event sits inside its own nearby minute and raises its own bar a little.</li>
+</ul>
+
+<h2 id="refs">Where the ideas come from</h2>
+<ol class="refs">
+  <li><b>Senktide</b> and the neurokinin 3 receptor: Navarro V.M. and others (2009). <i>J Neurosci</i> 29:11859–11866.
+  <a href="https://doi.org/10.1523/JNEUROSCI.1569-09.2009">doi.org/10.1523/JNEUROSCI.1569-09.2009</a>.</li>
+  <li><b>Testing for more coordinated events than chance.</b> CoactDetect and LoCo were designed in this lab;
+  the same idea was published earlier by Grün S., Diesmann M.,
+  Aertsen A. (2002). Unitary events in multiple single-neuron spiking activity. I: Detection and significance,
+  <i>Neural Computation</i> 14:43–80,
+  <a href="https://doi.org/10.1162/089976602753284455">doi.org/10.1162/089976602753284455</a>;
+  II: Nonstationary data, 14:81–119,
+  <a href="https://doi.org/10.1162/089976602753284464">doi.org/10.1162/089976602753284464</a>.</li>
+  <li><b>Judging chance from nearby time.</b> Harrison M.T., Geman S. (2009). A rate and history-preserving
+  resampling algorithm for neural spike trains. <i>Neural Computation</i> 21:1244–1258,
+  <a href="https://doi.org/10.1162/neco.2008.03-08-730">doi.org/10.1162/neco.2008.03-08-730</a>.
+  Amarasingham A., Harrison M.T., Hatsopoulos N.G., Geman S. (2012). Conditional modeling and the jitter
+  method of spike resampling. <i>J Neurophysiol</i> 107:517–531,
+  <a href="https://doi.org/10.1152/jn.00633.2011">doi.org/10.1152/jn.00633.2011</a>.
+  Date A., Bienenstock E., Geman S. (1998). On the temporal resolution of neural activity. Technical report,
+  Division of Applied Mathematics, Brown University,
+  <a href="http://www.dam.brown.edu/people/elie/papers/temp_res.ps">the report (PostScript file)</a>.</li>
+  <li><b>Shifting whole rows of events to make chance copies.</b> An example from spike recordings (small shifts,
+  without wrapping around): Pipa G., Wheeler D.W., Singer W., Nikolić D. (2008). NeuroXidence.
+  <i>J Comput Neurosci</i> 25:64–88,
+  <a href="https://doi.org/10.1007/s10827-007-0065-3">doi.org/10.1007/s10827-007-0065-3</a>.
+  Circular shifts used on calcium imaging by, among others, Mölter J., Avitan L., Goodhill G.J. (2018), <i>BMC Biology</i> 16:143,
+  <a href="https://doi.org/10.1186/s12915-018-0606-4">doi.org/10.1186/s12915-018-0606-4</a>;
+  Bocchio M. and others (2020), <i>Nat Commun</i> 11:4559,
+  <a href="https://doi.org/10.1038/s41467-020-18432-6">doi.org/10.1038/s41467-020-18432-6</a>; and
+  Dard R.F. and others (2022), <i>eLife</i> 11:e78116,
+  <a href="https://doi.org/10.7554/eLife.78116">doi.org/10.7554/eLife.78116</a>.
+  A comparison of several ways to make chance copies of spike recordings: Stella A., Bouss P., Palm G.,
+  Grün S. (2022), <i>eNeuro</i> 9:ENEURO.0505-21.2022,
+  <a href="https://doi.org/10.1523/ENEURO.0505-21.2022">doi.org/10.1523/ENEURO.0505-21.2022</a>.</li>
+  <li><b>binned SCE.</b> Counting neurons with events together against chance copies: Cossart R., Aronov D.,
+  Yuste R. (2003). Attractor dynamics of network UP states in the neocortex. <i>Nature</i> 423:283–288,
+  <a href="https://doi.org/10.1038/nature01614">doi.org/10.1038/nature01614</a>, which used the interval
+  reshuffling of Mao B.Q. and others (2001), <i>Neuron</i> 32:883–898,
+  <a href="https://doi.org/10.1016/S0896-6273(01)00518-9">doi.org/10.1016/S0896-6273(01)00518-9</a>: each
+  neuron's gaps between events are kept and put in a random order, which is not the shuffle of Section
+  {{SEC:shuffle}}. binned SCE is adapted from that rule, with 10-second bins, shifted copies and a bar set per
+  bin. "Synchronous calcium events", the Cossart lab's later name: Malvache A. and others (2016), <i>Science</i> 353:1280–1283,
+  <a href="https://doi.org/10.1126/science.aaf3319">doi.org/10.1126/science.aaf3319</a>.</li>
+  <li><b>locust</b> is adapted from CICADA (Calcium Imaging Complete Automated Data Analysis), from the Cossart
+  lab: Denis J., Dard R., Quiroli E., Cossart R., Picardo M. (2020), software release, Zenodo,
+  <a href="https://doi.org/10.5281/zenodo.10041433">doi.org/10.5281/zenodo.10041433</a>. The coordinated-event
+  code locust was adapted from is in the source history at
+  <a href="https://gitlab.com/cossartlab/cicada">gitlab.com/cossartlab/cicada</a>, not in that release; the
+  package is now continued at
+  <a href="https://gitlab.com/cossartlab/cicada_analysis">gitlab.com/cossartlab/cicada_analysis</a>.
+  locust is fed the lab's own event list, holds each event on for its measured duration, and uses its own bar, so its
+  results are its own; nobody has compared them with CICADA's. The version we adapted found events itself;
+  the current CICADA also accepts lists of event times, and we have not compared with it.</li>
+  <li><b>SPIKE-synch</b> uses the measure its authors call "SPIKE-synchronization": Kreuz T., Mulansky M., Bozanic N. (2015).
+  SPIKY. <i>J Neurophysiol</i> 113:3432–3445,
+  <a href="https://doi.org/10.1152/jn.00848.2014">doi.org/10.1152/jn.00848.2014</a>; built on "event
+  synchronization", Quian Quiroga R., Kreuz T., Grassberger P. (2002), <i>Phys Rev E</i> 66:041904,
+  <a href="https://doi.org/10.1103/PhysRevE.66.041904">doi.org/10.1103/PhysRevE.66.041904</a>. The version
+  followed here: Mulansky M., Kreuz T. (2016), PySpike, <i>SoftwareX</i> 5:183–189,
+  <a href="https://doi.org/10.1016/j.softx.2016.07.006">doi.org/10.1016/j.softx.2016.07.006</a>.
+  Picking out events by putting a threshold on the scores, the idea behind the rule this lab's version uses to
+  turn scores into calls (Kreuz, personal communication, 2026-04-23): Kreuz T., Satuvuori E., Pofahl M., Mulansky M. (2017),
+  <i>New J Phys</i> 19:043028,
+  <a href="https://doi.org/10.1088/1367-2630/aa68c3">doi.org/10.1088/1367-2630/aa68c3</a>; on calcium
+  imaging, Cecchini G. and others (2021), <i>PLoS Comput Biol</i> 17:e1008963,
+  <a href="https://doi.org/10.1371/journal.pcbi.1008963">doi.org/10.1371/journal.pcbi.1008963</a>.
+  The 0.25-second limit used here is applied in this project's own code, because PySpike's option for it
+  has had no effect since its version 0.8.0 wherever an event has neighbors on both sides; this project has
+  proposed a fix, not yet merged
+  (<a href="https://github.com/mariomulansky/PySpike/pull/89">PySpike pull request 89</a>).</li>
+  <li><b>Radar.</b> rate+context resembles a radar detector that compares each point with the average of its
+  neighbors, with one difference: the radar's bar is a multiple of that average, while rate+context adds a
+  fixed amount: Finn H.M., Johnson R.S. (1968). Adaptive detection mode with threshold control as a function
+  of spatially sampled clutter-level estimates. <i>RCA Review</i> 29:414–464,
+  <a href="https://www.worldradiohistory.com/ARCHIVE-RCA/RCA-Review/RCA-Review-1968-09.pdf">scan of the whole
+  issue</a> (the paper starts on page 414). LoCo's "take the higher side" rule is radar's "greatest-of" rule:
+  Hansen V.G. (1973). Constant false alarm rate processing in search radars. <i>IEE Conference Publication</i>
+  105:325–332, <a href="https://www.semanticscholar.org/paper/b9f381e35d0cc467d022f6661a4b477f0ba78d8f">catalogue
+  record</a> (read from a library copy). Its small cost on an even background: Hansen V.G., Sawyers J.H. (1980), <i>IEEE Trans Aerosp Electron Syst</i> 16:115–118,
+  <a href="https://doi.org/10.1109/TAES.1980.308885">doi.org/10.1109/TAES.1980.308885</a>. How nearby targets
+  hide each other: Rohling H. (1983), <i>IEEE Trans Aerosp Electron Syst</i> 19:608–621,
+  <a href="https://doi.org/10.1109/TAES.1983.309350">doi.org/10.1109/TAES.1983.309350</a>; Gandhi P.P.,
+  Kassam S.A. (1988), <i>IEEE Trans Aerosp Electron Syst</i> 24:427–445, <a href="https://doi.org/10.1109/7.7185">doi.org/10.1109/7.7185</a>.</li>
+  <li><b>Simulated test recordings with a known answer</b> are established practice: Mölter J., Avitan L.,
+  Goodhill G.J. (2018), above. The simulator, the grading and the tests in this document were built by
+  this project.</li>
+  <li><b>Counting neurons together, in labs that study these neurons.</b> The slice rule (at least 2 neurons, each
+  peak within 10 seconds of the one before) is defined in Han S.Y., Morris P.G., Kim J.C., Guru S.,
+  Pardo-Navarro M., Yeo S.H., McQuillan H.J., Herbison A.E. (2023). Mechanism of kisspeptin neuron
+  synchronization for pulsatile hormone secretion in male mice. <i>Cell Reports</i> 42:111914,
+  <a href="https://doi.org/10.1016/j.celrep.2022.111914">doi.org/10.1016/j.celrep.2022.111914</a>, and used
+  again in Morris P.G., Herbison A.E. (2023), <i>Endocrinology</i> 164:bqad167,
+  <a href="https://doi.org/10.1210/endocr/bqad167">doi.org/10.1210/endocr/bqad167</a>, and Eddleston T.,
+  Morris P.G., Herbison A.E. (2026), <i>J Neuroendocrinol</i> 38:e70170,
+  <a href="https://doi.org/10.1111/jne.70170">doi.org/10.1111/jne.70170</a>. "Synchronized episodes", in which every recorded
+  neuron had a calcium event, in living mice: Moore A.M., Coolen L.M., Lehman M.N. (2022), <i>PNAS</i> 119:e2117767119,
+  <a href="https://doi.org/10.1073/pnas.2117767119">doi.org/10.1073/pnas.2117767119</a>. The chance
+  comparison in Figure {{NUM:fig_count_published}} is ours; it uses only the averages those papers
+  report.</li>
+</ol>
+
+<h2 id="words">Word list</h2>
+<dl class="words">
+  <dt>Algorithm</dt><dd>A fixed list of steps, written out by a person, that a computer carries out in the
+  same order every time. All six programs in this document are algorithms.</dd>
+  <dt>Analysis window</dt><dd>A stretch of a recording the lab marks for study. Some programs look only inside
+  these windows.</dd>
+  <dt>Bar</dt><dd>The level a program's count must pass before it makes a call.</dd>
+  <dt>Bin</dt><dd>One of the short, equal stretches of time a recording is cut into before counting — 1, 2
+  or 10 seconds long, depending on the program.</dd>
+  <dt>Brief events, long events</dt><dd>The lab's event-finding program keeps short calcium events and much longer
+  ones in two separate lists. Each list is studied on its own.</dd>
+  <dt>Calcium event</dt><dd>An increase followed by a decrease in one neuron's brightness: calcium inside that neuron went
+  up and then cleared again. It is what we observe; what caused the rise is a separate
+  question.</dd>
+  <dt>Call</dt><dd>One moment a program marks as a coordinated event. A call is that program's claim, not a
+  fact about the neurons.</dd>
+  <dt>Clear stripe</dt><dd>Our rule for a coordinated event anyone can see on a raster (Figure {{NUM:fig_eye}}).</dd>
+  <dt>Coordinated event</dt><dd>A moment when several neurons have calcium events at about the same time. Chance alone produces
+  some; the programs ask which ones hold more neurons than chance explains.</dd>
+  <dt>Decoy</dt><dd>A coordinated event put into a simulated recording the same way a planted event is, but left off
+  the answer key.</dd>
+  <dt>False alarm</dt><dd>A call where there was no planted event.</dd>
+  <dt>GCaMP6f</dt><dd>The fluorescent protein these neurons build themselves, from a gene the mice carry. It gives off more
+  light when calcium is around it, which is what makes a rise in calcium visible under the
+  microscope.</dd>
+  <dt>High potassium</dt><dd>A solution that makes healthy neurons produce calcium events, often used at the
+  end of a recording as a check that a quiet neuron could have shown something.</dd>
+  <dt>Miniature synchronization event (mSE)</dt><dd>The name Allan Herbison's lab uses for a call of its
+  interval rule: at least 2 neurons whose event peaks fall within 10 seconds of each other (Section
+  {{SEC:count}}).</dd>
+  <dt>Overall score (F1 score)</dt><dd>One number from 0 to 1 that is high only when a program both finds most
+  planted events and makes few false alarms.</dd>
+  <dt>Planted event</dt><dd>A coordinated event we put into a simulated recording on purpose, at a time we
+  chose.</dd>
+  <dt>Raster</dt><dd>A picture of a recording: one row per neuron, one tick per event.</dd>
+  <dt>Senktide</dt><dd>A drug that switches on the neurokinin 3 receptor, a sensor these neurons carry.</dd>
+  <dt>Shifted copy (a <i>circular shift</i>, in the research literature)</dt><dd>A copy of a recording in
+  which each neuron's whole row of events is slid by that neuron's own random amount, with events pushed off
+  one end coming back at the other. A shift keeps each neuron's own pattern and breaks only the timing
+  between neurons.</dd>
+  <dt>Shuffled copy</dt><dd>A copy in which every event is moved to a new random time. A shuffle changes each
+  neuron's own pattern as well, which is why it gets chance wrong (Section {{SEC:shuffle}}).</dd>
+  <dt>Simulate, simulator</dt><dd>To produce a recording ourselves instead of measuring one, choosing in
+  advance when the neurons act together. The simulator is the program that writes those recordings.</dd>
+  <dt>TTX (tetrodotoxin)</dt><dd>A drug that blocks the fast electrical signals most neurons use.</dd>
+</dl>
+<p style="color:var(--muted);font-size:14px;margin-top:40px">Built {{T.built}}. Every number in the text is filled
+in from the same measurements that drew the figures, except the published papers' own numbers and a few
+counts read off the figures.</p>
+</main>

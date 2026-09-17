@@ -407,6 +407,130 @@ RULES = [
         fixture_bad="the fit reaches 847 mHz where the data reaches 486",
         fixture_good="the fit reaches 847 mHz where the data reach 486, and data is None",
     ),
+    Rule(
+        id="SAP016", level="BLOCK",
+        # THE SENTENCE THAT READS FINE AND EXPLAINS NOTHING. Tony, 2026-09-16, on
+        # "Looking nearby means the bar rises when cells get busy, so chance lineups
+        # in a busy stretch are not called": "it sort of makes sense to a human, and
+        # there's nothing wrong at first, but then 'looking' what do you mean? ...
+        # What bar? how did it rise?"
+        #
+        # The shape is an ACTIVITY STANDING IN FOR AN ACTOR: a gerund phrase is made
+        # the subject of an explanation, so nobody does anything, and the verb after
+        # "means" describes a result whose mechanism is now unstatable. The writer
+        # knows the chain and skips it; the reader gets the conclusion and a fog.
+        #
+        # The repair is always the same and is always available: name who does it,
+        # say what they compute, then say what follows. "CoactDetect draws its chance
+        # copies from the surrounding minute, so a busier stretch gives bigger copy
+        # counts, which raises the count a bin has to beat."
+        #
+        # DELIBERATELY NARROW — the plain-language templates only, where sixth-grade
+        # prose is the requirement and every sentence is meant to survive a reader
+        # with no background. Tree-wide it would fire on working notes, where the
+        # shorthand is between people who share the chain. See docs/sapper_feedback/.
+        # `[^.]` rather than `\w+\s+` between the two halves, because the first draft of
+        # this rule could not fire on the sentence it was written for: the page says
+        # "Looking <b>nearby</b> means", and inline markup does not match \w. A prose rule
+        # scanning HTML has to be able to read through the tags.
+        pattern=r"\b(Looking|Judging|Counting|Shifting|Choosing|Using|Taking|Setting|"
+                r"Measuring|Comparing|Scoring|Picking|Running|Keeping|Drawing)\b"
+                r"[^.]{0,45}?\bmeans\b",
+        include=["tools/plain_*_template.html"], exclude=["tools/sapper.py"],
+        message="AN ACTIVITY IS STANDING IN FOR AN ACTOR, and the mechanism is "
+                "gone with it (Tony, 2026-09-16). \"Looking nearby means the bar "
+                "rises\" — looking by whom? which bar? raised by what? A gerund "
+                "made the subject of an explanation lets the writer skip the chain "
+                "they already know. Name the program, say what it computes, then "
+                "say what follows: \"CoactDetect draws its chance copies from the "
+                "surrounding minute, so a busier stretch gives bigger copy counts, "
+                "which raises the count a bin has to beat.\"",
+        fixture_bad="<p>Looking nearby means the bar rises when cells get busy.</p>",
+        fixture_good="<p>CoactDetect draws its copies from the surrounding minute, so a "
+                     "busier stretch raises the count a bin has to beat.</p>",
+    ),
+    Rule(
+        id="SAP017", level="BLOCK",
+        # BANNED IN PERPETUITY. Tony, 2026-09-16, reading a figure caption that said a
+        # program ran at its stored setting "not at the freshly chosen setting of Figure
+        # 14": *"'freshly chosen' is hereby banned in perpetuity"*.
+        #
+        # The phrase is an adjective doing a noun's work. "Freshly" carries a whiff of
+        # approval — fresh is better than stale — while saying nothing about WHO chose,
+        # FROM WHAT, or WHEN, and here all three mattered: the rounds choose one value per
+        # round, from held-out simulated recordings, and for four of the six detectors the
+        # rounds disagreed with each other. A caption that says "freshly chosen" hides that
+        # there is no single chosen value to speak of.
+        #
+        # It is also the THIRD word tried for the same idea in one review — "shipped" was
+        # jargon, "default" was false, and this was decorative. The pattern behind all three
+        # is reaching for an adjective instead of naming the procedure, so the repair is
+        # always to name it: "the setting each round picked from the recordings it was
+        # allowed to see".
+        #
+        # Tree-wide, because a ban in perpetuity that only covers one document is not one.
+        # Exempt: this file, and the two places whose job is to record what was banned.
+        pattern=r"\bfresh(ly)?[\s-]+(chosen|picked|selected|tuned)\b",
+        include=["**"],
+        exclude=["tools/sapper.py", "docs/sapper_feedback/**", "docs/reviews/**"],
+        message="\"freshly chosen\" is BANNED IN PERPETUITY (Tony, 2026-09-16). The "
+                "adjective flatters the value and hides the procedure: who chose it, "
+                "out of what, and how many times? Name the procedure instead — \"the "
+                "setting each round picked from the recordings it was allowed to see\" "
+                "— which also makes it sayable that different rounds picked "
+                "differently.",
+        fixture_bad="at the freshly chosen setting of Figure 14.",
+        fixture_good="at the setting each round picked from the recordings it could see.",
+    ),
+    Rule(
+        id="SAP018", level="BLOCK",
+        # SAY WHAT WAS OBSERVED, IN ONE VOCABULARY. Tony, 2026-09-16, on "a cell brightened 13.4
+        # times an hour": not ok — "a cell with 13.4 events per hour" is. The house vocabulary for
+        # the plain-language documents:
+        #   * a CALCIUM EVENT is defined once, at the start, as an increase followed by a decrease in
+        #     brightness; after that the text says calcium event, or event — never "brighten",
+        #     "light up", "lit up";
+        #   * a COORDINATED EVENT is a coordinated calcium event;
+        #   * "synchronized" / "synchronous" appear only as another author's term, in quotes.
+        # "Brightness" itself stays legal: the definition needs it once. Paper titles containing
+        # "synchronization" stay legal too, which is why the synchron- half matches only the -ized and
+        # -ous forms, and only when no opening quote precedes them.
+        pattern=r"\bbright(en|ens|ened|ening|enings)\b|\blights? up\b|\blit up\b"
+                r"|(?<![\"“‘'])\b[Ss]ynchroni[sz]ed\b|(?<![\"“‘'])\b[Ss]ynchronous\b",
+        include=["tools/plain_*_template.html", "tools/make_plain_detector_review.py"],
+        exclude=["tools/sapper.py"],
+        message="PLAIN-DOCUMENT VOCABULARY (Tony, 2026-09-16). Say calcium event (one cell) or "
+                "coordinated event (many cells), not \"brighten\" / \"light up\": a calcium event is "
+                "defined once as an increase followed by a decrease in brightness, and after that it "
+                "is an event. Use \"synchronized\" only as another author's term, inside quotes.",
+        fixture_bad="<p>In the most recent paper, a cell brightened 13.4 times an hour.</p>",
+        fixture_good='<p>neurons had 13.4 calcium events per neuron per hour, and "synchronized events".</p>',
+    ),
+    Rule(
+        id="SAP019", level="BLOCK",
+        # NEURONS, NOT CELLS. Tony, 2026-09-16: "we can call brain cells neurons. i think we can replace
+        # cells with neurons throughout." The recordings are of neurons, and a second word for the same
+        # thing makes a reader wonder whether it is a second thing.
+        #
+        # Templates only. The builder's code is full of `cells` as an identifier and a data key, and a
+        # line matcher cannot tell those from drawn text; its display strings were converted with the
+        # tokenizer instead. Two titles keep their words: Lehman et al. 2010's "(KNDy) cells of the
+        # arcuate nucleus", and the journal Cell Reports.
+        #
+        # AND COORDINATED EVENTS, NOT LINEUPS. Tony, same day: spell the idea out once, then say
+        # "coordinated event" — for the ones chance produces too. A coined second noun made a reader
+        # ask whether a lineup and a coordinated event were different things.
+        pattern=r"(?<!\(KNDy\) )\bcells?\b|(?<!\(KNDy\) )\bcell's\b|\bCells?\b(?! Reports)"
+                r"|\b[Ll]ineups?\b|\b[Ll]in(e|es|ed|ing) up\b",
+        include=["tools/plain_*_template.html"],
+        exclude=["tools/sapper.py"],
+        message="PLAIN-DOCUMENT NOUNS (Tony, 2026-09-16): say neuron / neurons, not cell / cells (paper "
+                "titles and the journal Cell Reports excepted); and say coordinated event, not lineup or "
+                "line up — including the coordinated events chance produces.",
+        fixture_bad="<p>Each row is one cell, and each tick is one calcium event.</p>",
+        fixture_good="<p>Each row is one neuron. B/dynorphin (KNDy) cells of the arcuate nucleus. "
+                     "<i>Cell Reports</i></p>",
+    ),
 ]
 
 

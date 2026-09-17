@@ -1,0 +1,106 @@
+<title>The Learned Detectors</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#555; --rule:#e3e3e3; --bg:#ffffff; --soft:#f6f6f4; --warn:#8a5a00; }
+  body { background:var(--bg); color:var(--ink); }
+  main { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 80px;
+         font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  h1 { font-size: 32px; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 23px; margin: 46px 0 10px; padding-top: 14px; border-top: 1px solid var(--rule); }
+  p, li { max-width: 72ch; }
+  .lede { font-size: 19px; color: var(--muted); margin: 0 0 22px; }
+  .box { background: var(--soft); border-radius: 8px; padding: 14px 20px; margin: 18px 0; }
+  .box.hold { background: #fdf6e7; }
+  figure { margin: 22px 0 30px; }
+  figure svg, figure img { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 15px; color: var(--muted); max-width: 80ch; margin-top: 8px; }
+  figcaption b { color: var(--ink); }
+  a { color: #1f5fa8; }
+  table { border-collapse: collapse; font-size: 15px; margin: 12px 0; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+</style>
+<main>
+<h1>The learned detectors</h1>
+<p class="lede">A companion to <i>Finding neurons that act together</i>: four programs that were not written
+as steps, but trained on examples.</p>
+
+<div class="box hold">
+<p><b>Read the main document first.</b> This one is held back deliberately. The six step-by-step programs
+are being reviewed, and the networks were set aside so that review can finish on one kind of program at a
+time. Nothing here has been through that review.</p>
+</div>
+
+<h2 id="w1">1. What a learned detector is</h2>
+<p>The six programs in the main document are <b>algorithms</b>: a person wrote out the steps, and the
+computer carries them out in the same order every time. The four here are not. Each one is a small
+<b>neural network</b> — a stack of simple arithmetic operations, each holding numbers the computer can
+adjust.</p>
+<p>We showed a network many simulated recordings whose answer we knew. After each example the computer
+nudged those numbers so the network's output rose at the planted coordinated events and fell everywhere
+else. That nudging is <b>training</b>. When training ends the numbers are fixed, and the network runs like
+any other program: event times in, calls out. Nobody wrote a rule about 2-second bins or shifted copies;
+whatever the network does instead is in those {{T.tube_params}} numbers.</p>
+
+<h2 id="w2">2. What happens inside one</h2>
+<figure>{{FIG:learned_network}}
+<figcaption><b>Figure 1. What happens inside the tube network.</b> Stages 1 and 2 show 6 seconds around a
+planted coordinated event; stage 3 zooms out to a minute. In stage 4 each learned filter gives weight to
+"right now" (the tall middle part) and subtracts the seconds around it (the shallow dips on each side).
+Its middle part was learned to be between {{T.tube_centre_lo}} and {{T.tube_centre_hi}} seconds wide.
+Stage 6: A is a quiet minute holding one real coordinated event, which the network calls; B is a minute
+inside a busy stretch where nothing was put in, and the score crosses the call level once, so the network
+makes one mistake.</figcaption></figure>
+<p>The design is called <b>tube</b>, from the picture its author had in mind: looking down a dark tube
+while the recording slides past, a coordinated event goes by as a sudden jump. What the network is given
+is the same raster the six algorithms get — no pictures, no neuron identities, just which neuron had a calcium event
+when.</p>
+<p>There are four versions. <b>tube</b> is the one drawn above. <b>tube-guard</b> ignores the share of neurons with events
+immediately around the moment it is scoring, so a real event cannot inflate its own comparison.
+<b>tube-ratio</b> divides by the surrounding share instead of subtracting it. <b>tube-ratio-guard</b>
+does both.</p>
+
+<h2 id="w3">3. How they score</h2>
+<figure>{{FIG:learned_scores}}
+<figcaption><b>Figure 2. Overall scores on simulated recordings no network saw during training.</b> Each
+dot is the average over the {{T.n_tests}} groups of recordings; the line runs from the lowest group to the
+highest. Each network was trained three times from a different random start, so its line covers more
+tries than an algorithm's would. Scored the same way as the six in the main document, against the same
+ceiling of about {{T.ceiling}}.</figcaption></figure>
+<p>On the quiet background tube-guard reached {{T.f1q_tube_guard}} and tube {{T.f1q_tube}}, which sits
+alongside the best of the six algorithms (CoactDetect {{T.f1q_coact}}, LoCo {{T.f1q_loco}}). The two ratio
+versions scored lower: tube-ratio {{T.f1q_tube_ratio}} and tube-ratio-guard
+{{T.f1q_tube_ratio_guard}}.</p>
+<p>The spread between training runs is the thing to notice. The same design, trained three times on the
+same recordings, lands in different places — {{T.f1q_tube}} on average for tube, but its worst and best
+runs sit far apart. An algorithm has no equivalent of that: run it twice and it does the same thing.</p>
+
+<h2 id="w4">4. Busy stretches, where they were taught the wrong lesson</h2>
+<figure>{{FIG:learned_busy}}
+<figcaption><b>Figure 3. Finding real coordinated events inside a busy stretch.</b> A: the share of
+mid-sized planted events each network found outside the busy stretch (black) and inside it (orange); the
+gray tick is what calling at random would find inside. B: false alarms per minute inside the stretch, on a
+scale where each step is ten times more.</figcaption></figure>
+<p>Every one of these networks was trained on recordings in which <b>the busy stretch never held a
+coordinated event</b>. That was a decision about how to build the training set, and the networks learned
+it as a fact about the world. tube finds {{T.out_tube}} of mid-sized events outside a busy stretch and
+{{T.in_tube}} inside it. The two ratio versions find {{T.in_tube_ratio}} and
+{{T.in_tube_ratio_guard}} inside — nothing at all — while making almost no false alarms there, which
+looks like excellent behaviour until you notice they cannot see anything in a busy stretch either
+way.</p>
+<p>This is the clearest difference between the two kinds of program. When an algorithm goes blind in a
+busy stretch, it is because of a rule someone wrote and can read back. When a network does, it is because
+of what it was shown.</p>
+
+<h2 id="w5">5. What would have to happen before these are usable</h2>
+<ul>
+  <li><b>Training sets that contain busy stretches with real events in them.</b> Until then the blindness
+  above is baked in.</li>
+  <li><b>More than one training run per design, reported together.</b> A single run's score is not a
+  property of the design.</li>
+  <li><b>A check on real recordings</b> that does not depend on the simulator, which the main document
+  shows is imperfect in ways that matter.</li>
+  <li><b>An account of what the network responds to.</b> Figure 1 shows the stages, not the reasons; for
+  an algorithm those are the same thing, and here they are not.</li>
+</ul>
+<p style="color:var(--muted);font-size:14px;margin-top:40px">Built {{T.built}}. Numbers are filled in from
+the same measurements that drew the figures. Not reviewed.</p>
+</main>
