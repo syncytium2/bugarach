@@ -660,8 +660,19 @@ Mac seed) but trains at 204.0 s per fit against the Mac's 62.4 s, 3.3 times, une
 3.7 hours at 22 jobs, with one seed per configuration; 6.3 hours with two; 8.9 hours with three.
 At one seed, seed noise alone puts about 0.04 F1 (two standard deviations) between two configurations'
 inner scores; at two, 0.030; at three, 0.024. **Decision 8: three seeds, no 9-hour cutoff.**
-**Next:** Gate 2 (the tool, its test, `--quick`), a check of the home spec's event spacing against the
-240 s context, the pre-launch checks, and launch.
+**Gate 2 done** (`59704eb`): `tools/tune_learned_vs_coact.py` and its test (10 checks, about 25 s),
+`--quick` end to end and resumed with nothing rerun. Storage follows Tony's rule via the Mac unsupervised
+session (configs/, fits/, scores/, selections/, chosen/, all keyed by `learn.checkpoint.config_key`),
+on PR #602's branch merged early at `36dc5ab` (recorded in `meta.json`; merge `main` once #602 lands).
+**Event spacing checked:** the home spec plants events at least 171 s apart (`min_sep_sec`), so a 240 s
+LoCo context spans more than one spacing; `meta.json` records it and a chosen 240 s is flagged in the
+readout. **Pre-launch, checked 2026-09-16 ~22:00:** Windows never sleeps or hibernates on mains, no
+battery, no restart pending, automatic updates off by policy (a managed machine, so IT could still
+force one); WSL 2.7.14 with systemd running, user lingering off, no idle timeout set; `sudo` needs
+Tony's password. **Estimate for the declared draw:** a training floor of 200.7 CPU hours, 9.1 hours at
+22 jobs, before the larger configurations' extra cost per step (18 to 22 of each model's 24 are larger
+than untuned), 1,979 jobs before the outer refits the selections add. **Next:** how to launch detached
+(Tony), then launch into `~/runs/tune-learned-vs-coact/`.
 `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.
