@@ -671,8 +671,20 @@ battery, no restart pending, automatic updates off by policy (a managed machine,
 force one); WSL 2.7.14 with systemd running, user lingering off, no idle timeout set; `sudo` needs
 Tony's password. **Estimate for the declared draw:** a training floor of 200.7 CPU hours, 9.1 hours at
 22 jobs, before the larger configurations' extra cost per step (18 to 22 of each model's 24 are larger
-than untuned), 1,979 jobs before the outer refits the selections add. **Next:** how to launch detached
-(Tony), then launch into `~/runs/tune-learned-vs-coact/`.
+than untuned), 1,979 jobs before the outer refits the selections add.
+**LAUNCHED 2026-09-16 ~22:15** at the commit that adds this paragraph (`meta.json` records its sha), 22
+jobs, budget margin 1.6, into `~/runs/tune-learned-vs-coact/`. Floor finish about 07:30; likely later,
+by the larger configurations' cost. **How it is detached (Tony's choice over a systemd unit, since sudo
+needs his password):** a hidden Windows-side `wsl.exe -d Ubuntu -- bash -l
+~/runs/tune-learned-vs-coact-launch.sh`, started with `Start-Process`. It survives closing VS Code,
+terminals and the session, and that client keeps WSL from idling out; it stops on sign-out or a Windows
+restart. **Idle proof on the real run (Tony's choice):** with every VS Code window and Ubuntu terminal
+closed, `\\wsl$\Ubuntu\home\defazio\runs\tune-learned-vs-coact\progress.json` should show a recent `at`.
+**If the run stopped:** read `run.log` and `progress.json`, then start the launch script the same way
+again; finished jobs are skipped. Say in this line what was lost and why. **When it finishes:** Gate 3.
+Copy `meta.json`, `configs/`, `selections/`, `chosen/` and `results.json` into
+`docs/learned/tuned_vs_coact/`; claim a darkroom folder on `docs/SESSIONS.md` (a PR off `main`) and put
+`fits/` and `scores/` there, not in git.
 `tools/compare_bakeoff_runs.py` needs a test before #596's branch merges.
 ⚠ PR #596 was still open with CI running; if review changes a model's code, results tuned against an
 older commit go stale, which the commit recorded in `meta.json` makes visible.
