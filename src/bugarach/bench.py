@@ -70,7 +70,53 @@ this one **is** revisable: `optim_history/README.md` marks the whole campaign
 PROVISIONAL, and notes that the calibrated settings were adopted on 2026-08-05
 *without* the real-data validation the deck named as the deciding step. These
 numbers are measurements; the decision that rested on them was never checked.
+
+**Re-measured 2026-09-17 on the one folder the current program allows**
+(:data:`MEASURED_ROLE`), and none of the bench's measured values moved outside its
+bootstrap interval. The string above still names where the values were *first*
+taken from; :data:`MEASURED_RECORD` is where they were last *checked*, and
+``tests/test_bench_is_measured_on_the_declared_folder.py`` fails when the two
+stop agreeing.
 """
+
+MEASURED_ROLE = "steps_excluded"
+"""The ``current_export.toml`` role every measured value in this module is checked
+against.
+
+Tony, 2026-09-17: *"you should only work from the steps excluded folder. it is
+terrifying that you might use other data."* The same day it turned out that the
+bench's background shapes had been fitted on a closed ``.mat`` archive and its
+structural values taken from a MATLAB summary, and nothing had noticed, because a
+provenance string is prose. A role name is not prose: ``tools/remeasure_bench.py``
+resolves it, writes the folder it actually read into :data:`MEASURED_RECORD`, and
+the test compares that folder with what the pointer declares today. A new export
+under this role turns the suite red until the bench is re-measured on it.
+
+A role, not a folder name, because folder names are declared in
+``current_export.toml`` and nowhere else in code
+(``tests/test_where_the_data_are.py``).
+"""
+
+MEASURED_STREAM = "fast"
+"""The stream every measured value comes from. The slow stream gets its own bench
+later (goals README, *The current program*, decision 4)."""
+
+MEASURED_RECORD = "docs/learned/bench_measured.json"
+"""Repo-relative path of the last re-measurement: the folder read, each value with
+its 95% bootstrap interval, and whether the constant in this module sits inside it.
+Written by ``tools/remeasure_bench.py``."""
+
+MEASURED_OUTSIDE_INTERVAL: dict[str, str] = {
+    "participation": (
+        "2026-09-17, awaiting Tony. The bench holds 0.18; steps_excluded measures 0.1905 "
+        "(6 median participants over 31.5 median ROIs) with a 95% interval whose lower "
+        "end is 0.1818, which is 6/33: the ratio BENCH_RECORDING's docstring derives "
+        "and then rounds to 0.18. A rounding, not a moved measurement, but moving it "
+        "moves every bench number, so it is not moved here."),
+}
+"""Measured constants knowingly left outside their interval, each with the reason and
+who decides. The test fails for any constant outside its interval that is not listed
+here, and for any entry here whose constant has come back inside."""
 
 MEASURED_RATE_SHAPE = 0.275
 """Gamma shape of the per-ROI background rate in real baseline windows.
@@ -143,6 +189,28 @@ what switching them cost and who decided to spend it.
 
 MEASURED_BURST_BINS = (300.0, 60.0)
 """Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""
+
+
+def measured_constants() -> dict[str, float]:
+    """Every value in this module that claims to be measured off real recordings.
+
+    One table, so ``tools/remeasure_bench.py`` measures exactly these and the test
+    checks exactly these. A measured constant added to the bench and not added
+    here is a constant nobody re-checks, so add it here in the same change.
+
+    ``participation`` is the middle level of ``BENCH_RECORDING["participation"]``,
+    which its docstring derives as median participants over median ROI count.
+    """
+    return {
+        "rate_shape": MEASURED_RATE_SHAPE,
+        **{f"burst_shape_{b:.0f}s": s
+           for b, s in zip(MEASURED_BURST_BINS, MEASURED_BURST_SHAPE)},
+        "regime_quiet_hz": REGIMES["baseline_quiet"]["bg_rate_hz"],
+        "regime_busy_hz": REGIMES["baseline_busy"]["bg_rate_hz"],
+        "n_roi": float(BENCH_RECORDING["n_roi"]),
+        "jitter_sec": BENCH_RECORDING["jitter_sec"],
+        "participation": BENCH_RECORDING["participation"][1],
+    }
 
 
 @dataclass(frozen=True)
