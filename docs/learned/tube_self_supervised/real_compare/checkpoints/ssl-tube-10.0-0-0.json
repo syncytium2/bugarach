@@ -10,7 +10,7 @@
   "max_ratio": 40.0
  },
  "operating_point": {
-  "threshold": 0.9999995989121065,
+  "threshold": 0.999999614952699,
   "merge_gap_frames": 20,
   "dt_sec": 0.1
  },

@@ -1,0 +1,53 @@
+{
+  "tag": "look-2026-09-15-controls",
+  "role": "steps_excluded",
+  "started": "2026-09-16T20:03:00-0400",
+  "limit": null,
+  "quick": false,
+  "n_boot": 1000,
+  "fold_seeds": 10,
+  "n_twins": 20,
+  "n_draws": 20,
+  "n_assess_surrogates": 200,
+  "J_sec": {
+    "fast": [
+      1.6,
+      2.5,
+      5.0,
+      10.0,
+      20.0,
+      40.0
+    ],
+    "slow": [
+      1.4,
+      2.8,
+      5.6,
+      11.2,
+      22.4,
+      44.8
+    ]
+  },
+  "window_sec": 60.0,
+  "cossart_participation": 0.081,
+  "cossart_K": [
+    6,
+    9,
+    12,
+    18,
+    24
+  ],
+  "visibility_floor": 1.0,
+  "exploratory": true,
+  "fast_recordings": 84,
+  "fast_skipped": [],
+  "fast_window_sources": [
+    "baseline region 'baseline', analysis window as the folder states it"
+  ],
+  "slow_recordings": 84,
+  "slow_skipped": [],
+  "slow_window_sources": [
+    "baseline region 'baseline', analysis window as the folder states it"
+  ],
+  "finished": "2026-09-16T20:03:40-0400",
+  "seconds": 38.952409982681274
+}

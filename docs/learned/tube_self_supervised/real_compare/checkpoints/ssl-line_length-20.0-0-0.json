@@ -11,7 +11,7 @@
   "vote_gain": 8.0
  },
  "operating_point": {
-  "threshold": 0.9999999993688793,
+  "threshold": 0.9999999993344211,
   "merge_gap_frames": 20,
   "dt_sec": 0.1
  },

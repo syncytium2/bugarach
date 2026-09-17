@@ -12,7 +12,7 @@
   "orientation": true
  },
  "operating_point": {
-  "threshold": 0.996662513506562,
+  "threshold": 0.9967396965842445,
   "merge_gap_frames": 20,
   "dt_sec": 0.1
  },

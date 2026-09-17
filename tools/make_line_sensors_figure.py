@@ -87,16 +87,23 @@ def main(argv=None):
                  and not k.endswith(("sd",))})
     # An OPEN marker where the divisor is within one standard deviation of zero over the fields.
     # A ratio whose divisor is consistent with no response is not a measurement of discrimination.
+    # The axis stops at YMAX. A ratio above it is drawn ON the edge with its value beside it,
+    # because one open point at 9.8 flattened every other line in the panel against 1.
+    YMAX = 5.6
     for key, m in models:
         r = probe[key]
         colour, mk = INK.get(m, GREY)
         for plant, style, _ in COMPARISONS:
             vals = [r[f"line_{K}"] / r[f"{plant}_{K}"] for K in Ks]
-            bx.plot(Ks, vals, style, color=colour, lw=1.4, zorder=2)
+            bx.plot(Ks, [min(v, YMAX) for v in vals], style, color=colour, lw=1.4, zorder=2)
             for K, v in zip(Ks, vals):
                 shaky = abs(r[f"{plant}_{K}"]) < r.get(f"{plant}_{K}_sd", 0.0)
-                bx.plot([K], [v], mk, ms=5.0, zorder=3, color="white" if shaky else colour,
-                        mec=colour, mew=1.3)
+                bx.plot([K], [min(v, YMAX)], mk, ms=5.0, zorder=3,
+                        color="white" if shaky else colour, mec=colour, mew=1.3, clip_on=False)
+                if v > YMAX:
+                    bx.annotate(f"{v:.1f} (off scale)", (K, YMAX), xytext=(9, -14),
+                                textcoords="offset points", fontsize=7.5, color="0.25")
+    bx.set_ylim(0.8, YMAX)
     bx.axhline(1.0, color="0.55", ls=":", lw=0.9)
     bx.set_xscale("log", base=2)
     bx.set_xticks(Ks, [str(K) for K in Ks])

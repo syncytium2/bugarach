@@ -1,8 +1,12 @@
 {
   "tag": "tube-aggregate-2026-09-15",
-  "started": "2026-09-15T15:11:48-0400",
+  "started": "2026-09-16T19:58:03-0400",
   "limit": null,
   "n_boot": 1000,
+  "banks": [
+    "init",
+    "fitted"
+  ],
   "J_sec": {
     "fast": [
       5.0,
@@ -67,6 +71,20 @@
     "c128_p99",
     "c128_max"
   ],
+  "fitted_models": [
+    "tube",
+    "line"
+  ],
+  "fitted_stream": "fast",
+  "provenance": {
+    "bugarach_version": "0.1.0",
+    "git_commit": "b85b5c980e1a2fe327451b0d5914c7c90c30c36a",
+    "git_dirty": null,
+    "code_version": "0.1.0+gb85b5c9",
+    "python": "3.14.5",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "produced_by": "tools/tube_aggregate_leak.py"
+  },
   "exploratory": true,
-  "seconds": 34.205161809921265
+  "seconds": 296.2865672111511
 }
