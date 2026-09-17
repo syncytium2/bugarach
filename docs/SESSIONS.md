@@ -10,8 +10,19 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 065/opt-sliding-vs-binned — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-sliding-vs-binned/`
-- **Status:** ACTIVE (WSMIP065), claimed before writing. Goal 1 step 2 of
+### 065/opt-every-knob — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-full-search/`
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Goal 1 step 3: the search over every
+  parameter of all six detectors, not only the four declared ones.
+- **Writes:** one new folder only — `search.json`, `search.log` and the figures, from
+  `tools/search_all_settings.py` on branch `opt-every-knob`. **Measure only**: the run changes no
+  operating point. Nothing existing is touched, and the 2026-09-16 folder stays as the record of
+  the declared-settings search.
+- **Released when:** the search finishes and its result is reported.
+
+### 065/opt-sliding-vs-binned — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-sliding-vs-binned/`
+- **Status:** RELEASED 2026-09-17 — the run, its figures and its note are written, and the result
+  is reported in [`HANDOFF-coded-detectors.md`](../HANDOFF-coded-detectors.md) and on the goal page
+  (PR #619). Nothing further writes there. Was: ACTIVE, claimed before writing. Goal 1 step 2 of
   [`HANDOFF-coded-detectors.md`](../HANDOFF-coded-detectors.md): sliding LoCo and CoactDetect
   against their binned ports on real baseline windows, which nothing has compared yet.
 - **Writes:** one new folder only — `sliding_vs_binned.json` (per-recording call counts and how many

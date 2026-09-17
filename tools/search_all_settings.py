@@ -133,8 +133,18 @@ def extend(setting: str, grid: list, low_end: bool):
 
 # ------------------------------------------------------------------ evaluation
 
+#: What a NaN setting is called in a cache key. Binned SCE ships `merge_gap_sec` NaN ("do
+#: not merge"), and NaN never equals itself — so a key holding one matches nothing, INCLUDING
+#: the copy of itself that comes back from a worker process through pickling. That is a cache
+#: that silently never hits, and here it was a KeyError two axes into the search.
+NAN_KEY = "__nan__"
+
+
 def _key(det, params):
-    return det, tuple(sorted(params.items()))
+    """A hashable, NaN-safe key for one (detector, settings) pair."""
+    return det, tuple(sorted(
+        (k, NAN_KEY if isinstance(v, float) and math.isnan(v) else v)
+        for k, v in params.items()))
 
 
 def _job(args):
@@ -143,11 +153,14 @@ def _job(args):
     Returns a compact summary for selection, and the per-recording Scores (or empty-
     recording rates) when ``keep`` — only the held-out stage needs those.
     """
-    det, items, regime, seeds, keep = args
+    det, key_items, param_items, regime, seeds, keep = args
     from bugarach import bench
     from bugarach.score import score_stream
 
-    params = dict(items)
+    # `key_items` is what the cache is keyed by (NaN-safe); `param_items` is what the
+    # detector is actually run with, NaN and all.
+    items = key_items
+    params = dict(param_items)
     if regime == NULL:
         rates = [bench.false_positives_per_hour(det, seeds=(s,), **params) for s in seeds]
         return (det, items, regime), dict(null_per_hour=sum(rates) / len(rates),
@@ -179,9 +192,10 @@ class Evaluator:
         todo = []
         for det, params in points:
             k = _key(det, params)
+            real = tuple(sorted(params.items()))
             for regime in (*REGIMES, NULL):
                 if (k[0], k[1], regime) not in self.cache:
-                    todo.append((det, k[1], regime, self.seeds, False))
+                    todo.append((det, k[1], real, regime, self.seeds, False))
         if not todo:
             return
         t0 = time.time()
@@ -251,6 +265,8 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
             while pending:
                 points = []
                 for d, setting in pending.items():
+                    if not _bench.setting_applies(d, setting, state[d]):
+                        continue
                     for v in space[d][setting]:
                         p = {**state[d], setting: v}
                         if is_valid(d, p):
@@ -258,6 +274,12 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
                 evaluate(points)
                 nxt = {}
                 for d, setting in pending.items():
+                    # A conditional axis under a parent that is switched off is dead weight:
+                    # every value gives the same answer, and reporting it as searched is a
+                    # claim nobody can back. It comes back when its parent moves, because a
+                    # parent that moves reopens the round.
+                    if not _bench.setting_applies(d, setting, state[d]):
+                        continue
                     cands = [(v, summarize(d, {**state[d], setting: v}))
                              for v in space[d][setting]
                              if is_valid(d, {**state[d], setting: v})]
@@ -266,7 +288,13 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
                         continue
                     best_v, best_s = max(ok, key=lambda vs: vs[1]["mean_f1"])
                     grid = space[d][setting]
-                    at_edge = best_v in (min(grid), max(grid)) and len(grid) > 1
+                    # Names have no ends: "peak" is not an edge of ("threshold", "peak"), and
+                    # `extend` has nothing to double. Only a numeric axis can be at an edge
+                    # or grow.
+                    numeric = all(isinstance(v, (int, float)) and not isinstance(v, bool)
+                                  for v in grid)
+                    at_edge = (numeric and len(grid) > 1
+                               and best_v in (min(grid), max(grid)))
                     if at_edge and extensions[(d, setting)] < max_extensions:
                         new = extend(setting, grid, low_end=(best_v == min(grid)))
                         if new is not None:
@@ -279,8 +307,9 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
                     current = summarize(d, state[d])
                     if best_v != state[d][setting] and \
                             best_s["mean_f1"] > current["mean_f1"] + min_gain:
-                        log(f"  round {rnd} {d}.{setting}: {state[d][setting]:g} -> {best_v:g} "
-                            f"(mean F1 {current['mean_f1']:.3f} -> {best_s['mean_f1']:.3f})")
+                        log(f"  round {rnd} {d}.{setting}: {_fmt(state[d][setting])} -> "
+                            f"{_fmt(best_v)} (mean F1 {current['mean_f1']:.3f} -> "
+                            f"{best_s['mean_f1']:.3f})")
                         history[d].append(dict(round=rnd, setting=setting,
                                                old=state[d][setting], new=best_v,
                                                old_f1=current["mean_f1"],
@@ -352,8 +381,14 @@ def choose_settings(detector, *, score, admissible=None, grids=None, start=None,
     start = dict(start if start is not None else
                  {k: shipped_value(detector, k) for k in grids})
     for k, values in grids.items():
+        # NaN is a state, not a value to search: binned SCE ships `merge_gap_sec` NaN,
+        # meaning "do not merge". Adding it to the grid would put a value in there that is
+        # not equal to itself, so `min`, `max` and "is the start still the best" all stop
+        # meaning what they say. The search carries it as the starting point instead.
+        if isinstance(start[k], float) and math.isnan(start[k]):
+            continue
         if start[k] not in values:
-            grids[k] = sorted(values + [start[k]])
+            grids[k] = sorted(values + [start[k]], key=lambda v: (isinstance(v, str), v))
     is_valid = is_valid or (lambda d, p: _bench.settings_are_valid(d, p))
 
     cache: dict = {}
@@ -399,7 +434,12 @@ def choose_settings(detector, *, score, admissible=None, grids=None, start=None,
 
     edges = {}
     for k, values in grown[detector].items():
-        if len(values) > 1 and chosen[k] in (min(values), max(values)):
+        numeric = all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values)
+        if not (numeric and len(values) > 1) or not _bench.setting_applies(detector, k, chosen):
+            continue                      # a name has no ends; a switched-off axis has no choice
+        if isinstance(chosen[k], float) and math.isnan(chosen[k]):
+            continue                      # NaN is the starting state, not a value in the grid
+        if chosen[k] in (min(values), max(values)):
             edges[k] = "low" if chosen[k] == min(values) else "high"
     return ChosenSettings(detector=detector, params=chosen, score=_score(chosen),
                           moves=history[detector], edges=edges, n_scored=len(cache),
@@ -441,10 +481,11 @@ def held_out(pool, candidates, seeds, log=print):
     for d, cands in candidates.items():
         for name, p in cands.items():
             k = _key(d, p)
+            real = tuple(sorted(p.items()))
             for regime in (*REGIMES, NULL):
-                jobs.append((d, k[1], regime, list(seeds), True))
+                jobs.append((d, k[1], real, regime, list(seeds), True))
             for regime in TAIL:
-                jobs.append((d, k[1], regime, tail_seeds, False))
+                jobs.append((d, k[1], real, regime, tail_seeds, False))
     t0 = time.time()
     res = {key: val for key, val in pool.imap_unordered(_job, jobs, chunksize=1)}
     log(f"  held-out: {len(jobs)} evaluations in {time.time() - t0:.0f} s")

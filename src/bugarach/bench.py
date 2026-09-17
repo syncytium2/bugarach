@@ -218,31 +218,72 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
         "bin_width_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
         "context_win_sec": (30.0, 60.0, 120.0, 240.0, 480.0),
         "merge_gap_sec": (0.5, 1.0, 2.0, 4.0, 8.0),
+        "min_rois": (2, 3, 4, 5, 6, 8),
+        "null_context_mode": ("maxlt", "symmetric"),
+        "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.25, 0.5, 1.0, 2.0),
+        "peak_min_distance_sec": (0.0, 0.5, 1.0, 2.0, 5.0),
     },
     "sync": {
         "C_threshold": (0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16),
         "C_min": (0.02, 0.05, 0.1, 0.15, 0.2),
         "tau_max": (0.1, 0.25, 0.5, 1.0, 2.0),
         "max_gap": (0.1, 0.25, 0.5, 1.0, 2.0),
+        "min_n": (2, 3, 4, 5, 6, 8),
+        "tau_mode": ("isi_adaptive", "fixed"),
+        # The profile's own bin width, NOT the recording's frame interval (FOUNDATIONS §6).
+        "dt": (0.05, 0.1, 0.2, 0.5),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.01, 0.02, 0.05, 0.1),
+        "peak_min_distance_sec": (0.0, 0.5, 1.0, 2.0, 5.0),
     },
     "coact": {
         "alpha": (1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6),
         "int_win_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
         "context_win_sec": (20.0, 30.0, 60.0, 120.0, 240.0),
+        "min_rois": (2, 3, 4, 5, 6, 8),
+        "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
+        "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
+        "guard_norm": ("compact", "exposure"),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.25, 0.5, 1.0, 2.0),
+        "peak_min_distance_sec": (0.0, 0.5, 1.0, 2.0, 5.0),
     },
     "rate": {
         "excess_threshold_hz": (3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0),
         "context_win": (20.0, 30.0, 60.0, 120.0, 240.0),
         "rate_win": (0.5, 1.0, 2.0, 3.0, 5.0),
+        # ⚠ Starts at 0.1 s, not 0: at and below 0.001 s this detector returns NO calls at
+        # all, which is a defect rather than a setting —
+        # docs/todo/2026-09-17-rate-context-returns-nothing-at-a-zero-merge-gap.md.
+        "merge_gap_s": (0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 8.0),
+        "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
+        "threshold_mode": ("additive", "multiplicative"),
+        "threshold_alpha": (1.5, 2.0, 3.0, 4.0),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.25, 0.5, 1.0, 2.0),
+        "peak_min_distance_sec": (0.0, 0.5, 1.0, 2.0, 5.0),
     },
     "sce": {
         "threshold_pctile": (70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5),
         "bin_width_sec": (2.0, 5.0, 10.0, 15.0, 20.0, 30.0),
+        # This floor does NOTHING below about 8 here: 2, 4 and 6 give byte-identical output,
+        # because these episodes already recruit more cells than that. It starts binding at
+        # 10 and empties the output at 25, so the grid is where it can bite.
+        "min_rois": (3, 6, 8, 10, 12, 16),
+        # Shipped is NaN, which means "do not merge". NaN is not a grid value: the search
+        # carries it as the starting state, and this grid is what it may move to.
+        "merge_gap_sec": (0.0, 5.0, 10.0, 15.0, 20.0, 30.0),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.25, 0.5, 1.0, 2.0),
+        "peak_min_distance_sec": (0.0, 1.0, 2.0, 5.0, 10.0),
     },
     "cicada": {
         "sce_percentile": (99.9, 99.95, 99.99, 99.995, 99.999, 99.9995, 99.9999),
         "n_synchronous_frames": (1, 2, 3, 5, 10),
         "sce_min_distance_frames": (1, 2, 4, 8, 16),
+        "threshold_scope": ("global", "regional"),
     },
 }
 """The values each detector's settings are searched over — **one declaration, both
@@ -261,11 +302,90 @@ detectors ship at; goal 2 searches the same axes inside each of its outer folds,
 comparison tunes the coded side over the space the shipped values came from. Two copies of
 a grid is how the two machines came to tune different things on 2026-09-16.
 
-⚠ **These are the DECLARED settings, not yet every knob.** Goal 1 step 3 widens this to
-every parameter a detector takes bar the data's own — ``min_rois``, the merge gaps, the
-guards and the categorical axes — as ``HANDOFF-coded-detectors.md`` §3 step 3 inventories
-them. The *shape* is what callers bind to, and it does not change when the axes grow.
+**Every knob the bench can see, since 2026-09-17** (goal 1 step 3). Widened from the four
+declared settings per detector to every parameter a detector takes bar the data's own —
+``min_rois``, the merge gaps, the guards, the peak-mode group and the categorical axes.
+What is deliberately NOT here is in :data:`NOT_SEARCHED`, each with the reason, because a
+parameter left out silently is a parameter nobody knows was left out.
+
+**Each axis was probed before it was declared.** A parameter that cannot move this bench's
+answer is not tunable here, and searching it anyway would report coverage nobody has. Three
+of the probes found more than they were looking for: ``rate``'s merge gap returns no calls
+at all at zero, ``sce``'s participation floor does nothing below about 8, and
+``sync``'s ``synchrony_statistic`` is inert because the generator never puts two events on
+the same timestamp. The first and third are filed as todos.
+
+**Categorical and conditional axes.** Some axes are names rather than numbers
+(``detection_mode``, ``tau_mode``, ``guard_norm``, …): a search must not extend them and an
+"edge" means nothing on them. Others apply only under another setting — the peak-mode pair
+under ``detection_mode="peak"``, ``guard_norm`` under a nonzero guard, ``threshold_alpha``
+under multiplicative thresholding. :func:`setting_applies` is that rule, and a search that
+varies an axis its parent has switched off is measuring nothing.
 """
+
+NOT_SEARCHED: dict[str, dict[str, str]] = {
+    "coact": {
+        "window_mode": "a decision, not a score: sliding is chosen because calls should not "
+                       "move with the grid (forks.md §14), which F1 on this bench cannot see",
+    },
+    "loco": {
+        "window_mode": "as coact",
+    },
+    "sce": {
+        "analysis_mode": "measured inert: 'whole' and 'regional' give identical output on "
+                         "bench recordings, which carry one implicit window",
+        "surrogate_model": "only 'circular_shift' is implemented; 'jitter' raises",
+    },
+    "sync": {
+        "synchrony_statistic": "measured inert: it aggregates ROIs sharing an EXACT "
+                               "timestamp, and the generator draws times continuously so "
+                               "ties never happen. Live on real data, which is frame-"
+                               "quantized — docs/todo/2026-09-17-the-bench-does-not-put-"
+                               "events-on-the-frame-grid.md",
+        "artifact_threshold": "measured inert on the bench at 0.7 and 0.95: the artifact "
+                              "gate never engages on simulated recordings. It guards real "
+                              "data",
+        "artifact_threshold_fraction": "as artifact_threshold",
+        "artifact_threshold_plat90": "as artifact_threshold",
+    },
+    "cicada": {
+        "active_duration_mode": "settled by FOUNDATIONS §7: locust reads the event's own "
+                                "width column. 'If you find yourself asking which duration "
+                                "locust should use, the answer is the column'",
+        "active_duration_sec": "as active_duration_mode",
+    },
+}
+"""Parameters deliberately left out of :data:`FULL_GRIDS`, and why.
+
+Three classes are excluded across every detector and are not repeated here: **the data's
+own** (the events, the time range, the frame interval, column names, seeds, output
+switches); **the region rules** (``solution_delay_sec``, ``baseline_window_max_sec``,
+``treatment_window_sec``, ``region_min_sec``, ``clamp_context_to_region``), because an
+export folder's ``regions.csv`` is used as delivered (FOUNDATIONS §4); and **surrogate
+counts** (``n_surrogates``, ``thr_step_sec``), which trade compute for precision and are set
+by checking that the calls stop changing, not by chasing an F1.
+
+What is listed above is the rest: per detector, the parameter and the measured or decided
+reason it is not searched. A reader who wants to know whether a setting was tuned should be
+able to find it in one of the two places rather than in neither.
+"""
+
+
+def setting_applies(det: str, setting: str, params: dict) -> bool:
+    """Does this setting do anything, given the rest of them?
+
+    A conditional axis under a parent that is switched off is not a setting, it is dead
+    weight: varying it costs a search real evaluations and returns identical answers, and a
+    readout that lists it as searched is wrong. The three conditions here are the detectors'
+    own, read off their code.
+    """
+    if setting in ("peak_prominence", "peak_min_distance_sec"):
+        return params.get("detection_mode") == "peak"
+    if setting == "guard_norm":
+        return float(params.get("guard_sec", 0.0) or 0.0) > 0.0
+    if setting == "threshold_alpha":
+        return params.get("threshold_mode") == "multiplicative"
+    return True
 
 FULL_GRID_PAIRS: dict[str, tuple[str, str]] = {
     "sce": ("threshold_pctile", "bin_width_sec"),
