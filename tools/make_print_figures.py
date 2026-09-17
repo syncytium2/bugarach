@@ -537,11 +537,79 @@ def fig_busy(W):
     return f
 
 
+def fig_real_overview(W, label, stream):
+    """Figures 21-24, four real recordings per drug per kind of event, one from each group of mice.
+
+    For print the program names go once, in a key across the top, and each call row carries only its
+    count, in the program's colour: a name on every row of every recording needed ~90 pt of margin and
+    9 pt rows, which made the figure too tall to share a Word page with its caption."""
+    from make_plain_detector_review import (CODED, COLORS, GROUP_WORDS_PLAIN, INK_T, NAMES, PERIOD_COLORS,
+                                            _plural)
+    from svgfig import MUTED, Figure
+    ov = {k: v for k, v in W["real"]["overview"].items() if v["label"] == label and v["stream"] == stream}
+    order = [k for g in ("DI", "MALE", "ORX", "OVX") for k in ov if ov[k]["group"] == g]
+    lo = min(ov[k]["ext"][0] - ov[k]["anchor"] for k in order)
+    hi = max(ov[k]["ext"][1] - ov[k]["anchor"] for k in order)
+    span = (lo - 30, hi + 30)
+    L, PW = 26, PAGE_W - 26 - 6
+    ROW = 7
+    f = Figure(PAGE_W, 700)
+    # the key: which colour is which program
+    kx, y = L, 9
+    f.text(0, y, "calls:", size=PRINT_MIN_PT, color=MUTED)
+    for d in CODED:
+        f.text(kx, y, "▬", size=LABEL_PT, weight=700, color=COLORS[d])
+        f.text(kx + 11, y, NAMES[d], size=TICK_PT, color=INK_T)
+        kx += 11 + 4.2 * len(NAMES[d]) + 14
+    y = 26
+    for k in order:
+        c = ov[k]
+        f.text(L, y, c["group"], size=LABEL_PT, weight=700)
+        f.text(L + 6.0 * len(c["group"]) + 3, y, f"· {GROUP_WORDS_PLAIN.get(c['group'], '')} · "
+                                                 f"{_plural(c['n_roi'], 'neuron')}", size=TICK_PT, color=MUTED)
+        pl = f.panel(L, y + 3, PW, 10, span, (0, 1), frame=False)
+        for name, r0, r1 in c["regions"]:
+            pl.span(r0 - c["anchor"], r1 - c["anchor"], row_y=y + 4, row_h=5, color=PERIOD_COLORS.get(name, "#9e9e9e"))
+        for w0, w1 in c["windows"]:
+            pl.span(w0 - c["anchor"], w1 - c["anchor"], row_y=y + 10.5, row_h=2.5, color="#333")
+        yy = y + 15
+        lp = f.panel(L, yy, PW, len(CODED) * ROW + 3, span, (0, 1))
+        for i, d in enumerate(CODED):
+            ry = yy + 2 + i * ROW
+            for on, wd in c["calls"][d]:
+                lp.span(on - c["anchor"], on + wd - c["anchor"], row_y=ry, row_h=5, color=COLORS[d], min_px=1.5)
+            f.text(L - 4, ry + 5.5, f"{c['in_window'][d]:,}", size=PRINT_MIN_PT, anchor="end", weight=700,
+                   color=COLORS[d])
+        yy += len(CODED) * ROW + 6
+        rh = float(np.clip(1.3 * c["n_roi"], 36, 56))
+        r = f.panel(L, yy, PW, rh, span, (0, 1))
+        r.raster([np.asarray(v, float) - c["anchor"] for v in c["trains"]], width=0.7)
+        y = yy + rh + 16
+        if k == order[-1]:
+            _time_axis(f, r, offset=0.0, step=600.0 if (span[1] - span[0]) > 2400 else 300.0,
+                       label=f"minutes from the moment {label} arrives")
+            y += 22
+    for line in ((("#bcc3cc", "before the drug"), (PERIOD_COLORS.get(label, "#9e9e9e"), label),
+                  ("#7d7d7d", "high potassium"), ("#333", "the stretches the lab studies")),):
+        kx = L
+        for col, lab in line:
+            f.text(kx, y, "▬", size=LABEL_PT, weight=700, color=col)
+            f.text(kx + 11, y, lab, size=TICK_PT, color=MUTED)
+            kx += 11 + 4.2 * len(lab) + 14
+    f.text(L, y + 12, "The number at the left of each row of calls is that program's calls inside the stretches "
+                      "the lab studies.", size=TICK_PT, color=MUTED)
+    f.h = y + 18
+    return f
+
+
 FIGURES = {"fig_orient": ("fig01_orient", fig_orient), "fig_problem": ("fig02_problem", fig_problem),
            "fig_chance": ("fig03_chance", fig_chance)}
 for _i, _d in enumerate(("rate", "coact", "loco", "sce", "cicada", "sync")):
     FIGURES[f"fig_alg_{_d}"] = (f"fig{10 + _i}_alg_{_d}", lambda W, _d=_d: fig_algorithm(W, _d))
 FIGURES.update({"fig_scores": ("fig18_scores", fig_scores), "fig_busy": ("fig19_busy", fig_busy)})
+for _i, (_n, _l, _s) in enumerate((("real_ttx_brief", "TTX", "fast"), ("real_ttx_long", "TTX", "slow"),
+                                   ("real_senk_brief", "senktide", "fast"), ("real_senk_long", "senktide", "slow"))):
+    FIGURES[_n] = (f"fig{21 + _i}_{_n}", lambda W, _l=_l, _s=_s: fig_real_overview(W, _l, _s))
 
 
 def render(figs: dict, out: Path) -> None:

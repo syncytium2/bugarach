@@ -19,8 +19,9 @@ DOC = D / "detector_review_plain-td.docx"
 #: Only figures not yet swapped: a swapped figure's old bytes are gone from the docx, so a done pair would
 #: stop the run ("found n of m"). Done so far: fig_orient, fig_problem, fig_chance (1-3).
 #: Done so far: 1-3, 10-15 (swapped once, then redrawn shorter from the bytes kept in `swapped_v1/`).
-PAIRS = {"fig_scores.png": "print_figures/fig18_scores.png",
-         "fig_busy.png": "print_figures/fig19_busy.png"}
+#: 18-19 also done.
+PAIRS = {f"{n}.png": f"print_figures/fig{21 + i}_{n}.png"
+         for i, n in enumerate(("real_ttx_brief", "real_ttx_long", "real_senk_brief", "real_senk_long"))}
 
 
 def png_size(b):
