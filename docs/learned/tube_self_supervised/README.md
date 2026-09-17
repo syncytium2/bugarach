@@ -156,7 +156,11 @@ So the page asks, in order (terms are defined in the next section):
 > it ran, and then reported the contamination as a footnote about its own result. That is recorded
 > here rather than repaired, because the run is spent — **do not lean on any real-recording number on
 > this page until the producer has answered**
-> ([the question](../../todo/2026-09-10-four-recordings-carry-an-unflagged-contaminant.md)). The
+> ([the question](../../todo/2026-09-10-four-recordings-carry-an-unflagged-contaminant.md)).
+> ⚠ **That answer will not clear the group comparison**, which has a second and independent problem:
+> group is perfectly confounded with imaging day in this export (48 dates, no date holding more than
+> one group), so a clean answer about the pinned ROIs removes the artifact and leaves the confound
+> untouched. The
 > simulator results — the bake-off, the label-free training scores, the twin check — do not read the
 > export folder and are unaffected. `dataset.current()` now refuses this folder, so nothing reruns by
 > accident.
@@ -571,9 +575,15 @@ by the export folder's group labels:
 | `slow_modulation` | 0.685 | 0.526 | 0.290 | 0.466 |
 
 Every detector calls less co-activity in ORX recordings than in DI ones, by 0.3–0.5 for the detectors
-that find co-activity at all. Whether that is the preparation, the field, or the detectors is not
-addressed here; the ordering is the same for the hand-written references and for a detector with no
-parameters, which is the least interesting of the explanations to rule out. ⚠ Events are pooled over
+that find co-activity at all. The ordering is the same for the hand-written references and for a
+detector with no parameters, which rules out the least interesting explanation — that some model
+learned it — and nothing further. ⛔ **Two separate reasons say this ordering is not biology here,
+and answering one leaves the other standing.** The four contaminated recordings are all DI, the top
+of the ordering. And **group is perfectly confounded with imaging day in this export**: its 84
+recordings span 48 imaging dates and **not one date holds more than one group**, so every group
+difference is also a difference between days — rig state, slice batch, anything that varies between
+sessions. The producer's answer about the pinned ROIs can clear the first and cannot touch the
+second. ⚠ Events are pooled over
 runs on the same recordings and the groups are unbalanced (84 recordings from 44 mice). Four of those
 84 carry the contamination described at the top of this page, and all four are in the DI group, which
 is the group reading highest here.

@@ -83,6 +83,15 @@ whole-recording, and did the census cover all 85 slices. ⚠ An open interface2 
 says the census may be incomplete and ranks `20260629_314` and `20260630_325` beside the known four —
 so *"four recordings"* may itself be the floor rather than the count.
 
+## What the answer will NOT clear
+
+⚠ **The producer's reply can only fix one of the two problems with any group comparison in this
+export.** Group is perfectly confounded with imaging day: 84 recordings, **48 imaging dates, and not
+one date holds more than one group** (measured from `slices.csv`, and independently on the
+slow-co-modulation branch). So every group difference is also a between-day difference, and a clean
+answer about the pinned ROIs removes the artifact while leaving that untouched. Do not let the reply
+read as clearance for a group claim; it is clearance for one of its two confounds.
+
 ## Closes when
 
 Either the producer withdraws or flags them, or Tony rules that they stay unflagged and the decision
