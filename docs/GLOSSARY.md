@@ -354,7 +354,9 @@ Added 2026-09-10, when that plan's review found them used undefined.
   learns the leak instead of coordination. The known one: uniform per-onset
   dither's sub-floor intervals.
 - ***J*** — jitter radius: how far a dither may move one onset, ± seconds. Other
-  surrogates' parameters are matched to it by root-mean-square displacement.
+  surrogates' parameters are matched to it by root-mean-square displacement. For
+  **rigid shift** it is the radius of each ROI's whole-train offset, and some pages call
+  it the displacement or shift radius.
 - **dead time, τ** — the shortest within-ROI interval the producer's event
   extractor can emit; the producer's to declare. ⚠ **Not SPIKE-synch's τ**, which
   is a coincidence window (see **ISI-adaptive**).
@@ -372,7 +374,7 @@ Added 2026-09-10, when that plan's review found them used undefined.
   no regions), and a 60-second cut of it, the unit its statistics are computed on.
   "Analysis window" here is the 60-second cut, not the producer's
   `analysis_start_sec`/`analysis_end_sec` span.
-- **rigid shift** — a surrogate that slides each ROI's **whole** train by one offset
+- **rigid shift** — a surrogate that slides each ROI's **whole** train by its own offset
   drawn in ±*J*, keeping that ROI's rate and intervals while destroying alignment
   between ROIs. Published as whole-train shifting (Pipa, Riehle & Grün 2007; Pipa
   et al. 2008; Louis, Borgelt & Grün 2010). ⚠ The published form **wraps** the
@@ -387,6 +389,33 @@ Added 2026-09-10, when that plan's review found them used undefined.
   CFAR's (see **adaptive-threshold vocabulary**), with the surrogate standing in for
   the reference cells; Dard et al. 2022 set their event threshold the same way, at
   the 99th percentile of a per-cell circular shift.
+
+**Shared-activity vocabulary** — added 2026-09-17 with
+[`learned/slow_comodulation/`](learned/slow_comodulation/README.md).
+
+- **shared modulation (co-modulation)** — every ROI's onset rate rising and falling
+  together without any two onsets being aligned. Distinct from a **coordinated event**,
+  where onsets align within a fraction of a second.
+- **drift** — shared modulation slower than about a minute. Whether it is coordination,
+  background or a producer question is an open decision.
+- **excess coincidence** — onset pairs between distinct ROIs at a given lag, pooled over
+  ROI pairs and recordings, divided by the count expected if each pair fired
+  independently at its observed totals, minus one. 0 means no more than chance at the
+  window's average rates; summed over every lag to the window's length it is zero by
+  construction. The **population cross-correlogram** is excess coincidence against lag
+  (Perkel, Gerstein & Moore 1967).
+- **peak / shoulder / dip** — on that correlogram: a narrow excess at sub-second lags
+  (coordinated events), a broad low excess out to tens of seconds or minutes (shared
+  modulation), and a deficit at a few seconds (on the lab slow stream, after events).
+- **count-variance ratio** — the variance of the population onset count (onsets summed
+  over ROIs in a bin) divided by its variance after a **circular shift**; 1 means no
+  shared structure at that bin width. What a detector that counts lit ROIs responds to.
+- **circular shift** — each ROI's whole train slid by its own lag, wrapping round the
+  window: removes every relation between ROIs at every timescale. The assessor's null.
+- **block control** — the circular shift done inside each fixed block (2 minutes on the
+  slow co-modulation page) separately. Keeps every ROI's count per block, so it keeps
+  shared change in block counts **from any source, events included**. In the code,
+  `surrogates.window_circular_shift`, registered as a known-bad control.
 - **oracle threshold** — the F1-best threshold chosen **on planted truth**: a
   comparison ceiling, never a usable rule. ⚠ Distinct from the parity **oracle**
   under *validation vocabulary*, which is a MATLAB reference output.

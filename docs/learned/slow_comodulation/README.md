@@ -1,218 +1,388 @@
-# Slow co-modulation: what it is, where it sits in time, and what rigid shift does to it
+# Slow co-modulation: the recordings' shared swings in rate, and what rigid shift leaves of them
 
-> **Exploratory, one run, 2026-09-17, baseline windows only.** Nothing here is a milestone.
-> Numbers carry a 95 % interval from resampling **mice**; **measured** marks a number from this run,
-> **argued** marks reasoning nobody has measured. It was written because the label-free detector
-> thread ([goal page](../../goals/unsupervised-learning.md)) cannot settle whether *shared
-> modulation counts as coordination* without first showing what that modulation is.
+> **Why this page exists.** A detector trained without labels to tell a recording from a *rigid
+> shift* of itself is paid for anything the shift destroys. Whether that includes slow, shared
+> changes in rate — and whether it should — is an open decision in the label-free detector thread
+> ([goal page](../../goals/unsupervised-learning.md); the question as posed is item 2 of *What
+> waits on Tony* in the [rigid-shift report](../tube_self_supervised/README.md#what-waits-on-tony),
+> itself not yet re-reviewed). This page shows what that slow structure is and how much of it the
+> recordings hold.
+>
+> **Exploratory, one run, 2026-09-17, baseline windows only; nothing here is a milestone.**
+> **Measured** marks a number from this run and **argued** marks reasoning nobody has measured.
+> Numbers from recordings carry a 95 % interval from resampling mice; synthetic numbers do not.
 
-## The problem
+## What the page finds
 
-Two different things can make many ROIs (regions of interest, one imaged cell each) active in the
-same stretch of a recording.
+![Figure 1. How much the population count swings, as recorded and under each surrogate](fig1_how_much_the_count_swings.png)
 
-- **A coordinated event.** Several ROIs have onsets within a fraction of a second of each other. The
-  onsets themselves are aligned.
-- **Shared slow modulation.** Every ROI's firing *rate* rises and falls together over tens of seconds
-  or minutes. No two onsets need be aligned; there are simply more of them everywhere during a busy
-  stretch.
+**Figure 1. How much more the number of onsets swings than it would if ROIs were independent.**
+For each dataset, the variance of the population onset count — onsets summed over every ROI in a
+bin — divided by the same variance after a circular shift has made the ROIs independent; 1 means
+no shared structure. Bins of 1 s, 10 s and 1 minute. Bars: as recorded; rigid shift at *J* = 20 s;
+the block control; and, on the lab folder only, CoactDetect's episodes removed and then the block
+control (each defined below). Whiskers are 95 % intervals over mice; the benchmark generator has
+none. Log scale.
 
-Both put more ROIs in the same window than independent cells would, so a detector that counts lit
-ROIs sees both. A label-free objective sees both too: it is paid to tell a recording from a
-**surrogate** of itself, and **rigid shift** — each ROI's whole onset train slid by its own random
-offset within ±*J* seconds (*J*, the displacement radius) — was chosen to destroy the first. Whether
-it also destroys the second, and how much of the second the recordings hold, decides what such a
-detector learns. This page measures both.
+Measured, and read off Figure 1:
 
-## How to read the measurement
+- **Lab fast stream: the population count swings about 2× chance at 1 s and about 3× at 1 minute.**
+  Rigid shift at 20 s takes the 1 s swing back to chance (1.98 → 1.09) but removes only about a tenth
+  of the 1-minute excess (3.21 → 3.00; paired difference 0.21 [0.10, 0.34]). With CoactDetect's
+  episodes removed *and* every ROI's timing scrambled within 2-minute blocks, the 1-minute swing is
+  still 2.27× [1.71, 2.87]; per recording the median is 1.28×, above 1 in 69 % of recordings, and
+  dropping the five recordings with the most onset pairs leaves 2.13×. **That is shared change in onset
+  count at the scale of a minute or more that is not CoactDetect's events, and rigid shift leaves
+  almost all of it.** What carries it — a drift in every ROI's rate, or a drift in the rate of small
+  events CoactDetect does not call — and its exact timescale are not resolved within a 17–20 minute
+  window.
+- **Lab slow stream: the swings are mostly the events.** About 9–12× at every bin width, and 1.76× at 1
+  minute once CoactDetect's episodes are removed (1.48× with the block control after; per recording
+  the median is 1.06×). ⚠ A few busy recordings carry this stream: five of them hold 62 % of its onset
+  pairs, and weighted that way the removal took 61 % of onsets (the median recording lost 6.8 %).
+- **The [Dard et al. 2022](#published-lineage) dataset swings most:** about 15× at 1 minute, and
+  still 9.3× [7.7, 11.4] under the block control. Its recordings hold a median of 566 ROIs each, so a
+  small shared change per pair of ROIs becomes a large one in the count.
+- **The benchmark generator the repository trains and scores on carries more slow shared swing than
+  the lab fast stream** — 8.9× at 1 minute, from the whole-field dense block it plants for 5 minutes
+  to catch detectors that respond to rate — and rigid shift leaves that too (8.8×).
 
-For every pair of distinct ROIs, count pairs of onsets separated by a lag *τ*, and divide by the
-count expected if the two ROIs fired independently at their own observed totals. Pool that over all
-pairs and all recordings. The result minus one is the **excess coincidence** at lag *τ*: **0** means
-independent, **1** means onset pairs at that lag are twice as common as chance, **−0.5** half as
-common. As a function of *τ* this is a **population cross-correlogram**, and its shape separates the
-two things above:
+**The decision this sets up, for Tony:** does shared change in rate over minutes belong to
+**coordination**, to the **background** a detector should subtract, or to the **producer** to
+explain? It sharpens the question as the rigid-shift report posed it (shared modulation on
+timescales of 10–45 s): on the lab fast stream most of the shared slow structure sits at a minute or
+longer, where rigid shift at 10–20 s barely touches it; a smaller component in the 10–45 s range is not
+excluded. The rest of the page builds the evidence in this order: the
+two kinds of shared activity, a measurement that tells them apart, what each surrogate does where
+the answer is known, and then the recordings.
 
-- **a coordinated event** makes a **narrow peak** at lags shorter than the event's own spread;
-- **shared modulation** on a timescale *T* makes a **broad shoulder** out to lags of roughly *T*;
-- **modulation drawn separately for each ROI** makes nothing, because nothing moves together.
+## Two ways ROIs are active together
 
-![Figure 1. Three kinds of activity, and their cross-correlograms](fig1_three_kinds.png)
+The recordings are calcium imaging of hippocampal slices. An **ROI** (region of interest) is one
+imaged cell; an **onset** is the half-rise time of one of its calcium transients. The producer
+extracts two event **streams** from every ROI, **fast** and **slow** transients (their peaks trail the
+half-rise by roughly 0.3 s and 2 s; [`export_folder_spec.md`](../../export_folder_spec.md)). An ROI is
+**lit** in a bin if it has an onset there.
 
-**Figure 1. Three kinds of activity, and the shape each one leaves.** Synthetic recordings sized like
-the lab fast stream (32 ROIs, 1,200 s, 0.0097 onsets per ROI per second). The top row is the share of
-ROIs with an onset in each 10 s bin; below it, one recording's raster. The left column plants 32
-events of 7 ROIs each, jittered by 0.3 s. The middle column multiplies every ROI's rate by one
-shared multiplier that wanders on a 20 s timescale. The right column does the same on a 5-minute
-timescale. The bottom panel is the cross-correlogram of each kind, pooled over 24 recordings, with
-two controls that read zero: independent ROIs, and a multiplier drawn separately for each ROI —
-which is how `src/bugarach/simulate.py` draws its background, *"a busy stretch belongs to a cell,
-not to the whole field"*. Its vertical axis is linear between −1 and 1 and logarithmic beyond. The
-parameters are chosen to be visible and are fitted to nothing.
+Two different things put many ROIs in the same stretch of a recording.
 
-Two things in Figure 1, the three kinds, are easy to miss. **Shared modulation creates sub-second
-coincidences too** — the 20 s world's curve starts at about +0.75 at the shortest lags — because a
-busy stretch holds more onsets and some of them land close together by chance. And **the simulator's
-background has no shared modulation at all**, so no benchmark in this repository contains a
-shoulder.
+- **A coordinated event:** several ROIs have onsets within a fraction of a second of each other.
+- **Shared modulation:** every ROI's onset rate rises and falls together, over tens of seconds or
+  longer, without any two onsets being aligned. This page calls shared modulation slower than about a
+  minute **drift**.
+
+Both light more ROIs than independent cells would, so a detector that counts lit ROIs responds to
+both. A **label-free detector** here is a model trained to score a recording above a **surrogate** of
+it: a copy that keeps each ROI's own firing and destroys the relation between ROIs. The surrogate
+this thread chose is **rigid shift**, which slides each ROI's whole onset train by its own random
+offset within ±*J* seconds (*J*, the shift radius). It was chosen to destroy coordinated events.
+What it does to shared modulation decides whether the detector is paid for that too.
+
+## Telling them apart: the cross-correlogram
+
+For every pair of distinct ROIs, count the pairs of onsets separated by a lag *τ*. Sum those counts
+over all ROI pairs and recordings, sum the counts expected if each pair fired independently at its
+own observed totals, and divide. The result minus one is the **excess coincidence** at *τ*: 0 means
+no more onset pairs than chance at the window's average rates, 1 means twice as many. Plotted against
+*τ* this is the population cross-correlogram, normalised by its independence level (Perkel, Gerstein
+& Moore 1967). Pooling weights each recording by its number of onset pairs. **A coordinated event
+makes a narrow peak** at lags shorter than its own spread; **shared modulation on a timescale *T*
+makes a broad shoulder** out to lags of roughly *T*; modulation drawn separately for each ROI makes
+nothing.
+
+![Figure 2. Three kinds of activity, and the correlogram each leaves](fig2_three_kinds.png)
+
+**Figure 2. Three synthetic kinds of activity and the shape each leaves.** Panels A–C: share of the
+32 ROIs lit per 10 s bin over a whole recording. Panels D–F: a 1-minute raster from the same
+recording (D is centred on a planted event). **The planted-event world** (A, D) is the repository's
+own generator ([`generator_spec.json`](../generator_spec.json)) with its dense block and distractors
+switched off: a per-ROI background of 0.0097 onsets per ROI per second over 3,525 s plus 15 planted
+events of 3–7 ROIs. **The 20 s world** (B, E) and **the 5-minute world** (C, F) multiply every ROI's
+background rate by one shared log-normal multiplier that wanders on that timescale, over 1,200 s,
+with no events; their depth is chosen to be visible and fitted to nothing. Panels G and H: the
+cross-correlogram of each world, pooled over 24 recordings, with the generator's background alone for
+comparison, on a log lag axis (G) and a linear one (H). On the log axis a narrow peak and a
+minute-wide shoulder look equally wide; H shows their real durations.
+
+Two things in Figure 2 are easy to miss. **Shared modulation also makes sub-second coincidences**:
+a busy stretch holds more onsets, and some land close together by chance, so the 20 s world starts
+near +0.7 at the shortest lags with no event anywhere. And **the generator's own background reads
+zero** (panel G, dotted): it varies each ROI's rate on its own.
+
+⚠ **The excess is relative to the window's average rate.** Summed over all lags up to the window's
+length it is zero by construction (Brody 1999), so a shoulder at some lags is paid back at others,
+and the method cannot see a change in rate that spans the whole window.
 
 ## What the surrogates remove
 
-![Figure 2. What each surrogate removes, on synthetic recordings](fig2_what_the_surrogates_remove.png)
+![Figure 3. The three surrogates, drawn](fig3_the_surrogates.png)
 
-**Figure 2. What each surrogate does to each kind of activity.** The same three synthetic worlds as
-Figure 1, each against: **rigid shift** at *J* of 1.6 s, 10 s and 20 s, exactly as
-`tools/tube_self_supervised.py` draws it (one offset per ROI, onsets pushed past either end dropped);
-the **circular shift**, each ROI's train moved by its own uniform lag with wrap, which removes every
-relation between ROIs and is the null; and a **2-minute block control**, each ROI circularly shifted
-within every 2-minute block by its own lag, which keeps every ROI's count in every block. Every arm is
+**Figure 3. What each surrogate does to four onset trains** that share one aligned event near
+1m40s. A schematic, drawn from fixed numbers. **Rigid shift** (B) slides each ROI's train by its own
+offset and drops what leaves the window. **Circular shift** (C) slides each train by its own lag and
+wraps it round the window; it removes every relation between ROIs and is the null, the reference
+that reads zero. **The block control** (D) does the circular shift inside each 2-minute block
+separately, so every ROI keeps its onset count in every block.
+
+![Figure 4. What each surrogate removes, on synthetic recordings](fig4_what_the_surrogates_remove.png)
+
+**Figure 4. Each synthetic world against every surrogate:** the planted-event world (A), the 20 s
+world (B), the 5-minute world (C) and the benchmark generator with its whole spec (D). Every arm is
 analysed on the same window, trimmed by 20 s at each end so rigid shift's dropped onsets never enter.
-The events panel's vertical axis is linear between −0.5 and 0.5 and logarithmic beyond.
+Curves are pooled over 24 recordings per world and 8 surrogate draws per recording.
 
-Read Figure 2, what each surrogate removes, for three facts:
+Measured, from Figure 4:
 
-- **Rigid shift does not delete an event's coincidences; it spreads them.** Two ROIs with independent
-  offsets in ±*J* end up displaced relative to each other by up to 2*J*, so the peak flattens into a
-  low plateau reaching to about 2*J*. The planted-event world at *J* = 20 s sits near +0.1 out to
-  about 30 s where it was zero.
-- **Rigid shift removes modulation only on timescales shorter than about *J*.** In the 20 s world the
-  shortest-lag excess falls from about +0.75 to about +0.5 at *J* = 10 s and to about +0.35 at 20 s;
-  at *J* = 1.6 s nothing changes.
-- **Drift slower than *J* passes through untouched.** In the 5-minute world every rigid-shift curve
-  lies on the recorded curve. Only the block control and the circular shift move it, and the block
-  control keeps most of it, because a 2-minute count still carries a 5-minute drift.
-
-⚠ The block control is not a clean "slower than 2 minutes only" filter: in the 20 s world it keeps
-about +0.15 of the recorded +0.75. What it separates reliably is a curve that *falls* across tens of
-seconds (modulation near 20 s) from one that stays *flat* out to a minute (drift over minutes).
+- **Rigid shift spreads an event's coincidences rather than deleting them.** Two ROIs with
+  independent offsets in ±*J* end up up to 2*J* apart, so the peak flattens into a low plateau
+  reaching to about 2*J* (A).
+- **It removes shared modulation only on timescales shorter than about *J*.** In the 20 s world the
+  shortest-lag excess falls from about +0.7 to about +0.5 at *J* = 10 s and +0.35 at *J* = 20 s,
+  and barely moves at 1.6 s (B). In the 5-minute world every rigid-shift curve lies on the recorded
+  one (C).
+- **The block control keeps any shared change in 2-minute counts, whatever made it.** It keeps most
+  of the 5-minute drift (C), part of the 20 s modulation (B), and would keep events too: a block
+  holding a large event holds an extra onset from each member. So "survives the block control" means
+  "shared change in 2-minute counts", not "drift", unless events are removed first.
+- **The benchmark generator has a shoulder of about +1.0 out to a minute** (D), from the 5-minute
+  whole-field dense block its spec plants (`hot_window` 1,200–1,500 s at 0.06 onsets per ROI per
+  second), and no rigid shift touches it.
 
 ## What the recordings hold
 
-![Figure 3. The cross-correlogram of the recordings](fig3_recordings.png)
+**Every dataset has a sub-second peak. The lab fast stream and the Dard et al. dataset also keep
+excess out to lags of a minute and more, which rigid shift at 1.6–20 s leaves in place; on the lab
+slow stream most of what looks like a shoulder goes with the events.**
 
-**Figure 3. The recordings.** Baseline windows of the lab export (`steps_excluded`): the fast and
-slow streams of the same 84 recordings from 44 mice, 26.9 hours analysed. The Cossart folder: 59
-recordings from 32 mice, 22.7 hours, a median of 566 ROIs each, read whole because it declares no
-regions. Top row: full range. Bottom row: the same curves zoomed to ±0.7. Shading is the 95 %
-interval over mice for the recorded curve and for **CoactDetect episodes removed** — the recording
-with every onset inside an episode of the CoactDetect detector deleted (lab folder only). Eight
-surrogate draws per recording per arm.
+![Figure 5. The cross-correlograms of the recordings](fig5_recordings.png)
 
-Measured, lag bins as labelled; brackets are the 95 % interval over mice.
+**Figure 5. The recordings.** The lab export with field steps excluded — the approved export with
+every onset within ±2 s of a whole-field brightness step removed
+([`MILESTONES.md`](../../MILESTONES.md)) — read over each recording's declared baseline: the fast
+(A, D) and slow (B, E) streams of the same 84 recordings from 44 mice, 17–20 minutes each, 26.9
+hours per stream after trimming. The Dard et al. 2022 dataset (C, F): 59 recordings from 32 mice,
+read whole from the first onset of any ROI, 19–25 minutes each, 22.4 hours, a median of 566 ROIs.
+Top row full range, bottom row zoomed (the zoom differs per column). **CoactDetect episodes removed**
+is the recording with every onset inside an episode of CoactDetect deleted: CoactDetect is the
+repository's detector that flags bins where three or more distinct ROIs have onsets more often than a
+circular shift within a rolling context window allows, and an episode is a run of flagged bins
+(fast: 2 s bins, 60 s context, α = 10⁻⁴, as `bench.OPERATING_POINTS`; slow: 1 s bins, 120 s context,
+α = 10⁻⁶, the slow point `coact_detect`'s docstring states, since no retuned slow point exists).
+Shading is the 95 % interval over mice.
 
-| | shortest lags, 0–0.25 s | 2.7–3.7 s | 3.7–5.2 s | 20–28 s | 56–78 s |
-|---|---|---|---|---|---|
-| **lab fast**, as recorded | +2.06 [+1.27, +3.41] | +0.15 [+0.10, +0.25] | +0.09 [+0.04, +0.16] | +0.07 [+0.04, +0.13] | +0.05 [+0.03, +0.09] |
-| lab fast, CoactDetect episodes removed | +0.95 [+0.58, +1.40] | +0.10 [+0.05, +0.16] | +0.07 [+0.03, +0.13] | +0.07 [+0.03, +0.12] | +0.06 [+0.03, +0.09] |
-| lab fast, 2-minute block control | +0.08 [+0.05, +0.15] | +0.08 [+0.04, +0.14] | +0.08 [+0.04, +0.14] | +0.07 [+0.04, +0.13] | +0.06 [+0.03, +0.09] |
-| lab fast, rigid shift *J* 20 s | +0.11 [+0.06, +0.18] | +0.10 [+0.06, +0.18] | +0.10 [+0.06, +0.17] | +0.08 [+0.05, +0.14] | +0.05 [+0.03, +0.09] |
-| **lab slow**, as recorded | +21.94 [+17.33, +27.37] | −0.55 [−0.65, −0.33] | −0.53 [−0.64, −0.29] | +0.15 [+0.06, +0.27] | +0.16 [+0.10, +0.28] |
-| lab slow, CoactDetect episodes removed | +3.20 [+1.78, +4.95] | +0.03 [−0.04, +0.12] | +0.10 [+0.02, +0.23] | +0.09 [+0.03, +0.19] | +0.05 [+0.01, +0.11] |
-| lab slow, 2-minute block control | +0.25 [+0.16, +0.42] | +0.24 [+0.16, +0.40] | +0.23 [+0.16, +0.39] | +0.21 [+0.14, +0.35] | +0.16 [+0.10, +0.27] |
-| **Cossart**, as recorded | +0.83 [+0.68, +1.04] | −0.01 [−0.04, +0.03] | −0.05 [−0.08, −0.01] | +0.01 [+0.00, +0.02] | +0.01 [+0.01, +0.02] |
-| Cossart, 2-minute block control | +0.02 [+0.01, +0.02] | +0.02 [+0.01, +0.02] | +0.02 [+0.01, +0.02] | +0.02 [+0.01, +0.02] | +0.01 [+0.01, +0.02] |
+Measured, from Figure 5 and `summary.json`:
 
-**Every folder has both a peak and a shoulder** (measured).
+- **Lab fast.** The peak is +1.91 [+1.17, +3.13] at lags under 0.3 s and gone by about 1 s. A trough
+  follows at 1–2.7 s (+0.03 to +0.04, below the block control, and negative with episodes removed), then
+  a bump of +0.15 [+0.09, +0.24] near 3 s. From about 5 s out to a minute the shoulder is flat at +0.06
+  to +0.08 and still +0.05 at 56–78 s; removing CoactDetect's episodes and then applying the block
+  control leaves it at about +0.07. Removal halves the peak (+1.91 → +0.88); what remains is
+  coincidence CoactDetect does not call. ⚠ Two of the arms cannot rule drift in or out on their own:
+  the block control makes a flat excess from events alone (Figure 4, panel A), and rigid shift adds a
+  plateau spread from the peak, so at 5–20 s the recording sits slightly *below* its own rigid shift.
+  The evidence that can fail is that the recorded curve stays above zero at lags of a minute and more,
+  which events at a steady rate cannot produce, and the count variance of Figure 1 after events are
+  removed.
+- **Lab slow.** The peak is +20.8 [+16.5, +25.8]. Onset pairs 2.7–5.4 s apart are about half as
+  common as chance (−0.56 and −0.51), and that dip disappears with CoactDetect's episodes removed
+  (+0.03, +0.08). The shoulder beyond 20 s, +0.10 to +0.16 as recorded, drops to about +0.05 to +0.09
+  with removal. Rigid shift fills the dip in (+0.35 to +0.57 at *J* of 10 and 20 s), so a
+  real-against-shifted contrast on this stream is paid for what follows an event as well as for the
+  event. Without the five recordings holding the most onset pairs the dip is shallower (−0.39,
+  −0.31).
+- **Dard et al. dataset.** The peak is +0.78 [+0.64, +0.96] and takes about 3 s to fall; there is a
+  small dip near 5 s (−0.05 [−0.09, −0.01]) and a shoulder of about +0.01 per pair out to 5 minutes,
+  which the block control keeps. Per pair that is small; across 566 ROIs it is the 9× count swing of
+  Figure 1.
 
-- **The peak** is what coordinated events look like. On the lab fast stream it is gone by about 1 s;
-  on Cossart it takes about 3 s to fall to zero. Removing CoactDetect's episodes halves it on fast
-  (+2.06 to +0.95) and cuts it by six-sevenths on slow (+21.94 to +3.20); what remains is
-  coincidence CoactDetect does not call.
-- **The shoulder** on the lab fast stream is small per pair, +0.05 to +0.09, but **flat from about
-  3 s out to a minute**, and it fades only over several minutes. It is **unchanged by removing
-  CoactDetect's episodes, unchanged by rigid shift at any *J* tried, and kept by the 2-minute block
-  control**. In Figure 2's terms that is the drift world, not the 20 s world.
-- **Because it is so wide, the shoulder holds most of the excess.** Of all excess onset pairs at
-  lags up to 5 minutes, the share at lags beyond 1 s is **0.91 on lab fast**, 0.71 on lab slow and
-  0.86 on Cossart (measured; `summary.json`, `peak_and_shoulder`).
-- **Cossart's shoulder is +0.01 to +0.02 per pair**, which looks negligible and is not: every ROI
-  pairs with 565 others, so a per-pair excess that small still moves the count of lit ROIs visibly
-  (argued; this page measures pairs, not the count's variance).
+**Why the slow stream dips — three readings, none tested.** A large synchronous event puts many ROIs
+into a transient at once.
 
-**The lab slow stream has a dip.** Onset pairs 2.7–5.2 s apart are about half as common as chance
-(−0.55 and −0.53), and the dip disappears when CoactDetect's episodes are removed (+0.03 and +0.10).
-The argued reading: after a large synchronous event, its members sit inside their own refractory
-interval — the same-ROI floor the goal page records as 2.80–3.20 s on the slow stream — so fewer of
-them can fire again in the next few seconds. Rigid shift fills the dip in (+0.36 to +0.57 at *J* of
-10 and 20 s in `summary.json`), so a real-against-shifted contrast on the slow stream is paid for
-the event's aftermath as well as the event.
+- **Extractor dead time.** The shortest interval the event extractor emits between two onsets of one
+  ROI on this folder is 2.80 s, measured by a review role and not reproduced
+  ([goal page](../../goals/unsupervised-learning.md)); the source attributes it to the extractor, which
+  cannot split one transient into two onsets. An event's members then contribute few onsets for the
+  next few seconds. The dip reaches 5.4 s, past that floor, so this cannot be the whole account.
+- **A quiet interval after an event in the tissue**, which would remove onsets from every ROI, members
+  or not.
+- **Detection suppressed after a large transient**, a property of the extraction again.
 
-## By group
+All three need the event, so removing episodes cannot tell them apart. Splitting the lagged pairs by
+whether their first ROI took part in the event would: dead time removes pairs only from members, a
+network quiet interval from everyone. The Dard et al. dataset, with a different extractor, has a small
+dip at the same lags (−0.05). Which reading holds is a question for the producer.
 
-![Figure 4. The lab streams by group](fig4_by_group.png)
+<details>
+<summary>Numbers behind Figures 1 and 5</summary>
 
-**Figure 4. The lab streams split by group.** DI, MALE, ORX and OVX: 17, 22, 25 and 20 recordings
-from 10, 12, 12 and 10 mice. Top row: as recorded, zoomed to the shoulder. Bottom row: the 2-minute
-block control. Shading is the 95 % interval over mice within the group.
+Population count variance ÷ that of independent ROIs, [95 % interval over mice]:
 
-On the fast stream the shoulder is present in all four groups at a similar height. On the slow
-stream OVX's block-control curve sits lowest. ⚠ **Group cannot be separated from imaging day** on
-this export — no imaging date holds more than one group ([`docs/INDEX.md`](../../INDEX.md), the
-ROI-swap row; [recording identity](../recording_identity.md)) — and the intervals overlap, so this figure
-shows that the pooled curve is not one group's; it does not show a group difference.
+| dataset, arm | 1 s bins | 10 s bins | 1-minute bins |
+|---|---|---|---|
+| lab fast, as recorded | 1.98 [1.59, 2.48] | 2.69 [2.10, 3.33] | 3.21 [2.47, 3.97] |
+| lab fast, rigid shift *J* 20 s | 1.09 [1.06, 1.13] | 1.88 [1.57, 2.21] | 3.00 [2.29, 3.74] |
+| lab fast, block control | 1.07 [1.04, 1.10] | 1.69 [1.43, 1.98] | 2.75 [2.08, 3.46] |
+| lab fast, episodes removed, then block control | 0.96 [0.90, 1.00] | 1.41 [1.18, 1.68] | 2.27 [1.71, 2.87] |
+| lab slow, as recorded | 9.06 [5.58, 12.22] | 11.76 [7.74, 15.29] | 11.37 [7.50, 14.57] |
+| lab slow, rigid shift *J* 20 s | 1.24 [1.15, 1.32] | 3.88 [2.85, 4.72] | 9.86 [6.47, 12.71] |
+| lab slow, episodes removed | 0.86 [0.79, 0.92] | 1.28 [1.07, 1.48] | 1.76 [1.40, 2.14] |
+| lab slow, episodes removed, then block control | 0.59 [0.49, 0.73] | 0.79 [0.68, 0.91] | 1.48 [1.19, 1.79] |
+| Dard et al., as recorded | 9.69 [8.00, 11.35] | 15.54 [12.33, 18.85] | 15.23 [12.50, 18.28] |
+| Dard et al., rigid shift *J* 20 s | 1.42 [1.33, 1.52] | 4.49 [3.80, 5.27] | 12.38 [10.18, 14.77] |
+| Dard et al., block control | 1.17 [1.13, 1.21] | 2.54 [2.23, 2.92] | 9.33 [7.68, 11.36] |
+| benchmark generator, as recorded (no interval) | 1.67 | 4.52 | 8.94 |
+
+Removing onsets inside episodes can take a variance below 1: it empties the busiest bins. Removal took
+a median of 2.5 % of each recording's onsets on fast and 6.8 % on slow; weighted as the pooled curves
+weight recordings, 7.2 % on fast and 61 % on slow.
+
+Paired differences in the 1-minute count-variance ratio, the same mice resampled for both arms:
+
+| dataset | as recorded − rigid shift *J* 20 s | as recorded − episodes removed, then block control |
+|---|---|---|
+| lab fast | 0.21 [0.10, 0.34] | 0.94 [0.55, 1.37] |
+| lab slow | 1.50 [0.56, 2.41] | 9.89 [6.13, 12.84] |
+| Dard et al. | 2.85 [1.77, 3.95] | — |
+
+Per recording, 1-minute count-variance ratio, median [quartiles] and share of recordings above 1:
+
+| dataset | as recorded | episodes removed, then block control |
+|---|---|---|
+| lab fast | 1.52 [1.11, 2.70], 83 % | 1.28 [0.87, 1.85], 69 % |
+| lab slow | 1.92 [1.09, 7.03], 80 % | 1.06 [0.81, 1.42], 55 % |
+| Dard et al. | 13.34 [8.28, 19.00], 100 % | block control alone: 7.72 [4.72, 12.03], 100 % |
+
+The five recordings with the most onset pairs hold 47 % of them on fast, 62 % on slow and 28 % on the
+Dard et al. dataset; without them the 1-minute ratio after removal and block control is 2.13 on fast and
+1.34 on slow.
+</details>
 
 ## What this changes for the label-free thread
 
-Argued, from the figures above; nothing here was run against a trained model.
+Argued from the figures above; nothing here was run against a trained model.
 
-- **The decision is narrower than it was framed.** The goal page asks whether *shared modulation on
-  timescales of 10–45 s* counts as coordination. On the lab fast stream — the stream every label-free
-  model was trained on — the shared structure outside the peak is **drift over minutes**, and rigid
-  shift at 1.6–20 s does not remove it. So on that stream it is not what those objectives were paid
-  for. What rigid shift does change there is the peak, which it spreads into a plateau.
-- **On the lab slow stream, the contrast rewards three things at once**: the peak, the dip after it,
-  and the part of the shoulder faster than *J*. A classifier that separates slow recordings from
-  their rigid shift is not evidence about any one of them.
-- **A small displacement is not a modulation control.** Rigid shift at *J* = 1.6 s leaves drift
-  intact and spreads the event peak (lab fast +2.06 → +0.45 at the shortest lags), so a scorer that
-  separates real from a 1.6 s shift may be reading events. The session running the rigid-shift report
-  confirmed this independently on synthetic recordings, 2026-09-17, and is carrying it in that
-  report.
-- **Removing a local background removes drift.** `count_excess`, the zero-parameter baseline in the
-  rigid-shift report, subtracts a 30 s moving mean from the share of lit ROIs, which cancels drift
-  over minutes by construction. That may be part of why it holds up against trained models; it is
-  not tested here.
-- **The benchmark has never contained any of this.** The simulator draws modulation per ROI, so no
-  supervised model here has seen a shoulder or a dip.
+- **On the lab fast stream, rigid shift at 1.6–20 s leaves almost all of the slow shared structure in
+  place.** What differs between a fast recording and its rigid shift is mainly the event peak, spread
+  into a plateau, plus about a tenth of the 1-minute count excess. So for the label-free models
+  trained on real recordings, change at a minute or more was at most a small part of the contrast; a
+  10–45 s component, which rigid shift at 10–20 s would remove, is not excluded and not bounded here.
+- **On the lab slow stream the contrast rewards the events and their aftermath at once**, the peak
+  and the dip after it.
+- **The label-free models trained on simulated recordings saw a large shared block** that rigid shift
+  also leaves in place (Figure 4, panel D), so neither arm's contrast contained the slow structure.
+- **A small displacement is not a modulation control.** Rigid shift at *J* = 1.6 s leaves drift intact
+  and spreads the event peak (lab fast +1.91 → +0.44 at the shortest lags). A separate check, prompted
+  by the same argument, measured it on synthetic recordings: a 10 s scorer tells an events-only
+  recording from its 1.6 s shift at 0.669 and a shared-modulation-only one at 0.522
+  (`tools/check_small_j_mixes_events.py` at `65285fa`, results in
+  `docs/learned/tube_self_supervised/small_j_check/results.json` at `ef9fdc3`, both on the unmerged
+  branch `unsup/rigid-shift-report-residuals`; its synthetic recordings use a sinusoidal modulation, not
+  this page's).
+- **Removing a local background removes drift.** `count_excess`, a no-training baseline on that same
+  unmerged branch, subtracts a 30 s moving mean from the share of lit ROIs, which cancels change
+  slower than 30 s by construction. Whether that explains its scores there — which come from
+  simulated folds — is not tested here.
 
-**What this page cannot say is where the drift comes from.** Shared change in onset rate over minutes
-could be the tissue's network state, or it could enter through the measurement — a focus or
-slice-position change, bleaching, or a baseline fluorescence estimate that moves with them and moves
-every ROI's event threshold together. Those are facts about the preparation and the producer's
-extraction, not this repository's to decide; FOUNDATIONS §9 sends such questions to the lab. The
-decision it sets up is Tony's: **does shared drift over minutes belong to coordination, to the
-background a detector should subtract, or to the producer to explain?**
+## The decision this sets up
+
+**Does shared change in onset rate over minutes belong to coordination, to the background a detector
+should subtract, or to the producer to explain?**
+
+The page cannot say where the drift comes from, and that is what makes the choice real. On the slices
+it could be a slow change in network state, or it could enter through the measurement — a focus or
+slice-position change, bleaching, or a baseline fluorescence estimate that drifts and moves every ROI's
+event threshold together. In the Dard et al. dataset, recorded in awake pups, the authors tie the
+activity to the animals' own movement, which is a published candidate. Facts about the preparation
+are not this repository's to derive: FOUNDATIONS §9 defers them to the global `syncytium2/foundations`
+FOUNDATIONS §15, and questions about extraction are a conversation with the producer. ⚠ No record in
+this tree says anyone has asked the producer, or the Dard et al. authors, about shared slow drift.
 
 ## What this does not settle
 
-- **Pairs, not counts.** Excess coincidence is per pair of ROIs. What a count-based detector sees
-  scales with the number of ROIs; this page does not measure the count's variance.
-- **The 1 s cut** between peak and shoulder, and the **5-minute longest lag**, are choices; the share
-  of excess beyond 1 s grows with the longest lag counted.
-- **CoactDetect removal is partial by construction.** CoactDetect fires only where at least three ROIs
-  coincide, so two-ROI coincidences and events too weak for its test stay; and every onset inside an
-  episode goes, member or not. On lab fast that removed a median of 2.5 % of each recording's onsets
-  (mean 10 %); on lab slow, a median of 7.1 % (mean 22 %). Slow uses the explore_sce viewer's slow
-  settings (1 s bins, 120 s context, α = 10⁻⁶), because no retuned slow operating point exists.
-  Cossart has no removal arm.
-- **The block control keeps some faster structure** (Figure 2, the 20 s world), so "kept by the
-  block control" means "mostly slower than tens of seconds", not "only slower than 2 minutes".
-- **20 minutes of baseline per recording** bounds the slowest drift this can see; a trend across the
-  whole window reads as a shoulder that has not yet fallen at 5 minutes.
-- **Eight surrogate draws** per recording per arm. The surrogate arms' curves are means over draws;
-  their intervals are over mice and include draw noise.
-- **Baseline only, by rule.** Nothing here says what treatment does to either the peak or the drift.
+- **The excess is relative to each window's own average rate**, so structure spanning a whole
+  recording is invisible, and a shoulder here is paid back at longer lags.
+- **CoactDetect removal both misses and over-removes.** It needs three or more ROIs, so two-ROI
+  coincidences and events too weak for its test stay, and it removes every onset inside an episode,
+  member or not. The emptied episodes are gaps shared by every ROI, a small shared modulation of their
+  own: weighted as the pooled curves weight recordings they cover 1.3 % of the time on fast and 4.4 % on
+  slow.
+- **The timescale and the carrier of the slow structure are not resolved.** Shared modulation on a 1-
+  or 2-minute timescale, or coordinated events whose rate drifts over minutes, would also leave excess
+  at a minute's lag that the block control keeps; how late the curve fades is set as much by the
+  window's own average as by the drift.
+- **The synthetic modulation is deep for visibility**: the 20 s and 5-minute worlds reach about +0.4 to
+  +0.7 excess, five to ten times the lab fast shoulder.
+- **The block control keeps shared 2-minute counts from any source**, events included; the lab
+  claims rest on the arm that removes episodes first.
+- **The count variance** uses full bins only and whole-window means, the same caveat as the excess.
+- **Eight surrogate draws** per recording per arm; surrogate curves pool counts over draws, and their
+  intervals over mice include draw noise.
+- **The two folders differ in more than size.** The Dard et al. dataset is in vivo, in pups, and its
+  onset is the first frame of an inferred active run, not a half-rise
+  ([`tools/import_dandi.py`](../../../tools/import_dandi.py)), so compare shapes across folders, not lags
+  to the second.
+- **The field-step exclusion leaves a 4 s gap across all ROIs** where a step fell inside a baseline
+  window: three recordings, about 12 s in 27 hours.
+- **Baseline only, by rule.** Nothing here says what treatment does to the peak or the drift.
+- **Group** is shown in Figure 6, below; pooled numbers above are not admissible on their own
+  (FOUNDATIONS §9).
+
+## By group
+
+![Figure 6. The lab streams by group](fig6_by_group.png)
+
+**Figure 6. The lab streams split by group:** as recorded (A fast, B slow) and with CoactDetect's
+episodes removed and then the block control (C fast, D slow). Solid: pooled over recordings, as
+everywhere else. Dashed: each mouse weighted equally. The groups are DI, MALE, ORX and OVX as the export
+labels them. ⚠ Their expansions — diestrus females, intact males, orchidectomised males,
+ovariectomised females — are the conventional readings and are not written down in this repository.
+
+**The pooled group curves are dominated by one mouse each** — the heaviest mouse carries 37–48 % of a
+group's onset pairs on the fast stream — so a group curve is close to one animal's, and the
+equal-weight curves wander. On the fast stream every group's pooled curve sits in a similar low band
+after removal and blocking, and so does every group's on the slow stream except MALE's equal-weight
+curve. ⚠ Group cannot be separated from imaging day on this export: no imaging date holds more than
+one group ([recording identity](../recording_identity.md)). So Figure 6 shows that the pooled result is
+not one group's; it does not show a group difference.
+
+## Published lineage
+
+The phenomenon is old; what is new here is the measurement on these recordings.
+
+- Shared rate changes of independent neurons elevate the cross-correlogram near zero lag, and a linear
+  trend elevates it flat: Perkel, Gerstein & Moore 1967, *Biophys J* 7:419–440,
+  doi:10.1016/S0006-3495(67)86597-4, p. 428. Covariation in excitability produces correlogram peaks that
+  look like synchrony, and the correlogram integrates to the count covariance: Brody 1999, *Neural
+  Comput* 11:1537–1551, doi:10.1162/089976699300016133. Slow common fluctuations produce zero-lag
+  counts: Amarasingham, Harrison, Hatsopoulos & Geman 2012, *J Neurophysiol* 107:517–531,
+  doi:10.1152/jn.00633.2011. Shared slow trends produce nonsense correlations, and circular shifting
+  gives false positives under them: Harris 2021, bioRxiv doi:10.1101/2020.11.29.402719 (preprint).
+- Rigid shift is whole-train dithering; "firing rates are smoothed on the timescale of the dither
+  width" is Louis, Borgelt & Grün 2010, §17.3.3 (in *Analysis of Parallel Spike Trains*, Springer), who
+  credit Pipa et al. 2008 and Harrison & Geman 2009. This page drops what leaves the window and trims,
+  where Louis et al. roll the train, and shifts by 1.6–20 s, where the ranking in Stella et al. 2022
+  used 25 ms.
+- Holding each train's count fixed in fixed windows and randomising timing inside them is interval
+  jitter (Date, Bienenstock & Geman 1998; Amarasingham et al. 2012). CoactDetect's own null is the same
+  idea on a rolling window, which is one reason its episodes do not contain drift slower than that
+  window.
+- The Dard et al. 2022 dataset: in vivo two-photon calcium imaging of CA1 in mouse pups (P5–P12), Dard
+  et al. 2022, *eLife* 11:e78116, doi:10.7554/eLife.78116; data DANDI:000219 (Dard, Picardo & Cossart),
+  CC-BY-4.0, imported by `tools/import_dandi.py`. Its authors detect synchronous events against a
+  per-cell circular shift.
 
 ## Reproduce
 
-Code version `unsup/slow-comodulation` at the commit that adds this page. From a checkout with the
-export folders on the machine:
-
 | step | command | output |
 |---|---|---|
-| measure | `python tools/measure_slow_comodulation.py --out <dir>` | `results.json` (per recording, darkroom only) and `summary.json` (pooled, no identifiers) |
-| draw | `python tools/make_slow_comodulation_figure.py --run <dir> --also docs/learned/slow_comodulation` | the four figures, into `<darkroom>/2026-09-17-slow-comodulation/` and here |
+| measure | `python tools/measure_slow_comodulation.py` | `results.json` (per recording) and `summary.json` (pooled, no identifiers) in `<darkroom>/bugarach/2026-09-17-slow-comodulation/` |
+| draw | `python tools/make_slow_comodulation_figure.py --run <that folder> --also docs/learned/slow_comodulation` | the six figures, into the same darkroom folder and here |
 
-The run took under two minutes on 6 CPU workers. The tests are
-`tests/test_measure_slow_comodulation.py`: the pair count against a brute-force count, zero for
-independent ROIs, the nulls keeping what they claim, and the synthetic worlds' shapes.
+`summary.json` beside this page is the run's pooled output, with the paired and per-recording checks
+under `checks`. The measurement took about 3 minutes on 8 workers; `--resummarise` rebuilds the summary
+from an existing `results.json`. The tests, `tests/test_measure_slow_comodulation.py`, check the pair
+count against a brute-force count out to 300 s of lag; that a fixed lag lands in its bin; that the block
+control keeps each ROI's count per block; that rigid shift moves each ROI by one whole-frame offset and
+drops what leaves the window; the count variance; and that the generator's background reads zero while
+its planted events, its dense block and the 20 s world do not. They also check the circular arm reads
+zero in every lag bin, which holds by construction and tests the arithmetic, not the estimator.
