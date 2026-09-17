@@ -80,7 +80,9 @@ def bakeoff(run: Path) -> dict:
     per = defaultdict(lambda: defaultdict(dict))       # det -> seed -> fold -> row
     meta = {}
     for d in dirs:
-        b = json.loads((d / "bakeoff.json").read_text())
+        # `fair_bakeoff.py` writes `bakeoff.json` for seed 0 and `bakeoff_seed<N>.json` otherwise.
+        (f,) = sorted(d.glob("bakeoff*.json"))
+        b = json.loads(f.read_text())
         seed = int(b["train_seed"])
         meta[seed] = {"git_commit": b["provenance"].get("git_commit"),
                       "git_dirty": b["provenance"].get("git_dirty"),
@@ -88,8 +90,7 @@ def bakeoff(run: Path) -> dict:
         for group in ("hand_written", "learned"):
             for det, row in b[group].items():
                 for pf in row["per_fold"]:
-                    per[det][seed][pf["fold"]] = {**pf, "family": group,
-                                                  "train_sec": row.get("train_sec")}
+                    per[det][seed][pf["fold"]] = {**pf, "family": group}
     seeds = sorted(meta)
     out = {"seeds": seeds, "provenance": meta, "detectors": {}, "paired": {}, "paired_per_seed": {}}
     fold_means = {}
@@ -102,7 +103,9 @@ def bakeoff(run: Path) -> dict:
             v = [by_seed[s][f].get(key) for s in seeds for f in folds]
             v = [x for x in v if finite(x)]
             return float(np.mean(v)) if v else None
-        ts_ = [by_seed[s][folds[0]]["train_sec"] for s in seeds]
+        ts_ = [float(np.mean([by_seed[s][f]["train_sec"] for f in folds]))
+               if all(finite(by_seed[s][f].get("train_sec")) for f in folds) else None
+               for s in seeds]
         out["detectors"][det] = {
             "family": by_seed[seeds[0]][folds[0]]["family"],
             "f1_by_seed_fold": grid.tolist(), "f1_fold_means": fm.tolist(),
@@ -112,7 +115,8 @@ def bakeoff(run: Path) -> dict:
             if len(seeds) > 1 else None,
             "f1_seed_means": grid.mean(axis=1).tolist(),
             "recall": avg("recall"), "precision": avg("precision"), "probe_firings": avg("hot_fa"),
-            "train_sec_by_seed": ts_ if any(finite(x) for x in ts_) else None}
+            "train_sec_mean_by_seed": ts_ if any(finite(x) for x in ts_) else None,
+            "n_params": by_seed[seeds[0]][folds[0]].get("n_params")}
     for a, b in COMPARISONS:
         if a in fold_means and b in fold_means:
             key = f"{a} - {b}"
