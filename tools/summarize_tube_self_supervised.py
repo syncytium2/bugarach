@@ -48,6 +48,11 @@ COMPARISONS = (("line", "line_length"), ("line", "coact"), ("line_length", "coac
                ("line_bound", "line"), ("line_bound", "coact"), ("line", "tube"),
                ("tube", "coact"), ("coact", "loco"))
 EDGE_SEC = (5.0, 12.8)
+LOSS_LAST_LOGGED = 5
+"""Logged steps (every 50 steps) averaged for a fit's final loss."""
+AGG_KEYS = ("real_vs_rigid_shift", "real_vs_shared_offset", "unplanted_vs_rigid_shift",
+            "planted_vs_rigid_shift", "shared_modulation_vs_rigid_shift",
+            "independent_modulation_vs_rigid_shift")
 
 
 def finite(x):
@@ -58,16 +63,38 @@ def f1_or_zero(x):
     return float(x) if finite(x) else 0.0
 
 
+TEST_TRAIN_RATIO = 2 / 6
+"""Held-out recordings over training recordings per fold (4 folds of 2 recordings): the ratio the
+Nadeau–Bengio correction needs."""
+
+
 def paired(a, b):
-    """Paired differences a - b over folds: each, mean, t on n-1 df, and without the largest."""
+    """Paired differences a - b over folds: each, mean, t on n-1 df with its 95 % interval and
+    two-sided p, the same corrected for overlapping training folds (Nadeau & Bengio 2003: variance
+    times 1/n + n_test/n_train), a two-sided sign-test p, and the mean without the largest.
+
+    The correction exists because each fold's model is trained on the other folds, so the fold
+    differences are positively correlated and a plain paired t understates their variance."""
+    from scipy import stats as st
     d = np.asarray(a, float) - np.asarray(b, float)
     n = d.size
     sd = float(d.std(ddof=1)) if n > 1 else float("nan")
-    t = float(d.mean() / (sd / math.sqrt(n))) if n > 1 and sd > 0 else float("nan")
+    se = sd / math.sqrt(n) if n > 1 else float("nan")
+    t = float(d.mean() / se) if n > 1 and sd > 0 else float("nan")
+    crit = float(st.t.ppf(0.975, n - 1)) if n > 1 else float("nan")
+    se_nb = math.sqrt(sd ** 2 * (1 / n + TEST_TRAIN_RATIO)) if n > 1 else float("nan")
+    t_nb = float(d.mean() / se_nb) if n > 1 and sd > 0 else float("nan")
+    pos = int((d > 0).sum())
     drop = int(np.argmax(d))
     rest = np.delete(d, drop)
     return {"differences": d.tolist(), "mean": float(d.mean()), "sd": sd, "t": t, "df": n - 1,
-            "n_positive": int((d > 0).sum()), "largest_fold": drop,
+            "p_two_sided": float(2 * st.t.sf(abs(t), n - 1)) if math.isfinite(t) else None,
+            "ci95": [float(d.mean() - crit * se), float(d.mean() + crit * se)],
+            "t_nadeau_bengio": t_nb,
+            "p_nadeau_bengio": float(2 * st.t.sf(abs(t_nb), n - 1)) if math.isfinite(t_nb) else None,
+            "ci95_nadeau_bengio": [float(d.mean() - crit * se_nb), float(d.mean() + crit * se_nb)],
+            "sign_test_p": float(st.binomtest(pos, n, 0.5).pvalue) if n else None,
+            "n_positive": pos, "largest_fold": drop,
             "mean_without_largest": float(rest.mean()) if rest.size else None}
 
 
@@ -116,7 +143,15 @@ def bakeoff(run: Path) -> dict:
             "f1_seed_means": grid.mean(axis=1).tolist(),
             "recall": avg("recall"), "precision": avg("precision"), "probe_firings": avg("hot_fa"),
             "train_sec_mean_by_seed": ts_ if any(finite(x) for x in ts_) else None,
-            "n_params": by_seed[seeds[0]][folds[0]].get("n_params")}
+            "n_params": by_seed[seeds[0]][folds[0]].get("n_params"),
+            # A learned model's operating point on the end of `pick_threshold`'s default grid is
+            # a search that stopped, not an operating point; `tiny` sits there at every seed.
+            "threshold_at_grid_edge_fold_seeds": int(sum(
+                finite(by_seed[s][f].get("threshold"))
+                and (by_seed[s][f]["threshold"] <= 1e-4 + 1e-12
+                     or by_seed[s][f]["threshold"] >= 1 - 1e-4 - 1e-12)
+                for s in seeds for f in folds)) if group_of(by_seed) == "learned" else None,
+            "n_fold_seeds": len(seeds) * len(folds)}
     for a, b in COMPARISONS:
         if a in fold_means and b in fold_means:
             key = f"{a} - {b}"
@@ -125,7 +160,13 @@ def bakeoff(run: Path) -> dict:
             out["paired_per_seed"][key] = [
                 paired(np.asarray(g[a]["f1_by_seed_fold"])[i], np.asarray(g[b]["f1_by_seed_fold"])[i])
                 for i in range(len(seeds))]
+    out["n_paired_comparisons"] = len(out["paired"])
     return out
+
+
+def group_of(by_seed):
+    first = next(iter(by_seed.values()))
+    return next(iter(first.values()))["family"]
 
 
 # -- training -----------------------------------------------------------------------------------
@@ -160,11 +201,18 @@ def training(run: Path) -> dict:
                                                for g in got))}
         edge = [r.get("oracle_report", {}).get("at_edge") for r in rows]
         c["oracle_at_edge_fits"] = int(sum(bool(x) for x in edge))
-        hist_final = [r["history"][-1][1] for r in rows if r.get("history") and len(r["history"][-1]) >= 3]
+        # The loss of the last few LOGGED steps, averaged: one step's loss over three crop pairs is
+        # not a converged value, and a ranking loss can be dominated by a few misranked crops.
+        hist_final = [float(np.mean([h[1] for h in r["history"][-LOSS_LAST_LOGGED:]]))
+                      for r in rows if r.get("history") and len(r["history"][-1]) >= 3]
+        win_final = [float(np.mean([h[2] for h in r["history"][-LOSS_LAST_LOGGED:]]))
+                     for r in rows if r.get("history") and len(r["history"][-1]) >= 3]
         if hist_final:
-            c["final_loss"] = {"n_at_or_above_ln2": int(sum(x >= LN2 for x in hist_final)),
+            c["final_loss"] = {"logged_steps_averaged": LOSS_LAST_LOGGED,
+                               "n_at_or_above_ln2": int(sum(x >= LN2 for x in hist_final)),
                                "n_at_or_above_0.6": int(sum(x >= 0.6 for x in hist_final)),
-                               "min": float(min(hist_final)), "max": float(max(hist_final))}
+                               "min": float(min(hist_final)), "max": float(max(hist_final)),
+                               "win_share_median": float(np.median(win_final))}
         for r in rows:
             for k, v in (r.get("checks") or {}).items():
                 c["checks"].setdefault(k, {"share": [], "tie": []})
@@ -176,7 +224,23 @@ def training(run: Path) -> dict:
             t = np.asarray([x for x in v["tie"] if x is not None], float)
             c["checks"][k] = {"share_mean": float(s.mean()), "share_min": float(s.min()),
                               "share_max": float(s.max()), "tie_share_min": float(t.min()),
-                              "tie_share_max": float(t.max()), "n": int(s.size)}
+                              "tie_share_max": float(t.max()),
+                              "n_fits_tie_share_1": int((t >= 1 - 1e-9).sum()),
+                              "tie_share_max_excluding_1": float(t[t < 1 - 1e-9].max())
+                              if (t < 1 - 1e-9).any() else None,
+                              "n_fits_above_half": int((s > 0.5).sum()), "n": int(s.size)}
+        # A null check read only where its positive control moved: a fit whose thinned copy does
+        # not score below the real crop has no power, and its null readings mean nothing.
+        def thinned_share(r):
+            v = (r.get("checks") or {}).get("real_vs_thinned", {}).get("share_real_higher")
+            return v if finite(v) else None
+        moved = [r for r in rows if thinned_share(r) is not None and thinned_share(r) > 0.5]
+        c["n_fits_positive_control_moved"] = len(moved)
+        if moved:
+            c["checks_where_positive_control_moved"] = {
+                k: float(np.mean([r["checks"][k]["share_real_higher"] for r in moved
+                                  if r["checks"][k]["share_real_higher"] is not None]))
+                for k in moved[0]["checks"]}
         widths = [r.get("fitted_parameters") for r in rows if r.get("fitted_parameters")]
         if widths:
             c["fitted_parameters_by_fit"] = widths
@@ -197,6 +261,27 @@ def training(run: Path) -> dict:
             "n_trained_cells_below_best_untrained": sum(v < untrained[best] for v in trained.values()),
             "trained_f1_range": [min(trained.values()), max(trained.values())],
             "untrained_f1_range": [min(untrained.values()), max(untrained.values())]}
+        baselines = {f"{c['model']}|{c['J_sec']:g}": c["scores"][key]["f1_mean"] for c in cells
+                     if c["arm"] == "baseline" and key in c["scores"]}
+        if baselines:
+            best_b = max(baselines, key=baselines.get)
+            out["untrained_vs_trained"][key].update(
+                best_baseline=best_b, best_baseline_f1=baselines[best_b],
+                baseline_f1_range=[min(baselines.values()), max(baselines.values())],
+                n_trained_cells_below_best_baseline=sum(v < baselines[best_b]
+                                                        for v in trained.values()))
+    # Checks pooled per model over both displacements, the unit Figure 3 panel C draws.
+    pooled = defaultdict(lambda: defaultdict(list))
+    for c_rows in R:
+        if c_rows["arm"] in ("ssl_real", "ssl_sim"):
+            for k, v in (c_rows.get("checks") or {}).items():
+                if v.get("share_real_higher") is not None:
+                    pooled[f"{c_rows['arm']}|{c_rows['model']}"][k].append(v["share_real_higher"])
+    out["checks_pooled_over_J"] = {m: {k: {"mean": float(np.mean(v)), "n": len(v)}
+                                       for k, v in d.items()} for m, d in pooled.items()}
+    out["label_free_grid_floor_fits_total"] = {
+        key: int(sum(c["scores"].get(key, {}).get("at_grid_floor_count", 0) for c in cells))
+        for key in ("label_free_0.5", "label_free_1", "label_free_2")}
     out["oracle_at_edge_fits_total"] = int(sum(c["oracle_at_edge_fits"] for c in cells))
     out["oracle_at_edge_models"] = sorted({c["model"] for c in cells if c["oracle_at_edge_fits"]})
     out["cells_covering_over_half_at_truth_reading"] = sorted(
@@ -220,8 +305,7 @@ def aggregate(run: Path) -> dict:
     out = {"init": [], "fitted": defaultdict(list)}
     for r in R:
         cell = {"stream": r["stream"], "J_sec": r["J_sec"], "kind": r["kind"]}
-        for k in ("real_vs_rigid_shift", "real_vs_shared_offset", "unplanted_vs_rigid_shift",
-                  "planted_vs_rigid_shift"):
+        for k in AGG_KEYS:
             if k in r:
                 cell[k] = {s: r[k][s] for s in r[k] if s in ("all", "trace")}
                 if k == "real_vs_rigid_shift":
@@ -234,8 +318,7 @@ def aggregate(run: Path) -> dict:
     for model, cells in out["fitted"].items():
         rng = defaultdict(list)
         for c in cells:
-            for k in ("real_vs_rigid_shift", "real_vs_shared_offset", "unplanted_vs_rigid_shift",
-                      "planted_vs_rigid_shift"):
+            for k in AGG_KEYS:
                 if k in c:
                     rng[(k, c["J_sec"])].append(c[k]["all"]["accuracy"])
         out[f"fitted_{model}_all_accuracy_range_over_folds"] = {
@@ -252,7 +335,8 @@ def controls(run: Path) -> dict:
     return {f"{r['stream']}|{r['J_sec']:g}": {
         k: {"accuracy": r[k]["accuracy_fold_seed_mean"], "range": r[k]["accuracy_fold_seed_range"],
             "by_mouse": r[k]["by_mouse"], "dropped_share": r[k]["dropped_share"]}
-        for k in ("rigid_shift", "shared_shift", "uniform_dither")} for r in R}
+        for k in ("rigid_shift", "shared_shift", "uniform_dither", "circular_shift") if k in r}
+        for r in R}
 
 
 def real(run: Path, with_edges: bool) -> dict:
@@ -293,19 +377,61 @@ def probe(run: Path) -> dict:
     p = run / "probe" / "line_vs_fuzz.json"
     if not p.exists():
         return {}
-    sc = json.loads(p.read_text())["scores"]
-    out = {}
+    doc = json.loads(p.read_text())
+    sc = doc["scores"]
+    n_fields = int(doc["meta"]["n_fields"])
+    out = {"n_fields": n_fields}
     for m, r in sc.items():
         if m.startswith("no labels"):
             continue
         Ks = sorted({int(k.split("_")[1]) for k in r if k.startswith("line_") and not k.endswith("sd")})
-        out[m] = {plant: {K: {"ratio": r[f"line_{K}"] / r[f"{plant}_{K}"],
-                              "numerator": r[f"line_{K}"], "denominator": r[f"{plant}_{K}"],
-                              "denominator_sd": r[f"{plant}_{K}_sd"],
-                              "denominator_within_1sd_of_zero":
-                                  abs(r[f"{plant}_{K}"]) < r[f"{plant}_{K}_sd"]}
-                          for K in Ks}
-                  for plant in ("burst", "fuzz", "wave")}
+
+        def cell(plant, K):
+            num, den = r[f"line_{K}"], r[f"{plant}_{K}"]
+            se_num = r[f"line_{K}_sd"] / math.sqrt(n_fields)
+            se_den = r[f"{plant}_{K}_sd"] / math.sqrt(n_fields)
+            ratio = num / den
+            # First-order (delta-method) standard error of a ratio of two means, treating the
+            # two as independent: a scale for "is this ordering within noise", not an interval.
+            se_ratio = abs(ratio) * math.sqrt((se_num / num) ** 2 + (se_den / den) ** 2) \
+                if num and den else float("nan")
+            return {"ratio": ratio, "ratio_se_approx": se_ratio, "numerator": num,
+                    "denominator": den, "denominator_sd": r[f"{plant}_{K}_sd"],
+                    "denominator_within_1sd_of_zero": abs(den) < r[f"{plant}_{K}_sd"]}
+        out[m] = {plant: {K: cell(plant, K) for K in Ks} for plant in ("burst", "fuzz", "wave")}
+    return out
+
+
+def constants(run: Path) -> dict:
+    """The run's fixed quantities and counts the report quotes, so they too are keys here."""
+    out = {}
+    for name, rel in (("training", "training/meta.json"), ("aggregate_leak", "aggregate_leak/meta.json"),
+                      ("controls_lab", "controls_lab/meta.json")):
+        p = run / rel
+        if p.exists():
+            m = json.loads(p.read_text())
+            out[name] = {k: v for k, v in m.items() if k != "provenance"}
+            out[name]["provenance"] = m.get("provenance")
+    p = run / "controls_lab" / "results.json"
+    if p.exists():
+        R = json.loads(p.read_text())["leak"]
+        r0 = next(r for r in R if r["stream"] == "fast")
+        out["lab_fast"] = {"n_recordings": r0["n_recordings"], "n_mice": r0["n_mice"],
+                           "n_window_pairs": r0["n_pairs"],
+                           "groups": {g: {"n_mice": v["n_mice"], "n_window_pairs": v["n_pairs"]}
+                                      for g, v in r0["rigid_shift"]["by_group"].items()}}
+    p = run / "probe" / "line_vs_fuzz.json"
+    if p.exists():
+        out["probe"] = json.loads(p.read_text())["meta"]
+    spec = Path(__file__).resolve().parent.parent / "docs" / "learned" / "generator_spec.json"
+    if spec.exists():
+        g = json.loads(spec.read_text())["generator"]
+        out["generator"] = {k: g.get(k) for k in ("jitter_sec", "n_roi", "grid_sec", "duration_sec")}
+    p = run / "real_compare" / "summary.json"
+    if p.exists():
+        s = json.loads(p.read_text())
+        out["real_compare"] = {k: s.get(k) for k in ("sup_threshold_j_sec", "n_random_per_event",
+                                                    "provenance", "seconds")}
     return out
 
 
@@ -322,7 +448,7 @@ def main(argv=None):
                "provenance": provenance.stamp(produced_by="tools/summarize_tube_self_supervised.py"),
                "bakeoff": bakeoff(run), "training": training(run), "aggregate_leak": aggregate(run),
                "controls_lab": controls(run), "real_compare": real(run, not a.no_edges),
-               "probe": probe(run)}
+               "probe": probe(run), "constants": constants(run)}
     (run / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
     print(run / "summary.json")
 

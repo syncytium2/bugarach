@@ -367,26 +367,87 @@ THIN_SHARE = 0.2
 """The positive control's size: a fifth of every ROI's onsets removed."""
 
 
-def paired_checks(model, held, J_sec, label):
-    """Paired crop scores on held-out real recordings, plus unplanted twins.
+J_SMALL_SEC = 1.6
+"""The small displacement for the control that separates coordination from slow modulation. A
+murderboard reviewer (2026-09-17) showed every earlier paired check passes for a scorer with no
+events and only a slow rate change shared across ROIs. Such a change survives a 1.6 s shift almost
+untouched; sub-second alignment between ROIs does not. So a model that learned modulation reads
+chance against this shift, and one that learned coordination does not."""
+
+MOD_PERIOD_SEC = 40.0
+MOD_DEPTH = 0.9
+"""The modulation twins: each ROI of an unplanted twin keeps an onset at time *t* with probability
+``(1 + depth * sin(2 pi t / period + phase)) / (1 + depth)``. One phase for every ROI makes the
+SHARED-modulation twin (no events, only co-modulation); a phase per ROI makes the
+INDEPENDENT-modulation twin (each ROI's rate moves, nothing moves together)."""
+
+
+def modulated(trains, L, dt, rng, shared):
+    phases = (np.full(len(trains), rng.uniform(0, 2 * np.pi)) if shared
+              else rng.uniform(0, 2 * np.pi, len(trains)))
+    out = []
+    for r, t in enumerate(trains):
+        t = np.asarray(t, np.int64)
+        t = t[(t >= 0) & (t < L)]
+        keep = (1 + MOD_DEPTH * np.sin(2 * np.pi * t * dt / MOD_PERIOD_SEC + phases[r])) \
+            / (1 + MOD_DEPTH)
+        out.append(t[rng.random_sample(t.size) < keep])
+    return out
+
+
+def crop_pairs(score, real, sur, starts, sur_starts=None):
+    """(score of the real crop, score of the surrogate crop) at each start. ``score`` maps a
+    (n_roi, CROP) raster to a float; ``sur_starts`` draws the surrogate crop elsewhere."""
+    sur_starts = starts if sur_starts is None else sur_starts
+    return [(score(real[:, a:a + CROP]), score(sur[:, b:b + CROP]))
+            for a, b in zip(starts, sur_starts)]
+
+
+def model_scorer(model):
+    import torch
+
+    def score(x):
+        with torch.no_grad():
+            return float(crop_score(model, x))
+    return score
+
+
+def paired_checks(score, held, J_sec, label):
+    """Paired crop scores on held-out real recordings, plus synthetic twins. ``score`` maps a
+    crop to a float (``model_scorer`` for a network).
+
+    On the held-out real recordings:
 
     * ``real_vs_rigid_shift`` — what the objective paid for.
+    * ``real_vs_rigid_shift_small_J`` — the same at 1.6 s. **The control that separates
+      coordination from slow shared modulation**: see ``J_SMALL_SEC``.
     * ``real_vs_shared_offset`` — both crops at the same index. ⚠ Weak by construction: the
       two rasters differ by one global translation and every model here is convolutional, so
       the crops largely share frames and many pairs tie (reported as ``tie_share``, counted
       half). Kept so the change from the previous run is visible.
     * ``real_vs_shared_offset_independent_crop`` — the surrogate crop drawn at an index
-      independent of the real one, so a tie means the model scores two different stretches
-      identically rather than one stretch twice.
-    * ``real_vs_thinned`` — the POSITIVE control: a fifth of every ROI's onsets removed, same
-      crop. A count leak is exactly this kind of change, so a check that reads chance here as
-      well has no power to see one. It must move.
+      independent of the real one. ⚠ Two stretches of one recording are exchangeable, so this
+      reads chance for ANY scorer; it shows ties are not what holds the same-crop check at 0.5,
+      and nothing more.
+    * ``real_vs_thinned`` — a fifth of every ROI's onsets removed, same crop. It moves for any
+      scorer that rises with onset count; it shows the checks can register a count change, not
+      that they can register a leak.
+
+    On synthetic twins (``look_rigid_shift_controls.twin_pair``), each against its own rigid shift:
+
+    * ``unplanted_twin_vs_rigid_shift`` — ⚠ stationary, independent ROIs, which rigid shift
+      leaves invariant: it cannot fail for any leak. Kept for continuity only.
+    * ``shared_modulation_twin_vs_rigid_shift`` — no events, one slow rate change shared by
+      every ROI. **Separates for a model that learned modulation**; a model that learned only
+      coordination has nothing here to find.
+    * ``independent_modulation_twin_vs_rigid_shift`` — each ROI's rate moves on its own phase.
+      Must read chance: nothing moves together.
     """
     import look_rigid_shift_controls as lc
     out = {}
     rows = [r for r in real_recordings() if r["fold"] == held]
     wins = {"real_vs_shared_offset": [], "real_vs_shared_offset_independent_crop": [],
-            "real_vs_rigid_shift": [], "real_vs_thinned": []}
+            "real_vs_rigid_shift": [], "real_vs_thinned": [], "real_vs_rigid_shift_small_J": []}
     for r in rows:
         Jf = J_sec / r["dt"]
         margin = int(np.ceil(Jf)) + 1
@@ -395,41 +456,86 @@ def paired_checks(model, held, J_sec, label):
         real = raster_of(r["trains"], L)
         shared = raster_of(rigid_frames(r["trains"], L, Jf, rng, shared=True), L)
         rigid = raster_of(rigid_frames(r["trains"], L, Jf, rng), L)
-        # Drawn from its own stream so the three draws above match the previous run's.
+        # Drawn from its own streams so the draws above match the previous runs'.
         rng_extra = np.random.RandomState(seed31("check-extra", label, r["id"], J_sec))
         thin = raster_of(thinned(r["trains"], THIN_SHARE, rng_extra), L)
+        rng_small = np.random.RandomState(seed31("check-small", label, r["id"], J_sec))
+        small = raster_of(rigid_frames(r["trains"], L, J_SMALL_SEC / r["dt"], rng_small), L)
         starts = list(range(margin, L - margin - CROP + 1, CROP))
-        import torch
-        with torch.no_grad():
-            for a in starts:
-                s_r = float(crop_score(model, real[:, a:a + CROP]))
-                wins["real_vs_shared_offset"].append(
-                    (s_r, float(crop_score(model, shared[:, a:a + CROP]))))
-                b = int(rng_extra.randint(margin, L - margin - CROP + 1))
-                wins["real_vs_shared_offset_independent_crop"].append(
-                    (s_r, float(crop_score(model, shared[:, b:b + CROP]))))
-                wins["real_vs_rigid_shift"].append(
-                    (s_r, float(crop_score(model, rigid[:, a:a + CROP]))))
-                wins["real_vs_thinned"].append(
-                    (s_r, float(crop_score(model, thin[:, a:a + CROP]))))
+        others = [int(rng_extra.randint(margin, L - margin - CROP + 1)) for _ in starts]
+        wins["real_vs_shared_offset"] += crop_pairs(score, real, shared, starts)
+        wins["real_vs_shared_offset_independent_crop"] += crop_pairs(score, real, shared, starts,
+                                                                     others)
+        wins["real_vs_rigid_shift"] += crop_pairs(score, real, rigid, starts)
+        wins["real_vs_thinned"] += crop_pairs(score, real, thin, starts)
+        wins["real_vs_rigid_shift_small_J"] += crop_pairs(score, real, small, starts)
     for k, v in wins.items():
         out[k] = paired_summary(v)
-    tw = []
-    import torch
+    tw = {"unplanted_twin_vs_rigid_shift": [], "shared_modulation_twin_vs_rigid_shift": [],
+          "independent_modulation_twin_vs_rigid_shift": []}
     for t in range(10):
         _, un, shape = lc.twin_pair("fast", None, 0.2, t)
-        L = shape["n_frames"]
-        Jf = J_sec / shape["dt"]
+        L, dt = shape["n_frames"], shape["dt"]
+        Jf = J_sec / dt
         margin = int(np.ceil(Jf)) + 1
+        starts = list(range(margin, L - margin - CROP + 1, CROP))
         rng = np.random.RandomState(seed31("twin-check", label, t, J_sec))
-        real = raster_of(un, L)
-        rigid = raster_of(rigid_frames(un, L, Jf, rng), L)
-        with torch.no_grad():
-            for a in range(margin, L - margin - CROP + 1, CROP):
-                tw.append((float(crop_score(model, real[:, a:a + CROP])),
-                           float(crop_score(model, rigid[:, a:a + CROP]))))
-    out["unplanted_twin_vs_rigid_shift"] = paired_summary(tw)
+        tw["unplanted_twin_vs_rigid_shift"] += crop_pairs(
+            score, raster_of(un, L), raster_of(rigid_frames(un, L, Jf, rng), L), starts)
+        rng_mod = np.random.RandomState(seed31("twin-mod", label, t, J_sec))
+        for key, is_shared in (("shared_modulation_twin_vs_rigid_shift", True),
+                               ("independent_modulation_twin_vs_rigid_shift", False)):
+            mod = modulated(un, L, dt, rng_mod, is_shared)
+            tw[key] += crop_pairs(score, raster_of(mod, L),
+                                  raster_of(rigid_frames(mod, L, Jf, rng_mod), L), starts)
+    for k, v in tw.items():
+        out[k] = paired_summary(v)
     return out
+
+
+# -- zero-parameter scorers ---------------------------------------------------------------------
+
+BASELINES = ("count_share", "count_excess", "slow_modulation")
+"""Scorers with no parameters, run through the same thresholds and checks as the trained models.
+
+* ``count_share`` — the share of ROIs with an onset within ±2 frames (0.2 s). The detector every
+  counting architecture here is built around, with nothing learned.
+* ``count_excess`` — that share minus its own 30 s moving mean: a count judged against its local
+  background, CoactDetect's idea with no statistics.
+* ``slow_modulation`` — the share of ROIs active, averaged over 10 s. A scorer that can only see
+  slow co-modulation, never a sub-second event: the probe a murderboard reviewer built
+  (2026-09-17), kept as the check of the checks.
+
+Measured beside the trained models so "training bought something" has a comparator that fires."""
+BASELINE_WIDEN_FRAMES = 2
+BASELINE_BACKGROUND_FRAMES = 301
+BASELINE_SLOW_FRAMES = 101
+
+
+def baseline_model(name):
+    import torch
+    F = torch.nn.functional
+
+    class Baseline(torch.nn.Module):
+        def forward(self, x):                                   # (B, n_roi, T) -> (B, T)
+            b, n, t = x.shape
+            if name == "slow_modulation":
+                share = x.mean(dim=1, keepdim=True)
+                k = BASELINE_SLOW_FRAMES
+                return F.avg_pool1d(share, k, stride=1, padding=k // 2,
+                                    count_include_pad=False).squeeze(1)
+            w = BASELINE_WIDEN_FRAMES
+            lit = F.max_pool1d(x.reshape(b * n, 1, t), 2 * w + 1, stride=1, padding=w)
+            share = lit.reshape(b, n, t).mean(dim=1, keepdim=True)
+            if name == "count_share":
+                return share.squeeze(1)
+            k = BASELINE_BACKGROUND_FRAMES
+            bg = F.avg_pool1d(share, k, stride=1, padding=k // 2, count_include_pad=False)
+            return (share - bg).squeeze(1)
+
+    if name not in BASELINES:
+        raise KeyError(name)
+    return Baseline().eval()
 
 
 def paired_summary(pairs):
@@ -488,6 +594,11 @@ def task(args):
         n_par, hist = n_params(model), []
         thr, res["oracle_report"] = oracle_threshold(model, held, dt, seed)
         oracles = {"oracle": thr}
+    elif arm == "baseline":
+        model = baseline_model(name)
+        n_par, hist = 0, []
+        thr, res["oracle_report"] = oracle_threshold(model, held, dt, seed)
+        oracles = {"oracle": thr}
     else:
         if arm == "ssl_sim":
             # The fit block only. Until 2026-09-16 this arm trained on every training-fold
@@ -508,8 +619,10 @@ def task(args):
     res["centre_widths_sec"] = widths_sec(model, dt)
     res["fitted_parameters"] = fitted_parameters(model)
     res["scores"] = score_held_out(model, held, dt, J_sec, oracles, label)
-    if arm in ("ssl_sim", "ssl_real", "untrained"):
-        res["checks"] = paired_checks(model, held, J_sec, label)
+    # Every arm now, supervised and baselines included: the checks mean something only beside
+    # scorers whose answer is known (a count, a slow-modulation average) and models trained with
+    # labels.
+    res["checks"] = paired_checks(model_scorer(model), held, J_sec, label)
     res["seconds"] = time.time() - t0
     return res
 
@@ -534,13 +647,24 @@ def main(argv=None):
                 for J in J_SEC:
                     for arm in ("ssl_sim", "ssl_real"):
                         tasks.append((arm, name, J, seed, held, a.quick))
+        # No seed: nothing is drawn. One row per displacement, because the label-free threshold
+        # and the paired checks are drawn at J.
+        for name in BASELINES:
+            for J in J_SEC:
+                tasks.append(("baseline", name, J, 0, held, a.quick))
     from bugarach import provenance
     from bugarach.learn.nets import ARCHITECTURES
     meta = {"tag": TAG, "started": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "quick": a.quick,
             "models": MODELS, "registered": sorted(ARCHITECTURES),
             "registered_but_not_run": sorted(set(ARCHITECTURES) - set(MODELS)),
             "provenance": provenance.stamp(produced_by="tools/tube_self_supervised.py"),
-            "thin_share": THIN_SHARE,
+            "thin_share": THIN_SHARE, "j_small_sec": J_SMALL_SEC,
+            "modulation": {"period_sec": MOD_PERIOD_SEC, "depth": MOD_DEPTH},
+            "baselines": BASELINES,
+            "baseline_frames": {"widen": BASELINE_WIDEN_FRAMES,
+                                "background": BASELINE_BACKGROUND_FRAMES,
+                                "slow": BASELINE_SLOW_FRAMES},
+            "n_surrogates_per_label_free_threshold": N_SURR_THRESHOLD,
             "J_sec": J_SEC, "train_seeds": seeds, "folds": folds,
             "crop": CROP, "batch": BATCH, "steps": 60 if a.quick else STEPS,
             "topk_frac": TOPK_FRAC, "n_bank": N_BANK, "rates_per_10min": RATES_PER_10MIN,

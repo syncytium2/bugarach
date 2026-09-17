@@ -12,25 +12,30 @@ co-occurrence the simulator does not contain.
 
 **Detections**, all on the lab folder's fast stream, baseline windows only (FOUNDATIONS §9):
 
-* ``tube`` / ``tube_guard`` trained against rigid shift (J = 10 s, 20 s; 3 seeds), **fitted per
-  mouse fold** so every recording is called by a model that never saw its mouse. Threshold:
-  label-free, set per recording so the model fires at most 2 events per 10 minutes on three rigid
-  shifts of that recording (:mod:`tube_self_supervised`).
-* supervised ``tube`` fitted once on the bake-off's simulated corpus (as
-  ``tools/run_learned_on_folder.py`` fits it), at the same label-free threshold and at its own
-  bake-off threshold.
+* every model in ``tube_self_supervised.MODELS`` trained against rigid shift (J = 10 s, 20 s;
+  3 seeds), **fitted per mouse fold** so every recording is called by a model that never saw its
+  mouse. Threshold: label-free, set per recording so the model fires at most 2 events per
+  10 minutes on three rigid shifts of that recording at the training J.
+* the same models supervised, fitted once per seed on the bake-off's simulated recordings, at the
+  label-free threshold (rigid shifts at ``SUP_THRESHOLD_J_SEC``) and at their own bake-off
+  threshold.
+* the zero-parameter scorers ``tube_self_supervised.BASELINES`` under the same label-free rule.
 * ``coact`` (CoactDetect) and ``loco`` (LoCo) through :func:`bugarach.detect_folder.detect_slice`
   at their production operating points.
+* for every label-free detector, its calls on the first rigid shift its threshold was set on
+  (``…, on its rigid shift``): measured for window-edge shares only, so an edge effect that exists
+  without any cross-ROI alignment is visible as one.
 
 **What is measured per detector:**
 
 * events per 10 minutes;
-* **participation** — distinct ROIs with an onset inside each event (±2 frames), against the same
-  intervals dropped at random times in the same recording;
+* **participation** — distinct ROIs with an onset inside each event's extent ±2 frames, against the
+  same extents dropped at uniformly random times, and at times drawn in proportion to the
+  recording's population onset rate (the activity-matched chance);
 * **pair recurrence** — for events carried by exactly two ROIs, how much of a recording's share
   the single most frequent pair takes; a crosstalk or duplicated-ROI artefact concentrates there;
 * **agreement** — share of one detector's events overlapping the other's within ±1 s, against the
-  same events circularly shifted within the window.
+  same events circularly shifted within the window, pooled over every seed of both.
 
 Nothing is planted in these recordings, so none of this is a score.
 """
@@ -77,15 +82,22 @@ def events_from_logits(z, thr, w0, dt):
     return [((w0 + int(o)) * dt, int(w) * dt) for o, w in zip(d.onset_frame, d.width_frame)]
 
 
+SUP_THRESHOLD_J_SEC = 10.0
+"""The displacement of the rigid shifts a supervised or zero-parameter scorer's label-free threshold
+is set on. 20 s until 2026-09-17, while the bench used 10 s for the same arms; now one value."""
+
+
 def call_recording(model, r, J_sec, label):
-    """Label-free events on one real recording's baseline window."""
+    """Label-free threshold and scores on one real recording's baseline window, plus the scores
+    of the first rigid shift the threshold was set on — so detections on the surrogate can be
+    measured the same way as detections on the recording."""
     L, dt = r["L"], r["dt"]
     z = ts.probs(model, ts.raster_of(r["trains"], L))
     rng = np.random.RandomState(seed31("thr", label, r["id"]))
     z_s = [ts.probs(model, ts.raster_of(ts.rigid_frames(r["trains"], L, J_sec / dt, rng), L))
            for _ in range(ts.N_SURR_THRESHOLD)]
     thr, _ = ts.label_free_threshold(z_s, L * dt / 60.0, RATE)
-    return thr, z
+    return thr, z, z_s[0]
 
 
 def ssl_task(args):
@@ -97,13 +109,14 @@ def ssl_task(args):
     bank = ts.bank_for([r for r in rows if r["fold"] != fold], J_sec, ("ssl_real", fold))
     model, n_par, hist = ts.ssl_train(name, bank, seed, fb.LR[name])
     label = f"ssl-{name}-{J_sec}-{seed}-{fold}"
-    out, thrs = {}, []
+    out, on_shift, thrs = {}, {}, []
     for r in rows:
         if r["fold"] != fold:
             continue
-        thr, z = call_recording(model, r, J_sec, label)
+        thr, z, zs = call_recording(model, r, J_sec, label)
         thrs.append(thr)
         out[r["id"]] = events_from_logits(z, thr, r["w0"], r["dt"])
+        on_shift[r["id"]] = events_from_logits(zs, thr, r["w0"], r["dt"])
     if ckpt_dir:
         from bugarach.learn import checkpoint
         from bugarach.learn.train import Trained
@@ -118,8 +131,10 @@ def ssl_task(args):
                             "thresholds are set per recording from its own rigid shift; the "
                             "threshold here is the sigmoid of the median of those, and may round "
                             "to 1.0."))
-    return {"detector": f"ssl {name} J{J_sec:g}", "seed": seed, "fold": fold, "events": out,
-            "thresholds": thrs, "history_last": hist[-1] if hist else None}
+    return [{"detector": f"ssl {name} J{J_sec:g}", "seed": seed, "fold": fold, "events": out,
+             "thresholds": thrs, "history_last": hist[-1] if hist else None},
+            {"detector": f"ssl {name} J{J_sec:g}, on its rigid shift", "seed": seed,
+             "fold": fold, "events": on_shift, "surrogate": True}]
 
 
 def sup_task(args):
@@ -133,13 +148,31 @@ def sup_task(args):
                batch=ts.BATCH, lr=fb.LR[name], seed=seed)
     p = min(max(float(tr.threshold), 1e-12), 1 - 1e-12)
     bake = float(np.log(p / (1 - p)))
-    lf, bk = {}, {}
+    lf, bk, sh = {}, {}, {}
     for r in ts.real_recordings():
-        thr, z = call_recording(tr.model, r, 20.0, f"sup-{name}-{seed}")
+        thr, z, zs = call_recording(tr.model, r, SUP_THRESHOLD_J_SEC, f"sup-{name}-{seed}")
         lf[r["id"]] = events_from_logits(z, thr, r["w0"], r["dt"])
         bk[r["id"]] = events_from_logits(z, bake, r["w0"], r["dt"])
+        sh[r["id"]] = events_from_logits(zs, thr, r["w0"], r["dt"])
     return [{"detector": f"supervised {name} label-free", "seed": seed, "events": lf},
-            {"detector": f"supervised {name} bake-off threshold", "seed": seed, "events": bk}]
+            {"detector": f"supervised {name} bake-off threshold", "seed": seed, "events": bk},
+            {"detector": f"supervised {name} label-free, on its rigid shift", "seed": seed,
+             "events": sh, "surrogate": True}]
+
+
+def baseline_task(args):
+    """A zero-parameter scorer (``tube_self_supervised.BASELINES``) under the same label-free rule:
+    the comparator a trained model's real-recording calls should be read against."""
+    name, = args
+    model = ts.baseline_model(name)
+    lf, sh = {}, {}
+    for r in ts.real_recordings():
+        thr, z, zs = call_recording(model, r, SUP_THRESHOLD_J_SEC, f"baseline-{name}")
+        lf[r["id"]] = events_from_logits(z, thr, r["w0"], r["dt"])
+        sh[r["id"]] = events_from_logits(zs, thr, r["w0"], r["dt"])
+    return [{"detector": f"baseline {name} label-free", "seed": 0, "events": lf},
+            {"detector": f"baseline {name} label-free, on its rigid shift", "seed": 0,
+             "events": sh, "surrogate": True}]
 
 
 def hand_task(args):
@@ -172,13 +205,30 @@ def participation(r, on_sec, wd_sec, pad=PAD_FRAMES):
     return rois
 
 
+N_RANDOM_PER_EVENT = 10
+"""Random times drawn per event, for each chance baseline. Two until 2026-09-17."""
+ACTIVITY_SMOOTH_FRAMES = 101
+"""The activity-matched chance draws random times in proportion to the recording's population onset
+rate, smoothed over 10 s. A detector that fires where the population is busy is enriched against
+uniform random times without detecting coordination; against this baseline it is not."""
+
+
+def _activity_weights(r):
+    pop = np.zeros(r["L"])
+    for t in r["trains"]:
+        np.add.at(pop, np.asarray(t, np.int64), 1.0)
+    w = np.convolve(pop, np.ones(ACTIVITY_SMOOTH_FRAMES), mode="same") + 1e-9
+    return w / w.sum()
+
+
 def measure(detector_events, rows_by_id):
     """detector -> list over seeds of {recording: [(onset, width)]}; returns per-detector stats."""
     rng = np.random.RandomState(seed31("measure"))
+    weights = {rid: _activity_weights(r) for rid, r in rows_by_id.items()}
     stats = {}
     for det, runs in detector_events.items():
         n_ev, minutes, part, part_rand, top_pair = 0, 0.0, [], [], []
-        wide, wide_rand = [], []
+        wide, wide_rand, part_act = [], [], []
         for run in runs:
             for rid, evs in run.items():
                 r = rows_by_id[rid]
@@ -192,14 +242,19 @@ def measure(detector_events, rows_by_id):
                     wide.append(len(participation(r, on, wd, pad=one_s)))
                     if len(rois) == 2:
                         pairs[tuple(rois)] = pairs.get(tuple(rois), 0) + 1
-                    for _ in range(N_RANDOM // 10):
-                        t = (r["w0"] + rng.randint(0, max(1, r["L"] - int(wd / r["dt"]) - 1))) * r["dt"]
+                    span = max(1, r["L"] - int(wd / r["dt"]) - 1)
+                    for _ in range(N_RANDOM_PER_EVENT):
+                        t = (r["w0"] + rng.randint(0, span)) * r["dt"]
                         part_rand.append(len(participation(r, t, wd)))
                         wide_rand.append(len(participation(r, t, wd, pad=one_s)))
+                        f = int(rng.choice(r["L"], p=weights[rid]))
+                        ta = (r["w0"] + min(f, span - 1)) * r["dt"]
+                        part_act.append(len(participation(r, ta, wd)))
                 if sum(pairs.values()) >= 3:
                     top_pair.append(max(pairs.values()) / sum(pairs.values()))
         part, part_rand = np.asarray(part), np.asarray(part_rand)
         wide, wide_rand = np.asarray(wide), np.asarray(wide_rand)
+        part_act = np.asarray(part_act)
         runs_n = max(1, len(runs))
         stats[det] = {
             "events_per_10min": 10.0 * n_ev / max(minutes, 1e-9),
@@ -209,6 +264,9 @@ def measure(detector_events, rows_by_id):
             "participation_share_le2": float(np.mean(part <= 2)) if part.size else None,
             "random_participation_median": float(np.median(part_rand)) if part_rand.size else None,
             "random_share_ge3": float(np.mean(part_rand >= 3)) if part_rand.size else None,
+            "activity_random_participation_median":
+                float(np.median(part_act)) if part_act.size else None,
+            "activity_random_share_ge3": float(np.mean(part_act >= 3)) if part_act.size else None,
             "participation_1s_median": float(np.median(wide)) if wide.size else None,
             "participation_1s_share_ge3": float(np.mean(wide >= 3)) if wide.size else None,
             "random_participation_1s_median": float(np.median(wide_rand)) if wide_rand.size else None,
@@ -221,10 +279,13 @@ def measure(detector_events, rows_by_id):
 
 
 def agreement(a_runs, b_runs, rows_by_id, rng):
-    """Share of A's events within TOL of any of B's, and the same with A circularly shifted."""
+    """Share of A's events within TOL of any of B's, and the same with A circularly shifted.
+
+    Pooled over every run of B as well as of A. Until 2026-09-17 only B's first run was read, so
+    "the share of CoactDetect's events a model overlaps" was the seed-0 fit's alone while every
+    other column pooled three seeds."""
     hit = tot = hit_c = 0
-    b = b_runs[0]
-    for run in a_runs:
+    for run, b in ((a, b) for a in a_runs for b in b_runs):
         for rid, evs in run.items():
             r = rows_by_id[rid]
             w0, w1 = r["w0"] * r["dt"], (r["w0"] + r["L"]) * r["dt"]
@@ -271,6 +332,8 @@ def main(argv=None):
             for J in J_SEC:
                 for fold in range(ts.N_FOLDS):
                     tasks.append((ssl_task, (name, J, seed, fold, a.quick, a.checkpoints)))
+    for name in ts.BASELINES:
+        tasks.append((baseline_task, (name,)))
     t0 = time.time()
     detector_events: dict = {}
     raw = []
@@ -292,17 +355,24 @@ def main(argv=None):
     rng = np.random.RandomState(seed31("agree"))
     agree = {}
     for det in detector_events:
+        if det.endswith("on its rigid shift"):
+            continue  # measured for window-edge shares only; agreement is not defined on a surrogate
         for ref in ("coact", "loco"):
             if det != ref:
                 agree[f"{det} -> {ref}"] = agreement(detector_events[det], detector_events[ref],
                                                     rows_by_id, rng)
         if not det.startswith(("coact", "loco")):
             for ref in ("coact", "loco"):
-                agree[f"{ref} -> {det}"] = agreement(detector_events[ref], detector_events[det][:1],
+                agree[f"{ref} -> {det}"] = agreement(detector_events[ref], detector_events[det],
                                                     rows_by_id, rng)
     (out / "events.json").write_text(json.dumps(
         {det: runs for det, runs in detector_events.items()}, default=float))
+    from bugarach import provenance
     (out / "summary.json").write_text(json.dumps({"stats": stats, "agreement": agree,
+                                                  "provenance": provenance.stamp(
+                                                      produced_by="tools/tube_ssl_real_compare.py"),
+                                                  "sup_threshold_j_sec": SUP_THRESHOLD_J_SEC,
+                                                  "n_random_per_event": N_RANDOM_PER_EVENT,
                                                   "seconds": time.time() - t0,
                                                   "quick": a.quick}, indent=2, default=float))
     for det, s in sorted(stats.items()):

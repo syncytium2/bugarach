@@ -40,10 +40,18 @@ look scores its leak test (:mod:`look_rigid_shift`).
 1. **real vs shared offset** — every ROI moved by one offset (:mod:`look_rigid_shift_controls`).
    Keeps coordination and slow shared modulation, moves counts across window edges exactly as
    rigid shift does. Anything above chance is a count or edge leak on the channel.
-2. **unplanted twin vs its rigid shift** — synthetic, no coordination and no shared modulation,
-   so nothing legitimate to find. Anything above chance is a leak.
+2. **unplanted twin vs its rigid shift** — synthetic, stationary, independent ROIs. ⚠ Rigid shift
+   leaves such a process invariant, so this contrast cannot fail for any leak (a murderboard
+   finding, 2026-09-17). Kept for continuity only.
 3. **real vs rigid shift**, pooled and **per channel** — what the model could learn, and where.
-4. **planted twin vs its rigid shift** — the positive control: must separate.
+   At the smallest *J* (1.6 s fast, 1.4 s slow) slow co-modulation survives the shift, so
+   separation there is not modulation.
+4. **planted twin vs its rigid shift** — must separate: the channels can see planted events.
+5. **shared-modulation twin vs its rigid shift** — no events, one slow rate change shared by every
+   ROI. Must separate on any channel that sees co-modulation, which is what makes a large-*J*
+   separation on real recordings ambiguous.
+6. **independent-modulation twin vs its rigid shift** — each ROI's rate moves on its own. Must
+   read chance.
 """
 
 from __future__ import annotations
@@ -66,7 +74,9 @@ from bugarach import surrogate_stats as ss                   # noqa: E402
 from bugarach import surrogates as sg                        # noqa: E402
 
 TAG = "tube-aggregate-2026-09-15"
-J_SEC = {"fast": (5.0, 10.0, 20.0, 40.0), "slow": (5.6, 11.2, 22.4, 44.8)}
+J_SEC = {"fast": (1.6, 5.0, 10.0, 20.0, 40.0), "slow": (1.4, 5.6, 11.2, 22.4, 44.8)}
+"""1.6 s (fast) and 1.4 s (slow) added 2026-09-17: a shift too small to move slow co-modulation, so a
+channel that separates real from rigid shift only at large J is seeing modulation, not coordination."""
 CENTRES = (1, 2, 4, 8, 16, 32, 64, 128)
 SURROUND_RATIO = 8.0
 WIDEN = 1
@@ -223,7 +233,14 @@ def real_contrasts(stream, J_sec, n_boot, limit, channels, labels, seed_key):
 
 
 def twin_contrasts(stream, J_sec, n_boot, limit, channels, labels, seed_key):
-    X = {"planted": ([], []), "unplanted": ([], [])}
+    """Synthetic twins against their rigid shift. ``planted`` must separate. ``unplanted`` is
+    stationary with independent ROIs, which rigid shift leaves invariant, so it cannot fail (kept
+    for continuity). The two modulation twins (``tools/tube_self_supervised.modulated``, added
+    2026-09-17) carry no events: ``shared_modulation`` must separate on any channel that sees
+    co-modulation, and ``independent_modulation`` must read chance."""
+    import tube_self_supervised as ts
+    X = {"planted": ([], []), "unplanted": ([], []), "shared_modulation": ([], []),
+         "independent_modulation": ([], [])}
     groups = []
     shape = None
     for t in range(N_TWINS):
@@ -232,7 +249,10 @@ def twin_contrasts(stream, J_sec, n_boot, limit, channels, labels, seed_key):
         w = int(np.floor(lr.WINDOW_SEC / dt + 0.5))
         wins = [(i * w, (i + 1) * w) for i in range(n_frames // w)][1:-1]
         Jf = round(J_sec / dt, 9)
-        for kind, tr in (("planted", pl), ("unplanted", un)):
+        rng_mod = np.random.RandomState(seed31("twin-mod", stream, t))
+        mods = {k: ts.modulated(un, n_frames, dt, rng_mod, k == "shared_modulation")
+                for k in ("shared_modulation", "independent_modulation")}
+        for kind, tr in (("planted", pl), ("unplanted", un), *mods.items()):
             rig = sg.generate("rigid_shift", tr, (0, n_frames),
                               (TAG, "twin", stream, kind, t, Jf), J=Jf).trains
             X[kind][0].append(window_features(tr, (0, n_frames), wins, channels))
@@ -247,7 +267,15 @@ def twin_contrasts(stream, J_sec, n_boot, limit, channels, labels, seed_key):
                                               labels, per_scale=False),
             "planted_vs_rigid_shift": score(np.vstack(X["planted"][0]),
                                             np.vstack(X["planted"][1]), groups, n_boot, seed + 1,
-                                            labels, per_scale=False)}
+                                            labels, per_scale=False),
+            "shared_modulation_vs_rigid_shift": score(
+                np.vstack(X["shared_modulation"][0]), np.vstack(X["shared_modulation"][1]),
+                groups, n_boot, seed + 2, labels, per_scale=False),
+            "independent_modulation_vs_rigid_shift": score(
+                np.vstack(X["independent_modulation"][0]),
+                np.vstack(X["independent_modulation"][1]), groups, n_boot, seed + 3, labels,
+                per_scale=False),
+            "modulation": {"period_sec": ts.MOD_PERIOD_SEC, "depth": ts.MOD_DEPTH}}
 
 
 def real_task(args):

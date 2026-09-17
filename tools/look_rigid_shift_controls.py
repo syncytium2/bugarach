@@ -108,9 +108,11 @@ def leak_task(args):
     stream, J_sec, n_boot, limit = args
     recs, _ = lr.load(stream, limit)
     keep, _ = lr.feature_mask()
-    Xr, Xrig, Xsh, Xdi, mice, slices, groups = [], [], [], [], [], [], []
-    drop = {"rigid_shift": [0, 0], "shared_shift": [0, 0], "uniform_dither": [0, 0]}
-    per_rec_drop = {"rigid_shift": [], "shared_shift": [], "uniform_dither": []}
+    Xr, Xrig, Xsh, Xdi, Xcs, mice, slices, groups = [], [], [], [], [], [], [], []
+    drop = {"rigid_shift": [0, 0], "shared_shift": [0, 0], "uniform_dither": [0, 0],
+            "circular_shift": [0, 0]}
+    per_rec_drop = {"rigid_shift": [], "shared_shift": [], "uniform_dither": [],
+                    "circular_shift": []}
     for r in recs:
         Jf = round(J_sec / r.dt, 9)
         rig = sg.generate("rigid_shift", r.trains, r.window,
@@ -129,6 +131,17 @@ def leak_task(args):
         d_in = int(di.info["n_in"].sum()); d_out = int(di.info["n_out"].sum())
         drop["uniform_dither"][0] += d_in; drop["uniform_dither"][1] += d_in - d_out
         per_rec_drop["uniform_dither"].append((d_in - d_out) / max(1, d_in))
+        # A second positive control (added 2026-09-17), for the failure dither cannot stand in
+        # for: rigid shift preserves every same-ROI interval exactly, so dither tests a change
+        # rigid shift never makes. A per-ROI circular shift of the whole window also keeps each
+        # ROI's intervals (except at the one wrap) and moves its counts across windows by an
+        # independent lag of up to the whole recording. J does not enter; it is recomputed per
+        # cell only so every cell carries its own control.
+        cs = sg.generate("circular_shift", r.trains, r.window,
+                         (TAG, "leak", r.recording_id, stream, "circular_shift"))
+        c_in = int(cs.info["n_in"].sum()); c_out = int(cs.info["n_out"].sum())
+        drop["circular_shift"][0] += c_in; drop["circular_shift"][1] += c_in - c_out
+        per_rec_drop["circular_shift"].append((c_in - c_out) / max(1, c_in))
         wins = lr.interior_windows(r)
         if not wins:
             continue
@@ -136,11 +149,13 @@ def leak_task(args):
         a, b = sd.pair_features([r.trains] * len(wins), [rig.trains] * len(wins), wins, band)
         _, c = sd.pair_features([r.trains] * len(wins), [sh] * len(wins), wins, band)
         _, d = sd.pair_features([r.trains] * len(wins), [di.trains] * len(wins), wins, band)
+        _, e = sd.pair_features([r.trains] * len(wins), [cs.trains] * len(wins), wins, band)
         Xr.append(a[:, keep]); Xrig.append(b[:, keep]); Xsh.append(c[:, keep])
-        Xdi.append(d[:, keep])
+        Xdi.append(d[:, keep]); Xcs.append(e[:, keep])
         mice += [r.mouse] * len(wins); slices += [r.recording_id] * len(wins)
         groups += [r.group or ""] * len(wins)
     Xr, Xrig, Xsh, Xdi = np.vstack(Xr), np.vstack(Xrig), np.vstack(Xsh), np.vstack(Xdi)
+    Xcs = np.vstack(Xcs)
     mice, slices, groups = np.asarray(mice), np.asarray(slices), np.asarray(groups)
 
     res = {"stream": stream, "J_sec": J_sec, "n_pairs": int(len(mice)),
@@ -148,7 +163,8 @@ def leak_task(args):
            "n_recordings": len(recs)}
     look_seed = lr.seed31("leak", stream, "rigid_shift", J_sec)
     res["rigid_shift_look_seed_accuracy"] = float(lr.cv_correct(Xr, Xrig, mice, look_seed).mean())
-    for name, Xs in (("rigid_shift", Xrig), ("shared_shift", Xsh), ("uniform_dither", Xdi)):
+    for name, Xs in (("rigid_shift", Xrig), ("shared_shift", Xsh), ("uniform_dither", Xdi),
+                     ("circular_shift", Xcs)):
         seeds = [seed31("folds", stream, J_sec, i) for i in range(FOLD_SEEDS)]
         accs = [float(lr.cv_correct(Xr, Xs, mice, s_).mean()) for s_ in seeds]
         seed = seed31("leak", stream, name, J_sec)
