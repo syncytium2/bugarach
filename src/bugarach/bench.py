@@ -406,6 +406,13 @@ def settings_are_valid(det: str, p: dict) -> bool:
     :data:`FULL_GRIDS` rejects the same combinations this project's own search does.
     """
     if det == "loco":
+        # The detector's own refusal, encoded here so a search does not spend an evaluation
+        # discovering it: a guard is supported only with the one-sided 'maxlt' null, because
+        # under 'symmetric' the guard would hole the middle of the window and the wrap would
+        # cross the hole (`loco.py`). Found by the 2026-09-17 every-knob search, the first
+        # thing ever to cross those two axes.
+        if p.get("guard_sec", 0.0) and p.get("null_context_mode", "maxlt") != "maxlt":
+            return False
         return (p["bin_width_sec"] * 4 <= p["context_win_sec"]
                 and p["merge_gap_sec"] < p["context_win_sec"])
     if det == "coact":

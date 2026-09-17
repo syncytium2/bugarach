@@ -161,17 +161,25 @@ def _job(args):
     # detector is actually run with, NaN and all.
     items = key_items
     params = dict(param_items)
-    if regime == NULL:
-        rates = [bench.false_positives_per_hour(det, seeds=(s,), **params) for s in seeds]
-        return (det, items, regime), dict(null_per_hour=sum(rates) / len(rates),
-                                          per_seed=rates if keep else None)
-    scores = []
-    for s in seeds:
-        if regime in TAIL:
-            rec, gt = bench.make_tail_recording("baseline_" + regime.split("_", 1)[1], s)
-        else:
-            rec, gt = bench.make_recording(regime, s)
-        scores.append(score_stream(gt, bench.run_detector(det, rec, **params)))
+    try:
+        if regime == NULL:
+            rates = [bench.false_positives_per_hour(det, seeds=(s,), **params) for s in seeds]
+            return (det, items, regime), dict(null_per_hour=sum(rates) / len(rates),
+                                              per_seed=rates if keep else None)
+        scores = []
+        for s in seeds:
+            if regime in TAIL:
+                rec, gt = bench.make_tail_recording("baseline_" + regime.split("_", 1)[1], s)
+            else:
+                rec, gt = bench.make_recording(regime, s)
+            scores.append(score_stream(gt, bench.run_detector(det, rec, **params)))
+    except (ValueError, NotImplementedError) as e:
+        # A detector refusing a COMBINATION of settings is a fact about the detector, not a
+        # crash: `loco` refuses a guard under the symmetric null, and an hour of search must
+        # not die on one such pair. Recorded and reported, never retried and never silent —
+        # `Evaluator.run` prints each distinct refusal once, and the candidate is
+        # inadmissible rather than missing.
+        return (det, items, regime), dict(refused=f"{type(e).__name__}: {e}")
     r = bench.pool_scores(scores, detector=det, regime=regime, seeds=tuple(seeds))
     return (det, items, regime), dict(f1=r.f1, recall=r.recall, precision=r.precision,
                                       probe_per_min=r.hot_fa_per_min, n_hit=r.n_hit,
@@ -186,6 +194,7 @@ class Evaluator:
         self.pool, self.seeds, self.log = pool, list(seeds), log
         self.cache: dict = {}
         self.n_points = 0
+        self.refusals: dict = {}      # message -> the detector that refused, logged once each
 
     def run(self, points):
         """``points``: iterable of (det, params). Fills the cache for all three recordings."""
@@ -201,12 +210,24 @@ class Evaluator:
         t0 = time.time()
         for key, val in self.pool.imap_unordered(_job, todo, chunksize=1):
             self.cache[key] = val
+            why = val.get("refused")
+            if why and why not in self.refusals:
+                self.refusals[why] = key[0]
+                self.log(f"    {key[0]}: a combination is refused — {why}")
         self.n_points += len(todo) // 3
         self.log(f"    {len(todo)} evaluations in {time.time() - t0:.0f} s")
 
     def summary(self, det, params):
         k = _key(det, params)
         q, b, n = (self.cache[(k[0], k[1], r)] for r in (*REGIMES, NULL))
+        if any(r.get("refused") for r in (q, b, n)):
+            # Scored nowhere, so it cannot win: admissibility reads mean_f1 and every budget
+            # here, and NaN fails all of them.
+            nan = float("nan")
+            return dict(f1_quiet=nan, f1_busy=nan, mean_f1=nan,
+                        precision_quiet=nan, precision_busy=nan,
+                        probe_quiet=nan, probe_busy=nan, null_per_hour=nan,
+                        refused=next(r["refused"] for r in (q, b, n) if r.get("refused")))
         return dict(f1_quiet=q["f1"], f1_busy=b["f1"],
                     mean_f1=(q["f1"] + b["f1"]) / 2,
                     precision_quiet=q["precision"], precision_busy=b["precision"],
