@@ -54,6 +54,16 @@ repository alone.
 
 BENCH_SEEDS = (1, 2, 3)
 
+THRESHOLD_GRID = np.unique(np.concatenate([np.geomspace(1e-4, 0.05, 12),
+                                           np.arange(0.05, 0.95, 0.05),
+                                           1.0 - np.geomspace(0.05, 1e-4, 12)]))
+"""The thresholds :func:`pick_threshold` searches, open towards both ends (its comments say why).
+
+Module-level so a caller that re-decodes a model's probabilities at every candidate
+threshold (``tools/tune_learned_vs_coact.py``'s gated selection) searches exactly
+the grid the model's own threshold was picked from, instead of a copy that can drift.
+"""
+
 
 def pin_threads(n: int = THREADS) -> int:
     """Pin torch's intra-op threads. Idempotent; returns what is now set."""
@@ -260,9 +270,7 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     # went straight through the floor and the warning below fired on the first
     # architecture of the first fold. A grid open at one end is only half a
     # search, and which half it is depends on data the search does not control.
-    grid = np.unique(np.concatenate([np.geomspace(1e-4, 0.05, 12),
-                                     np.arange(0.05, 0.95, 0.05),
-                                     1.0 - np.geomspace(0.05, 1e-4, 12)]))
+    grid = THRESHOLD_GRID
     # Pooled by `bench.pool_scores`, like everything else scored against this
     # benchmark. Selecting the operating point under one rule and reporting it
     # under another is the same defect as scoring two detectors differently, and
