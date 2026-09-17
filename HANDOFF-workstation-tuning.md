@@ -757,7 +757,11 @@ against the Mac averaged over two: `tube` 0.650 against 0.646 (+0.004); `chorus_
 (−0.019); `chorus_gain_norm` 0.717 against 0.730 (−0.012); `line_length` 0.674 against 0.697 (−0.023).
 `line_length`'s gap is one seed: at seed 2, fold 0 scored 0.500 at a threshold of 0.9983 (recall 0.42)
 and fold 2 scored 0.577 at 0.9838 (precision 0.41), while seeds 0 and 1 average 0.704. That looks like
-threshold picking on two recordings rather than the device, but no CPU fit at seed 2 exists to show it.
+threshold picking on two recordings rather than the device. **Checked on the CPU the same day**
+(`line_length`, seed 2, native Windows, torch 2.14.0; 986 s): 0.615, 0.707, 0.601 and 0.659 F1, a mean
+of 0.646, with fold 0's threshold again at the top (0.9970). **Seed 2 is a low draw on both devices**,
+in the same two folds. The GPU sits lower within it (fold 0 0.500 against 0.615; mean 0.616 against
+0.646).
 The GPU's seed-to-seed spread per fold is 0.038 to 0.065 (0.267 with that fold), against the Mac's
 0.032 to 0.060 over two seeds. **Reading, not decided:** three of four models average 0.012 to 0.023 F1
 below the Mac on the GPU, within reach of seed noise. If it is a real device effect it lowers every
