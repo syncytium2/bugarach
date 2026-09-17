@@ -117,6 +117,7 @@ def stage_sim(work: Path) -> None:
     """Every algorithm's steps on the first review's simulated recording (seed 3)."""
     from make_detector_review import _bench, coded_results
     from make_mechanism_figure import coact_bar
+    from bugarach.detectors._shared import matlab_prctile
 
     s, gt, ext = _bench(SEED)
     trains = [np.asarray(v, float) for v in s.streams["events"].t50rise]
@@ -234,11 +235,13 @@ def stage_sim(work: Path) -> None:
     out["chance_loco"] = dict(observed=lo_obs,
                               before=np.bincount(before.astype(int), minlength=12).tolist(),
                               after=np.bincount(after.astype(int), minlength=12).tolist(),
-                              p999_before=float(np.percentile(before, 99.9)),
-                              p999_after=float(np.percentile(after, 99.9)),
+                              # at the STORED percentile (it read 99.9 after LoCo moved to 99.5)
+                              p999_before=float(matlab_prctile(before, params["loco"]["threshold_pctile"])),
+                              p999_after=float(matlab_prctile(after, params["loco"]["threshold_pctile"])),
                               bar=float(np.nanmax(np.asarray(A["loco"]["bar"], float)[max(0, ia - 2):ia + 3])))
     # binned SCE: 10 s bins over the whole recording, 200 copies pooled
-    edges = np.arange(ext[0], ext[1] + 1e-9, 10.0)
+    # ceil, as sce.py counts its bins: the last, partial bin is a bin too
+    edges = ext[0] + 10.0 * np.arange(int(np.ceil((ext[1] - ext[0]) / 10.0)) + 1)
     hist = np.zeros(40, int)
     for _ in range(200):
         occ = np.zeros(len(edges) - 1)
@@ -249,19 +252,21 @@ def stage_sim(work: Path) -> None:
     out["chance_sce"] = dict(hist=hist.tolist(), n_bins=int(hist.sum()),
                              observed=float(np.asarray(A["sce"]["y"], float)[si]),
                              bar=float(np.nanmax(np.asarray(A["sce"]["bar"], float))))
-    # locust: frames of 0.1 s, each event on for 1 s, 100 copies pooled
+    # locust: the detector's own raster (each event on for its own measured width, as the stored
+    # setting runs it) rolled by whole frames the way cicada._sce_threshold rolls it, 100 copies
+    # pooled. Until 2026-09-17 this drew each event on for a fixed 1 s and slid event times, a rule
+    # the detector had dropped (murderboard, roles 6 and 7).
+    from bugarach.detectors.cicada import _build_raster
     fr = 0.1
     nf = int(round((ext[1] - ext[0]) / fr))
+    widths = [np.asarray(w, float) for w in s.streams["events"].width]
+    raster = _build_raster(trains, widths, ext[0], fr, nf, 10).astype(np.int64)
     hist = np.zeros(40, np.int64)
     for _ in range(100):
-        on = np.zeros(nf, int)
-        for v in trains:
-            m = np.zeros(nf + 10, bool)
-            idx = np.floor((_shift(v, ext[0], ext[1], rng) - ext[0]) / fr).astype(int)
-            for j in range(10):
-                m[np.clip(idx + j, 0, nf + 9)] = True
-            on += m[:nf]
-        hist += np.bincount(on, minlength=40)[:40]
+        on = np.zeros(nf, np.int64)
+        for row in raster:
+            on += np.roll(row, int(rng.random_sample() * (nf - 1)) + 1)
+        hist += np.bincount(np.minimum(on, 39), minlength=40)[:40]
     ci = int(np.argmin(np.abs(np.asarray(A["cicada"]["t"]) - EVENT_T)))
     out["chance_cicada"] = dict(hist=hist.tolist(), n_frames=int(hist.sum()),
                                 observed=float(np.nanmax(np.asarray(A["cicada"]["y"], float)[max(0, ci - 20):ci + 20])),
@@ -547,12 +552,15 @@ def stage_real(work: Path, review: Path) -> None:
     def closeup(k, t0, t1, why):
         r = rec[k]
         win = (t0, t1)
-        order = np.argsort([len(v) for v in r["trains"]], kind="stable")   # busiest on top
+        drawn = _trains_in(r["trains"], win)
+        # busiest on top, counted over the minutes DRAWN (ui/diagnostic.py fixed the same thing on
+        # 2026-09-07; this sorted by the whole recording until the 2026-09-17 murderboard, role 7)
+        order = np.argsort([len(v) for v in drawn], kind="stable")
         return dict(key=k, label=r["label"], group=r["group"], stream=r["stream"], n_roi=r["n_roi"],
                     regions=r["regions"],
                     anchor=r["anchor"], win=list(win), why=why,
                     windows=[[w0, w1] for _, w0, w1 in r["windows"]],
-                    trains=[_trains_in([r["trains"][i]], win)[0] for i in order],
+                    trains=[drawn[i] for i in order],
                     calls={dd: _calls_in(*zip(*r["calls"][dd]), win, pad=0.0) if r["calls"][dd] else []
                            for dd in ALL10},
                     stripes=[sp for sp in r["stripes"] if t0 <= sp["t"] <= t1],
@@ -1089,7 +1097,7 @@ def fig_chance(W):
     from svgfig import Figure, MUTED, nice_ticks
     sim = W["sim"]
     f = Figure(960, 440)
-    cols = [("A", "A · quiet neurons, one real coordinated event", 80),
+    cols = [("A", "A · quiet neurons, one planted coordinated event", 80),
             ("B", "B · busy neurons, nothing planted", 530)]
     for key, title, X in cols:
         D = sim[key]
@@ -1219,10 +1227,10 @@ def fig_shift_shuffle(W, numbers):
     from svgfig import Figure, MUTED, nice_ticks
     T = W["toys"]
     f = Figure(980, 900)
-    rows = [("bursty", "A · neurons that fire in bursts", 40,
+    rows = [("bursty", "A · neurons with events in bursts", 40,
              "A shuffle breaks the bursts apart, so events spread over more of the recording and more "
-             "neurons land in any bin by chance. The bar comes out too high and the real burst is missed."),
-            ("even", "B · neurons that fire at a steady beat", 410,
+             "neurons land in any bin by chance. The bar comes out too high and the burst that was put in is missed."),
+            ("even", "B · neurons with events at a steady beat", 410,
              "A shuffle lets a neuron's events pile up in one bin and leave others empty, so fewer neurons "
              "reach any bin by chance. The bar comes out too low and a coordinated event that is only chance is called.")]
     for key, title, Y, story in rows:
@@ -1310,7 +1318,8 @@ STEPS = {
               "For a bin with at least 3 neurons, take the {ctx:g} seconds around it and make "
               "{ns} shifted copies of them.",
               "Set the bar well above what the copies give: their average plus {z:.2f} times their "
-              "typical spread.",
+              "typical spread (the rule that would allow 1 bin in {alpha_1in} if the copies' counts "
+              "followed a bell curve).",
               "Call the bin if the real count is over the bar."],
     "loco": ["Cut time into {bin:g}-second bins. Count how many different neurons have an event in each.",
              "Every {step:g} seconds, make {ns} shifted copies of the {half:g} seconds before and of the "
@@ -1334,8 +1343,11 @@ STEPS = {
              "than {tau:g} seconds.",
              "Spread those per-event scores into a continuous line over time, by averaging the scores "
              "of the events in each 0.1-second frame.",
-             "Find the peaks of that line. A peak that rises above {bar:g} and covers at least 3 events "
-             "becomes a call. No copies are made."],
+             # the stored setting runs the threshold scan (SpikyDetect3), not peak finding (murderboard
+             # 2026-09-17, role 6): a run of frames, not a peak, becomes a call
+             "A call starts at a frame whose score is over {bar:g} and runs on through frames over {cmin:g}, "
+             "across gaps shorter than {gap:g} seconds. It is kept if it holds at least 3 events. "
+             "No copies are made."],
 }
 
 
@@ -1378,23 +1390,23 @@ def _settings_rows(det, st):
                  (f"{v['ex']:g} per second", "excess events over the average (the bar)")],
         "coact": [(f"{v['bin']:g} s", "bin width"),
                   (f"{v['ctx']:g} s", "context window copied around each bin"),
-                  (f"1 in {v['alpha_1in']}", "chance allowed per bin (sets the bar)"),
+                  (f"1 in {v['alpha_1in']}", "nominal chance per bin (bell-curve rule)"),
                   (f"{v['ns']}", "shifted copies per bin"),
                   ("3 neurons", "fewest neurons a bin needs to be tested")],
         "loco": [(f"{v['bin']:g} s", "bin width"),
                  (f"{v['half']:g} s", "context copied on each side"),
                  (f"every {v['step']:g} s", "how often the bar is worked out again"),
-                 (f"1 in {v['loco_1in']}", "chance allowed per bin (sets the bar)"),
+                 (f"1 in {v['loco_1in']}", "copied bins allowed over the bar"),
                  (f"{v['ns']}", "shifted copies each time"),
                  (f"{v['merge']:g} s", "calls closer than this merge into one"),
                  ("3 neurons", "fewest neurons a call needs")],
         "sce": [(f"{v['bin']:g} s", "bin width"),
-                (f"1 in {v['sce_1in']}", "chance allowed per bin (sets the bar)"),
+                (f"1 in {v['sce_1in']}", "copied bins allowed over the bar"),
                 (f"{v['ns']}", "shifted copies of the whole stretch"),
                 ("3 neurons", "fewest neurons a call needs")],
         "cicada": [("measured", "how long each event keeps its neuron on"),
                    ("0.1 s", "frame length"),
-                   (f"1 in {v['cic_1in']}", "chance allowed per frame (sets the bar)"),
+                   (f"1 in {v['cic_1in']}", "copied frames allowed over the bar"),
                    (f"{v['ns']}", "shifted copies of the whole recording")],
         "sync": [(f"{v['tau']:g} s", "longest gap still counted as close"),
                  (f"{v['bar']:g}", "score that starts a call (the bar)"),
@@ -1805,7 +1817,7 @@ def fig_grading(W, numbers):
     f.text(L - 8, 88, "calls", size=12, anchor="end", color=MUTED)
     lane.xaxis_time(label="a simulated minute, drawn to show the rule")
     f.text(L, 214, f"Green bands reach {tol:g} seconds either side of each planted event. A call that touches a "
-                   f"band is a hit; each call can claim only one event.", size=12, color=MUTED)
+                   f"band is a hit; each planted event counts only one call.", size=12, color=MUTED)
     f.text(L, 234, "Here: found 2 of 3 planted events; 2 of 4 calls were right.", size=12, color=MUTED)
     return f
 
@@ -1923,7 +1935,8 @@ def fig_count_rule(W):
                            "Wherever it sits, count how many different neurons have an event inside it.",
                            f"Wherever that count reaches {x} neurons, call a coordinated event. Windows "
                            "that overlap make one call.",
-                           "No copies are made. The bar is the same number in every recording.")):
+                           "It never asks what chance would produce. The bar is the same number in every "
+                           "recording.")):
         f.step_badge(32, y - 4, str(i + 1), color=COUNT_C)
         y = f.para(52, y, s, width_chars=40, size=13) + 12
     for j, (key, title) in enumerate((("A", "A · a planted event (quiet neurons)"),
@@ -2110,9 +2123,9 @@ def fig_count_published(W):
     # the figure could not tell which paper it meant (Tony, 2026-09-16: "what published 2026 paper?").
     f = Figure(1000, 460)
     for j, (key, title, ylim, ticks, ylab, rep) in enumerate((
-            ("mse_per_cell_h", "A · “synchronized events” per neuron per hour", (0, 4), [0, 1, 2, 3, 4],
-             "events per neuron per hour", e["mse"]),
-            ("cells_per", "B · neurons in each “synchronized event”", (2, 4.5), [2, 3, 4], "neurons in each event",
+            ("mse_per_cell_h", "A · mSEs per neuron per hour", (0, 4), [0, 1, 2, 3, 4],
+             "mSEs per neuron per hour", e["mse"]),
+            ("cells_per", "B · neurons in each mSE", (2, 4.5), [2, 3, 4], "neurons in each mSE",
              e["cells_per"]))):
         X, PW, PH = 90 + j * 470, 330, 290
         f.text(X, 24, title, size=13, weight=600)
@@ -2183,7 +2196,7 @@ def _closeup(f, c, X, Y, PW, *, title, dets=ALL10, raster_h=180, show_weak=False
     if stripe_marks:
         for s_ in c["stripes"]:
             sp.down_triangle(s_["t"] + 0.5, y + 8, color=INK_T, size=10)
-        f.text(X - 8, y + 12, "stripes you can see", size=11, anchor="end", color=MUTED)
+        f.text(X - 8, y + 12, "clear stripes", size=11, anchor="end", color=MUTED)
     y += 18
     r = f.panel(X, y, PW, raster_h, win, (0, 1))
     r.raster(c["trains"], width=1.2)
@@ -2370,6 +2383,7 @@ def _pct(v, nd=0):
 #: 1000-1023, which that search never saw.
 RETUNE_DATE = "16 September 2026"
 RETUNE_RECORDINGS = 48
+RETUNE_FOLDER = "2026-09-16-best-parameters"      # under bugarach.paths.darkroom()
 
 
 def _count_values(W) -> dict:
@@ -2429,7 +2443,10 @@ def _count_values(W) -> dict:
         pub_rep_rate=f"{e['rate']:g}", pub_rep_mse=f"{e['mse']:g}", pub_rep_cells=f"{e['cells_per']:g}",
         pub_rep_share=f"{e['share']:g}", pub_field=e["field"], pub_field_lo=e["field_lo"],
         pub_field_hi=e["field_hi"],
-        pub_chance_mse=f"{ch['mse_per_cell_h']:.1f}", pub_chance_cells=f"{ch['cells_per']:.1f}")
+        pub_chance_mse=f"{ch['mse_per_cell_h']:.1f}", pub_chance_cells=f"{ch['cells_per']:.1f}",
+        # the other reading of "per cell, per hour": how often each neuron takes part in an event, which is
+        # events per neuron per hour times neurons per event (Han et al. 2023 describe their unit this way)
+        pub_chance_part=f"{ch['mse_per_cell_h'] * ch['cells_per']:.1f}")
 
 
 def _display_values(W, N) -> dict:
@@ -2453,6 +2470,7 @@ def _display_values(W, N) -> dict:
         n6_shuffle=f"{100 * N['sur_fast_n6']['shuffle']:.2f}%", n_baselines=N["sur_fast_n_recordings"],
         real_over_shift_8=N["sur_fast_real_over_shift"]["n8"],
         rate_ex=f"{st['rate']['excess_threshold_hz']:g}", coact_ns=st["coact"]["n_surrogates"],
+        coact_alpha_1in=_fill(st["coact"])["alpha_1in"],
         loco_ns=st["loco"]["n_surrogates"], sce_ns=st["sce"]["n_surrogates"],
         cicada_ns=st["cicada"]["n_surrogates"],
         sync_tau=f"{st['sync']['tau_max']:g}", sync_bar=f"{st['sync']['C_threshold']:g}",
@@ -2491,6 +2509,15 @@ def _display_values(W, N) -> dict:
             T[f"fa{tag}_{d}"] = f"{N[f'stored_{reg}_{d}']['probe_per_min']:.1f}"
         for d in LEARNED4:          # the learned page keeps the rounds it was trained and scored in
             T[f"f1{tag}_{d}"] = f"{N[f'perf_{reg}_{d}']['f1']:.2f}"
+    for d in CODED:
+        # three times busier (the sentence "none held up" gave no numbers; murderboard 2026-09-17, roles 1 and 4)
+        b3 = N["blockrecall_hot3x"]["per_detector"][d]
+        T[f"in3_{d}"] = _pct(b3["p18"]["inside"])
+        T[f"fa3_{d}"] = f"{b3['calls_per_min']:.1f}"
+        # clear stripes OUTSIDE the analysis windows, which only the whole-recording programs can call
+        t = real["tally"][d]
+        T[f"stripe_out_called_{d}"] = t["called"] - t["called_in"]
+    T["n_stripes_out_total"] = real["tally"]["rate"]["stripes"] - real["tally"]["rate"]["stripes_in"]
     for d in CODED + LEARNED4:
         b = N["blockrecall"]["per_detector"][d]
         T[f"out_{d}"] = _pct(b["p18"]["outside"])
@@ -2509,6 +2536,30 @@ def _display_values(W, N) -> dict:
         raise SystemExit("a stored setting's source does not name the 2026-09-16 search; reword Section grading")
     words = lambda ds: ", ".join(NAMES[d] for d in ds[:-1]) + f" and {NAMES[ds[-1]]}"   # noqa: E731
     T["retune_moved"], T["retune_kept"] = words(moved), words(kept)
+    # Each program's OWN false-alarm limits, set from its own measured rate plus slack (bench.py). The text
+    # said "two limits" as if one standard held for all six (murderboard 2026-09-17, roles 1 and 4).
+    for key, lim, unit in (("probe", bench.MAX_PROBE_PER_MIN, "min"), ("null", bench.MAX_FALSE_POSITIVES_PER_HOUR, "h")):
+        lo, hi = min(lim.values()), max(lim.values())
+        T[f"lim_{key}_lo"], T[f"lim_{key}_hi"] = f"{lo:g}", f"{hi:g}"
+        T[f"lim_{key}_lo_who"] = words([d for d in CODED if lim[d] == lo]) if sum(lim[d] == lo for d in CODED) > 1 \
+            else NAMES[next(d for d in CODED if lim[d] == lo)]
+        T[f"lim_{key}_hi_who"] = NAMES[next(d for d in CODED if lim[d] == hi)]
+    # binned SCE is the program whose result the limit decided: its best overall score is far looser and
+    # far noisier on the empty recording. Read off the search's own output, not typed in.
+    from bugarach.paths import darkroom
+    rt = json.loads((darkroom() / RETUNE_FOLDER / "retune.json").read_text())["detectors"]["sce"]
+    by_v = {}
+    for bg in rt["backgrounds"].values():
+        for row in bg["rows"]:
+            by_v.setdefault(row["v"], []).append(row["f1"])
+    mean_f1 = {v: float(np.mean(f)) for v, f in by_v.items() if len(f) == len(rt["backgrounds"])}
+    v_best = max(mean_f1, key=mean_f1.get)
+    v_stored = float(bench.OPERATING_POINTS["sce"].params[bench.OPERATING_POINTS["sce"].knob])
+    T["sce_loose_1in"], T["sce_stored_1in"] = _one_in(v_best), _one_in(v_stored)
+    T["sce_loose_f1"], T["sce_stored_f1"] = f"{mean_f1[v_best]:.2f}", f"{mean_f1[v_stored]:.2f}"
+    T["sce_loose_null"] = f"{rt['null_per_hour'][repr(v_best)]:.0f}"
+    T["sce_stored_null"] = f"{rt['null_per_hour'][repr(v_stored)]:.1f}"
+    T["sce_null_limit"] = f"{rt['null_ceiling_per_hour']:g}"
     P = W["problem"]
     for d, v in P["pick"]["counts"].items():
         T[f"prob_{d}"] = v
@@ -2592,8 +2643,15 @@ def _display_values(W, N) -> dict:
     import datetime as _dt
     import subprocess
     try:
+        here = Path(__file__).resolve().parent
         sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
-                             cwd=Path(__file__).resolve().parent).stdout.strip()
+                             cwd=here).stdout.strip()
+        # a build from uncommitted tools names a commit that cannot rebuild it (murderboard 2026-09-17,
+        # roles 1, 3 and 10): say so rather than stamp the parent as if it were the source
+        dirty = subprocess.run(["git", "status", "--porcelain", "--", "tools", "src"], capture_output=True,
+                               text=True, cwd=here).stdout.strip()
+        if sha and dirty:
+            sha += " plus uncommitted changes"
     except OSError:
         sha = "unknown"
     T["built"] = f"{_dt.date.today().isoformat()} from commit {sha or 'unknown'} of the project's tools"
@@ -2809,7 +2867,39 @@ def stage_docx(work: Path, review: Path) -> None:
     out = dest / "detector_review_plain.docx"
     subprocess.run([pandoc, str(html_in), "-f", "html", "-t", "docx", "--reference-doc", str(ref),
                     "-o", str(out)], check=True)
+    _stamp_docx_properties(out, title=DOCX_TITLE, author=DOCX_AUTHOR)
     print(f"  wrote {out.name}: {len(order)} figures, {DOCX_FONT} {DOCX_BODY_PT}/{DOCX_HEAD_PT} pt")
+
+
+DOCX_TITLE = "Finding neurons that act together"
+DOCX_AUTHOR = "R. DeFazio"
+
+
+def _stamp_docx_properties(path: Path, *, title: str, author: str) -> None:
+    """Title and author into docProps/core.xml, and the reference document's word, page and editing-time
+    counts out of docProps/app.xml. pandoc leaves the first empty and copies the second from its blank
+    template (83 words, 1 page), so the file described itself as somebody else's (murderboard 2026-09-17,
+    role 10). Passing -M title instead would also print a second title on the first page."""
+    import html as _html
+    import shutil
+    import zipfile
+    tmp = path.with_suffix(".stamping.docx")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item)
+            if item.filename == "docProps/core.xml":
+                x = data.decode("utf-8")
+                x = re.sub(r"<dc:title>.*?</dc:title>|<dc:title\s*/>", f"<dc:title>{_html.escape(title)}</dc:title>", x)
+                x = re.sub(r"<dc:creator>.*?</dc:creator>|<dc:creator\s*/>",
+                           f"<dc:creator>{_html.escape(author)}</dc:creator>", x)
+                data = x.encode("utf-8")
+            elif item.filename == "docProps/app.xml":
+                x = data.decode("utf-8")
+                x = re.sub(r"\s*<(Words|Lines|Characters|CharactersWithSpaces|Paragraphs|Pages|TotalTime)>"
+                           r"[^<]*</\1>", "", x)
+                data = x.encode("utf-8")
+            zout.writestr(item, data)
+    shutil.move(str(tmp), str(path))
 
 
 def _write_page(page: str, out: Path, n_figs: int) -> None:
