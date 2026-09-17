@@ -213,8 +213,20 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   not deliver in VS Code and reports success anyway) and handed over scratchpad
   paths. It had held back on purpose, because screenshots were deleted from the
   darkroom on 2026-09-11. That deletion was a cleanup, not a ban. Put the image
-  there with `python3 tools/show.py <file>`, give the path it prints, and note the
-  write in your board block's `Holds:`.
+  there with `python3 tools/show.py <file> --project bugarach`, give the path it
+  prints, and note the write in your board block's `Holds:`.
+  **`--project bugarach` is not optional and this line used to omit it.** `show.py`
+  names its folder from `git rev-parse --show-toplevel`, which in a **worktree** is
+  the worktree, so the bare form writes `<darkroom>/<worktree-name>/` — a new folder
+  at the darkroom **root**, beside `bugarach/` and the producer team's
+  `constellation/`. bugarach owns `<darkroom>/bugarach/` and nothing above it. Filed
+  upstream on 2026-09-03
+  ([todo](docs/todo/2026-09-03-show-derives-the-project-from-the-worktree.md)), still
+  unfixed, and by 2026-09-17 it had left five folders at the root — Tony found them:
+  *"you are bugarach why are you posting to the root of dropbox?"*. **Sapper SAP016
+  now blocks the bare form**, which is why this line carries the flag rather than a
+  warning to remember it. For work under a board claim, prefer the figure tool's own
+  `--out <claimed folder>`, which lands inside the claim.
   Two paths, one directory: `~/Dropbox-<org>` is a **symlink** to
   `~/Library/CloudStorage/Dropbox-<org>`. Seeing a tool print one while looking in
   the other does not mean the file went somewhere else — check with `ls -ld`
