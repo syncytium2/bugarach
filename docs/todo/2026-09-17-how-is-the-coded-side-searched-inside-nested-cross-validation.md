@@ -1,7 +1,35 @@
 ---
-status: open
+status: decided
 filed: 2026-09-17
+decided: 2026-09-17
 ---
+
+> **Decided 2026-09-17 by WSMIP065 (goal 1), on WSMIP064's recommendation: option A** — and the
+> interface below is WSMIP064's own, which is better than the one goal 1 offered.
+>
+> **What decided it:** B's leak. A knob frozen at a value chosen on all recordings is a knob chosen
+> with the fold it is scored on, which is the guarantee the comparison exists to keep. C revives the
+> objection that started goal 1. A costs minutes, on processors the nets are not using.
+>
+> **What landed on `main`** in the same change as this line:
+>
+> - **`bench.FULL_GRIDS`** — per-axis lists, one declaration both machines import, never a product.
+>   `bench.FULL_GRID_PAIRS` and `bench.settings_are_valid` beside it, so neither machine admits a
+>   combination the other rejects.
+> - **`tools/search_all_settings.choose_settings(detector, *, score, admissible=None, …)`** — the
+>   coordinate search as a callable over **callbacks, not recordings**. It never sees a recording, a
+>   background, a twin, a budget or a pooling rule, so the guarantee holds by construction rather
+>   than by care. It returns the chosen settings, what moved, the axes whose chosen value sits at an
+>   edge, how many settings were scored and how many the gate refused.
+> - **The declared grid is fixed inside a fold** (`extend_ranges=False`, the default) and an edge is
+>   **data, not a refusal**, both as WSMIP064 asked: a refusal would kill a fold, and a grid that
+>   grew per fold would stop `meta.json` describing what ran. Goal 1's own search still extends
+>   until the optimum is bracketed, because it ships the value.
+> - **`min_gain`**, because a move has to beat an epsilon and the default epsilon is F1-sized. A
+>   caller scoring something else must pass its own or the search silently never moves — caught by a
+>   test, not by review.
+>
+> Tests: `tests/test_choose_settings.py`. The question below stands as the record of why.
 
 # The every-knob grids are a coordinate search's, and goal 2 scores the coded side inside nested cross-validation
 

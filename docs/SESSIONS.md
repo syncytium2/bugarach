@@ -2468,3 +2468,10 @@ session's work is not a sweep.
   intervals) and `best_parameters.html` / `best_parameters.png` (Figure 1), from
   `tools/retune_operating_points.py` on branch `best-parameters`.
 - **Released:** 2026-09-16, at write. Holds nothing.
+
+### darkroom/bugarach/2026-09-16-full-search/ — every declared setting of all six detectors, searched overnight (065/full-search)
+- **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `search.log`, `search.json` (written after each stage, so a stop mid-run keeps what
+  finished) and `full_search.html` / `full_search.png` (the figure), from
+  `tools/search_all_settings.py` on branch `full-search`. Measure-only: no operating point changes.
+- **Released:** 2026-09-17. The run finished 2026-09-16 17:02; holds nothing.
