@@ -1,481 +1,680 @@
-# Rigid shift as a teacher: what it hides, what it destroys, and what training on it alone buys
-
-## What this run found
-
-- **The per-ROI leak test can fail on the lab fast stream, and rigid shift still passes it.** A
-  classifier that catches per-onset dither at 0.74–0.79 reads rigid shift at 0.49–0.51 at every
-  displacement from 1.6 s to 40 s (Figure 1). Before this run that test had no positive control on
-  the stream the experiment used.
-- **The aggregate-channel gate gives the same answer when it is built from fitted models.** It used
-  to be built from `tube`'s initial parameters. Read off what a fitted `tube` or `line` actually
-  receives, real recordings separate from their rigid shift at 0.65–0.68, and the shared offset
-  sits at 0.48–0.53 (Figure 1).
-- **At three training seeds the bake-off separates none of the counting builds from each other or
-  from CoactDetect.** `line` leads CoactDetect by +0.047 F1 with one fold of four carrying it, and
-  the second sensor adds +0.015. Bounding each ROI's vote in time changes F1 by −0.004 (Figure 2).
-- **Training against rigid shift alone beats random initialisation only at the stricter
-  label-free thresholds, and is nowhere near supervised training.** At the loosest threshold the
-  best untrained model is ahead of most trained cells; at the two stricter ones every trained cell
-  is ahead of every untrained model. The truth-reading scores of the untrained arm, and of every
-  arm trained on real recordings, come from detections that cover most of the recording
-  (Figure 3).
-
-> **Exploratory. This page replaces the version of 2026-09-16**, which was reviewed twice and
-> carried residual defects that changed what its numbers meant
-> ([run record](../../reviews/tube-self-supervised-2026-09-16.md);
-> [what remained](../../handoffs/2026-09-16-rigid-shift-report-steps-3-and-4.md)). Every stage was
-> rerun on 2026-09-16 and 2026-09-17 with those defects fixed; *What changed from the reviewed
-> version* lists them. Nothing here is promoted: `docs/MILESTONES.md` reserves promoting a bake-off
-> number to Tony, and its standing ruling is **a table of performance, not a ranking**.
->
-> **Every number on this page is in [`summary.json`](summary.json)**, written by
-> `tools/summarize_tube_self_supervised.py` from the stage outputs beside it.
->
-> **⚠ marks a claim this page is telling you not to lean on**, with the reason beside it.
-
-**Terms used below.** An **ROI** (region of interest) is one imaged cell. An **onset** is the frame
-at which a cell's calcium transient starts. **F1** is the harmonic mean of recall and precision,
-1.0 perfect. ***J*** is the displacement radius of a surrogate, in seconds. ***t*(3)** is the paired
-*t* statistic over four folds, three degrees of freedom. **SD** is standard deviation. Model names
-in `code` are registered architectures in `src/bugarach/learn/nets/`.
+# Can a detector learn coordinated events from rigid shift alone?
 
 ## The problem
 
-The lab records calcium imaging of hippocampal slices, and a **coordinated event** is several cells
-becoming active within a fraction of a second. Nobody has annotated this corpus, so every
-*supervised* detector here is fitted on a **simulator** whose events were measured from the lab's
-own recordings, and a detector that never sees a real event cannot be told it was wrong about one.
+The lab images calcium in hippocampal slices, and a **coordinated event** is several cells becoming
+active within a fraction of a second. None of the 84 lab fast-stream baseline recordings used here
+is annotated, so every *supervised* detector in this project is fitted on a **simulator** whose
+events were measured from the lab's own recordings. A detector that never sees a real event cannot
+be told it was wrong about one.
 
-A label-free detector would need no annotation. It needs instead examples of what it should *not*
-fire on: copies of a recording that keep everything except the thing being detected. **Rigid
-shift** is the candidate. Each ROI's whole onset train slides by one random offset within ±*J*, so
-every ROI keeps its own rate and its own intervals while the alignment *between* ROIs is destroyed.
-Onsets pushed past the edge of the recording are dropped rather than wrapped.
+A label-free detector would need no annotation. What it needs instead are copies of a recording
+that keep everything except the thing to be detected, so that "score the recording above its copy"
+is a training signal. **Rigid shift** is the candidate (Figure 1, the surrogates): each ROI's whole
+train of onsets slides by one random offset within ±*J*, so every ROI keeps its own intervals while
+the alignment *between* ROIs is broken. Onsets pushed past either end of the recording are dropped.
 
-Three questions follow, and the figures take them in order:
+Two things can go wrong, and each has a test. A detector trained against a surrogate learns
+**whatever the surrogate moves**, not only what it was meant to move. So the first test asks whether
+anything besides alignment moves: first per ROI, then in the population-average channels that a
+detector averaging over ROIs actually receives (the **aggregate leak test**). The second is that
+rigid shift at *J* = 10–20 s also removes slow co-modulation, ROIs rising and falling together over
+tens of seconds. A model trained against it may learn that instead of sub-second events.
 
-1. **Does rigid shift hide from a detector of everything except alignment, and does it destroy
-   alignment?** (Figure 1)
-2. **Is a counting architecture better than the centre-surround one** the project already has, and
-   better than the hand-written detectors? (Figure 2)
-3. **Can a detector be trained against rigid shift alone**, with no labels anywhere? (Figure 3)
+The architecture question sits beside those two. `tube`, the project's existing learned detector,
+averages over ROIs and then compares a narrow smoothing of that average with a wider one (a
+center-surround filter). `line`, the **counting architecture** built for this work, first bounds each
+ROI's contribution and then counts the ROIs lit together, with a second sensor for how tightly they
+arrive. Its supervised score is both the case for the family and the ceiling a label-free version
+of it is measured against.
 
-A fourth, what these models call on real tissue, follows the figures.
+![Figure 1. The surrogates, on a synthetic minute](surrogate_schematic_fig.png)
 
-## What changed from the reviewed version
+**Figure 1. The surrogates, on a synthetic minute.** Six ROIs with two coordinated events, then the
+same recording under each transform this page uses. The offsets are set by hand for the picture; a
+real minute of recording loses a far smaller share of its onsets at the ends than this toy does.
 
-Each fix below moved a number or what a number could mean. The code is on branch
-`unsup/rigid-shift-report-residuals`.
+So the page asks, in order:
 
-- **`line` makes a weaker claim, and a variant tests the stronger one.** `line`'s docstring said one
-  ROI casts at most one vote. Its sigmoid bounds a vote's height, not how long the vote lasts, and
-  the difference-of-Gaussians stage after it averages over time. **`line_bound`**, registered beside
-  it with the same 1,305 parameters, also bounds each ROI's vote in time and subtracts the vote's
-  empty-field floor. Tony chose to measure both rather than rewrite either
-  (`tests/test_line_vote.py` pins the difference).
-- **The aggregate-channel gate is built from fitted models**, as well as from the initial
-  parameters that licensed the first run.
-- **The leak tests carry positive controls**: per-onset dither in the per-ROI test, and a fifth of
-  every ROI's onsets removed in the trained models' paired checks, with a shared offset drawn at an
-  independent crop beside the same-crop one.
-- **The truth-reading threshold is picked by `bugarach.learn.train.pick_threshold`** with its
-  edge-of-grid guard, over a grid that reaches the lowest score rather than stopping at the median;
-  with the validation recordings `fold_maker` actually holds (two, not four); and, for the arm
-  trained on simulated recordings, not on recordings that arm was trained on.
-- **The bake-off runs at three training seeds**, and on today's `main`, where LoCo was retuned and
-  simulated recordings carry event widths. CoactDetect's scores are unchanged by either.
-- **Detection widths, coverage and every fitted parameter are stored per fit**, and a test checks
-  that the numpy rigid shift used for training agrees in distribution with the tested,
-  Elephant-backed `bugarach.surrogates.rigid_shift`.
+1. **Does rigid shift move anything besides alignment?** (Figure 2, the leak tests)
+2. **Does counting beat the center-surround filter and the hand-written detectors, when trained on
+   the simulator?** (Figure 3, the bake-off)
+3. **Can a detector be trained against rigid shift alone, and does what it learns look like
+   sub-second events or slow co-modulation?** (Figure 4, training without labels)
+4. **What do these models call on real recordings?** (Figure 5, real recordings)
 
-## Figure 1. Rigid shift against the two leak tests, each with a control that can fail
+## Terms
 
-![Figure 1. Rigid shift against the two leak tests](rigid_shift_gates_fig.png)
+- **ROI**, region of interest: one imaged cell. An **onset** is the frame at which a cell's calcium
+  transient starts. Recordings are 0.1 s per frame on the lab fast stream and 1.4 s per frame on the
+  lab slow stream; training uses the fast stream only.
+- **Surrogate**: a transformed copy of a recording. ***J***: the radius of a surrogate's
+  displacement, in seconds. The surrogates of Figure 1 are rigid shift, a **shared offset** (one
+  offset for every ROI, so alignment is kept), **per-onset dither** (each onset moved on its own)
+  and a **per-ROI circular shift** (one offset per ROI of any size, wrapped at the end).
+- **Leak**: anything a surrogate changes besides the alignment between ROIs. A **positive control**
+  (the glossary's *known-bad control*) is a transform built so a test must detect it; a test that
+  cannot has no power. A **null control** is one a test must read as chance.
+- **Accuracy (0.5 = chance)**: the leak tests' score, the held-out accuracy of a classifier choosing
+  which of a pair is the real recording.
+- **Share where real scores higher (0.5 = chance)**: the trained models' paired checks, the share of
+  held-out crops in which the model scores the real crop above its transformed copy; ties count as
+  half.
+- **F1**: the harmonic mean of recall and precision against events planted in simulated
+  recordings, 1.0 perfect.
+- **Label-free threshold**: set per held-out recording, with no labels. Scanning down from the
+  top, it is the last threshold before the model fires more than a stated rate (0.5, 1 or 2 events
+  per 10 minutes) on any of three rigid shifts of that recording. It caps the rate on the shifts,
+  not on the recording.
+- **Truth-reading threshold** (the glossary's *oracle threshold*): the F1-best threshold on two
+  validation recordings with planted events. It reads the answer, so it is a comparison, not a rule,
+  and not a ceiling either: a label-free threshold can score above it.
+- **Arm**: one way of producing a model: supervised on the simulator; untrained (the architecture
+  at its registered initial parameters); trained against rigid shift on simulated recordings
+  (**sim**) or on real baseline recordings (**real**); or a **count baseline**, a scorer with no
+  parameters. A **condition** is one arm, one *J* and one model.
+- **CoactDetect** and **LoCo** are the project's hand-written detectors, each firing when at least
+  three ROIs are active together against a local background.
 
-**Figure 1.** **Panels A and B** use a linear classifier over per-ROI summary statistics (each
-ROI's onset count, the quantiles of its same-ROI intervals and its shortest interval, pooled over
-ROIs by mean, SD, minimum, median and maximum, plus the share of ROIs with an onset), which by
-construction cannot see alignment between ROIs. It tells a 60 s window of a real baseline recording
-from the same window of a transformed copy, with folds grouped by mouse, over 84 recordings and
-1,501 window pairs per stream. Bars are 95 % intervals from a refitting bootstrap that resamples
-mice. **Panel C** uses the same kind of classifier on aggregate channels of the lab fast stream only:
-`tube` at its initial parameters (bars: 95 % interval), and the input a fitted `tube` or `line`
-head receives, one supervised fit per held-out fold (bars: range over the four folds).
+## What this run found
 
-**The per-ROI test has power on the lab fast stream, and rigid shift passes it.**
+- **Rigid shift moves nothing a per-ROI classifier can see on the lab fast stream, and that
+  classifier has power.** It reads rigid shift at 0.486–0.505 accuracy at every *J* from 1.6 s to
+  40 s, while per-onset dither reads 0.738–0.794 and a per-ROI circular shift, which keeps
+  intervals as rigid shift does, reads 0.549–0.561 (Figure 2, the leak tests).
+- **In the population-average channels, a real recording separates from its rigid shift at
+  0.66–0.69, and the separation does not grow with *J*.** A synthetic twin with shared slow
+  modulation and no events reads chance at *J* = 1.6 s (0.503) and 0.82 by 20 s; the real
+  recordings already read 0.670 at 1.6 s. What separates them is not slow shared modulation alone.
+- **At three training seeds no counting build separates from CoactDetect.** `line` leads by
+  +0.047 F1 with a corrected 95 % interval of −0.17 to +0.26, and one fold of four carries every
+  learned margin (Figure 3, the bake-off). `line` over `tube` is positive on all four folds.
+- **Training against rigid shift beats the untrained architectures at strict rates and loses to a
+  detector with no parameters at every rate.** At ≤ 1 event per 10 minutes the 20 trained conditions
+  score 0.126–0.322 F1, the untrained models at most 0.093, and `count_excess`, the share of ROIs
+  active minus its own 30 s mean, 0.400–0.404; supervised models score 0.519–0.674 (Figure 4,
+  training without labels).
+- **What training taught shows on synthetic twins, not on real crops: the trained models respond to
+  planted sub-second events and only weakly to shared slow modulation.** Against a 1.6 s rigid shift
+  they separate an events-only twin at 0.958–1.000 and a shared-modulation twin at 0.524–0.541; at
+  20 s the modulation twin reaches only 0.549–0.624, below supervised models (0.658–0.733) and a 10 s
+  average (0.829). The paired checks on real crops could not have shown this: a 10 s average also
+  separates planted events from a 1.6 s shift (0.650).
+- **On real recordings, supervised models and `count_excess` call multi-ROI co-activity that a rigid
+  shift of the same recordings removes.** 0.799–0.830 and 0.903 of their events hold onsets in at
+  least three ROIs, against 0.12–0.14 at activity-weighted random times, and 0.046–0.070 and 0.073 on
+  the rigid shift. **The models trained against rigid shift see events at crop scale and do not
+  localize them at a threshold**: 0.128–0.237 of their events hold three ROIs, inside the
+  activity-weighted chance range of 0.127–0.203 (Figure 5, real recordings).
+- **Four decisions follow**, in *What waits on Tony*.
 
-| lab fast, *J* | 1.6 s | 2.5 s | 5 s | 10 s | 20 s | 40 s |
+> **Exploratory.** It replaces the version of 2026-09-16, whose third blind review found the trained
+> models' controls unable to tell coordination from slow shared modulation; the controls here were
+> added in answer ([record](../../reviews/tube-self-supervised-2026-09-17-round3.md)). Nothing here
+> is promoted: `docs/MILESTONES.md` reserves that to Tony, and its standing ruling is **a table of
+> performance, not a ranking**. Every result quoted from this run's outputs is a key in
+> [`summary.json`](summary.json), written by `tools/summarize_tube_self_supervised.py`; constants of
+> the tools and numbers from other documents carry their source where they appear. **⚠ marks a claim
+> not to lean on**, with the reason beside it.
+
+## Figure 2. The leak tests
+
+![Figure 2. The leak tests](rigid_shift_gates_fig.png)
+
+**Figure 2. The leak tests.** **A** (lab fast) and **B** (lab slow): a linear classifier over per-ROI
+statistics of a 60 s window tells real windows from transformed ones; accuracy with a 95 % interval
+from a bootstrap that resamples mice and refits. **C**: the same forced choice on the lab fast
+stream, read from population-average channels. **D**: synthetic twins against their own rigid shift,
+read from the same channels.
+
+**On the lab fast stream the per-ROI classifier sees three of the four transforms, and rigid shift
+is not among them.**
+
+| lab fast, accuracy (0.5 = chance) at *J* | 1.6 s | 2.5 s | 5 s | 10 s | 20 s | 40 s |
 |---|---|---|---|---|---|---|
 | rigid shift | 0.497 | 0.505 | 0.502 | 0.505 | 0.486 | 0.492 |
-| shared offset | 0.498 | 0.502 | 0.495 | 0.516 | 0.504 | 0.509 |
+| shared offset (null control) | 0.498 | 0.502 | 0.495 | 0.516 | 0.504 | 0.509 |
 | per-onset dither (positive control) | 0.738 | 0.761 | 0.784 | 0.794 | 0.775 | 0.785 |
+| per-ROI circular shift (positive control) | 0.561 | 0.552 | 0.558 | 0.554 | 0.549 | 0.556 |
 
-A **shared offset** moves every ROI of a recording by the same offset, so each ROI's train moves
-exactly as it does under rigid shift while the ROIs stay aligned; it should read chance. **Per-onset
-dither** moves every onset independently within ±*J*, which breaks each ROI's shortest same-ROI
-interval, something these features see; it must separate. Its lowest interval bound on this stream
-is 0.70. So a leak confined to single ROIs, of the size dither makes, would have been caught, and
-rigid shift shows none.
+The classifier's inputs are each ROI's onset count, the quantiles of its same-ROI intervals and its
+shortest interval, and the share of ROIs with an onset and with an interval, pooled over ROIs by
+mean, standard deviation, minimum, median and maximum; 84 recordings from 44 mice, 1,501 window
+pairs per stream, folds grouped by mouse. Features at the window's edges were removed because they
+see a shift directly.
 
-On the lab slow stream dither is caught at 0.60–0.77, the shared offset reads 0.495–0.507, and rigid
-shift reads 0.500–0.524 up to 11.2 s and then **0.558 at 22.4 s and 0.567 at 44.8 s**, with interval
-bounds of 0.51 and 0.52. That is the slow shared modulation the earlier look found; it is not a
-per-ROI leak, because the shared offset, which moves each ROI identically, stays at chance.
+⚠ **What this test can and cannot see.** It cannot see alignment finer than its 60 s window. It
+**can** see ROIs' counts rising and falling together across windows, which is why a per-ROI circular
+shift, which keeps intervals but moves each ROI's counts by up to a whole recording, is caught
+(lowest lower bound 0.513). Per-onset dither is caught mainly because it breaks each ROI's shortest
+interval, something rigid shift can never do, so dither alone would not show the test has power
+against a leak rigid shift could have. The circular shift is the control that can. The lab slow
+stream shows the same effect at rigid shift's own displacements: 0.500–0.524 up to 11.2 s, then
+**0.558 at 22.4 s and 0.567 at 44.8 s** (lower bounds 0.512 and 0.517), with the shared offset
+at 0.495–0.507. That is slow shared modulation, not a per-ROI leak. The slow stream's
+displacements are the fast stream's rounded to whole 1.4 s frames.
 
-**The aggregate gate answers the same with fitted channels.** On the lab fast stream, real against
-rigid shift reads 0.664–0.688 from the initial bank and 0.654–0.684 from fitted `tube` and `line`
-heads across folds and displacements; real against the shared offset reads 0.520–0.530 and
-0.484–0.527; an unplanted synthetic twin against its own rigid shift, where nothing legitimate can
-be found, reads 0.442–0.536 and 0.469–0.592; a planted twin against its rigid shift, the positive
-control, reads 0.861–0.886 and 0.864–0.914.
+**In the population-average channels, real recordings separate from rigid shift at every *J*, and
+the size of the separation does not depend on *J*.**
 
-⚠ **What the aggregate test excludes is narrow.** A classifier reading only the cells-mean trace
-already separates real from rigid shift at 0.657–0.674 (initial bank, onsets widened by one frame)
-and 0.619–0.643 (fitted banks, raw trace). That trace is the share of the field that is active,
-which is what a counting architecture computes. So the test rules out a leak on these channels that
-the shared offset would also carry, and nothing about co-activity itself.
-
-## Figure 2. The supervised bake-off at three training seeds, and the plant probe
-
-![Figure 2. The supervised bake-off and the plant probe](line_sensors_fig.png)
-
-**Figure 2.** **Panel A**: every detector on the simulator's held-out folds, four folds of two
-recordings each, 30 planted events per fold; learned models at training seeds 0, 1 and 2. A dot is
-one fold's F1 averaged over the three seeds; the bar is the mean over the four folds and is not a
-confidence interval. Rows are grouped by family, not ordered by score. **Panel B**: each supervised
-model's peak response to a plant on a quiet synthetic field, divided by its response to a plant of
-equal ink; an open marker is a ratio whose divisor is within one SD of zero over the 12 fields. One
-training seed.
-
-`line` carries two sensors. **Relative length** is how much of the field is lit at once; the
-**concentration** channels are the ratio of that count at a narrow smear to the count at the next
-wider one. `line_length` keeps only the first. `line_bound` keeps both and bounds each ROI's vote in
-time.
-
-| detector | what it is | F1 ± SD over folds | fold range | recall | precision | probe firings | fit time |
-|---|---|---|---|---|---|---|---|
-| line | learned here | 0.698 ± 0.064 | 0.64–0.78 | 0.875 | 0.584 | 3.25 | 66–67 s |
-| line_bound | learned here | 0.694 ± 0.040 | 0.67–0.75 | 0.881 | 0.575 | 3.50 | 289–292 s |
-| line_length | learned here | 0.682 ± 0.038 | 0.64–0.73 | 0.842 | 0.580 | 4.42 | 64–66 s |
-| tube | learned here | 0.654 ± 0.050 | 0.61–0.72 | 0.836 | 0.544 | 20.67 | 7.7–8.2 s |
-| tube_guard | learned here | 0.643 ± 0.052 | 0.59–0.69 | 0.797 | 0.548 | 15.25 | 7.3–7.7 s |
-| tube_ratio | learned here | 0.508 ± 0.025 | 0.48–0.53 | 0.647 | 0.432 | 0.17 | 8.7–8.9 s |
-| tube_ratio_guard | learned here | 0.466 ± 0.054 | 0.42–0.54 | 0.611 | 0.399 | 0.00 | 8.7–8.9 s |
-| tiny | learned here | 0.125 ± 0.000 | 0.12–0.12 | 0.067 | 1.000 | 0.00 | 89 s |
-| trace | learned here | 0.120 ± 0.011 | 0.11–0.14 | 0.072 | 0.669 | 0.00 | 9.4–9.5 s |
-| CoactDetect | hand-written here | 0.651 ± 0.044 | 0.61–0.71 | 0.767 | 0.572 | 1.25 | — |
-| LoCo | hand-written here | 0.631 ± 0.046 | 0.57–0.68 | 0.742 | 0.555 | 3.50 | — |
-| rate+context | hand-written here | 0.607 ± 0.082 | 0.52–0.70 | 0.675 | 0.552 | 26.50 | — |
-| binned SCE | port of another lab's | 0.582 ± 0.072 | 0.50–0.68 | 0.758 | 0.478 | 59.75 | — |
-| locust | port of another lab's | 0.545 ± 0.052 | 0.48–0.60 | 0.708 | 0.447 | 239.25 | — |
-| SPIKE-synch | wraps another lab's measure | 0.267 ± 0.072 | 0.21–0.34 | 0.175 | 0.569 | 8.75 | — |
-
-**Probe firings** are calls made inside a stretch of the benchmark where ROIs are dense but nothing
-is planted, averaged over folds and seeds. They are excluded from precision and reported separately,
-because a detector can buy recall with promiscuity. **Fit time** is the range over the three seeds
-of the mean seconds per fit, with the three bake-offs sharing one Mac; ⚠ it is a comparison within
-this run, not a benchmark.
-
-**Paired per-fold differences**, on each fold's seed-averaged F1:
-
-| comparison | fold 1 / 2 / 3 / 4 | mean | *t*(3) | without the largest fold | mean at seed 0 / 1 / 2 |
-|---|---|---|---|---|---|
-| line − CoactDetect | −0.005 / −0.004 / +0.178 / +0.018 | +0.047 | 1.06 | +0.003 | +0.063 / +0.055 / +0.023 |
-| line_bound − CoactDetect | −0.033 / +0.033 / +0.147 / +0.025 | +0.043 | 1.13 | +0.008 | +0.050 / +0.047 / +0.031 |
-| line_length − CoactDetect | −0.035 / +0.036 / +0.126 / −0.001 | +0.032 | 0.91 | −0.000 | +0.005 / +0.052 / +0.038 |
-| tube − CoactDetect | −0.052 / −0.035 / +0.116 / −0.017 | +0.003 | 0.08 | −0.035 | +0.036 / −0.017 / −0.010 |
-| line − line_length | +0.029 / −0.040 / +0.052 / +0.019 | +0.015 | 0.78 | +0.003 | +0.058 / +0.003 / −0.015 |
-| line_bound − line | −0.028 / +0.037 / −0.031 / +0.007 | −0.004 | −0.25 | −0.018 | −0.012 / −0.007 / +0.008 |
-| line − tube | +0.047 / +0.031 / +0.062 / +0.035 | +0.044 | 6.19 | +0.038 | +0.027 / +0.071 / +0.033 |
-| CoactDetect − LoCo | +0.071 / +0.005 / +0.039 / −0.035 | +0.020 | 0.88 | +0.003 | same at every seed |
-
-**Every learned margin over CoactDetect is carried by the third fold.** Without it, no learned model
-is ahead by more than 0.008. **The second sensor's +0.058 in the reviewed version was one seed**: at
-the other two seeds it is +0.003 and −0.015. **Bounding the vote in time changes nothing measurable
-in F1**, and a fit takes 289–292 s against `line`'s 66–67 s. The one separable comparison in the table is
-`line` over `tube`, positive on all four folds.
-
-**Panel B, the plant probe.** Four plants of equal ink on a quiet field of 32 ROIs: a **line plant**
-(as many ROIs as the plant size, one onset each, in one frame), a **burst** (a quarter of those ROIs
-firing four times each over 0.6 s), **fuzz** (the same ROIs spread over 2.9 s) and a **wave** (the
-same ROIs one frame apart). Each value is the line plant's response divided by the other plant's,
-where a response is the model's peak score with the plant minus the same field without it.
-
-| supervised model | ÷ burst, plant 4 / 8 / 16 | ÷ fuzz, 4 / 8 / 16 | ÷ wave, 4 / 8 / 16 |
+| lab fast, accuracy (0.5 = chance) | hand-built initial bank | fitted `tube`, four folds | fitted `line`, four folds |
 |---|---|---|---|
-| line | 3.90 ⚠ / 1.63 / 1.83 | 1.27 / 1.44 / 1.99 | 1.01 / 1.05 / 1.32 |
-| line_length | 5.05 / 1.99 / 1.82 | 1.24 / 1.31 / 1.75 | 1.01 / 1.04 / 1.14 |
-| line_bound | 9.82 ⚠ / 2.78 / 1.80 | 1.21 / 1.24 / 1.60 | 1.04 / 1.13 / 1.35 |
-| tube | 2.24 / 1.23 / 1.34 | 1.22 / 1.08 / 1.43 | 1.00 / 0.99 / 1.17 |
+| real vs rigid shift | 0.664–0.688 | 0.654–0.678 | 0.657–0.684 |
+| real vs shared offset (null control) | 0.520–0.530 | 0.476–0.527 | 0.484–0.527 |
+| planted-event twin vs its rigid shift (positive control) | 0.861–0.886 | 0.864–0.900 | 0.847–0.914 |
+| stationary twin vs its rigid shift | 0.442–0.536 | 0.431–0.578 | 0.478–0.592 |
+| independent-modulation twin vs its rigid shift (null control) | 0.456–0.586 | 0.417–0.558 | 0.464–0.569 |
+| shared-modulation twin vs its rigid shift | 0.503–0.817 | 0.506–0.756 | 0.489–0.772 |
 
-⚠ marks a divisor within one SD of zero. All three counting builds separate the line plant from a
-burst better than `tube` does. At the largest plant, `line` separates it from fuzz best (1.99), then
-`line_length` (1.75), `line_bound` (1.60) and `tube` (1.43), so bounding the vote does not improve
-the separation from fuzz. **Read this panel as a direction, not a measurement**: the head is a
-six-layer stack, so a ratio of two response differences does not compare strictly across models;
-the wave's span grows with the plant size by construction; and the field is flat, where the bench's
-background is not.
+Ranges run over *J* = 1.6, 5, 10, 20 and 40 s, and for the fitted models also over the four
+held-out folds. The **channels** are the share of ROIs active in each frame (the cells-mean trace)
+and its response to difference-of-Gaussians kernels. The **hand-built bank** reproduces `tube`'s
+kernels at initialization at its four scales and adds four wider ones, so it is a stand-in, not
+`tube` itself; the fitted rows read what a supervised `tube` or `line` head actually receives. The
+**twins** are synthetic recordings of 20 ROIs' worth of real rates: the stationary twin has no
+events and no modulation, which rigid shift leaves unchanged, so it cannot fail and is kept only for
+continuity; the shared-modulation twin gives every ROI one 40 s rate cycle of depth 0.9 and no
+events; the independent-modulation twin gives each ROI its own.
 
-## Figure 3. Training against rigid shift, with no labels
+**The shared-modulation twin is what slow co-modulation alone looks like in these channels**: chance
+at *J* = 1.6 s (0.503, interval 0.408–0.583), rising to 0.742 at 10 s and 0.817 at 20 s. The
+real recordings read 0.670 at 1.6 s and 0.664–0.688 at every other displacement. So what separates
+real recordings from their rigid shift in these channels is present at a shift of 1.6 s, where 40 s
+co-modulation is not. It is consistent with sub-second co-activity; it does not identify it.
 
-![Figure 3. Learning from rigid shift alone](tube_ssl_fig.png)
+⚠ **The cells-mean trace alone does almost all of it**: 0.657–0.674 from the initial bank's trace
+and 0.619–0.643 from the fitted heads' trace. That trace is the share of the field active, which is
+what a counting architecture computes. So this test excludes a leak the shared offset would also
+carry and says nothing about whether the co-activity is coordination. Whether rigid shift
+**removes** planted coordination was measured in the earlier look, not rerun here: 84–99 % of it on
+the lab fast stream at 10–20 s ([the look](../rigid_shift_look/README.md)).
 
-**Figure 3.** Five architectures × three training seeds × four folds, in six arms: supervised and
-untrained controls, and trained against rigid shift with no labels on unlabelled **simulated**
-recordings ("sim") or real lab fast-stream **baseline** recordings ("real"), at *J* = 10 s and 20 s.
-That is 12 fits per model per arm and 360 fits in all. A dot is one fit; a fit with no true positive
-scores 0. **Panel A** is the truth-reading threshold, **panel B** the label-free one at no more than
-2 events per 10 minutes. **Panel C** is the paired checks on held-out real recordings, for the models
-trained on real recordings, both displacements pooled (24 fits per model).
+## Figure 3. The supervised bake-off
 
-**The objective.** A crop of 4,096 frames (409.6 s at this stream's 0.1 s frame interval) and the
-same crop of its rigid shift go through the model; each crop's score is the mean of its top 1 % of
-per-frame scores; the loss is `softplus(shift − real)`. 900 steps, no label read.
+![Figure 3. The supervised bake-off](line_sensors_fig.png)
 
-**Two thresholds.** The **label-free** threshold is, per held-out recording, the lowest threshold at
-which the model fires at most a stated rate (0.5, 1 or 2 events per 10 minutes) on three rigid shifts
-of **that** recording. The **truth-reading** threshold is the F1-best threshold on the training
-folds' two validation recordings; it reads planted truth and is a comparison, not a usable rule.
-± is the population SD over the 12 fits of a cell.
+**Figure 3. The supervised bake-off.** **A**: every detector on the simulator's four held-out folds
+(two recordings each, 30 planted events per fold); learned models at training seeds 0, 1 and 2. A
+dot is one fold's F1 averaged over the seeds; the bar is the mean of the four folds, not an interval.
+Rows are grouped by family and in the same order in every table and figure here. **B**: the
+comparisons the page makes, fold by fold; the grey line is a 95 % interval with the
+Nadeau–Bengio correction for folds that share training data. **C**: the plant probe, below.
 
-**Supervised, as the label-free threshold tightens:**
+**No learned model separates from CoactDetect, and one fold carries every learned margin.** Without
+the third fold, no learned model leads CoactDetect by more than 0.008 F1. What sets that fold apart
+was not examined. `line` over `tube` is the one comparison positive on every fold.
 
-| model | ≤ 0.5 per 10 min | ≤ 1 | ≤ 2 | truth-reading |
-|---|---|---|---|---|
-| line | 0.571 | 0.668 | 0.697 ± 0.068 | 0.691 ± 0.064 |
-| line_bound | 0.618 | 0.674 | 0.703 ± 0.038 | 0.678 ± 0.048 |
-| line_length | 0.602 | 0.662 | 0.703 ± 0.057 | 0.696 ± 0.050 |
-| tube | 0.434 | 0.519 | 0.629 ± 0.064 | 0.662 ± 0.051 |
-| tube_guard | 0.492 | 0.551 | 0.636 ± 0.080 | 0.671 ± 0.054 |
-
-As the rate tightens from 2 to 0.5 events per 10 minutes, the three counting builds keep more of
-their F1 than the tube family does.
-
-**Trained against rigid shift, and untrained**, at the label-free threshold (≤ 2 per 10 min | ≤ 1
-per 10 min):
-
-| model | sim, *J* 10 s | sim, 20 s | real, 10 s | real, 20 s | untrained |
+| comparison, ΔF1 | per fold | mean | 95 % interval, corrected | sign test *p* | mean without the fold with the largest difference |
 |---|---|---|---|---|---|
-| line | 0.347 \| 0.277 | 0.250 \| 0.201 | 0.242 \| 0.203 | 0.303 \| 0.212 | 0.000 \| 0.000 |
-| line_bound | 0.307 \| 0.227 | 0.246 \| 0.204 | 0.276 \| 0.191 | 0.262 \| 0.183 | 0.004 \| 0.000 |
-| line_length | 0.294 \| 0.252 | 0.386 \| 0.322 | 0.283 \| 0.230 | 0.219 \| 0.169 | 0.291 \| 0.093 |
-| tube | 0.264 \| 0.175 | 0.228 \| 0.126 | 0.257 \| 0.196 | 0.307 \| 0.223 | 0.090 \| 0.014 |
-| tube_guard | 0.279 \| 0.137 | 0.284 \| 0.190 | 0.286 \| 0.220 | 0.290 \| 0.194 | 0.114 \| 0.030 |
+| line − CoactDetect | −0.005 / −0.004 / +0.178 / +0.018 | +0.047 | −0.168 to +0.262 | 1.00 | +0.003 |
+| line_length − CoactDetect | −0.035 / +0.036 / +0.126 / −0.001 | +0.032 | −0.137 to +0.200 | 1.00 | 0.000 |
+| line_bound − CoactDetect | −0.033 / +0.033 / +0.147 / +0.025 | +0.043 | −0.141 to +0.227 | 0.63 | +0.008 |
+| tube − CoactDetect | −0.052 / −0.035 / +0.116 / −0.017 | +0.003 | −0.183 to +0.189 | 0.63 | −0.035 |
+| line − line_length (concentration channels) | +0.029 / −0.040 / +0.052 / +0.019 | +0.015 | −0.080 to +0.110 | 0.63 | +0.003 |
+| line_bound − line (two changes, below) | −0.028 / +0.037 / −0.031 / +0.007 | −0.004 | −0.082 to +0.074 | 1.00 | −0.018 |
+| line − tube | +0.047 / +0.031 / +0.062 / +0.035 | +0.044 | +0.009 to +0.078 | 0.13 | +0.038 |
+| CoactDetect − LoCo | +0.071 / +0.005 / +0.039 / −0.035 | +0.020 | −0.090 to +0.130 | 0.63 | +0.003 |
 
-**At ≤ 2 per 10 minutes, untrained `line_length` (0.291) is ahead of 14 of the 20 trained cells. At
-≤ 1 and ≤ 0.5 every trained cell is ahead of every untrained model**: 0.126–0.322 against at most
-0.093 at ≤ 1, and 0.070–0.250 against at most 0.039 at ≤ 0.5. So training against rigid shift does
-buy something a threshold can use once the rate is strict, and no architecture approaches its own
-supervised score: at ≤ 1 the best trained cell is 0.322 against 0.519–0.674 supervised. No
-architecture separates from the others. Between 0 and 4 fits of each cell of twelve ended at or
-above chance loss (ln 2 = 0.693).
+⚠ Eight comparisons, none corrected for multiplicity; `line` over `tube` has a corrected *p* of
+0.027, which eight comparisons would not survive by Bonferroni. Four folds cannot exclude any effect
+smaller than about ±0.08 F1 between the counting builds.
 
-⚠ **The truth-reading scores of the untrained arm and of every arm trained on real recordings are not
-detection.** Those arms reach 0.50–0.56 and 0.50–0.58, but the median share of each held-out
-recording their detections cover is 0.962–0.984 and 0.954–0.985, with median widths of 23–128 s:
-they touch planted events by being on almost everywhere. The supervised models cover 0.005–0.010.
-Among the arms trained on simulated recordings, `line` at 10 s (0.551, covering 0.035) and
+**The builds.** `line` bounds each ROI's vote in height with a sigmoid, averages the votes over ROIs
+(**relative length**, the share of the field lit), and adds **concentration channels**: that share at
+a narrow smoothing divided by the share at the next wider one, near 1 when the lit ROIs arrive
+together (registered in code as orientation channels; they read no image orientation, because these
+models ignore ROI order). `line_length` keeps relative length only. `line_bound` differs from `line`
+in **two** ways: each ROI's vote is also bounded in time, and the vote's resting level on an empty
+field is subtracted. A difference between them is therefore not attributable to either change alone.
+All three have 1,305 parameters.
+
+| detector | what it computes | F1 ± SD over folds | recall | precision | promiscuity-probe calls per fold | seconds per fit |
+|---|---|---|---|---|---|---|
+| line | counting, two sensors | 0.698 ± 0.064 | 0.875 | 0.584 | 3.25 | 66–67 |
+| line_length | counting, relative length only | 0.682 ± 0.038 | 0.842 | 0.580 | 4.42 | 64–66 |
+| line_bound | counting, vote bounded in time | 0.694 ± 0.040 | 0.881 | 0.575 | 3.50 | 289–292 |
+| tube | center-surround on the ROI average | 0.654 ± 0.050 | 0.836 | 0.544 | 20.67 | 7.7–8.2 |
+| tube_guard | `tube` with a guard band between center and surround | 0.643 ± 0.052 | 0.797 | 0.548 | 15.25 | 7.3–7.7 |
+| tube_ratio | `tube` dividing by the surround instead of subtracting | 0.508 ± 0.025 | 0.647 | 0.432 | 0.17 | 8.7–8.9 |
+| tube_ratio_guard | both | 0.466 ± 0.054 | 0.611 | 0.399 | 0.00 | 8.7–8.9 |
+| tiny | a small convolutional network ⚠ | 0.125 ± 0.000 | 0.067 | 1.000 | 0.00 | 89 |
+| trace | a network on the cells-mean trace | 0.120 ± 0.011 | 0.072 | 0.669 | 0.00 | 9.4–9.5 |
+| CoactDetect | hand-written here | 0.651 ± 0.044 | 0.767 | 0.572 | 1.25 | — |
+| LoCo | hand-written here | 0.631 ± 0.046 | 0.742 | 0.555 | 3.50 | — |
+| rate+context | hand-written here | 0.607 ± 0.082 | 0.675 | 0.552 | 26.50 | — |
+| binned SCE | hand-written here, after Cossart, Aronov & Yuste 2003 ⚠ | 0.582 ± 0.072 | 0.758 | 0.478 | 59.75 | — |
+| locust | partial port of CICADA ⚠ | 0.545 ± 0.052 | 0.708 | 0.447 | 239.25 | — |
+| SPIKE-synch | wraps a synchronization profile ⚠ | 0.267 ± 0.072 | 0.175 | 0.569 | 8.75 | — |
+
+**Promiscuity-probe calls** are detections inside a stretch of each simulated recording where ROIs
+are dense but nothing is planted, excluded from precision because a detector can buy recall with
+them. **Seconds per fit** is the range over seeds of the mean, with three bake-offs sharing one
+Mac: a comparison within this run, not a benchmark. ⚠ **`tiny`** sits on its threshold grid's lowest
+value in all 12 fold-seed fits, where each recording becomes one detection; 0.125 is what that
+scores, not an operating point. ⚠ **binned SCE** (synchronous calcium events) is this project's
+detector in that paper's tradition, not a port of it. ⚠ **`locust`** is a partial, modified port that
+skips CICADA's own transient detection, and ⚠ **SPIKE-synch** thresholds a synchronization profile
+without the detection layer its authors published, so neither row measures the other lab's method
+(see *The published lineage*).
+
+**The plant probe (panel C)** asks what each supervised model responds to. Four plants of the same
+number of onsets are laid on a quiet synthetic field of 32 ROIs: a **synchronous plant** (one onset in
+each of *n* ROIs, all in one frame), a **burst** (*n*/4 ROIs, four onsets each within 0.6 s), a
+**fuzz** (the synchronous plant's *n* ROIs spread over 2.9 s) and a **wave** (the same *n* ROIs one
+frame apart). Each ratio is the synchronous plant's response divided by the other plant's, where a
+response is the model's peak score with the plant minus without it, over 12 fields, at one training
+seed. All three counting builds separate the synchronous plant from a burst more than `tube` does. At
+the largest plant, the ratios over fuzz are 1.99 for `line`, 1.75 for `line_length`, 1.60 for
+`line_bound` and 1.43 for `tube`, each with an approximate standard error of 10–14 % of the ratio, so
+each adjacent pair in that ordering differs by less than its combined error. **Read the panel as a
+direction**: the head is a
+six-layer stack, so a ratio of response differences does not compare strictly across models, and the
+wave's span grows with the plant by construction.
+
+## Figure 4. Training against rigid shift, with no labels
+
+![Figure 4. Training against rigid shift](tube_ssl_fig.png)
+
+**Figure 4. Training against rigid shift, with no labels.** Five architectures × three training
+seeds × four folds in four arms (supervised, untrained, sim and real, the last two at *J* = 10 s and
+20 s): 360 fits, plus the three count baselines at each *J* on each fold (24 rows). Every mark is a condition's
+mean; a fit with no true positive scores 0. **A**: F1 at the label-free threshold at each rate. **B**:
+F1 at the truth-reading threshold against the share of the held-out recording the detections cover
+there. **C**: the paired checks on held-out real crops (409.6 s each), grouped by what each can show.
+
+**The objective.** A crop of 4,096 frames and the same crop of its rigid shift go through the model;
+each crop's score is the mean of its top 1 % of per-frame scores; the loss is
+softplus(shifted score − real score). 900 steps, three crop pairs per step, no label read. Crops stay
+more than *J* from either end, so the onsets rigid shift drops never enter training.
+
+**A detector with no parameters beats every model trained against rigid shift.** `count_excess`,
+the share of ROIs with an onset within ±0.2 s minus its own 30 s moving mean, scores above all 20
+trained conditions at every label-free rate. Training against rigid shift does beat the untrained
+architectures once the rate is strict, and every trained condition stays far below supervised
+training.
+
+| planted-truth F1 at the label-free threshold | ≤ 0.5 events per 10 min | ≤ 1 | ≤ 2 |
+|---|---|---|---|
+| supervised (5 models) | 0.434–0.618 | 0.519–0.674 | 0.629–0.703 |
+| `count_excess` (no parameters, both *J*) | 0.307–0.319 | 0.400–0.404 | 0.478 |
+| `count_share` (no parameters, both *J*) | 0.122–0.133 | 0.181–0.234 | 0.312 |
+| trained against rigid shift (20 conditions) | 0.070–0.250 | 0.126–0.322 | 0.219–0.386 |
+| untrained (5 models) | 0.000–0.039 | 0.000–0.093 | 0.000–0.291 |
+| `slow_modulation` (no parameters, both *J*) | 0.000 | 0.000 | 0.000 |
+
+Ranges are over condition means of 12 fits (4 held-out folds for the count baselines). At ≤ 2 events
+per 10 minutes, untrained `line_length` (0.291) is ahead of 14 of the 20 trained conditions; at the
+two stricter rates every trained condition is ahead of every untrained model. Between 1 and 9 of the
+12 fits in a trained condition score no true positive at ≤ 0.5, and up to 5 at ≤ 2. In the `line`
+conditions the label-free threshold fell to its grid's lowest value in 8, 9 and 10 fit-and-recording
+settings at the three rates (all of them `line`, 2–4 per condition), where one detection can cover a
+whole recording. `slow_modulation` fires within the rate on no held-out recording's shifts and
+scores 0.
+
+⚠ **The truth-reading scores of every arm trained on real recordings, and of the untrained arm, are
+not detection** (panel B). They reach 0.499–0.577 and 0.503–0.559 with detections covering a median
+0.954–0.985 and 0.962–0.984 of each held-out recording, 23–128 s wide: they touch planted events by
+being on almost everywhere. Supervised models cover 0.005–0.010 and `count_excess` 0.004, at 0.662–0.696
+and 0.648. Among the arms trained on simulated recordings, `line` at 10 s (0.551, covering 0.035) and
 `line_length` at 20 s (0.620, covering 0.022) are narrow; `line_length` at 10 s, `line` at 20 s and
 `line_bound` at 10 s cover 0.36–0.50; the tube family at both displacements and `line_bound` at 20 s
-cover 0.93 or more. The reviewed version blamed this on a grid that stopped at the median score.
-That floor is gone, and the chosen threshold sits on a grid edge in only 4 of the 360 fits, all of
-them `line`, so the coverage is a property of those models' scores, not of the search.
+cover 0.92 or more. The truth-reading threshold sits on its grid's edge in 4 of the 360 trained,
+supervised and untrained fits, all `line`, so the coverage is the models' and not the search's.
 
-**Panel C, the paired checks** (models trained on real recordings, per-cell means): real against
-rigid shift 0.720–0.774; real against a copy with a fifth of every ROI's onsets removed **0.766–0.940,
-so the checks can see a count change**; real against the shared offset at the same crop 0.484–0.555,
-and at an independent crop 0.450–0.510; unplanted twins against their rigid shift 0.456–0.575. ⚠ The
-same-crop shared offset ties on 10–69 % of crops in a cell, counted as half, which is why the
-independent crop was added. Some `tube` fits score every crop identically (tie share 1.00) and
-contribute only halves.
+**The paired checks (panel C) cannot say whether a model learned sub-second events or slow shared
+modulation, and models trained on labelled events give the same pattern as models trained against
+rigid shift.**
 
-## On real recordings
+| share where the real crop scores higher (0.5 = chance), condition means | supervised | trained on simulated | trained on real | count baselines |
+|---|---|---|---|---|
+| shared offset, same crop (null) | 0.500–0.517 | 0.464–0.513 | 0.484–0.555 | 0.482–0.557 |
+| shared offset, independent crop (null) | 0.431–0.487 | 0.456–0.505 | 0.450–0.510 | 0.446–0.518 |
+| stationary twin vs its rigid shift (cannot fail) | 0.462–0.521 | 0.454–0.554 | 0.456–0.575 | 0.406–0.575 |
+| independent-modulation twin vs its rigid shift (null) | 0.446–0.521 | 0.448–0.569 | 0.442–0.579 | 0.400–0.569 |
+| a fifth of every ROI's onsets removed (positive control) | 0.650–0.765 | 0.669–0.791 | 0.766–0.940 | 0.810–0.896 |
+| rigid shift at the training *J* | 0.688–0.730 | 0.596–0.734 | 0.720–0.774 | 0.664–0.783 |
+| rigid shift at *J* = 1.6 s | 0.649–0.709 | 0.631–0.693 | 0.687–0.774 | 0.616–0.786 |
+| shared-modulation twin vs its rigid shift | 0.596–0.642 | 0.552–0.650 | 0.575–0.679 | 0.662–0.763 |
 
-All 84 lab fast-stream **baseline recordings**, each judged by a model that never saw its mouse,
-beside CoactDetect and LoCo at their production operating points. **Neither is ground truth** —
-nothing in this folder is annotated, and `docs/MILESTONES.md` blocks quoting any transfer figure
-until a MAHICE review (machine-assisted human identification of coordinated events) exists. This is
-a consistency check. Supervised models are fitted on the simulator at three seeds; models trained
-against rigid shift are fitted per mouse fold at three seeds. Every row pools its seeds.
+The null checks read chance for every group. The positive control moves above 0.5 in 10–12 of 12
+fits per supervised condition, 11–12 per condition trained on real recordings, 8–12 per condition
+trained on simulated recordings, and in every count-baseline fold; in the untrained arm it moves in
+only 1–8 of 12, which is expected of models that separate nothing. The untrained models read
+0.485–0.519 on the rigid-shift checks.
 
-| detector | events per 10 min | ROIs with an onset in the detection's extent ±2 frames: median, share ≥ 3 | the same, extent ±1 s |
-|---|---|---|---|
-| CoactDetect | 2.70 | 7, 1.00 | 7, 1.00 |
-| LoCo | 3.72 | 6, 1.00 | 7, 1.00 |
-| supervised, label-free ≤ 2 (five models) | 4.29–5.03 | 4–5, 0.80–0.84 | 5, 0.86–0.89 |
-| trained against rigid shift, label-free ≤ 2 (ten rows) | 5.67–6.75 | 0–1, 0.13–0.24 | 2–4, 0.40–0.63 |
-| random times of the same widths, same recordings | — | 0–1, 0.06–0.18 | 1, 0.19–0.29 |
+Two results say the last two rows cannot separate the alternatives on real crops. **Supervised
+models, trained on planted events and never shown modulation, see the shared-modulation twin
+(0.596–0.642) and the 1.6 s shift (0.649–0.709) as much as the models trained against rigid shift
+do.** And **the 1.6 s check reads events as well as modulation**: `slow_modulation`, which averages
+over 10 s and so cannot resolve a sub-second event, separates a synthetic twin with planted events and
+no modulation from its 1.6 s shift at 0.650, and so its own real-crop reading at 1.6 s (0.616–0.633)
+can come from events alone.
 
-⚠ **CoactDetect and LoCo cannot report a thin event**: both run at a floor of three ROIs, so their
-1.00 is a floor, not a finding. The random rows are width-matched to each detector's own events,
-which is why their range spans the detectors.
+**So the models were asked directly** (`small_j_check`, with `tools/check_small_j_mixes_events.py`):
+every checkpoint trained against rigid shift on real recordings (10 conditions × 12 fits), a
+supervised fit and an untrained model of each architecture, and the count baselines, each scored on
+synthetic twins against their own rigid shift, with the paired checks' crops and rule, 60 twin
+recordings per scorer.
 
-**Calls from models trained against rigid shift mostly hold one ROI or none at the event itself**
-(median 0–1 within ±2 frames), against 0.07–0.13 for random times matched to those same calls. The
-supervised label-free models' calls hold a median of 4–5.
+| share where the twin scores above its rigid shift | events, no modulation, *J* 1.6 s | events plus independent modulation, 1.6 s | shared modulation, no events, 1.6 s | shared modulation, 20 s | independent modulation, no events, 1.6 s (null) |
+|---|---|---|---|---|---|
+| trained against rigid shift (10 conditions) | 0.958–1.000 | 0.950–1.000 | 0.524–0.541 | 0.549–0.624 | 0.455–0.497 |
+| supervised (5 fits) | 0.975–1.000 | 0.792–1.000 | 0.550–0.625 | 0.658–0.733 | 0.475–0.517 |
+| untrained (5 models) | 0.458–0.546 | 0.438–0.583 | 0.438–0.500 | 0.475–0.517 | 0.487–0.521 |
+| `count_excess` | 1.000 | 1.000 | 0.554 | 0.646 | 0.458 |
+| `slow_modulation` | 0.650 | 0.613 | 0.550 | 0.829 | 0.546 |
 
-**Agreement** is the share of one detector's events that overlap any of another's within ±1 s. ⚠ It
-is a many-to-one overlap share, not a recall: a detector that fragments one reference event into
-five calls is credited five times.
+**The models trained against rigid shift respond to planted sub-second events as strongly as the
+supervised ones do, and to shared slow modulation less than the supervised models or a 10 s average
+do.** Above chance on the events twin in 11–12 of 12 fits per condition. The twins are synthetic
+(participation 0.2, a 40 s modulation cycle of depth 0.9), so this shows what the crop score responds
+to, not what real recordings contain; how the lab's recordings co-modulate is measured separately
+(on branch `unsup/slow-comodulation`, under its own review).
 
-| supervised model, label-free ≤ 2 | share of CoactDetect's / LoCo's events it overlaps | share of its own events near CoactDetect / LoCo |
-|---|---|---|
-| tube_guard | 0.856 / 0.752 | 0.462 / 0.542 |
-| line_bound | 0.834 / 0.697 | 0.460 / 0.510 |
-| tube | 0.831 / 0.681 | 0.473 / 0.530 |
-| line | 0.776 / 0.649 | 0.442 / 0.494 |
-| line_length | 0.752 / 0.601 | 0.428 / 0.476 |
+The training loss, averaged over the last five logged steps, ended at or above chance (ln 2 = 0.693)
+in 0–4 of 12 fits per condition; the median share of training pairs won over those steps is
+0.90–1.00 for the arms trained on simulated recordings and 0.63–0.80 for those trained on real ones.
+⚠ The same-crop shared offset ties on up to 0.98 of crops in a fit, counted as half, and 10 trained
+fits tie on every crop; the independent-crop version is there so ties are not what holds it at 0.5.
 
-The two references agree with each other at 0.780 (CoactDetect's events near LoCo's) and 0.591
-(LoCo's near CoactDetect's). Every supervised model fires more often than either reference, so the
-first column rewards firing more, and the second column is the one that bounds it. **The architecture
-that leads the bake-off, `line`, is fourth of the five here on overlap with the references**, ahead of
-its own length-only ablation. The models trained against rigid shift place 0.174–0.340 of their events
-near a reference, against chance rates of 0.046–0.064 computed the same way.
+## Figure 5. Real recordings
 
-⚠ **Detections of every kind are enriched near the window edges.** Within 5 s of a window edge the
-uniform expectation is 0.84 % of events and within 12.8 s it is 2.1 %. The supervised label-free rows
-put 3.8–5.9 % and 5.6–7.1 % there, the same models at their bake-off thresholds 1.6–2.2 % and
-3.1–3.9 %, the rows trained against rigid shift 1.1–3.7 % and 3.1–5.5 %, CoactDetect 3.3 % and 4.7 %,
-and LoCo 0.0 % and 1.1 %. Each supervised model is more edge-enriched at its label-free threshold
-than at its bake-off threshold, so the threshold rule, not only the architecture, is involved. **The mechanism is
-not identified.** The 12.8 s is the padded support of the models' difference-of-Gaussians kernels
-(128 frames), not a fitted width.
+![Figure 5. Real recordings](tube_real_summary_fig.png)
 
-The lanes-over-raster view of one baseline recording that the reviewed version pointed to in the
-darkroom was drawn from that version's run and **was not redrawn for this one**; nothing here quotes
-it. It is rebuilt with `tools/make_tube_real_lanes.py --run <real_compare> --out <darkroom> --family
-line` once a darkroom folder is claimed. It holds a real baseline raster, which FOUNDATIONS §5
-releases by name only, so it has no repo copy.
+**Figure 5. Real recordings.** Each detector on all 84 lab fast-stream baseline recordings (four
+groups pooled), and each learned model and count baseline also on one rigid shift of every recording
+at the *J* its threshold was set with. **A**: the share of events with an onset in at least 3 ROIs
+within the event's span, against the same share at uniformly random times and at times drawn in
+proportion to population activity, ten draws per event. **B**: the share of events starting within
+5 s of either end of the recording, against uniform placement. **C, D**: the share of a detector's
+events that a CoactDetect event (C) or a LoCo event (D) overlaps within 1 s, against the same overlap
+at random times.
+
+**Supervised models and `count_excess` call co-activity on real recordings, and lose it on a rigid
+shift of them. Models trained against rigid shift call events that hold no more co-activity than
+random times weighted by population activity.**
+
+| detector, label-free threshold ≤ 2 events per 10 min | events per 10 min | share of events with onsets in ≥ 3 ROIs | same, random times weighted by activity | on its rigid shift: events per 10 min, share ≥ 3 ROIs |
+|---|---|---|---|---|
+| CoactDetect (production operating point) | 2.70 | 1.00 ⚠ | 0.33 | — |
+| LoCo (production operating point) | 3.72 | 1.00 ⚠ | 0.16 | — |
+| supervised, five models | 4.27–4.93 | 0.799–0.830 | 0.122–0.140 | 1.36–1.49, 0.046–0.070 |
+| trained against rigid shift, ten conditions | 5.67–6.75 | 0.128–0.237 | 0.127–0.203 | 1.26–1.45, 0.038–0.098 |
+| `count_excess` (no parameters) | 6.29 | 0.903 | 0.118 | 1.23, 0.073 |
+| `count_share` (no parameters) | 3.74 | 0.960 | 0.121 | 0.31, 0.098 |
+| `slow_modulation` (no parameters) | 1.83 | 0.523 | 0.316 | 1.08, 0.425 |
+
+A detector's **event** spans its merged detection (detections closer than 2 s merge), and an ROI
+counts if it has an onset within that span ±0.2 s. ⚠ CoactDetect and LoCo fire only when at least
+three ROIs coincide, so their 1.00 is their definition, not a finding. Each learned row pools its three
+training seeds (for the models trained against rigid shift, 3 seeds × 4 mouse folds); the count
+baselines have no seed. The supervised label-free threshold on real recordings is set on rigid shifts
+at *J* = 20 s.
+
+- **The rate cap holds on the shifts, not on the recordings.** Every learned model fires 1.26–1.49
+  times per 10 minutes on its rigid shift, inside the ≤ 2 cap its threshold was set to, and 4.27–6.75
+  times on the recordings themselves. For the supervised models and `count_excess` that excess is
+  multi-ROI co-activity that the shift removes. For the models trained against rigid shift it is not:
+  their share of events with at least three ROIs (0.128–0.237) sits inside the activity-weighted
+  chance range (0.127–0.203), and the median event holds 0–1 ROIs.
+- **`slow_modulation` is the detector the checks worried about**, and on real recordings it behaves as
+  one: about half its events hold three ROIs, against 0.32 by chance, and its rigid shift keeps most
+  of that (0.43), because a 10 s average of the active share is slow enough to survive a 20 s shift in
+  part.
+
+**Agreement** is the share of one detector's events that any event of another overlaps within ±1 s
+(Figure 5, panels C and D). ⚠ It is a many-to-one overlap, not a recall: a detector that splits one
+reference event into five is credited five times.
+
+| detector | share of CoactDetect's events it overlaps | share of LoCo's | share of its own events near CoactDetect | near LoCo |
+|---|---|---|---|---|
+| supervised, five models | 0.680–0.825 | 0.545–0.715 | 0.431–0.472 (chance 0.052–0.056) | 0.475–0.543 |
+| trained against rigid shift, ten conditions | 0.466–0.685 | 0.307–0.619 | 0.202–0.307 (chance 0.046–0.064) | 0.174–0.340 |
+| `count_excess` | 0.845 | 0.868 | 0.382 (chance 0.045) | 0.518 |
+
+The two references agree with each other at 0.780 (CoactDetect's events near LoCo's) and 0.591. Every
+learned model fires more often than either reference, so overlapping more of a reference's events
+partly rewards firing more; the share of a detector's own events near a reference is the column that
+does not.
+
+⚠ **Edge enrichment is a property of the detectors, not of the recordings.** Within 5 s of either end
+of a recording, uniform placement expects 0.8 % of events. The supervised label-free rows put 3.8–5.7 %
+there on the recordings and **5.0–10.0 % on their rigid shifts**, where no alignment is left to find;
+at their bake-off thresholds 1.6–2.2 %. The rows trained against rigid shift put 1.1–3.7 % there, and
+0.7–8.8 % on their shifts; CoactDetect 3.3 %, LoCo 0.0 %, `count_excess` 2.2 %. A candidate cause, not
+tested: the difference-of-Gaussians kernels pad the recording with zeros up to 12.8 s beyond each end
+and the head reaches a further 6.3 s, so the frames nearest an end are judged against an empty
+background. Rigid shift drops onsets there too, which lowers the background the threshold is set
+against.
+
+**Nothing here is ground truth.** No recording in the export folder is annotated, and
+`docs/MILESTONES.md` blocks quoting any transfer figure until a MAHICE review (machine-assisted human
+identification of coordinated events) exists. This is a consistency check. The 84 recordings come from
+44 mice in four groups, pooled here; events are pooled across runs on the same recordings, not
+clustered by mouse.
+
+**Nothing here is ground truth.** No recording in the export folder is annotated, and
+`docs/MILESTONES.md` blocks quoting any transfer figure until a MAHICE review (machine-assisted human
+identification of coordinated events) exists. This is a consistency check. Supervised models are
+fitted on the simulator at three seeds; models trained against rigid shift are fitted per mouse fold
+at three seeds; every row pools its runs. ⚠ Events are pooled over runs on the same recordings, not
+clustered by mouse (84 recordings from 44 mice). An **event** merges detections closer than 2 s.
 
 ## What this does not settle
 
-- **No learned model separates from CoactDetect** at four folds and three seeds; every margin rests
-  on one fold. Promoting any of these rows is Tony's decision, and the numbers do not argue for it.
-- **The surrogate is used three orders of magnitude from its published regime.** Stella et al. 2022
-  rank whole-train shifting most robust at a dither of **25 ms**; this run shifts a whole recording by
-  **10–20 s**, where it also removes shared modulation slower than an event on the lab slow stream
-  (Figure 1, panel B).
-- **The aggregate test cannot exclude co-activity**, because its strongest channel is the share of
-  the field that is lit (Figure 1).
+- **No learned model separates from CoactDetect** at four folds and three seeds. Promoting any row is
+  Tony's decision, and these numbers do not argue for it.
+- **Rigid shift here is not the published regime.** Whole-train shifting as published shifts each of
+  many short **trials** independently, and Stella et al. 2022 found it the most robust of the
+  surrogates they compared at a 25 ms dither. This run shifts one ~20 min recording as a single trial
+  by 10–20 s, 400–800 times that dither; a lag pattern repeated between two ROIs survives it as one
+  new constant lag.
+- **Dropping onsets at the ends biases the null.** Rolling the train instead keeps the expected
+  coincidence count (Louis, Borgelt & Grün 2010); dropping lowers the surrogate's, which makes real
+  recordings look more coordinated. At 10 s and 20 s rigid shift drops 0.5 % and 1.1 % of lab fast
+  onsets. Training crops stay clear of the ends; the label-free thresholds and the leak tests do not.
+- **The aggregate leak test cannot exclude co-activity**, because its strongest channel is the share
+  of the field lit (Figure 2, the leak tests).
 - **The objective is untuned**: one pooling rule, one learning rate, 900 steps. It pays for any
   separation of real from shifted, so a two-ROI coincidence earns as much as a crowd.
-- **The label-free threshold is a stricter cut on the bench than on a real recording.** Rigid shift
-  keeps each ROI's rate profile to within ±*J*, so the bench's dense probe stretch survives into the
-  shifts the threshold is set on; real recordings have no such stretch. A bench label-free score and a
-  real-recording label-free event rate are therefore not the same operating point.
-- **`line_bound`'s bound is soft**: a four-onset burst's peak reaches 1.04–1.15 times a single
-  onset's on an untrained model with hand-set widths, not 1.
-- **The concentration channels are not a test of image orientation.** These models ignore ROI order,
-  and the encoder sorts rows by rate, so a diagonal a person sees in a raster is not available to
-  them; temporal concentration is the nearest readable quantity. The architecture is nonetheless
-  registered with `orientation=True`, where no caveat travels with the word.
-- **The benchmark is a simulator** whose planted events carry 0.31 s of jitter. Real fast onset jitter
-  was measured at **0.36 s against a 0.42 s circular-shift null on 47 of 84 slices**, and
-  `docs/generator.md` flags the 0.36 s as its least trustworthy number and an upper bound.
-- **The real-recording statistics are pooled over events, not clustered by mouse.** The 84 recordings
-  come from 44 mice. The leak tests in Figure 1 are mouse-grouped.
-- **Only the lab fast stream** was used for label-free training.
-- **`line` and `line_bound` have not been reviewed as code.** `tests/test_line_vote.py` pins the vote
-  behaviour; the behavioural tests that pin `tube`'s claims are still hardwired to `tube`.
-- **The literature search behind the lineage below covered** spike-train surrogates, radar
-  constant-false-alarm-rate detection, calcium-imaging event detection and weakly-supervised
-  sound-event detection. It did **not** cover anomaly detection and change-point analysis, EEG burst
-  detection, or astronomical and seismological transient detection, where thresholds set to a stated
-  event rate are routine.
+- **A bench label-free score and a real-recording label-free event rate are not the same operating
+  point.** The bench's dense probe stretch survives into the rigid shifts its threshold is set on,
+  and real recordings have no such stretch; and on the bench the supervised and untrained thresholds
+  use rigid shifts at *J* = 10 s, on real recordings at 20 s.
+- **`line_bound`'s time bound is soft**: a four-onset burst's peak vote reaches 1.04–1.15 times one
+  onset's on an untrained model with hand-set widths (`tests/test_line_vote.py`, which checks the
+  vote helpers rather than the full forward pass).
+- **The simulator's events carry 0.311 s of onset jitter**, measured within clusters against a null of
+  0.335 s (`docs/learned/generator_spec.json`); `docs/generator.md` gives 0.36 s against 0.42 s from an
+  earlier fit and calls it its least trustworthy number. Either way the planted spread is close to its
+  own null.
+- **Of the real recordings, only the lab fast stream** was used for training; the other training arm
+  used simulated recordings, whose five-minute dense stretch is itself shared slow drift that rigid
+  shift leaves in place. **`line` and `line_bound` have not been reviewed as code.**
+- **The literature search** covered spike-train surrogates, radar constant-false-alarm-rate
+  detection, learned Neyman–Pearson detection, calcium-imaging population-event detection, and
+  weakly supervised sound-event detection. It did not cover anomaly and change-point detection, EEG
+  (electroencephalography) burst detection, astronomical or seismological transient detection,
+  time-shift surrogates in nonlinear time-series analysis, or contrastive learning beyond the two
+  papers named below.
 
 ## What waits on Tony
 
-1. **Which `line` build, if any, stays.** At three seeds the second sensor adds +0.015 F1 (*t*(3) =
-   0.78), and `line` makes fewer probe firings than `line_length` (3.25 against 4.42); bounding the
-   vote in time adds −0.004 F1 at 289–292 s per fit against 66–67 s, and does not improve the fuzz
-   separation. On real
-   recordings `line` overlaps the references less than `line_bound`, `tube` and `tube_guard`. Nothing
-   here separates the three builds.
-2. **Does shared modulation on timescales of 10–45 s count as coordination?** Rigid shift removes it.
-   It is detectable on the lab slow stream from 22.4 s (0.558, 0.567) and absent on the lab fast stream
-   at every displacement up to 40 s. The answer decides whether *J* belongs at 10–20 s at all.
-3. **Is the objective worth another attempt?** Training against rigid shift beats initialisation at
-   strict label-free rates and is far below supervised training everywhere. An objective that pays for
-   the **number** of ROIs in a window, rather than for any separation of real from shifted, is the
-   next design; the weakly-supervised sound-event literature has measured which pooling rules
-   localise events in time (Wang, Li & Metze 2019; McFee, Salamon & Bello 2018).
-4. **Which firing rate should the label-free threshold target?** Under the ≤ 2 rule the supervised
-   models realise 4.29–5.03 events per 10 minutes on real recordings, against CoactDetect's 2.70 and
-   LoCo's 3.72. No recommendation is made here.
+In the order the argument raised them.
+
+1. **Does shared modulation over tens of seconds count as coordination?** Rigid shift at *J* removes
+   only modulation faster than about *J*. On the lab slow stream the per-ROI classifier detects what
+   rigid shift removes from 22.4 s (Figure 2, panel B); on the lab fast stream it detects nothing up
+   to 40 s, which is a statement about that classifier, not a finding that the modulation is absent.
+   The models trained against rigid shift respond to it only weakly on synthetic twins (Figure 4). The
+   answer decides whether *J* belongs at 10–20 s.
+2. **Does any learned build stay, given that none separates from CoactDetect; and if one does,
+   which?** All three are registered and on the bake-off roster today; staying means remaining there,
+   and a build that goes is unregistered with its tests. Between the builds: the concentration
+   channels add +0.015 F1 (corrected interval −0.080 to +0.110) and cut promiscuity-probe calls from
+   4.42 to 3.25 per fold; `line_bound` changes F1 by −0.004 (−0.082 to +0.074) at about four times
+   the fit time, with its two changes confounded. On real recordings the three builds' supervised calls
+   hold 0.804–0.814 multi-ROI co-activity and overlap 0.680–0.804 of CoactDetect's events, with no
+   interval that separates them.
+3. **Is the objective worth another attempt, as built?** It taught every architecture to respond to
+   planted sub-second events at the scale of a 409.6 s crop, and not to localize them: at a threshold
+   the trained models lose at every rate to `count_excess`, a count judged against its local
+   background with no parameters (Figure 4), and on real recordings their calls hold no more co-activity
+   than chance (Figure 5). An objective that pays for the number of ROIs in a window, rather than any
+   separation of real from shifted, is the next design, and `count_excess` is the bar it has to
+   clear; the
+   weakly supervised sound-event literature measured which pooling rules localize events in time
+   (Wang, Li & Metze 2019; McFee, Salamon & Bello 2018).
+4. **Which event rate should the label-free threshold target?** The rule caps the rate on rigid
+   shifts, not on the recording: at ≤ 2 events per 10 minutes on the shifts, the supervised models fire
+   4.27–4.93 times per 10 minutes on real recordings and `count_excess` 6.29, against CoactDetect's
+   2.70 and LoCo's 3.72 (Figure 5). The label-free rule also places more of a supervised model's
+   events near a recording's ends than its bake-off threshold does (3.8–5.7 % against 1.6–2.2 % within
+   5 s). No recommendation is made here.
 
 ## The published lineage
 
-Nearly every component here is prior art, and the report inherits it. Whole-train shifting is Pipa et
-al. 2008, surveyed in Louis, Borgelt & Grün 2010, which recommends it and credits it jointly to Pipa et
-al. 2008 and Harrison & Geman 2009, and ranked most robust by Stella et al. 2022 for the SPADE
-analysis, at a 25 ms dither. ⚠ Pipa et al. 2008 itself credits the multiple-shift method (Grün et al.
-1999) as its antecedent; that paper is closed-access and unread here, so **where whole-train shifting
-begins is not established**.
+Nearly every component here is prior art.
 
-On the edge rule: Louis, Borgelt & Grün 2010 rolls the train specifically to avoid underestimating the
-expected coincidence count, and warns that dropping is acceptable only where start and end rates
-match. This run drops, which **deflates the surrogate's coincidence count**, biasing the null in the
-direction that makes real recordings look more coordinated. On the lab fast stream at the training
-displacements, 10 s and 20 s, rigid shift drops 0.5 % and 1.1 % of onsets (Figure 1's run). Elephant's own `dither_spike_train` does not wrap either; the
-only wrapping method on this page is Dard et al. 2022's *circular* shift.
+**Whole-train shifting.** Pipa, Riehle & Grün 2007 describe a resampling method that Harrison &
+Geman 2009 call closely related to their pattern jitter; Pipa et al. 2008 give whole-train shifting
+in full. Louis, Borgelt & Grün 2010 recommend it, credit it jointly to Pipa et al. 2008 and Harrison
+& Geman 2009, and roll the train at the ends so as not to underestimate the expected coincidence
+count, noting that rolling is safe for their data because start and end rates match. Stella et al.
+2022 found trial shifting, per neuron and per trial, the most robust of the surrogates they compared
+for SPADE (spike pattern detection and evaluation) and recommend it there, at a 25 ms dither. ⚠ The
+trail stops at Pipa, Riehle & Grün 2007, which is closed access and unread here; the multiple-shift
+method of Grün et al. 1999 that Pipa et al. 2008 cite is, by its abstract, a coincidence detector
+rather than a random-shift null. Elephant's `dither_spike_train` drops onsets at the ends as this run
+does; the forms Louis et al. recommend and Stella et al. prefer both wrap, as does Dard et al.'s
+circular shift.
 
-Counting co-active cells against a per-cell circular shift, with a threshold read off that surrogate,
-is how Dard et al. 2022 detect events in the Cossart dataset this project also uses. Holding a
-false-alarm rate fixed by estimating the background and setting a threshold from it is
-constant-false-alarm-rate (CFAR) detection (Finn & Johnson 1968); the stage that is CFAR-shaped here is
-the difference-of-Gaussians, whose centre is the cell under test and whose surround is the local
-reference. The label-free threshold rule is better described as a surrogate threshold. Capping each
-cell at one vote is the clipping step of Unitary Events (Grün, Diesmann & Aertsen 2002, Part I; the
-construction is Grün 1996); here `line` bounds the vote's height only and `line_bound` also bounds it
-in time, and both bounds are soft.
+**Counting co-active cells against a surrogate.** Cossart, Aronov & Yuste 2003 counted co-active
+cells per frame against interval reshuffles; they credit Mao et al. 2001, not reached here. Dard et
+al. 2022 do the same against a per-cell circular shift, with a threshold at the 99th percentile, on
+the dataset this project also uses. The label-free threshold is that kind of **surrogate threshold**.
 
-**What is this project's own** is narrow: making that construction differentiable and trainable, and
-setting its operating point at a stated event rate, is new **in the calcium-imaging literature**. ⚠
-Training a detector under a stated false-alarm constraint is established in radar, including CFARnet
-(Diskin et al. 2022) and differentiable Neyman–Pearson layers, so the transfer, not the idea, is what
-is ours.
+**Holding a false-alarm rate fixed.** Constant-false-alarm-rate (CFAR) detection sets a threshold in
+proportion to an estimate of the background: Finn 1967, and the cell-averaging treatment of Finn &
+Johnson 1968 (Finn's 1966 conference paper was not reached). `tube`'s difference of Gaussians is
+CFAR-shaped only loosely: it subtracts its surround rather than scaling by it and has no guard cells,
+so it does not hold the false-alarm probability constant when the background scale changes;
+`tube_ratio` is the proportional variant. Capping each cell's contribution per bin is the clipping
+step of Unitary Events (Grün, Diesmann & Aertsen 2002; the construction is Grün 1996).
 
-Two more names in Figure 2 are other labs' work, and their scores are not statements about it.
-`SPIKE-synch` wraps the SPIKE-synchronization profile (Kreuz, Mulansky & Bozanic 2015) as implemented
-in PySpike (Mulansky & Kreuz 2016); Kreuz's own lab has since published a detection layer on that
-profile (Kreuz et al. 2022, *J Neurosci Methods* 381:109703). `locust` is a **partial, modified** port,
-by way of interface2, of the Cossart lab's CICADA (software: Zenodo `10.5281/zenodo.10041434`;
-framework: Hamon et al. 2026), and it skips CICADA's own transient-detection stage, so **its numbers
-are never measurements of CICADA**. `binned SCE` descends from Cossart, Aronov & Yuste 2003.
+**Learning against a surrogate or a constraint.** Training a model to score data above samples from
+a chosen noise distribution is noise-contrastive estimation (Gutmann & Hyvärinen 2012), and this
+objective is that with a domain-specific noise distribution. Telling real from surrogate with a
+held-out classifier, as the leak tests do, is a classifier two-sample test (Lopez-Paz & Oquab 2017).
+Training detectors under a Neyman–Pearson false-alarm constraint is established: in statistical
+learning (Scott & Nowak 2005), in radar since at least Jarabo-Amores et al. 2009, and more recently
+as a differentiable Neyman–Pearson criterion used as a loss (Zhu, Li & Zhang 2023) and in CFARnet
+(Diskin, Beer, Okun & Wiesel 2024).
+
+**What is this project's own** is narrow: a counting detector of this shape made differentiable,
+trained against a whole-recording rigid shift, and thresholded at a stated rate on that surrogate, in
+calcium imaging. The transfer is ours, not the ideas.
+
+**Other labs' detectors in Figure 3.** `SPIKE-synch` wraps the SPIKE-synchronization profile (Kreuz,
+Mulansky & Bozanic 2015) as implemented in PySpike (Mulansky & Kreuz 2016). The Kreuz group's own
+event detection on that profile, which also requires a threshold on the mean calcium signal, is
+Cecchini et al. 2021 (Kreuz, personal communication, April 2026). `locust` is a partial, modified port,
+by way of interface2, of CICADA, from Cossart and Picardo's group at INMED (software: Denis et al.
+2020), described as a framework by Hamon et al. 2026 (corresponding author Dard, EPFL, with INMED
+co-authors). `binned SCE` descends from Cossart, Aronov & Yuste 2003 and is not a port.
+
+## References
+
+- Cecchini G, et al. (2021). *PLoS Comput Biol* 17(5):e1008963.
+- Cossart R, Aronov D, Yuste R (2003). Attractor dynamics of network UP states in the neocortex. *Nature* 423:283–288.
+- Dard RF, et al. (2022). *eLife* 11:e78116.
+- Denis J, Dard RF, Quiroli E, Cossart R, Picardo MA (2020). CICADA. Zenodo, doi:10.5281/zenodo.10041434.
+- Diskin T, Beer Y, Okun U, Wiesel A (2024). CFARnet. *Signal Processing* 223:109543 (arXiv:2208.02474).
+- Finn HM (1967). Adaptive detection with regulated error probabilities. *RCA Review* 28(4):653–678.
+- Finn HM, Johnson RS (1968). Adaptive detection mode with threshold control as a function of spatially sampled clutter-level estimates. *RCA Review* 29(3):414–464.
+- Grün S (1996). Unitary joint-events in multiple-neuron spiking activity. Reihe Physik 60, Harri Deutsch.
+- Grün S, Diesmann M, Aertsen A (2002). Unitary events in multiple single-neuron spiking activity: I. Detection and significance. *Neural Comput* 14(1):43–80.
+- Grün S, Diesmann M, Grammont F, Riehle A, Aertsen A (1999). *J Neurosci Methods* 94:67–79.
+- Gutmann MU, Hyvärinen A (2012). *J Mach Learn Res* 13:307–361.
+- Hamon et al. (2026). bioRxiv, doi:10.64898/2026.07.03.736318.
+- Harrison MT, Geman S (2009). *Neural Comput* 21:1244–1258.
+- Jarabo-Amores MP, et al. (2009). *IEEE Trans Signal Process* 57:4175.
+- Kreuz T, Mulansky M, Bozanic N (2015). SPIKY. *J Neurophysiol* 113(9):3432–3445.
+- Lopez-Paz D, Oquab M (2017). Revisiting classifier two-sample tests. ICLR.
+- Louis S, Borgelt C, Grün S (2010). Generation and selection of surrogate methods for correlation analysis. In Grün S, Rotter S (eds), *Analysis of Parallel Spike Trains*, ch. 17. Springer.
+- Mao BQ, et al. (2001). *Neuron* 32:883–898 (not reached).
+- McFee B, Salamon J, Bello JP (2018). *IEEE/ACM Trans Audio Speech Lang Process* 26(11):2180–2193.
+- Mulansky M, Kreuz T (2016). PySpike. *SoftwareX* 5:183–189.
+- Nadeau C, Bengio Y (2003). Inference for the generalization error. *Mach Learn* 52:239–281.
+- Pipa G, Riehle A, Grün S (2007). *Neurocomputing* 70(10–12):2064–2068, doi:10.1016/j.neucom.2006.10.142.
+- Pipa G, Wheeler DW, Singer W, Nikolić D (2008). NeuroXidence. *J Comput Neurosci* 25:64–88.
+- Scott C, Nowak R (2005). A Neyman–Pearson approach to statistical learning. *IEEE Trans Inf Theory* 51:3806–3819.
+- Stella A, Bouss P, Palm G, Grün S (2022). *eNeuro* 9(3), ENEURO.0505-21.2022.
+- Wang Y, Li J, Metze F (2019). A comparison of five multiple instance learning pooling functions for sound event detection with weak labeling. ICASSP.
+- Zhu, Li, Zhang (2023). *IEEE Trans Geosci Remote Sens* 61:1–14, doi:10.1109/TGRS.2023.3302472.
 
 ## Provenance and how to reproduce
 
-Branch `unsup/rigid-shift-report-residuals`. The bake-off ran at commit `70201e7`; every other stage at
-`b85b5c9`. Each ran from a separate checkout pinned to its commit, with no uncommitted changes (checked
-by hand: the run records say `git_dirty: null`, the value a provenance bug wrote for every clean
-tree until commit `ea350be` on this branch fixed it). Python 3.14.5 and torch 2.14.0 on
-one Mac, in the Elephant virtual environment, with `PYTHONPATH` set to that checkout's `src`.
+Branch `unsup/rigid-shift-report-residuals`. Every stage ran from a separate checkout pinned to one
+commit, with no uncommitted changes, on one Mac (Python 3.14.5, torch 2.14.0, Elephant 1.2.1), with
+`PYTHONPATH` set to that checkout's `src` and torch pinned to one thread per process.
 
-**Surrogates.** Training, the label-free thresholds and the paired checks draw rigid shift through a
-numpy implementation in `tools/tube_self_supervised.py`, an exact integer shift that differs from
-Elephant's `dither_spike_train(edges=True)` in seeding only;
-`tests/test_rigid_frames_matches_rigid_shift.py` checks the two agree in distribution. The leak tests
-in Figure 1 draw rigid shift and per-onset dither through `bugarach.surrogates` (Elephant 1.2.1,
-RRID:SCR_003833).
+| stage | command | output | commit, as recorded |
+|---|---|---|---|
+| bake-off, per seed *s* in 0, 1, 2 | `tools/fair_bakeoff.py --spec docs/learned/generator_spec.json --train-seed s --out <dir>/bakeoff_seed<s>` | `bakeoff_seed*/` | `70201e7` ⚠ |
+| plant probe | `tools/probe_line_vs_fuzz.py --checkpoints <dir>/real_compare/checkpoints --out <dir>/probe` | `probe/` | `b85b5c9` ⚠ |
+| per-ROI leak test | `tools/look_rigid_shift_controls.py --role steps_excluded --leak-only --out <dir>/controls_lab --jobs 12` | `controls_lab/` | `28ea5ad` ⚠ |
+| aggregate leak test | `tools/tube_aggregate_leak.py --out <dir>/aggregate_leak --jobs 12` | `aggregate_leak/` | `28ea5ad` |
+| label-free training | `tools/tube_self_supervised.py --out <dir>/training --jobs 12` | `training/` | `28ea5ad` |
+| real recordings | `tools/tube_ssl_real_compare.py --out <dir>/real_compare --checkpoints <dir>/real_compare/checkpoints --jobs 12` | `real_compare/` | `28ea5ad` |
+| models on synthetic twins | `tools/check_small_j_mixes_events.py --out <dir>/small_j_check --twins 30 --draws 2 --jobs 12 --checkpoints <all 120 checkpoints> --supervised-seeds 0 --untrained-seeds 0` | `small_j_check/` | `f55db21` |
+| every quoted result | `tools/summarize_tube_self_supervised.py --run <dir>` | `summary.json` | this page's commit |
+| figures | `tools/make_surrogate_schematic_figure.py`, `make_rigid_shift_gates_figure.py --run <dir>`, and `make_line_sensors_figure.py`, `make_tube_ssl_figure.py`, `make_tube_real_summary_figure.py` with `--summary <dir>/summary.json`; each writes to the darkroom unless given `--out`, and `--also` keeps a second copy | `*_fig.png` | this page's commit |
 
-| stage | command | output |
-|---|---|---|
-| bake-off, per seed *s* in 0, 1, 2 | `tools/fair_bakeoff.py --spec docs/learned/generator_spec.json --train-seed s --out <dir>/bakeoff_seed<s>` | `bakeoff_seed*/` |
-| aggregate leak | `tools/tube_aggregate_leak.py --out <dir>/aggregate_leak --jobs 12` | `aggregate_leak/` |
-| lab leak controls | `tools/look_rigid_shift_controls.py --role steps_excluded --leak-only --out <dir>/controls_lab --jobs 12` | `controls_lab/` |
-| label-free training | `tools/tube_self_supervised.py --out <dir>/training --jobs 12` | `training/` |
-| real recordings | `tools/tube_ssl_real_compare.py --out <dir>/real_compare --checkpoints <dir>/real_compare/checkpoints --jobs 12` | `real_compare/` |
-| plant probe | `tools/probe_line_vs_fuzz.py --checkpoints <dir>/real_compare/checkpoints --out <dir>/probe` | `probe/` |
-| every number | `tools/summarize_tube_self_supervised.py --run <dir>` | `summary.json` |
-| Figure 1 | `tools/make_rigid_shift_gates_figure.py --run <dir> --out <dir>` | `rigid_shift_gates_fig.png` |
-| Figure 2 | `tools/make_line_sensors_figure.py --summary <dir>/summary.json --probe <dir>/probe --out <dir>` | `line_sensors_fig.png` |
-| Figure 3 | `tools/make_tube_ssl_figure.py --run <dir>/training --out <dir>` | `tube_ssl_fig.png` |
+⚠ **What the records can and cannot show.** The aggregate leak test, training, real-recordings and
+twin-check outputs carry a provenance stamp with the commit and `git_dirty: false`. The bake-off
+records its commit with `git_dirty: null`, the value a provenance bug wrote for every clean tree until
+`ea350be` fixed it; those checkouts were checked clean by hand. The per-ROI leak test and the plant
+probe record no commit: the per-ROI test ran in the same pinned chain as training, whose log records
+`28ea5ad` and a clean tree, and the probe is carried over unchanged from the previous run at `b85b5c9`,
+which the models it reads (supervised fits and the seed-0, fold-0 checkpoints) make comparable here
+because their training did not change.
 
-`real_compare/checkpoints/` holds the seed-0, fold-0 fit of each architecture trained against rigid
-shift, at each displacement: 10 of the 120 fits that stage made. The initial-bank figure for the
-aggregate test is `aggregate_leak/tube_aggregate_fig.png`.
+**Surrogates.** Training, the label-free thresholds, the paired checks and the twin check draw rigid
+shift through a numpy implementation in `tools/tube_self_supervised.py` (`rigid_frames`), the same
+construction as `bugarach.surrogates.rigid_shift` with different seeding;
+`tests/test_rigid_frames_matches_rigid_shift.py` checks, for one onset in the middle of a recording,
+that the two offsets' means and standard deviations agree within 1.5 frames and their distributions
+within a Kolmogorov–Smirnov distance of 0.05. That would not detect a systematic one-frame bias
+(harmless for alignment, since it acts as a shared offset) and does not exercise the edges. The per-ROI leak test draws every
+surrogate through `bugarach.surrogates` (Elephant 1.2.1, RRID:SCR_003833).
+
+**Checkpoints.** `real_compare/checkpoints/` holds the seed-0, fold-0 fit of each architecture at each
+displacement, 10 of the 120 the real-recordings stage writes; the twin check read all 120, which the
+stage regenerates bit for bit (the ten here match the previous run's weights exactly).
+
+**A real raster.** The lanes-over-raster view of one baseline recording that an earlier version pointed
+to in the darkroom was drawn from that version's run and was not redrawn for this one; nothing here
+quotes it. It holds a real baseline raster, which FOUNDATIONS §5 keeps out of the repo, and is rebuilt
+with `tools/make_tube_real_lanes.py` into a claimed darkroom folder.
+
+**What changed from the version reviewed on 2026-09-17.** Its third blind review found the trained
+models' checks unable to tell coordination from slow shared modulation, and the Tony-approved answer
+was to add controls that can fail and rerun:
+
+- rigid shift at *J* = 1.6 s in the paired checks and the aggregate leak test; shared- and
+  independent-modulation twins; a per-ROI circular shift as a second positive control in the per-ROI
+  test; three zero-parameter count baselines through every threshold and check; and the models
+  scored directly on synthetic twins, which is where the question was answered;
+- on real recordings, activity-weighted random times, every learned model and baseline also run on a
+  rigid shift of the recordings, and agreement pooled over all seeds (it had used seed 0 for one
+  direction);
+- every figure drawn from `summary.json`, five of them, numbered and in the page's model order;
+- the page reordered problem first, with terms before results, claims before tables, and the
+  citations corrected (Cecchini et al. 2021 for the SPIKE-synch detection layer; Pipa, Riehle &
+  Grün 2007 in the origin trail; Louis et al.'s edge condition, which is about rolling; Finn 1967;
+  the Neyman–Pearson and noise-contrastive lineage).
 
 Earlier stages of this thread: the controls run in [`../rigid_shift_look/controls/`](../rigid_shift_look/controls/)
-and the [handoff](../../handoffs/2026-09-15-rigid-shift-controls-and-tube-training.md) that describes
-the first tube training run; ⚠ its numbers come from runs this page supersedes.
+and the [handoff](../../handoffs/2026-09-15-rigid-shift-controls-and-tube-training.md) that describes the
+first tube training run; ⚠ its numbers come from runs this page supersedes.
