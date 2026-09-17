@@ -4,7 +4,32 @@
 > When this thread is finished, delete this file (or move it to `docs/handoffs/` if anything
 > below is still worth reading). Not murderboarded; working notes.
 
-## 2026-09-16 — LIVE REVIEW IN PROGRESS. Read this section first.
+## 2026-09-17 — SUBMITTED. Waiting on reviewers' feedback. Read this section first.
+
+**Tony submitted `detector_review_plain-td.docx` on 2026-09-17** and will share the reviewers' feedback
+when it arrives. Nothing is in flight; the next work starts from that feedback.
+
+- **What went out is Tony's hand-edited Word file**, `<darkroom>/bugarach/2026-09-15-detector-review-plain/detector_review_plain-td.docx`
+  (PDF beside it, `detector_review_plain-td.pdf`, 40 pages). **Never rebuild over it**: the builder's `docx`
+  stage writes `detector_review_plain.docx`, a different file, and the -td copy carries his edits that
+  exist nowhere else. `detector_review_plain-td.before-print-figures.docx` is his copy before any figure swap.
+- **Numbers are on the stored settings after #597**, scored on test recordings none of which chose them
+  (`_review_best/_work/`).
+- **Its 25 figures are the print versions** (`tools/make_print_figures.py`, drawn at 6.5 in, no text under
+  8 pt), swapped in by `tools/swap_print_figures_into_docx.py`. How, and the per-figure status:
+  [`docs/todo/2026-09-17-print-figures-for-td-docx.md`](docs/todo/2026-09-17-print-figures-for-td-docx.md).
+  **The HTML page's figures are NOT these**; the page and the builder's docx still use the web versions.
+- **The murderboard was stopped by Tony after round 2**, unconverged. No run record was written. The
+  role reports are in the darkroom folder's `reviews/`.
+- **Deferred by Tony ("no time to revise the pipeline for this manuscript"):**
+  [`docs/todo/2026-09-17-detector-windowing-does-not-match-intent.md`](docs/todo/2026-09-17-detector-windowing-does-not-match-intent.md):
+  global detectors should run on the whole trace, with analysis regions only splitting events into
+  baseline and treatment.
+- **When feedback comes:** edit the -td docx's text by hand or through Tony; a figure change means a
+  new print figure plus one swap (the old image is found by its exact bytes, so keep the swapped PNG
+  before redrawing, as `print_figures/swapped_v1/` did).
+
+## 2026-09-16 — live review (superseded by the section above)
 
 **Tony is reading the plain-language page and sending notes one at a time. The loop is: he sends a
 note, it goes in [`docs/reviews/detector_review_plain_notes.md`](docs/reviews/detector_review_plain_notes.md)
