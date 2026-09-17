@@ -14,6 +14,12 @@ filed: 2026-09-16
 > `merge_when_green.sh` refused the merge. Fixed in `d0453de`. The milestone rows are in
 > `docs/MILESTONES.md` section C (three) and section H (one). **Steps 3 and 4 remain**, and so does
 > everything under *Waiting on Tony*.
+>
+> **Before starting 3 or 4, read the handoff:**
+> [`docs/handoffs/2026-09-16-rigid-shift-report-steps-3-and-4.md`](../handoffs/2026-09-16-rigid-shift-report-steps-3-and-4.md)
+> — file and line for every residual, the blind-round procedure, and the traps this session hit.
+> It recommends doing **step 4 before step 3**, since several residuals change numbers the report
+> quotes, and reviewing text that is about to change wastes a blind round.
 
 Everything from the 2026-09-15/16 sessions was on branch `unsup/rigid-shift-controls`,
 [PR #588](https://github.com/syncytium2/bugarach/pull/588), and is now on `main`. Before it landed,
