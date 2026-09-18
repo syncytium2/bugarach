@@ -882,6 +882,30 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   impossible when every candidate is enumerated and ordinary for a greedy coordinate walk: the gate
   changes which candidates it can step to, so it takes a different path. The test now asserts that
   rather than a false ordering, and the readout must describe two searches, not one filtered.
+- **THE SHAKEDOWN FINISHED, 2026-09-18 at 02:35: 2,089 jobs, 0 errors, 13 h 53 min, 27.3 GPU-hours.**
+  It ran unattended from Task Scheduler with no session attached, through the night, and the launch
+  path is therefore proven for the real run: detached start, resumable files, `progress.json`, a GPU
+  pool that held 9.1 GB flat for fourteen hours. Outputs in `%USERPROFILE%\runs\tune-gpu-shakedown\`,
+  on local disk, not in the repo and not in the darkroom.
+  **Its numbers are a rehearsal, not a result** — the retired home spec, the coded side on three
+  knobs, the old budget, and no context rule (its CoactDetect choices include 240 s). No readout is
+  planned and nothing quotes them. What they suggest, for whoever designs the real run:
+  held-out F1 over four folds and five seeds, untuned / ungated / gated — `chorus_norm` 0.726 /
+  0.725 / 0.724; `chorus_gain_norm` 0.725 / 0.692 / 0.728; `line_length` 0.674 / 0.709 / 0.681;
+  `tube` 0.653 / 0.659 / 0.609; CoactDetect 0.712 / 0.712; LoCo 0.692 / 0.703.
+  **Tuning the nets moved almost nothing** (`chorus_norm` −0.001 tuned minus untuned), and the
+  leader's margin over CoactDetect fell from the untuned table's +0.103 F1 to +0.011 ungated and
+  +0.012 gated (*t* 1.24 and 2.45). **`tube`, the control, behaved**: 0.05 to 0.10 below CoactDetect
+  and worse under the gate, which is what a rate-fooled model should do when false alarms are capped.
+  If that shape survives on the bench against every-knob coded detectors, the answer to this run's
+  question is that the margins were about tuning budget — which is what it was built to find out.
 - **Still waiting on goal 1:** step 3's every-knob values in `OPERATING_POINTS`, which is what the
   budget's reference anchors to and what the refuse-to-start guard waits for. 065 treats goal 2 as
-  blocked on it, Tony knows, and step 3's search is re-running under the context rule.
+  blocked on it, Tony knows, and step 3's search is re-running under the context rule. As of
+  2026-09-18 08:25 neither the context rule nor the values are on `main`.
+- **To start the real run when they land** (from `bugarach-worktrees/tune-bench-comparison`, its own
+  `.venv`): merge `main`, check `bench.context_fits_the_null` exists and CoactDetect's shipped point
+  is sliding, run `--quick --device cuda` once, then launch through Task Scheduler as
+  `%USERPROFILE%\runs\tune-gpu-shakedown-launch.cmd` does — a new `--out`, `--device cuda`,
+  `--gpu-jobs 2 --jobs 12`, output under `%USERPROFILE%\runs\`. The shakedown's task is deleted; its
+  launcher script is kept as the template.
