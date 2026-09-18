@@ -266,6 +266,33 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
     (launch path only — script bodies use Windows `C:\...` paths, per
     interface2's SAP003 lesson).
 
+## CI runs the suite in parallel — two kinds of test must opt out
+
+`pytest -n auto --dist loadfile` on a 4-core runner, so a CI leg is ~7 minutes
+rather than ~15 and a whole run is ~10 rather than ~18 (merged 2026-09-16,
+`71950dd`). Three consequences when you add or move a test:
+
+- **A test that asserts on wall-clock time needs `@pytest.mark.serial`.** With four
+  workers loading the runner, a budget measures the other three as much as the code:
+  the briefing's 3-second budget read 3.1s and reddened 3.11 only. Marked tests run
+  after the parallel pass, alone and in file order, so the budget stays honest.
+- **A test that reads or writes the built `site/` needs it too.** `test_site_pages_render.py`
+  deletes and rebuilds that directory and `test_site_withholding.py` reads it; split across
+  workers, the reader's figure checks skipped on 3.13 and ran on 3.14 in the same run.
+  A skip that depends on scheduling is coverage nobody can count on.
+- **Tests in one file are NOT independent of each other, and `--dist loadfile` is why
+  they can stay that way.** The webapp suites share a module-scoped page and build on it
+  in order. Splitting per test (xdist's default) turned that into a coin toss: 3.11 went
+  red with `aimed_at: None` while the other legs happened to schedule the tests together.
+
+Two habits follow from the same change. CI prints every skip with its reason (`-rs`) and
+the 25 slowest tests, so read the log rather than a count — that is how the `site/` coin
+toss was found. And **a race the suite always had can start landing**: `backdate()` in
+`tests/test_worktree_sweep.py` walked live git repos and touched files git was deleting
+underneath it, which reddened `main` five times in two days before it was fixed
+(`5f96453`). A new red test in a parallel run is worth reading as a timing window before
+it is read as broken code.
+
 ## Multi-session coordination — assume you are not alone
 
 Several stateless sessions may run against this repo at once, on this machine
