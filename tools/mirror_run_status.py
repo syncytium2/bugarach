@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# instrument: coordination
+# instrument: retrieval
 """Copy an unattended run's status file into the darkroom, so it is readable from
 somewhere other than the machine it runs on.
 
