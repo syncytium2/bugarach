@@ -58,7 +58,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-os.environ.setdefault("LOOK_ROLE", "steps_excluded")
+os.environ.setdefault("LOOK_ROLE", "steps_and_pins_excluded")
 
 import tube_self_supervised as ts                            # noqa: E402
 
@@ -198,13 +198,16 @@ def baseline_task(args):
 
 def hand_task(args):
     ids, = args
+    import look_rigid_shift as lr
     from bugarach import dataset
     from bugarach.detect_folder import detect_slice
     from bugarach.io import load_folder
     rows = {r["id"]: r for r in ts.real_recordings()}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        slices = {s.slice_id: s for s in load_folder(dataset.current("steps_excluded"))}
+        # The role the rest of the run reads, not a second hard-coded folder: the two
+        # disagreeing is how a comparison ends up spanning two exports.
+        slices = {s.slice_id: s for s in load_folder(dataset.current(lr.role()))}
     out = {"coact": {}, "loco": {}}
     for rid in ids:
         r = rows[rid]

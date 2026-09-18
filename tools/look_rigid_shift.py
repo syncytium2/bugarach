@@ -78,7 +78,7 @@ def k_scan(n_roi: int) -> tuple[int, ...]:
 
 def role() -> str:
     import os
-    return os.environ.get(ROLE_ENV, "steps_excluded")
+    return os.environ.get(ROLE_ENV, "steps_and_pins_excluded")
 
 
 # -- data -------------------------------------------------------------------------------------
