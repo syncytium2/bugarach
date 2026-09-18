@@ -11,8 +11,6 @@
 > bottom; the convention is in [`README.md`](README.md).
 >
 > **Written 2026-09-16** against `origin/main` at `a7fe2f8` and the open branches.
-<<<<<<< HEAD
-=======
 >
 > ⚠ **Goal 1 of the program Tony set on 2026-09-17**: *full tuning of the coded detectors, every
 > knob*. Five decisions bind it (one data folder, `steps_excluded`; train on the baseline and run on
@@ -20,7 +18,6 @@
 > except the data's own). They are in [`README.md`](README.md), *The current program*. The working
 > plan, owned by WSMIP065, is [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md). Where
 > this page and those two disagree, those two win until this page is brought up to date.
->>>>>>> origin/main
 
 ---
 
@@ -49,33 +46,22 @@ values moved, three were already best or inside the noise. That closed the *one 
 question and opened the larger one: `bench.py` says in terms that **only the one swept knob per
 detector was searched; every other parameter is as it was**.
 
-<<<<<<< HEAD
-**A search over every declared setting is running now**, started 2026-09-16 at 16:51 and written to
-`<darkroom>/bugarach/2026-09-16-full-search/`. It is a **measurement, not an adoption** — Tony's
-choice was to ship the review with the shipped settings and let the search say what was left on the
-table. Its status, its command and how to read its output are in `HANDOFF-full-search.md` on branch
-`full-search` ⚠ **unmerged — that file is not on `main`**.
-=======
 **A search over every *declared* setting finished** on 2026-09-16 at 17:02, into
 `<darkroom>/bugarach/2026-09-16-full-search/`. It was a **measurement, not an adoption**. Its handoff,
 `HANDOFF-evaluate-sliding-detectors.md` on branch `full-search` (⚠ unmerged), is **superseded** by
 [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md), which also corrects four of its
 readings. Two of them are in the table below.
->>>>>>> origin/main
 
 **Sliding LoCo and CoactDetect are built and not landed.** Branch `sliding-loco-coact`, also
 unmerged: at their binned-tuned values they call more and break the empty-recording budget, so the
 search has to hand them admissible values before they can merge.
 
-<<<<<<< HEAD
-=======
 **Next, 2026-09-17:** re-derive the bench from `steps_excluded`, fast stream, baseline windows. Then
 search every parameter (not just the declared ones) with grids that extend until bracketed, and land
 sliding at the chosen values. WSMIP064's tuning run (goals 2 and 3) is running and does not wait on
 these. Its next comparison uses them. None of it is final: Tony is still deciding which detectors
 and models to keep.
 
->>>>>>> origin/main
 ## What is settled
 
 **Strength** follows [`MILESTONES.md`](../MILESTONES.md): *measured* is a number from a run, *decided*
@@ -88,22 +74,14 @@ is a ruling, *argued* is reasoning nobody has measured.
 | **Three did not**: CoactDetect's alpha was already the best value inside both budgets; SPIKE-synch's every looser value fires over the busy-background limit; locust's 99.99 scores +0.010 mean F1 on an interval spanning zero, so 99.999 stays | measured | same `source` strings |
 | **Only one knob per detector has ever been swept.** Every other parameter in each stored operating point is as its function was written | measured from the code, and stated in the code | [`bench.py`](../../src/bugarach/bench.py); [the wall this makes](../todo/2026-08-27-one-knob-per-detector-is-the-next-wall.md) |
 | **Half the stored table is a code or viewer default rather than a calibration.** rate+context and binned SCE carry their function's defaults; SPIKE-synch and CoactDetect carry viewer FAST points; LoCo, locust and CoactDetect's alpha are the tuned ones | measured from the code | the `source` strings; `docs/todo/2026-09-16-three-detectors-run-at-code-defaults.md` ⚠ **on branch `detector-review-doc`, not on `main`** |
-<<<<<<< HEAD
-=======
 | **The bench's measured values hold on `steps_excluded`**, fast stream, baseline analysis windows (2026-09-17): 7 of 8 inside their 95% bootstrap intervals over 84 recordings. `participation` 0.18 sits 0.0018 below its interval, a rounding of 6/33, waiting on Tony. A test now fails if the pointer, the record and the bench stop agreeing | measured; one value waiting | [`bench_measured.json`](../learned/bench_measured.json), `tools/remeasure_bench.py`, `tests/test_bench_is_measured_on_the_declared_folder.py` |
 | **Sliding and binned disagree on real recordings only as `forks.md` §14 predicts** (2026-09-17, the 84 baseline analysis windows of `steps_excluded`, fast stream, at the binned-tuned settings): sliding calls more (LoCo 598 → 923 calls, CoactDetect 436 → 583) and never fewer for LoCo; a median 1.00 of binned calls survive within 2.5 s; CoactDetect's shared onsets move a median +0.30 s where LoCo's move 0.00 s, the bin edge becoming the first participating event. **Nothing unexplained blocks landing sliding** | measured, one run | `tools/compare_sliding_vs_binned.py`; run, figures and note in `<darkroom>/bugarach/2026-09-17-sliding-vs-binned/` |
->>>>>>> origin/main
 | **The refusal machinery exists and is tested.** `pick_operating_point` refuses an optimum on the edge of its grid, a sweep where every value scores alike, and a winner that fires too often where nothing was planted, rather than reporting them | built | [`bench.py`](../../src/bugarach/bench.py), `tests/test_bench.py` |
 | **The empty-recording false-alarm budget moved where a calibration can see it** — `MAX_FALSE_POSITIVES_PER_HOUR` and `false_positives_per_hour`, landed with the retune | built | [`bench.py`](../../src/bugarach/bench.py) |
 | **With LoCo retuned, CoactDetect's lead is 0.003 F1**, and the background-curve tests say so with a tie margin rather than asserting an order the spread does not support | measured | `tests/test_background_curve.py` |
 | **Two corrections landed immediately before the retune and moved every curve it reads**: locust holds each cell for the event's own width instead of a fixed second, and binned SCE's calls are scored over the bins they were made on | measured | [PR #594](https://github.com/syncytium2/bugarach/pull/594), [PR #593](https://github.com/syncytium2/bugarach/pull/593) |
-<<<<<<< HEAD
-| **A long context wins held-out and loses on crowded recordings.** The 240 s contexts that lead the overnight search's held-out column cost LoCo 0.044 and CoactDetect 0.022 mean F1 on the crowded check — the bench plants events at least 120 s apart, and a window-shaped setting can learn that spacing | measured, one run | `HANDOFF-full-search.md` on branch `full-search` ⚠ **not on `main`** |
-| **locust's 12.8 s minimum distance is the night's strongest finding** and the one that survives the crowded check: +0.119 held-out mean F1 and +0.149 crowded | measured, one run | same handoff ⚠ **not on `main`** |
-=======
 | **A long context wins held-out and loses on crowded recordings.** The 240 s contexts that lead the overnight search's held-out column cost LoCo 0.044 and CoactDetect 0.022 mean F1 on the crowded check — the bench plants events at least 120 s apart, and a window-shaped setting can learn that spacing. ⚠ Corrected 2026-09-17: the LoCo winner also carries an 8 s merge gap, the top of its grid, which fuses crowded events planted 6 s apart. Part of the loss may be that, not the context | measured, one run | `HANDOFF-evaluate-sliding-detectors.md` on branch `full-search` ⚠ **not on `main`**; correction in [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §2 |
 | **locust's minimum distance climbed to 12.8 s (128 frames), +0.119 held-out mean F1 and +0.149 crowded, and was still climbing.** ⚠ Corrected 2026-09-17: 128 frames is where the search's extension cap (`MAX_EXTENSIONS = 3`) stopped it, silently, so it is an unbracketed edge and not an optimum. A score that rises as repeat calls are suppressed points at the anchor question below | measured, one run; unbracketed | same; correction in [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §2 |
->>>>>>> origin/main
 
 ## Tried and dropped — do not re-propose without new evidence
 
@@ -137,13 +115,8 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 ## Open work a session can do without a ruling
 
 - **Land sliding LoCo and CoactDetect**, taking admissible values from the search — held-out and
-<<<<<<< HEAD
-  under all three budgets — and setting them in `OPERATING_POINTS` before merging. ⚠ Another session
-  runs the learned-model tuning against these same two detectors; coordinate before landing.
-=======
   under all three budgets — and setting them in `OPERATING_POINTS` before merging. The learned-model
   tuning (WSMIP064) already runs this sliding code. Its next comparison needs the **values**: [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4.
->>>>>>> origin/main
   Branch `sliding-loco-coact`.
 - **The browser still runs both of them binned** — `loco.js` and `coact.js`. Owed the moment the
   sliding versions land, or the two surfaces disagree about what a call is.
