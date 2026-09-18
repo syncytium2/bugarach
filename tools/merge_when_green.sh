@@ -136,6 +136,7 @@ print("FAIL" if "FAIL" in s else ("PENDING" if "PENDING" in s else "PASS"))
 # whole change is worth nothing.
 IN_USE_STATE=''
 IN_USE_WHY=''
+IN_USE_MARKERS_ONLY=''
 
 in_use_tool() {
   [ "${BUGARACH_IN_USE:-}" = off ] && return 1
@@ -148,18 +149,28 @@ in_use_tool() {
 
 in_use_state() {   # $1 dir -> sets IN_USE_STATE to free|held|unknown, IN_USE_WHY to the reason
   local dir="${1:-.}" tool out rc gd f pid host me
-  IN_USE_STATE=free; IN_USE_WHY=''
+  IN_USE_STATE=free; IN_USE_WHY=''; IN_USE_MARKERS_ONLY=''
   [ -n "$dir" ] || return 0
 
   if tool="$(in_use_tool)"; then
-    out="$(python3 "$tool" "$dir" 2>/dev/null)"; rc=$?
+    # Executed directly when it is executable, so a stub in the selftest can stand in for it;
+    # otherwise handed to python3, which is how it is normally found.
+    if [ -x "$tool" ]; then out="$("$tool" "$dir" 2>/dev/null)"; rc=$?
+    else out="$(python3 "$tool" "$dir" 2>/dev/null)"; rc=$?; fi
     IN_USE_WHY="$(printf '%s\n' "$out" | sed -n '2,4p')"
+    # rc 3 is MARKER-ONLY: nobody claimed the directory, and this machine has no process
+    # probe to contradict them. THAT IS EVERY WINDOWS WORKSTATION IN THE ESTATE, where there
+    # is no lsof at all. Refusing on it would refuse every reap ever offered on half the
+    # machines, and the check would be gone within a week. So we reap, and the message says
+    # only markers were checked rather than implying a probe looked and found nothing.
     if [ "$rc" = 0 ]; then IN_USE_STATE=free
     elif [ "$rc" = 1 ]; then IN_USE_STATE=held
+    elif [ "$rc" = 3 ]; then IN_USE_STATE=free; IN_USE_MARKERS_ONLY=yes
     else IN_USE_STATE=unknown; fi
     return 0
   fi
 
+  IN_USE_MARKERS_ONLY=yes
   gd="$(git -C "$dir" rev-parse --absolute-git-dir 2>/dev/null || true)"
   [ -n "$gd" ] || return 0
   me="$(hostname 2>/dev/null || echo unknown-host)"
@@ -285,6 +296,8 @@ reap_worktree() {
       fi
       git branch -d "$branch" >/dev/null 2>&1 || true
       echo "merge_when_green: reaped $name — '$branch' is on main and held nothing uncommitted."
+      [ "$IN_USE_MARKERS_ONLY" = yes ] && \
+        echo "  Nothing claimed it, but this machine has no process probe — markers only."
       [ -n "$ignored" ] && echo "  $ignored"
       echo "  YOUR SHELL IS STILL POINTED AT THE DELETED DIRECTORY.  cd $primary"
       ;;
@@ -369,6 +382,30 @@ selftest() {
   printf '{"pid": %s, "host": "%s-elsewhere"}\n' "$$" "$probe_host" > "$probe_gd/in-use/live.json"
   u "another machine's pid -> unknown"    unknown "$probe_tmp" off
   rm -f "$probe_gd/in-use/live.json"
+
+  # THE EXIT-CODE CONTRACT WITH ARMORY, FIRED BY NUMBER. This is the seam between two
+  # repositories: in_use.py promises 0/1/2/3 and this script maps them. Nothing else here
+  # would notice if that mapping drifted, and a stub costs four lines.
+  # SAVE AND RESTORE ONCE AROUND THE WHOLE BLOCK. The first draft unset BUGARACH_IN_USE after
+  # each stub, which wiped an override supplied from OUTSIDE the selftest -- so running with
+  # BUGARACH_IN_USE pointed at a real in_use.py silently lost it partway through and the
+  # armory-route row stopped running while everything still printed pass. Second instance of
+  # the same leak in this file; the first is in u() above.
+  probe_had="${BUGARACH_IN_USE+set}"; probe_saved="${BUGARACH_IN_USE:-}"
+  for pair in "0 free" "1 held" "2 unknown" "3 free"; do
+    set -- $pair
+    printf '#!/bin/sh\nexit %s\n' "$1" > "$probe_tmp/stub.py"
+    chmod +x "$probe_tmp/stub.py"
+    BUGARACH_IN_USE="$probe_tmp/stub.py" in_use_state "$probe_tmp"
+    if [ "$IN_USE_STATE" = "$2" ]; then printf '  ok   %-40s\n' "in_use.py exit $1 -> $2"
+    else printf '  FAIL %-40s (got %s, want %s)\n' "in_use.py exit $1 -> $2" "$IN_USE_STATE" "$2"; fails=$((fails+1)); fi
+  done
+  printf '#!/bin/sh\nexit 3\n' > "$probe_tmp/stub.py"
+  BUGARACH_IN_USE="$probe_tmp/stub.py" in_use_state "$probe_tmp"
+  if [ "$IN_USE_MARKERS_ONLY" = yes ]; then printf '  ok   %-40s\n' "exit 3 also records markers-only"
+  else printf '  FAIL %-40s\n' "exit 3 also records markers-only"; fails=$((fails+1)); fi
+  if [ "$probe_had" = set ]; then BUGARACH_IN_USE="$probe_saved"; else unset BUGARACH_IN_USE; fi
+  rm -f "$probe_tmp/stub.py"
 
   # A marker must never dirty the tree, or it trips this script's own `clean` check and the
   # right answer arrives for the wrong reason.
