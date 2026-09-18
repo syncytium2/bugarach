@@ -113,6 +113,86 @@ print("FAIL" if "FAIL" in s else ("PENDING" if "PENDING" in s else "PASS"))
 '
 }
 
+# ------------------------------------------------------------- is it in use?
+# THE SEVENTH FACT, AND THE FIRST ONE GIT CANNOT ANSWER. On 2026-09-17 this script reaped a
+# worktree from which an 11-minute search was executing, reading its code from
+# PYTHONPATH=<worktree>/src. Merged: yes. Clean: yes — the process held no uncommitted files,
+# only the directory. Both facts were true and the run died anyway.
+#
+# THE ANSWER IS THREE-VALUED ON PURPOSE. Every other fact the reaper uses is knowable from
+# git, locally, always. This one can be UNANSWERABLE: there is no portable way to ask an OS
+# what holds a directory, and no lsof on Windows. Folding "I could not look" into "free" is
+# the failure this estate keeps cataloguing — a check that cannot fire reading as one that
+# passed — so `unknown` is its own answer and it keeps the worktree.
+#
+# IT SETS GLOBALS RATHER THAN PRINTING. `x=$(in_use_state ...)` runs in a subshell, so the
+# reason string would be discarded at the closing paren and the refusal would print a verdict
+# with no explanation. Written that way first.
+#
+# THE FALLBACK IS DELIBERATELY THE WEAKER HALF. With armory's in_use.py present we get
+# markers AND a live-process probe. Without it we read markers only, in pure shell, with no
+# python — and a machine with no markers still reaps, because a reaper that refuses every
+# reap on every machine without armory installed gets deleted within a week, and then this
+# whole change is worth nothing.
+IN_USE_STATE=''
+IN_USE_WHY=''
+IN_USE_MARKERS_ONLY=''
+
+in_use_tool() {
+  [ "${BUGARACH_IN_USE:-}" = off ] && return 1
+  for c in "${BUGARACH_IN_USE:-}" "${ARMORY_ROOT:-}/tools/in_use.py" \
+           "$HOME/Developer/armory/tools/in_use.py"; do
+    if [ -n "$c" ] && [ -f "$c" ]; then printf '%s\n' "$c"; return 0; fi
+  done
+  return 1
+}
+
+in_use_state() {   # $1 dir -> sets IN_USE_STATE to free|held|unknown, IN_USE_WHY to the reason
+  local dir="${1:-.}" tool out rc gd f pid host me
+  IN_USE_STATE=free; IN_USE_WHY=''; IN_USE_MARKERS_ONLY=''
+  [ -n "$dir" ] || return 0
+
+  if tool="$(in_use_tool)"; then
+    # Executed directly when it is executable, so a stub in the selftest can stand in for it;
+    # otherwise handed to python3, which is how it is normally found.
+    if [ -x "$tool" ]; then out="$("$tool" "$dir" 2>/dev/null)"; rc=$?
+    else out="$(python3 "$tool" "$dir" 2>/dev/null)"; rc=$?; fi
+    IN_USE_WHY="$(printf '%s\n' "$out" | sed -n '2,4p')"
+    # rc 3 is MARKER-ONLY: nobody claimed the directory, and this machine has no process
+    # probe to contradict them. THAT IS EVERY WINDOWS WORKSTATION IN THE ESTATE, where there
+    # is no lsof at all. Refusing on it would refuse every reap ever offered on half the
+    # machines, and the check would be gone within a week. So we reap, and the message says
+    # only markers were checked rather than implying a probe looked and found nothing.
+    if [ "$rc" = 0 ]; then IN_USE_STATE=free
+    elif [ "$rc" = 1 ]; then IN_USE_STATE=held
+    elif [ "$rc" = 3 ]; then IN_USE_STATE=free; IN_USE_MARKERS_ONLY=yes
+    else IN_USE_STATE=unknown; fi
+    return 0
+  fi
+
+  IN_USE_MARKERS_ONLY=yes
+  gd="$(git -C "$dir" rev-parse --absolute-git-dir 2>/dev/null || true)"
+  [ -n "$gd" ] || return 0
+  me="$(hostname 2>/dev/null || echo unknown-host)"
+  for f in "$gd"/in-use/*.json; do
+    [ -f "$f" ] || continue
+    pid="$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$f" | head -1)"
+    host="$(sed -n 's/.*"host"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$f" | head -1)"
+    [ -n "$pid" ] || continue
+    if [ "$host" != "$me" ]; then
+      IN_USE_STATE=unknown
+      IN_USE_WHY="  a marker written on '$host', and a pid from another machine cannot be checked"
+      return 0
+    fi
+    if kill -0 "$pid" 2>/dev/null; then
+      IN_USE_STATE=held
+      IN_USE_WHY="  a marker held by live pid $pid on $host"
+      return 0
+    fi
+  done
+  return 0
+}
+
 # ---------------------------------------------------------------- reaper
 # Pure decision, six facts in, one word out. Separated from the doing so it can
 # be fired in every direction by --selftest, with no git tree and no network —
@@ -122,8 +202,9 @@ print("FAIL" if "FAIL" in s else ("PENDING" if "PENDING" in s else "PASS"))
 # questions (is it finished?), so a session that merged somebody else's PR from
 # its own worktree is turned away before "merged and clean" can ever look true.
 #   $1 self  $2 primary  $3 branch  $4 pr-head-branch  $5 merged  $6 dirty-count
+#   $7 in-use: free | held | anything else, including absent, meaning unknown
 reap_verdict() {
-  local self="$1" primary="$2" branch="$3" head="$4" merged="$5" dirty="$6"
+  local self="$1" primary="$2" branch="$3" head="$4" merged="$5" dirty="$6" inuse="${7:-}"
   if [ -z "$self" ];                              then echo "SKIP:not-a-worktree"; return; fi
   if [ "$self" = "$primary" ];                    then echo "SKIP:primary";        return; fi
   if [ -z "$branch" ] || [ "$branch" = DETACHED ]; then echo "SKIP:detached";       return; fi
@@ -131,6 +212,11 @@ reap_verdict() {
   if [ "$branch" != "$head" ];                    then echo "SKIP:other-branch";   return; fi
   if [ "$merged" != yes ];                        then echo "SKIP:not-merged";     return; fi
   if [ "$dirty" != 0 ];                           then echo "SKIP:dirty";          return; fi
+  # NO DEFAULT FOR $7. An absent seventh argument is "nobody told me", which is exactly the
+  # unknown case — defaulting it to free would let a caller that forgets the fact reproduce
+  # the 2026-09-17 loss in silence. The selftest fires that row by name.
+  if [ "$inuse" = held ];                         then echo "SKIP:in-use";         return; fi
+  if [ "$inuse" != free ];                        then echo "SKIP:in-use-unknown"; return; fi
   echo REAP
 }
 
@@ -169,7 +255,15 @@ reap_worktree() {
   git fetch -q origin 2>/dev/null || true
   if git merge-base --is-ancestor "$branch" origin/main 2>/dev/null; then merged=yes; else merged=no; fi
   dirty="$(git -C "${self:-.}" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
-  verdict="$(reap_verdict "$self" "$primary" "$branch" "$head" "$merged" "$dirty")"
+  # TWO CALLS, AND THE SECOND ONE IS WHY THE PROBE IS AFFORDABLE. lsof over a worktree is
+  # the only expensive fact here, and on most merges some cheaper fact already refuses. So
+  # ask the pure function first with `free`, and only pay for the probe when everything else
+  # has already said REAP. reap_verdict stays pure either way.
+  verdict="$(reap_verdict "$self" "$primary" "$branch" "$head" "$merged" "$dirty" free)"
+  if [ "$verdict" = REAP ]; then
+    in_use_state "$self"
+    verdict="$(reap_verdict "$self" "$primary" "$branch" "$head" "$merged" "$dirty" "$IN_USE_STATE")"
+  fi
   name="$(basename "${self:-?}")"
 
   case "$verdict" in
@@ -181,6 +275,17 @@ reap_worktree() {
     SKIP:other-branch) echo "merge_when_green: worktree kept — you are on '$branch' but PR #${PR:-?} merged '$head'." ;;
     SKIP:not-merged)   echo "merge_when_green: worktree kept — '$branch' is not on origin/main, so the merge did not land here." ;;
     SKIP:dirty)        echo "merge_when_green: worktree kept — $dirty uncommitted file(s) in $name." ;;
+    SKIP:in-use)
+      echo "merge_when_green: worktree kept — something is still running in $name."
+      [ -n "$IN_USE_WHY" ] && printf '%s\n' "$IN_USE_WHY"
+      echo "  The branch IS merged; only the directory is held. Re-run this when the run ends,"
+      echo "  or remove it by hand once you know what that process is."
+      ;;
+    SKIP:in-use-unknown)
+      echo "merge_when_green: worktree kept — could not establish whether anything is running in $name."
+      [ -n "$IN_USE_WHY" ] && printf '%s\n' "$IN_USE_WHY"
+      echo "  Refusing rather than guessing: a wrong answer here kills a run. The branch IS merged."
+      ;;
     REAP)
       ignored="$(git -C "$self" status --porcelain --ignored 2>/dev/null | awk '/^!! /{print $2}' | summarise_ignored)"
       if ! cd "$primary" 2>/dev/null; then
@@ -191,6 +296,8 @@ reap_worktree() {
       fi
       git branch -d "$branch" >/dev/null 2>&1 || true
       echo "merge_when_green: reaped $name — '$branch' is on main and held nothing uncommitted."
+      [ "$IN_USE_MARKERS_ONLY" = yes ] && \
+        echo "  Nothing claimed it, but this machine has no process probe — markers only."
       [ -n "$ignored" ] && echo "  $ignored"
       echo "  YOUR SHELL IS STILL POINTED AT THE DELETED DIRECTORY.  cd $primary"
       ;;
@@ -219,12 +326,12 @@ selftest() {
   # The reaper deletes a directory, so every refusal it can make gets fired here
   # by name. /p is the primary checkout, /w the worktree you are standing in.
   echo
-  r() { # name expected self primary branch head merged dirty
-    local got; got=$(reap_verdict "$3" "$4" "$5" "$6" "$7" "$8")
+  r() { # name expected self primary branch head merged dirty [in-use]
+    local got; got=$(reap_verdict "$3" "$4" "$5" "$6" "$7" "$8" "${9:-}")
     if [ "$got" = "$2" ]; then printf '  ok   %-40s\n' "$1"
     else printf '  FAIL %-40s (got %s, want %s)\n' "$1" "$got" "$2"; fails=$((fails+1)); fi
   }
-  r "mine, merged, clean -> REAP"   REAP               /w /p feat feat yes 0
+  r "mine, merged, clean, idle"     REAP               /w /p feat feat yes 0 free
   r "the primary is never reaped"   SKIP:primary       /p /p feat feat yes 0
   r "not in a worktree at all"      SKIP:not-a-worktree ''  /p feat feat yes 0
   r "detached HEAD"                 SKIP:detached      /w /p DETACHED feat yes 0
@@ -232,7 +339,90 @@ selftest() {
   r "somebody else's PR"            SKIP:other-branch  /w /p feat other yes 0
   r "merge did not land here"       SKIP:not-merged    /w /p feat feat no 0
   r "uncommitted work"              SKIP:dirty         /w /p feat feat yes 3
-  r "identity beats state"          SKIP:other-branch  /w /p feat other yes 3
+  r "identity beats state"          SKIP:other-branch  /w /p feat other yes 3 free
+
+  # The fact that cost a run on 2026-09-17. Merged and clean were both TRUE for this row.
+  r "a run is executing inside it"  SKIP:in-use         /w /p feat feat yes 0 held
+  r "cannot tell -> refuse"         SKIP:in-use-unknown /w /p feat feat yes 0 unknown
+  r "nobody supplied the fact"      SKIP:in-use-unknown /w /p feat feat yes 0
+  r "dirty is answered before it"   SKIP:dirty          /w /p feat feat yes 3 held
+
+  # THE PROBE ITSELF, AGAINST A REAL DIRECTORY AND A REAL PID. The rows above test the
+  # decision; these test the fact it decides on. Both routes are fired — with armory's
+  # in_use.py if this machine has it, and with BUGARACH_IN_USE=off, which forces the pure
+  # shell marker path a machine without armory would take. Whichever route is missing here
+  # would otherwise be the one that has never run anywhere.
+  echo
+  # `VAR=value some_function` LEAKS IN BASH. For a function, unlike an external command, the
+  # prefix assignment persists after the call returns — so the first `BUGARACH_IN_USE=off`
+  # row disabled armory's probe for the REST of the selftest, and the row that claims to test
+  # the armory route silently tested the shell fallback a second time while printing ok.
+  # Found by noticing that route reported absent on a machine that has armory.
+  u() { # name expected dir [env]
+    local got had="${BUGARACH_IN_USE+set}" saved="${BUGARACH_IN_USE:-}"
+    if [ -n "${4:-}" ]; then BUGARACH_IN_USE="$4"; fi
+    in_use_state "$3"
+    if [ "$had" = set ]; then BUGARACH_IN_USE="$saved"; else unset BUGARACH_IN_USE; fi
+    got="$IN_USE_STATE"
+    if [ "$got" = "$2" ]; then printf '  ok   %-40s\n' "$1"
+    else printf '  FAIL %-40s (got %s, want %s)\n' "$1" "$got" "$2"; fails=$((fails+1)); fi
+  }
+  probe_tmp="$(mktemp -d)"
+  ( cd "$probe_tmp" && git init -q . && git config user.email t@t.invalid && git config user.name t \
+    && echo x > f.txt && git add -A && git commit -qm one ) >/dev/null 2>&1
+  probe_gd="$(git -C "$probe_tmp" rev-parse --absolute-git-dir 2>/dev/null)"
+  mkdir -p "$probe_gd/in-use"
+  probe_host="$(hostname 2>/dev/null || echo unknown-host)"
+
+  u "no marker, nothing running -> free"  free    "$probe_tmp" off
+  printf '{"pid": %s, "host": "%s"}\n' "$$" "$probe_host" > "$probe_gd/in-use/live.json"
+  u "a live marker holds it"              held    "$probe_tmp" off
+  printf '{"pid": 2147483647, "host": "%s"}\n' "$probe_host" > "$probe_gd/in-use/live.json"
+  u "a dead pid does NOT hold it"         free    "$probe_tmp" off
+  printf '{"pid": %s, "host": "%s-elsewhere"}\n' "$$" "$probe_host" > "$probe_gd/in-use/live.json"
+  u "another machine's pid -> unknown"    unknown "$probe_tmp" off
+  rm -f "$probe_gd/in-use/live.json"
+
+  # THE EXIT-CODE CONTRACT WITH ARMORY, FIRED BY NUMBER. This is the seam between two
+  # repositories: in_use.py promises 0/1/2/3 and this script maps them. Nothing else here
+  # would notice if that mapping drifted, and a stub costs four lines.
+  # SAVE AND RESTORE ONCE AROUND THE WHOLE BLOCK. The first draft unset BUGARACH_IN_USE after
+  # each stub, which wiped an override supplied from OUTSIDE the selftest -- so running with
+  # BUGARACH_IN_USE pointed at a real in_use.py silently lost it partway through and the
+  # armory-route row stopped running while everything still printed pass. Second instance of
+  # the same leak in this file; the first is in u() above.
+  probe_had="${BUGARACH_IN_USE+set}"; probe_saved="${BUGARACH_IN_USE:-}"
+  for pair in "0 free" "1 held" "2 unknown" "3 free"; do
+    set -- $pair
+    printf '#!/bin/sh\nexit %s\n' "$1" > "$probe_tmp/stub.py"
+    chmod +x "$probe_tmp/stub.py"
+    BUGARACH_IN_USE="$probe_tmp/stub.py" in_use_state "$probe_tmp"
+    if [ "$IN_USE_STATE" = "$2" ]; then printf '  ok   %-40s\n' "in_use.py exit $1 -> $2"
+    else printf '  FAIL %-40s (got %s, want %s)\n' "in_use.py exit $1 -> $2" "$IN_USE_STATE" "$2"; fails=$((fails+1)); fi
+  done
+  printf '#!/bin/sh\nexit 3\n' > "$probe_tmp/stub.py"
+  BUGARACH_IN_USE="$probe_tmp/stub.py" in_use_state "$probe_tmp"
+  if [ "$IN_USE_MARKERS_ONLY" = yes ]; then printf '  ok   %-40s\n' "exit 3 also records markers-only"
+  else printf '  FAIL %-40s\n' "exit 3 also records markers-only"; fails=$((fails+1)); fi
+  if [ "$probe_had" = set ]; then BUGARACH_IN_USE="$probe_saved"; else unset BUGARACH_IN_USE; fi
+  rm -f "$probe_tmp/stub.py"
+
+  # A marker must never dirty the tree, or it trips this script's own `clean` check and the
+  # right answer arrives for the wrong reason.
+  printf '{"pid": %s, "host": "%s"}\n' "$$" "$probe_host" > "$probe_gd/in-use/live.json"
+  if [ -z "$(git -C "$probe_tmp" status --porcelain 2>/dev/null)" ]; then
+    printf '  ok   %-40s\n' "a marker leaves git status clean"
+  else
+    printf '  FAIL %-40s\n' "a marker leaves git status clean"; fails=$((fails+1))
+  fi
+  # NOT `ok`, BECAUSE NOTHING WAS ASSERTED. A skipped check that prints ok is how a suite
+  # reports coverage it does not have; this estate has the case reports to prove it.
+  if in_use_tool >/dev/null 2>&1; then
+    u "armory's probe agrees the dir is held" held "$probe_tmp"
+  else
+    printf '  note %-40s\n' "armory's in_use.py is not on this machine — that route was NOT tested"
+  fi
+  rm -rf "$probe_tmp"
 
   # The line a person actually reads after a reap.
   echo
