@@ -32,8 +32,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   12 seeds per fold, `--gpu-jobs 1`).
 - **Writes:** one new folder only. While the run goes: `progress.json`, mirrored from the run's
   folder under `%USERPROFILE%\runs\` about once a minute, so the run's state stays readable from any
-  machine after the session that launched it has ended. After it: the per-fit files (`fits/`,
-  `scores/`) that are too large for git. Nothing existing in the darkroom is touched.
+  machine after the session that launched it has ended. Also `external/` (`progress.json`,
+  `mirror.json`, `STATUS.txt`), written every 5 minutes by the scheduled task
+  `bugarach-mirror-fair-comparison` running `tools/mirror_run_status.py` from the primary checkout:
+  a separate process, so the status says `STALE` if the run's driver dies (armory finding 21;
+  `docs/windows_workstation_setup.md` §8). After the run: the per-fit files (`fits/`, `scores/`)
+  that are too large for git. Nothing existing in the darkroom is touched.
 - **Simulation only**, so nothing here is derived from a real recording.
 - **Goal:** learned-model-family (goal 2).
 - **Released when:** the run has ended and its readout has landed, or the run is abandoned.
