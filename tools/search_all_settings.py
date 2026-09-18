@@ -107,9 +107,18 @@ def shipped_value(det: str, setting: str):
     return inspect.signature(fn).parameters[setting].default
 
 
-#: Settings that make sense together — `bench.settings_are_valid`, which both this search
-#: and goal 2's per-fold search read, so neither admits a combination the other rejects.
-valid = _bench.settings_are_valid
+def valid(det: str, p: dict) -> bool:
+    """Settings that make sense together, AND that this bench can honestly measure.
+
+    `bench.settings_are_valid` is the detectors' own rule, read by goal 2's per-fold search
+    too, so neither admits a combination the other rejects. On top of it, a context window
+    wider than the planted spacing puts other events inside the null the threshold comes
+    from — and a contaminated null sits high, so the setting that breaks this scores BETTER
+    here. The 2026-09-17 sliding search chose 240 s contexts on a bench that plants at 120 s
+    for exactly that reason, and `tests/test_bench.py` refused the result after the run.
+    """
+    return (_bench.settings_are_valid(det, p)
+            and _bench.context_fits_the_null(p, _bench.BENCH_RECORDING["min_sep_sec"]))
 
 
 def extend(setting: str, grid: list, low_end: bool):
@@ -367,15 +376,25 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
                             log(f"  {d}.{setting}: best at the edge {best_v:g}; adding {new:g}")
                             continue
                     current = summarize(d, state[d])
-                    if best_v != state[d][setting] and \
-                            best_s["mean_f1"] > current["mean_f1"] + min_gain:
+                    # WHEN THE STARTING POINT IS ITSELF INADMISSIBLE, any admissible setting
+                    # beats it and the F1 comparison is the wrong question. Without this the
+                    # search reports "nothing moved" and leaves a point that breaks a budget:
+                    # sliding LoCo at its binned threshold fires 4.0 calls an hour on an empty
+                    # recording against a limit of 3, scores a high F1 for that reason, and no
+                    # admissible candidate could beat that F1. Found 2026-09-17 by the first
+                    # search whose starting point was out of budget.
+                    rescue = not is_admissible(d, current)
+                    if best_v != state[d][setting] and (
+                            rescue or best_s["mean_f1"] > current["mean_f1"] + min_gain):
+                        why = " (the starting point breaks a budget)" if rescue else ""
                         log(f"  round {rnd} {d}.{setting}: {_fmt(state[d][setting])} -> "
                             f"{_fmt(best_v)} (mean F1 {current['mean_f1']:.3f} -> "
-                            f"{best_s['mean_f1']:.3f})")
+                            f"{best_s['mean_f1']:.3f}){why}")
                         history[d].append(dict(round=rnd, setting=setting,
                                                old=state[d][setting], new=best_v,
                                                old_f1=current["mean_f1"],
-                                               new_f1=best_s["mean_f1"]))
+                                               new_f1=best_s["mean_f1"],
+                                               rescued_from_inadmissible=rescue))
                         state[d][setting] = best_v
                         moved.add(d)
                 pending = nxt
@@ -819,6 +838,25 @@ def main(argv=None) -> int:
             if shipped[d][k] not in space[d][k]:
                 space[d][k] = sorted(space[d][k] + [shipped[d][k]],
                                      key=lambda v: (isinstance(v, str), v))
+    # THE STARTING POINT HAS TO BE ONE THIS BENCH CAN MEASURE. A shipped point the validity
+    # rules refuse is never evaluated, so the first thing that asks for its score gets a
+    # cache miss — which is how this failed on 2026-09-17, a KeyError several hundred lines
+    # from the cause. Say it instead.
+    bad = {d: shipped[d] for d in dets if not valid(d, shipped[d])}
+    if bad:
+        for d, p in bad.items():
+            context = p.get("context_win_sec", p.get("context_win"))
+            print(f"{NAMES[d]}: the shipped operating point is not measurable on this bench "
+                  f"— context {context} s against planted events "
+                  f"{_bench.BENCH_RECORDING['min_sep_sec']:.0f} s apart"
+                  if not _bench.context_fits_the_null(
+                      p, _bench.BENCH_RECORDING["min_sep_sec"])
+                  else f"{NAMES[d]}: the shipped operating point is not a valid combination",
+                  file=sys.stderr)
+        print("Nothing was searched. Fix the operating point, or search a detector that has "
+              "a measurable one with --only.", file=sys.stderr)
+        return 2
+
     sel, ho = list(range(1, n + 1)), list(range(n + 1, 2 * n + 1))
     rep = dict(started=datetime.datetime.now().isoformat(timespec="seconds"),
                selection_seeds=sel, held_out_seeds=ho, space=space, shipped=shipped,
@@ -834,12 +872,22 @@ def main(argv=None) -> int:
         ev.crowded = not a.no_crowded_veto
         gate = admissible
         if ev.crowded:
-            # The reference every candidate is judged against: what the setting it would
-            # replace scores on the crowded recordings. Measured first, so the veto is in
-            # front of the choice rather than behind it.
-            log("crowded reference: scoring the shipped settings on the crowded recordings")
-            ev.run([(d, shipped[d]) for d in dets])
-            reference = {d: ev.summary(d, shipped[d]).get("crowded_mean_f1") for d in dets}
+            # The reference is what the setting a candidate would REPLACE scores on the
+            # crowded recordings — and under `--sliding` that is the point the detector
+            # actually ships at, not the sliding-forced starting point.
+            #
+            # Getting this wrong cost a run on 2026-09-17. Anchoring to sliding-at-binned-
+            # values held every candidate to the crowded score of a point that ships
+            # NOWHERE and is itself over budget, and sliding LoCo came out with no
+            # admissible setting at all. Against what LoCo really ships, the same candidate
+            # is an improvement on both axes. A veto is only as honest as its reference.
+            reference_points = {d: dict(_bench.OPERATING_POINTS[d].params) for d in dets}
+            log("crowded reference: scoring the SHIPPED operating points on the crowded "
+                "recordings — what a candidate would replace")
+            ev.run([(d, reference_points[d]) for d in dets])
+            reference = {d: ev.summary(d, reference_points[d]).get("crowded_mean_f1")
+                         for d in dets}
+            rep["crowded_reference_points"] = reference_points
             for d in dets:
                 log(f"  {NAMES[d]:14s} crowded mean F1 {reference[d]:.3f}  "
                     f"(a candidate may not fall below {reference[d] - _bench.MAX_CROWDED_DROP:.3f})")

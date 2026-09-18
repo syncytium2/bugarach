@@ -398,6 +398,30 @@ ridges this project has met. Optional for a caller: goal 2 leaves them off insid
 because a pair is a product and it pays for one per fold."""
 
 
+def context_fits_the_null(p: dict, min_sep_sec: float) -> bool:
+    """Is this setting's context window narrow enough for the null to be background only?
+
+    A detector estimates its threshold over a context window. If planted events are spaced
+    more tightly than that window, the window holds OTHER events, and the null the threshold
+    comes from is contaminated with the very thing being detected — the trap that made the
+    first upstream benchmark unusable and cost two weeks of tuning against it
+    (:data:`BENCH_RECORDING`, ``min_sep_sec``).
+
+    **It also flatters the setting that breaks it**, which is why a search needs this rule
+    and not only a test. A contaminated null sits too high, so the detector calls less,
+    precision rises and F1 with it. On 2026-09-17 the sliding search chose a 240 s context
+    for both LoCo and CoactDetect on a bench that plants events 120 s apart, under all four
+    budgets; ``tests/test_bench.py::test_the_bench_recording_keeps_the_null_clean`` refused
+    the result. The guard worked and the run was already spent.
+
+    ``min_sep_sec`` is the SCORED recordings' spacing, so a caller scoring something other
+    than :data:`BENCH_RECORDING` passes its own — goal 2's home spec plants at 171 s, and its
+    per-fold search binds this rule with that number.
+    """
+    context = p.get("context_win_sec", p.get("context_win"))
+    return context is None or context <= min_sep_sec
+
+
 def settings_are_valid(det: str, p: dict) -> bool:
     """Do these settings make sense together?
 
@@ -489,24 +513,34 @@ class OperatingPoint:
 RETUNE = ("tools/retune_operating_points.py 2026-09-16 (48 recordings per point, both "
           "backgrounds, both false-alarm budgets, mean F1, moved only if the 95% "
           "bootstrap gain interval excludes zero)")
+SLIDING_SEARCH = (
+    "tools/search_all_settings.py --sliding, 2026-09-17 "
+    "(<darkroom>/bugarach/2026-09-17-full-search/sliding5/): every parameter this bench can "
+    "see, one at a time in rounds, chosen on 48 recordings per background and scored on 48 "
+    "the search never saw, under FOUR budgets — the two false-alarm limits, the precision "
+    "swing, and MAX_CROWDED_DROP against what the detector ships at today — and refusing any "
+    "context window wider than the planted spacing (context_fits_the_null)")
 OPERATING_POINTS: dict[str, OperatingPoint] = {
     "loco": OperatingPoint(
-        # ⚠ STILL BINNED, and the sliding mode is built and waiting for a value.
-        # `detectors/sliding.py` gives this detector a window that slides: a sub-second
-        # shift of a real recording keeps 64% of the binned calls and 100% of the sliding
-        # ones (`tools/probe_sliding_vs_binned.py`), and on the 84 real baseline windows
-        # sliding is a superset of binned (`tools/compare_sliding_vs_binned.py`). What it
-        # is NOT yet is calibrated: at the threshold below, tuned binned, sliding fires
-        # 4.0 calls/hour on the empty recording against a limit of 3 and swings precision
-        # past `MAX_PRECISION_DROP`. The switch lands with the value goal 1 step 3 chooses,
-        # not before — a shipped operating point is a calibrated one.
+        # SLIDING since 2026-09-17, and calibrated IN that mode rather than inheriting the
+        # binned values. A window that slides: a sub-second shift of a real recording keeps
+        # 64% of the binned calls and 100% of the sliding ones
+        # (`tools/probe_sliding_vs_binned.py`), and on the 84 real baseline windows sliding
+        # is a superset of binned (`tools/compare_sliding_vs_binned.py`). `thr_step_sec` and
+        # `n_surrogates` do not apply in this mode and are kept for the binned path, which
+        # stays as the MATLAB port with its parity tests.
         params=dict(bin_width_sec=1.0, context_win_sec=120.0, thr_step_sec=15.0,
-                    merge_gap_sec=2.0, threshold_pctile=99.5, n_surrogates=100),
-        source=f"{RETUNE}: 99.9 -> 99.5, mean F1 0.669 -> 0.686, gain +0.017 "
-               "(interval +0.005 to +0.029); 0.16 firings/min in the empty stretch on "
-               "both backgrounds (limit 1), 1.7 calls/hour on the empty recording "
-               "(limit 3). Was the measured-regime F1 optimum of 2026-08-13 "
-               "(loco_detect docstring), found on an older bench.",
+                    merge_gap_sec=8.0, threshold_pctile=99.9, n_surrogates=100,
+                    null_context_mode="symmetric", window_mode="sliding"),
+        source=f"{SLIDING_SEARCH}. Sliding at the binned values was not shippable — 4.0 "
+               "calls/hour on the empty recording against a limit of 3 — so this is the "
+               "point chosen in sliding mode: threshold 99.5 -> 99.9, merge gap 2 -> 8 s, "
+               "null maxlt -> symmetric, context unchanged at 120 s. Held-out mean F1 0.737 "
+               "against 0.699 for the binned point it replaces; gain over sliding-at-binned "
+               "+0.016 (interval +0.007 to +0.026); 1.7 calls/hour on the empty recording "
+               "(limit 3); crowded-recording mean F1 0.827 against the binned point's 0.816. "
+               "The 8 s merge gap is bracketed — the search extended the axis to 16 s and "
+               "the crowded veto refused it.",
         knob="threshold_pctile", grid=(97.0, 98.0, 99.0, 99.5, 99.9, 99.99, 99.999,
                                        99.9999)),
     "cicada": OperatingPoint(
@@ -551,17 +585,23 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         knob="threshold_pctile", grid=(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 75.0,
                                        80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5, 99.9)),
     "coact": OperatingPoint(
-        # ⚠ STILL BINNED, for the reason on `loco` above. Sliding is built
-        # (`detectors/sliding.py`), with the null computed rather than drawn: binned, a
-        # sub-second shift keeps 0% of this detector's calls at a 0.05 s match, and the
-        # loss grew with the shift because every candidate bin re-used one random stream.
-        # At the alpha below, tuned binned, sliding fires 7.7 calls/hour on the empty
-        # recording against a limit of 7. The switch lands with goal 1 step 3's value.
-        params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4,
-                    n_surrogates=100),
-        source="explore_sce viewer FAST point — NOT the coact_detect signature "
-               f"default of alpha=0.01, which scores F1 0.72 here. Confirmed by {RETUNE}: "
-               "already the best value within both budgets (mean F1 0.700).",
+        # SLIDING since 2026-09-17, calibrated in that mode, with the null computed rather
+        # than drawn: binned, a sub-second shift keeps 0% of this detector's calls at a
+        # 0.05 s match, and the loss grew with the shift because every candidate bin re-used
+        # one random stream. `n_surrogates` does not apply here and is kept for the binned
+        # path, which stays as the MATLAB port with its parity tests.
+        params=dict(int_win_sec=2.0, context_win_sec=120.0, alpha=1e-5, merge_gap_sec=8.0,
+                    guard_sec=1.0, n_surrogates=100, window_mode="sliding"),
+        source="explore_sce's viewer FAST point was alpha=1e-4 — NOT the coact_detect "
+               f"signature default of alpha=0.01, which scores F1 0.72 here. {SLIDING_SEARCH}. "
+               "Sliding at 1e-4 was not shippable — 7.7 calls/hour on the empty recording "
+               "against a limit of 7 — so this is the point chosen in sliding mode: alpha "
+               "1e-4 -> 1e-5, context 60 -> 120 s, merge gap 3 -> 8 s, guard 0 -> 1 s. "
+               "Held-out mean F1 0.746 against 0.702 for the binned point it replaces; gain "
+               "over sliding-at-binned +0.034 (interval +0.025 to +0.044); 5.8 calls/hour on "
+               "the empty recording (limit 7); crowded-recording mean F1 0.818 against the "
+               "binned point's 0.808. The 8 s merge gap is bracketed — the search extended "
+               "the axis to 16 s and the crowded veto refused it.",
         knob="alpha", grid=(1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6,
                             1e-7)),
     "rate": OperatingPoint(
