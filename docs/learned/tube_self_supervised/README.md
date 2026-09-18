@@ -113,7 +113,7 @@ So the page asks, in order (terms are defined in the next section):
 
 - **No model trained against rigid shift reaches the zero-parameter baseline at a threshold.** At
   ≤ 1 event per 10 minutes the 20 trained conditions score 0.126–0.322 F1, the untrained models at
-  most 0.093, `count_excess` 0.400–0.404, and supervised models 0.519–0.674 (Figure 4, training
+  most 0.093, `count_excess` 0.400–0.404, and supervised models 0.519–0.685 (Figure 4, training
   without labels). That is a comparison of condition means with no interval; single fits beat
   `count_excess` in 41–48 of 240 cases.
 - **Counting and the center-surround filter do not separate from CoactDetect under supervision.**
@@ -121,12 +121,12 @@ So the page asks, in order (terms are defined in the next section):
   learned margin, and two of the four folds share one fitted model (Figure 2, the bake-off). `line`
   over `tube` is positive on all four folds.
 - **Rigid shift moves nothing a per-ROI classifier can see on the lab fast stream, and that
-  classifier has power**: rigid shift reads 0.486–0.505 at every *J* from 1.6 s to 40 s, a per-ROI
-  circular shift 0.549–0.561 (Figure 3, the leak tests). On the lab slow stream it reads 0.558 and
+  classifier has power**: rigid shift reads 0.489–0.504 at every *J* from 1.6 s to 40 s, a per-ROI
+  circular shift 0.545–0.559 (Figure 3, the leak tests). On the lab slow stream it reads 0.558 and
   0.567 at 22.4 s and 44.8 s, consistent with slow shared modulation.
 - **In the channels, a real recording separates from its rigid shift at 0.66–0.69 at every *J***,
   including 1.6 s, where a synthetic twin with 40 s shared modulation and no events reads chance
-  (0.503). What separates them there is not that modulation; it is consistent with sub-second
+  (0.486). What separates them there is not that modulation; it is consistent with sub-second
   co-activity and does not identify it.
 - **On synthetic twins, the models trained against rigid shift on real recordings respond to planted
   events; their response to shared modulation is weaker than supervised models' but untested**
@@ -134,36 +134,45 @@ So the page asks, in order (terms are defined in the next section):
   detect modulation, and there are no intervals, so this is a description.
 - **On real recordings the models trained against rigid shift fire more often than the supervised ones
   and land beside co-activity rather than on it**: 60–73 % of their events span no onset in any ROI,
-  while 0.671–0.783 of them sit within 3 s of a frame with three or more ROIs lit, against 0.438–0.488
-  by chance; at ±0.2 s only 3 of 10 conditions clear their own chance. Supervised models put
-  0.799–0.830 of their events on three or more ROIs and `count_excess` 0.903, and a rigid shift of the
+  while 0.673–0.752 of them sit within 3 s of a frame with three or more ROIs lit, against 0.450–0.482
+  by chance; at ±0.2 s 4 of 10 conditions clear their own chance and one falls below it. Supervised
+  models put
+  0.797–0.829 of their events on three or more ROIs and `count_excess` 0.899, and a rigid shift of the
   same recordings cuts their rate to about 1.5 events per 10 minutes without emptying what they call
-  (0.440–0.518 and 0.646) — the page's earlier claim that a shift removes that co-activity came from
+  (0.448–0.515 and 0.637) — the page's earlier claim that a shift removes that co-activity came from
   scoring shift events against the unshifted recording (Figure 6, real recordings).
 - **Four decisions follow**, in *What waits on Tony*.
 
-> ## ⛔ Every real-recording result on this page ran over a known contamination
+> ## The contamination was answered, and the whole chain reran on the answer
 >
-> The export folder's own note declares that non-rigid motion correction **pinned 12 ROIs to the
-> frame floor** in four recordings, *"not flagged in any column"*. All four are in the 84 recordings
-> scored here, in the folds the real-trained models were fitted on, and **all four are DI — the group
-> whose co-activity reads highest in the breakdown below**. A frame-floor-pinned ROI is a cross-cell
-> artifact, and this page's objective is trained to find exactly the cross-cell structure a
-> rate-matched null cannot explain, so it is rewarded for finding it.
->
-> **Tony ruled on 2026-09-17 that a known contamination stops the work and does not become a
-> caveat**, and that the question goes to the producer. This page did the thing the ruling forbids:
-> it ran, and then reported the contamination as a footnote about its own result. That is recorded
-> here rather than repaired, because the run is spent — **do not lean on any real-recording number on
-> this page until the producer has answered**
+> An earlier version of this page ran over a declared contamination and reported it as a footnote:
+> non-rigid motion correction **pinned 12 ROIs to the frame floor** in four recordings, *"not flagged
+> in any column"*. Tony ruled on 2026-09-17 that a known contamination stops the work rather than
+> becoming a caveat, and that the question goes to the producer
 > ([the question](../../todo/2026-09-10-four-recordings-carry-an-unflagged-contaminant.md)).
-> ⚠ **That answer will not clear the group comparison**, which has a second and independent problem:
-> group is perfectly confounded with imaging day in this export (48 dates, no date holding more than
-> one group), so a clean answer about the pinned ROIs removes the artifact and leaves the confound
-> untouched. The
-> simulator results — the bake-off, the label-free training scores, the twin check — do not read the
-> export folder and are unaffected. `dataset.current()` now refuses this folder, so nothing reruns by
-> accident.
+>
+> **The producer answered the same evening.** `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`
+> removes every event inside a pinned window — 83 of them, each listed in `moco_pinned_excluded.tsv`,
+> the windows confirmed panel by panel — and gives the reason this project reached independently: a
+> pinned ROI is a **cross-cell** artifact, four ROIs on `20260629_312` sharing one 0–375 s window, so
+> it manufactures the near-simultaneous multi-ROI structure a rate-matched null cannot explain. Every
+> number on this page is from a rerun of the whole chain on that folder.
+>
+> **It changed almost nothing, and that is worth saying plainly** — a reader would reasonably expect a
+> data change described that way to move something. Supervised models put 0.797–0.829 of their events
+> on three or more ROIs (0.799–0.830 before); the models trained against rigid shift 0.118–0.243
+> (0.128–0.237); `count_excess` 0.899 (0.903). F1 at ≤ 1 event per 10 minutes is identical in the
+> trained, untrained and baseline arms and moves by 0.011 at the top of the supervised range
+> (0.519–0.685 against 0.519–0.674). The per-ROI leak test still reads rigid shift as chance at every
+> displacement, and the channels still separate real from shifted at 0.671 at *J* = 1.6 s.
+> So the contamination was never what produced these results.
+>
+> ⚠ **Two residuals the answer does not clear.** The producer's census removes at `n_exceed >= 100`,
+> and **two ROIs sit below that cut and remain** — `20260702_338` at 13 exceeding frames and
+> `20260630_325` at 10, against 515–2,195 for everything removed; one further slice, `20260629_314`,
+> is absent from the census entirely. And **group is perfectly confounded with imaging day**: 84
+> recordings, 48 imaging dates, no date holding more than one group, so no answer about pinned ROIs
+> can make a group comparison here biological.
 >
 > **Exploratory.** It replaces the version of 2026-09-16, whose third blind review found the trained
 > models' controls unable to tell coordination from slow shared modulation; the controls here were
@@ -286,10 +295,10 @@ window's edges were removed because they see a shift directly.
 
 | lab fast, accuracy (0.5 = chance) at *J* | 1.6 s | 2.5 s | 5 s | 10 s | 20 s | 40 s |
 |---|---|---|---|---|---|---|
-| rigid shift | 0.497 | 0.505 | 0.502 | 0.505 | 0.486 | 0.492 |
-| shared offset (null control) | 0.498 | 0.502 | 0.495 | 0.516 | 0.504 | 0.509 |
-| per-onset dither (positive control) | 0.738 | 0.761 | 0.784 | 0.794 | 0.775 | 0.785 |
-| per-ROI circular shift (positive control) | 0.561 | 0.552 | 0.558 | 0.554 | 0.549 | 0.556 |
+| rigid shift | 0.500 | 0.504 | 0.502 | 0.502 | 0.490 | 0.489 |
+| shared offset (null control) | 0.499 | 0.497 | 0.503 | 0.514 | 0.504 | 0.518 |
+| per-onset dither (positive control) | 0.738 | 0.763 | 0.783 | 0.795 | 0.775 | 0.779 |
+| per-ROI circular shift (positive control) | 0.554 | 0.554 | 0.559 | 0.555 | 0.545 | 0.552 |
 
 ⚠ **What this test can and cannot see.** It cannot see alignment finer than its 60 s window. It
 **can** see ROIs' counts rising and falling together across windows, which is why a per-ROI circular
@@ -310,23 +319,23 @@ three distinct fitted models, not four (Figure 2's note).
 
 | lab fast, accuracy (0.5 = chance) | hand-built initial bank | fitted `tube`, four folds | fitted `line`, four folds |
 |---|---|---|---|
-| real vs rigid shift | 0.664–0.688 | 0.654–0.678 | 0.657–0.684 |
-| real vs shared offset (null control) | 0.520–0.530 | 0.476–0.527 | 0.484–0.527 |
-| events twin vs its rigid shift (positive control) | 0.861–0.886 | 0.864–0.900 | 0.847–0.914 |
-| stationary twin vs its rigid shift (pipeline check) | 0.442–0.536 | 0.431–0.578 | 0.478–0.592 |
-| independent-modulation twin vs its rigid shift (null control) | 0.456–0.586 | 0.417–0.558 | 0.464–0.569 |
-| shared-modulation twin vs its rigid shift | 0.503–0.817 | 0.506–0.756 | 0.489–0.772 |
+| real vs rigid shift | 0.663–0.690 | 0.652–0.676 | 0.658–0.684 |
+| real vs shared offset (null control) | 0.520–0.532 | 0.475–0.526 | 0.483–0.528 |
+| events twin vs its rigid shift (positive control) | 0.861–0.906 | 0.872–0.908 | 0.861–0.925 |
+| stationary twin vs its rigid shift (pipeline check) | 0.450–0.525 | 0.453–0.572 | 0.469–0.606 |
+| independent-modulation twin vs its rigid shift (null control) | 0.481–0.600 | 0.450–0.586 | 0.475–0.594 |
+| shared-modulation twin vs its rigid shift | 0.486–0.811 | 0.492–0.756 | 0.500–0.781 |
 
 Ranges run over *J* = 1.6, 5, 10, 20 and 40 s, and for the fitted models also over the four held-out
 folds. **The shared-modulation twin is what slow co-modulation alone looks like in these channels**:
-chance at *J* = 1.6 s (0.503, interval 0.408–0.583), then 0.603 at 5 s, 0.742 at 10 s and 0.817 at
-20 s for the hand-built bank. The real recordings read 0.670 at 1.6 s and 0.664–0.688 at every other
+chance at *J* = 1.6 s (0.486, interval 0.417–0.589), then 0.606 at 5 s, 0.733 at 10 s and 0.811 at
+20 s for the hand-built bank. The real recordings read 0.671 at 1.6 s and 0.663–0.690 at every other
 displacement, so what separates them from their rigid shift is present at a shift where 40 s
 co-modulation is not. No slope over *J* was tested, and the hand-built bank's shared-offset null
-reads 0.520–0.530, slightly above 0.5, at every *J*.
+reads 0.520–0.532, slightly above 0.5, at every *J*.
 
-⚠ **The cells-mean trace alone does almost all of it**: 0.657–0.674 from the initial bank's trace
-and 0.619–0.643 from the fitted heads' trace. That trace is the share of the field active, which is
+⚠ **The cells-mean trace alone does almost all of it**: 0.656–0.674 from the initial bank's trace
+and 0.618–0.643 from the fitted heads' trace. That trace is the share of the field active, which is
 what a counting architecture computes, so this test rules out a leak in how the field's activity is
 distributed over time and cannot say whether the co-activity it sees is coordination. The aggregate
 test's channels are whole-recording convolutions, so, unlike the per-ROI test, it does reach the ends
@@ -359,10 +368,10 @@ is strict, and every trained condition stays far below supervised training.
 
 | planted-truth F1 at the label-free threshold | ≤ 0.5 events per 10 min | ≤ 1 | ≤ 2 |
 |---|---|---|---|
-| supervised (5 models) | 0.434–0.618 | 0.519–0.674 | 0.629–0.703 |
+| supervised (5 models) | 0.434–0.602 | 0.519–0.685 | 0.629–0.706 |
 | `count_excess` (both *J*) | 0.307–0.319 | 0.400–0.404 | 0.478 |
 | `count_share` (both *J*) | 0.122–0.133 | 0.181–0.234 | 0.312 |
-| trained against rigid shift (20 conditions) | 0.070–0.250 | 0.126–0.322 | 0.219–0.386 |
+| trained against rigid shift (20 conditions) | 0.070–0.250 | 0.126–0.322 | 0.199–0.386 |
 | untrained (5 models) | 0.000–0.039 | 0.000–0.093 | 0.000–0.291 |
 | `slow_modulation` (both *J*) | undefined, written 0 | undefined, written 0 | undefined, written 0 |
 
@@ -435,32 +444,33 @@ that cell cannot show: where a reading is at the ceiling, where the cell has no 
 control's lowest single-fit reading.
 
 **Described, not tested.** The models trained against rigid shift on real recordings separate the
-events twin from its 1.6 s shift at 0.958–1.000 (above 0.5 in 11–12 of 12 fits per condition),
-where supervised fits read 0.975–1.000. On the shared-modulation twin at 20 s they read 0.549–0.624
-and supervised fits 0.658–0.733; against each scorer's own independent-modulation reading at 20 s,
-that is +0.084 to +0.181 and +0.167 to +0.283, and the two ranges overlap.
+events twin from its 1.6 s shift at 0.922–1.000, where supervised fits read 0.975–1.000. On the
+shared-modulation twin at 20 s they read 0.523–0.619 and supervised fits 0.650–0.733; against each
+scorer's own independent-modulation reading at 20 s, that is +0.086 to +0.174 and +0.183 to +0.259,
+and the two ranges overlap.
 
 | share where the twin scores above its rigid shift | events, *J* 1.6 s | events plus independent modulation, 1.6 s | shared modulation, 1.6 s ⚠ | shared modulation, 20 s | independent modulation, 20 s (null control) |
 |---|---|---|---|---|---|
-| trained against rigid shift on real recordings (10 conditions) | 0.958–1.000 | 0.950–1.000 | 0.524–0.541 | 0.549–0.624 | 0.434–0.465 |
-| supervised (5 fits) | 0.975–1.000 | 0.792–1.000 | 0.550–0.625 | 0.658–0.733 | 0.450–0.492 |
-| untrained (5 models) | 0.458–0.546 | 0.438–0.583 | 0.438–0.500 | 0.475–0.517 | 0.487–0.525 |
-| `count_excess` | 1.000 | 1.000 | 0.554 | 0.646 | 0.383 |
-| `count_share` | 1.000 | 1.000 | 0.550 | 0.650 | 0.408 |
-| `slow_modulation` | 0.650 | 0.613 | 0.550 | 0.829 | 0.508 |
+| trained against rigid shift on real recordings (10 conditions) | 0.922–1.000 | 0.913–0.999 | 0.518–0.549 | 0.523–0.619 | 0.426–0.451 |
+| supervised (5 fits) | 0.975–1.000 | 0.783–0.992 | 0.558–0.617 | 0.650–0.733 | 0.458–0.500 |
+| untrained (5 models) | 0.450–0.546 | 0.450–0.604 | 0.454–0.517 | 0.475–0.508 | 0.487–0.525 |
+| `count_excess` | 1.000 | 1.000 | 0.562 | 0.637 | 0.392 |
+| `count_share` | 1.000 | 1.000 | 0.567 | 0.654 | 0.408 |
+| `slow_modulation` | 0.633 | 0.592 | 0.546 | 0.821 | 0.467 |
 
 ⚠ **Why none of this is a test:**
 
 - **The events twin is easy and at the ceiling.** Its events carry one frame of jitter, against the
   simulator's 0.311 s, and most scorers read 1.000, so "as strongly as" cannot be measured.
 - **The 1.6 s shared-modulation cell cannot detect modulation.** `slow_modulation`, which sees only
-  modulation, reads 0.550 there against 0.546 on independent modulation at the same *J*.
+  modulation, reads 0.546 there against 0.467 on independent modulation at 20 s and is no better than
+  chance at 1.6 s.
 - **The 20 s cell does not isolate modulation.** `count_excess` subtracts its own 30 s mean and cannot
-  follow a 40 s cycle, yet reads 0.646, because a shared rate raises chance coincidences in proportion
+  follow a 40 s cycle, yet reads 0.637, because a shared rate raises chance coincidences in proportion
   to the rate squared. A weak reading fits a weak response to modulation and a weak response to
   coincidence equally.
 - **There are no intervals.** About 120 correlated crop pairs give a binomial standard error near
-  0.045 before accounting for shared twins, and a null reads as low as 0.383.
+  0.045 before accounting for shared twins, and a null reads as low as 0.392.
 - **One supervised fit per architecture**, one modulation period and depth, and none of the 10
   conditions trained on simulated recordings.
 
@@ -497,13 +507,13 @@ co-activity.**
 
 | detector, label-free threshold ≤ 2 events per 10 min | events per 10 min | share with onsets in ≥ 3 ROIs | its own activity-weighted chance | excess over that chance, 95 % interval over mice | share whose span holds no onset | share within 3 s of ≥ 3 ROIs lit (chance) | on a fresh rigid shift: rate, share ≥ 3 ROIs |
 |---|---|---|---|---|---|---|---|
-| CoactDetect (its shipped operating point) | 2.70 | 1.00 ⚠ | 0.330 | +0.62 to +0.73 | 0.000 | 0.902 (0.514) | — |
-| LoCo (its shipped operating point) | 3.72 | 1.00 ⚠ | 0.164 | +0.80 to +0.88 | 0.000 | 0.958 (0.533) | — |
-| supervised, five models | 4.27–4.93 | 0.799–0.830 | 0.122–0.139 | above zero in 5 of 5 | 0.039–0.069 | 0.738–0.806 (0.399–0.433) | 1.51–1.65, 0.440–0.518 |
-| trained against rigid shift, ten conditions | 5.67–6.75 | 0.128–0.237 | 0.128–0.207 | above zero in 3 of 10 | 0.604–0.733 | 0.671–0.783 (0.438–0.488) | 1.30–1.58, 0.037–0.116 |
-| `count_excess` | 6.29 | 0.903 | 0.115 | +0.73 to +0.82 | 0.069 | 0.903 (0.483) | 1.54, 0.646 |
-| `count_share` | 3.74 | 0.960 | 0.121 | +0.80 to +0.87 | 0.037 | 0.960 (0.514) | 0.41, 0.739 |
-| `slow_modulation` | 1.83 | 0.523 | 0.312 | +0.17 to +0.25 | 0.258 | 0.673 (0.396) | 1.25, 0.450 |
+| CoactDetect (its shipped operating point) | 2.69 | 1.00 ⚠ | 0.324 | +0.62 to +0.73 | 0.000 | 0.902 (0.511) | — |
+| LoCo (its shipped operating point) | 3.71 | 1.00 ⚠ | 0.163 | +0.80 to +0.88 | 0.000 | 0.958 (0.526) | — |
+| supervised, five models | 4.24–4.90 | 0.797–0.829 | 0.121–0.140 | above zero in 5 of 5 | 0.039–0.069 | 0.738–0.806 (0.399–0.433) | 1.51–1.65, 0.440–0.518 |
+| trained against rigid shift, ten conditions | 5.83–6.96 | 0.118–0.243 | 0.137–0.212 | above zero in 3 of 10 | 0.604–0.733 | 0.671–0.783 (0.438–0.488) | 1.30–1.58, 0.037–0.116 |
+| `count_excess` | 6.27 | 0.899 | 0.113 | +0.73 to +0.82 | 0.067 | 0.899 (0.479) | 1.55, 0.637 |
+| `count_share` | 3.74 | 0.960 | 0.120 | +0.80 to +0.87 | 0.037 | 0.960 (0.505) | 0.43, 0.746 |
+| `slow_modulation` | 1.82 | 0.528 | 0.316 | +0.17 to +0.26 | 0.254 | 0.677 (0.397) | 1.24, 0.444 |
 
 A detector's **event** spans its merged detection (detections closer than 2 s merge), and an ROI counts
 if it has an onset within that span ±0.2 s. Chance is drawn at activity-weighted random times with each
@@ -513,23 +523,26 @@ against another row's. The interval is a bootstrap over the 44 mice of the exces
 not a finding.
 
 - **A rigid shift changes the rate, not the content.** Every learned model and baseline fires
-  1.25–1.65 times per 10 minutes on a fresh shift, against 4.27–6.75 on the recordings, and
-  `count_share` 0.41 against 3.74. But what they call there is still co-activity: the supervised
-  models' shift events hold three or more ROIs in 0.440–0.518 of cases against a chance of
-  0.042–0.054, `count_excess` 0.646 and `count_share` 0.739, each above zero excess on every mouse
+  1.24–1.66 times per 10 minutes on a fresh shift, against 4.24–6.96 on the recordings, and
+  `count_share` 0.43 against 3.74. But what they call there is still co-activity: the supervised
+  models' shift events hold three or more ROIs in 0.448–0.515 of cases against a chance of
+  0.044–0.052, `count_excess` 0.637 and `count_share` 0.746, each above zero excess on every mouse
   bootstrap. **An earlier version of this page reported 0.046–0.070 here and read it as the shift
   removing co-activity**; those numbers scored shift events against the *unshifted* onsets, which is
   a defect of the measuring code, not a finding ([the round-4
   record](../../reviews/tube-self-supervised-2026-09-17-round4.md)). A rigid shift leaves a field
   whose ROIs still coincide by chance, and a detector looking for coincidence still finds those.
 - **The models trained against rigid shift are imprecise, not at chance.** At ±0.2 s their share with
-  three or more ROIs (0.128–0.237) sits beside their own chance (0.128–0.207), and the mouse-clustered
-  interval clears zero in only 3 of 10 conditions (`line` at *J* = 10 s, +0.008 to +0.091;
-  `line_length` at 10 s, +0.057 to +0.129; `line_length` at 20 s, +0.004 to +0.094). Their median
+  three or more ROIs (0.118–0.243) sits beside their own chance (0.137–0.212), and the mouse-clustered
+  interval clears zero in 4 of 10 conditions (`line` at *J* = 10 s, +0.033 to +0.170; `line` at 20 s,
+  +0.029 to +0.097; `line_bound` at 10 s, +0.018 to +0.083; `line_length` at 20 s, +0.019 to +0.052),
+  while one condition sits **below** its chance with the interval clearing zero downward (`tube_guard`
+  at 20 s, −0.070 to −0.019) — a detector calling events where co-activity is rarer than the
+  recording's own activity would predict. Their median
   event holds 0–1 ROIs and 60–73 % of their events span no onset in any ROI, against 4–7 % for
-  supervised models. Yet 0.671–0.783 of them lie within 3 s of a frame with three or more ROIs lit,
-  against 0.438–0.488 at activity-weighted random times, and 0.348–0.620 within 1 s against
-  0.255–0.306. They fire in quiet gaps beside busy stretches: **the events are in the right
+  supervised models. Yet 0.673–0.752 of them lie within 3 s of a frame with three or more ROIs lit,
+  against 0.450–0.482 at activity-weighted random times, and 0.366–0.600 within 1 s against
+  0.268–0.298. They fire in quiet gaps beside busy stretches: **the events are in the right
   neighborhood and not on the co-activity**, which is what a crop-scale objective would be expected
   to teach and is not what a detector needs.
 - **`slow_modulation` is the detector the checks worried about**, and on real recordings it behaves as
@@ -568,25 +581,34 @@ by the export folder's group labels:
 
 | detector | DI | MALE | ORX | OVX |
 |---|---|---|---|---|
-| supervised, five models | 0.922–0.957 | 0.824–0.857 | 0.458–0.500 | 0.711–0.802 |
-| trained against rigid shift, ten conditions | 0.146–0.269 | 0.115–0.296 | 0.054–0.141 | 0.080–0.201 |
-| `count_excess` | 0.992 | 0.888 | 0.558 | 0.865 |
+| supervised, five models | 0.920–0.957 | 0.824–0.851 | 0.443–0.500 | 0.727–0.802 |
+| trained against rigid shift, ten conditions | 0.143–0.323 | 0.118–0.242 | 0.025–0.113 | 0.100–0.249 |
+| `count_excess` | 0.984 | 0.888 | 0.558 | 0.865 |
 | `count_share` | 1.000 | 0.942 | 0.760 | 0.965 |
-| `slow_modulation` | 0.685 | 0.526 | 0.290 | 0.466 |
+| `slow_modulation` | 0.705 | 0.526 | 0.290 | 0.466 |
 
 Every detector calls less co-activity in ORX recordings than in DI ones, by 0.3–0.5 for the detectors
 that find co-activity at all. The ordering is the same for the hand-written references and for a
 detector with no parameters, which rules out the least interesting explanation — that some model
-learned it — and nothing further. ⛔ **Two separate reasons say this ordering is not biology here,
-and answering one leaves the other standing.** The four contaminated recordings are all DI, the top
-of the ordering. And **group is perfectly confounded with imaging day in this export**: its 84
-recordings span 48 imaging dates and **not one date holds more than one group**, so every group
-difference is also a difference between days — rig state, slice batch, anything that varies between
-sessions. The producer's answer about the pinned ROIs can clear the first and cannot touch the
-second. ⚠ Events are pooled over
-runs on the same recordings and the groups are unbalanced (84 recordings from 44 mice). Four of those
-84 carry the contamination described at the top of this page, and all four are in the DI group, which
-is the group reading highest here.
+learned it — and nothing further. Agreement between methods is evidence about methods: every
+explanation those detectors share is untouched by their agreeing, and an artifact in the recordings
+is shared by all of them by construction.
+
+**The pinned ROIs are not the explanation, and that is now measured rather than argued.** All four
+de-pinned recordings are DI, the top of this ordering, so removing their pinned events is the direct
+test. It moves DI almost not at all — `count_excess` 0.992 → 0.984, supervised `line` 0.922 → 0.920 —
+and leaves MALE, ORX and OVX identical to three decimals, because no recording of theirs was touched.
+⚠ Note what that does *not* license: an earlier sensitivity check on the contaminated folder dropped
+those four recordings whole and predicted a much larger fall. **Dropping a recording removes
+everything about it; de-pinning removes 83 events and keeps the rest**, so a leave-one-out is an
+upper bound on what an artifact contributes, never an estimate of it. The same caution applies to
+this page's own "mean without the fold with the largest difference" column in Figure 2, the bake-off.
+
+⛔ **What still forbids reading this ordering as biology is untouched by any of it:** group is
+perfectly confounded with imaging day in this export — 84 recordings, 48 imaging dates, and **not one
+date holds more than one group** — so every group difference is also a difference between days: rig
+state, slice batch, anything that varies between sessions. ⚠ Events are also pooled over runs on the
+same recordings, and the groups are unbalanced (84 recordings from 44 mice).
 ## What this does not settle
 
 **The surrogate.**
@@ -609,13 +631,16 @@ is the group reading highest here.
   onsets dropped at the edges, but that check is not in the suite.
 - **The aggregate leak test cannot exclude co-activity**, because its strongest channel is the share
   of the field lit (Figure 3, the leak tests).
-- ⛔ **The run should not have happened over the contamination at all**, and the stop notice at the
-  head of this page is the statement of record: 12 ROIs pinned to the frame floor by non-rigid motion
-  correction in four of the 84 recordings, all four DI, flagged in no column and declared in the
-  producer's own note. It was filed on 2026-09-10, cited by reviews on 2026-09-14 and twice on
-  2026-09-17, and every one of those citations was a caveat rather than a question to the producer.
-  Nobody measured what it does to these results, and nobody should: the export is the input, filtering
-  in the consumer is forbidden, and the answer is the producer's.
+- **Two ROIs the producer's census did not remove, and one slice it never saw.** The removal cuts at
+  `n_exceed >= 100`; `20260702_338` (13 exceeding frames) and `20260630_325` (10) stay in, and
+  `20260629_314` is not in the census at all. Two orders of magnitude below anything removed, and not
+  measured here — the export is the input and filtering in the consumer is forbidden, so what to do
+  about the tail is the producer's and Tony's
+  ([the question](../../todo/2026-09-10-four-recordings-carry-an-unflagged-contaminant.md)).
+- ⚠ **This page's earlier version ran over the contamination and reported it as a footnote**, for a
+  week in which it was filed once and cited by three reviews without anyone asking the producer. The
+  rerun says the results did not depend on it, which is luck rather than diligence: nothing about
+  the reasoning that let it run would have changed had the answer come out the other way.
 - **A second export feature was not examined here**: events removed within ±2 s of field steps in
   three of the 84 recordings (71 events), which leaves 4 s gaps shared
   by every ROI. Every surrogate here shifts whole trains, so those shared gaps move to each ROI's own
@@ -699,8 +724,8 @@ In the order the argument raised them.
    (Wang, Li & Metze 2019; McFee, Salamon & Bello 2018).
 4. **Which event rate should the label-free threshold target?** The rule caps the rate on rigid
    shifts, not on the recording: at ≤ 2 events per 10 minutes on the shifts, the supervised models
-   fire 4.27–4.93 times per 10 minutes on real recordings, the models trained against rigid shift
-   5.67–6.75 and `count_excess` 6.29, against CoactDetect's 2.70 and LoCo's 3.72 (Figure 6, real
+   fire 4.24–4.90 times per 10 minutes on real recordings, the models trained against rigid shift
+   5.83–6.96 and `count_excess` 6.27, against CoactDetect's 2.69 and LoCo's 3.71 (Figure 6, real
    recordings). ⚠ The 0.5 and 1 caps were run on
    the simulator only, so the comparison Tony would want at those caps does not exist yet. The
    choice also includes whether to cap the rate on the recording instead of on its shifts. No
@@ -814,26 +839,34 @@ co-authors). `binned SCE` descends from Cossart, Aronov & Yuste 2003 and is not 
 - Zhu Y, Li Y, Zhang Q (2023). *IEEE Trans Geosci Remote Sens* 61:1–14, doi:10.1109/TGRS.2023.3302472.
 ## Provenance and how to reproduce
 
-Branch `unsup/rigid-shift-report-residuals`. Every stage ran from a separate checkout pinned to one
-commit, with no uncommitted changes, on one Mac (Python 3.14.5, torch 2.14.0, Elephant 1.2.1), with
-`PYTHONPATH` set to that checkout's `src` and torch pinned to one thread per process.
+Branch `read-the-de-pinned-export`. **The input is the producer's de-pinned export**, declared in
+`current_export.toml` as the role `steps_and_pins_excluded`
+(`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, 84 recordings, 2,630 ROIs, 264,075 events).
+Its contaminated predecessor, `steps_excluded`, is still declared and still refuses to load: a run
+pointed at it stops with `ContaminatedExport`.
+
+Every stage below ran overnight on 2026-09-17/18 from **one** checkout pinned at `b3cfc16` with no
+uncommitted changes, on one Mac (Python 3.14.5, torch 2.14.0, Elephant 1.2.1), with `PYTHONPATH` set
+to that checkout's `src` and `tools` and torch pinned to one thread per process. The bake-off and the
+plant probe are not part of that rerun: they read the simulator, never the export folder, and are
+carried over unchanged.
 
 | stage | command | output | commit, as recorded |
 |---|---|---|---|
 | bake-off, per seed *s* in 0, 1, 2 | `tools/fair_bakeoff.py --spec docs/learned/generator_spec.json --train-seed s --out <dir>/bakeoff_seed<s>` | `bakeoff_seed*/` | `70201e7` ⚠ |
 | plant probe | `tools/probe_line_vs_fuzz.py --checkpoints <dir>/real_compare/checkpoints --out <dir>/probe` | `probe/` | `b85b5c9` ⚠ |
-| per-ROI leak test | `tools/look_rigid_shift_controls.py --role steps_excluded --leak-only --out <dir>/controls_lab --jobs 12` | `controls_lab/` | `28ea5ad` ⚠ |
-| aggregate leak test | `tools/tube_aggregate_leak.py --out <dir>/aggregate_leak --jobs 12` | `aggregate_leak/` | `28ea5ad` |
-| label-free training | `tools/tube_self_supervised.py --out <dir>/training --jobs 12` | `training/` | `28ea5ad` |
-| models on synthetic twins | `tools/check_small_j_mixes_events.py --out <dir>/small_j_check --twins 30 --draws 2 --jobs 12 --checkpoints <all 120 checkpoints> --supervised-seeds 0 --untrained-seeds 0` | `small_j_check/` | `f55db21` |
-| real recordings | `tools/tube_ssl_real_compare.py --out <dir>/real_compare --checkpoints <dir>/real_compare/checkpoints --jobs 12` | `real_compare/summary.json` here; its `events.json` and `checkpoints/` are real-derived and live in the darkroom | `95ec229` |
+| per-ROI leak test | `tools/look_rigid_shift_controls.py --role steps_and_pins_excluded --leak-only --out <dir>/controls_lab --jobs 12` | `controls_lab/` | `b3cfc16` |
+| aggregate leak test | `tools/tube_aggregate_leak.py --out <dir>/aggregate_leak --jobs 12` | `aggregate_leak/` | `b3cfc16` |
+| label-free training | `tools/tube_self_supervised.py --out <dir>/training --jobs 12` | `training/` | `b3cfc16` |
+| models on synthetic twins | `tools/check_small_j_mixes_events.py --out <dir>/small_j_check --twins 30 --draws 2 --jobs 12 --checkpoints <dir>/real_compare/checkpoints --supervised-seeds 0 --untrained-seeds 0` | `small_j_check/` | `b3cfc16` |
+| real recordings | `tools/tube_ssl_real_compare.py --out <dir>/real_compare --checkpoints <dir>/real_compare/checkpoints --jobs 12` | `real_compare/summary.json` here; its `events.json` and `checkpoints/` are real-derived and live in the darkroom | `b3cfc16` |
 | every quoted result | `tools/summarize_tube_self_supervised.py --run <dir>` | `summary.json` | recorded in its `provenance` key |
 | figures | `tools/make_surrogate_schematic_figure.py`, `make_rigid_shift_gates_figure.py --run <dir>`, and `make_line_sensors_figure.py`, `make_tube_ssl_figure.py`, `make_twin_check_figure.py`, `make_tube_real_summary_figure.py` with `--summary <dir>/summary.json`; each writes to the darkroom unless given `--out`, and `--also` keeps the repo copy | `*_fig.png` | six figures, all drawn from `summary.json` |
 
 **What is in the repo and what is not.** FOUNDATIONS §5 keeps anything derived from real recordings
 machine-local, and on Tony's ruling of 2026-09-17 that now includes this run's per-recording event
 times (`real_compare/events.json`, keyed by recording id) and the 120 checkpoints trained on real
-recordings. They are in the claimed darkroom folder `bugarach/2026-09-17-rigid-shift-report/`
+recordings. They are in the claimed darkroom folder `bugarach/2026-09-18-rigid-shift-de-pinned/`
 (`docs/SESSIONS.md`), together with the six figures and a copy of this page; the repo keeps
 `real_compare/summary.json`, which is what this page quotes. ⚠ The copies removed from the repo are
 still in git history and in every clone, so this is a removal and not a retraction.
@@ -841,13 +874,21 @@ still in git history and in every clone, so this is a removal and not a retracti
 ⚠ **What the records can and cannot show.** The aggregate leak test, training, twin-check and
 real-recordings outputs carry a provenance stamp with the commit and `git_dirty: false`. The bake-off
 records its commit with `git_dirty: null`, the value a provenance bug wrote for every clean tree until
-`ea350be` fixed it; those checkouts were checked clean by hand. The per-ROI leak test and the plant
-probe record no commit: the per-ROI test ran in the same pinned chain as training, whose log records
-`28ea5ad` and a clean tree. The probe is carried over unchanged from the previous run (`b85b5c9`). It
-is still valid here because the models it reads did not change: it trains its own supervised fits on
-all eight simulated recordings at seed 0, and reads the checkpoints trained against rigid shift, which
-this run regenerated **bit for bit** — all ten of the previously committed checkpoints hash identically
-to the rerun's.
+`ea350be` fixed it; those checkouts were checked clean by hand. The per-ROI leak test records no
+commit of its own; it ran in the same pinned chain as everything else that night, from `b3cfc16`.
+
+⚠ **The plant probe is the one stage whose models are now older than the page.** It is carried over
+from `b85b5c9`, and it reads checkpoints trained against rigid shift — which this rerun retrained on
+the de-pinned export, so they are no longer the models the probe measured. Nothing on this page
+quotes a probe number as a property of a *current* model: it is cited only for the direction it
+establishes between architectures, on the simulator, where the export folder never enters. Rerunning
+it is the obvious next tidy-up and is not done here.
+
+⚠ **This rerun's checkpoints are not the previous run's.** The earlier page could say its ten
+committed checkpoints hashed identically to its rerun's, because that rerun changed no input. This
+one changed the input by 83 events, so every model trained on real recordings differs, and the twin
+check's numbers move within about a point — which is the size of the surrogate-draw noise floor
+measured on the co-modulation branch (0.7 % on a byte-identical folder), not a finding.
 
 **Surrogates.** Training, the label-free thresholds, the paired checks and the twin check draw rigid
 shift through a numpy implementation in `tools/tube_self_supervised.py` (`rigid_frames`), the same
@@ -864,6 +905,15 @@ test uses as well.
 pointed to in the darkroom was drawn from that version's run and was not redrawn for this one; nothing
 here quotes it. It holds a real baseline raster, which FOUNDATIONS §5 keeps out of the repo, and is
 rebuilt with `tools/make_tube_real_lanes.py` into the claimed darkroom folder.
+
+**What changed on 2026-09-18.** The producer answered the contamination question, and **every stage
+that reads the export folder reran on the answer** — the per-ROI leak test, the aggregate leak test,
+label-free training, the real-recordings comparison and the twin check, from one pinned checkout at
+12 workers. Every real-recording and training number on this page is from that rerun; the bake-off
+and the plant probe read the simulator and are carried over. Two fixes went in with it: the role
+default now names the de-pinned export, and `lr.is_lab_folder()` replaced three tests of the form
+`role() == "steps_excluded"` — under the new role name, two of them loaded 0 of 84 recordings and the
+third, the guard refusing non-baseline windows, **stopped applying silently**.
 
 **What changed from the version reviewed on 2026-09-17.** That version's fourth blind review found a
 scoring defect and several wrong statements; Tony ruled to fix, rerun and deliver without a fifth
