@@ -166,3 +166,52 @@ def test_env_var_wins_and_a_bad_one_does_not_silently_fall_back(tmp_path, monkey
 def test_describe_names_the_kind_and_the_count(tmp_path):
     line = ds.describe(_export_folder(tmp_path, n=2))
     assert "export folder" in line and "2" in line
+
+
+# -- the contamination stop ---------------------------------------------------------------
+#
+# Tony's ruling, 2026-09-17: work stops when the export declares a contamination that
+# nothing in the data marks. These tests are what keeps the stop from being softened back
+# into a caveat by the next session that finds it inconvenient.
+
+CONTAMINATED = {"steps": {"name": "some_export", "note":
+                          "Known contamination this folder does NOT address: moco pinned "
+                          "12 ROIs to the frame floor across `20260629_312`. Not flagged in "
+                          "any column."}}
+
+
+def test_a_declared_unflagged_contamination_stops_the_analysis(monkeypatch):
+    monkeypatch.setattr(ds, "declared_exports", lambda: CONTAMINATED)
+    monkeypatch.delenv(ds.ACK_ENV, raising=False)
+    with pytest.raises(ds.ContaminatedExport) as e:
+        ds.refuse_if_contaminated("steps")
+    assert "frame floor" in str(e.value), "the stop must quote what the producer said"
+    assert ds.ACK_ENV in str(e.value), "and say how to proceed deliberately"
+
+
+def test_the_override_needs_a_reason_and_announces_itself(monkeypatch, capsys):
+    monkeypatch.setattr(ds, "declared_exports", lambda: CONTAMINATED)
+    monkeypatch.setenv(ds.ACK_ENV, "counts ROIs only, never their values")
+    ds.refuse_if_contaminated("steps")
+    assert "counts ROIs only" in capsys.readouterr().err, "an override leaves a trace"
+
+
+def test_a_note_that_says_the_folder_handles_it_does_not_stop_anything(monkeypatch):
+    """The stop is for contamination the data do not mark. A folder that removed the
+    events, or flagged them in a column, is the resolved case and must not fire."""
+    monkeypatch.setattr(ds, "declared_exports", lambda: {
+        "steps": {"name": "x", "note": "Known contamination: field steps. Every event "
+                                       "within 2 s removed and listed in the sidecar, "
+                                       "flagged per event in `on_field_step`."}})
+    monkeypatch.delenv(ds.ACK_ENV, raising=False)
+    assert ds.contamination_note("steps") is None
+
+
+def test_the_shipped_pointer_is_checked_not_assumed(monkeypatch):
+    """Against this repo's real current_export.toml: whichever roles declare an unflagged
+    contamination today, ``refuse_if_contaminated`` must refuse them. When the producer
+    answers and the note leaves the file, this test passes by having nothing to do."""
+    monkeypatch.delenv(ds.ACK_ENV, raising=False)
+    for role in [r for r in ds.declared_exports() if ds.contamination_note(r)]:
+        with pytest.raises(ds.ContaminatedExport):
+            ds.refuse_if_contaminated(role)

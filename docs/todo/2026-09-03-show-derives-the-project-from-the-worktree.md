@@ -58,6 +58,65 @@ explicitly. Worth a line in `CLAUDE.md` only if the upstream fix stalls; a worka
 in a durable doc that outlives the bug is its own defect, and this repo has paid for
 that one twice.
 
+## It stalled, and the scattering is what this page predicted
+
+**2026-09-17, found by Tony:** *"you are bugarach why are you posting to the root of
+dropbox?"* — two weeks on, `show.py` is unchanged upstream, and the darkroom root held
+**five** folders named after worktrees, three of them empty. This page had described
+the outcome in the future tense (*"a week of sessions delivering figures produces a
+darkroom full of folders named after branches"*); it had happened.
+
+| folder at the root | written | held |
+|---|---|---|
+| `unsup-rigid-shift-report-residuals` | 2026-09-17 | one PNG, a duplicate of the copy inside the run's claimed folder |
+| `unsup-rule-as-code` | 2026-09-16 | three PNGs, one of them a **real-recording lanes figure** (FOUNDATIONS §5 material sitting a level above bugarach's own folder) |
+| `turbo-takes-the-width` | 2026-09-12 | two PNGs |
+| `ci-covers-the-send-gate`, `ci-covers-the-vendored-two` | 2026-09-02 | empty; another repo's worktrees, same defect |
+| `proj` | 2026-09-11 | empty — `show.py --selftest` creates `<review root>/proj` in the **real** darkroom, which is a third defect worth sending upstream with the other two |
+
+Cleaned up the same day: the duplicate was deleted, and `unsup-rule-as-code` and
+`turbo-takes-the-width` were moved to `<darkroom>/bugarach/strays-from-the-darkroom-root/`,
+keeping their folder names so whoever wrote them can still find their files. The empty
+folders belonging to other repositories were left alone.
+
+**So the `CLAUDE.md` line is now warranted, and it is mechanized rather than
+remembered.** Sapper **SAP016** blocks `python3 tools/show.py <file>` on any line that
+does not name `--project`, and `CLAUDE.md`'s darkroom paragraph — which taught the bare
+form, and is where this session learned it — now carries the flag and the reason. This
+page is excluded from the rule, because it is where the wrong form is shown as wrong.
+
+The prose caution above still holds for the *next* workaround: when upstream lands the
+`--git-common-dir` fix, SAP016 and the `CLAUDE.md` sentence come out together.
+
+## Reported upstream, 2026-09-17: syncytium2/armory issue #15
+
+Tony's instruction — report it to armory so the fix is redistributed rather than patched
+per consumer. Filed with both defects, the `proj` trace, the estate-wide evidence (five
+folders at the darkroom root, one of them from armory's **own** worktree), the consumer
+list (12 repositories vendor this file) and the fix in code form. armory is private but
+its issues are reachable from this account, which is how the report exists.
+
+**A correction was posted to that issue an hour later, and it is the part worth reading
+here.** The report claimed the vendored header misroutes consumer findings, because it
+says *"there is nowhere to send a patch"*. armory's own board records that wording as a
+**deliberate trade**: it is accurate for the four **public** consumers, of which bugarach
+is one — the file cannot point a public reader at a private tracker — and one wording
+across all ten consumers is intentional, because a stamp that differs per consumer is a
+stamp nobody can verify. So the wording is not the defect. What remains is only the
+observable: this page existed for two weeks and did not reach upstream.
+
+**Redistribution is upstream's to sequence, not ours.** `show.py` is pinned across ten
+consumers at three shas, and the stamp is what makes a pin checkable, so a fix in armory
+reaches bugarach only when someone re-vendors on purpose. Our copy is stamped `e8ffaa3`;
+armory's trunk was `548f734` when this was filed, so this repo is already behind by
+commits that have nothing to do with this bug. Re-vendoring is a separate decision —
+`bash tools/check_vendor_freshness.sh` is the check, and `CLAUDE.md` says never to edit a
+vendored file in place.
+
+**What closes this page:** upstream fixes `project_name()` (and, ideally, the copy guard),
+bugarach re-vendors, `tests/test_sapper.py` loses SAP016, and the `CLAUDE.md` sentence
+about `--project bugarach` comes out with it. Until then the local check is what holds.
+
 ---
 
 # Second defect: `show.py` dies on a file that is already in the darkroom

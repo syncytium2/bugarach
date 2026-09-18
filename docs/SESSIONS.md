@@ -10,6 +10,99 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/read-the-de-pinned-export — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-rigid-shift-de-pinned/`
+- **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony, 2026-09-17 evening:
+  *"the new data are available now. set up for overnight."* The whole rigid-shift chain reran on the
+  producer's de-pinned export (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`), which removes
+  the 83 events inside moco pinned windows, so this run's outputs supersede the ones claimed on
+  2026-09-17 under `bugarach/2026-09-17-rigid-shift-report/`.
+- **Writes:** one new folder only — `real_compare/events.json` (per-recording event times keyed by
+  recording id) and `real_compare/checkpoints/` (120 models trained on real recordings), which
+  FOUNDATIONS §5 keeps machine-local; the report's six figures; and a reader's copy of the report.
+  The repo keeps `real_compare/summary.json`, which is what the page quotes.
+- ⚠ **The 2026-09-17 folder stays as it is.** It holds the superseded run, and the page that cites it
+  carries its own stop notice until this run's numbers replace it. This claim does not write there.
+- **Touches:** `docs/learned/tube_self_supervised/` (branch `read-the-de-pinned-export`),
+  `docs/SESSIONS.md`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the folder holds the files and the branch that regenerates the page has landed.
+
+### 065/opt-every-knob — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-full-search/`
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Goal 1 step 3: the search over every
+  parameter of all six detectors, not only the four declared ones.
+- **Writes:** one new folder only — `search.json`, `search.log` and the figures, from
+  `tools/search_all_settings.py` on branch `opt-every-knob`. **Measure only**: the run changes no
+  operating point. Nothing existing is touched, and the 2026-09-16 folder stays as the record of
+  the declared-settings search.
+- **Released when:** the search finishes and its result is reported.
+
+### 065/opt-sliding-vs-binned — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-sliding-vs-binned/`
+- **Status:** RELEASED 2026-09-17 — the run, its figures and its note are written, and the result
+  is reported in [`HANDOFF-coded-detectors.md`](../HANDOFF-coded-detectors.md) and on the goal page
+  (PR #619). Nothing further writes there. Was: ACTIVE, claimed before writing. Goal 1 step 2 of
+  [`HANDOFF-coded-detectors.md`](../HANDOFF-coded-detectors.md): sliding LoCo and CoactDetect
+  against their binned ports on real baseline windows, which nothing has compared yet.
+- **Writes:** one new folder only — `sliding_vs_binned.json` (per-recording call counts and how many
+  calls coincide, both detectors, both modes) and its figures, from
+  `tools/compare_sliding_vs_binned.py` on branch `opt-sliding-vs-binned`. Nothing existing in the
+  darkroom is touched.
+- ⚠ **Derived from real recordings** (`steps_excluded`, fast stream, baseline analysis windows), so
+  the run stays in the darkroom (FOUNDATIONS §5); the repo gets the tool and a summary carrying no
+  recording ids.
+- **Released when:** the comparison is reported and its PR lands.
+
+### Mac/unsup-rigid-shift-report-residuals — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-rigid-shift-report/`
+- **Status:** **RELEASED — the folder holds everything and PR #603 landed (`59262d5`), so both
+  release conditions are met and nobody holds it.** Was ACTIVE (bugarach-smoked-ratchet), claimed
+  before writing. Tony ruled on 2026-09-17,
+  after the report's fourth blind murderboard, that the real-derived outputs of the rigid-shift run
+  leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real recordings stays
+  machine-local, with no slice ids).
+- **Writes:** one new folder only —
+  - `real_compare/events.json` (per-recording event times, keyed by recording id) and
+    `real_compare/checkpoints/` (models trained on real recordings), for this run and the one they
+    replace;
+  - the report's six figures and a copy of the report, the reader's copy per CLAUDE.md.
+
+  Nothing existing in the darkroom is touched.
+- **Holds:** written 2026-09-17, about 10 MB — `real_compare/` (the rerun's `events.json` and all
+  120 checkpoints), `superseded_run/real_compare/` (the copies removed from the repo tree),
+  `figures/` (six PNGs), `report-README.md` and `summary.json`. The repo tree now keeps
+  `real_compare/summary.json` alone.
+- ⚠ **One PNG went to the darkroom ROOT and has been cleaned up.** `tools/show.py` names its folder
+  from the git toplevel, which in a worktree is the worktree, so it wrote
+  `<darkroom>/unsup-rigid-shift-report-residuals/` — outside this claim and outside bugarach's own
+  folder. Tony caught it. The duplicate was deleted, and two older strays of the same kind
+  (`unsup-rule-as-code`, `turbo-takes-the-width`, holding bugarach figures including a real-recording
+  lanes figure) were moved to `bugarach/strays-from-the-darkroom-root/` with their names kept. Other
+  repositories' empty folders were left alone. Reported upstream as syncytium2/armory issue #15 and
+  blocked locally by sapper SAP016
+  ([todo](todo/2026-09-03-show-derives-the-project-from-the-worktree.md)).
+- ⚠ **The files being moved are also in git history on `main`** since PR #588. Moving them out of the
+  tree is not a retraction, and this claim does not say it is.
+- **Touches:** `docs/learned/tube_self_supervised/` (branch `unsup/rigid-shift-report-residuals`,
+  PR #603), `docs/SESSIONS.md`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the folder holds the files and the branch that removes them from the tree has
+  landed.
+
+### Mac/unsup-slow-comodulation — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-slow-comodulation/`
+- **Status:** RELEASED. The folder is written and nobody holds it: the explainer, its six figures,
+  `results.json` and `summary.json`, `one_recording.png` (a single real recording, so darkroom only),
+  and `round3-roles-held/` — one murderboard role report that `check_quotes` refuses in the public
+  tree over published words, waiting on Tony's ruling. The page landed as PR #614.
+  Was ACTIVE (bugarach-quiet-raven). Tony: *"i think i need a figure or a doc to explain
+  this slow co-modulation. i've been trying to ignore it so far, but now i feel i cannot."*
+- **Writes:** one new folder only — the explainer page, its figures and the measurement's
+  `results.json`. Nothing existing in the darkroom is touched; the 2026-09-15 and 2026-09-16
+  rigid-shift folders are read-only from here.
+- **Touches:** new `docs/learned/slow_comodulation/`, `tools/measure_slow_comodulation.py`,
+  `tools/make_slow_comodulation_figure.py`, a test, and at landing a goal-page pointer and a
+  `docs/INDEX.md` row. ⚠ Near PR #603 (`unsup/rigid-shift-report-residuals`), which will link to
+  this page rather than carry the explanation; no shared files.
+- **Goal:** unsupervised-learning.
+- **Released when:** the reviewed page and figures are in the folder and on a PR.
+
 ### Mac/tube-ssl-report — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-tube-self-supervised/`
 - **Status:** **RELEASED — the two rebuilt figures and the real-recording lanes figure (two views,
   HTML and PNG) are in the folder; repo copies of the two synthetic-derived figures are on the PR.**
@@ -2418,3 +2511,10 @@ session's work is not a sweep.
   intervals) and `best_parameters.html` / `best_parameters.png` (Figure 1), from
   `tools/retune_operating_points.py` on branch `best-parameters`.
 - **Released:** 2026-09-16, at write. Holds nothing.
+
+### darkroom/bugarach/2026-09-16-full-search/ — every declared setting of all six detectors, searched overnight (065/full-search)
+- **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `search.log`, `search.json` (written after each stage, so a stop mid-run keeps what
+  finished) and `full_search.html` / `full_search.png` (the figure), from
+  `tools/search_all_settings.py` on branch `full-search`. Measure-only: no operating point changes.
+- **Released:** 2026-09-17. The run finished 2026-09-16 17:02; holds nothing.

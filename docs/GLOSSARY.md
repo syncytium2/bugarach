@@ -354,7 +354,10 @@ Added 2026-09-10, when that plan's review found them used undefined.
   learns the leak instead of coordination. The known one: uniform per-onset
   dither's sub-floor intervals.
 - ***J*** — jitter radius: how far a dither may move one onset, ± seconds. Other
-  surrogates' parameters are matched to it by root-mean-square displacement.
+  surrogates' parameters are matched to it by root-mean-square displacement. For
+  **rigid shift** it is the radius of each ROI's whole-train offset, and for a **shared
+  offset** the radius of the one offset applied to every train; some pages call it the
+  displacement or shift radius.
 - **dead time, τ** — the shortest within-ROI interval the producer's event
   extractor can emit; the producer's to declare. ⚠ **Not SPIKE-synch's τ**, which
   is a coincidence window (see **ISI-adaptive**).
@@ -364,6 +367,22 @@ Added 2026-09-10, when that plan's review found them used undefined.
   zero by construction.
 - **known-bad control** — a surrogate built to fail one statistic. A statistic
   that does not flag it has no power there, and its verdicts there do not count.
+  The rigid-shift report calls the same thing a **positive control**. ⚠ A control only
+  shows power against the alternative it was built for: per-onset dither breaks
+  intervals, which rigid shift never does, so it cannot show power against a leak rigid
+  shift could have (the third murderboard of that report, 2026-09-17).
+- **small-J control** — rigid shift at a displacement too small to move slow
+  co-modulation (1.6 s on the fast stream). A scorer that separates real from rigid
+  shift at 10–20 s but not at the small *J* is reading slow shared modulation, not
+  sub-second coordination.
+- **shared-modulation twin / independent-modulation twin** — synthetic recordings with
+  no events whose ROIs' rates follow one slow sinusoid (shared) or one each
+  (independent). The first separates from its rigid shift for any scorer that sees
+  co-modulation; the second must read chance.
+- **count baselines** — zero-parameter scorers run through the same thresholds and
+  checks as a trained model: `count_share` (share of ROIs with an onset within ±2
+  frames), `count_excess` (that minus its 30 s moving mean) and `slow_modulation` (the
+  share averaged over 10 s). `tools/tube_self_supervised.py`.
 - **destruction test** — whether a surrogate removes planted cross-ROI
   coordination. A surrogate can keep everything real data has and still keep the
   coordination too; a do-nothing surrogate must fail this test.
@@ -372,31 +391,96 @@ Added 2026-09-10, when that plan's review found them used undefined.
   no regions), and a 60-second cut of it, the unit its statistics are computed on.
   "Analysis window" here is the 60-second cut, not the producer's
   `analysis_start_sec`/`analysis_end_sec` span.
-- **rigid shift** — a surrogate that slides each ROI's **whole** train by one offset
+- **rigid shift** — a surrogate that slides each ROI's **whole** train by its own offset
   drawn in ±*J*, keeping that ROI's rate and intervals while destroying alignment
   between ROIs. Published as whole-train shifting (Pipa, Riehle & Grün 2007; Pipa
   et al. 2008; Louis, Borgelt & Grün 2010). ⚠ The published form **wraps** the
   train; this project's does not, and drops onsets pushed past the window's end.
+  ⚠ The published form also shifts each **trial** separately (Stella et al. 2022 use a
+  25 ms dither); this project shifts a whole recording as one trial, by 10–20 s.
 - **shared offset** — the control for rigid shift: **one** offset applied to every
   ROI of a recording. Each ROI's train moves exactly as rigid shift moves it while
   the ROIs stay aligned, so a classifier that separates real from a shared offset is
   reading a per-ROI or edge artifact rather than removed coordination.
 - **label-free threshold** — an operating point set from a recording's own surrogate:
-  the lowest threshold at which a model fires no more than a stated number of events
-  per 10 minutes on rigid shifts of that recording. Reads no labels. The idea is
-  CFAR's (see **adaptive-threshold vocabulary**), with the surrogate standing in for
-  the reference cells; Dard et al. 2022 set their event threshold the same way, at
-  the 99th percentile of a per-cell circular shift.
+  scanning thresholds downward from the top, the last one before the model fires more
+  than a stated number of events per 10 minutes on any of three rigid shifts of that
+  recording. Reads no labels. Scanned downward because the event count is not monotone:
+  low enough, the whole recording merges into one detection. ⚠ It caps the rate on the
+  shifts, not on the recording, so a model can fire well above the stated rate on the
+  recording itself; and where no threshold ever exceeds the rate the scan falls to the
+  grid's lowest value, which the tool records. The idea is closer to a surrogate
+  threshold than to CFAR's (see **adaptive-threshold vocabulary**): Dard et al. 2022 set
+  their event threshold the same way, at the 99th percentile of a per-cell circular
+  shift.
 - **oracle threshold** — the F1-best threshold chosen **on planted truth**: a
-  comparison ceiling, never a usable rule. ⚠ Distinct from the parity **oracle**
+  comparison, never a usable rule. The rigid-shift report calls it the **truth-reading
+  threshold**. ⚠ Not a ceiling: it is picked on two validation recordings, and a
+  label-free threshold can score above it on held-out ones. ⚠ Distinct from the parity **oracle**
   under *validation vocabulary*, which is a MATLAB reference output.
+
+**Shared-activity vocabulary** — added 2026-09-17 with
+[`learned/slow_comodulation/`](learned/slow_comodulation/README.md).
+
+- **shared modulation (co-modulation)** — every ROI's onset rate rising and falling
+  together without any two onsets being aligned. Distinct from a **coordinated event**,
+  where onsets align within a fraction of a second.
+- **drift** — shared modulation over a minute or more. Whether it is coordination,
+  background or a producer question is an open decision.
+- **excess coincidence** — onset pairs between distinct ROIs at a given lag *ℓ* (not τ,
+  which is the dead time above), pooled over
+  ROI pairs and recordings, divided by the count expected if each pair fired
+  independently at its observed totals, minus one. 0 means no more than chance at the
+  window's average rates; summed over every lag to the window's length it is zero by
+  construction. The **population cross-correlogram** is excess coincidence against lag
+  (Perkel, Gerstein & Moore 1967).
+- **peak / shoulder / dip** — on that correlogram: a narrow excess at sub-second lags, a
+  broad low excess out to tens of seconds or minutes, and a **dip**, fewer pairs than
+  chance at a given lag. Each is a shape, not a cause: what produces it is argued
+  separately, and the zero-sum construction above means a peak somewhere forces a
+  deficit elsewhere.
+- **arm** — one treatment of the same recording measured the same way: the recording as
+  it is, a surrogate of it, or the recording with something removed. Every arm is
+  divided by a **null** chosen to share everything with it but the structure under test.
+- **count-variance ratio** — the variance of the population onset count (onsets summed
+  over ROIs in a bin) divided by its variance after a **circular shift of the same
+  onsets**; 1 means no shared structure at that bin width. What a detector that counts
+  lit ROIs responds to. Schluter's (1984) variance ratio; it grows with the number of
+  ROIs for the same pairwise correlation.
+- **circular shift** — each ROI's whole train slid by its own lag, wrapping around the
+  window: removes every relation between ROIs at every timescale. The assessor's null.
+- **block control** — the circular shift done inside each fixed block (2 minutes on the
+  slow co-modulation page) separately. Keeps every ROI's count per block, so it keeps
+  shared change in block counts **from any source, events included**. In the code,
+  `surrogates.window_circular_shift`, registered as a known-bad control. A variant of
+  interval jitter, which re-places onsets independently inside fixed windows.
+- **promiscuity probe** — the benchmark generator's whole-field dense block
+  (`hot_window` in `generator_spec.json`, 1,200–1,500 s): every ROI's rate raised at
+  once, so it is also shared drift.
+- **lit** — an ROI with at least one onset in the bin being counted. "Share of ROIs lit"
+  is a count of ROIs, never of onsets.
+- **mask-matched null** — the null for an arm with stretches of time cut out of it.
+  Deleting onsets inside detected episodes cuts gaps that are shared across ROIs, so the
+  null has to carry the same gaps or they are scored as shared change. Built by shifting
+  each ROI circularly **inside the surviving stretches**, which keeps its onset count and
+  leaves the gaps where the arm has them.
+- **effective mice** — Kish's effective sample size on the weights a pooled number
+  actually uses, so a count of animals cannot stand in for how many the estimate leans
+  on. Fewer than the animals counted whenever the weights are uneven.
 
 Added 2026-09-16, with the label-free detector work:
 
 - ***line*** (detector axis, a proper name like **CoactDetect**) — a learned detector
-  that smooths each ROI on its own, bounds it so a bursting ROI votes once, averages
-  those votes over ROIs, and judges the result against its own background with a
-  difference of Gaussians. `src/bugarach/learn/nets/line.py`.
+  that smooths each ROI on its own, bounds each ROI's vote in **height** with a sigmoid,
+  averages those votes over ROIs, and judges the result against its own background with
+  a difference of Gaussians. `src/bugarach/learn/nets/line.py`. ⚠ The bound is on height
+  only: a bursting ROI holds its vote for longer, and the stage after it reads the time
+  course, so a burst still counts as more than one onset. This entry said "votes once"
+  until 2026-09-17.
+- ***line_bound*** — `line` with each ROI's vote also bounded **in time** (scaled
+  wherever its local mass exceeds one onset's) and its empty-field floor subtracted. Two
+  changes, so a difference from `line` is not attributable to either alone.
+  `src/bugarach/learn/nets/line_bound.py`.
 - ***line_length*** — `line` with its orientation channels removed: the registered
   ablation that says what the second sensor is worth.
 - **relative length** — the share of a field that is lit at one moment: `line`'s

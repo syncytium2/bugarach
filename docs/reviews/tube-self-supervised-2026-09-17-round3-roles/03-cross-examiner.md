@@ -1,0 +1,69 @@
+GRANT 3 ok — Read, Grep, Glob
+
+# Consistency audit: `docs/learned/tube_self_supervised/README.md`
+
+**Checked and found consistent.** I traced every number in the report to `summary.json` and its stage outputs, and found no mismatches in:
+- the Figure 1 per-ROI table, the slow-stream sentence and the aggregate-gate ranges
+- all 15 rows of the bake-off table, including fit times
+- the paired-difference table, including the per-seed and without-largest-fold columns
+- the plant-probe table
+- both Figure 3 tables, the 14-of-20 count, the 0.126–0.322 and 0.070–0.250 ranges, and 0–4 fits at or above ln 2
+- truth-reading coverage and width ranges, the 4 fits of 360 at a grid edge, and the panel C check ranges
+- the real-recordings table, the agreement table, the chance rates and the edge shares
+- the 1.04–1.15 soft-bound figure, the parameter counts (1,305) and the tool flags in the provenance table
+
+I opened all four figures. The defects are in wording, figures, terms and companion docs, listed below.
+
+## Findings
+
+| # | location | issue | severity | suggested fix | verified against a source |
+|---|---|---|---|---|---|
+| 1 | Figure 3 image, header line | It says "panels A and B share one F1 scale with **Figure 1**". Figure 1 shows classifier accuracy, not F1. The F1 figure is Figure 2, the bake-off. | medium | Change it to "Figure 2, the bake-off", or drop the claim. | yes (image) |
+| 2 | Figure 3 image, header line | It says "the ≤ 0.5 and ≤ 1 events per 10 min thresholds are in the report's table". The ≤ 0.5 values for the trained and untrained cells are in no table; the prose gives only the range 0.070–0.250. | medium | Add a ≤ 0.5 column to the trained/untrained table, or reword the header. | yes |
+| 3 | Figure 3 panel A annotation vs the text under "The truth-reading scores… are not detection" | Only the untrained arm is shaded, labelled "detections cover 84%–100%". The text says the untrained arm **and every real-trained arm** cover 0.954–0.985. So the figure flags one arm where the text flags five. It also uses a per-fit range where the text uses a per-cell median, and the two are not reconciled. | medium | Shade the four real-trained columns too, and use one basis (median per cell) in both places. | yes |
+| 4 | Real recordings: "median 0–1 within ±2 frames), against 0.07–0.13 for random times" | Two different quantities are compared. 0.07–0.13 is the random **share with ≥ 3 ROIs** (`random_share_ge3` 0.073–0.132). The random **median** for those rows is 0. | medium | Compare share with share: "0.13–0.24 of calls hold ≥ 3 ROIs, against 0.07–0.13 for random times". | yes |
+| 5 | Real recordings: "Detections of every kind are enriched near the window edges" | LoCo is at 0.0 % and 1.1 %, **below** the uniform expectation of 0.84 % and 2.1 %. The sentence contradicts its own numbers. | medium | "Every detector except LoCo…". | yes |
+| 6 | Panel C text: "ties on 10–69 % of crops in a cell" | Both `ssl_real` tube cells (10 s and 20 s) have `tie_share_max` 1.0. The range excludes them silently, and the next sentence admits a tie share of 1.00. | low | Say "10–100 %, or 10–69 % excluding the `tube` fits that score every crop identically". | yes |
+| 7 | Figure 2 table vs Figure 2 panel A, row order | Learned rows: table is line, line_bound, line_length; figure is line, line_length, line_bound. Hand-written rows: table has binned SCE before locust; figure has locust before binned SCE. Figure 3 uses a third order (tube, tube_guard, line, line_length, line_bound), and Figure 3's tables a fourth. None matches the glossary's detector order. | medium | Pick one order (glossary order for the hand-written detectors, one fixed order for the learned models) and use it in every table, figure and legend. | yes (images) |
+| 8 | Figure 2 caption: "Rows are grouped by family, not ordered by score" | The **table** under it is sorted by F1 within each family (0.698 &gt; 0.694 &gt; 0.682 …; 0.582 SCE before 0.545 locust). That reads as a ranking, which MILESTONES forbids ("No ranking; a table of performance"). | low | Use the same non-score order in the table. | yes |
+| 9 | Figure 3 arm order vs the "Trained against rigid shift" table | Figure: supervised, untrained, sim 10, sim 20, real 10, real 20. Table: sim 10, sim 20, real 10, real 20, untrained. Panel C's check order also differs from the prose order. | low | Use one arm order everywhere. | yes |
+| 10 | Figure 2 table, "binned SCE — port of another lab's" | MILESTONES section A says "**Only `locust` is a port of another lab's published method** … binned SCE is not a port". | medium | Change the "what it is" cell (for example "hand-written here, descends from Cossart, Aronov &amp; Yuste 2003"), or correct MILESTONES. | yes |
+| 11 | Provenance: "every other stage at `b85b5c9` … no uncommitted changes (… `git_dirty: null`)" | `summary.json`, the "every number" stage, records `git_commit c82f560…`, `git_dirty: true`. `real_compare/summary.json` and `probe/line_vs_fuzz.json` carry no provenance at all, so the claim cannot be checked for those two stages. | medium | State the summary's commit and dirty flag, and regenerate it from a clean tree. Say that `real_compare` and `probe` record no commit, or add one. | yes |
+| 12 | Line 45: "Nobody has annotated this **corpus**" | "corpus" is RETIRED in GLOSSARY.md (Tony, 2026-08-22). | low | "the export folder". | yes |
+| 13 | Terms: "ROI … is one imaged **cell**", then "trained **cells**", "each **cell** of twelve", "cells-mean trace", "the **cell** under test" | One word carries three meanings: an imaged cell, a results-table cell (arm × *J* × model), and a CFAR cell under test. | medium | Rename the table unit (for example "arm × displacement × model **condition**") and keep "cell" for tissue and the CFAR term. | yes |
+| 14 | "**truth-reading** threshold" (throughout, including Figure 3) | The glossary defines the same concept as **oracle threshold**, and `summary.json` and `tube_self_supervised.py` call it `oracle`. The new term is not in the glossary. | low | Add "truth-reading threshold" to GLOSSARY as the replacement for "oracle threshold" in the same change, or use the glossary term. | yes |
+| 15 | `line_bound`, "plant probe", "bank", "arm", "positive control" | These are new terms with no glossary entry. The glossary calls a surrogate built to fail a **known-bad control**, and the goal page calls dither that too; the report calls it a "positive control". | low | Add the entries, or use "known-bad control". | yes |
+| 16 | GLOSSARY `line` entry: "bounds it so a bursting ROI **votes once**" | This is the exact claim the report's "What changed" section says was wrong (height is bounded, time integral is not), and `line.py` now says so too. | medium | Correct the glossary entry in the same change, and add `line_bound`. | yes |
+| 17 | "***J*** is the displacement radius of a surrogate" vs GLOSSARY "***J*** — jitter radius: how far a dither may move one onset" | The report widens a glossary term (per-ROI offset for rigid shift, one offset for shared offset) without updating the glossary. | low | Update the glossary definition. | yes |
+| 18 | "floor" used for three things: the detectors' "floor of three ROIs", the vote's "empty-field floor", and "That floor is gone" (grid) | GLOSSARY reserves **floor** for the shortest observed within-ROI interval, and names the ROI minimum **K**, the coactivity floor. | low | Use "K = 3", "the vote's resting level", and "the grid's lower limit". | yes |
+| 19 | Lead: "Training against rigid shift alone beats **random initialisation**" | The untrained arm is "the architecture at initialisation" (`tube_self_supervised.py`). `line`'s filter-bank parameters are deterministic (a hand-set ladder) and only the head is random, which the report itself acknowledges later ("hand-set widths"). Elsewhere the page says "untrained" or "initialisation". | low | "beats the untrained architecture". | yes |
+| 20 | Lead: "Before this run that test had no positive control on the stream the experiment used" | `rigid_shift_look/README.md` Figure 1 already drew uniform dither beside rigid shift on the fast stream at 1.6–5 s (0.63–0.77). What was missing was a control at the training displacements. | low | "no positive control at the displacements used for training". | yes |
+| 21 | Lineage: "This run drops, which deflates the surrogate's coincidence count" | The `tube_self_supervised.py` docstring says training crops "stay more than *J* from the recording's ends, where rigid shift drops onsets". So the drop bias does not reach the training contrast. It reaches the label-free thresholds and the Figure 1 tests. | low | Say which stages the edge drop affects. | yes (docstring) |
+| 22 | "What this does not settle": "three orders of magnitude" | 25 ms against 10–20 s is 400–800×, about 2.6–2.9 orders. | low | "roughly 400–800 times". | yes |
+| 23 | "The benchmark … 0.31 s of jitter. Real … 0.36 s … `docs/generator.md`" | `generator_spec.json` gives 0.311 s measured against a 0.335 s null (negative excess). `generator.md` says "bench uses 0.36". The two companion sources disagree, and the report quotes one of each. | low | Cite the spec's own measurement and null, or reconcile `generator.md`. | yes |
+| 24 | Figure 1 panel C caption, "bars: 95 % interval" for the initial bank, vs `aggregate_leak/tube_aggregate_fig.png` (which the report names as "the initial-bank figure") | The same initial-bank results are drawn with **1.67–98.33 percentile** bars in that figure. Two different intervals for one quantity, with no note. | low | Note the difference beside the pointer on line 477. | yes (images) |
+| 25 | "The aggregate gate answers the same with fitted channels" (twin values 0.442–0.536 / 0.469–0.592, 0.861–0.886 / 0.864–0.914) | These numbers sit in the Figure 1 section, but Figure 1 panel C shows only real vs rigid shift and real vs shared offset. The fitted twin results appear in no figure. | low | Add the twin points to panel C, or say the values are table-only. | yes (image) |
+| 26 | Companion: MILESTONES section C, row "Training against rigid shift alone" | It says "**four** architectures … 0.34–0.49 F1 at a truth-reading threshold … **do not beat random initialisation** … one training seed per fold". The report has five architectures, 0.50–0.58 / 0.48–0.62, beats the untrained arm at ≤ 1 and ≤ 0.5, and three seeds. | high | Update the row (and its commit pin) in the same PR. | yes |
+| 27 | Companion: MILESTONES section C, row "`line`, a counting architecture" | It says "top mean F1 (0.713) … +0.063, t(3) = 1.31 … ablation +0.005, t(3) = 0.34". Those are seed-0 values; the report's 3-seed values are 0.698, +0.047, t = 1.06 and +0.032, t = 0.91. It also has no `line_bound` row. | high | Update the row, and add `line_bound`. | yes |
+| 28 | Companion: MILESTONES "waits on Tony" line: "concentration sensor on by default" | The report asks a different question: "Which `line` build, if any, stays", with three builds. The shared-offset row also still says the control "has not been shown able to fail on lab fast". | medium | Reword to match the report's four decisions, and update the row's status. | yes |
+| 29 | Companion: `docs/goals/unsupervised-learning.md`, "Latest, 2026-09-16" paragraph, and "Open work" | It says "label-free training of **four** architectures", "**did not beat random initialisation**", and still lists the aggregate-channel leak test as open work. | medium | Update both in the same PR. | yes |
+| 30 | Companion: `docs/pipelines/learned-model-evaluation.md`, "The route, as commands" | It gives `make_line_sensors_figure.py --bakeoff $D/bakeoff`, but the tool takes `--summary` (and the report uses it). It shows a single-seed bake-off, `controls` instead of `controls_lab` without `--leak-only`, and no summarize step or Figure 1 command. Stage 5's incident also states "training did not beat random initialisation" as the honest claim. | medium | Sync the command block with the report's provenance table, and date-stamp the incident text as the first run's. | yes |
+| 31 | Companion docstrings | `tube_ssl_real_compare.py` says "`tube` / `tube_guard`" and "supervised `tube` fitted **once**", but the code runs all five models at three seeds (the report is right). `probe_line_vs_fuzz.py` says "burst … inside **0.4 s**" and "fuzz … over **3 s**", and "supervised `tube` and `tube_guard`", but the code gives 0.6 s, 2.9 s and all five models. `tube_self_supervised.py` line 2 says "train `tube` and `tube_guard`". | low | Correct the three docstrings; the report matches the code. | yes |
+| 32 | Companion: GLOSSARY "rigid shift" cites "Pipa, Riehle &amp; Grün **2007**" as published origin | The report's lineage leaves out the 2007 paper and says "where whole-train shifting begins is **not established**". The two docs disagree about the origin. | low | Reconcile: add the 2007 citation to the report, or qualify the glossary. | no (the literature itself was not checked) |
+
+Files referenced:
+- `<worktree>/docs/learned/tube_self_supervised/README.md`
+- `<worktree>/docs/learned/tube_self_supervised/summary.json`
+- `<worktree>/docs/learned/tube_self_supervised/tube_ssl_fig.png`
+- `<worktree>/docs/learned/tube_self_supervised/line_sensors_fig.png`
+- `<worktree>/docs/learned/tube_self_supervised/rigid_shift_gates_fig.png`
+- `<worktree>/docs/learned/tube_self_supervised/aggregate_leak/tube_aggregate_fig.png`
+- `<worktree>/docs/MILESTONES.md`
+- `<worktree>/docs/GLOSSARY.md`
+- `<worktree>/docs/goals/unsupervised-learning.md`
+- `<worktree>/docs/pipelines/learned-model-evaluation.md`
+- `<worktree>/docs/learned/rigid_shift_look/README.md`
+- `<worktree>/tools/tube_ssl_real_compare.py`
+- `<worktree>/tools/probe_line_vs_fuzz.py`
+- `<worktree>/tools/tube_self_supervised.py`
+- `<worktree>/src/bugarach/learn/nets/line.py`
