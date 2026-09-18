@@ -10,6 +10,19 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP064/fair-comparison-run — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-fair-comparison-run/`
+- **Status:** ACTIVE (WSMIP064), claimed before writing. Goal 2, the fair comparison: the weekend
+  tuning run of the nets against the six coded detectors on the bench, from branch
+  `tune-bench-comparison` (Tony, 2026-09-18: fold defect fixed first, coded side searched sliding,
+  12 seeds per fold, `--gpu-jobs 1`).
+- **Writes:** one new folder only. While the run goes: `progress.json`, mirrored from the run's
+  folder under `%USERPROFILE%\runs\` about once a minute, so the run's state stays readable from any
+  machine after the session that launched it has ended. After it: the per-fit files (`fits/`,
+  `scores/`) that are too large for git. Nothing existing in the darkroom is touched.
+- **Simulation only**, so nothing here is derived from a real recording.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the run has ended and its readout has landed, or the run is abandoned.
+
 ### 065/interface2-mirror — DONE 2026-09-18, RELEASED: interface2 is on GitHub and GitHub is its only remote
 - **Status:** **DONE — released, nothing held.** Implemented `HANDOFF-interface2-mirror.md` (PR
   #636, now `docs/handoffs/2026-09-18-interface2-mirror.md`): a `push --mirror` of interface2 from
