@@ -40,6 +40,26 @@ resolving the darkroom through that repo's estate-wide resolver and taking the s
 file's name as an argument. Neither vendors from the other yet, so **a fix here does not
 reach that one** — say which you changed.
 
+ON WINDOWS, AS PROVEN ON WSMIP065 (2026-09-18). A Task Scheduler task, one-shot every
+5 minutes, headless, logging beside the run; the exact PowerShell is in
+`docs/windows_workstation_setup.md`, section 8. What that proof settled:
+
+* **Run it from a checkout.** This file loads `src/bugarach/paths.py` relative to
+  itself, so a copy standing alone finds no resolver. It needs no venv.
+* **Name the interpreter by absolute path** (WSMIP065 used uv's managed Python). The
+  `python3` on PATH may be the Windows Store alias, which is not what a task should
+  depend on.
+* **`BUGARACH_DARKROOM` was not needed.** It is unset for the user and the machine, and
+  the task still resolved the darkroom through Dropbox's `info.json`. Where no Dropbox is
+  found, set it durably — `[Environment]::SetEnvironmentVariable('BUGARACH_DARKROOM',
+  <path>, 'User')` — never `$env:` in a shell, which a task does not inherit; the tool
+  then exits 2.
+* **Prove a tick by its output, not by `Get-ScheduledTaskInfo`.** Its `LastRunTime`
+  trailed a manual run by about three minutes; the log line and `STATUS.txt`'s own
+  stamp were immediate.
+* **The task's logon is interactive**, like the tuning launcher's: signed out, both stop.
+  `STATUS.txt`'s stamp then goes old, which is itself the signal.
+
 The destination is always inside bugarach's own darkroom folder — `darkroom(*parts)`
 joins onto it — and a subfolder that tries to climb out is refused. bugarach owns
 `<darkroom>/bugarach/` and nothing above it.
@@ -83,13 +103,24 @@ HUMAN_NAME = "STATUS.txt"
 
 
 def _subfolder(name: str) -> str:
-    """Refuse anything that is not a plain folder name under the darkroom."""
-    p = Path(name)
-    if p.is_absolute() or ".." in p.parts:
-        raise ValueError(
-            f"--into must be a folder inside the darkroom, not {name!r}. "
-            "bugarach owns <darkroom>/bugarach/ and nothing above it."
-        )
+    """Refuse anything that is not a plain folder name under the darkroom.
+
+    Judged under BOTH path flavours, not the local one. On Windows ``/tmp/x`` is
+    not ``is_absolute()`` — it has a root but no drive — yet joining it onto the
+    darkroom discards the darkroom and lands on ``C:\\tmp\\x``. The first version
+    asked the local ``Path`` and let exactly that through on WSMIP065 (2026-09-18);
+    its own selftest caught it. Anything with an anchor (drive or root) in either
+    flavour, or a ``..`` in either, is refused.
+    """
+    from pathlib import PurePosixPath, PureWindowsPath
+
+    for flavour in (PurePosixPath, PureWindowsPath):
+        p = flavour(name)
+        if p.anchor or ".." in p.parts:
+            raise ValueError(
+                f"--into must be a folder inside the darkroom, not {name!r}. "
+                "bugarach owns <darkroom>/bugarach/ and nothing above it."
+            )
     return name
 
 
@@ -211,14 +242,19 @@ def _selftest() -> int:
         mirror_once(run, dest)
         assert "STALE" in (dest / HUMAN_NAME).read_text()
 
-        # 6. A subfolder that climbs out of the darkroom is refused.
-        for bad in ("../elsewhere", "/tmp/elsewhere"):
+        # 6. A subfolder that climbs out of the darkroom is refused — including the
+        #    Windows shapes, on every OS: rooted without a drive, drive-relative,
+        #    drive-absolute, and a backslash climb.
+        for bad in ("../elsewhere", "/tmp/elsewhere", "\\elsewhere", "C:elsewhere",
+                    "C:\\elsewhere", "..\\elsewhere", "run/../../elsewhere"):
             try:
                 _subfolder(bad)
             except ValueError:
                 pass
             else:  # pragma: no cover - the assert is the test
                 raise AssertionError(f"{bad!r} should have been refused")
+        for good in ("2026-09-18-my-run", "2026-09-18-my-run/sub"):
+            assert _subfolder(good) == good, good
 
         print("selftest: 6 checks, 0 failures")
         return 0

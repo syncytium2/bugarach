@@ -151,3 +151,104 @@ CPU build, about twice the Mac's time per fit. If a Windows workstation has a wo
   write progress to a file you can read from anywhere.
 - **Make runs resumable**, with atomic result files, so that a sign-out costs time, not results.
 - **Outputs go outside the repo** (`%USERPROFILE%\runs\`), never in `%TEMP%` or a session scratchpad.
+  That makes them durable on **one disk**, which is not the same as readable: section 8.
+
+## 8. Make a long run's status readable from anywhere
+
+**Why.** On 2026-09-16 a detached run wrote `progress.json` into `~/runs/`, the session that
+launched it was archived at 01:56, and the next morning nobody could say whether the run was alive:
+the answer was on one disk and the person asking was on a phone (armory finding 21). The darkroom is
+mounted on every machine and syncs, so the status goes there, stamped with its age.
+
+**The tool** is `tools/mirror_run_status.py` (on `main` since #649). It needs no venv, but it must run
+**from a checkout**, because it loads `src/bugarach/paths.py` relative to itself. Read its docstring.
+It copies `progress.json` into a darkroom folder, with `mirror.json` and a one-line `STATUS.txt`
+saying when it copied the file, how old the file already was, and from which host. `STATUS.txt`
+says `STALE` past 15 minutes, and says so plainly if there is no `progress.json` yet, so the mirror
+can be scheduled before the run starts, which is the safer order.
+
+**Claim the darkroom folder first**, on `docs/SESSIONS.md` and the machine-local board (CLAUDE.md).
+
+### Proven on WSMIP065, 2026-09-18
+
+The run this watches: the goal-2 replicate, launched as `bench-replicate1` through
+`tools\launch_tuning_run_windows.cmd`, which writes to `%USERPROFILE%\runs\<name>\`. Claimed in #651.
+Every path below is the one used; `$env:USERPROFILE` is spelled out only because this repository is
+public.
+
+```powershell
+$py   = (& "$env:USERPROFILE\.local\bin\uv.exe" python find 3.14)   # absolute: ...\uv\python\cpython-3.14-windows-x86_64-none\python.exe
+$tool = "$env:USERPROFILE\bugarach\bugarach-worktrees\weekend-runs\tools\mirror_run_status.py"
+$run  = "$env:USERPROFILE\runs\bench-replicate1"
+$log  = "$env:USERPROFILE\runs\mirror-bench-replicate1.log"
+& $py $tool --selftest                        # selftest: 6 checks, 0 failures
+$cmdline  = "/c `"`"$py`" `"$tool`" `"$run`" --into 2026-09-18-replicate-run-status >> `"$log`" 2>&1`""
+$action   = New-ScheduledTaskAction -Execute "conhost.exe" -Argument "--headless cmd.exe $cmdline"
+$trigger  = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 14)
+$settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+Register-ScheduledTask -TaskName "bugarach-mirror-bench-replicate1" -Action $action -Trigger $trigger -Settings $settings -Force
+Start-ScheduledTask -TaskName "bugarach-mirror-bench-replicate1"
+Get-Content $log -Tail 1                      # mirrored to <darkroom>\2026-09-18-replicate-run-status  source age: absent
+```
+
+The variables are expanded when the task is registered, so the task holds absolute paths and needs
+nothing from your shell. No admin rights: the task runs as you, with an interactive logon. What the
+proof settled:
+
+- **`BUGARACH_DARKROOM` was not needed.** It is unset for the user and the machine
+  (`[Environment]::GetEnvironmentVariable('BUGARACH_DARKROOM','User')` is empty), and the task still
+  found the darkroom through `%LOCALAPPDATA%\Dropbox\info.json`. If your machine needs it, set it
+  with `[Environment]::SetEnvironmentVariable('BUGARACH_DARKROOM', '<path>', 'User')`, which a task
+  inherits. A `$env:` in your shell is not inherited, and the tool then exits 2 and writes nothing.
+- **Prove a tick by its output.** `Get-ScheduledTaskInfo` reported the old `LastRunTime` for about
+  three minutes after a manual run; the log line and `STATUS.txt`'s own timestamp were immediate. A
+  wait loop keyed on `LastRunTime` hung for exactly that long.
+- **Both branches were proven through the task, not only by the selftest:** "absent" with no run
+  yet, and a present `progress.json`, which was copied byte for byte with a 0.9 s source age. The
+  file used for that proof was labelled as not a run, and was removed from both places afterwards.
+- **Enabling a task after its start time has passed fires it at once**, because of
+  `-StartWhenAvailable`. That is harmless here, but expect an extra log line.
+- **The logon is interactive, the same as the tuning launcher's**: if you are signed out, both
+  stop. `STATUS.txt`'s timestamp then goes old, which is itself the signal. `copied_at` is the
+  mirror's heartbeat; the file's age is the run's.
+- The launcher writes the run's log **beside** the run folder (`%USERPROFILE%\runs\<name>.log`),
+  not inside it, so the mirror's `--also` does not reach it as written.
+
+### For WSMIP064: the fair comparison launched 2026-09-18 at 16:14
+
+That run already copies `progress.json` into `<darkroom>/bugarach/2026-09-18-fair-comparison-run/`
+itself, through the tuning tool's `--mirror`, at least once a minute. That copy is written **by the
+run's own driver**, so if the driver dies it stops, and a reader has to notice that its `at` has gone
+old. The scheduled mirror is the independent check: a separate process with a one-line verdict. Two
+constraints shape it:
+
+- **Do not add files to the running worktree** (`tune-bench-comparison`'s handoff: no changes to
+  `tools/` or `src/` until the run ends). Run the tool from the primary checkout after `git pull` on
+  `main`.
+- **Do not write a second `progress.json` beside the run's own.** Mirror into a subfolder,
+  `external/`, of the folder already claimed in #648, and add that subfolder to the claim's
+  **Writes** line.
+
+```powershell
+git -C "$env:USERPROFILE\bugarach\bugarach" pull --ff-only
+$py   = (& "$env:USERPROFILE\.local\bin\uv.exe" python find 3.14)   # an absolute path, not the Store alias
+$tool = "$env:USERPROFILE\bugarach\bugarach\tools\mirror_run_status.py"
+$run  = "$env:USERPROFILE\runs\fair-comparison-2026-09-18"
+$log  = "$env:USERPROFILE\runs\mirror-fair-comparison-2026-09-18.log"
+& $py $tool --selftest                        # expect: selftest: 6 checks, 0 failures
+$cmdline  = "/c `"`"$py`" `"$tool`" `"$run`" --into 2026-09-18-fair-comparison-run/external >> `"$log`" 2>&1`""
+$action   = New-ScheduledTaskAction -Execute "conhost.exe" -Argument "--headless cmd.exe $cmdline"
+$trigger  = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 14)
+$settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+Register-ScheduledTask -TaskName "bugarach-mirror-fair-comparison" -Action $action -Trigger $trigger -Settings $settings -Force
+Start-ScheduledTask -TaskName "bugarach-mirror-fair-comparison"
+Get-Content $log -Tail 1                      # expect: mirrored to <darkroom>\...\external  source age: <n> s
+```
+
+Then open `STATUS.txt` in the folder that log line names: its first line should carry a timestamp
+from the last minute and `WSMIP064`. If the primary checkout is somewhere else on WSMIP064, only
+`$tool` changes. Run `--selftest` before scheduling. Before its fix, `--into /tmp/x` escaped the
+darkroom on Windows (to `C:\tmp\x`), and the selftest was what caught it.
+
+**When the run ends,** delete the task (`Unregister-ScheduledTask -TaskName <name> -Confirm:$false`)
+and release the darkroom claim.
