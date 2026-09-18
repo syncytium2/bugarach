@@ -1,0 +1,59 @@
+{
+ "detector": "coact",
+ "outer_fold": 1,
+ "budget": "meta.json budgets[1]",
+ "pooled": {
+  "recording_seeds": [
+   1000,
+   1001,
+   1002,
+   1003,
+   1004,
+   1005,
+   1012,
+   1013,
+   1014,
+   1015,
+   1016,
+   1017,
+   1018,
+   1019,
+   1020,
+   1021,
+   1022,
+   1023
+  ],
+  "twin_seeds": [
+   101000,
+   101001,
+   101002,
+   101003,
+   101004,
+   101005,
+   101012,
+   101013,
+   101014,
+   101015,
+   101016,
+   101017,
+   101018,
+   101019,
+   101020,
+   101021,
+   101022,
+   101023
+  ]
+ },
+ "n_configurations": 99,
+ "missing_configurations": [],
+ "selection": "ungated",
+ "config_key": "238b4154b23e193e",
+ "config": "configs/coact/238b4154b23e193e.json",
+ "grid_index": 83,
+ "inner_f1": 0.7107913669064748,
+ "edge_flags": {
+  "alpha": false,
+  "int_win_sec": true,
+  "context_win_sec": true
+ }
+}

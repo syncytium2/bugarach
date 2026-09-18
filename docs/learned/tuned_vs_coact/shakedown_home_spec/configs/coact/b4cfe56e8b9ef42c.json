@@ -1,0 +1,13 @@
+{
+ "detector": "coact",
+ "params": {
+  "int_win_sec": 4.0,
+  "context_win_sec": 60.0,
+  "alpha": 1e-07,
+  "n_surrogates": 100,
+  "window_mode": "sliding"
+ },
+ "grid_index": 97,
+ "is_shipped": false,
+ "config_key": "b4cfe56e8b9ef42c"
+}

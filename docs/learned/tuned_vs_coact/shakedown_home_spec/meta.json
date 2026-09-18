@@ -1,0 +1,1002 @@
+{
+ "declaration": {
+  "spec": "docs/learned/generator_spec.json",
+  "spec_generator": {
+   "bg_burst_bin_sec": [
+    300.0,
+    60.0
+   ],
+   "bg_burst_shape": [
+    1.547,
+    1.388
+   ],
+   "bg_rate_hz": 0.009705882352941177,
+   "bg_rate_shape": 0.275,
+   "distractor_frac": 0.18,
+   "distractor_window": [
+    120.0,
+    1100.0
+   ],
+   "duration_sec": 3525.0,
+   "grid_sec": 0.1,
+   "hot_rate_hz": 0.06,
+   "hot_window": [
+    1200.0,
+    1500.0
+   ],
+   "jitter_sec": 0.310912635102958,
+   "min_sep_sec": 171.42857142857144,
+   "n_distractors": 6,
+   "n_per_level": [
+    5,
+    5,
+    5
+   ],
+   "n_roi": 32,
+   "participation": [
+    0.225,
+    0.1406,
+    0.0844
+   ],
+   "ramp_sec": 30.0
+  },
+  "quick": false,
+  "folds": 4,
+  "seeds_per_fold": 6,
+  "recording_seeds": [
+   1000,
+   1001,
+   1002,
+   1003,
+   1004,
+   1005,
+   1006,
+   1007,
+   1008,
+   1009,
+   1010,
+   1011,
+   1012,
+   1013,
+   1014,
+   1015,
+   1016,
+   1017,
+   1018,
+   1019,
+   1020,
+   1021,
+   1022,
+   1023
+  ],
+  "tune_seeds": [
+   0,
+   1,
+   2
+  ],
+  "refit_seeds": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "models": [
+   "chorus_norm",
+   "tube",
+   "chorus_gain_norm",
+   "line_length"
+  ],
+  "learned_axes": {
+   "chorus_norm": [
+    [
+     "lr",
+     [
+      0.003,
+      0.01,
+      0.03
+     ]
+    ],
+    [
+     "steps",
+     [
+      900,
+      1800,
+      3600
+     ]
+    ],
+    [
+     "roi_width",
+     [
+      4,
+      8
+     ]
+    ],
+    [
+     "roi_depth",
+     [
+      4,
+      6
+     ]
+    ],
+    [
+     "top_m",
+     [
+      2,
+      4,
+      8
+     ]
+    ]
+   ],
+   "tube": [
+    [
+     "lr",
+     [
+      0.003,
+      0.01,
+      0.03
+     ]
+    ],
+    [
+     "steps",
+     [
+      900,
+      1800,
+      3600
+     ]
+    ],
+    [
+     "n_scales",
+     [
+      3,
+      4,
+      6
+     ]
+    ],
+    [
+     "width",
+     [
+      8,
+      16
+     ]
+    ],
+    [
+     "max_ratio",
+     [
+      40,
+      80
+     ]
+    ]
+   ],
+   "chorus_gain_norm": [
+    [
+     "lr",
+     [
+      0.003,
+      0.01,
+      0.03
+     ]
+    ],
+    [
+     "steps",
+     [
+      900,
+      1800,
+      3600
+     ]
+    ],
+    [
+     "roi_width",
+     [
+      4,
+      8
+     ]
+    ],
+    [
+     "roi_depth",
+     [
+      4,
+      6
+     ]
+    ],
+    [
+     "top_m",
+     [
+      2,
+      4,
+      8
+     ]
+    ],
+    [
+     "vote_gain",
+     [
+      4,
+      8,
+      16
+     ]
+    ]
+   ],
+   "line_length": [
+    [
+     "lr",
+     [
+      0.003,
+      0.01,
+      0.03
+     ]
+    ],
+    [
+     "steps",
+     [
+      900,
+      1800,
+      3600
+     ]
+    ],
+    [
+     "n_scales",
+     [
+      3,
+      4,
+      6
+     ]
+    ],
+    [
+     "width",
+     [
+      8,
+      16
+     ]
+    ],
+    [
+     "vote_gain",
+     [
+      4,
+      8,
+      16
+     ]
+    ]
+   ]
+  },
+  "untuned": {
+   "chorus_norm": {
+    "lr": 0.01,
+    "steps": 900,
+    "roi_width": 4,
+    "roi_depth": 4,
+    "top_m": 4
+   },
+   "tube": {
+    "lr": 0.01,
+    "steps": 900,
+    "n_scales": 4,
+    "width": 8,
+    "max_ratio": 40
+   },
+   "chorus_gain_norm": {
+    "lr": 0.01,
+    "steps": 900,
+    "roi_width": 4,
+    "roi_depth": 4,
+    "top_m": 4,
+    "vote_gain": 8
+   },
+   "line_length": {
+    "lr": 0.01,
+    "steps": 900,
+    "n_scales": 4,
+    "width": 8,
+    "vote_gain": 8
+   }
+  },
+  "draw_seed": 20260916,
+  "configurations": {
+   "chorus_norm": [
+    "a039a6a7783707c4",
+    "d9b39874f47022fd",
+    "2736f584e7c224e3",
+    "3437e3ecaf106f31",
+    "dbe3cf9316593578",
+    "aace23d7efecb5d1",
+    "f59195da20cc9c4f",
+    "072328d4a512df98",
+    "75d4474550026cfa",
+    "3502dfe232c7efa0",
+    "9ad792aaee66a80b",
+    "c9219b271c44daec",
+    "5d2026d14aba85ff",
+    "e87e294ee3dd8fcd",
+    "9987efaa4e9be452",
+    "33622c24f193b8e6",
+    "4a12a8bb655477ed",
+    "a04f8e1099676c47",
+    "63caa6e98b585385",
+    "61067874bc1fcfad",
+    "e86433df0e7e27a1",
+    "ca3701d02b5471d5",
+    "0693349c4b2af2d5",
+    "9c65e49854ad0e75"
+   ],
+   "tube": [
+    "0c17cd02739d34b3",
+    "919a1fa11f096344",
+    "20ea8aaf4ab92dec",
+    "725a6956f5c375d5",
+    "92243d9dbde25ff8",
+    "20825d7ddc61aa18",
+    "e6e306b33bbcaddb",
+    "38b0e61ee171cd21",
+    "c6da339bf1f5a3fc",
+    "1e64c2378af93631",
+    "c6fe99a001b4ae65",
+    "11438b57d09f3bda",
+    "fd6416d6f329976a",
+    "7e73e454079d5dc3",
+    "8c5595cc0a6f0878",
+    "1fccce5d4fad04ea",
+    "3db6322a80c8f581",
+    "5c964d3a00c0e19f",
+    "119e590f9f7a9356",
+    "004a4d8954b15694",
+    "60fb765e70766557",
+    "ca1a4b3ee4e74848",
+    "5b53b48b1cae7fd5",
+    "4d4874a843a50cac"
+   ],
+   "chorus_gain_norm": [
+    "6a473c8a02c0d57b",
+    "a6d1c9b2cb2e7c68",
+    "1f941b2954f4fcc6",
+    "406d0ed1ce8f44db",
+    "8df600b3eabfbfb2",
+    "f1fb3c66248cb46b",
+    "c5fcce777d2b55b8",
+    "b3a8866946910263",
+    "da3827ae613e1059",
+    "ce159f3f477dd348",
+    "bf75c9c9f1643f10",
+    "dd8d6c30ebc2b16c",
+    "7cea38e290106236",
+    "67689e667470f458",
+    "2efdaf96b9ce5c9c",
+    "95a649ddb5175420",
+    "45081e801e0351fe",
+    "fad8a0617cb92c97",
+    "66bcb21d7353710d",
+    "7c4543c216abf2f4",
+    "a6bbc604b6d9d5a5",
+    "f2958afac53bc53c",
+    "9ebc26b72242fab4",
+    "eefc44155b918331"
+   ],
+   "line_length": [
+    "cb57c5fd863f9efe",
+    "605b1b80e0cbbe83",
+    "6184df88d896c66c",
+    "7a948ac0df111267",
+    "116c725b639f8dff",
+    "24e47cbcccb71aea",
+    "1435b85fc2bed432",
+    "bcce71e024b88953",
+    "ca02704be5d6e9cd",
+    "fb964eaf6c42170c",
+    "f2d97abbfd63a13c",
+    "8b11e8e3bc847b1a",
+    "47d4c4c824386208",
+    "d74d842c364de732",
+    "81d80b57b575b5f9",
+    "d52bedaae4b7ab0c",
+    "b0a12a64a80dd840",
+    "9939274d2895253c",
+    "3b89fca6642b384c",
+    "ca6a8f3bd550c944",
+    "22bacdcf958630ca",
+    "1ae3c82c4e1ff5bd",
+    "8066ea54bbc58a06",
+    "105a4c75c2cc050a"
+   ]
+  },
+  "detectors": [
+   "coact",
+   "loco"
+  ],
+  "hand_axes": {
+   "coact": [
+    [
+     "alpha",
+     [
+      0.1,
+      0.03,
+      0.01,
+      0.003,
+      0.001,
+      0.0003,
+      0.0001,
+      3e-05,
+      1e-05,
+      1e-06,
+      1e-07
+     ]
+    ],
+    [
+     "int_win_sec",
+     [
+      1.0,
+      2.0,
+      4.0
+     ]
+    ],
+    [
+     "context_win_sec",
+     [
+      30.0,
+      60.0,
+      120.0
+     ]
+    ]
+   ],
+   "loco": [
+    [
+     "threshold_pctile",
+     [
+      97.0,
+      98.0,
+      99.0,
+      99.5,
+      99.9,
+      99.99,
+      99.999,
+      99.9999
+     ]
+    ],
+    [
+     "bin_width_sec",
+     [
+      0.5,
+      1.0,
+      2.0
+     ]
+    ],
+    [
+     "context_win_sec",
+     [
+      60.0,
+      120.0,
+      240.0
+     ]
+    ]
+   ]
+  },
+  "hand_configurations": {
+   "coact": [
+    "55cf4561251a64da",
+    "d3a34a1ca05fdb18",
+    "b995e50da830e20b",
+    "0b4061eaf56c541c",
+    "042e4dd47a09e1b3",
+    "3f023db81cf8ca28",
+    "6c89d758b7e5baf6",
+    "313fcf08ac3577c8",
+    "094464e961c7055c",
+    "538cc3f6254299c4",
+    "c6b68d84cc1f8c30",
+    "dff09294df87b7b7",
+    "8477cc4a7f2bbe4e",
+    "3613cdb12f7e6a23",
+    "53559063068ee14d",
+    "7d61982fbec6136b",
+    "9c7dec017f7752a6",
+    "5cbba0d3784c9c4e",
+    "16d701f36473c701",
+    "9db4ca1b6386c2f0",
+    "efb65c8281b60bc1",
+    "2d9b6c6aa8ffcb6e",
+    "97ed16e056525724",
+    "346f6219b14ed745",
+    "5928d9bb846acbd4",
+    "b813a44aba90a359",
+    "45064ede0d6d4b3c",
+    "976c2397e80c5c3b",
+    "3458b59cd2e3cc6a",
+    "dfa66e53002636ea",
+    "3d6342bb3c8479de",
+    "d44f42435c8b4bb8",
+    "8da6dc2067b0f750",
+    "4322bcdd93346204",
+    "1ecf112b80fde600",
+    "fe1040c2e5c8f90e",
+    "64ea224edd7d0665",
+    "188bfe67352e1d4c",
+    "2e5820f606c1ab06",
+    "ea9967bb856667ef",
+    "f0dfe0f15f375a23",
+    "da73c84ad5c7d559",
+    "c8225a55d6fc64d3",
+    "595d6b392fdc7c80",
+    "6fc845d162601251",
+    "2e78c86bec608c83",
+    "2e4f00b117e9457d",
+    "0bd20c57c1915b80",
+    "2467851fb7db6082",
+    "432d9f5c6f964018",
+    "52d5d4920d0b959d",
+    "1b0825f181ba4228",
+    "5defa4319412b805",
+    "210ce9cf5bb62c69",
+    "11369d06bad1a2f1",
+    "bb787347e7d8dc90",
+    "d18a70dd0cb3b9a4",
+    "cd494bae02a18055",
+    "257bf92bbb3570f2",
+    "1f7975d02a28cf9a",
+    "e1204a2eb8d53503",
+    "6d3c502b136a484b",
+    "a6c14633bb941d87",
+    "a5b1a7547c04fc44",
+    "bfe365d43c6c6eb7",
+    "d4badb8fe0befcba",
+    "97ae5604fbdd9d15",
+    "43ea5062556e7de5",
+    "5ff5eac2cf882d02",
+    "d5dad2dc30f0837f",
+    "fb1b8bb145dff4e9",
+    "3a264b46ab6d5750",
+    "b37ea3d7249f0047",
+    "4f096f62697a7613",
+    "933672d38757289b",
+    "be409e8ec4499796",
+    "ba04a15f40abcb53",
+    "e4c2cc49a7efb28f",
+    "93e84c7709690cfd",
+    "17b317245f13ff47",
+    "677ac6b19d1c1849",
+    "08323cc1deeed14c",
+    "c5f3b31b7fdacc0a",
+    "238b4154b23e193e",
+    "46508b5dcca3e6d2",
+    "99b56c1b15b4e06a",
+    "9c2808c41332a475",
+    "f0082a2e8dffe64e",
+    "a5a9e2eaeff3e27c",
+    "cf42f38c3413ee34",
+    "443d17e89d464d44",
+    "06a83c15a62cc0b7",
+    "18b05ffc07130782",
+    "8c55cc5c2300679f",
+    "58e6e09b1676d2b2",
+    "1b31a2fb1bc30261",
+    "57771f697bc07875",
+    "b4cfe56e8b9ef42c",
+    "ad87a37946d82bf5"
+   ],
+   "loco": [
+    "77d782bdf0fae993",
+    "71c01a1ccbbd318f",
+    "4687e0a7ba37310d",
+    "47c9537c90f1ba72",
+    "5fc388c6a5185162",
+    "f2e4ae99859453c6",
+    "f9639e1c47947de4",
+    "d07bcbddb93f1193",
+    "04ce8dd9eb1ebdb7",
+    "4f81888fa9177b02",
+    "a8739683c39a271b",
+    "77b53e92440c671f",
+    "ea368c00bf3f1f26",
+    "c07bc5cfab141a66",
+    "0bcc4052d932f311",
+    "a7fba3611183afc7",
+    "9c3f699f6aa64fa3",
+    "1a99f0c3411fb744",
+    "e1b576da96e5044f",
+    "8bf35b09f25bdf24",
+    "b8b4964e0539dbe6",
+    "a8e421588cb9026c",
+    "dd57727f663f6a74",
+    "52b27ea2228ecd84",
+    "da19b5039d39a171",
+    "3a2248960f717fbc",
+    "06da57a3431c045a",
+    "334cce6efb6a1224",
+    "20758405eb3d62b7",
+    "6c256299fe5ca08d",
+    "c33718ecf048c8e2",
+    "2a086fc7f4936daf",
+    "5760102aeeac8cae",
+    "68047cdf45405afb",
+    "7caccde5412bc7cf",
+    "93bba330892a4986",
+    "0b351a8c130a0a56",
+    "098902b9b7d9cc59",
+    "83618ce7f874ec7d",
+    "e15d71aa823916b2",
+    "90c4db6d23f53462",
+    "0b70ae9feb3dd332",
+    "7690b79dde5a9375",
+    "7c403bfe799decc1",
+    "e939ea25d79c5818",
+    "290b7f802464d3c7",
+    "ec3b9645b9a54039",
+    "666f276d93ed571b",
+    "19a96c4ec2fc15ae",
+    "7deba55c41f48305",
+    "3aa39a22ef3fc822",
+    "fad5e152b5469a57",
+    "ac74f7b9fea9c9bd",
+    "d12836c0401a525c",
+    "7a7485386fe9b0ba",
+    "27ba52d68853486b",
+    "b8df909f0dc06c8b",
+    "e76535feb74b3872",
+    "b02229b5ad2e0806",
+    "4b31f64de61d58b8",
+    "b38d773000c01976",
+    "1bbbd0dd4a706b49",
+    "7a3d2a1501bfe182",
+    "ead88f1b38c3237f",
+    "c7360f2b12097fe2",
+    "56928a21f9e4908c",
+    "7b7a6cce826e9fae",
+    "8f7e134ed4324a2a",
+    "1e93c1c6c741df96",
+    "2908deec837f9dba",
+    "13d8985ddb0ec96f",
+    "dbc29ca1267b1663"
+   ]
+  },
+  "reference": {
+   "config_key": "257bf92bbb3570f2",
+   "note": "sliding CoactDetect at OPERATING_POINTS as of this commit, the binned-tuned values (decision 7); not a calibrated sliding point"
+  },
+  "budget_margin": 1.6,
+  "gate_twin_factor": 0.54,
+  "twin_factors": [
+   1.0,
+   0.54,
+   0.25
+  ],
+  "busy_window_sec": 300.0,
+  "threshold_grid": [
+   0.0001,
+   0.00017593850992600728,
+   0.00030954359274983735,
+   0.0005446063846554921,
+   0.0009581723581247715,
+   0.0016857941694076093,
+   0.0029659611420752587,
+   0.0052182678383515925,
+   0.009180942678743854,
+   0.016152813746142795,
+   0.02841901981608691,
+   0.05,
+   0.1,
+   0.15000000000000002,
+   0.2,
+   0.25,
+   0.3,
+   0.35000000000000003,
+   0.4,
+   0.45,
+   0.5,
+   0.55,
+   0.6000000000000001,
+   0.6500000000000001,
+   0.7000000000000001,
+   0.7500000000000001,
+   0.8,
+   0.8500000000000001,
+   0.9000000000000001,
+   0.95,
+   0.9715809801839131,
+   0.9838471862538573,
+   0.9908190573212562,
+   0.9947817321616484,
+   0.9970340388579247,
+   0.9983142058305924,
+   0.9990418276418752,
+   0.9994553936153445,
+   0.9996904564072502,
+   0.999824061490074,
+   0.9999
+  ],
+  "tie_rules": {
+   "learned_ungated": "highest pooled F1; then fewer parameters; then fewer training steps; then earlier in the draw",
+   "learned_gated": "highest pooled F1 among admissible; then fewer parameters; then fewer training steps; then the higher threshold; then earlier in the draw",
+   "hand": "highest pooled F1 (among admissible, when gated); then earlier in grid order",
+   "nan_f1": "a NaN pooled F1 counts as 0, in selection and in comparisons"
+  },
+  "registered": [
+   "chorus",
+   "chorus_gain",
+   "chorus_gain_norm",
+   "chorus_line",
+   "chorus_norm",
+   "gauge",
+   "line",
+   "line_length",
+   "tiny",
+   "trace",
+   "tube",
+   "tube_guard",
+   "tube_no_bypass",
+   "tube_ratio",
+   "tube_ratio_guard"
+  ],
+  "registered_but_not_run": [
+   "chorus",
+   "chorus_gain",
+   "chorus_line",
+   "gauge",
+   "line",
+   "tiny",
+   "trace",
+   "tube_guard",
+   "tube_no_bypass",
+   "tube_ratio",
+   "tube_ratio_guard"
+  ],
+  "device": {
+   "learned": "cuda",
+   "hand": "cpu",
+   "note": "GPU and CPU arithmetic differ, so every learned fit in one run comes from one device; on CUDA, train.deterministic_cuda makes a rerun fit identical"
+  }
+ },
+ "started": {
+  "at": "2026-09-17T12:42:17-0400",
+  "git": {
+   "commit": "a2496c9b5c02ad0670fc543a12a549e4921a185b",
+   "dirty": false
+  },
+  "machine": {
+   "hostname": "WSMIP064",
+   "os": "Windows-11-10.0.22631-SP0",
+   "kernel": "11",
+   "wsl": false,
+   "cpus_logical": 48,
+   "cpus_physical": null,
+   "ram_gb": null,
+   "python": "3.14.7",
+   "torch": "2.14.0+cu126",
+   "numpy": "2.5.3",
+   "gpu": {
+    "name": "NVIDIA RTX A4000",
+    "driver": "582.78",
+    "cuda": "12.6",
+    "memory_gb": 16.0
+   }
+  },
+  "jobs": 12,
+  "argv": [
+   "tools\\tune_learned_vs_coact.py",
+   "--device",
+   "cuda",
+   "--gpu-jobs",
+   "2",
+   "--jobs",
+   "12",
+   "--out",
+   "%USERPROFILE%\\runs\\tune-gpu-shakedown"
+  ]
+ },
+ "estimate": {
+  "training_cpu_hours_floor": 200.71208333333334,
+  "jobs": 12,
+  "training_wall_hours_floor": 16.726006944444446,
+  "lone_fit_sec": {
+   "tube": 11.7,
+   "chorus_norm": 202.8,
+   "chorus_gain_norm": 204.0,
+   "line_length": 204.0
+  },
+  "basis": "Gate 1 lone untuned fit times on this machine, scaled by each drawn configuration's steps; ignores the larger configurations' cost per step, concurrency, scoring and the hand-written grids. A floor, and not a gate (decision 8)."
+ },
+ "gate1_reproduction": [
+  "tube at 7fc052d differs from the Mac per fold by -0.0034, -0.0212, -0.0053 and +0.0069 F1, and is deterministic on this machine",
+  "the committed training code is identical between 239f176 and 7fc052d",
+  "the Mac recorded neither its torch version nor its uncommitted changes, so CPU float differences cannot be separated from those changes",
+  "step 3, training seed 0, this machine minus the Mac's seed 0 per fold: chorus_norm -0.0124, -0.0065, +0.0231, -0.0014; chorus_gain_norm -0.0553, -0.0571, -0.0421, +0.0101 (at seed 1 here, every fold within 0.03 of a Mac seed); line_length -0.0023, +0.0000, +0.0213, -0.0061",
+  "record: docs/learned/tuned_vs_coact/gate1/README.md"
+ ],
+ "sliding_branch": "sliding-loco-coact 005ae98",
+ "checkpoint_format_branch": {
+  "branch": "learn-checkpoint-records-what-it-built",
+  "commit": "36dc5ab",
+  "pr": 602,
+  "note": "merged before #602 reached main, at the Mac unsupervised session's request; a checkpoint written here is that commit's format"
+ },
+ "storage_rule": "Tony, 2026-09-16, via the Mac unsupervised session: tuned parameters stored persistently, rationally and separably",
+ "home_spec_event_spacing": {
+  "min_sep_sec": 171.42857142857144,
+  "note": "planted events are at least this far apart; a chosen 240 s LoCo context spans more than one spacing and is flagged in the readout"
+ },
+ "budgets": {
+  "0": {
+   "reference_config_key": "257bf92bbb3570f2",
+   "recording_seeds": [
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019,
+    1020,
+    1021,
+    1022,
+    1023
+   ],
+   "twin_seeds": [
+    101006,
+    101007,
+    101008,
+    101009,
+    101010,
+    101011,
+    101012,
+    101013,
+    101014,
+    101015,
+    101016,
+    101017,
+    101018,
+    101019,
+    101020,
+    101021,
+    101022,
+    101023
+   ],
+   "reference_busy_per_hour": 10.666666666666666,
+   "reference_quiet_per_hour": 6.01418439716312,
+   "busy_per_hour": 17.066666666666666,
+   "quiet_per_hour": 9.622695035460993
+  },
+  "1": {
+   "reference_config_key": "257bf92bbb3570f2",
+   "recording_seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019,
+    1020,
+    1021,
+    1022,
+    1023
+   ],
+   "twin_seeds": [
+    101000,
+    101001,
+    101002,
+    101003,
+    101004,
+    101005,
+    101012,
+    101013,
+    101014,
+    101015,
+    101016,
+    101017,
+    101018,
+    101019,
+    101020,
+    101021,
+    101022,
+    101023
+   ],
+   "reference_busy_per_hour": 12.0,
+   "reference_quiet_per_hour": 5.219858156028369,
+   "busy_per_hour": 19.200000000000003,
+   "quiet_per_hour": 8.351773049645391
+  },
+  "2": {
+   "reference_config_key": "257bf92bbb3570f2",
+   "recording_seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1018,
+    1019,
+    1020,
+    1021,
+    1022,
+    1023
+   ],
+   "twin_seeds": [
+    101000,
+    101001,
+    101002,
+    101003,
+    101004,
+    101005,
+    101006,
+    101007,
+    101008,
+    101009,
+    101010,
+    101011,
+    101018,
+    101019,
+    101020,
+    101021,
+    101022,
+    101023
+   ],
+   "reference_busy_per_hour": 11.333333333333334,
+   "reference_quiet_per_hour": 5.560283687943262,
+   "busy_per_hour": 18.133333333333336,
+   "quiet_per_hour": 8.89645390070922
+  },
+  "3": {
+   "reference_config_key": "257bf92bbb3570f2",
+   "recording_seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017
+   ],
+   "twin_seeds": [
+    101000,
+    101001,
+    101002,
+    101003,
+    101004,
+    101005,
+    101006,
+    101007,
+    101008,
+    101009,
+    101010,
+    101011,
+    101012,
+    101013,
+    101014,
+    101015,
+    101016,
+    101017
+   ],
+   "reference_busy_per_hour": 10.0,
+   "reference_quiet_per_hour": 5.843971631205674,
+   "busy_per_hour": 16.0,
+   "quiet_per_hour": 9.350354609929079
+  }
+ }
+}

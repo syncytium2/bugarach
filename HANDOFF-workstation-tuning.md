@@ -885,8 +885,10 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
 - **THE SHAKEDOWN FINISHED, 2026-09-18 at 02:35: 2,089 jobs, 0 errors, 13 h 53 min, 27.3 GPU-hours.**
   It ran unattended from Task Scheduler with no session attached, through the night, and the launch
   path is therefore proven for the real run: detached start, resumable files, `progress.json`, a GPU
-  pool that held 9.1 GB flat for fourteen hours. Outputs in `%USERPROFILE%\runs\tune-gpu-shakedown\`,
-  on local disk, not in the repo and not in the darkroom.
+  pool that held 9.1 GB flat for fourteen hours. **Its summary is in the repo**, so the numbers below
+  trace to files: `docs/learned/tuned_vs_coact/shakedown_home_spec/` (declaration, results,
+  selections, configs; under 1 MB). The per-fit files (`fits/`, `scores/`, `chosen/`, about 0.4 GB)
+  stayed on WSMIP064's disk in `%USERPROFILE%\runs\tune-gpu-shakedown\`.
   **Its numbers are a rehearsal, not a result** — the retired home spec, the coded side on three
   knobs, the old budget, and no context rule (its CoactDetect choices include 240 s). No readout is
   planned and nothing quotes them. What they suggest, for whoever designs the real run:
@@ -905,7 +907,7 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   2026-09-18 08:25 neither the context rule nor the values are on `main`.
 - **To start the real run when they land** (from `bugarach-worktrees/tune-bench-comparison`, its own
   `.venv`): merge `main`, check `bench.context_fits_the_null` exists and CoactDetect's shipped point
-  is sliding, run `--quick --device cuda` once, then launch through Task Scheduler as
-  `%USERPROFILE%\runs\tune-gpu-shakedown-launch.cmd` does — a new `--out`, `--device cuda`,
-  `--gpu-jobs 2 --jobs 12`, output under `%USERPROFILE%\runs\`. The shakedown's task is deleted; its
-  launcher script is kept as the template.
+  is sliding, run `--quick --device cuda` once, then launch through Task Scheduler with
+  **`tools/launch_tuning_run_windows.cmd <name> --device cuda --gpu-jobs 2 --jobs 12`** — its header
+  carries the exact `schtasks` lines. It is the shakedown's proven launcher, made reusable and moved
+  into the repo; the shakedown's own task is deleted.
