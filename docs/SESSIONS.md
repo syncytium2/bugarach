@@ -11,21 +11,40 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ---
 
 ### Mac/unsup-pins-excluded-run — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-slow-comodulation-pins-excluded/`
-- **Status:** ACTIVE (bugarach-quiet-raven). The overnight re-measurement of slow shared modulation
-  on the producer's new export, `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, which removes
-  the moco floor-pinned windows that stopped this work. Tony: *"the new data are available now. set
-  up the run for overnight."*
+- **Status:** ACTIVE (bugarach-quiet-raven), **written and idle**. The re-measurement of slow shared
+  modulation on the producer's new export, `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`,
+  which removes the moco floor-pinned windows that stopped this work. Tony: *"the new data are
+  available now. set up the run for overnight."*
+- **Holds nothing running.** The run finished in 686 s at 12 workers, 32 draws, 4,000 resamples.
 - **Writes:** one new folder only — `results.json`, `summary.json`, the six figures and
-  `one_recording.png`. The 2026-09-17 slow-comodulation folder is read-only from here and keeps the
-  superseded run; nothing existing in the darkroom is touched.
+  `one_recording.png`, all present. The 2026-09-17 slow-comodulation folder is read-only from here
+  and keeps the superseded run; nothing existing in the darkroom is touched.
 - **Touches:** `current_export.toml` (adds the `steps_and_pins_excluded` role — it does **not**
   move `default` or `steps_excluded`), `tools/measure_slow_comodulation.py`,
   `tools/make_slow_comodulation_figure.py`, and at landing the page, its summary and a goal pointer.
 - ⚠ **Derived from real recordings**, so the run stays in the darkroom (FOUNDATIONS §5); the repo
   gets the pooled `summary.json`, which carries no recording ids.
-- ⚠ **Machine share:** `Mac unsupervised` is queued behind this one and starts when it finishes.
-  This run takes 12 workers; expect roughly an hour.
-- **Released when:** the run is drawn and the page updated, or the run is abandoned.
+- ⚠ **The page has not been rewritten on these numbers**, and the repo's figures are deliberately
+  still the superseded run's so page and figures agree. Handoff at the repo root:
+  `HANDOFF-slow-comodulation-on-the-de-pinned-export.md`.
+- **Released when:** the page is rewritten on this run and lands, or the run is abandoned.
+
+### Mac/read-the-de-pinned-export — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-rigid-shift-de-pinned/`
+- **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony, 2026-09-17 evening:
+  *"the new data are available now. set up for overnight."* The whole rigid-shift chain reran on the
+  producer's de-pinned export (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`), which removes
+  the 83 events inside moco pinned windows, so this run's outputs supersede the ones claimed on
+  2026-09-17 under `bugarach/2026-09-17-rigid-shift-report/`.
+- **Writes:** one new folder only — `real_compare/events.json` (per-recording event times keyed by
+  recording id) and `real_compare/checkpoints/` (120 models trained on real recordings), which
+  FOUNDATIONS §5 keeps machine-local; the report's six figures; and a reader's copy of the report.
+  The repo keeps `real_compare/summary.json`, which is what the page quotes.
+- ⚠ **The 2026-09-17 folder stays as it is.** It holds the superseded run, and the page that cites it
+  carries its own stop notice until this run's numbers replace it. This claim does not write there.
+- **Touches:** `docs/learned/tube_self_supervised/` (branch `read-the-de-pinned-export`),
+  `docs/SESSIONS.md`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the folder holds the files and the branch that regenerates the page has landed.
 
 ### 065/opt-every-knob — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-full-search/`
 - **Status:** ACTIVE (WSMIP065), claimed before writing. Goal 1 step 3: the search over every
