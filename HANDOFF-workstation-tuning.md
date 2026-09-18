@@ -935,3 +935,12 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   early Saturday 2026-09-19. **If it stopped:** `schtasks /run /tn bugarach-tune-fair-comparison`
   resumes it (finished jobs are skipped). **When it finishes:** delete the task, then Gate 3. Do not
   change `tools/` or `src/` here until it ends.
+- **A second, independent status mirror since 16:48** (WSMIP065's request for Tony, armory finding
+  21; `docs/windows_workstation_setup.md` §8). Task `bugarach-mirror-fair-comparison` runs
+  `tools/mirror_run_status.py` from the **primary checkout** every 5 minutes and writes
+  `progress.json`, `mirror.json` and `STATUS.txt` to `<darkroom>/bugarach/2026-09-18-fair-comparison-run/external/`
+  (claim extended in #654). It is a separate process, so if the run's driver dies, `STATUS.txt` says
+  `STALE` in one line. First tick: source age 21.4 s, stamped WSMIP064. **When the run ends, delete
+  both tasks** (`schtasks /delete /tn bugarach-tune-fair-comparison /f`;
+  `Unregister-ScheduledTask -TaskName bugarach-mirror-fair-comparison -Confirm:$false`) and release
+  the claim.
