@@ -10,6 +10,53 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/interface2-mirror — DONE 2026-09-18, RELEASED: interface2 is on GitHub and GitHub is its only remote
+- **Status:** **DONE — released, nothing held.** Implemented `HANDOFF-interface2-mirror.md` (PR
+  #636, now `docs/handoffs/2026-09-18-interface2-mirror.md`): a `push --mirror` of interface2 from
+  GitLab into an empty **private** `syncytium2/interface2`, verified by branch, tag and commit counts
+  and by the 35 stranded tools armory lists. Tony, 2026-09-18: whole mirror now, curation later —
+  this supersedes the selective push in interface2's own runbook.
+- **Cut over the same day.** With no machine working in the GitLab repository (Tony: *"let's kill
+  it"*), parity was re-checked ref for ref (203 refs) and WSMIP065's checkout re-pointed to GitHub.
+  No refresh push is owed. What remains — the Mac, archiving GitLab, the branch triage — is in
+  `docs/todo/2026-09-18-finish-leaving-gitlab.md`.
+- **Private, and stays private.** Making it public is a separate ruling (the handoff's gate).
+- **Mirrored and verified 2026-09-18** (first push, before the refresh):
+  - **3,208 commits; 197 refs** — 173 branches, 16 tags, 8 `refs/merge-requests/*` from GitLab's
+    4 merge requests. `ls-remote` of GitHub against the mirror clone: **identical, ref for ref, name
+    and SHA.** 220 MB, no LFS objects.
+  - **35 of 35 stranded tools** (armory `MANIFEST.json`, `repo == interface2`) present in the mirror
+    as the exact blob armory has committed. Six of their `source_ref` branches no longer exist on
+    GitLab — interface2's triage ledgers record each as merged or contained in a kept branch — so
+    the check is by content, not by branch and path.
+  - **One commit that existed only on this machine** — `55deeaf0`, in a stale July checkout — was
+    pushed to GitLab as tag `rescue/foundations-reference-audit` before the clone, so the mirror
+    carries it.
+- **Still owed, per the handoff:** GitLab's merge-request discussion, any wiki, release notes and
+  CI meaning are not in git and not in the mirror (there is no `.gitlab-ci.yml`); check the web UI
+  before access ends. ~~Which remote is authoritative is Tony's call.~~ **Decided — GitHub.** Tony,
+  2026-09-18: *"i want to remove all dependencies on gitlab."*
+- **Also done on this box:** the 16 worktrees of the MATLAB interface2 checkout were removed and the
+  stale second checkout deleted. Restore ledger on interface2's `main`,
+  `docs/worktree_prune_ledger_2026-09-18_WSMIP065.md`.
+- **Every other GitLab repository on this box is off GitLab** (2026-09-18, same session):
+  - **New private repos, each mirrored and verified ref for ref, checkout re-pointed:**
+    `coding-project` (1,617 commits, 125 branches, 3 tags; its never-pushed branch
+    `MLspikePlotting` pushed after), `interfaceDFoF0`, `ICCetcStatistics`, `ggplot-tuner`.
+    **ggplot-tuner was mirrored from the local checkout** — GitLab answers "project not found".
+  - **R** — GitLab answers "project not found" for it too. Its history continues in `fireflies`,
+    which already held all but 21 commits; those 21 (branches `infoTables` ×2, `AMANDAv2`, one
+    checkout's `main`, and two 2026-07-19 WIP stashes) are now **tags `archive/R-*` in fireflies**,
+    verified from a fresh clone of GitHub. The dead GitLab remote was removed from all three R
+    checkouts. **The checkouts were NOT deleted:** `Documents\lme2\R` holds gitignored analysis CSVs
+    and notebooks, and `Documents\ICCandBeyond\R` is the code folder of an R project whose PDFs and
+    `.RData` are not in git.
+  - **Left on GitLab: interface2 only**, waiting on the Mac session. Then: refresh push, re-point
+    this box and the Mac, and archive the GitLab projects (Tony, web UI). The Mac's own checkouts
+    and any GitLab project never cloned here were not inventoried from this box.
+
+---
+
 ### Mac/unsup-pins-excluded-run — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-slow-comodulation-pins-excluded/`
 - **Status:** ACTIVE (bugarach-quiet-raven), **written and idle**. The re-measurement of slow shared
   modulation on the producer's new export, `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`,
