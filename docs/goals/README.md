@@ -64,11 +64,26 @@ not fair, and that was the objection to the untuned bake-off in the first place.
    the parameters whose status is still an open reading, are in the goal 1 handoff
    [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md).
 
-**Division of labour.** WSMIP065 owns goal 1. It lands sliding LoCo and CoactDetect, re-derives the
-bench from the folder, and supplies the every-knob reference grids. WSMIP064 owns goals 2 and 3: the
-nested tuning (a GPU shakedown on the home spec since 12:42 on 2026-09-17; the real run waits on goal 1) and the fair comparison. WSMIP065 runs no net fits. The machines
+**Division of labour.** WSMIP065 owns goal 1: it lands sliding LoCo and CoactDetect, re-derives the
+bench from the folder, and supplies the every-knob reference grids. WSMIP064 owns goals 2 and 3. The machines
 share nothing but `origin`, so **everything one needs from the other goes through `main`**: this
 section, the goal pages, and the handoff files at the root.
+
+**Both GPUs are running goal 2's comparison this weekend, and that is deliberate** (Tony, 2026-09-18).
+This paragraph used to say WSMIP064's tuning was a shakedown waiting on goal 1, and that **WSMIP065
+runs no net fits**. Both were true when they were written and neither is now. The shakedown finished at
+02:35 on 2026-09-18 and the real comparison launched the same afternoon at 16:14 on WSMIP064. WSMIP065
+then launched **the same comparison on a disjoint draw of recordings** — `--replicate 1`, seeds
+2000–2047 against WSMIP064's 1000–1047, sharing no recording — because once both sides are tuned the
+shakedown's margin was +0.011 F1 and **variance binds**. The 24 configurations, the training seeds and
+the grids are held fixed, so a difference between the two runs is a difference between draws of data.
+`--replicate 0` declares byte for byte what WSMIP064 is already running, so that run stays resumable.
+
+Both runs write a `progress.json` mirrored about once a minute into the darkroom —
+`bugarach/2026-09-18-fair-comparison-run/` and `bugarach/2026-09-18-replicate-run-status/`. **An `at`
+more than a few minutes old means the run has stopped**, and `STATUS.txt` beside it says the age in
+words, so the answer is readable from any machine rather than from the one the run is on
+(`tools/mirror_run_status.py`).
 
 **Not among the three.** [`unsupervised-learning.md`](unsupervised-learning.md) and
 [`detector-review-document.md`](detector-review-document.md) are not stopped by this section, and
