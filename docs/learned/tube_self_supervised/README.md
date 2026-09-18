@@ -142,6 +142,29 @@ So the page asks, in order (terms are defined in the next section):
   scoring shift events against the unshifted recording (Figure 6, real recordings).
 - **Four decisions follow**, in *What waits on Tony*.
 
+> ## ⛔ Every real-recording result on this page ran over a known contamination
+>
+> The export folder's own note declares that non-rigid motion correction **pinned 12 ROIs to the
+> frame floor** in four recordings, *"not flagged in any column"*. All four are in the 84 recordings
+> scored here, in the folds the real-trained models were fitted on, and **all four are DI — the group
+> whose co-activity reads highest in the breakdown below**. A frame-floor-pinned ROI is a cross-cell
+> artifact, and this page's objective is trained to find exactly the cross-cell structure a
+> rate-matched null cannot explain, so it is rewarded for finding it.
+>
+> **Tony ruled on 2026-09-17 that a known contamination stops the work and does not become a
+> caveat**, and that the question goes to the producer. This page did the thing the ruling forbids:
+> it ran, and then reported the contamination as a footnote about its own result. That is recorded
+> here rather than repaired, because the run is spent — **do not lean on any real-recording number on
+> this page until the producer has answered**
+> ([the question](../../todo/2026-09-10-four-recordings-carry-an-unflagged-contaminant.md)).
+> ⚠ **That answer will not clear the group comparison**, which has a second and independent problem:
+> group is perfectly confounded with imaging day in this export (48 dates, no date holding more than
+> one group), so a clean answer about the pinned ROIs removes the artifact and leaves the confound
+> untouched. The
+> simulator results — the bake-off, the label-free training scores, the twin check — do not read the
+> export folder and are unaffected. `dataset.current()` now refuses this folder, so nothing reruns by
+> accident.
+>
 > **Exploratory.** It replaces the version of 2026-09-16, whose third blind review found the trained
 > models' controls unable to tell coordination from slow shared modulation; the controls here were
 > added in answer ([record](../../reviews/tube-self-supervised-2026-09-17-round3.md)). Its fourth
@@ -552,11 +575,18 @@ by the export folder's group labels:
 | `slow_modulation` | 0.685 | 0.526 | 0.290 | 0.466 |
 
 Every detector calls less co-activity in ORX recordings than in DI ones, by 0.3–0.5 for the detectors
-that find co-activity at all. Whether that is the preparation, the field, or the detectors is not
-addressed here; the ordering is the same for the hand-written references and for a detector with no
-parameters, which is the least interesting of the explanations to rule out. ⚠ Events are pooled over
-runs on the same recordings and the groups are unbalanced (84 recordings from 44 mice), and four of the
-84 recordings carry ROIs the export folder flags as stuck at the frame floor.
+that find co-activity at all. The ordering is the same for the hand-written references and for a
+detector with no parameters, which rules out the least interesting explanation — that some model
+learned it — and nothing further. ⛔ **Two separate reasons say this ordering is not biology here,
+and answering one leaves the other standing.** The four contaminated recordings are all DI, the top
+of the ordering. And **group is perfectly confounded with imaging day in this export**: its 84
+recordings span 48 imaging dates and **not one date holds more than one group**, so every group
+difference is also a difference between days — rig state, slice batch, anything that varies between
+sessions. The producer's answer about the pinned ROIs can clear the first and cannot touch the
+second. ⚠ Events are pooled over
+runs on the same recordings and the groups are unbalanced (84 recordings from 44 mice). Four of those
+84 carry the contamination described at the top of this page, and all four are in the DI group, which
+is the group reading highest here.
 ## What this does not settle
 
 **The surrogate.**
@@ -579,9 +609,15 @@ runs on the same recordings and the groups are unbalanced (84 recordings from 44
   onsets dropped at the edges, but that check is not in the suite.
 - **The aggregate leak test cannot exclude co-activity**, because its strongest channel is the share
   of the field lit (Figure 3, the leak tests).
-- **Two known features of the export folder were not examined here**: 12 ROIs stuck at the frame
-  floor after non-rigid motion correction in four of the 84 recordings (all four in the DI group), and
-  events removed within ±2 s of field steps in three of them (71 events), which leaves 4 s gaps shared
+- ⛔ **The run should not have happened over the contamination at all**, and the stop notice at the
+  head of this page is the statement of record: 12 ROIs pinned to the frame floor by non-rigid motion
+  correction in four of the 84 recordings, all four DI, flagged in no column and declared in the
+  producer's own note. It was filed on 2026-09-10, cited by reviews on 2026-09-14 and twice on
+  2026-09-17, and every one of those citations was a caveat rather than a question to the producer.
+  Nobody measured what it does to these results, and nobody should: the export is the input, filtering
+  in the consumer is forbidden, and the answer is the producer's.
+- **A second export feature was not examined here**: events removed within ±2 s of field steps in
+  three of the 84 recordings (71 events), which leaves 4 s gaps shared
   by every ROI. Every surrogate here shifts whole trains, so those shared gaps move to each ROI's own
   phase in the surrogate and a cross-ROI objective can be paid for finding them — which is exactly
   what this page's objective rewards. The remedy is a circular shift confined to the stretches the

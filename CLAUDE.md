@@ -175,6 +175,29 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   producer's own export had it right. Contract revision 6 records it.
   If a folder looks like it contains something it should not, that is a
   **conversation with the producer**, not a filter in the consumer.
+- **A known contamination stops the work. It does not become a caveat.** (Tony,
+  2026-09-17: *"there needs to be a full stop work if there's a known 'contamination'.
+  there's no point in running all of this when you know there's a problem."*) When the
+  export's own note declares something the data do not mark, the analysis does not run
+  and the finding does not ship with a footnote — **the question goes to the producer
+  that day**, and work resumes when the answer does.
+  What this repository did instead is the reason it is mechanized. The producer's note
+  on `steps_excluded` said non-rigid motion correction pinned 12 ROIs to the frame floor
+  in four recordings and was "not flagged in any column". It was filed as a todo on
+  2026-09-10, verified by a review on 2026-09-14, and flagged again by two reviews on
+  2026-09-17 — while analyses kept running over those recordings, including a label-free
+  training set and a whole explainer page that then reported the contamination as a
+  caveat about its own result. Four rediscoveries, no question asked, for a week. **A
+  note everybody cites and nobody acts on is not a safeguard**, and "we disclosed it" is
+  not the same as "we asked".
+  **This one fires by itself**: `dataset.current()` refuses through
+  `dataset.refuse_if_contaminated()`, so every analysis resolving its input through the
+  pointer inherits the stop and none has to remember it. Proceeding needs
+  `BUGARACH_ACK_CONTAMINATION='<why this analysis is unaffected>'`, which prints what
+  was acknowledged. The stop clears when the producer's answer removes the note from
+  `current_export.toml` — withdrawn recordings, or a column a consumer can read — not
+  when a session decides the effect is probably small. Tests:
+  `tests/test_dataset.py`, the contamination stop.
 - **Machine-local inventory** (everything else lives in the repo): the
   `.venv` (rebuild: `python3 -m venv .venv && pip install -e ".[dev]"`),
   the export folders under `<data>/exports/bugarach/`, MATLAB + interface2
