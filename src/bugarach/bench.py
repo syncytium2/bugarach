@@ -405,6 +405,11 @@ def settings_are_valid(det: str, p: dict) -> bool:
     threshold. It lives here rather than in the search so that a caller walking
     :data:`FULL_GRIDS` rejects the same combinations this project's own search does.
     """
+    # Sliding supports threshold detection only, in both detectors that have the mode: a
+    # sliding window has no bins to find a peak across (`loco.py`, `coact.py`). Encoded so a
+    # search in sliding mode does not spend evaluations on a pair the detector will refuse.
+    if p.get("window_mode") == "sliding" and p.get("detection_mode", "threshold") != "threshold":
+        return False
     if det == "loco":
         # The detector's own refusal, encoded here so a search does not spend an evaluation
         # discovering it: a guard is supported only with the one-sided 'maxlt' null, because
@@ -1523,6 +1528,35 @@ the third time that day's reason** — a budget a test holds cannot gate a calib
 Switching LoCo and CoactDetect to a sliding window broke it at their binned settings
 (precision 0.53 busy against 0.67 quiet for LoCo), and ``tools/search_all_settings.py``
 now refuses such a setting instead of proposing it.
+"""
+
+MAX_CROWDED_DROP = 0.02
+"""How much mean F1 a candidate setting may lose on the CROWDED recordings, against the
+setting it is proposed in place of.
+
+**The fourth budget, and the first one a search could not have been stopped without.** On
+2026-09-17 the every-knob search found large held-out gains for four of the six detectors —
+binned SCE +0.305 mean F1, rate+context +0.134, CoactDetect +0.122, LoCo +0.113 — and every
+one of them got there by running its **merge gap out to about a minute**. On a bench that
+plants events at least 120 s apart, merging within 60 s costs nothing and tidies away
+duplicate calls; on `make_tail_recording`, where planted events sit as little as 6 s apart,
+it fuses real events. The same four settings lose **0.251 to 0.318** mean F1 there.
+
+**The other three budgets cannot see it, and it is worth understanding why.** Merging makes
+a detector call LESS, so a merge-happy setting looks *cleaner* on every false-alarm measure:
+LoCo's empty-recording rate went 1.4 to 1.9 calls per hour against a limit of 3, well inside.
+A budget counting false alarms cannot catch a setting whose flaw is that it answers a
+different question — "was there coordination in the last minute" instead of "was there
+coordination here".
+
+**So the crowded recordings stop being only a report.** `bench.py` still forbids CALIBRATING
+on them — nothing is chosen for scoring well there — but a candidate that scores worse there
+than what it would replace is refused, in the search, before it can be proposed. Report and
+veto are different powers, and this is the second.
+
+⚠ **0.02 is a judgement, not a measurement.** It is meant to allow noise and refuse the
+artifact, which on the numbers above is a gap of more than ten to one. Tony has not signed
+it, and a detector genuinely better in both regimes will pass it easily.
 """
 
 MAX_FALSE_POSITIVES_PER_HOUR = {
