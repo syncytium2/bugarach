@@ -75,8 +75,10 @@ shakedown, not a result** (Tony: *"launch it"*, after choosing between waiting f
 a stale test). Nothing had run between the loss and then. It runs on the retired home spec as declared
 on that branch, from Task Scheduler on the GPU (`--device cuda --gpu-jobs 2`), resumable. Its purposes:
 prove a long unattended GPU run on that machine before the one that matters, and show which of the
-nets' settings ever win. **No readout is planned from it, and it is stopped as soon as the next
-comparison needs the GPU.** Before relaunching, a GPU correctness check agreed with the CPU and the
+nets' settings ever win. **It finished on 2026-09-18 at 02:35**: 2,089 jobs, no errors, and no
+readout planned. Its summary is in `docs/learned/tuned_vs_coact/shakedown_home_spec/` on
+`tune-bench-comparison` ⚠ **not on `main`**. The real comparison launched the same afternoon (below,
+*Four more, before the run launched*). Before relaunching, a GPU correctness check agreed with the CPU and the
 Mac: over three seeds each model's mean F1 is within 0.004 to 0.023 of the Mac's. The simulation change
 and goal 1's every-knob grids apply to the next comparison, not to this run:
 [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4. The untuned home-spec table above
@@ -100,10 +102,21 @@ selections (F1 alone, and F1 under a shared false-alarm budget), three training 
 | 3 | **Where the shared false-alarm budget is measured** | **The bench's own instruments:** the probe (the 5-minute stretch at 0.06 Hz inside every recording), counted in both backgrounds' recordings, and `bench.make_null_recording` (a whole recording at the quiet rate, nothing planted). **Reported, never used to select:** a no-event recording at the busy rate. **Dropped:** the home spec's 0.25× stress twin, which describes no real recording | the budget then measures what `MAX_PROBE_PER_MIN` and `MAX_FALSE_POSITIVES_PER_HOUR` measure. On the home spec the quiet twin was already this rate (0.54 × 0.0097 = 0.0052 Hz) |
 | 4 | **What the budget is anchored to** | **CoactDetect at the settings goal 1's every-knob search lands**, times the declared margin (1.6), with the exact values written into the run's declaration before it starts | it is the CoactDetect that will ship, and the run waits on goal 1's bench and grids anyway |
 
-**What the run still waits on, all from goal 1 (WSMIP065) through `main`:** the bench re-derived
-from `steps_excluded`, one grid declaration for the six coded detectors in `bench`, sliding LoCo and
-CoactDetect landed, and the every-knob CoactDetect values. Until then WSMIP064's GPU runs the home-spec
-shakedown, which gives way when this run is ready.
+### Four more, before the run launched (decided, Tony, 2026-09-18)
+
+| # | question | decided | why |
+|---|---|---|---|
+| 5 | **The fold defect** ([todo](../todo/2026-09-17-two-bake-off-folds-train-the-same-model.md)) | **Fixed before any launch**, in the tuning tool. Training seeds are dealt round-robin across the training folds, starting after the held-out one; the run replays `train`'s and `pick_threshold`'s own draws and refuses to start unless every outer fold has its own fitting set and threshold pair. `meta.json` records the check | the tuning tool had it too: in the shakedown, two of the four outer folds fitted the same ten recordings at seed 0. A paired test over folds assumes distinct fits, so more folds would have bought degrees of freedom the harness could not deliver |
+| 6 | **Sliding or binned for the coded side** | **Sliding, and said so.** `bench.OPERATING_POINTS` still ships CoactDetect and LoCo binned (goal 1 held the switch for the viewer's sake), so the tool lays goal 1's chosen sliding values under every coded setting it scores and records each detector's window mode in `meta.json` | searching binned would put the coded side at a configuration goal 1 already measured as inferior: the unfairness goal 2 exists to remove, in different clothes |
+| 7 | **What the rest of the weekend buys** | **Twelve seeds per fold instead of six**, everything else as declared. Not eight folds: that is about 45–50 hours, and the back half of the weekend stays free | at a tuned margin of +0.011 F1 (the shakedown), variance binds; each fold's held-out F1 now pools 24 recordings instead of 12 |
+| 8 | **GPU workers** | **One** (`--gpu-jobs 1`) | measured on the tool's own fit path: `chorus_norm` 309 fits per hour at one process, 264–274 at two to six. Processes contend on one GPU under Windows' display driver |
+
+**Launched 2026-09-18 at 16:14** on WSMIP064 from branch `tune-bench-comparison` @ `e8764aa`, from
+Task Scheduler, into `%USERPROFILE%\runs\fair-comparison-2026-09-18\`. All four nets and all six coded
+detectors, fast stream, bench simulation. Its `progress.json` is mirrored about once a minute to
+`<darkroom>/bugarach/2026-09-18-fair-comparison-run/`. An `at` there more than a few minutes old means
+the run has stopped. Training floor 11.7 GPU-hours, so it should finish early on 2026-09-19. Status
+and readout plan: `HANDOFF-workstation-tuning.md` on that branch ⚠ **not on `main`**.
 
 ### The family
 

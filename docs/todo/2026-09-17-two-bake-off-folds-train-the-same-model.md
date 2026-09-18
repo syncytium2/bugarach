@@ -8,6 +8,21 @@ filed: 2026-09-17
 > **Found** by the fourth blind murderboard of the rigid-shift report (role 1, Prove It), 2026-09-17,
 > and confirmed in the main thread. Tony ruled the same day to file it here rather than fix it on the
 > report's branch.
+>
+> **Fixed in the tuning tool only, 2026-09-18** (Tony: *"fix the fold defect first, before any
+> launch"*), on branch `tune-bench-comparison` @ `e8764aa`, before goal 2's fair-comparison run.
+> `tools/tune_learned_vs_coact.py` deals training seeds round-robin across the training folds,
+> starting after the held-out one (the first option below, generalised), and `Plan.fold_check`
+> replays `train`'s and `pick_threshold`'s draws for every seed and refuses to start the run if two
+> outer folds share a fitting set or a threshold pair. `tests/test_tune_learned_vs_coact.py` proves
+> both that the check passes and that it fires on the old order. **Still open** for every other
+> harness listed below.
+>
+> ⚠ **The last bullet under *Why it matters* was wrong for that tool.** The 24-seed split is affected
+> there too, for a second reason: the tool fits `n_train = 10` recordings, a contiguous run of the
+> training list, so the run sat inside the first two training folds. In the GPU shakedown at seed 0,
+> held-out folds 3 and 4 both fitted recordings 1000–1009 (and folds 2 to 4 shared a threshold pair).
+> Any harness that fits fewer recordings than it holds should be checked the same way.
 
 ## What
 
