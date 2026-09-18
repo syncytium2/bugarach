@@ -31,9 +31,26 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
     carries it.
 - **Still owed, per the handoff:** GitLab's merge-request discussion, any wiki, release notes and
   CI meaning are not in git and not in the mirror (there is no `.gitlab-ci.yml`); check the web UI
-  before access ends. Which remote is authoritative is Tony's call.
+  before access ends. ~~Which remote is authoritative is Tony's call.~~ **Decided — GitHub.** Tony,
+  2026-09-18: *"i want to remove all dependencies on gitlab."*
 - **Also done on this box:** the 16 worktrees of the MATLAB interface2 checkout were removed and the
-  stale second checkout deleted. Restore ledger on interface2 branch `worktree-prune-20260918`.
+  stale second checkout deleted. Restore ledger on interface2's `main`,
+  `docs/worktree_prune_ledger_2026-09-18_WSMIP065.md`.
+- **Every other GitLab repository on this box is off GitLab** (2026-09-18, same session):
+  - **New private repos, each mirrored and verified ref for ref, checkout re-pointed:**
+    `coding-project` (1,617 commits, 125 branches, 3 tags; its never-pushed branch
+    `MLspikePlotting` pushed after), `interfaceDFoF0`, `ICCetcStatistics`, `ggplot-tuner`.
+    **ggplot-tuner was mirrored from the local checkout** — GitLab answers "project not found".
+  - **R** — GitLab answers "project not found" for it too. Its history continues in `fireflies`,
+    which already held all but 21 commits; those 21 (branches `infoTables` ×2, `AMANDAv2`, one
+    checkout's `main`, and two 2026-07-19 WIP stashes) are now **tags `archive/R-*` in fireflies**,
+    verified from a fresh clone of GitHub. The dead GitLab remote was removed from all three R
+    checkouts. **The checkouts were NOT deleted:** `Documents\lme2\R` holds gitignored analysis CSVs
+    and notebooks, and `Documents\ICCandBeyond\R` is the code folder of an R project whose PDFs and
+    `.RData` are not in git.
+  - **Left on GitLab: interface2 only**, waiting on the Mac session. Then: refresh push, re-point
+    this box and the Mac, and archive the GitLab projects (Tony, web UI). The Mac's own checkouts
+    and any GitLab project never cloned here were not inventoried from this box.
 
 ---
 
