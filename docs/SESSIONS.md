@@ -10,6 +10,23 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/read-the-de-pinned-export — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-rigid-shift-de-pinned/`
+- **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony, 2026-09-17 evening:
+  *"the new data are available now. set up for overnight."* The whole rigid-shift chain reran on the
+  producer's de-pinned export (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`), which removes
+  the 83 events inside moco pinned windows, so this run's outputs supersede the ones claimed on
+  2026-09-17 under `bugarach/2026-09-17-rigid-shift-report/`.
+- **Writes:** one new folder only — `real_compare/events.json` (per-recording event times keyed by
+  recording id) and `real_compare/checkpoints/` (120 models trained on real recordings), which
+  FOUNDATIONS §5 keeps machine-local; the report's six figures; and a reader's copy of the report.
+  The repo keeps `real_compare/summary.json`, which is what the page quotes.
+- ⚠ **The 2026-09-17 folder stays as it is.** It holds the superseded run, and the page that cites it
+  carries its own stop notice until this run's numbers replace it. This claim does not write there.
+- **Touches:** `docs/learned/tube_self_supervised/` (branch `read-the-de-pinned-export`),
+  `docs/SESSIONS.md`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the folder holds the files and the branch that regenerates the page has landed.
+
 ### 065/opt-every-knob — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-full-search/`
 - **Status:** ACTIVE (WSMIP065), claimed before writing. Goal 1 step 3: the search over every
   parameter of all six detectors, not only the four declared ones.
