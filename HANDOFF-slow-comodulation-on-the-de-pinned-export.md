@@ -150,11 +150,28 @@ holding two groups can. Every group figure needs that sentence beside it.
 - **The primary checkout is not always on `main`.** Another session works in it on its own
   branch; check before assuming, and do not `git pull` it out from under them.
 
-## The other session
+## The other session — its chain is FINISHED and the machine is free
 
-`Mac unsupervised` is running the rigid-shift chain overnight from a pinned checkout, and is
-holding branch `use-the-steps-and-pins-export` until this branch's pointer lands, because its
-defaults name the `steps_and_pins_excluded` role. Its first result: the per-ROI classifier
-still reads rigid shift as chance on the de-pinned folder (0.489–0.506, against 0.486–0.505
-before), so de-pinning opened no per-ROI leak. Two independent measures agreeing that the
-producer's change did what it claimed and nothing more.
+`Mac unsupervised` ran the rigid-shift chain 22:35–03:06 (controls 57 s, aggregate leak
+400 s, training 2.7 h, real compare 1.4 h, then the twin check) and is done. **The machine is
+idle: do not wait for it.** Its handoff is `HANDOFF-rigid-shift-de-pinned-rerun.md` (PR #630).
+
+Its live branch is **`read-the-de-pinned-export`**, tip `269cc19` — *not*
+`use-the-steps-and-pins-export`, which it pushed, then rebased onto this branch's `a7d2273`
+and could not push back without rewriting a pushed branch. That older remote ref is
+superseded and two commits behind; ignore it.
+
+**Its results corroborate this side, on the same de-pinned data.** Every conclusion survived:
+supervised detectors call 0.797–0.829 of events on three or more ROIs against 0.799–0.830
+before, `count_excess` 0.899 against 0.903, F1 identical in the trained, untrained and
+baseline arms, the per-ROI classifier still at chance for rigid shift at every displacement
+(0.489–0.506 against 0.486–0.505). And the group question came out as this side predicted
+from the fast stream: `count_excess` DI 0.992 → 0.984, supervised `line` 0.922 → 0.920, the
+other three groups identical to three decimals. So **the de-pinning changed almost nothing on
+either side, and the leave-out arithmetic was the thing that misled** — the lesson above,
+confirmed twice by different measures.
+
+That session also hit the role-name bug in its own tools before this one was fixed: two
+stages loaded 0 of 84 recordings and crashed, and a third silently disabled its
+non-baseline-window guard. The silent one only failed to ship because the crash stopped the
+chain first, which is the argument for the todo being a rule rather than two fixes.
