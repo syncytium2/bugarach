@@ -62,12 +62,42 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
    27 branches** (the 21 `branch` rows still unmerged, `main`, and 5 unlisted ones kept by default),
    39 `archive/*` + 16 `rescue/*` tags. WSMIP065's checkout still has 25 local branches whose remote
    is gone — every commit on them is on GitHub; delete them locally whenever.
-5. **Text that still names GitLab as live** — foundations' `GLOSSARY.md` line 1 provenance stamp
-   (`interface2 (GitLab) … @ 62c856c`) and its `README.md` line 81 and ADRs 0001/0004 (the ADRs are
-   dated records: add a note, do not rewrite). In interface2, its own docs beyond the banner and
-   runbook. bugarach's `gitlab.com/cossartlab/cicada` links **stay** — they cite another lab's
-   project, not a dependency.
+5. ~~**Text that still names GitLab as live.**~~ **Done 2026-09-18** (Tony: *"clean up the last of
+   the gitlab remnants"*), after a sweep of every repo on WSMIP065. Rule applied: fix what claims
+   GitLab is live or tells a reader to use it; leave dated records as written, adding a dated note
+   to an ADR rather than editing it; leave citations of another lab's GitLab (CICADA) alone.
+   - **interface2** (`e603b00d` on `main`) — the real dependency was **Great Lakes**: both cluster
+     clones fetch from GitLab with a token in the remote URL, and `greatlakes/ACCESS.md` plus four
+     READMEs taught that. The clone section now uses a **read-only GitHub deploy key**, with
+     github.com's host-key fingerprints confirmed from GitHub's API and a live keyscan (identical;
+     not yet from a login node). The scrubber already redacted GitHub tokens; its self-test now
+     plants a `github_pat_` in the `git remote -v` shape that leaked on 2026-09-04, and passes.
+     Also: the MIGRATED banner replaces the planned-migration one, ROADMAP goal 3 is done,
+     `docs/gitlab_auth.md` is marked superseded, two handoffs and a todo corrected.
+   - **foundations** #7, **fireflies** #8, **downLow** #2, **no_peak** #3 — the GLOSSARY stamp and
+     README, notes on ADRs 0001/0004; fireflies' one-remote rule (the `archive/R-*` tags named),
+     `NEXT_SESSION.md`, two workflow comments; the `coding-project` source line gains its GitHub
+     home. **Reviewed, open, not merged** — merging was refused to this session as "merge without
+     review", so each waits on Tony.
+   - **bugarach** — this todo, `bct-modularity-fast`'s pointer (now `archive/bct-modularity-fast`),
+     and `docs/reaper_handoff.md`'s "interface2 is on GitLab".
+   - **Left, deliberately:** ledgers, board blocks, reviews, changelogs, archived notes, the
+     runbook body, short-course's dated case studies and its generic "your institution may run
+     GitLab" advice, and armory's `tri_paths.py`, whose GitLab URLs are a guard and its test data.
+   - **This machine's stored GitLab credentials** (two Git Credential Manager OAuth entries for
+     gitlab.com) were deleted. That removes the local copy only; see item 9.
 6. **WSMIP065's MATLAB path** — `pathdef.m` still lists 128 worktree folders that no longer exist
    (interface2's `docs/worktree_prune_ledger_2026-09-18_WSMIP065.md` has the detail). Separately,
    Tony asked about moving the interface2 checkout out of `Documents\MATLAB`: 25 `.m` files on its
    `main` hard-code that location and would need `if2_paths` first.
+7. **Re-point both Great Lakes clones** (`~/if2-bakeoff`, `~/interface2`) — needs a login (Okta).
+   Steps: interface2's `greatlakes/ACCESS.md` § "Cloning comes from GITHUB": generate a key on the
+   cluster, register it as a read-only deploy key on `syncytium2/interface2`, `set-url`, fetch.
+   Until then a fetch there reads a frozen GitLab copy and reports success.
+8. **Confirm 064.** interface2's ROADMAP planned the cutover "with 064 + Mac"; the Mac is confirmed,
+   064 never was. On 064: `git remote -v | grep -i gitlab` in each checkout.
+9. **Revoke GitLab credentials while access lasts** (Tony, GitLab web UI): personal/project access
+   tokens and deploy tokens (Settings → Access tokens), deploy keys on the archived projects, and the
+   Git Credential Manager OAuth grant (User settings → Applications → Authorized applications). The
+   cluster's token-in-URL is among them.
+10. **Merge foundations #7, fireflies #8, downLow #2, no_peak #3** (item 5).
