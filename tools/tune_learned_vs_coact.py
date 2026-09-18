@@ -122,6 +122,14 @@ HAND = ("coact", "loco")
 # Twelve seeds per fold, not six (Tony, 2026-09-18): once both sides tune, the shakedown's margin
 # was +0.011 F1, so variance binds, and each fold's held-out F1 now pools 24 recordings, not 12.
 N_FOLDS, SEEDS_PER_FOLD = 4, 12
+# A REPLICATE is the same declared comparison on a fresh draw of recordings (Tony, 2026-09-18: the
+# fair comparison on WSMIP064, and replicate 1 of it on WSMIP065). Replicate R starts the recording
+# seeds at BASE_SEED + R * REPLICATE_STRIDE, so replicate 0 IS the declared run (seeds 1000-1047) and
+# replicate 1 reads 2000-2047. Every recording a fit trains on, picks its threshold on or is scored on
+# comes from those seeds, and the empty twins sit NULL_SEED_OFFSET above them, so no two replicates
+# share one. Everything else is held fixed — the 24 configurations (DRAW_SEED), the training seeds, the
+# grids — so a difference between replicates is a difference between draws of data, nothing else.
+BASE_SEED, REPLICATE_STRIDE = 1000, 1000
 TUNE_SEEDS = (0, 1, 2)            # decision 8
 REFIT_SEEDS = (0, 1, 2, 3, 4)
 N_CONFIGS = 24
@@ -283,11 +291,13 @@ class Plan:
     """
 
     def __init__(self, *, quick: bool, models=MODELS, detectors=HAND, spec_path=SPEC_PATH,
-                 device: str = "cpu", simulation: str = "bench"):
+                 device: str = "cpu", simulation: str = "bench", replicate: int = 0):
         from bugarach import bench
         from bugarach.bench import fold_split
 
         assert simulation in SIMULATIONS, simulation
+        assert int(replicate) >= 0, f"replicate {replicate} must be 0 or more"
+        self.replicate = int(replicate)
         self.quick = quick
         self.device = device   # where learned fits train and score; part of the declaration
         self.simulation = simulation
@@ -309,7 +319,10 @@ class Plan:
         # What a worker needs to rebuild any recording; picklable, and nothing else.
         self.sim = dict(simulation=simulation, spec=self.spec)
         self.n_folds, self.seeds_per_fold = (3, 2) if quick else (N_FOLDS, SEEDS_PER_FOLD)
-        self.split = fold_split(n_folds=self.n_folds, seeds_per_fold=self.seeds_per_fold)
+        assert self.n_folds * self.seeds_per_fold <= REPLICATE_STRIDE, \
+            "replicates would share recordings: the stride must exceed the seeds one run uses"
+        self.split = fold_split(n_folds=self.n_folds, seeds_per_fold=self.seeds_per_fold,
+                                base_seed=BASE_SEED + REPLICATE_STRIDE * self.replicate)
         self.tune_seeds = (0,) if quick else TUNE_SEEDS
         self.refit_seeds = (0, 1) if quick else REFIT_SEEDS
         self.n_train = 1 if quick else N_TRAIN
@@ -1210,8 +1223,11 @@ def declaration(plan) -> dict:
     from bugarach.learn.nets import ARCHITECTURES
     from bugarach.learn.train import THRESHOLD_GRID
 
+    # Written only for a replicate, so replicate 0's declaration stays byte-identical to the run
+    # launched before the option existed, which this tool would otherwise refuse to resume.
+    rep = dict(replicate=plan.replicate) if plan.replicate else {}
     return dict(
-        **simulation_declaration(plan), quick=plan.quick,
+        **simulation_declaration(plan), **rep, quick=plan.quick,
         folds=plan.n_folds, seeds_per_fold=plan.seeds_per_fold,
         recording_seeds=list(plan.split.seeds), tune_seeds=list(plan.tune_seeds),
         refit_seeds=list(plan.refit_seeds), models=list(plan.models),
@@ -1692,6 +1708,10 @@ def main(argv=None) -> int:
                    help=f"a folder to copy progress.json into at least every {MIRROR_EVERY_SEC} s: "
                         "a claimed darkroom folder, so the run is readable from any machine once the "
                         "session that launched it has ended. Not part of the declaration")
+    p.add_argument("--replicate", type=int, default=0,
+                   help=f"0 (default): the declared run, recording seeds from {BASE_SEED}. R: the same "
+                        f"comparison on recordings from {BASE_SEED} + {REPLICATE_STRIDE} * R, and "
+                        "nothing else changed. Part of the declaration when not 0")
     a = p.parse_args(argv)
     models = tuple(x for x in a.models.split(",") if x)
     dets = tuple(x for x in a.detectors.split(",") if x)
@@ -1705,7 +1725,7 @@ def main(argv=None) -> int:
             raise SystemExit(f"--device {a.device}: torch {torch.__version__} sees no CUDA device. "
                              "See docs/windows_workstation_setup.md, section 4.")
     plan = Plan(quick=a.quick, models=models, detectors=dets, device=a.device,
-                simulation=a.simulation)
+                simulation=a.simulation, replicate=a.replicate)
     # Decision 4: the budget is anchored to goal 1's every-knob CoactDetect. Its values reach this
     # run through CODED_BASE (goal 1's chosen sliding values), because bench.OPERATING_POINTS still
     # ships the binned point they replace. The guard stays: a base that lost its window mode would

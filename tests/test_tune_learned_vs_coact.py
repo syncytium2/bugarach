@@ -406,6 +406,27 @@ def test_every_outer_fold_fits_its_own_model_and_picks_its_own_threshold():
     assert plan.fold_check()["distinct"] is True
 
 
+def test_a_replicate_is_the_same_comparison_on_recordings_no_other_replicate_reads():
+    """Replicate 1 (WSMIP065's weekend run beside WSMIP064's) moves the recordings and nothing else.
+
+    Replicate 0 must declare exactly what the run launched before the option existed declared, or
+    that run could not be resumed; replicate 1's recordings, twins included, must be disjoint from
+    it; and the fold fix must hold on the new seeds too.
+    """
+    kw = dict(quick=False, models=("tube",), detectors=("coact",), simulation="bench")
+    p0, p1 = T.Plan(**kw), T.Plan(**kw, replicate=1)
+    assert p0.split.seeds == tuple(range(1000, 1048))
+    assert p1.split.seeds == tuple(range(2000, 2048))
+    twins = {s + T.NULL_SEED_OFFSET for s in p1.split.seeds}
+    assert not (set(p0.split.seeds) | {s + T.NULL_SEED_OFFSET for s in p0.split.seeds}) \
+        & (set(p1.split.seeds) | twins)
+    assert "replicate" not in T.declaration(p0)
+    assert T.declaration(p1)["replicate"] == 1
+    d0, d1 = T.declaration(p0), T.declaration(p1)
+    assert {k for k in d0 if d0[k] != d1.get(k)} == {"recording_seeds"}
+    assert p1.fold_check()["distinct"] is True
+
+
 def test_the_fold_check_fires_on_the_old_contiguous_order():
     """The check above can fail: the order this tool used until 2026-09-18 reproduces the defect."""
     plan = T.Plan(quick=False, models=("tube",), detectors=("coact",), simulation="bench")
