@@ -319,8 +319,25 @@ except Exception: print(0)')
       fi
       echo "merge_when_green: PR #$PR — NO checks reported after ${GRACE}s. Refusing."
       echo "  An absent gate is indistinguishable from a passed one, so this"
-      echo "  script treats it as failure. If CI genuinely does not run on this"
-      echo "  PR, that is the thing to fix."
+      echo "  script treats it as failure."
+      # WHY no checks is the question the caller then has to answer, and on
+      # 2026-09-18 two PRs in one night answered it the same way: a CONFLICTING PR
+      # gets no CI run at all, ever. Both sessions read the silence as a slow queue
+      # — one waited all night, and the PR carrying the handoff written FOR the
+      # reboot was the one that nearly missed it. The diagnosis is one API call, so
+      # the tool makes it rather than leaving it to whoever is still awake.
+      state=$(gh pr view "$PR" --json mergeable,mergeStateStatus \
+                --jq '.mergeable + " / " + .mergeStateStatus' 2>/dev/null || echo "UNKNOWN")
+      echo "  mergeable: $state"
+      case "$state" in
+        CONFLICTING*)
+          echo "  ^ THAT is why there are no checks: GitHub schedules none for a PR that"
+          echo "    conflicts with its base, so this one can never go green. Merge the base"
+          echo "    in and resolve (a rebase of an already-pushed branch needs Tony's word),"
+          echo "    push, and CI starts by itself." ;;
+        *)
+          echo "  If CI genuinely does not run on this PR, that is the thing to fix." ;;
+      esac
       exit 1 ;;
   esac
 
