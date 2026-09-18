@@ -35,6 +35,11 @@ was itself a lost process. `--watch` is for starting it beside a run by hand.
     python3 tools/mirror_run_status.py ~/runs/my-run --into 2026-09-18-my-run --watch 60
     python3 tools/mirror_run_status.py --selftest
 
+A GENERAL COPY LIVES IN ARMORY (`tools/mirror_run_status.py`, syncytium2/armory#18),
+resolving the darkroom through that repo's estate-wide resolver and taking the status
+file's name as an argument. Neither vendors from the other yet, so **a fix here does not
+reach that one** — say which you changed.
+
 The destination is always inside bugarach's own darkroom folder — `darkroom(*parts)`
 joins onto it — and a subfolder that tries to climb out is refused. bugarach owns
 `<darkroom>/bugarach/` and nothing above it.
