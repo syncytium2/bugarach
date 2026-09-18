@@ -222,6 +222,11 @@ def test_a_chosen_checkpoint_reloaded_in_a_fresh_process_reproduces_its_held_out
         assert row == want, (s, row, want)
 
 
+@pytest.mark.xfail(strict=True, reason=(
+    "detect_folder.load_settings accepts only the keys bench.OPERATING_POINTS ships, and "
+    "bench.FULL_GRIDS now searches every knob (detection_mode, min_rois, ...), so a chosen "
+    "setting cannot be read back by `bugarach detect`. The run does not read it back; "
+    "docs/todo/2026-09-18-bugarach-detect-refuses-settings-an-every-knob-search-chooses.md"))
 def test_a_chosen_settings_file_round_trips_what_was_chosen(run):
     from bugarach.detect_folder import load_settings
 
@@ -245,8 +250,8 @@ def test_training_is_half_quiet_half_busy_and_the_threshold_pair_is_one_of_each(
     from bugarach.learn.train import TRAIN_SEED_BLOCK, VAL_SEED_BLOCK, fold_maker
 
     plan = T.Plan(quick=False, models=("tube",), detectors=("coact",), simulation="bench")
-    for train_folds in ([0, 1], [0, 1, 2]):                 # an inner fit, and an outer refit
-        recs = plan.fold_recordings(train_folds)
+    for train_folds, held in (([0, 1], None), ([0, 1, 2], 3)):   # an inner fit, and an outer refit
+        recs = plan.fit_recordings(train_folds, held_out=held)
         mk, n_fit, n_val = fold_maker(lambda r: (r, None), recs)
         picked = {mk(VAL_SEED_BLOCK + i)[0] for i in range(4)}
         assert sorted(T.regime_of(r) for r in picked) == ["busy", "quiet"], picked
@@ -291,7 +296,8 @@ def test_the_declaration_writes_out_the_backgrounds_the_empty_recordings_and_the
         {b: bench.REGIMES[r]["bg_rate_hz"] for b, r in T.BENCH_REGIMES.items()}
     assert d["gate_empty_recording"] == "null_quiet" and d["reported_only_empty_recordings"] == ["null_busy"]
     assert d["empty_recordings"]["null_quiet"]["bg_rate_hz"] == bench.NULL_RECORDING["bg_rate_hz"]
-    assert d["reference"]["params"] == json.loads(json.dumps(bench.OPERATING_POINTS["coact"].params))
+    assert d["reference"]["params"] == json.loads(json.dumps(T.base_params("coact")))
+    assert d["reference"]["params"]["window_mode"] == "sliding"
     score = next((run["out"] / "scores" / "tube").rglob("*__fold*.json"))
     assert {T.regime_of(r) for r in _json(score)["rows"]} == {"quiet", "busy"}
 
@@ -362,6 +368,82 @@ def test_a_context_wider_than_the_planted_spacing_is_refused():
     # rate+context names the same setting differently, and the rule reads both spellings.
     assert not T.context_fits_the_null(dict(context_win=240.0), 120.0)
     assert T.context_fits_the_null(dict(context_win=60.0), 120.0)
+
+
+def _fits_and_thresholds(plan, recs, seed):
+    """What `train` fits on and `pick_threshold` reads, for one fit, exactly as they draw."""
+    from bugarach.learn.train import TRAIN_SEED_BLOCK, VAL_SEED_BLOCK, fold_maker
+
+    mk, _, _ = fold_maker(lambda r: (r, None), recs)
+    fitted = frozenset(mk(TRAIN_SEED_BLOCK + seed * 1000 + i)[0] for i in range(plan.n_train))
+    picked = frozenset(mk(VAL_SEED_BLOCK + seed * 1000 + i)[0] for i in range(4))
+    return fitted, picked
+
+
+def test_every_outer_fold_fits_its_own_model_and_picks_its_own_threshold():
+    """The fold defect (docs/todo/2026-09-17-two-bake-off-folds-train-the-same-model.md), fixed.
+
+    Found in this tool's own shakedown: at training seed 0, the held-out folds trained on folds
+    (0, 1, 2) and (0, 1, 3) both fitted recordings 1000-1009, the same model, because `train`
+    reads a contiguous run of the training list and that run sat inside the first two folds.
+    Four outer folds were three fits. The list is now dealt round-robin across the training
+    folds, starting after the held-out one, so every fit spans all of its training folds and the
+    threshold pair rotates with the held-out fold. Checked at full size, every seed.
+    """
+    plan = T.Plan(quick=False, models=("tube",), detectors=("coact",), simulation="bench")
+    assert plan.seeds_per_fold == 12, "Tony, 2026-09-18: twelve seeds per fold"
+    for seed in sorted(set(plan.tune_seeds) | set(plan.refit_seeds)):
+        outer = [_fits_and_thresholds(plan, plan.fit_recordings(plan.training_folds(h), held_out=h),
+                                      seed) for h in plan.folds()]
+        assert len({f for f, _ in outer}) == plan.n_folds, f"seed {seed}: outer folds share a model"
+        assert len({p for _, p in outer}) == plan.n_folds, f"seed {seed}: outer folds share a threshold"
+        for h, (fitted, _) in zip(plan.folds(), outer):
+            spans = {plan.split.fold_of(T.seed_of(r)) for r in fitted}
+            assert spans == set(plan.training_folds(h)), (seed, h, spans)
+        pairs = list(itertools.combinations(plan.folds(), plan.n_folds - 2))
+        inner = {_fits_and_thresholds(plan, plan.fit_recordings(p), seed)[0] for p in pairs}
+        assert len(inner) == len(pairs), f"seed {seed}: two inner fold pairs share a model"
+    assert plan.fold_check()["distinct"] is True
+
+
+def test_the_fold_check_fires_on_the_old_contiguous_order():
+    """The check above can fail: the order this tool used until 2026-09-18 reproduces the defect."""
+    plan = T.Plan(quick=False, models=("tube",), detectors=("coact",), simulation="bench")
+    old = [_fits_and_thresholds(plan, plan.fold_recordings(plan.training_folds(h)), 0)[0]
+           for h in plan.folds()]
+    assert len(set(old)) < plan.n_folds
+
+
+def test_the_coded_side_is_searched_sliding_from_goal_ones_values_and_says_so(run):
+    """Tony, 2026-09-18: searching the coded side binned is the unfairness goal 2 exists to remove.
+
+    bench.OPERATING_POINTS still ships CoactDetect and LoCo binned (goal 1 held the switch for the
+    viewer's sake), and `run_detector` fills every unsearched knob from there, so the tool lays
+    goal 1's chosen sliding values under every coded setting it scores, and writes that down.
+    """
+    for det in ("coact", "loco"):
+        assert T.base_params(det)["window_mode"] == "sliding"
+    assert T.base_params("coact")["alpha"] == 1e-5 and T.base_params("loco")["threshold_pctile"] == 99.9
+    d = _json(run["out"] / "meta.json")["declaration"]
+    assert d["coded_window_mode"]["coact"] == "sliding"
+    assert d["coded_base"]["source"].startswith("goal 1")
+    assert d["fold_check"]["distinct"] is True
+    for h in run["plan"].folds():
+        for w in T.SELECTIONS:
+            sel = _json(T.selection_path(run["out"], w, h, "coact"))
+            chosen = _json(run["out"] / sel["config"])["params"]
+            assert chosen["window_mode"] == "sliding", (h, w)
+
+
+def test_progress_is_mirrored_and_carries_a_heartbeat(tmp_path):
+    """Tony, 2026-09-18: a run's status became unreadable the moment its session ended."""
+    out, mirror = tmp_path / "run", tmp_path / "mirror"
+    out.mkdir()
+    state = dict(pending={}, running={}, finished=[], errors=set(), stages={}, seen=set())
+    T.write_progress(out, state, dict(commit="x"), mirror=mirror)
+    got = _json(mirror / "progress.json")
+    assert got == _json(out / "progress.json") and "at" in got
+    assert got["mirror_every_sec"] == T.MIRROR_EVERY_SEC <= 60
 
 
 def test_a_home_spec_plan_still_names_recordings_by_seed():

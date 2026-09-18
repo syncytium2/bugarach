@@ -110,11 +110,18 @@ MAX_HAND_CONFIGS = 5000   # a full product past this is not what a coordinate-se
 # the search's own default is the right one; it is passed rather than defaulted because a caller
 # scoring anything else silently never moves (WSMIP065, 2026-09-17).
 SEARCH_MIN_GAIN = 0.002
-GPU_LONE_FIT_SEC = {"tube": 4.2, "chorus_norm": 6.4, "chorus_gain_norm": 6.4,
-                    "line_length": 10.4}   # WSMIP064, RTX A4000, untuned 900 steps, one process
+# WSMIP064, RTX A4000, untuned 900 steps, one process, measured 2026-09-18 through this tool's own
+# fit path on the bench (crops built from recordings on one CPU thread; the older 6.4 s for
+# chorus_norm was a synthetic loop). chorus_gain_norm is taken as chorus_norm's and tube as its
+# synthetic-loop time: neither was re-measured. More processes do not help: chorus_norm gave 309 fits
+# per hour at one process and 264-274 at two, three, four and six (WDDM contention).
+GPU_LONE_FIT_SEC = {"tube": 4.2, "chorus_norm": 10.6, "chorus_gain_norm": 10.6,
+                    "line_length": 10.9}
 MODELS = ("chorus_norm", "tube", "chorus_gain_norm", "line_length")   # priority order
 HAND = ("coact", "loco")
-N_FOLDS, SEEDS_PER_FOLD = 4, 6
+# Twelve seeds per fold, not six (Tony, 2026-09-18): once both sides tune, the shakedown's margin
+# was +0.011 F1, so variance binds, and each fold's held-out F1 now pools 24 recordings, not 12.
+N_FOLDS, SEEDS_PER_FOLD = 4, 12
 TUNE_SEEDS = (0, 1, 2)            # decision 8
 REFIT_SEEDS = (0, 1, 2, 3, 4)
 N_CONFIGS = 24
@@ -200,11 +207,35 @@ def learned_config(model: str, choice: dict, *, index: int, is_untuned: bool,
                 is_untuned=is_untuned, config_key=config_key(model, cfg, training))
 
 
-def hand_config(det: str, grid_values: dict | None, *, index) -> dict:
+# THE CODED SIDE SLIDES, FROM GOAL 1'S VALUES, AND SAYS SO (Tony, 2026-09-18). bench.OPERATING_POINTS
+# still ships CoactDetect and LoCo binned: goal 1 chose the sliding values, measured them admissible
+# under four budgets, and held the switch only because shipping it moves the viewer's calibrated
+# defaults and the calls a slow-comodulation analysis is pinned to (8525be3). `run_detector` fills
+# every knob a caller does not pass from OPERATING_POINTS, so without this the per-fold search would
+# walk binned CoactDetect and LoCo: a configuration goal 1 has already measured as inferior, which is
+# the unfairness goal 2 exists to remove. These are the values of 6fe09ab, exactly.
+CODED_BASE = {
+    "coact": dict(int_win_sec=2.0, context_win_sec=120.0, alpha=1e-5, merge_gap_sec=8.0,
+                  guard_sec=1.0, n_surrogates=100, window_mode="sliding"),
+    "loco": dict(bin_width_sec=1.0, context_win_sec=120.0, thr_step_sec=15.0, merge_gap_sec=8.0,
+                 threshold_pctile=99.9, n_surrogates=100, null_context_mode="symmetric",
+                 window_mode="sliding"),
+}
+CODED_BASE_SOURCE = ("goal 1's every-knob sliding values, WSMIP065, branch opt-every-knob-run @ "
+                     "6fe09ab (HANDOFF-coded-detectors.md, status of 2026-09-17 23:50); held off "
+                     "bench.OPERATING_POINTS by 8525be3 for the viewer's sake, not for the values'")
+
+
+def base_params(det: str) -> dict:
+    """A coded detector's unsearched knobs: OPERATING_POINTS, with goal 1's sliding values on top."""
     from bugarach.bench import OPERATING_POINTS
+    return {**OPERATING_POINTS[det].params, **CODED_BASE.get(det, {})}
+
+
+def hand_config(det: str, grid_values: dict | None, *, index) -> dict:
     from bugarach.learn.checkpoint import config_key
 
-    shipped = dict(OPERATING_POINTS[det].params)
+    shipped = base_params(det)
     params = {**shipped, **(grid_values or {})}
     from bugarach.learn.checkpoint import canonical
     return dict(detector=det, params=params, grid_index=index,
@@ -331,6 +362,60 @@ class Plan:
 
     def fold_recordings(self, folds) -> list[str]:
         return self.recordings(self.fold_seeds(folds))
+
+    def fit_recordings(self, train_folds, *, held_out=None) -> list[str]:
+        """A fit's training recordings IN THE ORDER ``fold_maker`` and ``train`` read them.
+
+        The fold defect (``docs/todo/2026-09-17-two-bake-off-folds-train-the-same-model.md``):
+        ``fold_maker`` gives the LAST two recordings to the threshold and ``train`` fits on a
+        contiguous run of the rest, so in fold order the run sat inside the first training folds,
+        and outer folds sharing those trained the same model. In the shakedown, seed 0's held-out
+        folds 3 and 4 both fitted recordings 1000-1009. At twelve seeds per fold it would have been
+        three outer folds of four.
+
+        So seeds are dealt ROUND-ROBIN across the training folds, starting after the held-out
+        one: any run of ``n_train`` recordings then spans every training fold, and the last seed,
+        which is the threshold pair, comes from the fold just before the held-out one and rotates
+        with it. Each seed still expands to its backgrounds in turn, so training stays half of each
+        and the threshold pair one of each (decision 2). :meth:`fold_check` proves the result.
+        """
+        folds = sorted(train_folds)
+        if held_out is not None:
+            folds.sort(key=lambda f: (f - held_out - 1) % self.n_folds)
+        per = [self.fold_seeds([f]) for f in folds]
+        assert len({len(p) for p in per}) == 1, "folds of unequal size cannot be dealt evenly"
+        dealt = [s for group in zip(*per) for s in group]
+        if self.simulation == "home":
+            return [str(s) for s in dealt]
+        return [f"{r}:{s}" for s in dealt for r in self.regimes]
+
+    def fold_check(self) -> dict:
+        """Does every fit this run makes have its own fitting set, and every outer fold its own
+        threshold pair? Computed from the same draws ``train`` and ``pick_threshold`` make, for
+        every training seed; the run refuses to start if not."""
+        from bugarach.learn.train import TRAIN_SEED_BLOCK, VAL_SEED_BLOCK, fold_maker
+
+        def draws(recs, seed):
+            mk, _, _ = fold_maker(lambda r: r, recs)
+            return (frozenset(mk(TRAIN_SEED_BLOCK + seed * 1000 + i) for i in range(self.n_train)),
+                    frozenset(mk(VAL_SEED_BLOCK + seed * 1000 + i) for i in range(4)))
+
+        pairs = list(itertools.combinations(self.folds(), self.n_folds - 2))
+        bad = []
+        for seed in sorted(set(self.tune_seeds) | set(self.refit_seeds)):
+            outer = [draws(self.fit_recordings(self.training_folds(h), held_out=h), seed)
+                     for h in self.folds()]
+            if len({f for f, _ in outer}) < self.n_folds:
+                bad.append(f"seed {seed}: outer folds share a fitting set")
+            if len({p for _, p in outer}) < self.n_folds:
+                bad.append(f"seed {seed}: outer folds share a threshold pair")
+            if len({draws(self.fit_recordings(p), seed)[0] for p in pairs}) < len(pairs):
+                bad.append(f"seed {seed}: inner fold pairs share a fitting set")
+        return dict(distinct=not bad, problems=bad,
+                    rule="training seeds dealt round-robin across the training folds, starting "
+                         "after the held-out one; the threshold pair is the last seed dealt",
+                    todo="docs/todo/2026-09-17-two-bake-off-folds-train-the-same-model.md",
+                    fixed="2026-09-18, before the fair-comparison run (Tony)")
 
     def training_folds(self, h):
         return [f for f in self.folds() if f != h]
@@ -595,8 +680,9 @@ def _run_search(job, out, sim):
     only after the search has finished, with what it chose.
     """
     sys.path.insert(0, str(REPO / "tools"))
-    from search_all_settings import MOVE_EPS, choose_settings
+    from search_all_settings import MOVE_EPS, choose_settings, shipped_value
 
+    from bugarach import bench
     from bugarach.learn.checkpoint import canonical, config_key
 
     assert MOVE_EPS == SEARCH_MIN_GAIN, (
@@ -608,11 +694,21 @@ def _run_search(job, out, sim):
     train, seeds = job["train_recordings"], job["train_seeds"]
     gate, busy_sec = job["gate_key"], job["busy_sec"]
     cache: dict = {}
+    # Every setting the search proposes is laid over the declared base, so the knobs it does not
+    # search (window_mode among them) are goal 1's sliding values and not OPERATING_POINTS' binned
+    # ones. The search starts from the base too.
+    base = base_params(det)
+    start = ({k: base[k] if k in base else shipped_value(det, k) for k in bench.FULL_GRIDS[det]}
+             if det in CODED_BASE else None)
+
+    def full(params):
+        return {**base, **params}
 
     def measured(params):
-        key = json.dumps(canonical(params), sort_keys=True)
+        p = full(params)
+        key = json.dumps(canonical(p), sort_keys=True)
         if key not in cache:
-            cache[key] = _score_settings(det, params, sim, train, seeds, [gate], busy_sec)
+            cache[key] = _score_settings(det, p, sim, train, seeds, [gate], busy_sec)
         return cache[key]
 
     def score(params):
@@ -630,12 +726,12 @@ def _run_search(job, out, sim):
                               admissible=None if w == "ungated" else admissible,
                               # A context wider than the planted spacing estimates its threshold
                               # from a window holding other planted events (WSMIP065, 2026-09-17).
-                              is_valid=lambda d, p: candidate_is_valid(d, p, min_sep),
+                              is_valid=lambda d, p: candidate_is_valid(d, full(p), min_sep),
                               # An F1-sized objective, so MOVE_EPS is the right epsilon; passed
                               # rather than defaulted because a caller scoring something else
                               # silently never moves (WSMIP065, 2026-09-17).
-                              min_gain=MOVE_EPS, max_rounds=job["max_rounds"])
-        params = dict(got.params)
+                              min_gain=MOVE_EPS, max_rounds=job["max_rounds"], start=start)
+        params = full(got.params)
         key = config_key(det, params)
         write_json(config_path(Path(out), det, key),
                    dict(detector=det, params=params, config_key=key, grid_index=None,
@@ -767,7 +863,9 @@ def _run_fit(job, out, sim, spec_path):
 
 def fit_job(plan, out, model, ci, seed, train_folds, score_folds, role, priority):
     conf = plan.configs[model][ci]
-    recs = plan.fold_recordings(train_folds)
+    # An outer refit's order rotates with its held-out fold; an inner fit's does not, so the one
+    # inner fit two outer folds share is still trained once (Plan.fit_recordings, the fold defect).
+    recs = plan.fit_recordings(train_folds, held_out=score_folds[0] if role == "outer" else None)
     stem = fit_stem(out, model, conf["config_key"], seed, recs)
     return dict(kind="fit", role=role, key=f"fit/{model}/{conf['config_key']}/{stem.name}",
                 model=model, ci=ci, config_key=conf["config_key"], seed=seed,
@@ -1138,9 +1236,15 @@ def declaration(plan) -> dict:
                  "sits at an end is reported, not refused"),
         hand_configurations={d: [c["config_key"] for c in plan.hand[d]] for d in plan.detectors},
         reference=dict(config_key=plan.reference["config_key"], params=plan.reference["params"],
-                       note="CoactDetect at bench.OPERATING_POINTS as this code found it (goal 2 "
-                            "decision 4: goal 1's landed every-knob values once they land); the "
-                            "parameters above are the ones the budget was measured with"),
+                       note="CoactDetect at goal 1's every-knob sliding values (goal 2 decision "
+                            "4), laid over bench.OPERATING_POINTS: see coded_base. The parameters "
+                            "above are the ones the budget was measured with"),
+        coded_base=dict(values=CODED_BASE, source=CODED_BASE_SOURCE,
+                        rule="every coded setting this run scores is OPERATING_POINTS, then these "
+                             "values, then what the search chose; the search starts from them"),
+        coded_window_mode={d: base_params(d).get("window_mode", "no such knob")
+                           for d in plan.detectors},
+        fold_check=plan.fold_check(),
         budget_margin=BUDGET_MARGIN, busy_window_sec=plan.busy_sec,
         threshold_grid=[float(t) for t in THRESHOLD_GRID],
         tie_rules=TIE_RULES, registered=sorted(ARCHITECTURES),
@@ -1204,12 +1308,19 @@ def write_declaration(plan, out, jobs, gpu_jobs=1) -> dict:
     return meta
 
 
-def write_progress(out, state, git):
+# Tony, 2026-09-18: on the Tuesday before, a run's status became unreadable the moment its session
+# ended and nobody could say whether it was alive. progress.json is rewritten at least this often,
+# job or no job, and copied to `--mirror` (a claimed darkroom folder) so any machine can read it.
+# An `at` older than a few minutes means the driver is gone.
+MIRROR_EVERY_SEC = 60
+
+
+def write_progress(out, state, git, mirror=None):
     now = time.time()
     rate = sum(1 for t, kind in state["finished"] if kind == "fit" and now - t <= 3600)
     remaining = sum(1 for j in list(state["pending"].values()) + list(state["running"].values())
                     if j["kind"] == "fit")
-    write_json(Path(out) / "progress.json", dict(
+    doc = dict(
         at=time.strftime("%Y-%m-%dT%H:%M:%S%z"), commit=git["commit"], torch=torch_version(),
         stages=state["stages"], errors=sorted(state["errors"]), fits_last_hour=rate,
         running=len(state["running"]), queued=len(state["pending"]),
@@ -1218,12 +1329,21 @@ def write_progress(out, state, git):
                                         time.localtime(now + 3600.0 * remaining / rate))
                           if rate else None),
         note="remaining_fits_known excludes outer refits not yet queued: a model's are queued "
-             "when its selections are made"))
+             "when its selections are made",
+        mirror_every_sec=MIRROR_EVERY_SEC, mirror=None if mirror is None else str(mirror))
+    write_json(Path(out) / "progress.json", doc)
+    if mirror is not None:
+        try:
+            write_json(Path(mirror) / "progress.json", doc)
+        except OSError as e:   # a sync client holding the file must not end the run
+            write_json(Path(out) / "mirror_error.json",
+                       dict(at=doc["at"], error=f"{type(e).__name__}: {e}"))
 
 
 # ---- the driver --------------------------------------------------------------------------------------
 
-def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int = 1) -> dict:
+def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int = 1,
+        mirror: Path | None = None) -> dict:
     """With a GPU, learned fits run in their OWN pool of ``gpu_jobs`` worker processes, and the
     ``jobs`` CPU workers run only hand-written configurations.
 
@@ -1321,7 +1441,9 @@ def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int = 
                     state["running"][key] = job
                     futures[pools[pool_of(job)].submit(run_job, job, str(out), plan.sim,
                                                        plan.spec_path)] = job
-                done, _ = wait(list(futures), return_when=FIRST_COMPLETED)
+                # A timeout, so progress.json is rewritten even while a long fit holds every slot.
+                done, _ = wait(list(futures), timeout=MIRROR_EVERY_SEC,
+                               return_when=FIRST_COMPLETED)
                 for fu in done:
                     job = futures.pop(fu)
                     state["running"].pop(job["key"], None)
@@ -1331,7 +1453,7 @@ def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int = 
                     bump(stage_of(job), "done" if res["status"] == "ok" else "errors")
                     if res["status"] != "ok":
                         state["errors"].add(job["key"])
-                    write_progress(out, state, git)
+                write_progress(out, state, git, mirror)
                 on_idle()
 
         # 1. The reference alone, then the budgets into meta.json before any learned fit.
@@ -1346,7 +1468,7 @@ def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int = 
         # 2. Everything else in priority order; each model's selections queue its outer refits.
         for job in plan_jobs(plan, out):
             enqueue(job)
-        write_progress(out, state, git)
+        write_progress(out, state, git, mirror)
         on_idle()
         drain()
 
@@ -1354,7 +1476,7 @@ def run(plan, out: Path, jobs: int, retry_errors: bool = False, gpu_jobs: int = 
     results = summarize(plan, out)
     write_json(out / "results.json", results)
     write_json(out / "ran.json", ran)
-    write_progress(out, state, git)
+    write_progress(out, state, git, mirror)
     return dict(ran=ran, results=results)
 
 
@@ -1566,6 +1688,10 @@ def main(argv=None) -> int:
     p.add_argument("--simulation", choices=SIMULATIONS, default="bench",
                    help="bench (default): the bench's fitted field at its two backgrounds, goal 2's "
                         "next comparison. home: the retired home spec, docs/learned/generator_spec.json")
+    p.add_argument("--mirror", type=Path, default=None,
+                   help=f"a folder to copy progress.json into at least every {MIRROR_EVERY_SEC} s: "
+                        "a claimed darkroom folder, so the run is readable from any machine once the "
+                        "session that launched it has ended. Not part of the declaration")
     a = p.parse_args(argv)
     models = tuple(x for x in a.models.split(",") if x)
     dets = tuple(x for x in a.detectors.split(",") if x)
@@ -1580,10 +1706,10 @@ def main(argv=None) -> int:
                              "See docs/windows_workstation_setup.md, section 4.")
     plan = Plan(quick=a.quick, models=models, detectors=dets, device=a.device,
                 simulation=a.simulation)
-    # Decision 4: the budget is anchored to goal 1's landed every-knob CoactDetect. Its values
-    # reach this run through bench.OPERATING_POINTS, and until goal 1 lands them the shipped point
-    # is the binned one it is about to replace. A real run against that anchor would be measured
-    # against a reference nobody intends to ship.
+    # Decision 4: the budget is anchored to goal 1's every-knob CoactDetect. Its values reach this
+    # run through CODED_BASE (goal 1's chosen sliding values), because bench.OPERATING_POINTS still
+    # ships the binned point they replace. The guard stays: a base that lost its window mode would
+    # measure the budget against a reference nobody intends to ship.
     if not a.quick and plan.reference["params"].get("window_mode") != "sliding" \
             and not a.allow_binned_reference:
         raise SystemExit(
@@ -1591,8 +1717,12 @@ def main(argv=None) -> int:
             f"{plan.reference['params'].get('window_mode') or 'binned'}, not sliding. Goal 1 lands "
             "the sliding every-knob values (HANDOFF-coded-detectors.md §3 step 4); wait for them, "
             "or pass --allow-binned-reference and say in the readout which reference was used.")
+    check = plan.fold_check()
+    if not check["distinct"]:
+        raise SystemExit("the fold defect: " + "; ".join(check["problems"]))
     t0 = time.time()
-    r = run(plan, a.out.expanduser(), a.jobs, retry_errors=a.retry_errors, gpu_jobs=a.gpu_jobs)
+    r = run(plan, a.out.expanduser(), a.jobs, retry_errors=a.retry_errors, gpu_jobs=a.gpu_jobs,
+            mirror=a.mirror)
     n_ok = sum(1 for x in r["ran"] if x["status"] == "ok")
     print(f"ran {len(r['ran'])} jobs ({n_ok} ok, {len(r['ran']) - n_ok} errors) in "
           f"{(time.time() - t0) / 60:.1f} min; results in {a.out / 'results.json'}")

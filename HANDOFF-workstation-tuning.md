@@ -577,7 +577,7 @@ which need a session.
   model beside tuned CoactDetect and LoCo, **drawn as points per fold, never as bars with range
   whiskers** (the pipeline's stage 7 gate; forest-plot grammar asserts a significance nobody computed).
   Number it *Figure 1.* in its caption. Render it, look at it, put a copy in the claimed darkroom folder
-  with `python3 tools/show.py <file>`, and give Tony the path it prints.
+  with `python3 tools/show.py <file> --project bugarach`, and give Tony the path it prints.
 - A *Limits* section: simulation only; four outer folds; tuning at one training seed; the hand-written
   side's larger budget; the secondary's threshold carried from seed 0 to all five seeds; the budget
   anchored to one reference detector with a margin of 1.6; any Gate 1 difference from the Mac.
