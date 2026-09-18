@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/weekend-run-status — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-replicate-run-status/`
+- **Status:** ACTIVE (WSMIP065), claimed before writing. The status mirror for WSMIP065's weekend
+  run, the replicate of goal 2's fair comparison (Tony's choice, 2026-09-18: the same comparison at a
+  fresh seed draw), launched as `bench-replicate1` into `%USERPROFILE%\runs\bench-replicate1\` —
+  local disk, which is why it needs a mirror (armory finding 21).
+- **Writes:** one new folder only: `progress.json` (copied verbatim), `mirror.json` and `STATUS.txt`
+  (when it was copied, how old the source was, from which host), by `tools/mirror_run_status.py`
+  one-shot every 5 minutes from Task Scheduler task `bugarach-mirror-bench-replicate1`. Nothing
+  existing in the darkroom is touched.
+- **Touches:** this block; a note for WSMIP064 with the commands that worked here.
+- **Holds:** the folder above and that scheduled task on WSMIP065.
+- **Simulation only**, so nothing here is derived from a real recording.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the replicate has ended and the task is deleted, or the run is abandoned.
+
 ### WSMIP064/fair-comparison-run — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-fair-comparison-run/`
 - **Status:** ACTIVE (WSMIP064), claimed before writing. Goal 2, the fair comparison: the weekend
   tuning run of the nets against the six coded detectors on the bench, from branch
