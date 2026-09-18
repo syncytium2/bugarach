@@ -313,8 +313,12 @@ to keep. Nothing below edits WSMIP064's branch. It all arrives through `main`.
   0.00 s — the bin edge becoming the first participating event, which is the whole of why only half
   of CoactDetect's calls match at 0.5 s. Run, figures and note:
   `<darkroom>/bugarach/2026-09-17-sliding-vs-binned/`. Next: §3 step 3, the every-knob search.
-- 2026-09-17 23:50 (WSMIP065): **§3 steps 3 and 4 done for the sliding pair. LoCo and CoactDetect
-  ship SLIDING, calibrated in that mode.** Held out on 48 recordings the search never saw, against
+- 2026-09-17 23:50 (WSMIP065): **§3 step 3 done for the sliding pair; step 4 is HELD.** The values
+  are chosen, measured and bracketed, and both operating points are **still binned on `main`**:
+  switching them moves the viewer's calibrated defaults while the browser runs both detectors
+  binned, and moves the calls a slow-comodulation analysis is pinned to. The switch is committed on
+  branch `opt-every-knob-run` and pushed, with the full suite's verdict in the darkroom. Held out on
+  48 recordings the search never saw, against
   the binned points they replace: **LoCo** threshold 99.9, merge gap 8 s, symmetric null — mean F1
   0.737 against 0.699, 1.7 calls/hour on the empty recording (limit 3, was 4.0 and over), crowded
   0.827 against 0.816. **CoactDetect** alpha 1e-5, context 120 s, merge gap 8 s, guard 1 s — 0.746
