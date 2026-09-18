@@ -28,9 +28,9 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
 
 ## Open, in order
 
-1. **Re-point the Mac's interface2 checkout** — `git remote set-url origin
-   https://github.com/syncytium2/interface2.git`, then `git fetch`. One command covers its
-   worktrees. Then run the sweep above there too: the Mac's other checkouts were never inventoried.
+1. ~~**Re-point the Mac's interface2 checkout**, and run the sweep above there too.~~ **Done
+   2026-09-18** (Tony). Checked from WSMIP065 afterwards: GitLab's `main` still at the cutover
+   commit `94912afc`, and no ref on GitLab that GitHub lacks — nothing was pushed there after it.
 2. **Look through the GitLab web UI before access ends** (Tony; the date is unknown and no later
    than 2027-03-31): projects never cloned on either machine, and the discussion on interface2's
    4 merge requests, any issues and any wiki. None of it is git, so none of it is in a mirror.
