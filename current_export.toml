@@ -79,10 +79,15 @@ removed over the whole recording, listed in `field_steps_excluded.tsv`.
 84 recordings, 2,630 ROIs, 264,075 events, 238 regions. `20250731_149` is excluded by db4
 `exclude == 1`, as in every sibling folder.
 
-⚠ The census that found the pinned ROIs may not be complete. An open interface2 todo from
-2026-09-02 ranks `20260629_314` and `20260630_325` beside the four censused slices on a blind
-whole-frame scan, and the pinning detector has not been run over them. So four slices is a
-floor rather than a count: this folder cleans what the census found.
+⚠ Four slices is a threshold, not the whole population, and the census says so itself
+(`darkroom/sandbox_bakeoff/pinned_roi_census.csv`, 14 ROIs over 6 slices, cut at
+`n_exceed >= 100`). Two slices sit below the cut and keep their events: `20260702_338`
+(1 ROI, 13 exceeding frames) and `20260630_325` (1 ROI, 10), against 515 to 2,195 for the
+four that were cleaned — two orders of magnitude weaker, measured rather than assumed. A
+third, `20260629_314`, is absent from the census altogether: an open interface2 todo from
+2026-09-02 ranks it beside the known four on a blind whole-frame scan, and the pinning
+detector has not been run over it. So the honest statement is measured-and-tiny for two
+slices, unexamined for one.
 """
 
 [steps_excluded]
