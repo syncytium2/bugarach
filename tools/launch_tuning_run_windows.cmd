@@ -16,6 +16,8 @@ rem the run ends (schtasks /delete /tn bugarach-tune-<name> /f), or it fires aga
 rem Do not change tools\ or src\ in the worktree while it runs: a resume would load the new code, and
 rem the tool refuses a changed declaration.
 setlocal
+rem Before any shift: SHIFT moves %0 too, so %~dp0 afterwards names an argument, not this file.
+set "HERE=%~dp0"
 if "%~1"=="" (echo usage: launch_tuning_run_windows.cmd ^<name^> [tool arguments] & exit /b 2)
 set "NAME=%~1"
 shift
@@ -26,7 +28,7 @@ set "ARGS=%ARGS% %1"
 shift
 goto collect
 :run
-cd /d "%~dp0.."
+cd /d "%HERE%.."
 set "LOG=%USERPROFILE%\runs\%NAME%.log"
 if not exist "%USERPROFILE%\runs" mkdir "%USERPROFILE%\runs"
 echo ==== launched %DATE% %TIME% >> "%LOG%"

@@ -6,3 +6,8 @@
 # rather than "the check could not run". Pin the line endings instead.
 # (Convention adopted from syncytium2/murderboard.)
 *.sh text eol=lf
+
+# Windows batch files the other way, CRLF on every platform. cmd.exe looks up a `goto` label by
+# scanning the file, and with LF-only line endings that scan can miss labels outright; a batch
+# file edited on a Mac would then break on the machine it is for.
+*.cmd text eol=crlf
