@@ -10,6 +10,25 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/unsup-pins-excluded-run — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-slow-comodulation-pins-excluded/`
+- **Status:** ACTIVE (bugarach-quiet-raven), **written and idle**. The re-measurement of slow shared
+  modulation on the producer's new export, `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`,
+  which removes the moco floor-pinned windows that stopped this work. Tony: *"the new data are
+  available now. set up the run for overnight."*
+- **Holds nothing running.** The run finished in 686 s at 12 workers, 32 draws, 4,000 resamples.
+- **Writes:** one new folder only — `results.json`, `summary.json`, the six figures and
+  `one_recording.png`, all present. The 2026-09-17 slow-comodulation folder is read-only from here
+  and keeps the superseded run; nothing existing in the darkroom is touched.
+- **Touches:** `current_export.toml` (adds the `steps_and_pins_excluded` role — it does **not**
+  move `default` or `steps_excluded`), `tools/measure_slow_comodulation.py`,
+  `tools/make_slow_comodulation_figure.py`, and at landing the page, its summary and a goal pointer.
+- ⚠ **Derived from real recordings**, so the run stays in the darkroom (FOUNDATIONS §5); the repo
+  gets the pooled `summary.json`, which carries no recording ids.
+- ⚠ **The page has not been rewritten on these numbers**, and the repo's figures are deliberately
+  still the superseded run's so page and figures agree. Handoff at the repo root:
+  `HANDOFF-slow-comodulation-on-the-de-pinned-export.md`.
+- **Released when:** the page is rewritten on this run and lands, or the run is abandoned.
+
 ### Mac/read-the-de-pinned-export — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-rigid-shift-de-pinned/`
 - **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony, 2026-09-17 evening:
   *"the new data are available now. set up for overnight."* The whole rigid-shift chain reran on the

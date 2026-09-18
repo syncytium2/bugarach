@@ -47,7 +47,7 @@ from bugarach.time_axis import label as tlabel  # noqa: E402
 from bugarach.time_axis import ticks as tticks  # noqa: E402
 from tube_self_supervised import rigid_frames  # noqa: E402
 
-FOLDER = "2026-09-17-slow-comodulation"
+FOLDER = "2026-09-17-slow-comodulation-pins-excluded"
 DARKROOM_ONLY = ("one_recording.png",)
 plt.rcParams.update({"font.size": 14, "axes.labelsize": 14, "xtick.labelsize": 13,
                      "ytick.labelsize": 13, "legend.fontsize": 13})
@@ -74,7 +74,9 @@ WORLD = {  # colour, style, label
     "sim_hot_window": ("#1b9e77", "-", "promiscuity probe only"),
     "benchmark": ("#e41a1c", (0, (5, 2)), "benchmark generator, whole spec"),
 }
-DATASET = {"steps_excluded/fast": "lab, fast stream", "steps_excluded/slow": "lab, slow stream",
+LAB = "steps_and_pins_excluded"
+"""The lab role ``measure_slow_comodulation.py`` reads; its result keys are ``<role>/<stream>``."""
+DATASET = {f"{LAB}/fast": "lab, fast stream", f"{LAB}/slow": "lab, slow stream",
            "cossart/events": "Dard et al. 2022"}
 GROUP_INK = {"DI": "#0f9fb5", "MALE": "#b8860b", "ORX": "#6b3e26", "OVX": "#c51b7d"}
 """Four hues that differ in lightness as well as hue, so the thin dashed lines separate."""
@@ -453,7 +455,7 @@ def fig4(R, out):
 
 # -- Figure 5: the recordings' correlograms ----------------------------------------------------
 
-ZOOM = {"steps_excluded/fast": (-0.15, 0.35), "steps_excluded/slow": (-0.8, 0.8),
+ZOOM = {f"{LAB}/fast": (-0.15, 0.35), f"{LAB}/slow": (-0.8, 0.8),
         "cossart/events": (-0.12, 0.12)}
 
 
@@ -498,7 +500,7 @@ def fig5(R, out):
 # -- Figure 6: by group ------------------------------------------------------------------------
 
 def fig6(R, out):
-    names = [n for n in ("steps_excluded/fast", "steps_excluded/slow") if n in R["folders"]]
+    names = [n for n in (f"{LAB}/fast", f"{LAB}/slow") if n in R["folders"]]
     if not names:
         return
     fig = plt.figure(figsize=(12.5, 11.5))
@@ -557,7 +559,7 @@ def fig6(R, out):
 # -- darkroom only: one real recording ---------------------------------------------------------
 
 def one_recording(R, out):
-    F = R["folders"].get("steps_excluded/fast")
+    F = R["folders"].get(f"{LAB}/fast")
     if not F:
         return
     rows = [r for r in F["rows"] if "counts_per_minute" in r]

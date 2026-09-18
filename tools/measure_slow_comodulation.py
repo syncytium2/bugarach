@@ -102,7 +102,7 @@ from bugarach import surrogates as sg  # noqa: E402
 from tube_self_supervised import rigid_frames  # noqa: E402
 
 TAG = "slow-comodulation-2026-09-17"
-FOLDER = "2026-09-17-slow-comodulation"
+FOLDER = "2026-09-17-slow-comodulation-pins-excluded"
 J_SEC = (1.6, 10.0, 20.0)
 TRIM_SEC = max(J_SEC)
 BLOCK_SEC = 120.0
@@ -116,7 +116,16 @@ N_SINGLE = 3
 """Single circular draws per recording, each scored against the 8-draw circular mean: how often a
 per-recording ratio from one surrogate realization exceeds 1 by chance. ``circular_ref8`` is a
 second 8-draw mean, the matching reference for arms that are themselves means of 8 draws."""
-FOLDERS = (("steps_excluded", "fast"), ("steps_excluded", "slow"), ("cossart", "events"))
+LAB_ROLE = "steps_and_pins_excluded"
+"""The lab folder this analysis reads, named once rather than repeated in branches.
+
+It moved on 2026-09-17, from ``steps_excluded`` to the producer's folder that also removes the
+moco floor-pinned windows. This is not a preference between two corpora: the earlier folder
+declared a contamination nothing in the data marked, and ``dataset.current`` refuses it outright.
+The branches below test against this constant because the lab folder is the one with two streams,
+baseline windows and a CoactDetect removal arm; the Dard et al. folder has none of those.
+"""
+FOLDERS = ((LAB_ROLE, "fast"), (LAB_ROLE, "slow"), ("cossart", "events"))
 
 COACT_NOTE = ("CoactDetect runs at detect_folder.detector_params('coact', ...) on both streams: "
               "the project's calibrated point, as bugarach detect runs it.")
@@ -350,20 +359,31 @@ def arms_for(trains_full, L_full: int, dt: float, key, draws: int, stream: str |
 # -- real recordings --------------------------------------------------------------------------
 
 def load(role: str, stream: str, limit: int | None):
-    """The lab folder is refused anything but its declared baseline (as ``tools/look_rigid_shift.py``
-    refuses it)."""
+    """Recordings, and whether this folder declares treatment regions.
+
+    A folder that declares regions is refused anything but its declared baseline, as
+    ``tools/look_rigid_shift.py`` refuses it.
+
+    ⚠ **The guard asks the folder, not the role name.** It used to read
+    ``role == "steps_excluded"``, which meant that renaming the role — which happened the day
+    the producer shipped the de-pinned export — would have switched the guard off without a
+    word, leaving treatment windows in a baseline-only analysis. The session next door hit
+    exactly that: three name comparisons, two of which crashed loudly and one of which was this
+    guard, failing silently. A property of the data cannot go stale the way a name can.
+    """
     from bugarach import dataset
     from bugarach.io import load_folder
     slices = load_folder(dataset.current(role))
     if limit:
         slices = slices[:limit]
     recs, skipped = ss.recordings_from_slices(slices, stream)
-    if role == "steps_excluded":
+    declares_regions = any(getattr(s, "regions", None) for s in slices)
+    if declares_regions:
         refused = [r.recording_id for r in recs
                    if not r.window_source.startswith("baseline region")]
         if refused:
             raise SystemExit(f"refusing non-baseline windows in {stream}: {refused}")
-    return recs, skipped
+    return recs, skipped, declares_regions
 
 
 def active_and_correlation(trains_full, L_full: int, dt: float) -> dict:
@@ -403,17 +423,21 @@ def minute_counts(trains_full, L_full: int, dt: float, key) -> dict:
 
 
 def real_task(args):
-    role, stream, rec, draws = args
+    role, stream, rec, draws, declares_regions = args
     a, b = rec.window
     lead_in = 0
-    if role != "steps_excluded":
+    if not declares_regions:
+        # No regions means the window is the whole recording, and several of those open with
+        # tens of seconds in which no ROI fires; start at the first onset instead.
         firsts = [int(t[0]) for t in rec.trains if len(t)]
         if firsts:
             lead_in = min(firsts) - a
             a = min(firsts)
     trains = [np.asarray(t, np.int64) - a for t in rec.trains]
+    # arms_for builds the CoactDetect removal arms only for a stream it has an operating point
+    # for, so the stream goes through as it is rather than being gated on the folder's name.
     arms, extra, used_sec = arms_for(trains, b - a, rec.dt, (role, stream, rec.recording_id),
-                                     draws, stream if role == "steps_excluded" else None)
+                                     draws, stream)
     extra["counts_per_minute"] = minute_counts(trains, b - a, rec.dt,
                                                (role, stream, rec.recording_id))
     extra.update(active_and_correlation(trains, b - a, rec.dt))
@@ -812,8 +836,9 @@ def main(argv=None):
     with mp.Pool(a.jobs) as pool:
         if not a.no_real:
             for role, stream in FOLDERS:
-                recs, skipped = load(role, stream, a.limit)
-                rows = pool.map(real_task, [(role, stream, r, a.draws) for r in recs])
+                recs, skipped, declares_regions = load(role, stream, a.limit)
+                rows = pool.map(real_task,
+                                [(role, stream, r, a.draws, declares_regions) for r in recs])
                 name = f"{role}/{stream}"
                 R["folders"][name] = dict(
                     rows=rows, skipped=skipped, summary=summarise(rows, a.boot, (role, stream)),
