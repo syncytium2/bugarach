@@ -45,20 +45,23 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
 2. **Look through the GitLab web UI before access ends** (Tony; the date is unknown and no later
    than 2027-03-31): projects never cloned on either machine, and the discussion on interface2's
    4 merge requests, any issues and any wiki. None of it is git, so none of it is in a mirror.
-3. **Archive the GitLab projects** (Tony, web UI: Settings → General → Advanced → Archive). This is
-   what makes a stray push fail loudly instead of splitting the history. **interface2: archived
-   2026-09-18** (Tony). The rest: open.
+3. ~~**Archive the GitLab projects.**~~ **Done 2026-09-18** (Tony) — interface2 first, then the rest.
    `Documents\cascade stuff\TDCascade` (286 MB, not a git repo — a copy of the CASCADE tree plus a
    clone of the empty `tdcascade` project) was **checked and deleted 2026-09-18** (Tony: go). Every
    file was hashed against all of `cascade-td`'s objects: 681 of 694 already there. Of the 13 not,
    one mattered — `cascade2p/utils.py` of 2024-09-04, an unfinished fix for the ground-truth path —
    and it is branch `archive/tdcascade-utils-2024-09-04` in `cascade-td`, byte-identical. The rest
    were `__pycache__`, Jupyter checkpoints and the one-line README.
-4. **interface2's branch list on GitHub** — the triage in its `docs/migration_selection.tsv`,
-   applied on GitHub only, **after** step 3: create each `archive/<branch>` tag, verify it SHA
-   against SHA, then delete the branch. Decided on interface2's board, block
-   `065/reply-branch-list`: before cutover a GitLab catch-up would have undone it, and after the
-   tags exist the deletions depend on nothing at GitLab.
+4. ~~**interface2's branch list on GitHub.**~~ **Done 2026-09-18** (Tony: *"clean up interface2 on
+   github"*), from a fresh clone of GitHub, restore ledger landed on interface2's `main` **before**
+   anything was deleted (`docs/github_branch_triage_ledger_2026-09-18.md`). 39 `tag` rows became
+   `archive/<branch>` tags, all verified SHA against SHA on GitHub first; then one atomic push, each
+   deletion leased at its recorded SHA, removed those 39, 112 branches whose tips are in `main`, and
+   GitLab's 8 `refs/merge-requests/*` (each `head` in `main`; each `merge` a preview merge whose
+   parents are both in `main`). No `tag` row had been committed to since the triage. **GitHub now:
+   27 branches** (the 21 `branch` rows still unmerged, `main`, and 5 unlisted ones kept by default),
+   39 `archive/*` + 16 `rescue/*` tags. WSMIP065's checkout still has 25 local branches whose remote
+   is gone — every commit on them is on GitHub; delete them locally whenever.
 5. **Text that still names GitLab as live** — foundations' `GLOSSARY.md` line 1 provenance stamp
    (`interface2 (GitLab) … @ 62c856c`) and its `README.md` line 81 and ADRs 0001/0004 (the ADRs are
    dated records: add a note, do not rewrite). In interface2, its own docs beyond the banner and
