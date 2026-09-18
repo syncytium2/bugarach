@@ -313,7 +313,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     import os
     os.environ[lr.ROLE_ENV] = a.role
-    lab = a.role == "steps_excluded"
+    lab = lr.is_lab_folder()          # the folder's streams, not the role's name
     streams = ("fast", "slow") if lab else ("events",)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
