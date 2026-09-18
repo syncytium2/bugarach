@@ -19,7 +19,7 @@ unmerged branch, which declares the export role it reads. That is the one blocki
 | what | where | state |
 |---|---|---|
 | the rerun: page, outputs, figures, role plumbing | branch **`read-the-de-pinned-export`** (5 commits, tip `269cc19`) | **not landed; blocked, see below** |
-| the export role `steps_and_pins_excluded` | branch `unsup/pins-excluded-run` (tip `180ce63`), another session's | **not on `main`, no PR open** |
+| the export role `steps_and_pins_excluded` | branch `unsup/pins-excluded-run`, another session's | **PR #631, merging on green** — this is the blocker clearing |
 | darkroom claim for this run's outputs | `docs/SESSIONS.md`, merged as **#629** | ACTIVE; folder written |
 | the previous (contaminated) run's report | on `main` since `59262d5` | superseded by this branch when it lands |
 | the contamination stop | `src/bugarach/dataset.py`, merged as #625 | live; refuses `steps_excluded` |
@@ -137,9 +137,22 @@ where co-activity is rarer than the recording's own activity predicts. Nobody ha
 - **The board is shared and changes under you.** Read `../bugarach-worktrees/SESSIONS.md` immediately
   before writing to it, and read `docs/SESSIONS.md` before claiming anything in the darkroom.
 
+## The other live thread, and its handoff
+
+The slow-co-modulation session reran its own measurement on the same de-pinned export the same night
+and is handing off too, as `HANDOFF-slow-comodulation-on-the-de-pinned-export.md` (lands with #631).
+Read its traps section rather than rediscovering them. Two of its results bear directly on this page
+and are already folded in: the leave-one-out caution above, and that its pooled numbers moved 2.37 →
+2.36 and 2.13 → 2.11, which is the same "the contamination was not the explanation" answer this run
+got. ⚠ Its repo figures deliberately still show the superseded run until its new page text lands with
+them; this page's figures and text went in together instead. Either way `main` never carries figures
+that disagree with the words beside them.
+
+**The machine is free.** This session's chain finished at 03:06 and nothing of it is running.
+
 ## Next actions, in order
 
-1. Check whether `unsup/pins-excluded-run` has landed. If yes: `git rebase origin/main` on
+1. Check whether `unsup/pins-excluded-run` (PR #631) has landed. If yes: `git rebase origin/main` on
    `read-the-de-pinned-export`, run `pytest -q`, open the PR, merge on green.
 2. After it lands: repin the two `docs/MILESTONES.md` section C rows to the new commit — they
    currently quote the contaminated run's numbers and cite `59262d5` — and release the darkroom claim
