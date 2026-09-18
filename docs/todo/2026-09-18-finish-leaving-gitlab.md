@@ -18,6 +18,17 @@ filed: 2026-09-18
   repo of the same name, verified, and its checkout re-pointed.
 - **R** — already gone from GitLab. The 21 commits fireflies lacked are `archive/R-*` tags in
   fireflies; the dead remote was removed from all three checkouts.
+- **CASCADE** — found while going through the GitLab UI. Its four GitLab projects (`cascade-local`,
+  `cascade`, `tdcascade`, `cascadeTD`) each held one commit, a README with a title and nothing else;
+  **Tony deleted them.** The real work was in `Documents\cascade stuff\Cascade`, a checkout of the
+  Helmchen lab's CASCADE with **no remote holding any of it**: 3 unpushed commits (TD ground truth,
+  `cascade2p` edits) and 168 untracked files — the CASCADE models trained on TD data (`TD_5min`,
+  `TD_thing64`, `TD_thing65`, `TD_three`), KNDy ground truth (DS96/97/98) and 2024 traces with their
+  predictions. Now private **`syncytium2/cascade-td`**: `master`, `defazio`, and
+  `archive/untracked-2026-09-18` (the 168 files, committed without touching the working tree), each
+  identical by SHA; 162 files byte-identical on the archive branch and six `config.yaml` identical
+  after `core.autocrlf`'s CRLF→LF. The checkout's `origin` is now that repo; the Helmchen lab's is
+  `upstream`.
 
 No checkout on WSMIP065 has a gitlab.com remote. Check it again with:
 
@@ -35,7 +46,10 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
    than 2027-03-31): projects never cloned on either machine, and the discussion on interface2's
    4 merge requests, any issues and any wiki. None of it is git, so none of it is in a mirror.
 3. **Archive the GitLab projects** (Tony, web UI: Settings → General → Advanced → Archive). This is
-   what makes a stray push fail loudly instead of splitting the history.
+   what makes a stray push fail loudly instead of splitting the history. **interface2: archived
+   2026-09-18** (Tony). The rest: open.
+   `Documents\cascade stuff\TDCascade` (286 MB, not a git repo — a copy of the CASCADE tree plus a
+   clone of the empty `tdcascade` project) is still on disk, unchecked against `cascade-td`.
 4. **interface2's branch list on GitHub** — the triage in its `docs/migration_selection.tsv`,
    applied on GitHub only, **after** step 3: create each `archive/<branch>` tag, verify it SHA
    against SHA, then delete the branch. Decided on interface2's board, block
