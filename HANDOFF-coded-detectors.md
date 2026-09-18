@@ -313,3 +313,34 @@ to keep. Nothing below edits WSMIP064's branch. It all arrives through `main`.
   0.00 s — the bin edge becoming the first participating event, which is the whole of why only half
   of CoactDetect's calls match at 0.5 s. Run, figures and note:
   `<darkroom>/bugarach/2026-09-17-sliding-vs-binned/`. Next: §3 step 3, the every-knob search.
+- 2026-09-17 23:50 (WSMIP065): **§3 step 3 done for the sliding pair; step 4 is HELD.** The values
+  are chosen, measured and bracketed, and both operating points are **still binned on `main`**:
+  switching them moves the viewer's calibrated defaults while the browser runs both detectors
+  binned, and moves the calls a slow-comodulation analysis is pinned to. The switch is committed on
+  branch `opt-every-knob-run` and pushed, with the full suite's verdict in the darkroom. Held out on
+  48 recordings the search never saw, against
+  the binned points they replace: **LoCo** threshold 99.9, merge gap 8 s, symmetric null — mean F1
+  0.737 against 0.699, 1.7 calls/hour on the empty recording (limit 3, was 4.0 and over), crowded
+  0.827 against 0.816. **CoactDetect** alpha 1e-5, context 120 s, merge gap 8 s, guard 1 s — 0.746
+  against 0.702, 5.8 calls/hour (limit 7, was 7.7 and over), crowded 0.818 against 0.808. Both merge
+  gaps are bracketed: the axis was extended to 16 s and the crowded veto refused it.
+  **Three things the search needed first, each found by failing.** (1) `bench.MAX_CROWDED_DROP`, a
+  fourth budget: the first every-knob run gained 0.11–0.31 held-out F1 for four detectors by running
+  merge gaps out to about a minute, and lost 0.25–0.32 on crowded recordings. The other three budgets
+  cannot see it — merging makes a detector call LESS, so the artifact looks *cleaner* on every
+  false-alarm measure. (2) The veto's reference is what a detector SHIPS at, not the sliding-forced
+  start; anchored wrongly, sliding LoCo had no admissible setting at all. (3)
+  `bench.context_fits_the_null`: a context wider than the planted spacing puts other events inside
+  the null, the null sits high, the detector calls less and scores better — the search chose 240 s on
+  a 120 s bench and `test_bench.py` refused it after the run. It is a validity rule in front now.
+  **Also:** the search rescues an inadmissible starting point instead of reporting "nothing moved",
+  and refuses to start when the shipped point is not measurable here. `TIE_F1` in
+  `tests/test_background_curve.py` widened 0.01 → 0.02 against a measurement, not to fit a result: at
+  12 seeds the new values leave no steady leader; at 36 seeds CoactDetect leads every grid point with
+  deficit 0.000. Run: `<darkroom>/bugarach/2026-09-17-full-search/sliding5/`; the binned every-knob
+  run and the artifact it exposed are in the parent folder.
+  **Still open, measured and not landed:** locust's 128-frame minimum distance (+0.119 held-out,
+  +0.149 crowded, but unbracketed at the extension ceiling and tangled with the anchor question);
+  SPIKE-synch `min_n` 3 → 2 (+0.042 held-out, +0.051 crowded, admissible); rate+context merge gap
+  3 → 8 s (+0.013 held-out, crowded −0.008). Next: land those three or say why not, then the
+  browser's `loco.js` / `coact.js` port, which the sliding switch now owes.
