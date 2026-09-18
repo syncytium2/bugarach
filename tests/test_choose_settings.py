@@ -129,6 +129,82 @@ def test_invalid_combinations_are_never_scored(search):
     assert all(bench.settings_are_valid("coact", p) for p in seen)
 
 
+def test_a_categorical_axis_is_never_extended_and_never_called_an_edge(search):
+    """"peak" is not an end of ("threshold", "peak") — a name has no ends, and `extend` has
+    nothing to double past one."""
+    got = search.choose_settings(
+        "loco", score=lambda p: 1.0 if p["detection_mode"] == "peak" else 0.0,
+        extend_ranges=True)
+    assert got.params["detection_mode"] == "peak"
+    assert "detection_mode" not in got.edges
+    assert set(got.grids["detection_mode"]) == {"threshold", "peak"}
+
+
+def test_a_switched_off_axis_is_not_searched_and_returns_when_its_parent_moves(search):
+    """The peak-mode pair means nothing under threshold detection.
+
+    Varying it there costs evaluations and returns identical answers, and a readout listing
+    it as searched is a claim nobody can back.
+    """
+    seen = set()
+
+    def flat(p):
+        seen.add((p["detection_mode"], p["peak_prominence"]))
+        return 0.0
+
+    search.choose_settings("loco", score=flat)
+    assert {m for m, _ in seen} == {"threshold", "peak"}, "the mode itself is searched"
+    assert len({pr for m, pr in seen if m == "threshold"}) == 1, (
+        "prominence must not be varied under threshold mode")
+
+    seen.clear()
+
+    def prefers_peak(p):
+        seen.add((p["detection_mode"], p["peak_prominence"]))
+        return 1.0 if p["detection_mode"] == "peak" else 0.0
+
+    search.choose_settings("loco", score=prefers_peak)
+    assert len({pr for m, pr in seen if m == "peak"}) > 1, (
+        "once peak mode wins, its own settings must be searched")
+
+
+def test_a_nan_start_is_carried_rather_than_put_in_the_grid(search):
+    """Binned SCE ships `merge_gap_sec` NaN, meaning "do not merge".
+
+    NaN is not equal to itself, so a grid holding it breaks `min`, `max` and every "is the
+    start still the best" comparison in the search.
+    """
+    import math
+
+    got = search.choose_settings("sce", score=lambda p: 0.0)
+    assert math.isnan(got.params["merge_gap_sec"]), "nothing beat it, so it stays"
+    assert not any(isinstance(v, float) and math.isnan(v) for v in got.grids["merge_gap_sec"])
+    assert "merge_gap_sec" not in got.edges
+
+    moved = search.choose_settings(
+        "sce", score=lambda p: 0.0 if math.isnan(p["merge_gap_sec"]) else 1.0)
+    assert not math.isnan(moved.params["merge_gap_sec"]), "and it can be moved off"
+
+
+def test_every_declared_axis_is_a_real_parameter_of_its_detector():
+    """A grid for a parameter the function does not take is a search of nothing."""
+    import inspect
+
+    from bugarach.detectors import (cicada_detect, coact_detect, loco_detect, rate_detect,
+                                    sce_detect, sync_detect)
+
+    fns = {"coact": coact_detect, "loco": loco_detect, "rate": rate_detect,
+           "sce": sce_detect, "sync": sync_detect, "cicada": cicada_detect}
+    for det, axes in bench.FULL_GRIDS.items():
+        takes = set(inspect.signature(fns[det]).parameters)
+        assert set(axes) <= takes, f"{det}: {sorted(set(axes) - takes)} is not a parameter"
+    for det, skipped in bench.NOT_SEARCHED.items():
+        takes = set(inspect.signature(fns[det]).parameters)
+        assert set(skipped) <= takes, f"{det}: {sorted(set(skipped) - takes)} is not a parameter"
+        assert not (set(skipped) & set(bench.FULL_GRIDS[det])), (
+            f"{det}: a parameter cannot be both searched and recorded as not searched")
+
+
 def test_the_same_settings_are_scored_once(search):
     """A fold pays for a search; paying twice for one setting is the caller's compute."""
     calls = []

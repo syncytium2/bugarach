@@ -54,7 +54,7 @@ from pathlib import Path
 import numpy as np
 
 LEARNED = ("tube", "tube_guard", "tube_ratio", "tube_ratio_guard", "trace", "tiny",
-           "line", "line_length", "tube_no_bypass", "gauge", "chorus",
+           "line", "line_length", "line_bound", "tube_no_bypass", "gauge", "chorus",
            "chorus_gain", "chorus_norm", "chorus_gain_norm", "chorus_line")
 LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3,
       # THE 2x2 RUNS AT THE CONTROL'S LEARNING RATE, DELIBERATELY. `tube`'s 1e-2 is
@@ -67,7 +67,7 @@ LR = {"tube": 1e-2, "trace": 1e-3, "tiny": 1e-3,
       # `line` runs at the control's rate too, for the same reason: it differs from
       # `tube` by where the ROI axis is collapsed, and tuning its rate would confound
       # the mechanism with its optimisation.
-      "line": 1e-2, "line_length": 1e-2,
+      "line": 1e-2, "line_length": 1e-2, "line_bound": 1e-2,
       # The field-size candidates, and gauge's control, at the same rate and for the
       # same reason. `gauge` differs from `tube_no_bypass` by standardising against
       # its own shifted null; `chorus` differs from `line` by two extra pooled

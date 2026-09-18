@@ -12,8 +12,9 @@ This probe measures whether the models already here can make those distinctions.
 synthetic field it plants, one at a time:
 
 * **line K** — K distinct ROIs, one onset each, inside one frame: the vertical line;
-* **burst K** — K/4 ROIs firing 4 times each inside 0.4 s: the same ink, a quarter of the line;
-* **fuzz K** — K distinct ROIs spread uniformly over 3 s: the same ROIs, no line;
+* **burst K** — K/4 ROIs firing 4 times each, two frames apart (0.6 s): the same ink, a quarter
+  of the line;
+* **fuzz K** — K distinct ROIs spread uniformly over 2.9 s (±15 frames): the same ROIs, no line;
 * **wave K** — K distinct ROIs recruited one frame apart: the same ROIs, ordered rather than
   scattered. To a model that is permutation-invariant over ROIs this is fuzz with a different
   cover story, and that is the point of including it — the tilt a person sees in a raster is a
@@ -23,9 +24,11 @@ A detector of coordination should rank line above burst and above fuzz at equal 
 score is the maximum of its per-frame output within ±2 s of the plant, minus the same maximum on
 the identical field with nothing planted, so a model's own scale cancels.
 
-Models: every checkpoint in ``--checkpoints`` (the self-supervised fits), plus a supervised
-``tube`` and ``tube_guard`` fitted here the way the bake-off fits them, and the untrained
-architectures. Nothing is fitted to this probe.
+Models: every checkpoint in ``--checkpoints`` (the self-supervised fits), plus every model in
+``tube_self_supervised.MODELS`` fitted here with labels the way the bake-off fits them (one seed), and
+the same architectures untrained. Nothing is fitted to this probe. These docstring figures were
+0.4 s, 3 s and "tube and tube_guard" until 2026-09-17; the code has drawn 0.6 s, 2.9 s and every
+model since the first report.
 """
 
 from __future__ import annotations
@@ -120,7 +123,7 @@ def main(argv=None):
     import fair_bakeoff as fb
     pin_threads()
     models = {}
-    for name in ("tube", "tube_guard", "line", "line_length"):
+    for name in ts.MODELS:
         torch.manual_seed(0)
         models[f"untrained {name}"] = ARCHITECTURES[name].make().eval()
         mk, n_fit, _ = fold_maker(ts.sim_recording, list(fold_split(

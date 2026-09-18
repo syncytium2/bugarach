@@ -47,6 +47,20 @@ def test_dirty_is_tri_state_because_unknown_is_not_clean():
     assert provenance.git_dirty() in (True, False, None)
 
 
+def test_a_clean_tree_is_reported_clean_and_not_unknown(monkeypatch):
+    """An empty `git status --porcelain` means clean. It was read as "could not check"
+    until 2026-09-16, so every clean run carried `git_dirty: null`."""
+    import subprocess
+
+    def fake_run(args, **kw):
+        out = "" if args[1] == "status" else "abc123\n"
+        return subprocess.CompletedProcess(args, 0, stdout=out, stderr="")
+
+    monkeypatch.setattr(provenance.subprocess, "run", fake_run)
+    assert provenance.git_dirty() is False
+    assert provenance.git_commit() == "abc123"
+
+
 def test_code_version_carries_the_commit_when_there_is_one():
     """In a checkout the scalar must name the tree, not just the release.
 

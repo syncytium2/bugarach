@@ -69,6 +69,9 @@ def _window_slice(s, stream):
     if window is None:
         return None, "no regions declared, so no baseline window"
     lo, hi = window
+    if hi - lo < bench.MIN_BASELINE_SEC:
+        return None, (f"baseline window {hi - lo:.0f} s, under the "
+                      f"{bench.MIN_BASELINE_SEC:.0f} s floor (bench.MIN_BASELINE_SEC)")
     st = s.streams[stream]
     kw = {}
     for f in ("locs", "t50rise", "peak"):

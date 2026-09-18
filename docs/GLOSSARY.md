@@ -355,8 +355,9 @@ Added 2026-09-10, when that plan's review found them used undefined.
   dither's sub-floor intervals.
 - ***J*** — jitter radius: how far a dither may move one onset, ± seconds. Other
   surrogates' parameters are matched to it by root-mean-square displacement. For
-  **rigid shift** it is the radius of each ROI's whole-train offset, and some pages call
-  it the displacement or shift radius.
+  **rigid shift** it is the radius of each ROI's whole-train offset, and for a **shared
+  offset** the radius of the one offset applied to every train; some pages call it the
+  displacement or shift radius.
 - **dead time, τ** — the shortest within-ROI interval the producer's event
   extractor can emit; the producer's to declare. ⚠ **Not SPIKE-synch's τ**, which
   is a coincidence window (see **ISI-adaptive**).
@@ -366,6 +367,22 @@ Added 2026-09-10, when that plan's review found them used undefined.
   zero by construction.
 - **known-bad control** — a surrogate built to fail one statistic. A statistic
   that does not flag it has no power there, and its verdicts there do not count.
+  The rigid-shift report calls the same thing a **positive control**. ⚠ A control only
+  shows power against the alternative it was built for: per-onset dither breaks
+  intervals, which rigid shift never does, so it cannot show power against a leak rigid
+  shift could have (the third murderboard of that report, 2026-09-17).
+- **small-J control** — rigid shift at a displacement too small to move slow
+  co-modulation (1.6 s on the fast stream). A scorer that separates real from rigid
+  shift at 10–20 s but not at the small *J* is reading slow shared modulation, not
+  sub-second coordination.
+- **shared-modulation twin / independent-modulation twin** — synthetic recordings with
+  no events whose ROIs' rates follow one slow sinusoid (shared) or one each
+  (independent). The first separates from its rigid shift for any scorer that sees
+  co-modulation; the second must read chance.
+- **count baselines** — zero-parameter scorers run through the same thresholds and
+  checks as a trained model: `count_share` (share of ROIs with an onset within ±2
+  frames), `count_excess` (that minus its 30 s moving mean) and `slow_modulation` (the
+  share averaged over 10 s). `tools/tube_self_supervised.py`.
 - **destruction test** — whether a surrogate removes planted cross-ROI
   coordination. A surrogate can keep everything real data has and still keep the
   coordination too; a do-nothing surrogate must fail this test.
@@ -379,18 +396,27 @@ Added 2026-09-10, when that plan's review found them used undefined.
   between ROIs. Published as whole-train shifting (Pipa, Riehle & Grün 2007; Pipa
   et al. 2008; Louis, Borgelt & Grün 2010). ⚠ The published form **wraps** the
   train; this project's does not, and drops onsets pushed past the window's end.
+  ⚠ The published form also shifts each **trial** separately (Stella et al. 2022 use a
+  25 ms dither); this project shifts a whole recording as one trial, by 10–20 s.
 - **shared offset** — the control for rigid shift: **one** offset applied to every
   ROI of a recording. Each ROI's train moves exactly as rigid shift moves it while
   the ROIs stay aligned, so a classifier that separates real from a shared offset is
   reading a per-ROI or edge artifact rather than removed coordination.
 - **label-free threshold** — an operating point set from a recording's own surrogate:
-  the lowest threshold at which a model fires no more than a stated number of events
-  per 10 minutes on rigid shifts of that recording. Reads no labels. The idea is
-  CFAR's (see **adaptive-threshold vocabulary**), with the surrogate standing in for
-  the reference cells; Dard et al. 2022 set their event threshold the same way, at
-  the 99th percentile of a per-cell circular shift.
+  scanning thresholds downward from the top, the last one before the model fires more
+  than a stated number of events per 10 minutes on any of three rigid shifts of that
+  recording. Reads no labels. Scanned downward because the event count is not monotone:
+  low enough, the whole recording merges into one detection. ⚠ It caps the rate on the
+  shifts, not on the recording, so a model can fire well above the stated rate on the
+  recording itself; and where no threshold ever exceeds the rate the scan falls to the
+  grid's lowest value, which the tool records. The idea is closer to a surrogate
+  threshold than to CFAR's (see **adaptive-threshold vocabulary**): Dard et al. 2022 set
+  their event threshold the same way, at the 99th percentile of a per-cell circular
+  shift.
 - **oracle threshold** — the F1-best threshold chosen **on planted truth**: a
-  comparison ceiling, never a usable rule. ⚠ Distinct from the parity **oracle**
+  comparison, never a usable rule. The rigid-shift report calls it the **truth-reading
+  threshold**. ⚠ Not a ceiling: it is picked on two validation recordings, and a
+  label-free threshold can score above it on held-out ones. ⚠ Distinct from the parity **oracle**
   under *validation vocabulary*, which is a MATLAB reference output.
 
 **Shared-activity vocabulary** — added 2026-09-17 with
@@ -445,9 +471,16 @@ Added 2026-09-10, when that plan's review found them used undefined.
 Added 2026-09-16, with the label-free detector work:
 
 - ***line*** (detector axis, a proper name like **CoactDetect**) — a learned detector
-  that smooths each ROI on its own, bounds it so a bursting ROI votes once, averages
-  those votes over ROIs, and judges the result against its own background with a
-  difference of Gaussians. `src/bugarach/learn/nets/line.py`.
+  that smooths each ROI on its own, bounds each ROI's vote in **height** with a sigmoid,
+  averages those votes over ROIs, and judges the result against its own background with
+  a difference of Gaussians. `src/bugarach/learn/nets/line.py`. ⚠ The bound is on height
+  only: a bursting ROI holds its vote for longer, and the stage after it reads the time
+  course, so a burst still counts as more than one onset. This entry said "votes once"
+  until 2026-09-17.
+- ***line_bound*** — `line` with each ROI's vote also bounded **in time** (scaled
+  wherever its local mass exceeds one onset's) and its empty-field floor subtracted. Two
+  changes, so a difference from `line` is not attributable to either alone.
+  `src/bugarach/learn/nets/line_bound.py`.
 - ***line_length*** — `line` with its orientation channels removed: the registered
   ablation that says what the second sensor is worth.
 - **relative length** — the share of a field that is lit at one moment: `line`'s

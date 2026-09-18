@@ -10,8 +10,102 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 065/opt-sliding-vs-binned — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-sliding-vs-binned/`
-- **Status:** ACTIVE (WSMIP065), claimed before writing. Goal 1 step 2 of
+### 065/interface2-mirror — DONE 2026-09-18, RELEASED: interface2 is on GitHub and GitHub is its only remote
+- **Status:** **DONE — released, nothing held.** Implemented `HANDOFF-interface2-mirror.md` (PR
+  #636, now `docs/handoffs/2026-09-18-interface2-mirror.md`): a `push --mirror` of interface2 from
+  GitLab into an empty **private** `syncytium2/interface2`, verified by branch, tag and commit counts
+  and by the 35 stranded tools armory lists. Tony, 2026-09-18: whole mirror now, curation later —
+  this supersedes the selective push in interface2's own runbook.
+- **Cut over the same day.** With no machine working in the GitLab repository (Tony: *"let's kill
+  it"*), parity was re-checked ref for ref (203 refs) and WSMIP065's checkout re-pointed to GitHub.
+  No refresh push is owed. What remains — the Mac, archiving GitLab, the branch triage — is in
+  `docs/todo/2026-09-18-finish-leaving-gitlab.md`.
+- **Private, and stays private.** Making it public is a separate ruling (the handoff's gate).
+- **Mirrored and verified 2026-09-18** (first push, before the refresh):
+  - **3,208 commits; 197 refs** — 173 branches, 16 tags, 8 `refs/merge-requests/*` from GitLab's
+    4 merge requests. `ls-remote` of GitHub against the mirror clone: **identical, ref for ref, name
+    and SHA.** 220 MB, no LFS objects.
+  - **35 of 35 stranded tools** (armory `MANIFEST.json`, `repo == interface2`) present in the mirror
+    as the exact blob armory has committed. Six of their `source_ref` branches no longer exist on
+    GitLab — interface2's triage ledgers record each as merged or contained in a kept branch — so
+    the check is by content, not by branch and path.
+  - **One commit that existed only on this machine** — `55deeaf0`, in a stale July checkout — was
+    pushed to GitLab as tag `rescue/foundations-reference-audit` before the clone, so the mirror
+    carries it.
+- **Still owed, per the handoff:** GitLab's merge-request discussion, any wiki, release notes and
+  CI meaning are not in git and not in the mirror (there is no `.gitlab-ci.yml`); check the web UI
+  before access ends. ~~Which remote is authoritative is Tony's call.~~ **Decided — GitHub.** Tony,
+  2026-09-18: *"i want to remove all dependencies on gitlab."*
+- **Also done on this box:** the 16 worktrees of the MATLAB interface2 checkout were removed and the
+  stale second checkout deleted. Restore ledger on interface2's `main`,
+  `docs/worktree_prune_ledger_2026-09-18_WSMIP065.md`.
+- **Every other GitLab repository on this box is off GitLab** (2026-09-18, same session):
+  - **New private repos, each mirrored and verified ref for ref, checkout re-pointed:**
+    `coding-project` (1,617 commits, 125 branches, 3 tags; its never-pushed branch
+    `MLspikePlotting` pushed after), `interfaceDFoF0`, `ICCetcStatistics`, `ggplot-tuner`.
+    **ggplot-tuner was mirrored from the local checkout** — GitLab answers "project not found".
+  - **R** — GitLab answers "project not found" for it too. Its history continues in `fireflies`,
+    which already held all but 21 commits; those 21 (branches `infoTables` ×2, `AMANDAv2`, one
+    checkout's `main`, and two 2026-07-19 WIP stashes) are now **tags `archive/R-*` in fireflies**,
+    verified from a fresh clone of GitHub. The dead GitLab remote was removed from all three R
+    checkouts. **The checkouts were NOT deleted:** `Documents\lme2\R` holds gitignored analysis CSVs
+    and notebooks, and `Documents\ICCandBeyond\R` is the code folder of an R project whose PDFs and
+    `.RData` are not in git.
+  - **Left on GitLab: interface2 only**, waiting on the Mac session. Then: refresh push, re-point
+    this box and the Mac, and archive the GitLab projects (Tony, web UI). The Mac's own checkouts
+    and any GitLab project never cloned here were not inventoried from this box.
+
+---
+
+### Mac/unsup-pins-excluded-run — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-slow-comodulation-pins-excluded/`
+- **Status:** ACTIVE (bugarach-quiet-raven), **written and idle**. The re-measurement of slow shared
+  modulation on the producer's new export, `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`,
+  which removes the moco floor-pinned windows that stopped this work. Tony: *"the new data are
+  available now. set up the run for overnight."*
+- **Holds nothing running.** The run finished in 686 s at 12 workers, 32 draws, 4,000 resamples.
+- **Writes:** one new folder only — `results.json`, `summary.json`, the six figures and
+  `one_recording.png`, all present. The 2026-09-17 slow-comodulation folder is read-only from here
+  and keeps the superseded run; nothing existing in the darkroom is touched.
+- **Touches:** `current_export.toml` (adds the `steps_and_pins_excluded` role — it does **not**
+  move `default` or `steps_excluded`), `tools/measure_slow_comodulation.py`,
+  `tools/make_slow_comodulation_figure.py`, and at landing the page, its summary and a goal pointer.
+- ⚠ **Derived from real recordings**, so the run stays in the darkroom (FOUNDATIONS §5); the repo
+  gets the pooled `summary.json`, which carries no recording ids.
+- ⚠ **The page has not been rewritten on these numbers**, and the repo's figures are deliberately
+  still the superseded run's so page and figures agree. Handoff at the repo root:
+  `HANDOFF-slow-comodulation-on-the-de-pinned-export.md`.
+- **Released when:** the page is rewritten on this run and lands, or the run is abandoned.
+
+### Mac/read-the-de-pinned-export — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-rigid-shift-de-pinned/`
+- **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony, 2026-09-17 evening:
+  *"the new data are available now. set up for overnight."* The whole rigid-shift chain reran on the
+  producer's de-pinned export (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`), which removes
+  the 83 events inside moco pinned windows, so this run's outputs supersede the ones claimed on
+  2026-09-17 under `bugarach/2026-09-17-rigid-shift-report/`.
+- **Writes:** one new folder only — `real_compare/events.json` (per-recording event times keyed by
+  recording id) and `real_compare/checkpoints/` (120 models trained on real recordings), which
+  FOUNDATIONS §5 keeps machine-local; the report's six figures; and a reader's copy of the report.
+  The repo keeps `real_compare/summary.json`, which is what the page quotes.
+- ⚠ **The 2026-09-17 folder stays as it is.** It holds the superseded run, and the page that cites it
+  carries its own stop notice until this run's numbers replace it. This claim does not write there.
+- **Touches:** `docs/learned/tube_self_supervised/` (branch `read-the-de-pinned-export`),
+  `docs/SESSIONS.md`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the folder holds the files and the branch that regenerates the page has landed.
+
+### 065/opt-every-knob — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-full-search/`
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Goal 1 step 3: the search over every
+  parameter of all six detectors, not only the four declared ones.
+- **Writes:** one new folder only — `search.json`, `search.log` and the figures, from
+  `tools/search_all_settings.py` on branch `opt-every-knob`. **Measure only**: the run changes no
+  operating point. Nothing existing is touched, and the 2026-09-16 folder stays as the record of
+  the declared-settings search.
+- **Released when:** the search finishes and its result is reported.
+
+### 065/opt-sliding-vs-binned — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-sliding-vs-binned/`
+- **Status:** RELEASED 2026-09-17 — the run, its figures and its note are written, and the result
+  is reported in [`HANDOFF-coded-detectors.md`](../HANDOFF-coded-detectors.md) and on the goal page
+  (PR #619). Nothing further writes there. Was: ACTIVE, claimed before writing. Goal 1 step 2 of
   [`HANDOFF-coded-detectors.md`](../HANDOFF-coded-detectors.md): sliding LoCo and CoactDetect
   against their binned ports on real baseline windows, which nothing has compared yet.
 - **Writes:** one new folder only — `sliding_vs_binned.json` (per-recording call counts and how many
@@ -23,18 +117,33 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   recording ids.
 - **Released when:** the comparison is reported and its PR lands.
 
-### Mac/unsup-rigid-shift-report-residuals — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-rigid-shift-report/`
-- **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony ruled on 2026-09-17,
+### Mac/unsup-rigid-shift-report-residuals — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-rigid-shift-report/`
+- **Status:** **RELEASED — the folder holds everything and PR #603 landed (`59262d5`), so both
+  release conditions are met and nobody holds it.** Was ACTIVE (bugarach-smoked-ratchet), claimed
+  before writing. Tony ruled on 2026-09-17,
   after the report's fourth blind murderboard, that the real-derived outputs of the rigid-shift run
-  leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real data stays
-  machine-local, no slice ids).
+  leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real recordings stays
+  machine-local, with no slice ids).
 - **Writes:** one new folder only —
   - `real_compare/events.json` (per-recording event times, keyed by recording id) and
     `real_compare/checkpoints/` (models trained on real recordings), for this run and the one they
     replace;
-  - the report's five figures and a copy of the report, the reader's copy per CLAUDE.md.
+  - the report's six figures and a copy of the report, the reader's copy per CLAUDE.md.
 
   Nothing existing in the darkroom is touched.
+- **Holds:** written 2026-09-17, about 10 MB — `real_compare/` (the rerun's `events.json` and all
+  120 checkpoints), `superseded_run/real_compare/` (the copies removed from the repo tree),
+  `figures/` (six PNGs), `report-README.md` and `summary.json`. The repo tree now keeps
+  `real_compare/summary.json` alone.
+- ⚠ **One PNG went to the darkroom ROOT and has been cleaned up.** `tools/show.py` names its folder
+  from the git toplevel, which in a worktree is the worktree, so it wrote
+  `<darkroom>/unsup-rigid-shift-report-residuals/` — outside this claim and outside bugarach's own
+  folder. Tony caught it. The duplicate was deleted, and two older strays of the same kind
+  (`unsup-rule-as-code`, `turbo-takes-the-width`, holding bugarach figures including a real-recording
+  lanes figure) were moved to `bugarach/strays-from-the-darkroom-root/` with their names kept. Other
+  repositories' empty folders were left alone. Reported upstream as syncytium2/armory issue #15 and
+  blocked locally by sapper SAP016
+  ([todo](todo/2026-09-03-show-derives-the-project-from-the-worktree.md)).
 - ⚠ **The files being moved are also in git history on `main`** since PR #588. Moving them out of the
   tree is not a retraction, and this claim does not say it is.
 - **Touches:** `docs/learned/tube_self_supervised/` (branch `unsup/rigid-shift-report-residuals`,

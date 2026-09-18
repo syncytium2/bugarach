@@ -1,5 +1,25 @@
 # Slow shared modulation: shared change in onset rate across ROIs, and what rigid shift leaves of it
 
+> ## ⚠ STOP — the real-recording numbers on this page are on hold
+>
+> The export folder this page reads carries a contamination its own note declares and no column
+> marks: non-rigid motion correction pinned 12 ROIs to the frame floor in four recordings. A
+> frame-floor-pinned ROI is a **cross-cell** artifact, which is the same thing this page measures,
+> so it is not a distant risk — it imitates the signal.
+>
+> **This run should not have happened over it.** The note was filed as a todo on 2026-09-10 and
+> rediscovered by reviews three times before this page shipped; each time it was written down as a
+> caveat instead of put to the producer. It is now a question on the producer's side, and the code
+> refuses: `dataset.current()` stops any analysis reading a folder whose note declares a
+> contamination nothing flags (Tony's ruling, 2026-09-17).
+>
+> **Until the producer answers, do not lean on any real-recording number here.** The synthetic
+> results (Figures 1–3) never read the export folder and are unaffected. What is measured about the
+> four: they change nothing on the fast stream (pooled 2.37 with, 2.38 without) and carry 19 % of
+> the slow stream's pooled excess. All four are DI, the group that reads highest, so **the by-group
+> reading is the part to trust least** — see [By group](#by-group). The count of four may be a
+> floor: an open producer-side todo ranks two further recordings beside them.
+>
 > **The worry.** A detector can be trained with no labels by asking it to score a recording above a
 > **surrogate** of that recording — a copy that keeps each cell's own activity and destroys the
 > relation between cells. The model is paid for whatever the surrogate destroys, and for nothing
@@ -358,6 +378,25 @@ separated from imaging day on this export — no imaging date holds more than on
 ([recording identity](../recording_identity.md)) — so these are differences between groups of
 recordings, not group differences.
 
+**A different measure on the same recordings orders the groups the same way.** The rigid-shift
+report's run counts how often a detector's events hold three or more ROIs, which is a detector's
+call rate rather than a count variance, and it puts ORX lowest and DI highest by a wide margin
+(0.46–0.50 against 0.92–0.96 for its supervised detectors, with the same ordering for the
+hand-written references and for a counter with no fitted parameters). This is worth knowing and is
+not extra evidence: it is the same 84 recordings seen through another statistic, so it says the
+ordering is in the recordings rather than in the count-variance ratio — and it says nothing at all
+about the imaging-day confound, which both measures share.
+
+⚠ **It also shares an artifact, and the artifact sits at the top of the ordering.** All four
+recordings with the known motion-correction contaminant are DI, the group both measures rank
+highest, and a frame-floor-pinned ROI is exactly the cross-cell artifact both measures respond to.
+On this page's measure the four do not account for DI's fast-stream height — dropping them leaves DI
+at 2.81 rather than 2.73, slightly higher — but they do account for much of its slow-stream figure,
+which falls from 1.97 to 1.49. Whether the same holds for the detector call rate cannot be checked:
+reruns over that folder are stopped until the producer answers. Until then **neither ordering should
+be read as biology**, and four may be a floor rather than a count — an open producer-side todo from
+2026-09-02 ranks two further recordings beside the known four.
+
 **The four recordings with a known motion-correction contaminant are in this analysis, and all four
 are DI.** The producer's own note records that non-rigid motion correction pinned 12 ROIs to the
 frame floor in four recordings, unflagged in any column
@@ -456,6 +495,10 @@ anyone has asked the producer, or the Dard et al. authors, about shared slow cha
   or scoring crops a few minutes long, would feel one 4 s shared gap far more than the minute-scale
   ratios here do.
 - **Baseline only, by rule.** Nothing here says what treatment does.
+- **The run should not have happened over a declared contamination**, and the stop notice at the
+  top of this page is the honest status of everything measured from recordings here. This is not an
+  item that stays on a list: it is a question to the producer, and the analysis resumes when the
+  answer does.
 
 ## Published lineage
 

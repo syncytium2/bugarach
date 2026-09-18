@@ -86,6 +86,12 @@ def _measure_recording(args):
         out["skipped"] = "no regions declared, so no baseline window"
         return out
     lo, hi = window
+    from bugarach.bench import MIN_BASELINE_SEC
+
+    if hi - lo < MIN_BASELINE_SEC:
+        out["skipped"] = (f"baseline window {hi - lo:.0f} s, under the "
+                          f"{MIN_BASELINE_SEC:.0f} s floor (bench.MIN_BASELINE_SEC)")
+        return out
     out.update(window=[lo, hi], window_source=source)
 
     st = s.streams[stream]
@@ -200,6 +206,7 @@ def main(argv=None) -> int:
         "folder": name,
         "stream": bench.MEASURED_STREAM,
         "window": WINDOW_RULE,
+        "min_baseline_sec": bench.MIN_BASELINE_SEC,
         "k": K,
         "recordings_measured": len(recs),
         "recordings_in_shape_fits": n_shape,

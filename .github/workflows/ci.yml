@@ -7,10 +7,18 @@ on:
 
 # A push to a PR branch makes the run still going on that branch worthless, and before this
 # block it ran to the end anyway: detector-review-doc pushed five times in 25 minutes on
-# 2026-09-16 and all five ran their full 13–18 minutes. Cancelled only on pull requests, so
-# every commit that lands on main keeps a finished result of its own.
+# 2026-09-16 and all five ran their full 13–18 minutes.
+#
+# THE GROUP IS THE COMMIT ON A PUSH AND THE REF ONLY ON A PULL REQUEST, because
+# `cancel-in-progress: false` protects a RUNNING run and not a WAITING one. This block
+# first keyed main on the ref as well, and claimed main kept a finished result for every
+# commit. It did not: 66fa654's run sat pending behind 9185431's, be2c25d's merge arrived
+# seven minutes later, and GitHub cancelled the pending one to make room for the newer
+# wait. A merge that nothing ever tested is worse than a slow queue, and on an afternoon
+# of three merges it was the normal case rather than the unlucky one. Keyed on the sha,
+# two main runs are never in one group, so neither can displace the other.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Read-only, and named rather than left to the default so a reader can see what CI
@@ -39,6 +47,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          # pip's cache holds the wheels it BUILDS, not only the ones it downloads, and the
+          # PySpike step below compiled pyspike from source for ~45s on every run. Downloads
+          # were never the cost (torch's 196 MB wheel arrives in about a second). This does
+          # not pin anything: pip still resolves the newest release each run, so CI keeps
+          # meeting new versions of unpinned dependencies — which caching the installed
+          # environment would have stopped.
+          cache: pip
+          cache-dependency-path: pyproject.toml
       - name: Install
         # torch comes from PyTorch's CPU wheel index, not PyPI. The PyPI default for
         # linux is the CUDA build: 527 MB of torch plus ~1 GB of nvidia-* runtime, per
@@ -122,5 +138,5 @@ jobs:
           BUGARACH_REQUIRE_PR_API: "1"
         run: |
           echo "runner cores: $(nproc)"
-          pytest -q -rs -n auto --dist loadfile -m "not serial"
-          pytest -q -rs -m serial
+          pytest -q -rs --durations=25 -n auto --dist loadfile -m "not serial"
+          pytest -q -rs --durations=10 -m serial
