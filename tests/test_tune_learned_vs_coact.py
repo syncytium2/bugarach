@@ -322,7 +322,13 @@ def test_the_gate_refuses_candidates_inside_the_fold_and_the_ungated_search_does
         assert ungated["n_refused"] == 0, "no gate means no refusals"
         refused += gated["n_refused"]
         assert T.within(b, gated["inner_probe_per_hour"], gated["inner_quiet_per_hour"])
-        assert gated["inner_f1"] <= ungated["inner_f1"] + 1e-12, "the gate cannot raise the score"
+        # NOT `gated <= ungated`. That holds when every candidate is enumerated, and this is a
+        # greedy coordinate walk: the gate changes which candidates the walk can step to, so it
+        # takes a different path and can end somewhere better. Observed on the bench quick run,
+        # 2026-09-17: gated 0.7136 against ungated 0.7057. The two selections are different
+        # searches, not one search with a filter, and a readout must not describe the gated result
+        # as the ungated one minus something.
+        assert np.isfinite(gated["inner_f1"]) and np.isfinite(ungated["inner_f1"])
     assert refused > 0, "the gate never bit; the budget or the grid is not doing its job"
 
 
@@ -337,6 +343,25 @@ def test_the_declaration_records_how_the_coded_side_was_searched(run):
     sel = _json(T.selection_path(run["out"], "ungated", 0, "coact"))
     assert set(sel["grids"]) == set(dict(d["hand_axes"]["coact"])), "the grids walked are declared"
     assert set(sel["edge_flags"]) <= set(sel["grids"])
+
+
+def test_a_context_wider_than_the_planted_spacing_is_refused():
+    """WSMIP065, 2026-09-17: such a setting wins by contaminating the null it is measured against.
+
+    The spacing is the simulation's: 120 s on the bench, 171 s on the home spec. Both searches
+    chose 240 s contexts before the rule existed, and `test_the_bench_recording_keeps_the_null_clean`
+    refused them after the fact.
+    """
+    bench_plan = T.Plan(quick=True, models=("tube",), detectors=("coact",), simulation="bench")
+    home_plan = T.Plan(quick=True, models=("tube",), detectors=("coact",), simulation="home")
+    assert bench_plan.min_sep_sec == 120.0 and home_plan.min_sep_sec == pytest.approx(171.4, abs=0.1)
+    for plan, ok, bad in ((bench_plan, 120.0, 240.0), (home_plan, 120.0, 240.0)):
+        good = dict(alpha=1e-4, int_win_sec=2.0, context_win_sec=ok)
+        assert T.candidate_is_valid("coact", good, plan.min_sep_sec)
+        assert not T.candidate_is_valid("coact", dict(good, context_win_sec=bad), plan.min_sep_sec)
+    # rate+context names the same setting differently, and the rule reads both spellings.
+    assert not T.context_fits_the_null(dict(context_win=240.0), 120.0)
+    assert T.context_fits_the_null(dict(context_win=60.0), 120.0)
 
 
 def test_a_home_spec_plan_still_names_recordings_by_seed():

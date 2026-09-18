@@ -290,7 +290,11 @@ class Plan:
             self.configs[m] = [learned_config(m, d[i], index=i, is_untuned=(i == len(d) - 1),
                                               steps=100 if quick else None, n_train=self.n_train)
                                for i in idx]
+        # The planted spacing a context window must fit inside; the simulation's, not always the
+        # bench's (120 s on the bench, 171 s on the home spec).
+        self.min_sep_sec = float(min_sep_sec(self))
         self.hand, self.hand_axes, self.hand_grid_source, self.hand_mode = {}, {}, {}, {}
+        self.hand_refused: dict = {}
         for det in self.detectors:
             axes, source, mode = hand_axes(det, quick)
             self.hand_axes[det], self.hand_grid_source[det], self.hand_mode[det] = axes, source, mode
@@ -299,8 +303,14 @@ class Plan:
                 self.hand[det] = []
                 continue
             names = [a for a, _ in axes]
-            self.hand[det] = [hand_config(det, dict(zip(names, vals)), index=i) for i, vals in
-                              enumerate(itertools.product(*[v for _, v in axes]))]
+            every = [hand_config(det, dict(zip(names, vals)), index=i) for i, vals in
+                     enumerate(itertools.product(*[v for _, v in axes]))]
+            # The same two validity rules the searched path applies, so a product-grid detector
+            # cannot admit a combination the search would refuse — including a context window that
+            # contaminates its own null.
+            self.hand[det] = [c for c in every
+                              if candidate_is_valid(det, c["params"], self.min_sep_sec)]
+            self.hand_refused[det] = [c["config_key"] for c in every if c not in self.hand[det]]
         # Decision 4: the budget's reference is CoactDetect at OPERATING_POINTS as this code finds it,
         # which is goal 1's landed values once they land; the declaration writes the parameters out.
         shipped_in_grid = [c for c in self.hand.get("coact", []) if c["is_shipped"]]
@@ -324,6 +334,40 @@ class Plan:
 
     def training_folds(self, h):
         return [f for f in self.folds() if f != h]
+
+
+CONTEXT_KEYS = ("context_win_sec", "context_win")
+
+
+def context_fits_the_null(params: dict, min_sep_sec: float) -> bool:
+    """Is every context window narrow enough that the null it estimates is uncontaminated?
+
+    A context window wider than the spacing between planted events estimates its threshold from a
+    window that contains other planted events. The null sits too high, the detector calls less, and
+    precision — so F1 — rises. **The setting wins by breaking the measurement**, which is the trap
+    `tests/test_bench.py::test_the_bench_recording_keeps_the_null_clean` exists for and the one that
+    made the first upstream benchmark unusable.
+
+    Found by WSMIP065 on 2026-09-17, whose sliding search chose 240 s contexts for LoCo and
+    CoactDetect, passed all four budgets including the crowded veto, and was refused by that test
+    after the fact. **`bugarach.bench.context_fits_the_null` is the canonical rule** and is used
+    whenever this tree has it; this is the same check, kept so the rule binds before it lands.
+    The spacing is the SIMULATION's, not always the bench's: 120 s on the bench, 171 s on the home
+    spec.
+    """
+    from bugarach import bench
+
+    theirs = getattr(bench, "context_fits_the_null", None)
+    if theirs is not None:
+        return bool(theirs(params, min_sep_sec))
+    return all(float(params[k]) <= float(min_sep_sec) for k in CONTEXT_KEYS if k in params)
+
+
+def candidate_is_valid(det: str, params: dict, min_sep_sec: float) -> bool:
+    """Both validity rules a candidate must pass: the project's own, and an uncontaminated null."""
+    from bugarach import bench
+
+    return bool(bench.settings_are_valid(det, params)) and context_fits_the_null(params, min_sep_sec)
 
 
 def seed_of(rid) -> int:
@@ -580,9 +624,13 @@ def _run_search(job, out, sim):
                       quiet_rate(list(m["twins"][gate].values())))
 
     t0 = time.perf_counter()
+    min_sep = float(job["min_sep_sec"])
     for w in SELECTIONS:
         got = choose_settings(det, score=score,
                               admissible=None if w == "ungated" else admissible,
+                              # A context wider than the planted spacing estimates its threshold
+                              # from a window holding other planted events (WSMIP065, 2026-09-17).
+                              is_valid=lambda d, p: candidate_is_valid(d, p, min_sep),
                               # An F1-sized objective, so MOVE_EPS is the right epsilon; passed
                               # rather than defaulted because a caller scoring something else
                               # silently never moves (WSMIP065, 2026-09-17).
@@ -745,7 +793,7 @@ def search_job(plan, out, det, h, priority):
                 train_seeds=sorted(plan.split.train(h)),
                 test_recordings=plan.fold_recordings([h]), test_seeds=sorted(plan.split.test(h)),
                 gate_key=plan.gate_key, twins=list(plan.twin_keys), busy_sec=plan.busy_sec,
-                max_rounds=2 if plan.quick else None,
+                min_sep_sec=min_sep_sec(plan), max_rounds=2 if plan.quick else None,
                 outputs=[str(selection_path(out, w, h, det)) for w in SELECTIONS]
                 + [str(searched_score_path(out, det, h, w)) for w in SELECTIONS],
                 priority=priority)
@@ -1079,7 +1127,13 @@ def declaration(plan) -> dict:
                 "selection, on that fold's training recordings only (option A, decided with "
                 "WSMIP065 on 2026-09-17)",
             min_gain=SEARCH_MIN_GAIN, extend_ranges=False, pairs=False,
-            is_valid="bench.settings_are_valid",
+            is_valid="bench.settings_are_valid AND context_fits_the_null(params, min_sep_sec)",
+            min_sep_sec=plan.min_sep_sec,
+            context_rule=("a context window wider than the planted spacing estimates its threshold "
+                          "from a window holding other planted events, so the setting wins by "
+                          "breaking the measurement (WSMIP065, 2026-09-17; "
+                          "test_the_bench_recording_keeps_the_null_clean)"),
+            hand_refused_by_validity=dict(plan.hand_refused),
             note="the grids are goal 1's, per axis and never a product; an axis whose chosen value "
                  "sits at an end is reported, not refused"),
         hand_configurations={d: [c["config_key"] for c in plan.hand[d]] for d in plan.detectors},

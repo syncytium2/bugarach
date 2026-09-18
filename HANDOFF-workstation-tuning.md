@@ -865,6 +865,23 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   elsewhere:** the `steps_excluded` pointer in `current_export.toml` should name the new folder —
   Tony's as producer, and neither session touches it — and goal 1 re-runs its sliding-vs-binned
   comparison on the revised folder once it moves.
+- **A context window wider than the planted spacing is now refused, on both paths** (WSMIP065,
+  2026-09-17). Such a window estimates its threshold from a stretch holding OTHER planted events, so
+  the null sits too high, the detector calls less, and precision — with it F1 — rises: **the setting
+  wins by breaking the measurement.** 065's sliding search chose 240 s contexts for LoCo and
+  CoactDetect, passed all four budgets including the crowded veto, and was refused by
+  `tests/test_bench.py::test_the_bench_recording_keeps_the_null_clean` only after the values were
+  written. It is now a validity rule in front of both searches. The tool calls
+  `bench.context_fits_the_null` when the tree has it and an identical local check until then, always
+  with **the simulation's own spacing** — 120 s on the bench, 171 s on the home spec — and applies it
+  to the product path too, recording what it refuses in the declaration.
+  ⚠ **064's earlier fold-0 quick numbers chose a 240 s context and are not comparable** to anything
+  chosen under this rule. They were never a result; no readout quotes them.
+- ⚠ **The gated selection is not the ungated one minus something.** With the rule in place, the quick
+  bench run's gated search scored **higher** than its ungated one (0.7136 against 0.7057). That is
+  impossible when every candidate is enumerated and ordinary for a greedy coordinate walk: the gate
+  changes which candidates it can step to, so it takes a different path. The test now asserts that
+  rather than a false ordering, and the readout must describe two searches, not one filtered.
 - **Still waiting on goal 1:** step 3's every-knob values in `OPERATING_POINTS`, which is what the
   budget's reference anchors to and what the refuse-to-start guard waits for. 065 treats goal 2 as
-  blocked on it, Tony knows, and step 3's search keeps running since the bench does not move.
+  blocked on it, Tony knows, and step 3's search is re-running under the context rule.
