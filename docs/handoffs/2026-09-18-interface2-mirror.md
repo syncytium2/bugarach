@@ -1,5 +1,15 @@
 # Handoff — mirror interface2 to GitHub, private, before anything is curated
 
+> **Moved here from the root 2026-09-18, the day it was written, when the work landed.** The
+> mirror was made and verified the same day from WSMIP065, and then went further than this file
+> asked: Tony answered its one open question — *"i want to remove all dependencies on gitlab"* —
+> and, with no machine working in it, *"let's kill it."* **GitHub is interface2's only remote;
+> WSMIP065 was re-pointed after a final ref-for-ref parity check (203 refs).** The body below is
+> as written and is now history; in particular its "copies and stops" and "which remote is
+> authoritative" are settled. The verification numbers are on `docs/SESSIONS.md`, block
+> `065/interface2-mirror`. What remains is in
+> [`docs/todo/2026-09-18-finish-leaving-gitlab.md`](../todo/2026-09-18-finish-leaving-gitlab.md).
+
 > **For a Claude Code session on WSMIP065.** Written 2026-09-18 by the cloud session
 > `Orchestration goals tracking`, on Tony's instruction. **Working material, not murderboarded** —
 > same standing as the other root handoffs. Every fact below either links the file that owns it or

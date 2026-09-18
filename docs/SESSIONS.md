@@ -10,13 +10,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 065/interface2-mirror — GitHub claim ACTIVE 2026-09-18: new private repo `syncytium2/interface2`
-- **Status:** ACTIVE. Implements `HANDOFF-interface2-mirror.md` (PR #636): a `push --mirror` of
-  interface2 from GitLab into an empty **private** `syncytium2/interface2`, verified by branch, tag
-  and commit counts and by the 35 stranded tools armory lists. Tony, 2026-09-18: whole mirror now,
-  curation later — this supersedes the selective push in interface2's own runbook.
-- **Holds:** the new GitHub repository until the refresh below. A Mac session is still pushing to
-  GitLab, so the mirror is refreshed (fetch, `push --mirror` again) once it ends.
+### 065/interface2-mirror — DONE 2026-09-18, RELEASED: interface2 is on GitHub and GitHub is its only remote
+- **Status:** **DONE — released, nothing held.** Implemented `HANDOFF-interface2-mirror.md` (PR
+  #636, now `docs/handoffs/2026-09-18-interface2-mirror.md`): a `push --mirror` of interface2 from
+  GitLab into an empty **private** `syncytium2/interface2`, verified by branch, tag and commit counts
+  and by the 35 stranded tools armory lists. Tony, 2026-09-18: whole mirror now, curation later —
+  this supersedes the selective push in interface2's own runbook.
+- **Cut over the same day.** With no machine working in the GitLab repository (Tony: *"let's kill
+  it"*), parity was re-checked ref for ref (203 refs) and WSMIP065's checkout re-pointed to GitHub.
+  No refresh push is owed. What remains — the Mac, archiving GitLab, the branch triage — is in
+  `docs/todo/2026-09-18-finish-leaving-gitlab.md`.
 - **Private, and stays private.** Making it public is a separate ruling (the handoff's gate).
 - **Mirrored and verified 2026-09-18** (first push, before the refresh):
   - **3,208 commits; 197 refs** — 173 branches, 16 tags, 8 `refs/merge-requests/*` from GitLab's
