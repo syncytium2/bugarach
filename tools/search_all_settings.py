@@ -107,9 +107,18 @@ def shipped_value(det: str, setting: str):
     return inspect.signature(fn).parameters[setting].default
 
 
-#: Settings that make sense together — `bench.settings_are_valid`, which both this search
-#: and goal 2's per-fold search read, so neither admits a combination the other rejects.
-valid = _bench.settings_are_valid
+def valid(det: str, p: dict) -> bool:
+    """Settings that make sense together, AND that this bench can honestly measure.
+
+    `bench.settings_are_valid` is the detectors' own rule, read by goal 2's per-fold search
+    too, so neither admits a combination the other rejects. On top of it, a context window
+    wider than the planted spacing puts other events inside the null the threshold comes
+    from — and a contaminated null sits high, so the setting that breaks this scores BETTER
+    here. The 2026-09-17 sliding search chose 240 s contexts on a bench that plants at 120 s
+    for exactly that reason, and `tests/test_bench.py` refused the result after the run.
+    """
+    return (_bench.settings_are_valid(det, p)
+            and _bench.context_fits_the_null(p, _bench.BENCH_RECORDING["min_sep_sec"]))
 
 
 def extend(setting: str, grid: list, low_end: bool):
@@ -161,17 +170,25 @@ def _job(args):
     # detector is actually run with, NaN and all.
     items = key_items
     params = dict(param_items)
-    if regime == NULL:
-        rates = [bench.false_positives_per_hour(det, seeds=(s,), **params) for s in seeds]
-        return (det, items, regime), dict(null_per_hour=sum(rates) / len(rates),
-                                          per_seed=rates if keep else None)
-    scores = []
-    for s in seeds:
-        if regime in TAIL:
-            rec, gt = bench.make_tail_recording("baseline_" + regime.split("_", 1)[1], s)
-        else:
-            rec, gt = bench.make_recording(regime, s)
-        scores.append(score_stream(gt, bench.run_detector(det, rec, **params)))
+    try:
+        if regime == NULL:
+            rates = [bench.false_positives_per_hour(det, seeds=(s,), **params) for s in seeds]
+            return (det, items, regime), dict(null_per_hour=sum(rates) / len(rates),
+                                              per_seed=rates if keep else None)
+        scores = []
+        for s in seeds:
+            if regime in TAIL:
+                rec, gt = bench.make_tail_recording("baseline_" + regime.split("_", 1)[1], s)
+            else:
+                rec, gt = bench.make_recording(regime, s)
+            scores.append(score_stream(gt, bench.run_detector(det, rec, **params)))
+    except (ValueError, NotImplementedError) as e:
+        # A detector refusing a COMBINATION of settings is a fact about the detector, not a
+        # crash: `loco` refuses a guard under the symmetric null, and an hour of search must
+        # not die on one such pair. Recorded and reported, never retried and never silent —
+        # `Evaluator.run` prints each distinct refusal once, and the candidate is
+        # inadmissible rather than missing.
+        return (det, items, regime), dict(refused=f"{type(e).__name__}: {e}")
     r = bench.pool_scores(scores, detector=det, regime=regime, seeds=tuple(seeds))
     return (det, items, regime), dict(f1=r.f1, recall=r.recall, precision=r.precision,
                                       probe_per_min=r.hot_fa_per_min, n_hit=r.n_hit,
@@ -186,9 +203,18 @@ class Evaluator:
         self.pool, self.seeds, self.log = pool, list(seeds), log
         self.cache: dict = {}
         self.n_points = 0
+        self.refusals: dict = {}      # message -> the detector that refused, logged once each
+        self.crowded = False          # set True to score the crowded recordings per candidate
 
     def run(self, points):
-        """``points``: iterable of (det, params). Fills the cache for all three recordings."""
+        """``points``: iterable of (det, params). Fills the cache for every recording kind.
+
+        The crowded recordings are scored here, for EVERY candidate, because they are a veto
+        now and a veto has to be in front of the choice. Scoring them only for the survivors
+        is what let the 2026-09-17 search propose four settings that lose 0.25 to 0.32 mean
+        F1 there (`bench.MAX_CROWDED_DROP`). They cost about a quarter more per candidate:
+        12 recordings per background against 48.
+        """
         todo = []
         for det, params in points:
             k = _key(det, params)
@@ -196,34 +222,79 @@ class Evaluator:
             for regime in (*REGIMES, NULL):
                 if (k[0], k[1], regime) not in self.cache:
                     todo.append((det, k[1], real, regime, self.seeds, False))
+            if self.crowded:
+                for regime in TAIL:
+                    if (k[0], k[1], regime) not in self.cache:
+                        todo.append((det, k[1], real, regime, self.seeds[:N_TAIL], False))
         if not todo:
             return
         t0 = time.time()
         for key, val in self.pool.imap_unordered(_job, todo, chunksize=1):
             self.cache[key] = val
+            why = val.get("refused")
+            if why and why not in self.refusals:
+                self.refusals[why] = key[0]
+                self.log(f"    {key[0]}: a combination is refused — {why}")
         self.n_points += len(todo) // 3
         self.log(f"    {len(todo)} evaluations in {time.time() - t0:.0f} s")
 
     def summary(self, det, params):
         k = _key(det, params)
         q, b, n = (self.cache[(k[0], k[1], r)] for r in (*REGIMES, NULL))
-        return dict(f1_quiet=q["f1"], f1_busy=b["f1"],
-                    mean_f1=(q["f1"] + b["f1"]) / 2,
-                    precision_quiet=q["precision"], precision_busy=b["precision"],
-                    probe_quiet=q["probe_per_min"], probe_busy=b["probe_per_min"],
-                    null_per_hour=n["null_per_hour"])
+        if any(r.get("refused") for r in (q, b, n)):
+            # Scored nowhere, so it cannot win: admissibility reads mean_f1 and every budget
+            # here, and NaN fails all of them.
+            nan = float("nan")
+            return dict(f1_quiet=nan, f1_busy=nan, mean_f1=nan,
+                        precision_quiet=nan, precision_busy=nan,
+                        probe_quiet=nan, probe_busy=nan, null_per_hour=nan,
+                        refused=next(r["refused"] for r in (q, b, n) if r.get("refused")))
+        out = dict(f1_quiet=q["f1"], f1_busy=b["f1"],
+                   mean_f1=(q["f1"] + b["f1"]) / 2,
+                   precision_quiet=q["precision"], precision_busy=b["precision"],
+                   probe_quiet=q["probe_per_min"], probe_busy=b["probe_per_min"],
+                   null_per_hour=n["null_per_hour"])
+        if self.crowded:
+            tq, tb = (self.cache.get((k[0], k[1], r)) for r in TAIL)
+            if tq and tb and not (tq.get("refused") or tb.get("refused")):
+                out["crowded_mean_f1"] = (tq["f1"] + tb["f1"]) / 2
+        return out
 
 
-def admissible(det: str, s: dict) -> bool:
-    """Under all three budgets bench.py holds: the probe on both backgrounds, the empty
-    recording, and the precision swing between the backgrounds."""
+def make_admissible(reference_crowded=None):
+    """The admissibility rule, with the crowded-recording veto bound to a reference.
+
+    ``reference_crowded`` maps a detector to the crowded mean F1 of the setting a candidate
+    would replace — the shipped one. Without it the rule is the three budgets alone, which
+    is what every search before 2026-09-17 applied and what let the merge-gap artifact
+    through.
+    """
     from bugarach import bench
-    ceiling = bench.MAX_PROBE_PER_MIN[det]
-    swing = abs(s["precision_quiet"] - s["precision_busy"])
-    return (math.isfinite(s["f1_quiet"]) and math.isfinite(s["f1_busy"])
-            and s["probe_quiet"] <= ceiling and s["probe_busy"] <= ceiling
-            and s["null_per_hour"] <= bench.MAX_FALSE_POSITIVES_PER_HOUR[det]
-            and math.isfinite(swing) and swing <= bench.MAX_PRECISION_DROP[det])
+
+    def admissible(det: str, s: dict) -> bool:
+        ceiling = bench.MAX_PROBE_PER_MIN[det]
+        swing = abs(s["precision_quiet"] - s["precision_busy"])
+        ok = (math.isfinite(s["f1_quiet"]) and math.isfinite(s["f1_busy"])
+              and s["probe_quiet"] <= ceiling and s["probe_busy"] <= ceiling
+              and s["null_per_hour"] <= bench.MAX_FALSE_POSITIVES_PER_HOUR[det]
+              and math.isfinite(swing) and swing <= bench.MAX_PRECISION_DROP[det])
+        if not ok or reference_crowded is None:
+            return ok
+        ref = reference_crowded.get(det)
+        got = s.get("crowded_mean_f1")
+        if ref is None:
+            return ok
+        # Not scored there = not admissible. A candidate whose crowded score is missing is a
+        # candidate nobody checked, and this budget exists because an unchecked one won.
+        if got is None or not math.isfinite(got):
+            return False
+        return got >= ref - bench.MAX_CROWDED_DROP
+
+    return admissible
+
+
+#: The three-budget rule, for callers that have no crowded reference (and for tests).
+admissible = make_admissible()
 
 
 # ------------------------------------------------------------------ the search
@@ -305,15 +376,25 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
                             log(f"  {d}.{setting}: best at the edge {best_v:g}; adding {new:g}")
                             continue
                     current = summarize(d, state[d])
-                    if best_v != state[d][setting] and \
-                            best_s["mean_f1"] > current["mean_f1"] + min_gain:
+                    # WHEN THE STARTING POINT IS ITSELF INADMISSIBLE, any admissible setting
+                    # beats it and the F1 comparison is the wrong question. Without this the
+                    # search reports "nothing moved" and leaves a point that breaks a budget:
+                    # sliding LoCo at its binned threshold fires 4.0 calls an hour on an empty
+                    # recording against a limit of 3, scores a high F1 for that reason, and no
+                    # admissible candidate could beat that F1. Found 2026-09-17 by the first
+                    # search whose starting point was out of budget.
+                    rescue = not is_admissible(d, current)
+                    if best_v != state[d][setting] and (
+                            rescue or best_s["mean_f1"] > current["mean_f1"] + min_gain):
+                        why = " (the starting point breaks a budget)" if rescue else ""
                         log(f"  round {rnd} {d}.{setting}: {_fmt(state[d][setting])} -> "
                             f"{_fmt(best_v)} (mean F1 {current['mean_f1']:.3f} -> "
-                            f"{best_s['mean_f1']:.3f})")
+                            f"{best_s['mean_f1']:.3f}){why}")
                         history[d].append(dict(round=rnd, setting=setting,
                                                old=state[d][setting], new=best_v,
                                                old_f1=current["mean_f1"],
-                                               new_f1=best_s["mean_f1"]))
+                                               new_f1=best_s["mean_f1"],
+                                               rescued_from_inadmissible=rescue))
                         state[d][setting] = best_v
                         moved.add(d)
                 pending = nxt
@@ -705,6 +786,15 @@ def main(argv=None) -> int:
                     help="also search every combination for these detectors")
     ap.add_argument("--only", nargs="*", default=None, choices=list(SPACE))
     ap.add_argument("--smoke", action="store_true", help="2 recordings, 2 values per setting")
+    ap.add_argument("--sliding", action="store_true",
+                    help="search LoCo and CoactDetect in their SLIDING window mode: the mode "
+                         "is fixed, everything else is searched. Their shipped points are "
+                         "binned because no calibrated sliding value exists yet, and this is "
+                         "what produces one")
+    ap.add_argument("--no-crowded-veto", action="store_true",
+                    help="do NOT refuse a candidate that loses on the crowded recordings. The "
+                         "2026-09-17 search ran this way by default and proposed four settings "
+                         "that lose 0.25 to 0.32 mean F1 there (bench.MAX_CROWDED_DROP)")
     ap.add_argument("--out", type=Path, default=None,
                     help="destination (default: <darkroom>/<date>-full-search)")
     a = ap.parse_args(argv)
@@ -732,10 +822,41 @@ def main(argv=None) -> int:
                 sv = shipped_value(d, k)
                 space[d][k] = sorted({sv, v[0] if v[0] != sv else v[-1]})
     shipped = {d: {k: shipped_value(d, k) for k in space[d]} for d in dets}
+    if a.sliding:
+        # The mode is FIXED, not searched: sliding is chosen because calls should not move
+        # with the grid, which F1 on this bench cannot see (`bench.NOT_SEARCHED`). What is
+        # searched is every other setting, in that mode.
+        for d in ("loco", "coact"):
+            if d in shipped:
+                shipped[d]["window_mode"] = "sliding"
+                shipped[d]["detection_mode"] = "threshold"
+                space[d].pop("detection_mode", None)
+                space[d].pop("peak_prominence", None)
+                space[d].pop("peak_min_distance_sec", None)
     for d in dets:
         for k in space[d]:
             if shipped[d][k] not in space[d][k]:
-                space[d][k] = sorted(space[d][k] + [shipped[d][k]])
+                space[d][k] = sorted(space[d][k] + [shipped[d][k]],
+                                     key=lambda v: (isinstance(v, str), v))
+    # THE STARTING POINT HAS TO BE ONE THIS BENCH CAN MEASURE. A shipped point the validity
+    # rules refuse is never evaluated, so the first thing that asks for its score gets a
+    # cache miss — which is how this failed on 2026-09-17, a KeyError several hundred lines
+    # from the cause. Say it instead.
+    bad = {d: shipped[d] for d in dets if not valid(d, shipped[d])}
+    if bad:
+        for d, p in bad.items():
+            context = p.get("context_win_sec", p.get("context_win"))
+            print(f"{NAMES[d]}: the shipped operating point is not measurable on this bench "
+                  f"— context {context} s against planted events "
+                  f"{_bench.BENCH_RECORDING['min_sep_sec']:.0f} s apart"
+                  if not _bench.context_fits_the_null(
+                      p, _bench.BENCH_RECORDING["min_sep_sec"])
+                  else f"{NAMES[d]}: the shipped operating point is not a valid combination",
+                  file=sys.stderr)
+        print("Nothing was searched. Fix the operating point, or search a detector that has "
+              "a measurable one with --only.", file=sys.stderr)
+        return 2
+
     sel, ho = list(range(1, n + 1)), list(range(n + 1, 2 * n + 1))
     rep = dict(started=datetime.datetime.now().isoformat(timespec="seconds"),
                selection_seeds=sel, held_out_seeds=ho, space=space, shipped=shipped,
@@ -748,14 +869,40 @@ def main(argv=None) -> int:
     t_start = time.time()
     with Pool(a.workers) as pool:
         ev = Evaluator(pool, sel, log)
+        ev.crowded = not a.no_crowded_veto
+        gate = admissible
+        if ev.crowded:
+            # The reference is what the setting a candidate would REPLACE scores on the
+            # crowded recordings — and under `--sliding` that is the point the detector
+            # actually ships at, not the sliding-forced starting point.
+            #
+            # Getting this wrong cost a run on 2026-09-17. Anchoring to sliding-at-binned-
+            # values held every candidate to the crowded score of a point that ships
+            # NOWHERE and is itself over budget, and sliding LoCo came out with no
+            # admissible setting at all. Against what LoCo really ships, the same candidate
+            # is an improvement on both axes. A veto is only as honest as its reference.
+            reference_points = {d: dict(_bench.OPERATING_POINTS[d].params) for d in dets}
+            log("crowded reference: scoring the SHIPPED operating points on the crowded "
+                "recordings — what a candidate would replace")
+            ev.run([(d, reference_points[d]) for d in dets])
+            reference = {d: ev.summary(d, reference_points[d]).get("crowded_mean_f1")
+                         for d in dets}
+            rep["crowded_reference_points"] = reference_points
+            for d in dets:
+                log(f"  {NAMES[d]:14s} crowded mean F1 {reference[d]:.3f}  "
+                    f"(a candidate may not fall below {reference[d] - _bench.MAX_CROWDED_DROP:.3f})")
+            rep["crowded_reference"] = reference
+            gate = make_admissible(reference)
+            save()
+
         log("stage 1: coordinate rounds")
         state, history, grown = coordinate_rounds(
-            dets, shipped, space, ev.run, ev.summary, admissible, valid, log)
+            dets, shipped, space, ev.run, ev.summary, gate, valid, log)
         rep.update(stage="rounds done", rounds=dict(state=state, history=history, grids=grown))
         save()
 
         log("stage 2: two-setting grids")
-        pairs = pair_grids(dets, shipped, grown, PAIRS, ev.run, ev.summary, admissible, valid)
+        pairs = pair_grids(dets, shipped, grown, PAIRS, ev.run, ev.summary, gate, valid)
         rep.update(stage="pairs done", pairs=pairs)
         save()
 

@@ -398,6 +398,30 @@ ridges this project has met. Optional for a caller: goal 2 leaves them off insid
 because a pair is a product and it pays for one per fold."""
 
 
+def context_fits_the_null(p: dict, min_sep_sec: float) -> bool:
+    """Is this setting's context window narrow enough for the null to be background only?
+
+    A detector estimates its threshold over a context window. If planted events are spaced
+    more tightly than that window, the window holds OTHER events, and the null the threshold
+    comes from is contaminated with the very thing being detected — the trap that made the
+    first upstream benchmark unusable and cost two weeks of tuning against it
+    (:data:`BENCH_RECORDING`, ``min_sep_sec``).
+
+    **It also flatters the setting that breaks it**, which is why a search needs this rule
+    and not only a test. A contaminated null sits too high, so the detector calls less,
+    precision rises and F1 with it. On 2026-09-17 the sliding search chose a 240 s context
+    for both LoCo and CoactDetect on a bench that plants events 120 s apart, under all four
+    budgets; ``tests/test_bench.py::test_the_bench_recording_keeps_the_null_clean`` refused
+    the result. The guard worked and the run was already spent.
+
+    ``min_sep_sec`` is the SCORED recordings' spacing, so a caller scoring something other
+    than :data:`BENCH_RECORDING` passes its own — goal 2's home spec plants at 171 s, and its
+    per-fold search binds this rule with that number.
+    """
+    context = p.get("context_win_sec", p.get("context_win"))
+    return context is None or context <= min_sep_sec
+
+
 def settings_are_valid(det: str, p: dict) -> bool:
     """Do these settings make sense together?
 
@@ -405,7 +429,19 @@ def settings_are_valid(det: str, p: dict) -> bool:
     threshold. It lives here rather than in the search so that a caller walking
     :data:`FULL_GRIDS` rejects the same combinations this project's own search does.
     """
+    # Sliding supports threshold detection only, in both detectors that have the mode: a
+    # sliding window has no bins to find a peak across (`loco.py`, `coact.py`). Encoded so a
+    # search in sliding mode does not spend evaluations on a pair the detector will refuse.
+    if p.get("window_mode") == "sliding" and p.get("detection_mode", "threshold") != "threshold":
+        return False
     if det == "loco":
+        # The detector's own refusal, encoded here so a search does not spend an evaluation
+        # discovering it: a guard is supported only with the one-sided 'maxlt' null, because
+        # under 'symmetric' the guard would hole the middle of the window and the wrap would
+        # cross the hole (`loco.py`). Found by the 2026-09-17 every-knob search, the first
+        # thing ever to cross those two axes.
+        if p.get("guard_sec", 0.0) and p.get("null_context_mode", "maxlt") != "maxlt":
+            return False
         return (p["bin_width_sec"] * 4 <= p["context_win_sec"]
                 and p["merge_gap_sec"] < p["context_win_sec"])
     if det == "coact":
@@ -477,24 +513,41 @@ class OperatingPoint:
 RETUNE = ("tools/retune_operating_points.py 2026-09-16 (48 recordings per point, both "
           "backgrounds, both false-alarm budgets, mean F1, moved only if the 95% "
           "bootstrap gain interval excludes zero)")
+SLIDING_SEARCH = (
+    "tools/search_all_settings.py --sliding, 2026-09-17 "
+    "(<darkroom>/bugarach/2026-09-17-full-search/sliding5/): every parameter this bench can "
+    "see, one at a time in rounds, chosen on 48 recordings per background and scored on 48 "
+    "the search never saw, under FOUR budgets — the two false-alarm limits, the precision "
+    "swing, and MAX_CROWDED_DROP against what the detector ships at today — and refusing any "
+    "context window wider than the planted spacing (context_fits_the_null)")
 OPERATING_POINTS: dict[str, OperatingPoint] = {
     "loco": OperatingPoint(
-        # ⚠ STILL BINNED, and the sliding mode is built and waiting for a value.
-        # `detectors/sliding.py` gives this detector a window that slides: a sub-second
-        # shift of a real recording keeps 64% of the binned calls and 100% of the sliding
-        # ones (`tools/probe_sliding_vs_binned.py`), and on the 84 real baseline windows
-        # sliding is a superset of binned (`tools/compare_sliding_vs_binned.py`). What it
-        # is NOT yet is calibrated: at the threshold below, tuned binned, sliding fires
-        # 4.0 calls/hour on the empty recording against a limit of 3 and swings precision
-        # past `MAX_PRECISION_DROP`. The switch lands with the value goal 1 step 3 chooses,
-        # not before — a shipped operating point is a calibrated one.
+        # SLIDING since 2026-09-17, and calibrated IN that mode rather than inheriting the
+        # binned values. A window that slides: a sub-second shift of a real recording keeps
+        # 64% of the binned calls and 100% of the sliding ones
+        # (`tools/probe_sliding_vs_binned.py`), and on the 84 real baseline windows sliding
+        # is a superset of binned (`tools/compare_sliding_vs_binned.py`). `thr_step_sec` and
+        # `n_surrogates` do not apply in this mode and are kept for the binned path, which
+        # stays as the MATLAB port with its parity tests.
+        # ⚠ STILL BINNED HERE. The sliding values below are measured and chosen; they are
+        # NOT switched on in this change, because switching them moves the viewer's
+        # calibrated defaults while the browser still runs both detectors binned, and moves
+        # the calls a slow-comodulation analysis is pinned to. Both are consequences of
+        # shipping sliding rather than defects in the values. The switch, with those two
+        # handled, is on branch `opt-every-knob-run` and in HANDOFF-coded-detectors.md.
         params=dict(bin_width_sec=1.0, context_win_sec=120.0, thr_step_sec=15.0,
                     merge_gap_sec=2.0, threshold_pctile=99.5, n_surrogates=100),
         source=f"{RETUNE}: 99.9 -> 99.5, mean F1 0.669 -> 0.686, gain +0.017 "
                "(interval +0.005 to +0.029); 0.16 firings/min in the empty stretch on "
                "both backgrounds (limit 1), 1.7 calls/hour on the empty recording "
                "(limit 3). Was the measured-regime F1 optimum of 2026-08-13 "
-               "(loco_detect docstring), found on an older bench.",
+               "(loco_detect docstring), found on an older bench. "
+               f"⚠ NOT YET SWITCHED TO SLIDING. {SLIDING_SEARCH} chose, for the sliding "
+               "mode: threshold 99.9, merge gap 8 s, symmetric null, context unchanged at "
+               "120 s — held-out mean F1 0.737 against this point's 0.699, 1.7 calls/hour "
+               "on the empty recording (limit 3) where sliding at THIS point fires 4.0 and "
+               "is over, crowded-recording mean F1 0.827 against this point's 0.816. The "
+               "switch waits on the browser port and one analysis; see the comment above.",
         knob="threshold_pctile", grid=(97.0, 98.0, 99.0, 99.5, 99.9, 99.99, 99.999,
                                        99.9999)),
     "cicada": OperatingPoint(
@@ -539,17 +592,18 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         knob="threshold_pctile", grid=(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 75.0,
                                        80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5, 99.9)),
     "coact": OperatingPoint(
-        # ⚠ STILL BINNED, for the reason on `loco` above. Sliding is built
-        # (`detectors/sliding.py`), with the null computed rather than drawn: binned, a
-        # sub-second shift keeps 0% of this detector's calls at a 0.05 s match, and the
-        # loss grew with the shift because every candidate bin re-used one random stream.
-        # At the alpha below, tuned binned, sliding fires 7.7 calls/hour on the empty
-        # recording against a limit of 7. The switch lands with goal 1 step 3's value.
+        # ⚠ STILL BINNED HERE, for the reason on `loco` above: the sliding values are
+        # measured and chosen and are not switched on in this change.
         params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4,
                     n_surrogates=100),
         source="explore_sce viewer FAST point — NOT the coact_detect signature "
                f"default of alpha=0.01, which scores F1 0.72 here. Confirmed by {RETUNE}: "
-               "already the best value within both budgets (mean F1 0.700).",
+               "already the best value within both budgets (mean F1 0.700). "
+               f"⚠ NOT YET SWITCHED TO SLIDING. {SLIDING_SEARCH} chose, for the sliding "
+               "mode: alpha 1e-5, context 120 s, merge gap 8 s, guard 1 s — held-out mean "
+               "F1 0.746 against this point's 0.702, 5.8 calls/hour on the empty recording "
+               "(limit 7) where sliding at THIS point fires 7.7 and is over, "
+               "crowded-recording mean F1 0.818 against this point's 0.808.",
         knob="alpha", grid=(1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6,
                             1e-7)),
     "rate": OperatingPoint(
@@ -1516,6 +1570,35 @@ the third time that day's reason** — a budget a test holds cannot gate a calib
 Switching LoCo and CoactDetect to a sliding window broke it at their binned settings
 (precision 0.53 busy against 0.67 quiet for LoCo), and ``tools/search_all_settings.py``
 now refuses such a setting instead of proposing it.
+"""
+
+MAX_CROWDED_DROP = 0.02
+"""How much mean F1 a candidate setting may lose on the CROWDED recordings, against the
+setting it is proposed in place of.
+
+**The fourth budget, and the first one a search could not have been stopped without.** On
+2026-09-17 the every-knob search found large held-out gains for four of the six detectors —
+binned SCE +0.305 mean F1, rate+context +0.134, CoactDetect +0.122, LoCo +0.113 — and every
+one of them got there by running its **merge gap out to about a minute**. On a bench that
+plants events at least 120 s apart, merging within 60 s costs nothing and tidies away
+duplicate calls; on `make_tail_recording`, where planted events sit as little as 6 s apart,
+it fuses real events. The same four settings lose **0.251 to 0.318** mean F1 there.
+
+**The other three budgets cannot see it, and it is worth understanding why.** Merging makes
+a detector call LESS, so a merge-happy setting looks *cleaner* on every false-alarm measure:
+LoCo's empty-recording rate went 1.4 to 1.9 calls per hour against a limit of 3, well inside.
+A budget counting false alarms cannot catch a setting whose flaw is that it answers a
+different question — "was there coordination in the last minute" instead of "was there
+coordination here".
+
+**So the crowded recordings stop being only a report.** `bench.py` still forbids CALIBRATING
+on them — nothing is chosen for scoring well there — but a candidate that scores worse there
+than what it would replace is refused, in the search, before it can be proposed. Report and
+veto are different powers, and this is the second.
+
+⚠ **0.02 is a judgement, not a measurement.** It is meant to allow noise and refuse the
+artifact, which on the numbers above is a gap of more than ten to one. Tony has not signed
+it, and a detector genuinely better in both regimes will pass it easily.
 """
 
 MAX_FALSE_POSITIVES_PER_HOUR = {
