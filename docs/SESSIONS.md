@@ -15,10 +15,25 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   interface2 from GitLab into an empty **private** `syncytium2/interface2`, verified by branch, tag
   and commit counts and by the 35 stranded tools armory lists. Tony, 2026-09-18: whole mirror now,
   curation later — this supersedes the selective push in interface2's own runbook.
-- **Holds:** the new GitHub repository until verified. A Mac session is still pushing to GitLab,
-  so the mirror is refreshed (fetch, `push --mirror` again) once it ends; counts are recorded after
-  that refresh.
+- **Holds:** the new GitHub repository until the refresh below. A Mac session is still pushing to
+  GitLab, so the mirror is refreshed (fetch, `push --mirror` again) once it ends.
 - **Private, and stays private.** Making it public is a separate ruling (the handoff's gate).
+- **Mirrored and verified 2026-09-18** (first push, before the refresh):
+  - **3,208 commits; 197 refs** — 173 branches, 16 tags, 8 `refs/merge-requests/*` from GitLab's
+    4 merge requests. `ls-remote` of GitHub against the mirror clone: **identical, ref for ref, name
+    and SHA.** 220 MB, no LFS objects.
+  - **35 of 35 stranded tools** (armory `MANIFEST.json`, `repo == interface2`) present in the mirror
+    as the exact blob armory has committed. Six of their `source_ref` branches no longer exist on
+    GitLab — interface2's triage ledgers record each as merged or contained in a kept branch — so
+    the check is by content, not by branch and path.
+  - **One commit that existed only on this machine** — `55deeaf0`, in a stale July checkout — was
+    pushed to GitLab as tag `rescue/foundations-reference-audit` before the clone, so the mirror
+    carries it.
+- **Still owed, per the handoff:** GitLab's merge-request discussion, any wiki, release notes and
+  CI meaning are not in git and not in the mirror (there is no `.gitlab-ci.yml`); check the web UI
+  before access ends. Which remote is authoritative is Tony's call.
+- **Also done on this box:** the 16 worktrees of the MATLAB interface2 checkout were removed and the
+  stale second checkout deleted. Restore ledger on interface2 branch `worktree-prune-20260918`.
 
 ---
 
