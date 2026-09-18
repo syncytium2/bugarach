@@ -326,18 +326,23 @@ except Exception: print(0)')
       # — one waited all night, and the PR carrying the handoff written FOR the
       # reboot was the one that nearly missed it. The diagnosis is one API call, so
       # the tool makes it rather than leaving it to whoever is still awake.
+      # An `if`, not a nested `case`: tests/test_merge_gate.py reads this branch by
+      # slicing from "NONE)" to the first case-arm terminator and asserting it still
+      # refuses, so a nested arm's terminator would hide the `exit 1` from it. The
+      # test is right to be crude about a gate — keep this branch simple to parse.
+      # (Writing that terminator literally in a comment here truncates the slice too,
+      # which is how this comment got its first draft wrong.)
       state=$(gh pr view "$PR" --json mergeable,mergeStateStatus \
                 --jq '.mergeable + " / " + .mergeStateStatus' 2>/dev/null || echo "UNKNOWN")
       echo "  mergeable: $state"
-      case "$state" in
-        CONFLICTING*)
-          echo "  ^ THAT is why there are no checks: GitHub schedules none for a PR that"
-          echo "    conflicts with its base, so this one can never go green. Merge the base"
-          echo "    in and resolve (a rebase of an already-pushed branch needs Tony's word),"
-          echo "    push, and CI starts by itself." ;;
-        *)
-          echo "  If CI genuinely does not run on this PR, that is the thing to fix." ;;
-      esac
+      if [ "${state%% *}" = "CONFLICTING" ]; then
+        echo "  ^ THAT is why there are no checks: GitHub schedules none for a PR that"
+        echo "    conflicts with its base, so this one can never go green. Merge the base"
+        echo "    in and resolve (a rebase of an already-pushed branch needs Tony's word),"
+        echo "    push, and CI starts by itself."
+      else
+        echo "  If CI genuinely does not run on this PR, that is the thing to fix."
+      fi
       exit 1 ;;
   esac
 
