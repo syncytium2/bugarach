@@ -49,6 +49,42 @@ every existing analysis and every parity fixture at a different corpus. Changing
 decision, not a housekeeping edit — see the note on `steps_excluded`.
 """
 
+[steps_and_pins_excluded]
+# The producer's 2026-09-17 export: field-step artifacts AND moco floor-pinned windows removed.
+# This is the folder new analysis reads. `steps_excluded` below is kept so runs made before it
+# reproduce, and it still stops an analysis by itself — see its note.
+name = "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED"
+recordings = 84
+note = """
+Answers the question this repository should have asked a week earlier. Non-rigid motion
+correction (NoRMCorre, `boundary='copy'`) floods a textureless patch with a constant fill;
+an ROI sitting there reports the frame minimum, and the detectors call events on the steps
+into and out of it. The producer removed it rather than flagging it, and gives the reason
+this repository reached independently: it is a CROSS-CELL artifact — on `20260629_312` four
+ROIs pin over an identical 0-375 s span — so it manufactures near-simultaneous multi-ROI
+structure that a rate-matched null cannot explain away.
+
+Known contamination, and what this folder does about it: every event inside a pinned window
+is REMOVED over the whole recording, and each one is listed in `moco_pinned_excluded.tsv`
+(83 events, joinable on slice_id/roi/stream/time_sec, with `pin_window` grouping them by
+block). The window is an ENVELOPE — first to last frame over the detector threshold — so it
+takes some real events with the artifact, deliberately, in the conservative direction. Five
+(roi, stream) blocks were emptied and appear as `time_sec = NA` rows; the ROI stays in the
+population. The windows are human-confirmed: one panel per pinned ROI, raw F against the
+frame minimum, reviewed by Tony. Census and method: interface2 `docs/moco_floor_pinning.md`.
+
+Field steps are excluded here too, on the same rule as `steps_excluded`: every flagged event
+removed over the whole recording, listed in `field_steps_excluded.tsv`.
+
+84 recordings, 2,630 ROIs, 264,075 events, 238 regions. `20250731_149` is excluded by db4
+`exclude == 1`, as in every sibling folder.
+
+⚠ The census that found the pinned ROIs may not be complete. An open interface2 todo from
+2026-09-02 ranks `20260629_314` and `20260630_325` beside the four censused slices on a blind
+whole-frame scan, and the pinning detector has not been run over them. So four slices is a
+floor rather than a count: this folder cleans what the census found.
+"""
+
 [steps_excluded]
 # The producer's 2026-09-03 export with field-step artifacts REMOVED.
 name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED"

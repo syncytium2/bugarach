@@ -102,7 +102,7 @@ from bugarach import surrogates as sg  # noqa: E402
 from tube_self_supervised import rigid_frames  # noqa: E402
 
 TAG = "slow-comodulation-2026-09-17"
-FOLDER = "2026-09-17-slow-comodulation"
+FOLDER = "2026-09-17-slow-comodulation-pins-excluded"
 J_SEC = (1.6, 10.0, 20.0)
 TRIM_SEC = max(J_SEC)
 BLOCK_SEC = 120.0
@@ -116,7 +116,16 @@ N_SINGLE = 3
 """Single circular draws per recording, each scored against the 8-draw circular mean: how often a
 per-recording ratio from one surrogate realization exceeds 1 by chance. ``circular_ref8`` is a
 second 8-draw mean, the matching reference for arms that are themselves means of 8 draws."""
-FOLDERS = (("steps_excluded", "fast"), ("steps_excluded", "slow"), ("cossart", "events"))
+LAB_ROLE = "steps_and_pins_excluded"
+"""The lab folder this analysis reads, named once rather than repeated in branches.
+
+It moved on 2026-09-17, from ``steps_excluded`` to the producer's folder that also removes the
+moco floor-pinned windows. This is not a preference between two corpora: the earlier folder
+declared a contamination nothing in the data marked, and ``dataset.current`` refuses it outright.
+The branches below test against this constant because the lab folder is the one with two streams,
+baseline windows and a CoactDetect removal arm; the Dard et al. folder has none of those.
+"""
+FOLDERS = ((LAB_ROLE, "fast"), (LAB_ROLE, "slow"), ("cossart", "events"))
 
 COACT_NOTE = ("CoactDetect runs at detect_folder.detector_params('coact', ...) on both streams: "
               "the project's calibrated point, as bugarach detect runs it.")
@@ -358,7 +367,7 @@ def load(role: str, stream: str, limit: int | None):
     if limit:
         slices = slices[:limit]
     recs, skipped = ss.recordings_from_slices(slices, stream)
-    if role == "steps_excluded":
+    if role == LAB_ROLE:
         refused = [r.recording_id for r in recs
                    if not r.window_source.startswith("baseline region")]
         if refused:
@@ -406,14 +415,14 @@ def real_task(args):
     role, stream, rec, draws = args
     a, b = rec.window
     lead_in = 0
-    if role != "steps_excluded":
+    if role != LAB_ROLE:
         firsts = [int(t[0]) for t in rec.trains if len(t)]
         if firsts:
             lead_in = min(firsts) - a
             a = min(firsts)
     trains = [np.asarray(t, np.int64) - a for t in rec.trains]
     arms, extra, used_sec = arms_for(trains, b - a, rec.dt, (role, stream, rec.recording_id),
-                                     draws, stream if role == "steps_excluded" else None)
+                                     draws, stream if role == LAB_ROLE else None)
     extra["counts_per_minute"] = minute_counts(trains, b - a, rec.dt,
                                                (role, stream, rec.recording_id))
     extra.update(active_and_correlation(trains, b - a, rec.dt))
