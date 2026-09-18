@@ -911,3 +911,27 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   **`tools/launch_tuning_run_windows.cmd <name> --device cuda --gpu-jobs 2 --jobs 12`** — its header
   carries the exact `schtasks` lines. It is the shakedown's proven launcher, made reusable and moved
   into the repo; the shakedown's own task is deleted.
+- **THE FAIR COMPARISON LAUNCHED, 2026-09-18 at 16:14** (Tony: *"evaluate the gpu dependent tuning
+  options. weekend run"*, then four conditions). From this worktree @ `e8764aa`, Task Scheduler task
+  `bugarach-tune-fair-comparison`, through a machine-local wrapper
+  `%USERPROFILE%\runs\fair-comparison-2026-09-18-launch.cmd` (it quotes the darkroom path and the
+  detector list once; **cmd splits an unquoted comma list**, which cost the first launch attempt,
+  refused by argparse before anything was written). Into `%USERPROFILE%\runs\fair-comparison-2026-09-18\`,
+  log `%USERPROFILE%\runs\fair-comparison-2026-09-18.log`. `--device cuda --gpu-jobs 1 --jobs 12`,
+  all four nets, all six coded detectors searched per fold on the CPU.
+  **Tony's conditions, all in `meta.json`:**
+  - **The fold defect is fixed** (`Plan.fit_recordings`, `Plan.fold_check`; declaration
+    `fold_check.distinct` is true). The shakedown had it: seed 0's held-out folds 3 and 4 fitted the
+    same ten recordings.
+  - **The coded side searches sliding**, from goal 1's values of 6fe09ab (`CODED_BASE`), because
+    `OPERATING_POINTS` still ships binned. Declaration: `coded_base`, `coded_window_mode`.
+  - **Twelve seeds per fold** (recordings 1000–1047), everything else as declared.
+  - **One GPU worker**: `chorus_norm` 309 fits per hour at one process, 264–274 at two to six,
+    measured through this tool's own fit path.
+  **progress.json is mirrored** to `<darkroom>/bugarach/2026-09-18-fair-comparison-run/` at least once
+  a minute (claimed in #648). Read its `at`: more than a few minutes old means the driver is gone. A
+  sync client briefly locking the file writes `mirror_error.json` and the next write goes through.
+  **Expected finish:** training floor 11.7 GPU-hours, likely 12–13 with the larger configurations, so
+  early Saturday 2026-09-19. **If it stopped:** `schtasks /run /tn bugarach-tune-fair-comparison`
+  resumes it (finished jobs are skipped). **When it finishes:** delete the task, then Gate 3. Do not
+  change `tools/` or `src/` here until it ends.
