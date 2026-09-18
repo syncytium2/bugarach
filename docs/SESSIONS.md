@@ -10,6 +10,18 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/interface2-mirror — GitHub claim ACTIVE 2026-09-18: new private repo `syncytium2/interface2`
+- **Status:** ACTIVE. Implements `HANDOFF-interface2-mirror.md` (PR #636): a `push --mirror` of
+  interface2 from GitLab into an empty **private** `syncytium2/interface2`, verified by branch, tag
+  and commit counts and by the 35 stranded tools armory lists. Tony, 2026-09-18: whole mirror now,
+  curation later — this supersedes the selective push in interface2's own runbook.
+- **Holds:** the new GitHub repository until verified. A Mac session is still pushing to GitLab,
+  so the mirror is refreshed (fetch, `push --mirror` again) once it ends; counts are recorded after
+  that refresh.
+- **Private, and stays private.** Making it public is a separate ruling (the handoff's gate).
+
+---
+
 ### Mac/unsup-pins-excluded-run — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-slow-comodulation-pins-excluded/`
 - **Status:** ACTIVE (bugarach-quiet-raven), **written and idle**. The re-measurement of slow shared
   modulation on the producer's new export, `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`,
