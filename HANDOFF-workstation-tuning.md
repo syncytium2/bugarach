@@ -944,3 +944,16 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   both tasks** (`schtasks /delete /tn bugarach-tune-fair-comparison /f`;
   `Unregister-ScheduledTask -TaskName bugarach-mirror-fair-comparison -Confirm:$false`) and release
   the claim.
+- **A replicate runs on WSMIP065 since 17:30 (065's message, 2026-09-18).** Branch `replicate-run` @
+  `7a95e8a`: this run's code (`9ba49bc`) plus `--replicate R`, which draws recording seeds from
+  1000 + 1000·R (replicate 1: recordings 2000–2047, empty recordings 100,000 above). Configurations,
+  training seeds and grids are unchanged, so it differs from this run only in the data drawn, and
+  replicate 0 declares exactly what this run declared (tested). Results in
+  `%USERPROFILE%\runs\bench-replicate1\` on WSMIP065; status at
+  `<darkroom>/bugarach/2026-09-18-replicate-run-status/STATUS.txt`. **Gate 3 reads both**: the
+  replicate is a second, independent draw of the same comparison. Report each alone and then side by
+  side; never pool the two as if they were one run's folds.
+- ⚠ **Owed after the run, not before:** `tools/launch_tuning_run_windows.cmd` splits a
+  comma-separated argument (cmd treats commas as separators), so `--detectors coact,loco,…` reaches
+  argparse as six arguments. Both machines hit it on 2026-09-18 and both launched through a
+  machine-local wrapper that quotes the list. Fix it in the launcher once this worktree may change.
