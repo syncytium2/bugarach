@@ -49,7 +49,11 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
    what makes a stray push fail loudly instead of splitting the history. **interface2: archived
    2026-09-18** (Tony). The rest: open.
    `Documents\cascade stuff\TDCascade` (286 MB, not a git repo — a copy of the CASCADE tree plus a
-   clone of the empty `tdcascade` project) is still on disk, unchecked against `cascade-td`.
+   clone of the empty `tdcascade` project) was **checked and deleted 2026-09-18** (Tony: go). Every
+   file was hashed against all of `cascade-td`'s objects: 681 of 694 already there. Of the 13 not,
+   one mattered — `cascade2p/utils.py` of 2024-09-04, an unfinished fix for the ground-truth path —
+   and it is branch `archive/tdcascade-utils-2024-09-04` in `cascade-td`, byte-identical. The rest
+   were `__pycache__`, Jupyter checkpoints and the one-line README.
 4. **interface2's branch list on GitHub** — the triage in its `docs/migration_selection.tsv`,
    applied on GitHub only, **after** step 3: create each `archive/<branch>` tag, verify it SHA
    against SHA, then delete the branch. Decided on interface2's board, block
