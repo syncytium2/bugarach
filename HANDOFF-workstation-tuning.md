@@ -836,6 +836,35 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
     (*"baselines shorter than 15 minutes should be ignored"*). Nothing in the declared folder is
     affected — its shortest baseline is 17.0 minutes. **Import the constant; never write 900**: it is
     his ruling, not a derived filter.
+- **The pins-excluded export does not move the simulation — measured twice, on two machines.** Tony,
+  2026-09-17: the recordings this work has used were contaminated by motion-correction pinning, and a
+  new folder `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED` excludes it. Non-rigid motion
+  correction floods a textureless patch with a constant fill, so an ROI there reports the frame
+  minimum and the detectors call events on the steps into and out of it; several ROIs in one slice
+  share one window (four over an identical 0–375 s span on `20260629_312`), which makes it
+  **coordination-shaped** contamination, not rate-shaped. 83 events removed, 12 ROIs, 4 recordings;
+  84 recordings, 2,630 ROIs and 238 regions unchanged.
+  **The eight measured constants, old folder against new** (064 with a patched resolver and
+  `--no-write`; 065 with its own `--folder` mode; the two agree, and 064's old-folder run reproduces
+  `docs/learned/bench_measured.json` exactly): `rate_shape` 0.2688 → 0.2667, `burst_shape_300s`
+  1.7993 → 1.8001, `burst_shape_60s` 1.5157 → 1.5164, and `regime_quiet_hz`, `regime_busy_hz`,
+  `n_roi`, `jitter_sec` and `participation` identical to four decimals. Every change sits far inside
+  its bootstrap interval. **The two coordination-shaped constants — onset jitter and participation —
+  do not move at all**, which is the thing both sessions were watching.
+  **Participation's disagreement is not the pins:** it reads outside its interval in BOTH folders,
+  because the bench's stored 0.18 is the 6/33 rounding and the folder says 0.1905. That is the
+  pre-existing question for Tony, unchanged by this export.
+  **Dropping the four affected recordings gives identical values from both folders** (065), so the
+  folders differ only there. Within them, 064 measured baseline events 401 → 389, 434 → 411 and
+  508 → 487, cells firing down by one or two, and cluster statistics barely moving.
+  **Where it does land is real recordings:** 56 of the removed events are fast-stream baseline ones,
+  and on `20260629_312` the detectors' calls move (065: locust 21 → 17, binned SCE 12 → 10,
+  rate+context 13 → 11, SPIKE-synch 13 → 11, CoactDetect 19 → 18, LoCo 18 → 19).
+  **Consequences for goal 2: none.** Nothing here reads the folder; the simulation is unchanged, so
+  the nets' recordings, the shakedown and this comparison's baseline all stand. **Consequences
+  elsewhere:** the `steps_excluded` pointer in `current_export.toml` should name the new folder —
+  Tony's as producer, and neither session touches it — and goal 1 re-runs its sliding-vs-binned
+  comparison on the revised folder once it moves.
 - **Still waiting on goal 1:** step 3's every-knob values in `OPERATING_POINTS`, which is what the
   budget's reference anchors to and what the refuse-to-start guard waits for. 065 treats goal 2 as
-  blocked on it, Tony knows, and 065 starts step 3 next.
+  blocked on it, Tony knows, and step 3's search keeps running since the bench does not move.
