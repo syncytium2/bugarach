@@ -1360,8 +1360,8 @@ hit. Where events are a few seconds apart, the same merge fuses them, and with o
 fused call finds only one. Merging also chains: calls each within the gap of the next can fuse across
 far more than the gap. How wide a merge gap each side was allowed is the subject of section 7.</p>
 {figure(3, "Merging calls", fig_merging(),
-        "A schematic, with calls drawn as short spans as in Figure 2. In the \"far apart\" row, two "
-        "events each keep their own merged call, and both are hit. In the \"close\" row, three events "
+        "A schematic, with calls drawn as short spans as in Figure 2. In the “far apart” row, two "
+        "events each keep their own merged call, and both are hit. In the “close” row, three events "
         "a few seconds apart fuse into one merged call, which can hit only one of them.")}
 <p>This run used {folds * spf * 2} recordings with planted events ({folds * spf} seeds,
 {d['recording_seeds'][0]} to {d['recording_seeds'][-1]}, at both backgrounds), and
