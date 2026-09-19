@@ -46,6 +46,81 @@ cross-validation.
 
 ## Where it stands
 
+### The weekend's two runs: CoactDetect holds under the budget, and the rest is inside the noise
+
+**Both runs finished 2026-09-19 with no errors** — WSMIP064 on recording seeds 1000–1047 at 05:58
+EDT, WSMIP065's disjoint replicate on 2000–2047 at 07:47. Each machine wrote a report for a reader
+new to the project and murderboarded it in **three blind rounds** plus a finding-driven pass. The
+reports are committed at [`tuned_vs_coact/fair_comparison_2026_09_18/report.html`](../learned/tuned_vs_coact/fair_comparison_2026_09_18/report.html)
+and [`tuned_vs_coact/replicate1/report.html`](../learned/tuned_vs_coact/replicate1/report.html); the
+four architectures are drawn through draughtsman in `<darkroom>/bugarach/2026-09-19-comparison-architectures/`.
+
+**Under the shared false-alarm budget the answer is clean and it survived every round.** Held to
+1.6 times CoactDetect's own rates, **CoactDetect is ahead of every net in every fold of both
+draws**. That is the selection with a stated operating constraint, and it is the one that replicated.
+
+**Chosen on F1 alone the two are nearly tied, and the sign is not settled.** Counting every training
+of every net, CoactDetect is ahead on average in both draws. But in WSMIP064's run the best net moves
+ahead once both sides use the same **merge gap** — a setting only the coded side was allowed to tune —
+and in the replicate it is ahead in most folds, its average pulled down by two trainings that failed.
+**Margins this small are at the limit of what the scoring resolves**, and the matched-gap leads carry
+*t* of only −1.5 to −2.1.
+
+**The scale that makes those claims checkable.** The replicate measured what moves when only the
+recordings change, configurations and training seeds held fixed: the nets by a median of **0.010 F1**,
+the coded detectors by **0.003**. The shakedown's leads of +0.011 and +0.016 were exactly that size,
+so a single run could never have told them from the draw. That is what the second draw was for.
+
+**Three things the rounds established that a single pass would have missed:**
+
+1. **The earlier +0.103 lead is gone even for the untuned nets.** So it was not lost to tuning them.
+   The simulator and CoactDetect's own tuning changed together, and this run cannot separate them.
+2. **The two sides win in different places.** On F1 alone the chorus nets find more of the faintest
+   events — those joined by a tenth of the cells — when background firing is high; CoactDetect finds
+   more of them when it is low. A pooled F1 hides that entirely.
+3. **The nets are handicapped by construction.** Each fits only **10 of the 72** training recordings
+   and picks its threshold on 2, while a coded setting is scored on all 72. Tuning moved the nets by
+   a few hundredths at most, and not always upward.
+
+**Among the coded detectors, binned SCE beats CoactDetect under the budget in a few folds**, by a few
+hundredths of F1 — admissible there, in 3 of 4 replicate folds. Its *F1-alone* first place is a
+different matter and does not stand: a 30 s merge gap it moved to in 8 of 8 folds, failing the
+crowded-recording check in 7 of 8.
+
+**The chorus nets often fail to train, and the failures are inside these averages.** About a third of
+`chorus_norm`'s 432 inner fits per draw make one call per recording — F1 exactly 0.125 — and a sixth
+of `chorus_gain_norm`'s. Two failed refits carry a whole fold's margin in the replicate.
+
+**Why, diagnosed on WSMIP065: at a learning rate of 0.03 the head is never woken.** Across both draws
+292 of 396 inner fits at that rate collapse, against 7 of 468 below it. Every collapsed inner fit has
+a head layer that passes nothing varying — 153 of 153 for `chorus_norm`, 75 of 75 for
+`chorus_gain_norm` — and no working fit does. Replayed bit-exactly against its checkpoint, the same
+collapsed fit trains at 0.01 or 0.003, or at 0.03 behind a 200-step warm-up. Tuning chose no
+lr-0.03 configuration for `chorus_norm` under either selection, so the cost to goal 2 is a smaller
+effective grid rather than a wrong answer; `chorus_gain_norm` is the exception, picking that rate in
+6 of 8 folds on F1 alone. The repair is filed as a decision, not made. Source:
+[PR #667](https://github.com/syncytium2/bugarach/pull/667), ⚠ **landed at Tony's call with four open
+murderboard findings and its round-2 repairs not blind-verified**. Its readout
+[`chorus_collapse/`](../learned/chorus_collapse/index.html) and its
+[todo](../todo/2026-09-19-chorus-norm-does-not-train-at-lr-0.03.md) arrive with that PR.
+
+⚠ **A claim this page carried is withdrawn.** It read the **111** inner fits that collapse in *both*
+draws as the same fits failing twice, and called the failure deterministic given configuration, seed
+and fold pair. It is not evidence of that. Draws share their configurations, seeds and fold pairs and
+differ only in recordings, so the per-configuration collapse rates predict an overlap of **112.6** on
+their own — against the 111 observed, and 40.4 against 38 for `chorus_gain_norm`. The overlap is what
+chance gives. Whether a collapse is reproducible is a question the replay tool can answer and nobody
+has asked. Found by round 2 of the chorus-collapse murderboard; the same misreading in the replicate
+report is in the todo above.
+
+**Next:** tune the nets' merge gap like any other setting, reporting both selections separately, with
+the crowded-recording check applied to the nets' chosen gaps for the first time. **Running on
+WSMIP064 since 2026-09-19**, which reported selection about three hours out at 16:14 EDT.
+
+⚠ **The bench's values were re-measured on the de-pinned export** on 2026-09-17 by both workstations,
+every value inside its own bootstrap interval — commit `2120516` on `tune-bench-comparison`, **not on
+`main`**. Moving `MEASURED_ROLE` to the corrected folder is still undecided.
+
 **There is a built route, and it is the best-organised thing in this goal.**
 [`pipelines/learned-model-evaluation.md`](../pipelines/learned-model-evaluation.md) walks a new
 architecture from registration to murderboard in eight stages, each with the gate it has to pass and

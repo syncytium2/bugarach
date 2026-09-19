@@ -10,8 +10,41 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 065/weekend-run-status — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-replicate-run-status/`
-- **Status:** ACTIVE (WSMIP065), claimed before writing. The status mirror for WSMIP065's weekend
+### 065/chorus-collapse — DARKROOM claim DONE 2026-09-19: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** DONE (WSMIP065), released. The diagnosis landed with its murderboard flags (Tony's call:
+  "land with flags"); the folder holds the page and its data, and nothing more will be written.
+- **Was:** Tony's next step for goal 2: diagnose why a third of `chorus_norm`'s inner fits make one
+  call per recording (the replicate report's Table 2).
+- **Writes:** one new folder only: the diagnosis page, its figures, and the small JSON tables behind
+  them (the collapse table, the dead-layer census, the replays). Nothing existing is touched; the
+  two runs' `results/` folders are read, never written.
+- **Touches:** this block. The tool and the repo copy of the page land on branch `chorus-collapse`.
+  Not `docs/goals/` (#664 owns it).
+- **Holds:** the folder above.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the diagnosis has landed, or the work is abandoned.
+
+### Mac/draw-the-comparison-four — DARKROOM claim RELEASED 2026-09-19: `bugarach/2026-09-19-comparison-architectures/`
+- **Status:** **RELEASED 2026-09-19** — the page, the composite and the four one-to-one panels are in the folder, and the path went to the orchestrator and to WSMIP064 and WSMIP065. Rebuild with `tools/make_comparison_figure.py` (PR #660). Was: ACTIVE (draughtsman-slate-ledger, on the Mac), claimed before writing. The four
+  architectures of goal 2's fair comparison (`chorus_norm`, `tube`, `chorus_gain_norm`,
+  `line_length`) drawn through draughtsman at one common slot, so that WSMIP064's and WSMIP065's
+  reports compare them as shapes. Asked by the orchestration session on Tony's instruction; both
+  workstations have been told to stand off this figure and leave it to this claim.
+- **Writes:** one new folder only: the four SVGs, their PNGs and the combined comparison page.
+  Nothing existing in the darkroom is touched.
+- **Touches:** this block. The specs and `DRAWABLE` entries land separately, on branch
+  `draw-the-comparison-four` into `tune-bench-comparison`, because the two chorus nets exist only
+  there. Not `docs/goals/`.
+- **Holds:** the folder above.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the figure is in the folder and its path is handed to the orchestrator.
+
+### 065/weekend-run-status — DARKROOM claim RELEASED 2026-09-19: `bugarach/2026-09-18-replicate-run-status/`
+- **Released 2026-09-19:** the report landed (`report/report.html`, with the round-by-round review
+  reports beside it), both scheduled tasks are deleted, and `results/` also holds `merge_gap.json`
+  and `crowded_check.json`, WSMIP064's two checks run unchanged on this draw. Nothing more is written.
+- **Status:** was ACTIVE (WSMIP065), claimed before writing. The status mirror for WSMIP065's weekend
   run, the replicate of goal 2's fair comparison (Tony's choice, 2026-09-18: the same comparison at a
   fresh seed draw), launched as `bench-replicate1` into `%USERPROFILE%\runs\bench-replicate1\` —
   local disk, which is why it needs a mirror (armory finding 21).
@@ -19,11 +52,20 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   (when it was copied, how old the source was, from which host), by `tools/mirror_run_status.py`
   one-shot every 5 minutes from Task Scheduler task `bugarach-mirror-bench-replicate1`. Nothing
   existing in the darkroom is touched.
+  **Widened 2026-09-19, before writing** (Tony: *"unless the data are large they should go to
+  Dropbox upon completion"*): the run finished at 07:48 (1,968 jobs, 0 errors) and its folder is
+  1.3 GB on disk, almost all of it small JSON files that compress well, so two subfolders are
+  added. `results/`: the declaration and summaries (`meta.json`, `results.json`, `ran.json`,
+  `progress.json`), `configs/`, the per-fold `selections/` and the refit models in `chosen/`, about
+  13 MB, plus the inner fits and the per-threshold score files as two archives (`fits.zip`, 3,886
+  files in 53 MB; `scores.zip`, 3,720 files in 34 MB), about 100 MB in all. So nothing stays only on
+  WSMIP065. `report/`: the report written for a new reader, and its figures.
 - **Touches:** this block; a note for WSMIP064 with the commands that worked here.
 - **Holds:** the folder above and that scheduled task on WSMIP065.
 - **Simulation only**, so nothing here is derived from a real recording.
 - **Goal:** learned-model-family (goal 2).
-- **Released when:** the replicate has ended and the task is deleted, or the run is abandoned.
+- **Released when:** the replicate's report has landed and both scheduled tasks are deleted, or the
+  work is abandoned.
 
 ### WSMIP064/fair-comparison-run — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-fair-comparison-run/`
 - **Status:** ACTIVE (WSMIP064), claimed before writing. Goal 2, the fair comparison: the weekend
@@ -38,6 +80,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   a separate process, so the status says `STALE` if the run's driver dies (armory finding 21;
   `docs/windows_workstation_setup.md` §8). After the run: the per-fit files (`fits/`, `scores/`)
   that are too large for git. Nothing existing in the darkroom is touched.
+- **Run ended 2026-09-19 05:58** (1,963 jobs, 0 errors); both scheduled tasks deleted. **Now
+  writes** (Tony, 2026-09-19: results to Dropbox on completion, and a full report for a new reader):
+  `results/` (the run folder's summaries, selections, configurations, chosen settings and fitted
+  models, and the 1.1 GB of score tables as one archive) and `report/` (the built report and its
+  figures).
 - **Simulation only**, so nothing here is derived from a real recording.
 - **Goal:** learned-model-family (goal 2).
 - **Released when:** the run has ended and its readout has landed, or the run is abandoned.
