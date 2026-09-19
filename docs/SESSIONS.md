@@ -38,6 +38,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   a separate process, so the status says `STALE` if the run's driver dies (armory finding 21;
   `docs/windows_workstation_setup.md` §8). After the run: the per-fit files (`fits/`, `scores/`)
   that are too large for git. Nothing existing in the darkroom is touched.
+- **Run ended 2026-09-19 05:58** (1,963 jobs, 0 errors); both scheduled tasks deleted. **Now
+  writes** (Tony, 2026-09-19: results to Dropbox on completion, and a full report for a new reader):
+  `results/` (the run folder's summaries, selections, configurations, chosen settings and fitted
+  models, and the 1.1 GB of score tables as one archive) and `report/` (the built report and its
+  figures).
 - **Simulation only**, so nothing here is derived from a real recording.
 - **Goal:** learned-model-family (goal 2).
 - **Released when:** the run has ended and its readout has landed, or the run is abandoned.
