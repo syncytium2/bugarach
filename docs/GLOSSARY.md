@@ -310,6 +310,27 @@ describes.
 - **sapper** — the mechanized rule gate (`tools/sapper.py`); a rule must
   prove it can fire (self-test fixtures) to exist.
 
+## Tuning the learned nets
+
+Terms from goal 2's comparison of coded detectors against learned nets. They were added on
+2026-09-19, when the chorus-collapse diagnosis (`docs/learned/chorus_collapse/`) used them.
+
+- **configuration** — one setting of a net's size and training, such as encoder width and
+  depth, learning rate and step count. Each has a hash name (`2736f584…`).
+- **inner fit** — one configuration trained at one training seed on one pair of inner folds,
+  then scored on the other two folds. Tuning picks a configuration from these.
+- **refit** — the configuration tuning picked, trained afresh and scored on recordings held
+  out from all of that tuning. The untuned default is also refit in every fold.
+- **draw** — one complete run of the comparison on its own simulated recordings. There are two
+  so far.
+- **collapse** (of a fit) — exactly one call on every recording the fit was scored on, at its
+  own threshold. The whole recording becomes one event, and F1 is 0.125 against 15 planted
+  events.
+- **silent layer** — a layer none of whose units' outputs varies over a recording: the standard
+  deviation over its frames is under 0.001. This is **not** the ReLU sense of "dead", which
+  means a unit whose output is exactly zero. GELU's negative dip carries signal without ever
+  going positive, so a test of the sign counts layers that still transmit.
+
 ## Bench and simulation
 
 Terms used by `bugarach.bench`, `bugarach.simulate` and
