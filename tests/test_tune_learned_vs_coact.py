@@ -26,6 +26,20 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 TOOL = REPO / "tools" / "tune_learned_vs_coact.py"
 
+# The ``run`` fixture shells out to the tool under a wall-clock timeout, so it measures whatever
+# else is loading the machine. CI runs the suite on four xdist workers (``-n auto``), and the fixture
+# asking for four more jobs on top made the budget measure the other workers: 3.11 passed, 3.13 and
+# 3.14 reported 13 setup errors in the same run. The house rule (CLAUDE.md, "CI runs the suite in
+# parallel") is that a test with a wall-clock budget runs alone: ``serial`` tests run after the
+# parallel pass, one at a time, so the four jobs have the runner's four cores to themselves.
+# The jobs stay at four, not one: measured on a 2026-09 workstation, this quick run took 276 s at
+# four jobs and 559 s at one, against the 600 s timeout. On CI, alone, at four jobs, the fixture
+# took 419 s (3.11), 533 s (3.14) and 545 s (3.13) (run 35453034315): the runners are about half as
+# fast, so one job would time out everywhere, and four already spend up to 91% of the budget. The
+# timeout stays where it is: raising it would hide contention until the suite grows again. The next
+# lever, if this reddens, is a smaller quick run, not a longer wait.
+pytestmark = pytest.mark.serial
+
 
 def _load_tool():
     spec = importlib.util.spec_from_file_location("tune_learned_vs_coact_under_test", TOOL)
