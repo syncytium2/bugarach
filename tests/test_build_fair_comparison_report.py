@@ -40,9 +40,51 @@ def test_every_figure_is_inline_svg(html):
 
 
 def test_no_personal_path_reaches_the_page_or_the_committed_files(html):
+    """The repository is public, and sapper SAP004 matches forward-slash paths only (armory
+    finding 23), so a Windows or WSL path would pass the commit gate. This test looks for both
+    slash forms, and for the running machine's own user name, read at run time rather than
+    written here."""
+    me = Path.home().name.lower()
     for text in [html] + [p.read_text(encoding="utf-8") for p in RUN.rglob("*.json")]:
-        assert not re.search(r"[A-Za-z]:\\\\?Users\\\\?[a-z]", text)
-        assert "Dropbox" not in text
+        low = text.lower()
+        assert not re.search(r"[a-z]:[\\/]+users[\\/]+[a-z]", low)
+        assert not re.search(r"[\\/]+(home|users)[\\/]+[a-z0-9._-]+[\\/]", low)
+        assert "wsl$" not in low and "dropbox" not in low
+        assert len(me) < 3 or me not in low
+
+
+def test_the_merge_gap_evidence_reproduces_the_run_at_its_own_gaps():
+    """Figure 5 and the headline rest on merge_gap.json. It changes one setting at a time, so it is
+    only evidence if, at each side's own gap, it gives back exactly what the run scored."""
+    doc = json.loads((RUN / "merge_gap.json").read_text())
+    results = json.loads((RUN / "results.json").read_text())
+    for d, rows in doc["coded"].items():
+        assert len(rows) == len(results["hand"][d]) * 2
+        assert max(r["reproduces_run"] for r in rows) < 1e-9, d
+    # The nets were trained and scored on the GPU and are re-scored here on the processors, whose
+    # arithmetic differs slightly: the worst refit lands 0.0015 F1 away. A defect in the re-decoding
+    # (a wrong threshold, a wrong recording) moves a refit by tenths, not thousandths.
+    for m, rows in doc["nets"].items():
+        assert len(rows) == len(results["learned"][m]) * 2
+        assert max(e["reproduces_run"] for r in rows for e in r["per_seed"]) < 0.005, m
+
+
+def test_the_fold_draw_evidence_is_regenerable():
+    """Figure 4's before-fix strips come from the project's own fold_maker, not a copied rule."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("evidence", REPO / "tools" / "fair_comparison_evidence.py")
+    ev = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ev)
+    doc = json.loads((RUN / "fold_draws.json").read_text())
+    from bugarach.learn.train import TRAIN_SEED_BLOCK, VAL_SEED_BLOCK, fold_maker
+    decl = json.loads((RUN / "meta.json").read_text())["declaration"]
+    for h, got in doc["before_fix"].items():
+        train = sorted(int(s) for s, f in doc["fold_of"].items() if f != int(h))
+        mk, _, _ = fold_maker(lambda r: r, [f"{b}:{s}" for s in train for b in ev.REGIMES])
+        fitted = sorted({mk(TRAIN_SEED_BLOCK + i) for i in range(doc["n_train"])})
+        picked = sorted({mk(VAL_SEED_BLOCK + i) for i in range(4)})
+        assert (fitted, picked) == (got["fitted"], got["threshold"]), h
+    assert decl["fold_check"]["distinct"] is True
 
 
 def test_the_crowded_check_covers_every_coded_choice():

@@ -332,7 +332,23 @@ load-bearing terms with no glossary entry.
   rate rather than on coordination. Its firings are reported separately and kept
   out of headline precision.
 - **distractor** — a planted correlated burst: real cross-ROI coincidence that is
-  not a coordinated event. A negative that is meant to be confusable.
+  not a coordinated event. A negative that is meant to be confusable. On the bench it
+  is built exactly as an 18% planted event is built and differs only in its label, so
+  whether a call on one should count against a detector is an open question
+  (`score.py`); today it counts as a false alarm, for every detector alike.
+- **merge gap** — how close two calls may be before a detector merges them into one.
+  Tuned for the coded detectors (`merge_gap_sec`, `merge_gap_s`); fixed at 20 frames
+  for the learned models (`pick_threshold`). On the bench, where planted events are at
+  least 120 s apart, a wider gap never costs recall, so bench F1 rises with it; that
+  is why the crowded-recording check exists.
+- **crowded-recording check** (also *crowded veto*) — `bench.MAX_CROWDED_DROP`: a
+  setting may not score more than that much mean F1 below the setting it replaces on
+  `bench.make_tail_recording`'s crowded recordings. Goal 1's fourth budget.
+- **shared false-alarm budget** — goal 2's second selection: a candidate may fire at
+  most a declared margin (1.6) times as often as the reference CoactDetect, in the
+  promiscuity probe and on recordings with nothing planted, on the training folds.
+  A result is **admissible** if it was chosen within the budget and passes the
+  crowded-recording check.
 - **contaminated null** — a surrogate null estimated over a context window that
   contains real coordinated events, which inflates the threshold. Avoided by
   spacing events wider than the widest context window.
