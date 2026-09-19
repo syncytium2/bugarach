@@ -896,8 +896,11 @@ from Task Scheduler, not before the elevation's sign-out (about 12:09).
   0.725 / 0.724; `chorus_gain_norm` 0.725 / 0.692 / 0.728; `line_length` 0.674 / 0.709 / 0.681;
   `tube` 0.653 / 0.659 / 0.609; CoactDetect 0.712 / 0.712; LoCo 0.692 / 0.703.
   **Tuning the nets moved almost nothing** (`chorus_norm` −0.001 tuned minus untuned), and the
-  leader's margin over CoactDetect fell from the untuned table's +0.103 F1 to +0.011 ungated and
-  +0.012 gated (*t* 1.24 and 2.45). **`tube`, the control, behaved**: 0.05 to 0.10 below CoactDetect
+  leader's margin over CoactDetect fell from the untuned table's +0.103 F1 to +0.012 ungated
+  (`chorus_norm`, *t* 1.24) and +0.016 gated (`chorus_gain_norm`, *t* 1.98; `chorus_norm` +0.011,
+  *t* 2.45). ⚠ Corrected 2026-09-19: this line first had the ungated and gated margins swapped and
+  named the wrong leader under the budget (WSMIP065 caught it against the shakedown's
+  `results.json`). **`tube`, the control, behaved**: 0.05 to 0.10 below CoactDetect
   and worse under the gate, which is what a rate-fooled model should do when false alarms are capped.
   If that shape survives on the bench against every-knob coded detectors, the answer to this run's
   question is that the margins were about tuning budget — which is what it was built to find out.
