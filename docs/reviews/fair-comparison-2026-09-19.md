@@ -58,7 +58,7 @@ near tie whose sign depends on the merge gap and on the draw.
 - upstream:  syncytium2/murderboard @ 08f5ddb
 - copy:      vendored @ 08f5ddb
 - freshness: current
-- artifact:  docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/report.html (76c3270 -> 3c94e2e)
+- artifact:  docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/report.html (76c3270 -> e0818e7; the reviewed build was 3c94e2e, and e0818e7 differs from it only in the build stamp and in Figure 3's caption using typographic quotation marks, which Python 3.11 needs)
 - roles:     11 of 11 run (named agents), in each of three blind rounds
 - reports:   fair-comparison-2026-09-19-round3-roles/
 - rounds 1 and 2 reports: fair-comparison-2026-09-19-roles/ and fair-comparison-2026-09-19-round2-roles/
