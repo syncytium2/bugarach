@@ -315,21 +315,36 @@ describes.
 Terms from goal 2's comparison of coded detectors against learned nets. They were added on
 2026-09-19, when the chorus-collapse diagnosis (`docs/learned/chorus_collapse/`) used them.
 
-- **configuration** — one setting of a net's size and training, such as encoder width and
-  depth, learning rate and step count. Each has a hash name (`2736f584…`).
-- **inner fit** — one configuration trained at one training seed on one pair of inner folds,
-  then scored on the other two folds. Tuning picks a configuration from these.
-- **refit** — the configuration tuning picked, trained afresh and scored on recordings held
-  out from all of that tuning. The untuned default is also refit in every fold.
+- **configuration** — one setting of a net's size and training: encoder width and depth, top m,
+  learning rate, step count and, for chorus_gain_norm, the vote gain's starting value. Each has
+  a hash name (`2736f584…`).
+- **inner fit** — one configuration trained at one training seed on 2 of a draw's 4 folds and
+  scored on the other 2. That gives 6 pairs of folds × 3 seeds per configuration. Tuning picks a
+  configuration from these; an inner fit is shared by every outer fold it did not use. Also
+  called a tuning fit.
+- **refit** — for each fold held out in turn, the configuration tuning picked, trained afresh on
+  the other 3 folds and scored on the held-out one. There is one pick per selection rule: on F1
+  alone, and under the false-alarm budget. The untuned default is also refit in every fold.
+- **training seed** — it sets a fit's starting weights and the order of its training crops. It
+  also sets which recordings of its folds the fit trains on, so it is not only a starting point.
+- **twin** (configurations) — two configurations identical except for step count. The learning
+  rate is constant and training is deterministic, so the shorter twin's fit is the longer twin's
+  fit stopped early: one trajectory, not two samples.
+- **census** — the chorus-collapse diagnosis's run of every second-draw chorus fit on one fresh
+  simulated recording that no fit trained on (quiet background, seed 9000).
 - **draw** — one complete run of the comparison on its own simulated recordings. There are two
   so far.
 - **collapse** (of a fit) — exactly one call on every recording the fit was scored on, at its
   own threshold. The whole recording becomes one event, and F1 is 0.125 against 15 planted
   events.
-- **silent layer** — a layer none of whose units' outputs varies over a recording: the standard
-  deviation over its frames is under 0.001. This is **not** the ReLU sense of "dead", which
-  means a unit whose output is exactly zero. GELU's negative dip carries signal without ever
-  going positive, so a test of the sign counts layers that still transmit.
+- **silent layer** — a layer none of whose units' outputs varies over a recording or training
+  crop: the standard deviation over its frames is under 0.001. It is measured with 400 frames
+  trimmed from each end, because zero padding makes even a constant layer wiggle there.
+  - This is **not** the ReLU sense of "dead", which means a unit whose output is exactly zero.
+    GELU's negative dip carries signal without ever going positive, so a test of the sign counts
+    layers that still transmit.
+  - It is not Sokar et al.'s "dormant" unit either, which is a threshold on the unit's mean
+    absolute activation, relative to its layer's.
 
 ## Bench and simulation
 
