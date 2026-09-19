@@ -44,7 +44,7 @@ DEFAULT_RUN = REPO / "docs" / "learned" / "tuned_vs_coact" / "fair_comparison_20
 
 
 def _clean(params: dict) -> dict:
-    """JSON writes NaN as NaN, and the run stored it that way; keep it a float NaN."""
+    """A merge gap stored as null (JSON has no NaN) becomes a float NaN, as the detectors expect."""
     return {k: (float("nan") if v is None and k.startswith("merge_gap") else v)
             for k, v in params.items()}
 

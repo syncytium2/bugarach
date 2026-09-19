@@ -321,7 +321,30 @@ def replicate(source: Path) -> dict:
         hand={dd: {w: [row[w]["f1"] for row in rows] for w in SELECTIONS}
               for dd, rows in r["hand"].items()},
         comparisons=r["comparisons"],
-        refits=_refit_health(r))
+        refits=_refit_health(r),
+        admissibility=_admissibility(source, r))
+
+
+def _admissibility(source: Path, r: dict) -> dict:
+    """Per coded detector and selection, fold by fold: whether the choice passes the replicate's own
+    crowded-recording check (its ``crowded_check.json``, written by
+    ``tools/crowded_check_fair_comparison.py``) and, under the budget, whether the budget refused every
+    configuration its search tried (its ``selections/``), read the same way as this run's."""
+    check = json.loads((source / "crowded_check.json").read_text())
+    passes = {(c["detector"], c["outer_fold"], c["selection"]): bool(c["passes_veto"])
+              for c in check["choices"]}
+    out = {}
+    for d, rows in r["hand"].items():
+        out[d] = {}
+        for w in SELECTIONS:
+            refused = []
+            for row in rows:
+                sel = json.loads((source / "selections" / w / f"outer{row['outer_fold']}"
+                                  / f"{d}.json").read_text())
+                refused.append(bool(sel["n_refused"]) and sel["n_refused"] >= sel["n_scored"])
+            out[d][w] = dict(passes_crowded=[passes[(d, row["outer_fold"], w)] for row in rows],
+                             refused_all=refused)
+    return out
 
 
 #: A refit under this held-out F1 is set aside in the "without" means. The flags the run records

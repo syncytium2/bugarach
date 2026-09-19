@@ -335,7 +335,7 @@ def fig_problem() -> Svg:
     down-pointing markers, planted filled and distractors hollow."""
     _, gt, trains, facts = problem_recording()
     dur = bench.BENCH_RECORDING["duration_sec"]
-    svg = Svg(900, 700, "Figure 1: panel A, the whole 45-minute recording as a lane of planted "
+    svg = Svg(900, 700, "Panel A, the whole 45-minute recording as a lane of planted "
                         "events, distractors and the probe; panel B, a raster of 33 ROIs over ten "
                         "minutes of it, with the same lane above")
     x0, x1 = 170, 870
@@ -363,7 +363,7 @@ def fig_problem() -> Svg:
     svg.text(lx + 124, 176, "the stretch panel B shows", size=11)
     # --- B: ten minutes, cell by cell ---
     t0, t1 = FIG1_WINDOW
-    svg.text(20, 214, "B.  Ten minutes of it, cell by cell", size=13, weight="bold")
+    svg.text(20, 214, "B.  About ten minutes of it, cell by cell", size=13, weight="bold")
     counts = [int(np.sum((t >= t0) & (t <= t1))) for t in trains]
     order = np.argsort(counts, kind="stable")[::-1]
     X = lambda t: x0 + (t - t0) / (t1 - t0) * (x1 - x0)      # noqa: E731
@@ -389,9 +389,9 @@ def fig_problem() -> Svg:
 
 
 def fig_scoring() -> Svg:
-    """Figure 2: how a call is scored, drawn from score.TOL_SEC and the one-to-one matching."""
+    """How a call is scored, drawn from score.TOL_SEC and the one-to-one matching."""
     tol = score.TOL_SEC
-    svg = Svg(900, 330, "Figure 2: four rows showing how a detector's call is scored: a hit, a false "
+    svg = Svg(900, 330, "Four rows showing how a detector's call is scored: a hit, a false "
                         "alarm, one call spanning two events, and a call inside the probe")
     x0, x1, s0, s1 = 250, 590, 0.0, 40.0
     X = lambda t: x0 + (t - s0) / (s1 - s0) * (x1 - x0)      # noqa: E731
@@ -424,6 +424,8 @@ def fig_scoring() -> Svg:
     svg.rect(150, ly - 7, 26, 6, fill="#111")
     svg.text(182, ly, "a detector's call (its time span)", size=11)
     svg.line(390, ly - 4, 430, ly - 4, stroke=GREY, w=1.4)
+    svg.line(390, ly - 8, 390, ly, stroke=GREY, w=1.4)
+    svg.line(430, ly - 8, 430, ly, stroke=GREY, w=1.4)
     svg.text(436, ly, f"the span widened by {tol:g} s", size=11)
     hatch(svg, 610, 650, ly - 10, ly)
     svg.text(656, ly, "the probe (section 1)", size=11)
@@ -432,7 +434,7 @@ def fig_scoring() -> Svg:
 
 def fig_nested(run: Run) -> Svg:
     n, spf = run.decl["folds"], run.decl["seeds_per_fold"]
-    svg = Svg(900, 250, "Figure 3: four outer folds of twelve recording seeds; for held-out fold 1, "
+    svg = Svg(900, 250, "Four outer folds of twelve recording seeds; for held-out fold 1, "
                         "a net rotates which training fold scores, and a coded detector scores on all "
                         "three at once")
     x0, cw, ch = 170, 90, 34
@@ -474,7 +476,7 @@ def fig_defect(run: Run) -> Svg:
     seeds = sorted(int(s) for s in d["fold_of"])
     fold_of = {int(k): v for k, v in d["fold_of"].items()}
     spf = run.decl["seeds_per_fold"]
-    svg = Svg(900, 450, "Figure 4: for each held-out fold, the ten training recordings fitted at the "
+    svg = Svg(900, 450, "For each held-out fold, the ten training recordings fitted at the "
                         "first training seed, before the fix and as this run drew them")
     x0, x1 = 200, 880
     cell = (x1 - x0) / len(seeds)
@@ -516,7 +518,7 @@ MODE_SHIFT, MODE_NEED, MODE_WIN = 0.45, 5, 1.0
 
 
 def fig_modes() -> Svg:
-    """Figure 5: binned against sliding counting, a schematic. The counts are computed from the tick
+    """Binned against sliding counting, a schematic. The counts are computed from the tick
     positions drawn, not typed."""
     svg = Svg(900, 336, "Six ROIs firing within a second, counted in fixed one-second bins and in a "
                         "sliding one-second window, as recorded and shifted 0.45 s later")
@@ -558,7 +560,7 @@ def fig_modes() -> Svg:
 
 
 def fig_budget(run: Run) -> Svg:
-    svg = Svg(900, 330, "Figure 6: a schematic of the two selections: the best F1 anywhere, and the "
+    svg = Svg(900, 330, "A schematic of the two selections: the best F1 anywhere, and the "
                         "best F1 among candidates firing no more than 1.6 times the reference")
     x0, x1, y0, y1 = 110, 870, 30, 270
     svg.line(x0, y1, x1, y1)
@@ -584,9 +586,10 @@ def fig_budget(run: Run) -> Svg:
         svg.circle(X(fa[i]), Y(f1[i]), 4, fill="#777")
     ung = max(far, key=lambda i: f1[i])
     gat = max([i for i in far if fa[i] <= budget - 0.02], key=lambda i: f1[i])
-    svg.circle(X(fa[ung]), Y(f1[ung]), 7, fill="none", stroke="#111")
+    # Squares, not rings: a ring elsewhere on the page marks a fold holding a failed refit.
+    svg.rect(X(fa[ung]) - 7, Y(f1[ung]) - 7, 14, 14, fill="none", stroke="#111", sw=1.4)
     svg.text(X(fa[ung]) - 12, Y(f1[ung]) + 4, "chosen on F1 alone", anchor="end", size=12)
-    svg.circle(X(fa[gat]), Y(f1[gat]), 7, fill="none", stroke=NET_INK)
+    svg.rect(X(fa[gat]) - 7, Y(f1[gat]) - 7, 14, 14, fill="none", stroke=NET_INK, sw=1.4)
     svg.text(X(fa[gat]) - 12, Y(f1[gat]) - 10, "chosen under the budget", anchor="end", size=12,
              fill=NET_INK)
     svg.add(f'<path d="M{X(ref_fa) - 6:.1f} {Y(ref_f1) - 6:.1f} h12 v12 h-12 Z" fill="{CODED_INK}"/>')
@@ -596,7 +599,7 @@ def fig_budget(run: Run) -> Svg:
 
 def fig_results(run: Run) -> Svg:
     names = list(NETS) + list(CODED)
-    svg = Svg(900, 560, "Figure 7: held-out F1 per outer fold, one row per contestant, panel A for "
+    svg = Svg(900, 560, "Held-out F1 per outer fold, one row per contestant, panel A for "
                         "choices on F1 alone and panel B under the budget")
     lo, hi = 0.2, 0.85
     panels = ((170, 510, "ungated", "A"), (560, 890, "gated", "B"))
@@ -625,6 +628,8 @@ def fig_results(run: Run) -> Svg:
                 else:
                     yk = y + (k - 1.5) * 4.5          # each fold on its own line: no two can fuse
                     svg.circle(X(v), yk, 3.6, fill=ink if veto[k] else "#fff", stroke=ink)
+                    if m in NETS and low_folds(run, m, w)[k]:
+                        svg.circle(X(v), yk, 7.5, fill="none", stroke=ink)
             if not all(refused):                      # a row the budget refused has no result
                 mean = float(np.mean(vals))
                 svg.line(X(mean), y - 12, X(mean), y + 12, stroke=ink, w=2.2)
@@ -645,7 +650,7 @@ def fig_results(run: Run) -> Svg:
     svg.text(300, ly + 4, "fails the crowded-recording check (section 4.5)", size=12)
     svg.line(606, ly - 4, 614, ly + 4, stroke=CODED_INK, w=1.6)
     svg.line(606, ly + 4, 614, ly - 4, stroke=CODED_INK, w=1.6)
-    svg.text(620, ly + 4, "the budget refused every setting tried", size=12)
+    svg.text(620, ly + 4, "the budget refused every configuration tried", size=12)
     return svg
 
 
@@ -769,8 +774,13 @@ def fig_gap_curves(run: Run) -> Svg:
     svg.text(X(2.0) + 4, top + 10, "every net ran at 2 s", size=11, fill=NET_INK)
     for name, ink, dash, w, pts, chosen in curves:
         for (ga, va), (gb, vb) in zip(pts, pts[1:]):
-            svg.line(X(ga), Y(va), X(gb), Y(vb), stroke=ink, w=w,
-                     dash="1 4" if ga == 0 else dash)
+            if ga == 0:     # across the axis break: the curve's own style, faded (a dotted
+                d = f' stroke-dasharray="{dash}"' if dash else ""      # bridge read as LoCo)
+                svg.add(f'<line x1="{X(ga):.1f}" y1="{Y(va):.1f}" x2="{X(gb):.1f}" '
+                        f'y2="{Y(vb):.1f}" stroke="{ink}" stroke-width="{w}" '
+                        f'stroke-opacity="0.35"{d}/>')
+            else:
+                svg.line(X(ga), Y(va), X(gb), Y(vb), stroke=ink, w=w, dash=dash)
         for g, v in pts:
             if name in NETS:
                 svg.circle(X(g), Y(v), 2.4, fill=ink)
@@ -880,8 +890,11 @@ def fig_breakdown(run: Run) -> Svg:
             yc = top + i * rh + rh / 2
             ink = CODED_INK if s in CODED else NET_INK
             d = run.recall_at(s, "ungated", b, frac)
+            ringed = low_folds(run, s, "ungated") if s in NETS else [False] * len(d)
             for k, v in enumerate(d):
                 svg.circle(X(v), yc + (k - 1.5) * 3.2, 3.2, fill=ink)
+                if ringed[k]:
+                    svg.circle(X(v), yc + (k - 1.5) * 3.2, 7.5, fill="none", stroke=ink)
             svg.line(X(float(np.mean(d))), yc - 10, X(float(np.mean(d))), yc + 10, stroke=ink, w=2.4)
     for i, (s, b) in enumerate(rows):
         yc = top + i * rh + rh / 2
@@ -942,6 +955,9 @@ def fig_crowded(run: Run) -> Svg:
     svg.circle(690, ly, 3.4, fill=CODED_INK)
     svg.circle(704, ly, 3.4, fill="#fff", stroke=CODED_INK)
     svg.text(714, ly + 4, "one fold's choice: passes, fails", size=12)
+    svg.line(687, ly + 21, 693, ly + 27, w=1.6)
+    svg.line(687, ly + 27, 693, ly + 21, w=1.6)
+    svg.text(714, ly + 28, "all refused by the budget", size=12)
     return svg
 
 
@@ -1085,7 +1101,7 @@ def headline_table(run: Run) -> str:
         cells = [f"<b>{esc(NAME[m])}</b>"]
         for w in SEL:
             if m in CODED and all(run.refused_all(m, w)):
-                cells += ["the budget refused every setting", "—"]
+                cells += ["the budget refused every configuration", "—"]
                 continue
             vals = run.f1(m, w)
             cell = num(float(np.mean(vals)), 3)
@@ -1137,7 +1153,7 @@ def coded_table(run: Run) -> str:
             crowd_s = num(lo, 3) if abs(hi - lo) < 5e-4 else f"{num(lo, 3)} to {num(hi, 3)}"
             note = []
             if sum(run.refused_all(d, w)):
-                note.append(f"the budget refused every setting in {sum(run.refused_all(d, w))} of 4 "
+                note.append(f"the budget refused every configuration in {sum(run.refused_all(d, w))} of 4 "
                             "folds; the search returned its starting point")
             rows.append([esc(NAME[d]), esc(SEL_NAME[w]), esc(gap), crowd_s,
                          num(ref[d]["crowded_mean_f1"], 3), f"{sum(run.veto(d, w))} of 4",
@@ -1153,8 +1169,8 @@ def coded_table(run: Run) -> str:
                    "values for its sliding CoactDetect and LoCo come from its held-out crowded "
                    "recordings instead, so they differ from the starting values here.") \
         + table(["detector", "selection", "merge gap chosen", "crowded F1 of the choices",
-                 "crowded F1, starting configuration", "folds passing against it",
-                 "crowded F1, shipped configuration", "folds passing against it", "also"], rows,
+                 "crowded F1, starting configuration", "folds passing against the start",
+                 "crowded F1, shipped configuration", "folds passing against the shipped", "also"], rows,
                 "Table 3: the coded choices on crowded recordings")
 
 
@@ -1231,26 +1247,27 @@ setting while CoactDetect had one of its settings tuned. This run tunes both sid
 simulator, choosing every setting without looking at the recordings it is scored on (section 6 names
 the two places the page does look), and asks again.</p>
 <p class=lede><b>The answer.</b> Held to the same limit on false alarms, a limit set at 1.6 times
-CoactDetect's own rates, the hand-written CoactDetect is ahead of every net on two independent sets of
-simulated recordings. Chosen for accuracy alone, the two are nearly tied. Counting every training of
+CoactDetect's own rates, the hand-written CoactDetect is ahead of every net in every fold of two
+independent sets of simulated recordings. Chosen for accuracy alone, the two are nearly tied. Counting every training of
 every net, CoactDetect is ahead on average in both sets; but in this run the best net moves ahead when
 both sides use the same merge gap, how close two calls must be before they are merged into one, a
 setting only the coded side was allowed to tune; and in the second set it is ahead in most folds, its
 average pulled
 down by two trainings that failed. Margins this small are at the limit of what the scoring resolves.
-The nets were also handicapped: each fits only 10 of the 72 training recordings, and tuning moved them
+The nets were also handicapped: each fits only 10 of the 72 training recordings, and in this run tuning moved them
 by a few hundredths of F1 at most, not always up. The earlier lead is gone even for the untuned nets,
 so it was not lost to tuning the nets; the simulator and CoactDetect's own tuning changed together,
-and this run cannot separate them. The two sides also win in different places: the two chorus nets
-find more of the faintest events, those joined by only a tenth of the cells, when the cells'
-background firing is high, and CoactDetect finds more of them when it is low. Sections 6 to 8 and 10
-give the numbers.</p>
+and this run cannot separate them. The two sides also win in different places: chosen for accuracy
+alone, the two chorus nets find more of the faintest events, those joined by only a tenth of the
+cells, when the cells' background firing is high, and CoactDetect finds more of them when it is low.
+Among the coded detectors, binned SCE beats CoactDetect under the limit in a few folds, by a few
+hundredths of F1 (section 9). Sections 6 to 10 give the numbers.</p>
 <p><b>Terms.</b> An <b>ROI</b> (region of interest) is one imaged cell. A cell's <b>firing</b> is one
 entry in its list of event times; a <b>coordinated event</b> is several ROIs firing together. A
 <b>call</b> is a detector's claim that a coordinated event happened, over a span of time. <b>F1</b>,
 from 0 to 1, is the harmonic mean of <b>recall</b> (the share of planted events found) and
 <b>precision</b> (the share of calls that were real). Recordings are split into four <b>outer
-folds</b>; a setting is chosen on three and scored on the fourth, the <b>held-out</b> fold (section
+folds</b>; a configuration is chosen on three and scored on the fourth, the <b>held-out</b> fold (section
 4.1). A <b>refit</b> is one training of a chosen net; each is refitted five times, and a few of those
 trainings fail outright (section 6). The <b>merge gap</b> is how close two calls may be before they
 are merged into one (section 2). The <b>budget</b> is the shared limit on false alarms (section 4.4).
@@ -1301,7 +1318,7 @@ computed on one. The project's <b>bench</b> is a simulator whose inputs are meas
 baseline recordings, so its recordings look like real ones, but every planted event is known.</p>
 <p>Each bench recording is {bench.BENCH_RECORDING['duration_sec'] / 60:.0f} minutes of
 {bench.BENCH_RECORDING['n_roi']} ROIs. It holds 15 planted events, 5 at each of three participation
-levels: 30%, 18% and 10% of the ROIs. Each event's onsets have a standard deviation of
+levels: 30%, 18% and 10% of the ROIs. Each event's onsets are drawn with a standard deviation of
 {bench.BENCH_RECORDING['jitter_sec']:g} s, and events are at least
 {bench.BENCH_RECORDING['min_sep_sec']:g} s apart. Every recording seed (the random seed that
 generates one recording) is simulated at two backgrounds, the steady rates at which every cell also
@@ -1313,7 +1330,8 @@ second per ROI for five minutes (about {hot / quiet:.0f} times the quiet backgro
 then averaged over the two, so doing well at only one background is not enough.</p>
 <p>Each recording also holds {bench.BENCH_RECORDING['n_distractors']} distractors. A distractor stands
 for a real but uncoordinated burst: it is built exactly as a planted event joined by
-{facts['event_frac']:.0%} of the ROIs is built, and is labeled a negative, so a call on one counts
+{facts['event_frac']:.0%} of the ROIs is built, though placed at random times with no regard to the
+planted events, and is labeled a negative, so a call on one counts
 against the detector. No detector can tell the two apart by construction, so a detector that finds
 nearly every {facts['event_frac']:.0%} event also calls nearly every distractor, and its precision
 cannot rise far above {15 / (15 + bench.BENCH_RECORDING['n_distractors']):.2f} (15 planted events
@@ -1326,9 +1344,10 @@ events finds one of them. Calls inside the probe are counted apart, as false ala
 out of precision. {tol:g} s is where the coded detectors' scores stop changing as the tolerance
 widens; the nets' tolerance curve was never measured.</p>
 <p><b>How fine a difference the scorer can resolve.</b> The scorer's own documentation says to read
-the order in which it ranks detectors, never the decimal places of one score. The margins between the
-best net and CoactDetect in sections 6 and 7 are 0.007 to 0.010 F1: they say the two are close, and
-the sign of so small a margin says little.</p>
+the order in which it ranks detectors, never the decimal places of one score. On F1 alone, in this
+run, the margins between the best net and CoactDetect in sections 6 and 7 are {abs(cu['mean']):.3f} to
+{max(abs(m2['mean']), abs(m8['mean'])):.3f} F1: they say the two are close, and the sign of so small a
+margin says little.</p>
 {figure(2, "How a call is scored", fig_scoring(),
         f"A schematic. Each row is a few tens of seconds of one recording; the black bar is a call's "
         f"time span, the gray bracket that span widened by {tol:g} s on each side. The third row is "
@@ -1341,9 +1360,9 @@ hit. Where events are a few seconds apart, the same merge fuses them, and with o
 fused call finds only one. Merging also chains: calls each within the gap of the next can fuse across
 far more than the gap. How wide a merge gap each side was allowed is the subject of section 7.</p>
 {figure(3, "Merging calls", fig_merging(),
-        "A schematic, with calls drawn as short spans as in Figure 2. Above: two events far apart; "
-        "each keeps its own merged call, and both are hit. Below: three events a few seconds apart "
-        "fuse into one merged call, which can hit only one of them.")}
+        "A schematic, with calls drawn as short spans as in Figure 2. In the \"far apart\" row, two "
+        "events each keep their own merged call, and both are hit. In the \"close\" row, three events "
+        "a few seconds apart fuse into one merged call, which can hit only one of them.")}
 <p>This run used {folds * spf * 2} recordings with planted events ({folds * spf} seeds,
 {d['recording_seeds'][0]} to {d['recording_seeds'][-1]}, at both backgrounds), and
 {folds * spf * 2} <b>empty recordings</b>, one per seed at each background with nothing planted, to
@@ -1571,6 +1590,8 @@ from its results by the same rules; its own report is the authority on it (secti
     claim(len(repl_low_folds) == 1 and len(run.rhealth[bn]["ungated"][repl_low_folds[0]]["low"]) == 2
           and all(run.rhealth[bn]["ungated"][repl_low_folds[0]]["failed_signature"]),
           "the lede's two failed trainings in one replicate fold")
+    claim(all(v < 0 for m in NETS for rep in (False, True) for v in run.margin(m, "gated", rep)),
+          "under the budget every net is behind CoactDetect in every fold of both draws")
     rbest = max(NETS, key=lambda m: np.mean(run.repl["learned"][m]["ungated"]))
     rbest_all = run.stats(run.margin(rbest, "ungated", True))
     ahead_folds = [(m, w, h, v) for m in NETS for w in SEL
@@ -1579,15 +1600,20 @@ from its results by the same rules; its own report is the authority on it (secti
     P.append(f"""
 <h2 id="results">6. What came out, at the configurations each search chose</h2>
 <p><b>Counting every refit, CoactDetect is ahead of every net on average, in both draws of recordings
-and in both selections.</b> On F1 alone the margins are small; under the budget they are not.
+and in both selections.</b> What differs between the selections is how consistently: under the budget
+every net is behind in every fold of both draws, while on F1 alone the best net's margin is small and
+its sign changes with the merge gap and the draw.
 <a href="#fig8">Figure 8, held-out F1 for all ten contestants</a>, shows every outer fold of this run,
 and Table 2 gives the means and each contestant's difference from CoactDetect. The best net is picked
 here from four by its held-out mean, which flatters the net side slightly.</p>
 {figure(8, "Held-out F1 per outer fold", fig_results(run),
         "One row per contestant: nets in blue above the dashed line, coded detectors in black below "
-        "it. For a net, a fold's value is the mean over its 5 refits. A hollow circle is a coded "
-        "choice that fails the crowded-recording check (section 4.5); an × is a fold where the budget "
-        "refused every configuration the search tried, so there is no result under the budget.")}
+        "it. For a net, a fold's value is the mean over its 5 refits, every refit counted; a ringed "
+        f"dot is a fold holding a refit below {LOW_F1:g} F1 (section 6). A hollow circle is a coded "
+        "choice that fails the crowded-recording check (section 4.5). An × is a fold where the budget "
+        "refused every configuration the search tried, so there is no result under the budget; it is "
+        "placed at the held-out F1 of the starting configuration, which was scored but is not a "
+        "result.")}
 {headline_table(run)}
 <ul>
 <li><b>On F1 alone, in this run,</b> the best net, <code>{esc(bn)}</code>, trails CoactDetect by
@@ -1653,7 +1679,7 @@ selections).</li>
 <p><b>On F1 alone, given the same merge gap, the best net moves ahead of CoactDetect in this run, by
 about 0.01 F1; under the budget, CoactDetect stays ahead at every gap tried.</b> Neither margin is
 large enough to call. The coded detectors' searches tuned their merge gaps (Figure 3); the nets' was
-fixed at 2 s (20 frames), the default their threshold picker returns, and never searched. The budget
+fixed at 2 s (20 frames), the default returned by their threshold picker (the training step that sets a net's threshold), and never searched. The budget
 counts calls after merging (section 4.4), so the difference touches both selections.</p>
 <p><a href="#fig10">Figure 10, the chorus nets against CoactDetect at matched gaps</a>, re-scores both
 sides with only the merge gap changed. On F1 alone, <code>{esc(bn)}</code> is ahead by
@@ -1694,8 +1720,9 @@ that tuned it together with the other parameters could do better.</p>
         "(rate+context also has a merge gap and was not re-scored.) Each side first reproduces the "
         f"run's own scores at its own gap: the coded detectors exactly, the nets within {repro_net:.4f} "
         f"F1 per refit and {repro_fold:.4f} per fold mean, since the run scored on a GPU and this "
-        "re-scoring ran on a CPU (central processor). The coded curves rise all the way to 30 s, "
-        "which is what the crowded-recording check (section 4.5) exists to stop.")}
+        "re-scoring ran on a CPU (central processor). The faded segments cross the axis break "
+        "between 0 s and 2 s. The coded curves rise all the way to 30 s, which is what the "
+        "crowded-recording check (section 4.5) exists to stop.")}
 <p>A rerun that tunes the nets' merge gap like any other parameter would remove the asymmetry; it
 needs no retraining, only re-scoring. It has not been run.</p>
 """)
@@ -1742,7 +1769,8 @@ precision, {precision(bn, 'ungated', 'busy'):.3f} against CoactDetect's
 widened span reaches it. The breakdown covers the two chorus nets and this run only.</p>
 {figure(12, "The planted events found, by participation and background", fig_breakdown(run),
         "The share of planted events each detector found on the held-out fold, per outer fold (dots) "
-        "and on average (bars), for choices on F1 alone; for a net, pooled over its 5 refits. "
+        "and on average (bars), for choices on F1 alone; for a net, pooled over its 5 refits, and "
+        f"ringed where a refit fell below {LOW_F1:g} F1 (section 6). "
         "<b>A</b>: events joined by 30% of the ROIs; <b>B</b>: by 18%; <b>C</b>: by 10%. Read from "
         "the run's own score rows (<code>breakdown.json</code>).")}
 """)
@@ -1772,6 +1800,11 @@ widened span reaches it. The breakdown covers the two chorus nets and this run o
     sce_drop = [c for c in run.crowded["choices"] if c["detector"] == "sce"
                 and c["selection"] == "gated" and c["passes_veto"]]
     repl_sce = [a - b for a, b in zip(run.repl["hand"]["sce"]["gated"], run.repl["hand"]["coact"]["gated"])]
+    ra_sce = run.repl["admissibility"]["sce"]["gated"]
+    repl_sce_adm = [(h, v) for h, v in enumerate(repl_sce)
+                    if ra_sce["passes_crowded"][h] and not ra_sce["refused_all"][h]]
+    claim(all(v > 0 for _, v in repl_sce_adm) and len(repl_sce_adm) >= 2,
+          "in the replicate, binned SCE is admissible and ahead of CoactDetect in its admissible folds")
     moves = {dd: run.first_move(dd, 0) for dd in veto_fail_gated}
     move_txt = "; ".join(
         f"{NAME[dd]} moved <code>{esc(mv['setting'])}</code> from {mv['old']:g} to {mv['new']:g}, "
@@ -1787,9 +1820,14 @@ gap, the top of its grid, in every fold; at that same gap CoactDetect scores {nu
 {fold_label(sce_win[0][0]) if sce_win else 'none'} under the budget,
 {sce_drop[0]['reference_crowded_mean_f1'] - sce_drop[0]['crowded_mean_f1']:.3f} F1 below its start on
 the crowded recordings, inside the {run.crowded['max_crowded_drop']:g} allowance, and there it is ahead
-of CoactDetect by {signed(sce_win[0][1])} F1, an admissible win in one fold. In the replicate, binned
-SCE under the budget is ahead of CoactDetect in {sum(v > 0 for v in repl_sce)} of 4 folds; the
-crowded-recording check was not run there, so whether those results count is unknown.</li>
+of CoactDetect by {signed(sce_win[0][1])} F1, an admissible win in one fold. In the replicate the
+pattern is stronger: under the budget, binned SCE's choices pass the replicate's own
+crowded-recording check in {sum(ra_sce['passes_crowded'])} of 4 folds, the budget refused every
+configuration in {sum(ra_sce['refused_all'])}, and in the {len(repl_sce_adm)} admissible folds it is
+ahead of CoactDetect, by {and_join([signed(v) for _, v in repl_sce_adm])} F1. <b>So under the budget,
+binned SCE is the one detector on this page that admissibly beats CoactDetect in some folds</b>:
+{len(sce_win)} of 4 here and {len(repl_sce_adm)} of 4 in the replicate, by a few hundredths of F1 at
+most.</li>
 <li><b>Under the budget, {and_join([NAME[x] for x in no_admissible])} have no admissible result in
 any fold.</b> The budget is anchored to CoactDetect, and every other coded detector's starting point
 was over it in every fold ({and_join([NAME[x] for x in CODED if start_over[x] == 4])}). When a start
@@ -1892,7 +1930,7 @@ changed together between the earlier comparison and this one, the simulator and 
 tuning (goal 1's sliding values and this run's search), and this run cannot separate them.</p>
 {figure(14, "Tuned minus untuned, per outer fold", fig_tuning(run),
         "Each dot is one outer fold: the net's held-out F1 at the chosen configuration minus at its "
-        "untuned one, both means over 5 refits, every refit counted; the bar is the mean of four; a "
+        "untuned one in this run, both means over 5 refits, every refit counted; the bar is the mean of four; a "
         f"ringed dot is a fold where either side holds a refit below {LOW_F1:g} F1 (Table 4). Under "
         "the budget, the tuned configuration is held to the budget and the untuned one is not. Right "
         "of zero, tuning helped.")}
@@ -1924,7 +1962,7 @@ hour, CoactDetect {min(busy_coact):.1f} to {max(busy_coact):.1f}, and binned SCE
 {min(busy_sce):.1f} to {max(busy_sce):.1f}. Among the {n_refits_gated} refits of nets chosen under the
 budget, these exceeded it on the held-out fold:</p>
 <ul>{over_rows}</ul>
-<p>A net over the budget is at a more liberal operating point, which tends to favor its F1.</p>
+<p>A net over the budget calls more freely than the budget allows, which tends to favor its F1.</p>
 """)
 
     part = open_items.get("participation", "")
@@ -2072,6 +2110,7 @@ def build(run_dir: Path) -> str:
     meta = ('<meta name="description" content="The fair comparison of tuned learned detectors against '
             'tuned coded detectors on the project\'s simulator, written for a reader new to it.">\n'
             f'<meta name="generator" content="tools/build_fair_comparison_report.py {esc(ver)}">\n'
+            '<meta name="author" content="the bugarach project">\n'
             f'<meta name="date" content="{time.strftime("%Y-%m-%d")}">\n')
     html = page("Tuned nets against tuned coded detectors",
                 EXTRA_CSS + body(run) + provenance_line(run))

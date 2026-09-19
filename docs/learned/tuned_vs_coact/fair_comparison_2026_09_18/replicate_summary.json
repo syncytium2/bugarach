@@ -1921,5 +1921,187 @@
     }
    ]
   }
+ },
+ "admissibility": {
+  "coact": {
+   "ungated": {
+    "passes_crowded": [
+     true,
+     true,
+     true,
+     true
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "gated": {
+    "passes_crowded": [
+     true,
+     true,
+     true,
+     true
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "loco": {
+   "ungated": {
+    "passes_crowded": [
+     true,
+     true,
+     true,
+     true
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "gated": {
+    "passes_crowded": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "rate": {
+   "ungated": {
+    "passes_crowded": [
+     true,
+     true,
+     true,
+     true
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "gated": {
+    "passes_crowded": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "sce": {
+   "ungated": {
+    "passes_crowded": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "gated": {
+    "passes_crowded": [
+     true,
+     true,
+     true,
+     true
+    ],
+    "refused_all": [
+     false,
+     false,
+     true,
+     false
+    ]
+   }
+  },
+  "sync": {
+   "ungated": {
+    "passes_crowded": [
+     true,
+     true,
+     true,
+     true
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "gated": {
+    "passes_crowded": [
+     false,
+     false,
+     false,
+     false
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   }
+  },
+  "cicada": {
+   "ungated": {
+    "passes_crowded": [
+     true,
+     true,
+     true,
+     true
+    ],
+    "refused_all": [
+     false,
+     false,
+     false,
+     false
+    ]
+   },
+   "gated": {
+    "passes_crowded": [
+     true,
+     true,
+     true,
+     true
+    ],
+    "refused_all": [
+     true,
+     true,
+     true,
+     true
+    ]
+   }
+  }
  }
 }
