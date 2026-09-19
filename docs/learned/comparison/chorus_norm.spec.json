@@ -1,0 +1,298 @@
+{
+  "draughtsman": "0",
+  "graph": "graph.json",
+  "stages": [
+    {
+      "id": "raster",
+      "name": "onset raster",
+      "kind": "input",
+      "nodes": [
+        "in1"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "ROIs × frames, binary"
+      ],
+      "glyph": {
+        "of": "{stage.out_shape}",
+        "axes": [
+          -2,
+          -1
+        ],
+        "labels": [
+          "ROIs",
+          "frames"
+        ],
+        "style": "marks"
+      }
+    },
+    {
+      "id": "encode",
+      "name": "encode each ROI on its own",
+      "kind": "stack",
+      "nodes": [
+        "n0015",
+        "n0019",
+        "n0043",
+        "n0044",
+        "n0051",
+        "n0052",
+        "n0059",
+        "n0060",
+        "n0067",
+        "n0068",
+        "n0075"
+      ],
+      "detail": [
+        "{stage.params} learned params",
+        "kernel {node:n0043.weight_shape[2]}, dilation {node:n0043.constants.dilation} → {node:n0067.constants.dilation}",
+        "{stage.out_shape}",
+        "ROIs × channels × frames"
+      ],
+      "glyph": {
+        "of": "{stage.out_shape}",
+        "axes": [
+          -3,
+          -1
+        ],
+        "labels": [
+          "ROIs",
+          "frames"
+        ],
+        "style": "marks"
+      },
+      "note": "One dilated stack, shared by every ROI: the ROI axis is folded into the batch for the convolutions, so each ROI is filtered alone and none sees another."
+    },
+    {
+      "id": "norm",
+      "name": "standardise each ROI over time",
+      "kind": "op",
+      "nodes": [
+        "n0080",
+        "n0082",
+        "n0087",
+        "n0090",
+        "n0091"
+      ],
+      "detail": [
+        "nothing fitted",
+        "{stage.out_shape}",
+        "per ROI, per channel"
+      ],
+      "glyph": {
+        "of": "{stage.out_shape}",
+        "axes": [
+          -3,
+          -1
+        ],
+        "labels": [
+          "ROIs",
+          "frames"
+        ],
+        "style": "marks"
+      },
+      "note": "Mean subtracted and divided by the standard deviation over the frames of whatever window the model is given, so a ROI with no onset reads 0. This is what `chorus` lacks, and why its encoder starts deaf."
+    },
+    {
+      "id": "vote",
+      "name": "one ROI, one vote",
+      "kind": "op",
+      "nodes": [
+        "n0092",
+        "n0095"
+      ],
+      "detail": [
+        "sigmoid, nothing fitted",
+        "{stage.out_shape}",
+        "bounded per ROI"
+      ],
+      "glyph": {
+        "of": "{stage.out_shape}",
+        "axes": [
+          -3,
+          -1
+        ],
+        "labels": [
+          "ROIs",
+          "frames"
+        ],
+        "style": "marks"
+      },
+      "note": "A plain sigmoid on the standardised output. The only difference from `chorus_gain_norm`, whose vote has a fitted gain and bias."
+    },
+    {
+      "id": "mean",
+      "name": "mean over ROIs",
+      "kind": "reduce",
+      "nodes": [
+        "n0100"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "share of the field voting"
+      ]
+    },
+    {
+      "id": "spread",
+      "name": "spread over ROIs",
+      "kind": "reduce",
+      "nodes": [
+        "n0105"
+      ],
+      "detail": [
+        "{stage.out_shape}",
+        "standard deviation"
+      ]
+    },
+    {
+      "id": "top",
+      "name": "mean of the loudest ROIs",
+      "kind": "reduce",
+      "nodes": [
+        "n0108",
+        "n0113",
+        "n0118",
+        "n0123"
+      ],
+      "detail": [
+        "sort, keep {node:n0118.out_shape[1]}",
+        "{stage.out_shape}"
+      ],
+      "glyph": {
+        "of": "{node:n0118.out_shape}",
+        "axes": [
+          -3,
+          -1
+        ],
+        "labels": [
+          "ROIs",
+          "frames"
+        ],
+        "style": "marks"
+      },
+      "note": "A fixed count, not a share: the glyph is the ROIs kept before the mean."
+    },
+    {
+      "id": "join",
+      "name": "concatenate",
+      "kind": "concat",
+      "nodes": [
+        "n0126"
+      ],
+      "detail": [
+        "{stage.out_shape[1]} channels",
+        "{stage.out_shape}"
+      ],
+      "note": "Three symmetric statistics of the votes. Each has the same expectation at nine ROIs and at a thousand, so the head never sees the field size."
+    },
+    {
+      "id": "head",
+      "name": "dilated conv stack",
+      "kind": "stack",
+      "nodes": [
+        "n0162",
+        "n0163",
+        "n0170",
+        "n0171",
+        "n0178",
+        "n0179",
+        "n0186",
+        "n0187",
+        "n0194",
+        "n0195",
+        "n0202",
+        "n0203",
+        "n0210",
+        "n0211",
+        "n0218",
+        "n0219"
+      ],
+      "detail": [
+        "kernel {node:n0162.weight_shape[2]}, dilation {node:n0162.constants.dilation} → {node:n0218.constants.dilation}",
+        "{stage.params} params",
+        "{stage.out_shape}"
+      ]
+    },
+    {
+      "id": "score",
+      "name": "per-frame score",
+      "kind": "output",
+      "nodes": [
+        "n0226",
+        "n0228"
+      ],
+      "detail": [
+        "kernel {node:n0226.weight_shape[2]}",
+        "{stage.params} params",
+        "{stage.out_shape} — one score per frame"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "raster",
+      "to": "encode"
+    },
+    {
+      "from": "encode",
+      "to": "norm"
+    },
+    {
+      "from": "norm",
+      "to": "vote"
+    },
+    {
+      "from": "vote",
+      "to": "mean"
+    },
+    {
+      "from": "vote",
+      "to": "spread"
+    },
+    {
+      "from": "vote",
+      "to": "top"
+    },
+    {
+      "from": "mean",
+      "to": "join"
+    },
+    {
+      "from": "spread",
+      "to": "join"
+    },
+    {
+      "from": "top",
+      "to": "join"
+    },
+    {
+      "from": "join",
+      "to": "head"
+    },
+    {
+      "from": "head",
+      "to": "score"
+    }
+  ],
+  "constants": {
+    "n0043.constants.dilation": "Architectural. _dilated_stack sets d = 2 ** i from the layer index, so the schedule is fixed by `depth` and no gradient reaches it.",
+    "n0067.constants.dilation": "Architectural, as above — the last dilated layer, i = depth - 1.",
+    "n0162.constants.dilation": "Architectural. _dilated_stack sets d = 2 ** i from the layer index, so the schedule is fixed by `depth` and no gradient reaches it.",
+    "n0218.constants.dilation": "Architectural, as above — the last dilated layer, i = depth - 1."
+  },
+  "title": "chorus_norm — the ROI axis survives into three statistics",
+  "subtitle": "{model.params} parameters · {model.input_shape} in",
+  "layout": {
+    "orientation": "lr",
+    "legend": true,
+    "breaks": [
+      "mean",
+      "head"
+    ]
+  },
+  "caption": "Drawn by draughtsman from a torch.jit.trace of the registered model; every quantity is read off the trace by node id, none typed by hand. One of four drawn at one width for the fair comparison. Glyphs are drawn only where the ROI axis is still in the tensor.",
+  "output": {
+    "width": "912px",
+    "min_type": "9.5px"
+  }
+}
