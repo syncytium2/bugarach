@@ -10,8 +10,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 065/weekend-run-status — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-replicate-run-status/`
-- **Status:** ACTIVE (WSMIP065), claimed before writing. The status mirror for WSMIP065's weekend
+### 065/weekend-run-status — DARKROOM claim RELEASED 2026-09-19: `bugarach/2026-09-18-replicate-run-status/`
+- **Released 2026-09-19:** the report landed (`report/report.html`, with the round-by-round review
+  reports beside it), both scheduled tasks are deleted, and `results/` also holds `merge_gap.json`
+  and `crowded_check.json`, WSMIP064's two checks run unchanged on this draw. Nothing more is written.
+- **Status:** was ACTIVE (WSMIP065), claimed before writing. The status mirror for WSMIP065's weekend
   run, the replicate of goal 2's fair comparison (Tony's choice, 2026-09-18: the same comparison at a
   fresh seed draw), launched as `bench-replicate1` into `%USERPROFILE%\runs\bench-replicate1\` —
   local disk, which is why it needs a mirror (armory finding 21).
