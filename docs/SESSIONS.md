@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### Mac/draw-the-comparison-four — DARKROOM claim ACTIVE 2026-09-19: `bugarach/2026-09-19-comparison-architectures/`
+- **Status:** ACTIVE (draughtsman-slate-ledger, on the Mac), claimed before writing. The four
+  architectures of goal 2's fair comparison (`chorus_norm`, `tube`, `chorus_gain_norm`,
+  `line_length`) drawn through draughtsman at one common slot, so that WSMIP064's and WSMIP065's
+  reports compare them as shapes. Asked by the orchestration session on Tony's instruction; both
+  workstations have been told to stand off this figure and leave it to this claim.
+- **Writes:** one new folder only: the four SVGs, their PNGs and the combined comparison page.
+  Nothing existing in the darkroom is touched.
+- **Touches:** this block. The specs and `DRAWABLE` entries land separately, on branch
+  `draw-the-comparison-four` into `tune-bench-comparison`, because the two chorus nets exist only
+  there. Not `docs/goals/`.
+- **Holds:** the folder above.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the figure is in the folder and its path is handed to the orchestrator.
+
 ### 065/weekend-run-status — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-replicate-run-status/`
 - **Status:** ACTIVE (WSMIP065), claimed before writing. The status mirror for WSMIP065's weekend
   run, the replicate of goal 2's fair comparison (Tony's choice, 2026-09-18: the same comparison at a
