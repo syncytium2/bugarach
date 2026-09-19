@@ -33,7 +33,7 @@ and that binned SCE's first place did not stand.
   +0.103 lead was not lost to tuning the nets: untuned, the best net is already within 0.02 F1 of the
   tuned CoactDetect.
 
-Every sentence the page states about the data is now printed only while it holds: the builder's
+Every sentence the page states about the run's results is printed only while it holds: the builder's
 `claim()` stops the build otherwise. It fired twice while round 3's fixes were applied, once on a
 sentence a reviewer had endorsed (chorus_norm does not beat CoactDetect on faint busy-background events
 in every fold under the budget; only chorus_gain_norm does).
@@ -46,11 +46,11 @@ per the brief.
 ## What would validate it, and what it does not settle
 
 - A rerun that tunes the nets' merge gap like any other parameter (re-scoring only, no retraining).
-- The crowded-recording check run on the replicate's coded choices, and on the nets.
+- The crowded-recording check run on the nets, in both draws.
 - A sensitivity sweep of the budget's 1.6 margin.
 - Nets fitted on all 72 training recordings rather than 10.
 
-Until those, the page's answer is: under the budget, CoactDetect ahead in both draws; on F1 alone, a
+Until those, the page's answer is: under the budget, CoactDetect ahead of every net in every fold of both draws, with binned SCE the one coded detector that admissibly beats it in some folds; on F1 alone, a
 near tie whose sign depends on the merge gap and on the draw.
 
 ## Appendix
