@@ -1697,7 +1697,7 @@ wider gap, a net keeps a threshold chosen at 2 s; under the budget that handicap
 since a wider merge calls less and a lower threshold might then have fitted the budget.</p>
 {figure(10, "The chorus nets minus CoactDetect with the merge gap matched", fig_matched(run),
         "Each dot is one outer fold, every refit counted; the bar is the mean of four; a ringed dot is "
-        f"a fold holding a refit below {LOW_F1:g} F1 (section 6). \"As run\" is the net at its 2 s "
+        f"a fold holding a refit below {LOW_F1:g} F1 (section 6). “As run” is the net at its 2 s "
         "against CoactDetect at its chosen 8 s; the other rows re-score both at the gap named, "
         "nothing re-chosen. <b>A</b>: choices on F1 alone. <b>B</b>: choices under the budget, whose "
         "thresholds were chosen at 2 s. Left of the dashed zero line, CoactDetect is ahead.")}
