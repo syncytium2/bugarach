@@ -15,6 +15,14 @@ disagrees with this section is out of date. Fix it in the same change as whateve
 | 2 | **A fair comparison of the coded detectors against the nets** | [`learned-model-family.md`](learned-model-family.md) | WSMIP064 |
 | 3 | **"Final" supervised-learning results on the current best simulation** | [`learned-model-family.md`](learned-model-family.md) | WSMIP064 |
 
+**Goals 2 and 3 have their first result** (2026-09-19). Both runs finished with no errors on
+disjoint draws, and each report was murderboarded in three blind rounds. **Under the shared
+false-alarm budget CoactDetect is ahead of every net in every fold of both draws.** Chosen on F1
+alone the two are nearly tied and the sign is not settled: the merge gap was tuned for the coded side
+only, and margins are at the limit of what the scoring resolves — the replicate measured the
+between-draw move at 0.010 F1 for the nets. The numbers, what the rounds changed and where the
+reports live are in [`learned-model-family.md`](learned-model-family.md), *The weekend's two runs*.
+
 Goal 2 depends on goal 1. A comparison against coded detectors that were tuned on a few knobs is
 not fair, and that was the objection to the untuned bake-off in the first place.
 
