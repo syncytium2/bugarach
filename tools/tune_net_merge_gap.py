@@ -238,10 +238,10 @@ def crowded_job(args):
     out = work_path(Path(work), "crowded", rec)
     prev = None
     if out.exists():
-        z = np.load(out)
-        if not bool(json.loads(str(z["meta"])).get("partial")):
-            return rec["stem"], "cached"
-        prev = z["rows"]
+        with np.load(out) as z:    # closed before os.replace below: Windows refuses to replace an open file
+            if not bool(json.loads(str(z["meta"])).get("partial")):
+                return rec["stem"], "cached"
+            prev = z["rows"].copy()
     if pairs is None and prev is not None:
         raise RuntimeError(f"{rec['stem']}: a partial file exists; say which pairs to add")
     from bugarach import bench
