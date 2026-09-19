@@ -1,9 +1,10 @@
 # Handoff — the loop closes; both of pipeline.md's blockers are gone
 
-> ⚠ **ANOTHER GOAL IS ALSO LIVE, and it is not this one.** The label-free (unsupervised) detector —
-> its detector-design thread and its surrogate-screen thread — is gathered on one page:
-> [`docs/goals/unsupervised-learning.md`](docs/goals/unsupervised-learning.md). Start there; it links
-> both of that goal's handoffs. The screen's code landed on `main` with PR #530 on 2026-09-14, but
+> ⚠ **OTHER GOALS ARE ALSO LIVE, and none of them is this one.** Four goals now have pages, and
+> [`docs/goals/README.md`](docs/goals/README.md) lists them: the label-free (unsupervised) detector,
+> the hand-written detectors' operating points, the learned model family, and the detector review
+> document. Start at the page for the goal you are picking up; each links that goal's own handoffs.
+> The label-free one is [`docs/goals/unsupervised-learning.md`](docs/goals/unsupervised-learning.md). The screen's code landed on `main` with PR #530 on 2026-09-14, but
 > **Tony's stop of 2026-09-12 still stands**: no third reevaluation, no code findings, no run, until
 > the family-size question is discussed. **This file concerns none of that, and neither supersedes
 > the other.** When a thread lands, delete only its own file.

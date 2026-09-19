@@ -31,6 +31,7 @@ Nothing here reads a dataset; it identifies one and resolves where it lives.
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -50,6 +51,28 @@ _NOT_A_RECORDING = {"slices.csv", "regions.csv", "detector_settings.csv",
 
 class DataError(Exception):
     """The dataset is missing, or is not the shape the caller needs."""
+
+
+class ContaminatedExport(DataError):
+    """The export folder carries a contamination its own note says is not flagged.
+
+    Work stops. Tony's ruling, 2026-09-17: *"there needs to be a full stop work if
+    there's a known contamination. there's no point in running all of this when you
+    know there's a problem."*
+
+    The incident behind it is what this repository did instead. The producer's note on
+    `steps_excluded` recorded that non-rigid motion correction pinned 12 ROIs to the
+    frame floor in four recordings and was "not flagged in any column". It was filed as
+    a todo on 2026-09-10, verified by a review on 2026-09-14, flagged again by two
+    reviews on 2026-09-17 — and in between, analyses kept running over those
+    recordings, including a label-free training set and a whole explainer page, each of
+    which then had to report the contamination as a caveat rather than resolve it.
+    Nobody asked the producer for a week. A note that everybody cites and nobody acts
+    on is not a safeguard.
+
+    A caveat in a report is not a substitute for the question. If the analysis cannot
+    wait, the override is deliberate and leaves a trace, but the default is to stop.
+    """
 
 
 @dataclass(frozen=True)
@@ -275,6 +298,61 @@ def declared_exports() -> dict[str, dict]:
     return roles
 
 
+ACK_ENV = "BUGARACH_ACK_CONTAMINATION"
+"""Set to the reason for proceeding anyway. Any value works; the value is echoed."""
+
+_CONTAMINATION = "known contamination"
+_UNFLAGGED = ("not flagged", "does not address", "does NOT address")
+
+
+def contamination_note(role: str = "default") -> str | None:
+    """The unresolved contamination the export's own note declares, or ``None``.
+
+    Reads the pointer file only — no recording, no data root — so a hook, a test or a
+    machine with nothing mounted gets the same answer. A note counts when it says both
+    that there is a contamination and that the folder does not flag or address it: the
+    producer writing "known contamination this folder does NOT address" is telling
+    every consumer that the columns cannot be trusted to show it.
+    """
+    roles = declared_exports()
+    note = str(roles.get(role, {}).get("note", ""))
+    flat = " ".join(note.split())
+    if _CONTAMINATION not in flat.lower():
+        return None
+    if not any(m.lower() in flat.lower() for m in _UNFLAGGED):
+        return None
+    start = flat.lower().index(_CONTAMINATION)
+    return flat[start:].strip()
+
+
+def refuse_if_contaminated(role: str = "default") -> None:
+    """Stop the analysis if the export declares a contamination nothing flags.
+
+    Called by :func:`current`, so every analysis that resolves its input through the
+    pointer inherits it and none has to remember. Raises
+    :class:`ContaminatedExport`; ``BUGARACH_ACK_CONTAMINATION=<reason>`` proceeds and
+    prints what was acknowledged, so an override is visible in the run's own log
+    rather than silent.
+    """
+    note = contamination_note(role)
+    if note is None:
+        return
+    why = os.environ.get(ACK_ENV)
+    if why:
+        print(f"{ACK_ENV}={why} — proceeding over: {note}", file=sys.stderr)
+        return
+    raise ContaminatedExport(
+        f"STOP: the {role} export declares a contamination nothing in the data marks.\n"
+        f"  {note}\n"
+        f"Declared in {_pointer_path()}, by the producer.\n"
+        f"An analysis that runs anyway can only report this as a caveat, which is what\n"
+        f"this repository did for a week while four reviews rediscovered it. The way\n"
+        f"out is the producer's answer — withdraw the recordings, or flag the affected\n"
+        f"ROIs in a column a consumer can read — after which this note leaves the\n"
+        f"pointer file and work resumes by itself.\n"
+        f"To proceed deliberately: {ACK_ENV}='<why this analysis is unaffected>'.")
+
+
 def current_name(role: str = "default") -> str:
     """The NAME of the current export folder. Does not touch the filesystem.
 
@@ -302,6 +380,7 @@ def current(role: str = "default") -> Path:
     Raises ``DataError`` — never returns a store, never guesses a folder — if the
     declared name is not under the data root on this machine.
     """
+    refuse_if_contaminated(role)
     name = current_name(role)
     try:
         path = resolve(name)

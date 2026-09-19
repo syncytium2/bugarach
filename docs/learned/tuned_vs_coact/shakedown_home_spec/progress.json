@@ -1,0 +1,64 @@
+{
+ "at": "2026-09-18T02:35:41-0400",
+ "commit": "a2496c9b5c02ad0670fc543a12a549e4921a185b",
+ "torch": "2.14.0+cu126",
+ "stages": {
+  "hand:coact": {
+   "total": 99,
+   "done": 99,
+   "errors": 0
+  },
+  "hand:loco": {
+   "total": 72,
+   "done": 72,
+   "errors": 0
+  },
+  "inner:chorus_norm": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:chorus_norm": {
+   "total": 45,
+   "done": 45,
+   "errors": 0
+  },
+  "inner:tube": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:tube": {
+   "total": 55,
+   "done": 55,
+   "errors": 0
+  },
+  "inner:chorus_gain_norm": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:chorus_gain_norm": {
+   "total": 45,
+   "done": 45,
+   "errors": 0
+  },
+  "inner:line_length": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:line_length": {
+   "total": 45,
+   "done": 45,
+   "errors": 0
+  }
+ },
+ "errors": [],
+ "fits_last_hour": 177,
+ "running": 0,
+ "queued": 0,
+ "remaining_fits_known": 0,
+ "projected_finish": "2026-09-18T02:35:41-0400",
+ "note": "remaining_fits_known excludes outer refits not yet queued: a model's are queued when its selections are made"
+}

@@ -1,0 +1,31 @@
+data set: 24 recordings, 4 folds (6 each)
+  1410 recording-minutes total
+  chorus_norm fold 0: F1 0.744  thr 0.9716  train 214.7s  detect 1.85s
+  chorus_norm fold 1: F1 0.742  thr 0.9838  train 200.6s  detect 1.85s
+  chorus_norm fold 2: F1 0.716  thr 0.9908  train 198.0s  detect 1.83s
+  chorus_norm fold 3: F1 0.764  thr 0.9838  train 197.7s  detect 1.80s
+
+wrote ~/runs/gate1/step3_tip_chorus_norm/bakeoff.json
+	Command being timed: "~/bugarach/.venv/bin/python -u tools/fair_bakeoff.py --spec docs/learned/generator_spec.json --seeds-per-fold 6 --null-rates --out ~/runs/gate1/step3_tip_chorus_norm --skip-hand-written --learned chorus_norm"
+	User time (seconds): 604.59
+	System time (seconds): 240.18
+	Percent of CPU this job got: 100%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 14:01.00
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 738056
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 7
+	Minor (reclaiming a frame) page faults: 227457355
+	Voluntary context switches: 187
+	Involuntary context switches: 2820
+	Swaps: 0
+	File system inputs: 3560
+	File system outputs: 56
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

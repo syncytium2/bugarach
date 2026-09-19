@@ -1,0 +1,59 @@
+{
+ "detector": "loco",
+ "outer_fold": 2,
+ "budget": "meta.json budgets[2]",
+ "pooled": {
+  "recording_seeds": [
+   1000,
+   1001,
+   1002,
+   1003,
+   1004,
+   1005,
+   1006,
+   1007,
+   1008,
+   1009,
+   1010,
+   1011,
+   1018,
+   1019,
+   1020,
+   1021,
+   1022,
+   1023
+  ],
+  "twin_seeds": [
+   101000,
+   101001,
+   101002,
+   101003,
+   101004,
+   101005,
+   101006,
+   101007,
+   101008,
+   101009,
+   101010,
+   101011,
+   101018,
+   101019,
+   101020,
+   101021,
+   101022,
+   101023
+  ]
+ },
+ "n_configurations": 72,
+ "missing_configurations": [],
+ "selection": "ungated",
+ "config_key": "0b70ae9feb3dd332",
+ "config": "configs/loco/0b70ae9feb3dd332.json",
+ "grid_index": 41,
+ "inner_f1": 0.7248764415156508,
+ "edge_flags": {
+  "threshold_pctile": false,
+  "bin_width_sec": false,
+  "context_win_sec": true
+ }
+}

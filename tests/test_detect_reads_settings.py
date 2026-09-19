@@ -72,14 +72,14 @@ def _settings_csv(path: Path, rows) -> Path:
 
 def test_a_settings_file_changes_what_a_detector_runs_with(tmp_path):
     shipped = OPERATING_POINTS["loco"].params["threshold_pctile"]
-    assert shipped != 99.5, "fixture assumes the shipped value is not the one set"
+    assert shipped != 99.0, "fixture assumes the shipped value is not the one set"
     csv = _settings_csv(tmp_path / "s.csv",
-                        [("loco", "fast", "threshold_pctile", 99.5),
-                         ("loco", "slow", "threshold_pctile", 99.5)])
+                        [("loco", "fast", "threshold_pctile", 99.0),
+                         ("loco", "slow", "threshold_pctile", 99.0)])
     overrides, _ = load_settings(csv)
     got = detector_params("loco", frame_interval_sec=0.05,
                           overrides=overrides, stream="fast")
-    assert got["threshold_pctile"] == 99.5
+    assert got["threshold_pctile"] == 99.0
     # and with no file it is still the shipped point
     assert detector_params(
         "loco", frame_interval_sec=0.05)["threshold_pctile"] == shipped

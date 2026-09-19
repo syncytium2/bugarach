@@ -1,0 +1,10 @@
+tube (Mac)                       gaps +0.029, -0.013, -0.060, -0.039; one-seed sd per fold 0.0278 F1
+chorus_norm (Mac)                gaps +0.000, +0.036, +0.000, +0.023; one-seed sd per fold 0.0151 F1
+chorus_gain_norm (Mac)           gaps -0.005, +0.008, -0.031, -0.032; one-seed sd per fold 0.0160 F1
+line_length (Mac)                gaps -0.015, -0.047, +0.032, -0.019; one-seed sd per fold 0.0219 F1
+chorus_gain_norm (workstation)   gaps +0.067, +0.078, +0.041, -0.013; one-seed sd per fold 0.0393 F1
+pooled over 20 gaps: one-seed sd per fold 0.0256 F1
+k=1: inner-score sd 0.0148 F1; difference of two configurations: sd 0.0209, two sd 0.0418 F1
+k=2: inner-score sd 0.0105 F1; difference of two configurations: sd 0.0148, two sd 0.0296 F1
+k=3: inner-score sd 0.0085 F1; difference of two configurations: sd 0.0121, two sd 0.0242 F1
+k=5: inner-score sd 0.0066 F1; difference of two configurations: sd 0.0094, two sd 0.0187 F1

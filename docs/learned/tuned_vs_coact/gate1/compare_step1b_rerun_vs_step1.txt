@@ -1,0 +1,6 @@
+tube               fold 0: F1 0.6509 vs 0.6509 (diff +0.0000)  threshold 0.9948 vs 0.9948  train 13.0s vs 14.1s  other fields differing: 0
+tube               fold 1: F1 0.6697 vs 0.6697 (diff +0.0000)  threshold 0.9838 vs 0.9838  train 11.5s vs 11.3s  other fields differing: 0
+tube               fold 2: F1 0.6178 vs 0.6178 (diff +0.0000)  threshold 0.9908 vs 0.9908  train 11.7s vs 11.2s  other fields differing: 0
+tube               fold 3: F1 0.6635 vs 0.6635 (diff +0.0000)  threshold 0.9948 vs 0.9948  train 11.5s vs 11.3s  other fields differing: 0
+tube               largest |F1 diff| 0.0000 -> within 0.0
+ALL MATCH

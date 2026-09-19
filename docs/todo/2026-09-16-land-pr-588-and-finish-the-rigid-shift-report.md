@@ -7,6 +7,30 @@ filed: 2026-09-16
 
 > **Tony, 2026-09-16:** *"we need to close up shop. write the status in milestones and a todo"*
 
+> **Progress, 2026-09-17 evening — the report is delivered, unconverged.** The fourth blind round ran
+> ([record](../reviews/tube-self-supervised-2026-09-17-round4.md)) and found a scoring defect in the
+> real-recordings stage: events called on a rigid shift were scored against the *unshifted*
+> recording. Tony ruled **fix, rerun, deliver, no fifth round**; also that the twin check be softened
+> to described rather than tested, that the bake-off harness's shared folds be filed
+> ([todo](2026-09-17-two-bake-off-folds-train-the-same-model.md)), and that the real-derived outputs
+> move to the darkroom. All four are done: the stage is fixed (`95ec229`) and rerun with the
+> localization measures the round asked for, the page is rewritten around its own answer with six
+> figures, and `real_compare/events.json` and the 120 checkpoints are in
+> `bugarach/2026-09-17-rigid-shift-report/` while the repo keeps `summary.json`. **Remaining:** land
+> PR #603; then supersede the section C rows in `docs/MILESTONES.md`, pinned to its commits once they
+> are on `main`; release the darkroom claim; then the four decisions go to Tony. ⚠ The delivered text
+> has had **no blind pass**.
+
+> **Progress, 2026-09-17 (earlier).** Steps 3 and 4 were done on branch `unsup/rigid-shift-report-residuals`
+> (draft PR #603): the residuals were fixed and rerun, and a third blind round ran
+> ([record](../reviews/tube-self-supervised-2026-09-17-round3.md)). It reached the three-round cap
+> with a blocking finding, that the trained models' checks could not fail against slow shared
+> modulation. **Tony chose to add controls that can fail, rerun, restructure the report and run a
+> fourth blind round.** The controls, the rerun, a direct check of what the models respond to, and
+> the rewritten report are on the branch. **Remaining:** the fourth blind round and its fixes; land
+> the branch; then supersede the section C rows in `docs/MILESTONES.md`, pinned to its commits once
+> they are on `main`; then the four decisions go to Tony.
+
 > **Progress, 2026-09-16 (Tony: *"do 1 and 2"*).** Steps 1 and 2 are **done**.
 > [PR #588](https://github.com/syncytium2/bugarach/pull/588) merged as `b4f09ab` with CI green on
 > Python 3.11, 3.13 and 3.14 — after its first CI run caught a regression of this session's own:
@@ -14,6 +38,12 @@ filed: 2026-09-16
 > `merge_when_green.sh` refused the merge. Fixed in `d0453de`. The milestone rows are in
 > `docs/MILESTONES.md` section C (three) and section H (one). **Steps 3 and 4 remain**, and so does
 > everything under *Waiting on Tony*.
+>
+> **Before starting 3 or 4, read the handoff:**
+> [`docs/handoffs/2026-09-16-rigid-shift-report-steps-3-and-4.md`](../handoffs/2026-09-16-rigid-shift-report-steps-3-and-4.md)
+> — file and line for every residual, the blind-round procedure, and the traps this session hit.
+> It recommends doing **step 4 before step 3**, since several residuals change numbers the report
+> quotes, and reviewing text that is about to change wastes a blind round.
 
 Everything from the 2026-09-15/16 sessions was on branch `unsup/rigid-shift-controls`,
 [PR #588](https://github.com/syncytium2/bugarach/pull/588), and is now on `main`. Before it landed,

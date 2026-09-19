@@ -67,12 +67,16 @@ def _git(*args: str) -> str | None:
         return None
     if out.returncode != 0:
         return None
-    return out.stdout.strip() or None
+    # An EMPTY answer is still an answer. `git status --porcelain` on a clean tree prints
+    # nothing, and folding that into None recorded every clean run as "nobody could check",
+    # the collapse `git_dirty`'s own docstring forbids. Found 2026-09-16, when three bake-offs
+    # run from a pinned, clean checkout all reported `git_dirty: null`.
+    return out.stdout.strip()
 
 
 def git_commit() -> str | None:
     """The commit this tree is at, or ``None`` outside a checkout."""
-    return _git("rev-parse", "HEAD")
+    return _git("rev-parse", "HEAD") or None
 
 
 def git_dirty() -> bool | None:

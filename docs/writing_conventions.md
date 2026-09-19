@@ -145,6 +145,26 @@ Emphasize the row a passage is *about* if you like. Do not emphasize a number
 unless it is the extreme of its column, and not even then when the document's own
 argument is that the differences are not separable.
 
+## Agreement between methods rules out one thing: that a single method invented it
+
+A result that holds for several detectors, or for a learned model and a
+zero-parameter counter, or for two different statistics over the same recordings,
+excludes exactly one explanation — *this came from the way we measured it* — and
+nothing else. Every explanation the methods share is untouched, and an artifact in
+the data is shared by all of them by construction.
+
+Two pages hit this on 2026-09-17 within an hour, in the same shape. One said a
+group ordering held "for the hand-written references and for a detector with no
+parameters, which is the least interesting of the explanations to rule out" — true,
+and phrased so it reads as support. The other called two measures agreeing on that
+ordering a cross-check. Both orderings had four recordings with a declared,
+unflagged contamination sitting at the top of them, and a perfect confound between
+group and imaging day underneath. Neither convergence could have seen either, because
+both problems are in the recordings rather than in the methods.
+
+Write the one thing it excludes, in those words, and then write what it leaves.
+Agreement between methods is evidence about methods.
+
 ## Every table column carries its units, and *dimensionless* is a unit
 
 A bare number in a table is a number in whatever unit the reader last saw. This
