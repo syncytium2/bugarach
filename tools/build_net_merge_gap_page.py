@@ -48,7 +48,20 @@ NOISE_INK = "#ececec"
 
 
 def load(run: Path) -> dict:
-    return {k: json.loads((run / f).read_text(encoding="utf-8")) for k, f, _ in DRAWS}
+    """Whichever draws are committed, in DRAWS order. One draw is a page; the page then says so."""
+    got = {k: json.loads((run / f).read_text(encoding="utf-8")) for k, f, _ in DRAWS
+           if (run / f).exists()}
+    if "this" not in got:
+        raise SystemExit(f"{run / DRAWS[0][1]} is not there: nothing to write about")
+    return got
+
+
+def draws(docs):
+    return [(k, f, name) for k, f, name in DRAWS if k in docs]
+
+
+def first(docs):
+    return docs[draws(docs)[0][0]]
 
 
 def heldout(entry):
@@ -92,8 +105,10 @@ def fig_margins(docs, w) -> Svg:
     lo = min(-step, math.floor(min(vals) / step) * step)
     hi = max(step, math.ceil(max(vals) / step) * step)
     ticks = [round(v, 2) for v in np.arange(lo, hi + 1e-9, step)]
-    noise = docs["this"]["noise_f1"]
-    for (x0, x1), (k, _, name), letter in (((330, 590), DRAWS[0], "A"), ((630, 880), DRAWS[1], "B")):
+    noise = first(docs)["noise_f1"]
+    panels = ([((330, 590), draws(docs)[0], "A")] if len(docs) == 1 else
+              [((330, 590), draws(docs)[0], "A"), ((630, 880), draws(docs)[1], "B")])
+    for (x0, x1), (k, _, name), letter in panels:
         X = lambda v, a=x0, b=x1: a + (v - lo) / (hi - lo) * (b - a)   # noqa: E731
         svg.text((x0 + x1) / 2, 24, f"{letter}.  {name[0].upper() + name[1:]}", anchor="middle",
                  size=13, weight="bold")
@@ -134,8 +149,8 @@ def fig_margins(docs, w) -> Svg:
 
 def fig_gaps(docs) -> Svg:
     """Which gap each fold chose, and which higher-scoring gaps the crowded check refused."""
-    grid = docs["this"]["gaps_sec"]
-    rows = [(k, m, w) for k, _, _ in DRAWS for m in CHORUS for w in SEL]
+    grid = first(docs)["gaps_sec"]
+    rows = [(k, m, w) for k, _, _ in draws(docs) for m in CHORUS for w in SEL]
     top, rh = 64, 30
     yb = top + len(rows) * rh
     svg = Svg(900, yb + 100, "The merge gap each outer fold chose for the two chorus nets, and the "
@@ -187,9 +202,13 @@ def stat_cell(c, per_fold=None):
             f"corrected {tnum(c['t_corrected'])})")
 
 
+def both(docs):
+    return "both draws" if len(docs) > 1 else "this draw"
+
+
 def results_table(docs) -> str:
     rows = []
-    for k, _, name in DRAWS:
+    for k, _, name in draws(docs):
         d = docs[k]
         for w in SEL:
             for m in NETS:
@@ -201,19 +220,19 @@ def results_table(docs) -> str:
     return table(["draw", "selection", "net", "gap chosen, folds 1 to 4",
                   "as run: net minus CoactDetect, F1 (folds ahead; <i>t</i>)",
                   "gap tuned", "gap and configuration re-chosen"], rows,
-                 "Table 1, every net in both draws")
+                 f"Table 1, every net in {both(docs)}")
 
 
 # ---- the page -----------------------------------------------------------------------------------
 
 def body(docs, report_href: str) -> str:
-    d, r = docs["this"], docs["replicate"]
+    d = first(docs)
     noise = d["noise_f1"]
     for doc in docs.values():
         rep = doc["reproduction"]
         claim(rep["own_threshold_at_2s"] == rep["rows_at_2s"] == rep["empty_recordings_at_2s"]
               == rep["fits"] and rep["rows_without_score_file"] == 0, "every fit reproduces at 2 s")
-    n_fits = d["reproduction"]["fits"] + r["reproduction"]["fits"]
+    n_fits = sum(doc["reproduction"]["fits"] for doc in docs.values())
     claim(all(doc["coact"]["passes_crowded_check"] and all(doc["coact"]["passes_crowded_check"].values())
               for doc in docs.values()),
           "CoactDetect's choices pass the crowded check after the fact, in both draws")
@@ -317,7 +336,7 @@ every recording's counts and every empty recording's call count equal the run's 
         "threshold together, so a cross can share a column with the chosen gap at another threshold. "
         "The shaded column is CoactDetect's choice.")}
 
-<h2 id="table">6. Every net, both draws</h2>
+<h2 id="table">6. Every net, {both(docs)}</h2>
 <p class=tcap><b>Table 1.</b> Held-out F1, net minus CoactDetect, mean of four outer folds, with the
 number of folds the net is ahead and the paired <i>t</i> over folds (3 degrees of freedom), plain and
 with the Nadeau–Bengio correction for overlapping training sets (factor {d["nb_factor"]:.3f}).</p>
@@ -373,28 +392,30 @@ def lede(docs, u, closed, noise, lead_u, under_noise, ahead, n_folds):
     hi = max(closed[k][m] for k in docs for m in CHORUS)
     return (f"Tuned like any other setting, the nets' merge gap moves each chorus net toward "
             f"CoactDetect, and past it by no more than the noise. On F1 alone the better chorus net "
-            f"ends {signed(u['this'][lead_u['this']]['mean'])} F1 from CoactDetect in this draw and "
-            f"{signed(u['replicate'][lead_u['replicate']]['mean'])} in the replicate, both inside "
-            f"±{noise:.3f}: still a tie. Under the budget, tuning the gap closes {lo:.0%} to {hi:.0%} "
+            + and_join([f"ends {signed(u[k][lead_u[k]]['mean'])} F1 from CoactDetect in {name}"
+                        for k, _, name in draws(docs)])
+            + f", inside ±{noise:.3f}: still a tie. Under the budget, tuning the gap closes "
+            f"{lo:.0%} to {hi:.0%} "
             f"of the chorus nets' shortfall, and {ahead_phrase(ahead, n_folds)}.")
 
 
 def alone_text(docs, u, u0, lead_u, noise):
     parts = []
-    for k, _, name in DRAWS:
+    for k, _, name in draws(docs):
         m = lead_u[k]
         c, c0 = u[k][m], u0[k][m]
         parts.append(f"In {name}, <code>{m}</code> goes from {signed(c0['mean'])} as run to "
                      f"{signed(c['mean'])} with its gap tuned ({c['folds_ahead']} of 4 folds ahead; "
                      f"<i>t</i> {tnum(c['t'])}, corrected {tnum(c['t_corrected'])}), choosing "
                      f"{fmt_gaps(gaps(docs[k], m, 'ungated'))}.")
-    return (" ".join(parts) + f" Both margins are under {noise:.3f} F1, the change that swapping the "
-            "recordings alone produces, so on F1 alone the two stay tied (Figure 1).")
+    return (" ".join(parts) + f" {'Both margins are' if len(parts) > 1 else 'That margin is'} under "
+            f"{noise:.3f} F1, the change that swapping the recordings alone produces, so on F1 alone "
+            "the two stay tied (Figure 1).")
 
 
 def budget_text(docs, g, g0, closed, ahead, n_folds, noise):
     parts = []
-    for k, _, name in DRAWS:
+    for k, _, name in draws(docs):
         for m in CHORUS:
             parts.append(f"<code>{m}</code> in {name}: {signed(g0[k][m]['mean'])} as run, "
                          f"{signed(g[k][m]['mean'])} tuned ({closed[k][m]:.0%} of the shortfall "
@@ -403,7 +424,7 @@ def budget_text(docs, g, g0, closed, ahead, n_folds, noise):
     claim(all(v < noise for *_, v in ahead), "no fold led by the noise scale under the budget")
     return ("Held to the shared false-alarm budget, a wider gap lets a net call less and so fit the "
             "budget at a lower threshold, and every chorus net gains: " + "; ".join(parts) + ". "
-            f"Across the four nets and both draws, {ahead_phrase(ahead, n_folds)}"
+            f"Across the four nets and {both(docs)}, {ahead_phrase(ahead, n_folds)}"
             + (f", inside ±{noise:.3f}" if ahead else "") + " (Figure 2).")
 
 
@@ -418,7 +439,7 @@ def crowded_text(docs, n_moved, n_all, n_refusing):
     rows = [(k, m, w, row) for k in docs for m in NETS for w in SEL for row in docs[k]["nets"][m][w]]
     wider = sum(any(x["gap_sec"] > row["config_kept"]["gap_sec"]
                     for x in row["config_kept"]["refused_by_crowded"]) for *_, row in rows)
-    drop = docs["this"]["max_crowded_drop"]
+    drop = first(docs)["max_crowded_drop"]
     outer = [(k, m, w, row["outer_fold"],
               row["config_kept"]["outer_crowded_f1_as_run"] - row["config_kept"]["outer_crowded_f1"])
              for k, m, w, row in rows if row["config_kept"].get("outer_crowded_f1") is not None]
@@ -464,7 +485,7 @@ def build(run: Path, report_href: str) -> str:
     prov = (f'<h2 id="provenance">Provenance</h2><p class=dim>Built {time.strftime("%Y-%m-%d %H:%M %z")} '
             f"by <code>tools/build_net_merge_gap_page.py</code> at <code>{esc(ver)}</code>.{note}</p>")
     meta = ('<meta name="description" content="The fair comparison\'s nets with their merge gap tuned '
-            'like any other setting, against CoactDetect, in both draws of recordings.">\n'
+            f'like any other setting, against CoactDetect, in {both(docs)} of recordings.">\n'
             f'<meta name="generator" content="tools/build_net_merge_gap_page.py {esc(ver)}">\n'
             '<meta name="author" content="the bugarach project">\n'
             f'<meta name="date" content="{time.strftime("%Y-%m-%d")}">\n')

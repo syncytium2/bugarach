@@ -102,7 +102,7 @@ effective grid rather than a wrong answer; `chorus_gain_norm` is the exception, 
 [PR #667](https://github.com/syncytium2/bugarach/pull/667), ⚠ **landed at Tony's call with four open
 murderboard findings and its round-2 repairs not blind-verified**. Its readout
 [`chorus_collapse/`](../learned/chorus_collapse/index.html) and its
-[todo](../todo/2026-09-19-chorus-norm-does-not-train-at-lr-0.03.md) arrive with that PR.
+[todo](../todo/2026-09-19-chorus-norm-does-not-train-at-lr-0.03.md) are on `main` with it.
 
 ⚠ **A claim this page carried is withdrawn.** It read the **111** inner fits that collapse in *both*
 draws as the same fits failing twice, and called the failure deterministic given configuration, seed

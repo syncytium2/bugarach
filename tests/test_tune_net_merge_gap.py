@@ -95,13 +95,19 @@ def test_the_comparison_is_recomputed_from_the_folds_it_reports(doc):
 
 
 def test_the_heldout_curve_agrees_with_the_chosen_gap(doc):
+    """The curve holds the chosen threshold and moves only the gap, so it meets the chosen gap's
+    held-out F1, and the as-run number only where the threshold did not move too."""
     for m, by_w in doc["nets"].items():
         for w, rows in by_w.items():
             for row in rows:
-                c = row["config_kept"]
+                c, a = row["config_kept"], row["as_run"]
                 curve = c["heldout_f1_by_gap"]
                 assert curve[f"{c['gap_sec']:g}"] == pytest.approx(c["heldout"]["f1_mean"])
-                assert curve["2"] == pytest.approx(row["as_run"]["heldout"]["f1_mean"])
+                if c["threshold"] == a["threshold"]:
+                    assert curve["2"] == pytest.approx(a["heldout"]["f1_mean"]), (m, w)
+                elif not c["moved"]:
+                    pytest.fail(f"{m} {w} fold {row['outer_fold']}: nothing moved, yet the "
+                                "threshold differs from the run's")
 
 
 def test_paired_statistics_by_hand():
