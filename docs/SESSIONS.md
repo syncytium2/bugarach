@@ -10,8 +10,8 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### Mac/draw-the-comparison-four — DARKROOM claim ACTIVE 2026-09-19: `bugarach/2026-09-19-comparison-architectures/`
-- **Status:** ACTIVE (draughtsman-slate-ledger, on the Mac), claimed before writing. The four
+### Mac/draw-the-comparison-four — DARKROOM claim RELEASED 2026-09-19: `bugarach/2026-09-19-comparison-architectures/`
+- **Status:** **RELEASED 2026-09-19** — the page, the composite and the four one-to-one panels are in the folder, and the path went to the orchestrator and to WSMIP064 and WSMIP065. Rebuild with `tools/make_comparison_figure.py` (PR #660). Was: ACTIVE (draughtsman-slate-ledger, on the Mac), claimed before writing. The four
   architectures of goal 2's fair comparison (`chorus_norm`, `tube`, `chorus_gain_norm`,
   `line_length`) drawn through draughtsman at one common slot, so that WSMIP064's and WSMIP065's
   reports compare them as shapes. Asked by the orchestration session on Tony's instruction; both
