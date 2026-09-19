@@ -792,7 +792,7 @@ co-authors). `binned SCE` descends from Cossart, Aronov & Yuste 2003 and is not 
 - Grün S, Diesmann M, Grammont F, Riehle A, Aertsen A (1999). *J Neurosci Methods* 94:67–79.
 - Gutmann MU, Hyvärinen A (2010). Noise-contrastive estimation: a new estimation principle for unnormalized statistical models. AISTATS, PMLR 9:297–304 (not reached; the preliminary version of the 2012 paper).
 - Gutmann MU, Hyvärinen A (2012). *J Mach Learn Res* 13:307–361.
-- Hamon L, et al. (2026). CICADA: a unified framework for NWB-based neurophysiological data analysis. bioRxiv, doi:10.64898/2026.07.03.736318.
+- Hamon M, et al. (2026). CICADA: a unified framework for NWB-based neurophysiological data analysis. bioRxiv, doi:10.64898/2026.07.03.736318.
 - Harrison MT, Geman S (2009). *Neural Comput* 21:1244–1258.
 - Hyvärinen A, Morioka H (2017). Nonlinear ICA of temporally dependent stationary sources. AISTATS, PMLR 54:460–469.
 - Jarabo-Amores MP, et al. (2009). *IEEE Trans Signal Process* 57(11):4175–4181.

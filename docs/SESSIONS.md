@@ -10,6 +10,19 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/chorus-collapse — DARKROOM claim ACTIVE 2026-09-19: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony's next step for goal 2: diagnose why a
+  third of `chorus_norm`'s inner fits make one call per recording (the replicate report's Table 2).
+- **Writes:** one new folder only: the diagnosis page, its figures, and the small JSON tables behind
+  them (the collapse table, the dead-layer census, the replays). Nothing existing is touched; the
+  two runs' `results/` folders are read, never written.
+- **Touches:** this block. The tool and the repo copy of the page land on branch `chorus-collapse`.
+  Not `docs/goals/` (#664 owns it).
+- **Holds:** the folder above.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the diagnosis has landed, or the work is abandoned.
+
 ### Mac/draw-the-comparison-four — DARKROOM claim RELEASED 2026-09-19: `bugarach/2026-09-19-comparison-architectures/`
 - **Status:** **RELEASED 2026-09-19** — the page, the composite and the four one-to-one panels are in the folder, and the path went to the orchestrator and to WSMIP064 and WSMIP065. Rebuild with `tools/make_comparison_figure.py` (PR #660). Was: ACTIVE (draughtsman-slate-ledger, on the Mac), claimed before writing. The four
   architectures of goal 2's fair comparison (`chorus_norm`, `tube`, `chorus_gain_norm`,
@@ -25,8 +38,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Goal:** learned-model-family (goal 2).
 - **Released when:** the figure is in the folder and its path is handed to the orchestrator.
 
-### 065/weekend-run-status — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-replicate-run-status/`
-- **Status:** ACTIVE (WSMIP065), claimed before writing. The status mirror for WSMIP065's weekend
+### 065/weekend-run-status — DARKROOM claim RELEASED 2026-09-19: `bugarach/2026-09-18-replicate-run-status/`
+- **Released 2026-09-19:** the report landed (`report/report.html`, with the round-by-round review
+  reports beside it), both scheduled tasks are deleted, and `results/` also holds `merge_gap.json`
+  and `crowded_check.json`, WSMIP064's two checks run unchanged on this draw. Nothing more is written.
+- **Status:** was ACTIVE (WSMIP065), claimed before writing. The status mirror for WSMIP065's weekend
   run, the replicate of goal 2's fair comparison (Tony's choice, 2026-09-18: the same comparison at a
   fresh seed draw), launched as `bench-replicate1` into `%USERPROFILE%\runs\bench-replicate1\` —
   local disk, which is why it needs a mirror (armory finding 21).
