@@ -101,7 +101,7 @@ Mode: standard
 - upstream:  syncytium2/murderboard @ 08f5ddb
 - copy:      vendored @ 08f5ddb
 - freshness: current
-- artifact:  docs/learned/chorus_collapse/index.html (5cafecea0898379c4f05434dde6e7a2d5695120c -> e477f6f2170ef1d634366304bae519fe776e5360)
+- artifact:  docs/learned/chorus_collapse/index.html (5cafecea0898379c4f05434dde6e7a2d5695120c -> 5ed4b10c78692ad06a66f4af9db0f920bdde6179)
 - roles:     11 of 11 run (named agents)
 - reports:   chorus-collapse-2026-09-19-roles/
 - rounds:    1 blind round after the first pass; severity not falling (blocking 3 -> 4); escalated; round-2 repairs not blind-verified

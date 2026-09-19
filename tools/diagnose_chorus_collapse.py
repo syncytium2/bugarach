@@ -477,7 +477,7 @@ def _cluster_test(rows, net, level, rnd, draws=("first", "second")) -> float:
         shuffled = []
         for items in groups.values():
             labels = [c for _, c in items]
-            rnd.shuffle(labels)
+            labels = [labels[i] for i in rnd.permutation(len(labels))]
             shuffled.append([(lv, c) for (lv, _), c in zip(items, labels)])
         hits += stat(shuffled) >= obs
     return (1 + hits) / (N_PERM + 1)
@@ -512,7 +512,7 @@ def _seed_carryover(rows, net, rnd) -> tuple[float, float]:
     obs = corr(lambda c: (0, 1, 2))
     hits = 0
     for _ in range(N_PERM):
-        perms = {c: rnd.sample((0, 1, 2), 3) for c in cfgs}
+        perms = {c: [int(i) for i in rnd.permutation(3)] for c in cfgs}
         hits += corr(lambda c: tuple(perms[c])) >= obs
     return obs, (1 + hits) / (N_PERM + 1)
 
@@ -856,7 +856,10 @@ def page(work: Path) -> str:
     sel = json.loads((work / "selections.json").read_text())
     tr = json.loads((work / "trace.json").read_text())
     reps = {p.stem: json.loads(p.read_text()) for p in sorted((work / "replays").glob("*.json"))}
-    rnd = random.Random(2026)
+    import numpy as np
+    # numpy's legacy RandomState, not the stdlib: random.shuffle and random.sample draw differently
+    # on Python 3.11 and 3.12+, and the page must rebuild byte for byte on every version CI runs
+    rnd = np.random.RandomState(2026)
     cfg_row = {r["cfg"]: r for r in rows}
 
     def rate(net, pred, rs=rows):
