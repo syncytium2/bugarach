@@ -353,7 +353,43 @@ load-bearing terms with no glossary entry.
   rate rather than on coordination. Its firings are reported separately and kept
   out of headline precision.
 - **distractor** — a planted correlated burst: real cross-ROI coincidence that is
-  not a coordinated event. A negative that is meant to be confusable.
+  not a coordinated event. A negative that is meant to be confusable. On the bench it
+  is built exactly as an 18% planted event is built and differs only in its label, so
+  whether a call on one should count against a detector is an open question
+  (`score.py`); today it counts as a false alarm, for every detector alike.
+- **merge gap** — how close two calls may be before a detector merges them into one.
+  Tuned for the coded detectors (`merge_gap_sec`, `merge_gap_s`); fixed at 20 frames
+  for the learned models (`pick_threshold`). On the bench, where planted events are at
+  least 120 s apart, a wider gap rarely costs recall, so bench F1 rises with it for a
+  detector whose calls come in short bursts; that is why the crowded-recording check
+  exists. Merging chains, so a detector that calls almost continuously can lose events
+  to it even here (the fair comparison's `line_length` and `tube`, 2026-09-19). Three
+  rules share the name: a net merges runs of frames above threshold; sliding
+  CoactDetect and LoCo merge window positions; binned SCE merges by firing times.
+- **call** — a detector's claim that a coordinated event happened, over a span of time.
+  Scored one to one against planted events (`score.score_detections`).
+- **firing** — one entry in a cell's list of event times (an *onset*); the page-level
+  word for a per-ROI event, kept apart from a coordinated event.
+- **background** — the steady random firing rate a bench recording is simulated at:
+  *quiet* (0.0052 per second per ROI) or *busy* (0.019), the 25th and 75th percentiles
+  of real baseline rates. The code's word is *regime*. Not the promiscuity probe.
+- **empty recording** — a bench recording with nothing planted, one per seed at each
+  background, used to count false alarms.
+- **refit** — one training of a chosen net configuration on the outer training folds,
+  at one training seed; five per choice in goal 2's comparison.
+- **failed-training signature** — a refit that calls one long stretch per recording, so
+  it finds an event or two at perfect precision and almost no recall (F1 0.125 on the
+  bench). Recorded per refit as `failed_training_signature`.
+- **crowded-recording check** (also *crowded veto*) — `bench.MAX_CROWDED_DROP`: a
+  setting may not score more than that much mean F1 below the setting it replaces on
+  `bench.make_tail_recording`'s crowded recordings. Goal 1's fourth budget.
+- **shared false-alarm budget** — goal 2's second selection: a candidate may fire at
+  most a declared margin (1.6) times as often as the reference CoactDetect, in the
+  promiscuity probe at each background and on the empty recordings at the quiet
+  background, on the training folds (the busy-background empty recordings are reported,
+  not gated).
+  A result is **admissible** if it was chosen within the budget and passes the
+  crowded-recording check.
 - **contaminated null** — a surrogate null estimated over a context window that
   contains real coordinated events, which inflates the threshold. Avoided by
   spacing events wider than the widest context window.

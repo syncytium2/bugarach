@@ -108,7 +108,22 @@ def pep701_offences(src: str) -> list[tuple[int, str]]:
     for tok in tokenize.generate_tokens(io.StringIO(src).readline):
         if tok.type == getattr(tokmod, "FSTRING_START", -1):
             q = tok.string[tok.string.index(tok.string[-1]):]
+            if starts and len(starts[-1][0]) < 3 and q.startswith(starts[-1][0]):
+                out.append((tok.start[0],
+                            f"an f-string inside a replacement field reuses the "
+                            f"enclosing {starts[-1][0]} quote (PEP 701, 3.12+)"))
             starts.append((q, tok.start[0]))
+        elif tok.type == getattr(tokmod, "FSTRING_MIDDLE", -2):
+            # Literal text is legal on 3.11, unless it belongs to an f-string that is
+            # itself inside another's replacement field: there all of it is expression.
+            # Missed until 2026-09-19, when a figure caption's nested f-string escaped
+            # its quotation marks, passed this scan and failed the 3.11 leg
+            # (tools/build_fair_comparison_report.py).
+            if len(starts) >= 2 and "\\" in tok.string:
+                out.append((tok.start[0],
+                            "a backslash in an f-string nested inside a replacement "
+                            "field — 3.11 says 'f-string expression part cannot "
+                            "include a backslash' (relaxed in 3.12)"))
         elif tok.type == getattr(tokmod, "FSTRING_END", -1):
             if not starts:
                 continue
@@ -144,6 +159,8 @@ def test_the_floor_is_declared_and_this_interpreter_is_not_below_it():
 SHIPPED = 'x = f"{chip(A, \'one \'\n               \'two\')}"\n'
 NESTED = 'x = f"{d["k"]}"\n'
 BACKSLASH = "x = f\"{re.search(r'(\\d+)', k)}\"\n"
+NESTED_BACKSLASH = "x = f\"{g(f'a \\\"b\\\" {c}')}\"\n"
+NESTED_FSTRING_QUOTE = 'x = f"{g(f"a {c}")}"\n'
 
 
 @pytest.mark.skipif(sys.version_info < (3, 12),
@@ -154,6 +171,10 @@ def test_the_pep701_scan_can_actually_fire():
     assert pep701_offences(SHIPPED), "the scan missed the form that shipped"
     assert pep701_offences(NESTED), "the scan missed the nested-quote form"
     assert pep701_offences(BACKSLASH), "the scan missed the backslash form"
+    assert pep701_offences(NESTED_BACKSLASH), "the scan missed a backslash in a nested f-string"
+    assert pep701_offences(NESTED_FSTRING_QUOTE), "the scan missed a nested f-string's quote"
+    # a nested f-string with the other quote and no backslash is legal on 3.11
+    assert pep701_offences("x = f\"{g(f'a {c}')}\"\n") == []
     # a backslash in the LITERAL part is legal on 3.11 and must not be flagged
     assert pep701_offences('x = f"a\\nb{c}"\n') == []
     assert pep701_offences("x = f'{a}{b}'\ny = f'''{c\n}'''\n") == []
@@ -162,7 +183,8 @@ def test_the_pep701_scan_can_actually_fire():
 @pytest.mark.skipif(sys.version_info < (3, 12),
                     reason="on the floor itself there is no blindness to pin — "
                            "the interpreter rejects all three at parse time")
-@pytest.mark.parametrize("src", [SHIPPED, NESTED, BACKSLASH])
+@pytest.mark.parametrize("src", [SHIPPED, NESTED, BACKSLASH, NESTED_BACKSLASH,
+                                 NESTED_FSTRING_QUOTE])
 def test_feature_version_alone_would_not_have_caught_these(src):
     """Why there are two checks and not one.
 
