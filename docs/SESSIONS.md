@@ -21,11 +21,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   existing in the darkroom is touched.
   **Widened 2026-09-19, before writing** (Tony: *"unless the data are large they should go to
   Dropbox upon completion"*): the run finished at 07:48 (1,968 jobs, 0 errors) and its folder is
-  1.3 GB, so two subfolders are added. `results/`: the declaration and summaries (`meta.json`,
-  `results.json`, `ran.json`, `progress.json`), `configs/`, the per-fold `selections/` and the refit
-  models in `chosen/`, about 13 MB. The inner fits (`fits/`, 146 MB) and per-threshold score files
-  (`scores/`, 1.1 GB) stay on WSMIP065 at `%USERPROFILE%\runs\bench-replicate1\`. `report/`: the
-  report written for a new reader, and its figures.
+  1.3 GB on disk, almost all of it small JSON files that compress well, so two subfolders are
+  added. `results/`: the declaration and summaries (`meta.json`, `results.json`, `ran.json`,
+  `progress.json`), `configs/`, the per-fold `selections/` and the refit models in `chosen/`, about
+  13 MB, plus the inner fits and the per-threshold score files as two archives (`fits.zip`, 3,886
+  files in 53 MB; `scores.zip`, 3,720 files in 34 MB), about 100 MB in all. So nothing stays only on
+  WSMIP065. `report/`: the report written for a new reader, and its figures.
 - **Touches:** this block; a note for WSMIP064 with the commands that worked here.
 - **Holds:** the folder above and that scheduled task on WSMIP065.
 - **Simulation only**, so nothing here is derived from a real recording.
