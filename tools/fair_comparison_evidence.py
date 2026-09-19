@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Two pieces of evidence behind the fair comparison's report, regenerated from the run's own files.
+"""The evidence behind the fair comparison's report, regenerated from the run's own files.
 
     python tools/fair_comparison_evidence.py fold-draws --fits %USERPROFILE%/runs/fair-comparison-2026-09-18/fits
     python tools/fair_comparison_evidence.py merge-gap  --fits %USERPROFILE%/runs/fair-comparison-2026-09-18/fits
+    python tools/fair_comparison_evidence.py breakdown  --fits %USERPROFILE%/runs/fair-comparison-2026-09-18/fits
     python tools/fair_comparison_evidence.py replicate  --source <darkroom>/bugarach/2026-09-18-replicate-run-status/results
 
-All three write into ``--run`` (default ``docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/``).
-The per-fit files (``--fits``) are too large for git; they are archived in the darkroom as
-``results/fits.tar.gz``.
+All four write into ``--run`` (default ``docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/``).
+The per-fit and per-score files (``--fits``, and ``scores/`` beside it) are too large for git; they
+are archived in the darkroom as ``results/fits.tar.gz`` and ``results/scores.tar.gz``.
+
+``breakdown``. Held-out recall per participation level and background, and distractor calls,
+read from the run's own score rows at the operating point each choice was scored at. A pooled F1
+can hide two sides winning in different places; this is where they differ.
 
 ``fold-draws`` (Figure 4). Which recordings each outer refit fitted and picked its threshold on, at
 training seed 0: **as run**, read from the run's own fit records, and **before the fix**, by calling
@@ -220,6 +225,77 @@ def net_gaps(run: Path, fits: Path) -> dict:
     return out
 
 
+# ---- where the difference is: recall by participation and background -------------------------
+
+def breakdown(run: Path, fits: Path, detectors=("coact",), nets=("chorus_norm", "chorus_gain_norm")) -> dict:
+    """Held-out recall per participation level and background, and distractor calls, per outer fold.
+
+    A pooled F1 can hide two sides winning in different places, so this reads the run's own
+    per-recording score rows, at the operating point each choice was scored at: the coded choice's
+    one row per recording, and each net refit's row at its ``threshold_index``, pooled over the
+    five refits. Counts are summed before dividing (hits over planted), as the scorer pools.
+    Nothing is re-scored."""
+    decl = json.loads((run / "meta.json").read_text())["declaration"]
+    results = json.loads((run / "results.json").read_text())
+    scores = fits.parent / "scores"
+    records = {}
+    for p in fits.rglob("*.run.json"):
+        r = json.loads(p.read_text())
+        if r["role"] == "outer":
+            records[(p.parts[-3], p.parts[-2], int(p.name.split("seed")[1].split("__")[0]),
+                     tuple(r["train_folds"]))] = Path(r["fit"]).stem
+
+    def tally(rows):
+        t = {}
+        for rid, row in rows:
+            b = rid.split(":")[0]
+            c = t.setdefault(b, dict(planted={}, hit={}, distractor_hits=0, n_distractors=0,
+                                     n_fa=0, n_detected=0, hot_fa=0))
+            for frac, (n, k) in row["by_frac"].items():
+                c["planted"][frac] = c["planted"].get(frac, 0) + n
+                c["hit"][frac] = c["hit"].get(frac, 0) + k
+            c["distractor_hits"] += row["distractor_hits"]
+            c["n_distractors"] += decl["bench_recording"]["n_distractors"]
+            for k in ("n_fa", "n_detected", "hot_fa"):
+                c[k] += row[k]
+        for c in t.values():
+            c["recall_by_participation"] = {f: c["hit"][f] / c["planted"][f] for f in c["planted"]}
+            c["distractor_hit_rate"] = c["distractor_hits"] / c["n_distractors"]
+            c["distractor_share_of_false_calls"] = (c["distractor_hits"] / (c["n_fa"] - c["hot_fa"])
+                                                    if c["n_fa"] > c["hot_fa"] else None)
+        return t
+
+    out = dict(
+        what="held-out recall per participation level and background, and distractor calls, at "
+             "each choice's scored operating point; nets pooled over their refits",
+        generator="tools/fair_comparison_evidence.py breakdown", detectors={}, nets={})
+    for d in detectors:
+        out["detectors"][d] = []
+        for row in results["hand"][d]:
+            h = row["outer_fold"]
+            for w in SELECTIONS:
+                doc = json.loads((scores / d / f"outer{h}__{w}.json").read_text())
+                out["detectors"][d].append(dict(
+                    outer_fold=h, selection=w, f1_by_background=row[w]["f1_by_background"],
+                    by_background=tally(doc["rows"].items())))
+    for m in nets:
+        out["nets"][m] = []
+        for row in results["learned"][m]:
+            h = row["outer_fold"]
+            for w in SELECTIONS:
+                x = row[w]
+                rows = []
+                for s in x["per_seed"]:
+                    stem = records[(m, x["config_key"], s["seed"], tuple(_training_folds(decl, h)))]
+                    doc = json.loads((scores / m / x["config_key"] / f"{stem}__fold{h}.json").read_text())
+                    rows += [(rid, per_thr[s["threshold_index"]]) for rid, per_thr in doc["rows"].items()]
+                fb = {b: float(np.mean([s["f1_by_background"][b] for s in x["per_seed"]]))
+                      for b in REGIMES}
+                out["nets"][m].append(dict(outer_fold=h, selection=w, f1_by_background=fb,
+                                           by_background=tally(rows)))
+    return out
+
+
 def replicate(source: Path) -> dict:
     """The replicate's headline numbers, copied from WSMIP065's results so the report can show both
     draws. WSMIP065's own report is the authority on the replicate; this is a citation, not a copy
@@ -244,13 +320,43 @@ def replicate(source: Path) -> dict:
                  for mm, rows in r["learned"].items()},
         hand={dd: {w: [row[w]["f1"] for row in rows] for w in SELECTIONS}
               for dd, rows in r["hand"].items()},
-        comparisons=r["comparisons"])
+        comparisons=r["comparisons"],
+        refits=_refit_health(r))
+
+
+#: A refit under this held-out F1 is set aside in the "without" means. The flags the run records
+#: depend on the threshold a model is scored at (one failed model carries the failed-training
+#: signature at one selection's threshold and makes no calls at the other's), so one cut on F1,
+#: applied to both draws alike, is the rule; the flags describe what each set-aside refit did.
+LOW_F1 = 0.2
+
+
+def _refit_health(r: dict) -> dict:
+    """Per net, selection and outer fold: the refits' F1, which fall under ``LOW_F1`` and what they
+    did (the failed-training signature, or no calls at all), and the fold mean with and without
+    them. Applied to this run and to the replicate alike, so both draws are read the same way."""
+    out = {}
+    for mm, rows in r["learned"].items():
+        out[mm] = {}
+        for w in ("untuned",) + SELECTIONS:
+            out[mm][w] = []
+            for row in rows:
+                ps = row[w]["per_seed"]
+                kept = [s["f1"] for s in ps if s["f1"] >= LOW_F1]
+                out[mm][w].append(dict(
+                    f1=[s["f1"] for s in ps],
+                    low=[s["seed"] for s in ps if s["f1"] < LOW_F1],
+                    failed_signature=[s["seed"] for s in ps if s.get("failed_training_signature")],
+                    no_calls=[s["seed"] for s in ps if s.get("f1_was_nan")],
+                    mean=float(np.mean([s["f1"] for s in ps])),
+                    mean_without_low=float(np.mean(kept)) if kept else None))
+    return out
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("what", choices=("fold-draws", "merge-gap", "replicate"))
+    ap.add_argument("what", choices=("fold-draws", "merge-gap", "replicate", "breakdown"))
     ap.add_argument("--run", type=Path, default=DEFAULT_RUN)
     ap.add_argument("--fits", type=Path, default=None,
                     help="the run's fits/ folder (the darkroom's results/fits.tar.gz, unpacked)")
@@ -263,7 +369,12 @@ def main(argv=None) -> int:
         print(a.run / "replicate_summary.json")
         return 0
     if a.fits is None:
-        ap.error("--fits is required for fold-draws and merge-gap")
+        ap.error("--fits is required for fold-draws, merge-gap and breakdown")
+    if a.what == "breakdown":
+        doc = breakdown(a.run, a.fits)
+        (a.run / "breakdown.json").write_text(json.dumps(doc, indent=1) + "\n")
+        print(a.run / "breakdown.json")
+        return 0
     if a.what == "fold-draws":
         doc = fold_draws(a.run, a.fits)
         (a.run / "fold_draws.json").write_text(json.dumps(doc, indent=1) + "\n")
