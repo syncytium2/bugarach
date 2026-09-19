@@ -58,7 +58,7 @@ near tie whose sign depends on the merge gap and on the draw.
 - upstream:  syncytium2/murderboard @ 08f5ddb
 - copy:      vendored @ 08f5ddb
 - freshness: current
-- artifact:  docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/report.html (76c3270 -> 805b113)
+- artifact:  docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/report.html (76c3270 -> 3c94e2e)
 - roles:     11 of 11 run (named agents), in each of three blind rounds
 - reports:   fair-comparison-2026-09-19-round3-roles/
 - rounds 1 and 2 reports: fair-comparison-2026-09-19-roles/ and fair-comparison-2026-09-19-round2-roles/
