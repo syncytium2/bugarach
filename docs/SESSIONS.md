@@ -10,9 +10,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 065/chorus-collapse — DARKROOM claim ACTIVE 2026-09-19: `bugarach/2026-09-19-chorus-collapse/`
-- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony's next step for goal 2: diagnose why a
-  third of `chorus_norm`'s inner fits make one call per recording (the replicate report's Table 2).
+### 065/chorus-collapse — DARKROOM claim DONE 2026-09-19: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** DONE (WSMIP065), released. The diagnosis landed with its murderboard flags (Tony's call:
+  "land with flags"); the folder holds the page and its data, and nothing more will be written.
+- **Was:** Tony's next step for goal 2: diagnose why a third of `chorus_norm`'s inner fits make one
+  call per recording (the replicate report's Table 2).
 - **Writes:** one new folder only: the diagnosis page, its figures, and the small JSON tables behind
   them (the collapse table, the dead-layer census, the replays). Nothing existing is touched; the
   two runs' `results/` folders are read, never written.
