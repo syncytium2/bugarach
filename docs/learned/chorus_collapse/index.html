@@ -141,12 +141,12 @@ folds) in both draws. If every fit collapsed at chorus_norm's overall rate, abou
 111.5 fits. The configuration accounts for the overlap and nothing is left for
 the particular fit (chorus_gain_norm: 38 fits observed,
 39.6 expected). Inside a draw the training seed does cluster with
-collapse (p = 0.001 in the second draw, p = 0.083 in the
+collapse (p = 0.002 in the second draw, p = 0.083 in the
 first; collapse labels shuffled within each configuration). Across draws the same seed builds the same
 starting weights and crop order but trains on different recordings, and a seed that collapses more
 than its configuration's others in one draw does not do so in the other (correlation 0.24,
 p = 0.147). So the seed's effect cannot be put down to its starting weights; the recordings it
-picks are at least as likely. No fold-pair effect was detected (p = 0.937 for
+picks are at least as likely. No fold-pair effect was detected (p = 0.938 for
 chorus_norm, p = 0.434 for chorus_gain_norm). 5 pairs of
 configurations differ only in step count; the shorter one's fits are the longer one's stopped early,
 so they are left out of these tests.</p>

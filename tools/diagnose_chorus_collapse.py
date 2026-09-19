@@ -461,14 +461,16 @@ def _cluster_test(rows, net, level, rnd, draws=("first", "second")) -> float:
             groups[(r["draw"], r["cfg"])].append((level(r), r["collapsed"]))
 
     def stat(labelled):
-        tot = 0.0
+        # n times the spread, in integers: it ranks shuffles exactly as the spread does, and float
+        # sums round differently across Python versions (3.12's sum() compensates, 3.11's does
+        # not), which moved the p value in the last digit and broke the byte-for-byte rebuild
+        tot = 0
         for items in labelled:
             counts = defaultdict(int)
             for lv, c in items:
                 counts[lv] += c
             vals = list(counts.values())
-            mu = sum(vals) / len(vals)
-            tot += sum((v - mu) ** 2 for v in vals)
+            tot += len(vals) * sum(v * v for v in vals) - sum(vals) ** 2
         return tot
 
     obs = stat(groups.values())
@@ -496,9 +498,10 @@ def _seed_carryover(rows, net, rnd) -> tuple[float, float]:
     cfgs = sorted({c for (_, c, _) in k})
 
     def dev(draw, cfg, order):
+        # three times the deviation from the configuration's mean: integers, so every sum below is
+        # exact on every Python version, and the correlation is unchanged by the scale
         v = [k[(draw, cfg, s)] for s in order]
-        mu = sum(v) / 3
-        return [x - mu for x in v]
+        return [3 * x - sum(v) for x in v]
 
     def corr(order_of):
         a, b = [], []
@@ -886,7 +889,7 @@ def page(work: Path) -> str:
     for r in rows:
         per_cfg_draw[(r["net"], r["cfg"], r["draw"])][0] += r["collapsed"]
         per_cfg_draw[(r["net"], r["cfg"], r["draw"])][1] += 1
-    exp_cfg = {n: sum(per_cfg_draw[(n, c, "first")][0] * per_cfg_draw[(n, c, "second")][0]
+    exp_cfg = {n: math.fsum(per_cfg_draw[(n, c, "first")][0] * per_cfg_draw[(n, c, "second")][0]
                       / per_cfg_draw[(n, c, "first")][1]
                       for c in {r["cfg"] for r in rows if r["net"] == n}) for n in CHORUS}
     exp_flat = {n: per_draw[(n, "first")][0] * per_draw[(n, "second")][0] / per_draw_n[n]
@@ -1024,7 +1027,7 @@ def page(work: Path) -> str:
         f" The one that did not train woke its head by step {wakes(d)} and fell silent again, "
         f"ending with {nsil(d['log'][-1])} of 8 layers silent." if wakes(d) is not None else
         " The one that did not train never woke its head." for d in wu_fail[:1])
-    reroll = sum(1 - share("chorus_norm", d["cfg"]) for d in dist)
+    reroll = math.fsum(1 - share("chorus_norm", d["cfg"]) for d in dist)
     wu_cfgs = {d["cfg"] for d in wu}
     own_cfg = [d for d in wu if d["cfg"] == SHOWN["collapsed"][0]]
     tried_cfgs = wu_cfgs | {SHOWN["collapsed"][0]}
