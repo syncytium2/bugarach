@@ -344,6 +344,7 @@ def _refit_health(r: dict) -> dict:
                 ps = row[w]["per_seed"]
                 kept = [s["f1"] for s in ps if s["f1"] >= LOW_F1]
                 out[mm][w].append(dict(
+                    seeds=[s["seed"] for s in ps],
                     f1=[s["f1"] for s in ps],
                     low=[s["seed"] for s in ps if s["f1"] < LOW_F1],
                     failed_signature=[s["seed"] for s in ps if s.get("failed_training_signature")],

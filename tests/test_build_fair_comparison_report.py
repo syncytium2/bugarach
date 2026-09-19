@@ -81,8 +81,8 @@ def test_the_fold_draw_evidence_is_regenerable():
     for h, got in doc["before_fix"].items():
         train = sorted(int(s) for s, f in doc["fold_of"].items() if f != int(h))
         mk, _, _ = fold_maker(lambda r: r, [f"{b}:{s}" for s in train for b in ev.REGIMES])
-        fitted = sorted({mk(TRAIN_SEED_BLOCK + i) for i in range(doc["n_train"])})
-        picked = sorted({mk(VAL_SEED_BLOCK + i) for i in range(4)})
+        fitted = sorted({mk(TRAIN_SEED_BLOCK + doc["seed"] * 1000 + i) for i in range(doc["n_train"])})
+        picked = sorted({mk(VAL_SEED_BLOCK + doc["seed"] * 1000 + i) for i in range(4)})
         assert (fitted, picked) == (got["fitted"], got["threshold"]), h
     assert decl["fold_check"]["distinct"] is True
 
@@ -94,3 +94,34 @@ def test_the_crowded_check_covers_every_coded_choice():
                 for w in ("ungated", "gated")}
     got = {(c["detector"], c["outer_fold"], c["selection"]) for c in check["choices"]}
     assert got == expected
+    # Both references are scored, so "which reference changes no verdict" is read from a file.
+    assert set(check["shipped_reference"]) == set(results["hand"])
+    assert all("passes_veto_vs_shipped" in c for c in check["choices"])
+
+
+def test_the_refit_rule_reads_both_draws_alike():
+    """Section 6 sets refits under LOW_F1 aside in this run and in the replicate by one rule; the
+    replicate's summary must carry that rule's output, computed by the same function."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("evidence", REPO / "tools" / "fair_comparison_evidence.py")
+    ev = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ev)
+    repl = json.loads((RUN / "replicate_summary.json").read_text())
+    this = ev._refit_health(json.loads((RUN / "results.json").read_text()))
+    for health in (repl["refits"], this):
+        for m, by_sel in health.items():
+            for w, folds in by_sel.items():
+                for x in folds:
+                    assert x["low"] == [s for s, f in zip(x["seeds"], x["f1"]) if f < ev.LOW_F1]
+
+
+def test_the_breakdown_covers_every_fold_and_selection():
+    doc = json.loads((RUN / "breakdown.json").read_text())
+    for group in (doc["detectors"], doc["nets"]):
+        for rows in group.values():
+            assert {(r["outer_fold"], r["selection"]) for r in rows} == \
+                {(h, w) for h in range(4) for w in ("ungated", "gated")}
+            for r in rows:
+                for b in ("quiet", "busy"):
+                    rec = r["by_background"][b]["recall_by_participation"]
+                    assert set(rec) == {"0.1", "0.18", "0.3"} and all(0 <= v <= 1 for v in rec.values())
