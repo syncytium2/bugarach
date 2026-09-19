@@ -6,29 +6,32 @@ filed: 2026-09-19
 # Landing `tune-bench-comparison`: what has to be true first
 
 **The scan Tony asked for on 2026-09-19**, after the weekend's fair-comparison runs finished.
-Every figure below was measured that day against `origin/main` at `ab4eef1`, not estimated.
+Every figure below is measured, not estimated. **Re-measured at 17:40 EDT the same day**, after gate
+1 was repaired and #660 merged the four architecture figures in; the first column is the original
+scan against `origin/main` at `ab4eef1`.
 
 ## What the branch is
 
-| | |
-|---|---|
-| commits ahead of `main` | 59 |
-| files | 454 |
-| insertions | 54,264 |
-| **code and tests** | **21 files, 3,742 insertions** |
-| **run output under `docs/learned/`** | **429 files, 49,509 insertions** (363 in `tuned_vs_coact/`, 66 in `field_size_candidates/`) |
+| | first scan | now |
+|---|---|---|
+| commits ahead of `main` | 59 | **66** |
+| files | 454 | **475** |
+| insertions | 54,264 | **56,382** |
+| **code, tests and tools** | 21 files, 3,742 | **25 files, 4,162** |
+| **run output under `docs/learned/`** | 429 files, 49,509 | **440 files, 51,120** (363 in `tuned_vs_coact/`, 66 in `field_size_candidates/`, 9 in the new `comparison/`) |
 
-**It merges into `main` with no conflict.** `sapper --all` reports 0 blocks and `check_quotes` is
-clear. The largest single file is a results JSON of 4,805 lines. So nothing here is dirty; the
-gates below are all decisions or one small repair, not a mess to clean up.
+**It merges into `main` with no conflict.** `sapper --all` reports **0 blocks** (78 warnings, nearly
+all SAP015's "data is plural" on prose) and `check_quotes` is clear. The largest single file is a
+results JSON of 4,805 lines. So nothing here is dirty; the gates below are all decisions or one
+small repair, not a mess to clean up.
 
-**Nine tenths of the diff is run output.** That is worth seeing before anyone reacts to "54,000
-lines": the tool, the tests and the library changes are 3,742 lines across 21 files, and everything
+**Nine tenths of the diff is run output.** That is worth seeing before anyone reacts to "56,000
+lines": the tool, the tests and the library changes are 4,162 lines across 25 files, and everything
 else is what the runs produced.
 
 ## The five gates
 
-### 1. The base is red, and the cause is a rule this repo already wrote down
+### 1. ~~The base is red~~ — repaired 2026-09-19, and the prescribed fix was half wrong
 
 `tests/test_tune_learned_vs_coact.py` has a **module-scoped fixture** that shells out to the tuning
 tool with `timeout=600` and `--jobs 4`. Fourteen tests take it. When the subprocess misses the
@@ -43,10 +46,21 @@ and two do not: a race, not a version defect.
 CLAUDE.md states the remedy for exactly this shape, after the briefing's 3-second budget did the
 same thing: *a test that asserts on wall-clock time needs `@pytest.mark.serial`*.
 
-**Fix:** mark the module `serial` and drop the inner `--jobs` to 1. Raising the timeout is the wrong
-repair — it hides the contention and the number drifts again at the next suite growth.
+**Fixed in `b9752a9`** — the module carries `pytestmark = pytest.mark.serial` and the base went
+green on run 1624 at 17:45 UTC. #660 then passed on the repaired base and merged.
 
-**Until this lands, no pull request based on this branch can be green**, including #660.
+**Half of what this gate prescribed was wrong, and the measurement is why.** It said to drop the
+inner `--jobs` to 1 as well. WSMIP064 measured that before doing it: the quick run takes **276 s at
+four jobs and 559 s at one** on that workstation, and 559 against a 600 s budget leaves no room on a
+slower runner. So the jobs stayed at four and only the serial mark changed. The CI timings are
+recorded beside the fixture: **419 to 545 s of the 600 s budget** across the three legs. Raising the
+timeout would still have been the wrong repair, for the reason given above.
+
+**One consequence to carry forward.** A serial module runs after the parallel pass with the runner
+to itself, so every branch carrying this fixture now runs a **~2-hour** CI suite rather than ~10
+minutes — #642's run 1624 took 2 h 06, #660's took 1 h 47. That cost arrives on `main` with this
+branch and lands on every pull request in the repository afterwards. Whether the fixture should be
+trimmed first is not part of this scan, but it should be asked before the landing, not after.
 
 ### 2. Landing this branch also lands #596, which is a decision Tony reserved
 
@@ -77,7 +91,7 @@ claiming work that has landed.
 
 ### 5. Ask what the landing is actually for
 
-**The seven stranded architectures are 7 files of the 454.** `chorus`, `chorus_gain`,
+**The seven stranded architectures are 7 files of the 475.** `chorus`, `chorus_gain`,
 `chorus_gain_norm`, `chorus_line`, `chorus_norm`, `gauge` and `tube_no_bypass` exist only here, so
 every session starting from `main` is blind to more than a third of the model family. If that is the
 goal, a nets-only branch does it today and drags along neither gate 2 nor 49,509 lines of run
@@ -89,6 +103,7 @@ does not need the large one.
 
 ## Closes when
 
-Gate 1 is repaired and the base is green; Tony has ruled on gate 2; gate 3 is fixed; gate 4 is
-resolved per file; and gate 5 is answered — either a nets-only branch lands and this scan stays open
-for the rest, or the whole branch lands at once.
+~~Gate 1 is repaired and the base is green~~ (done, `b9752a9`); Tony has ruled on gate 2; gate 3 is
+fixed — **still open, the username is still at line 682**; gate 4 is resolved per file — **still
+open, five handoff files sit at the root**; and gate 5 is answered — either a nets-only branch lands
+and this scan stays open for the rest, or the whole branch lands at once.
