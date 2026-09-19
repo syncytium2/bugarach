@@ -1,5 +1,6 @@
 {
- "what": "fitting and threshold recordings of each outer refit at training seed 0: as this run drew them (chorus_norm's refits, read from fits/*.run.json), and as the order used before the 2026-09-18 fix would have drawn them on the same split",
+ "what": "fitting and threshold recordings of each outer refit at training seed 0: as run (chorus_norm's refits, read from their fit records) and as the order used before the 2026-09-18 fix would have drawn them on the same split (bugarach.learn.train.fold_maker over each training seed in turn, quiet then busy)",
+ "generator": "tools/fair_comparison_evidence.py fold-draws",
  "seed": 0,
  "n_train": 10,
  "seeds_per_fold": 12,
@@ -162,8 +163,8 @@
     "quiet:1016"
    ],
    "threshold": [
-    "quiet:1047",
-    "busy:1047"
+    "busy:1047",
+    "quiet:1047"
    ]
   },
   "1": {
@@ -180,8 +181,8 @@
     "quiet:1004"
    ],
    "threshold": [
-    "quiet:1047",
-    "busy:1047"
+    "busy:1047",
+    "quiet:1047"
    ]
   },
   "2": {
@@ -198,8 +199,8 @@
     "quiet:1004"
    ],
    "threshold": [
-    "quiet:1047",
-    "busy:1047"
+    "busy:1047",
+    "quiet:1047"
    ]
   },
   "3": {
@@ -216,8 +217,8 @@
     "quiet:1004"
    ],
    "threshold": [
-    "quiet:1035",
-    "busy:1035"
+    "busy:1035",
+    "quiet:1035"
    ]
   }
  }
