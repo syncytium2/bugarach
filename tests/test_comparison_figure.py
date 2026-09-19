@@ -92,3 +92,12 @@ def test_every_comparison_spec_breaks_its_rows_by_name():
         spec = json.loads((mcf.COMPARISON / f"{arch}.spec.json").read_text())
         assert spec["layout"].get("breaks"), arch
         assert "wrap" not in spec["layout"], arch
+
+
+def test_the_committed_composite_is_the_four_committed_panels_composed_now():
+    """The public report embeds this file; it must not outlive the panels it is made of."""
+    panels = [mcf.Panel(a) for a in mcf.COMPARED]
+    assert mcf.COMMITTED.read_text(encoding="utf-8") == mcf.compose(panels), (
+        "docs/learned/comparison/comparison.svg is not the four committed panels "
+        "composed as they stand. Regenerate:\n\n"
+        "    python tools/make_comparison_figure.py --commit\n")

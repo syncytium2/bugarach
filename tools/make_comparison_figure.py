@@ -28,6 +28,12 @@ second starts where that axis collapses, the third is the head. So the first row
 length is the comparison, and a glyph is drawn only where the ROI axis is in the
 tensor.
 
+**The composite is also committed**, at `docs/learned/comparison/comparison.svg`
+(`--commit` rewrites it), because WSMIP064's report ships in the public repo, where
+a darkroom file cannot be embedded. It is a function of the four committed panels,
+and `tests/test_comparison_figure.py` recomposes and byte-compares it, so a panel
+that moves without it turns the suite red.
+
 The single-panel copies written beside the page carry the same one-to-one size, for
 a report that embeds them one at a time; the files in `docs/learned/comparison/`
 are each stretched to the full slot, which is right for one figure alone and wrong
@@ -52,6 +58,8 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from make_architecture_diagram import COMPARED, COMPARISON  # noqa: E402
 
+#: The composite in the repo, for pages that cannot reach the darkroom.
+COMMITTED = COMPARISON / "comparison.svg"
 #: The darkroom folder this page is claimed under on docs/SESSIONS.md.
 SUBFOLDER = "2026-09-19-comparison-architectures"
 PAD, GAP = 16.0, 40.0
@@ -198,9 +206,15 @@ def main(argv=None) -> int:
                     help=f"destination folder (default: <darkroom>/{SUBFOLDER})")
     ap.add_argument("--also", type=Path, default=None,
                     help="write a second copy here")
+    ap.add_argument("--commit", action="store_true",
+                    help=f"only rewrite the committed composite, {COMMITTED.relative_to(ROOT)}")
     a = ap.parse_args(argv)
     panels = [Panel(arch) for arch in COMPARED]
     one_scale(panels)
+    if a.commit:
+        COMMITTED.write_text(compose(panels), encoding="utf-8")
+        print(COMMITTED)
+        return 0
     out = a.out
     if out is None:
         from bugarach import paths
