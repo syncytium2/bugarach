@@ -1,10 +1,8 @@
 {
-  "_vendored": "vendored from draughtsman @ 18b4453 — canonical source is examples/tube/front-page-phone.json there; do NOT edit here, update upstream and re-copy.",
   "draughtsman": "0",
   "graph": "graph.json",
-  "batch_axis": 0,
-  "title": "tube — a coordinated-event detector",
-  "subtitle": "{model.params} parameters · {model.input_shape} in, {node:n0199.out_shape} out",
+  "title": "tube — the ROI axis collapses first",
+  "subtitle": "{model.params} parameters · {model.input_shape} in",
   "stages": [
     {
       "id": "raster",
@@ -15,9 +13,20 @@
       ],
       "detail": [
         "{stage.out_shape}",
-        "cells × frames",
-        "binary"
-      ]
+        "ROIs × frames, binary"
+      ],
+      "glyph": {
+        "of": "{stage.out_shape}",
+        "axes": [
+          -2,
+          -1
+        ],
+        "labels": [
+          "ROIs",
+          "frames"
+        ],
+        "style": "marks"
+      }
     },
     {
       "id": "widen",
@@ -31,13 +40,26 @@
       ],
       "detail": [
         "max-pool, width fitted",
-        "{stage.out_shape}"
+        "{stage.out_shape}",
+        "still one row per ROI"
       ],
-      "note": "Per cell. The raster is already binary, so this widens rather than caps. The width is 2·kmin+1 and kmin is read from a trained parameter, so the traced 3 belongs to an untrained instantiation and is not drawn."
+      "note": "Per cell. The raster is already binary, so this widens rather than caps. The width is 2·kmin+1 and kmin is read from a trained parameter, so the traced 3 belongs to an untrained instantiation and is not drawn.",
+      "glyph": {
+        "of": "{stage.out_shape}",
+        "axes": [
+          -2,
+          -1
+        ],
+        "labels": [
+          "ROIs",
+          "frames"
+        ],
+        "style": "marks"
+      }
     },
     {
       "id": "mean",
-      "name": "mean over cells",
+      "name": "mean over ROIs",
       "kind": "reduce",
       "nodes": [
         "n0038",
@@ -45,9 +67,21 @@
       ],
       "detail": [
         "{stage.out_shape}",
-        "all cells → one trace"
+        "all ROIs → one trace"
       ],
-      "note": "Cells are summed, so the model never sees which cell is which."
+      "note": "THE COLLAPSE. The mean keeps the axis at length one, so the glyph can draw it: one mark where there were thirty. Everything downstream sees a single trace, and four onsets from one cell are the same number as four cells firing once.",
+      "glyph": {
+        "of": "{stage.out_shape}",
+        "axes": [
+          -2,
+          -1
+        ],
+        "labels": [
+          "ROIs",
+          "frames"
+        ],
+        "style": "marks"
+      }
     },
     {
       "id": "dog",
@@ -83,9 +117,9 @@
       ],
       "detail": [
         "{stage.nodes} ops, {stage.params} learned params",
-        "kernel {node:n0100.out_shape[2]}, area-normalized",
+        "kernel {node:n0100.out_shape[2]}, area-normalised",
         "{stage.out_shape}",
-        "channels × frames, from here on"
+        "channels × frames"
       ],
       "lanes": {
         "count_from": "{node:n0116.out_shape[1]}",
@@ -145,8 +179,7 @@
       "detail": [
         "kernel {node:n0197.weight_shape[2]}",
         "{stage.params} params",
-        "{stage.out_shape}",
-        "one score per frame"
+        "{stage.out_shape} — one score per frame"
       ]
     }
   ],
@@ -182,16 +215,20 @@
     }
   ],
   "layout": {
-    "orientation": "tb",
-    "legend": true
+    "orientation": "lr",
+    "legend": true,
+    "breaks": [
+      "mean",
+      "head"
+    ]
   },
   "constants": {
     "n0149.constants.dilation": "Architectural. _dilated_stack sets d = 2 ** i from the layer index, so the schedule is fixed by `depth` and no gradient reaches it.",
     "n0189.constants.dilation": "Architectural, as above — the last dilated layer, i = depth - 1."
   },
-  "caption": "Drawn by draughtsman from a torch.jit.trace of the built model; every quantity is read off the trace by node id, none typed by hand. The kernel bank collapses {stage:dog.nodes} traced operations.",
+  "caption": "Drawn by draughtsman from a torch.jit.trace of the registered model; every quantity is read off the trace by node id, none typed by hand. One of four drawn at one width for the fair comparison. Glyphs are drawn only where the ROI axis is still in the tensor.",
   "output": {
-    "width": "395px",
+    "width": "912px",
     "min_type": "9.5px"
   }
 }

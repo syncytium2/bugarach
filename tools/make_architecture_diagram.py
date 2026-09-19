@@ -92,6 +92,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "third_party"))
 
 LEARNED = ROOT / "docs" / "learned"
+COMPARISON = LEARNED / "comparison"
 
 #: `arch` -> the draughtsman specs that say how to draw it, one per figure written,
 #: and the trace target and input shape to build it from. A spec is a
@@ -108,6 +109,7 @@ DRAWABLE = {
         "figures": {
             "architecture.svg": LEARNED / "architecture.spec.json",
             "architecture-phone.svg": LEARNED / "architecture-phone.spec.json",
+            "comparison/tube.svg": COMPARISON / "tube.spec.json",
         },
         "target": "bugarach.learn.nets.tube:build_tube",
         # One recording's worth of cells and frames. The model is invariant to the
@@ -115,7 +117,38 @@ DRAWABLE = {
         # taken at, not a constraint the architecture carries.
         "input_shape": [1, 30, 600],
     },
+    # THE FAIR COMPARISON'S OTHER THREE, drawn at the tube's comparison slot so the
+    # four can be laid against each other (goal 2, 2026-09-19). One spec each, all at
+    # `output.width` 912px — report.css's column — and every one breaks its rows at
+    # the same place: the first row is the stages that still hold one row per ROI,
+    # the second starts where that axis collapses, the third is the head. So the
+    # first row's length is the comparison. `tools/make_comparison_figure.py` puts
+    # the four on one page at one scale.
+    #
+    # ⚠ TRACED THROUGH THE REGISTRY, NOT THE BUILDER. `build_chorus_norm()` called
+    # bare returns plain `chorus` — the registered `norm=True` never reaches it — and
+    # the trace, the check and the figure were all green on the wrong model. See
+    # `bugarach/learn/registered.py`.
+    "chorus_norm": {
+        "figures": {"comparison/chorus_norm.svg": COMPARISON / "chorus_norm.spec.json"},
+        "target": "bugarach.learn.registered:chorus_norm",
+        "input_shape": [1, 30, 600],
+    },
+    "chorus_gain_norm": {
+        "figures": {"comparison/chorus_gain_norm.svg":
+                    COMPARISON / "chorus_gain_norm.spec.json"},
+        "target": "bugarach.learn.registered:chorus_gain_norm",
+        "input_shape": [1, 30, 600],
+    },
+    "line_length": {
+        "figures": {"comparison/line_length.svg": COMPARISON / "line_length.spec.json"},
+        "target": "bugarach.learn.registered:line_length",
+        "input_shape": [1, 30, 600],
+    },
 }
+
+#: The order the comparison page stacks them in: by how long the ROI axis survives.
+COMPARED = ("tube", "line_length", "chorus_norm", "chorus_gain_norm")
 
 
 def build(arch: str, out_dir: Path) -> int:
@@ -165,8 +198,8 @@ def build(arch: str, out_dir: Path) -> int:
             return 1
         drawn[name] = render(spec, graph)
 
-    out_dir.mkdir(parents=True, exist_ok=True)
     for name, svg in drawn.items():
+        (out_dir / name).parent.mkdir(parents=True, exist_ok=True)
         (out_dir / name).write_text(svg, encoding="utf-8")
     return 0
 
