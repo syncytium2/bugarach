@@ -89,13 +89,33 @@ crowded-recording check in 7 of 8.
 
 **The chorus nets often fail to train, and the failures are inside these averages.** About a third of
 `chorus_norm`'s 432 inner fits per draw make one call per recording — F1 exactly 0.125 — and a sixth
-of `chorus_gain_norm`'s. **111 of `chorus_norm`'s are the same fit in both draws**, so it is
-deterministic given configuration, seed and fold pair, not noise. Two failed refits carry a whole
-fold's margin in the replicate. Under diagnosis on WSMIP065.
+of `chorus_gain_norm`'s. Two failed refits carry a whole fold's margin in the replicate.
 
-**Next, and it needs no retraining:** tune the nets' merge gap like any other setting, reporting both
-selections separately, with the crowded-recording check applied to the nets' chosen gaps for the
-first time.
+**Why, diagnosed on WSMIP065: at a learning rate of 0.03 the head is never woken.** Across both draws
+292 of 396 inner fits at that rate collapse, against 7 of 468 below it. Every collapsed inner fit has
+a head layer that passes nothing varying — 153 of 153 for `chorus_norm`, 75 of 75 for
+`chorus_gain_norm` — and no working fit does. Replayed bit-exactly against its checkpoint, the same
+collapsed fit trains at 0.01 or 0.003, or at 0.03 behind a 200-step warm-up. Tuning chose no
+lr-0.03 configuration for `chorus_norm` under either selection, so the cost to goal 2 is a smaller
+effective grid rather than a wrong answer; `chorus_gain_norm` is the exception, picking that rate in
+6 of 8 folds on F1 alone. The repair is filed as a decision, not made. Source:
+[PR #667](https://github.com/syncytium2/bugarach/pull/667), ⚠ **landed at Tony's call with four open
+murderboard findings and its round-2 repairs not blind-verified**. Its readout
+[`chorus_collapse/`](../learned/chorus_collapse/index.html) and its
+[todo](../todo/2026-09-19-chorus-norm-does-not-train-at-lr-0.03.md) arrive with that PR.
+
+⚠ **A claim this page carried is withdrawn.** It read the **111** inner fits that collapse in *both*
+draws as the same fits failing twice, and called the failure deterministic given configuration, seed
+and fold pair. It is not evidence of that. Draws share their configurations, seeds and fold pairs and
+differ only in recordings, so the per-configuration collapse rates predict an overlap of **112.6** on
+their own — against the 111 observed, and 40.4 against 38 for `chorus_gain_norm`. The overlap is what
+chance gives. Whether a collapse is reproducible is a question the replay tool can answer and nobody
+has asked. Found by round 2 of the chorus-collapse murderboard; the same misreading in the replicate
+report is in the todo above.
+
+**Next:** tune the nets' merge gap like any other setting, reporting both selections separately, with
+the crowded-recording check applied to the nets' chosen gaps for the first time. **Running on
+WSMIP064 since 2026-09-19**, which reported selection about three hours out at 16:14 EDT.
 
 ⚠ **The bench's values were re-measured on the de-pinned export** on 2026-09-17 by both workstations,
 every value inside its own bootstrap interval — commit `2120516` on `tune-bench-comparison`, **not on
