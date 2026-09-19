@@ -225,30 +225,62 @@ def score_job(args):
 
 
 def crowded_job(args):
-    """One fit on goal 1's crowded recordings, at every gap and threshold."""
-    rec, work = args
+    """One fit on goal 1's crowded recordings, at every gap and threshold, or only at ``pairs``.
+
+    ``pairs`` is a list of ``[gap index, threshold index or None]``, None meaning the threshold this
+    fit's own rule picks at that gap. It exists for fits whose full grid is impractical: the four
+    inner fits of one ``chorus_norm`` configuration ran for more than three hours each on the full
+    grid without finishing (2026-09-19), where the rest took well under a minute. A partial file
+    holds -1 in every cell not scored, and ``Scored.crowded`` refuses to read one.
+    """
+    rec, work = args[:2]
+    pairs = args[2] if len(args) > 2 else None
     out = work_path(Path(work), "crowded", rec)
+    prev = None
     if out.exists():
-        return rec["stem"], "cached"
+        z = np.load(out)
+        if not bool(json.loads(str(z["meta"])).get("partial")):
+            return rec["stem"], "cached"
+        prev = z["rows"]
+    if pairs is None and prev is not None:
+        raise RuntimeError(f"{rec['stem']}: a partial file exists; say which pairs to add")
     from bugarach import bench
+    from bugarach.learn.encode import decode
+    from bugarach.score import score_stream
     grid = _grid()
     tr = _load(rec["fit"])
     gaps_f = [int(round(g / tr.dt)) for g in GAPS_SEC]
     T = _tool()
     rids = [f"{name}:{s}" for name in TAIL for s in TAIL_SEEDS]
-    rows = np.zeros((len(rids), len(gaps_f), len(grid), len(FIELDS)), np.int32)
+    if pairs is None:
+        rows = np.zeros((len(rids), len(gaps_f), len(grid), len(FIELDS)), np.int32)
+    else:
+        own = np.load(work_path(Path(work), "bench", rec))["own"]
+        cells = sorted({(int(gi), int(own[gi]) if ti is None else int(ti)) for gi, ti in pairs})
+        rows = (prev.copy() if prev is not None
+                else np.full((len(rids), len(gaps_f), len(grid), len(FIELDS)), -1, np.int32))
+        cells = [c for c in cells if rows[0, c[0], c[1], 0] < 0]
+        if not cells:
+            return rec["stem"], "cached"
     tol = None
     for i, rid in enumerate(rids):
         name, s = rid.split(":")
         sl, gt = bench.make_tail_recording(TAIL[name], int(s))
         p, enc = T.probabilities(tr, sl)
-        rows[i], tol = _rows(tr, p, enc, gt, grid, gaps_f)
+        if pairs is None:
+            rows[i], tol = _rows(tr, p, enc, gt, grid, gaps_f)
+            continue
+        for gi, ti in cells:
+            sc = score_stream(gt, decode(p, threshold=grid[ti],
+                                         merge_gap_frames=gaps_f[gi]).to_seconds(enc))
+            rows[i, gi, ti] = [getattr(sc, k) for k in FIELDS]
+            tol = sc.tol_sec
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_name(out.stem + f".tmp{os.getpid()}.npz")
     np.savez_compressed(tmp, rows=rows, rids=np.asarray(rids),
-                        meta=np.asarray(json.dumps(dict(tol_sec=tol))))
+                        meta=np.asarray(json.dumps(dict(tol_sec=tol, partial=pairs is not None))))
     os.replace(tmp, out)
-    return rec["stem"], "ok"
+    return rec["stem"], "ok" if pairs is None else f"partial, {len(cells)} cells"
 
 
 def _init_worker():
@@ -309,7 +341,7 @@ class Scored:
 
     def crowded(self, rec, gi, ti):
         z = self._npz("crowded", rec)
-        if z is None:
+        if z is None or z["rows"][0, gi, ti, 0] < 0:     # absent, or a partial file without this cell
             return None
         return [(str(rid), self._row(z["rows"][i, gi, ti], z["meta"]["tol_sec"]))
                 for i, rid in enumerate(z["rids"])]
@@ -357,6 +389,7 @@ class Selector:
             if k not in self.n_params:
                 self.n_params[k] = int(peek(Path(r["fit"]))["n_params"])
         self.needs_crowded: set = set()
+        self.needs_pairs: set = set()
 
     def training_folds(self, h):
         return [f for f in self.folds if f != h]
@@ -399,6 +432,9 @@ class Selector:
             got = self.S.crowded(r, gi, self._ti(w, r, gi, ti))
             if got is None:
                 self.needs_crowded.add((m, key))
+                # Every fit of the set, so one `crowded --pairs` pass completes this candidate.
+                self.needs_pairs |= {(x["model"], x["config_key"], x["stem"], gi,
+                                      None if w == "ungated" else ti) for x in fits}
                 return None
             items += got
         return self.T.objective(items, m)
@@ -553,6 +589,9 @@ def main(argv=None) -> int:
                     help="crowded: every configuration, not only the ones a selection reaches. The "
                          "re-chosen walk passes over every candidate the crowded check refuses, so "
                          "it can reach most configurations one pass at a time")
+    ap.add_argument("--pairs", action="store_true",
+                    help="crowded: only the (gap, threshold) pairs `select` found missing, listed in "
+                         "crowded_pairs.json, for fits whose full grid is impractical")
     a = ap.parse_args(argv)
     decl = read_json(a.run / "meta.json")["declaration"]
     recs = fit_records(a.run)
@@ -574,6 +613,13 @@ def main(argv=None) -> int:
         if a.all:
             want = {(r["model"], r["config_key"]) for r in recs}
         jobs = [(r, str(a.work)) for r in recs if (r["model"], r["config_key"]) in want]
+        if a.pairs:
+            got: dict = {}
+            for m, key, stem, gi, ti in read_json(a.work / "crowded_pairs.json"):
+                got.setdefault((m, key, stem), []).append([gi, ti])
+            jobs = [(r, str(a.work), got[(r["model"], r["config_key"], r["stem"])]) for r in recs
+                    if (r["model"], r["config_key"], r["stem"]) in got]
+            want = {(r["model"], r["config_key"]) for r, *_ in jobs}
         print(f"{len(want)} configurations, {len(jobs)} fits on {len(TAIL) * len(TAIL_SEEDS)} "
               f"crowded recordings", flush=True)
         _pool_run(crowded_job, jobs, a.workers)
@@ -586,6 +632,11 @@ def main(argv=None) -> int:
         p = a.work / "crowded_wanted.json"
         prev = {tuple(x) for x in read_json(p)} if p.exists() else set()
         p.write_text(json.dumps(sorted(prev | sel.needs_crowded)) + "\n")
+        pp = a.work / "crowded_pairs.json"
+        prev_p = {tuple(x) for x in read_json(pp)} if pp.exists() else set()
+        pp.write_text(json.dumps(sorted(prev_p | sel.needs_pairs,
+                                        key=lambda x: tuple(-1 if v is None else v for v in x)))
+                      + "\n")
         print(f"{len(sel.needs_crowded)} more configurations need the crowded recordings: "
               f"run `crowded`, then `select` again", flush=True)
         return 1
