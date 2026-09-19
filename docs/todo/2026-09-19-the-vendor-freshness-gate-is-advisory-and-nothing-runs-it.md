@@ -60,6 +60,30 @@ body cannot be unpublished and a later session will read it:
 The other half of that finding is the real one, and it is the subject of this todo:
 the gate is advisory and nothing runs it.
 
+## The upstream answer it gives you can be twelve hours old
+
+Found by the session that wrote #669, while working out where its own wrong claim came
+from — the more useful half of that story.
+
+`murderboard_freshness.sh` caches the resolved upstream HEAD per family in the git common
+dir for `TTL` seconds, defaulting to **43,200 — twelve hours**
+(`.git/murderboard-head.<slug>.cache`). `--refresh` is the only bypass. So a run can name
+an upstream sha that the real upstream left behind hours ago, and the verdict line reports
+that sha as "upstream" without saying it came from a cache. That is exactly what happened
+here: the cache held a draughtsman sha written before draughtsman #1 merged, and a session
+reasoning from it built a finding on a repository state that no longer existed.
+
+The gate is not naive about a behind answer — it has a guard for it, and a self-test
+("a BEHIND cache is not stale") that keeps a consumer stamped at or after the cached sha
+from being accused. But *provably at-or-ahead of a twelve-hour-old sha* is a weaker
+statement than *current*, and the report does not distinguish them.
+
+**The window this matters in is the exact one the gate exists for**: upstream merges
+something, a session re-vendors within the day and checks its work. Worth considering
+alongside the CI question above, since both are about the gate answering when it cannot
+really tell: a much shorter TTL, `--refresh` by default off the warm path, or simply
+printing the cache's age beside the sha so a reader knows what they are being told.
+
 ## Also worth noting about #669
 
 It was opened at 17:42 EDT and merged at 17:44, before its CI finished. The branch it
