@@ -162,7 +162,7 @@ and `replicate_net_merge_gap.json` beside it, and the page
 [`net_merge_gap.html`](../learned/tuned_vs_coact/fair_comparison_2026_09_18/net_merge_gap.html) —
 WSMIP064's draw (seeds 1000–1047) and WSMIP065's (2000–2047), both re-decoded on WSMIP064.
 Murderboarded in one round of all eleven roles plus a blind verify round,
-[`net_merge_gap_2026-09-19.md`](../reviews/net_merge_gap_2026-09-19.md); what the review changed is
+[`net-merge-gap-2026-09-19.md`](../reviews/net-merge-gap-2026-09-19.md); what the review changed is
 listed there and in the page builder's docstring.
 
 ⚠ **The bench's values were re-measured on the de-pinned export** on 2026-09-17 by both workstations,

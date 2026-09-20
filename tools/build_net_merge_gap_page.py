@@ -14,7 +14,7 @@ The page kit is ``tools/build_surrogate_report.py``'s and the axis helpers are t
 rather than copied. Every sentence stating a fact about these data is computed, and a directional one
 sits behind ``claim``, which stops the build when it stops being true.
 
-**What the murderboard of 2026-09-19 changed** (``docs/reviews/net_merge_gap_2026-09-19.md``), because
+**What the murderboard of 2026-09-19 changed** (``docs/reviews/net-merge-gap-2026-09-19.md``), because
 each of these is a way the first draft read better than the data warranted: the set-aside treatment is
 applied to the as-run baseline as well as the tuned one, so the gap's own contribution is visible; the
 held-out F1 of every gap is drawn, which shows that every chosen gap is a boundary the crowded check
@@ -971,7 +971,7 @@ def build(run: Path, report_href: str) -> str:
             if dirty else " Whether the tree was clean could not be checked.")
     prov = (f'<h2 id="provenance">Provenance</h2><p class=dim>Built {time.strftime("%Y-%m-%d %H:%M %z")} '
             f"by <code>tools/build_net_merge_gap_page.py</code> at <code>{esc(ver)}</code>.{note} The "
-            "review record for this page is <code>docs/reviews/net_merge_gap_2026-09-19.md</code>.</p>")
+            "review record for this page is <code>docs/reviews/net-merge-gap-2026-09-19.md</code>.</p>")
     meta = ('<meta name="description" content="The fair comparison\'s nets with their merge gap tuned '
             f'like any other setting, against CoactDetect, in {both(docs)} of recordings.">\n'
             f'<meta name="generator" content="tools/build_net_merge_gap_page.py {esc(ver)}">\n'
