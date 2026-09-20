@@ -605,9 +605,16 @@ class Selector:
                         comp[f"{m} {variant} - coact"] = _paired(vals, cf)
             out["comparisons"][w] = comp
         coact_pass = None
+        coact_crowded = None
         if crowded_coded:
             coact_pass = {f"{c['outer_fold']} {c['selection']}": c["passes_veto"]
                           for c in crowded_coded["choices"] if c["detector"] == "coact"}
+            # CoactDetect's own score on the crowded recordings, so a reader can put the nets'
+            # crowded cost beside the comparison it is not: net against CoactDetect, there.
+            coact_crowded = {f"{c['outer_fold']} {c['selection']}": c["crowded_mean_f1"]
+                             for c in crowded_coded["choices"] if c["detector"] == "coact"}
+            out["coact_crowded"] = coact_crowded
+            out["coact_crowded_no_merge"] = crowded_coded["shipped_reference"]["coact"]["crowded_mean_f1"]
         out["coact"] = dict(f1={w: [coact[h][w]["f1"] for h in self.folds] for w in SELECTIONS},
                             merge_gap_sec={w: [coact[h][w]["chosen_params"]["merge_gap_sec"]
                                                for h in self.folds] for w in SELECTIONS},

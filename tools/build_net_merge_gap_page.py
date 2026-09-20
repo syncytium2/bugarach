@@ -226,8 +226,10 @@ def fig_margins(docs, w) -> Svg:
     hi = max(step, math.ceil(max(inliers) / step) * step)
     ticks = [round(v, 2) for v in np.arange(lo, hi + 1e-9, step)]
     noise = first(docs)["noise_f1"]
-    panels = ([((372, 610), draws(docs)[0], "A")] if len(docs) == 1 else
-              [((372, 590), draws(docs)[0], "A"), ((700, 880), draws(docs)[1], "B")])
+    # A and B carry the same axis, so they get the same width: a band 21% wider on the left is a
+    # comparison the eye gets wrong before it reads either label.
+    panels = ([((372, 552), draws(docs)[0], "A")] if len(docs) == 1 else
+              [((372, 552), draws(docs)[0], "A"), ((700, 880), draws(docs)[1], "B")])
     for (x0, x1), (k, _, name), letter in panels:
         X = lambda v, a=x0, b=x1: a + (v - lo) / (hi - lo) * (b - a)   # noqa: E731
         svg.text((x0 + x1) / 2, 24, f"{letter}.  {name[0].upper() + name[1:]}", anchor="middle",
@@ -265,8 +267,10 @@ def fig_margins(docs, w) -> Svg:
                 notes.append(f"{len(got)} of {len(d)} folds")
                 notes.append("refitted, so no mean")
             for n_, txt in enumerate(notes):
+                # In the row's own colour: grey means as-run everywhere else in this figure, so a
+                # grey value on a blue row read as a fold of the wrong series.
                 svg.text(x0 - 6, yc + (1 if len(notes) == 1 else -3 + n_ * 13), txt, anchor="end",
-                         size=SMALL, fill=NOTE_INK)
+                         size=SMALL, fill=ink if off else NOTE_INK)
     # The net names head their group; the rows carry only what distinguishes them, which keeps the
     # longest label inside the label column instead of off the left edge.
     for i, (m, var, low, lab) in enumerate(rows):
@@ -292,8 +296,10 @@ def fig_margins(docs, w) -> Svg:
     svg.text(44, y + 4, f"a fold holding a refit under {LOW_F1:g} F1, counted in that row's mean; "
                         "in these panels every such fold lies left of the axis and is written "
                         "there instead", size=12)
-    svg.text(30, y + 20, "◀ a fold, and where needed a mean, beyond the axis, with its value",
+    svg.text(30, y + 20, "◀ a fold, and where needed a mean, beyond the axis, in the row's colour",
              size=12, fill=NOTE_INK)
+    svg.line(560, y + 12, 560, y + 26, dash="4 3")
+    svg.text(570, y + 24, "zero: the net and CoactDetect tie; right of it the net is ahead", size=12)
     y += 22
     svg.text(30, y + 22, "Rows are grouped by net; the dashed rule separates them.", size=12,
              fill=NOTE_INK)
@@ -366,8 +372,8 @@ def fig_gaps(docs) -> Svg:
     svg = Svg(900, yb + 126, "For every net and selection, the merge gap each outer fold chose and "
                              "the number of folds in which a setting at each gap was refused by the "
                              "crowded-recording check, for each draw")
-    panels = ([((330, 870), draws(docs)[0], "A")] if len(docs) == 1 else
-              [((330, 600), draws(docs)[0], "A"), ((640, 880), draws(docs)[1], "B")])
+    panels = ([((330, 570), draws(docs)[0], "A")] if len(docs) == 1 else
+              [((330, 570), draws(docs)[0], "A"), ((640, 880), draws(docs)[1], "B")])
     coact_gap = sorted({g for d in docs.values() for w in SEL for g in d["coact"]["merge_gap_sec"][w]})
     claim(coact_gap == [8.0], "CoactDetect chose 8 s in every fold, selection and draw")
     for (x0, x1), (k, _, name), letter in panels:
@@ -421,13 +427,71 @@ def fig_gaps(docs) -> Svg:
     return svg
 
 
+def fig_crowded(docs, coact_crowded) -> Svg:
+    """Two things the prose can only summarise: what each chosen gap costs its own net on the crowded
+    recordings, against the check's limit; and where the tuned net stands against CoactDetect there."""
+    drop = first(docs)["max_crowded_drop"]
+    rows = [(m, w) for m in NETS for w in SEL]
+    top, rh = 56, 30
+    yb = top + len(rows) * rh
+    svg = Svg(900, yb + 118, "For every net and selection, what the chosen merge gap costs on the "
+                             "crowded recordings against the same net at 2 s, and the same net's "
+                             "crowded F1 against CoactDetect, one mark per outer fold per draw")
+    cost, head = {}, {}
+    for k in docs:
+        for m, w in rows:
+            for r in rows_of(docs[k], m, w):
+                c = r["config_kept"]
+                if c.get("outer_crowded_f1") is None:
+                    continue
+                cost.setdefault((m, w), []).append(c["outer_crowded_f1_as_run"] - c["outer_crowded_f1"])
+                ref = coact_crowded.get((r["outer_fold"], w))
+                if ref is not None:
+                    head.setdefault((m, w), []).append(c["outer_crowded_f1"] - ref)
+    for (x0, x1), vals, title, zero, lim in (
+            ((330, 560), cost, "A.  Cost to the net's own 2 s", 0.0, drop),
+            ((650, 880), head, "B.  The same net minus CoactDetect", 0.0, None)):
+        flat = [v for vs in vals.values() for v in vs]
+        lo = math.floor(min(flat + [0.0]) / 0.05) * 0.05
+        hi = math.ceil(max(flat + [lim or 0.0]) / 0.05) * 0.05
+        X = lambda v, a=x0, b=x1, l=lo, h=hi: a + (v - l) / (h - l) * (b - a)   # noqa: E731
+        svg.text((x0 + x1) / 2, 24, title, anchor="middle", size=13, weight="bold")
+        x_axis(svg, X, x0, x1, yb, [round(v, 2) for v in np.arange(lo, hi + 1e-9, 0.05)], fmt_diff,
+               "crowded-recording F1 lost" if lim else "crowded-recording F1, net minus CoactDetect",
+               zero_rule=True, top=top - 6)
+        if lim:
+            svg.line(X(lim), top - 6, X(lim), yb, stroke=REPL_INK, w=1.4, dash="4 3")
+            svg.text(X(lim) + 4, top + 6, f"the {lim:g} limit", size=SMALL, fill=REPL_INK)
+        for i, key in enumerate(rows):
+            yc = top + i * rh + rh / 2
+            for j, v in enumerate(vals.get(key, [])):
+                svg.circle(X(v), yc + (j % 4 - 1.5) * 3.4, 3.2,
+                           fill=REPL_INK if (lim and v > lim) else NET_INK)
+    for i, (m, w) in enumerate(rows):
+        yc = top + i * rh + rh / 2
+        svg.text(320, yc + 4, f"{m}, {SEL_NAME[w]}", anchor="end", size=12)
+        if i and i % len(SEL) == 0:
+            svg.line(20, top + i * rh, 890, top + i * rh, stroke="#bbb", dash="3 3")
+    y = yb + 70
+    svg.circle(30, y, 3.2, fill=NET_INK)
+    svg.text(42, y + 4, "one outer fold of one draw, eight per row", size=12)
+    svg.circle(330, y, 3.2, fill=REPL_INK)
+    svg.text(342, y + 4, f"a fold whose cost exceeds the {drop:g} limit (panel A)", size=12)
+    svg.text(30, y + 22, "Panel A: right of zero the tuned gap is worse than the net's own 2 s. "
+                         "Panel B: right of zero the net beats CoactDetect on these recordings. "
+                         "Rows are grouped by net.", size=12, fill=NOTE_INK)
+    return svg
+
+
 # ---- tables -------------------------------------------------------------------------------------
 
 def stat_cell(c, per_fold=None, noise=None, flag=""):
     if c is None:
         got = sum(v is not None for v in per_fold or [])
         return (f"no mean: {got} of {len(per_fold)} folds refitted" if per_fold else "not measured")
-    mark = "°" if (noise is not None and abs(c["mean"]) < noise) else ""
+    # A dagger, not a degree sign: on a page whose rule is that every number carries its unit, "°"
+    # after a number reads as a unit before it reads as a footnote.
+    mark = "†" if (noise is not None and abs(c["mean"]) < noise) else ""
     return (f"{signed(c['mean'])}{mark}{flag} ({c['folds_ahead']} of {c['folds']}; <i>t</i> "
             f"{tnum(c['t'])}, corrected {tnum(c['t_corrected'])})")
 
@@ -442,16 +506,17 @@ def results_table(docs) -> str:
             for m in NETS:
                 cost = [v for v in crowded_cost(d, m, w) if v is not None]
                 over = max(cost) if cost else None
+                fail_mark = " ⚠" if over is not None and over > drop else ""
                 rows.append([
                     name, SEL_NAME[w], m, fmt_gaps(gaps(d, m, w)),
                     stat_cell(stats(d, m, w, "as_run"), noise=noise),
                     stat_cell(stats(d, m, w, "as_run", True), margins(d, m, w, "as_run", True), noise),
-                    stat_cell(stats(d, m, w, "config_kept"), noise=noise,
-                              flag=" ⚠" if over is not None and over > drop else ""),
+                    # The ⚠ belongs to the chosen gap, so it marks every column that uses it.
+                    stat_cell(stats(d, m, w, "config_kept"), noise=noise, flag=fail_mark),
                     stat_cell(stats(d, m, w, "config_kept", True),
-                              margins(d, m, w, "config_kept", True), noise),
+                              margins(d, m, w, "config_kept", True), noise, flag=fail_mark),
                     stat_cell(stats(d, m, w, "config_rechosen"),
-                              margins(d, m, w, "config_rechosen")),
+                              margins(d, m, w, "config_rechosen"), flag=fail_mark),
                     "—" if not cost else f"{max(cost):+.3f}".replace("-", "−")])
     return table(["draw", "selection", "net", "gap chosen, folds 1 to 4", "as run",
                   f"as run, refits under {LOW_F1:g} F1 set aside", "gap tuned",
@@ -463,22 +528,25 @@ def results_table(docs) -> str:
 
 # ---- the prose, all of it computed ----------------------------------------------------------------
 
-def lede(docs, noise, gained, aside_gained, ahead, n_folds, refusals, costs):
+def lede(docs, noise, gained, aside_gained, ahead, n_folds, refusals, costs, drop):
     claim(all(v > 0 for v in gained.values()), "tuning the gap helps every chorus net in every draw")
     claim(refusals == 1.0, "every choice had a wider setting refused by the crowded check")
     lo, hi = min(gained.values()), max(gained.values())
     alo, ahi = min(aside_gained.values()), max(aside_gained.values())
     return (
-        f"<b>The gap the nets were never allowed to tune is worth about one noise unit, and the check "
-        f"that bounds it refused a wider one every time.</b> Tuning each net's merge gap on its "
-        f"training folds gains {lo:.3f} to {hi:.3f} F1 against CoactDetect counting every refit, and "
-        f"{alo:.3f} to {ahi:.3f} F1 with the refits under {LOW_F1:g} F1 set aside on both sides — "
-        f"against a between-draw scale of {noise:.3f} F1. In all {len(costs)} choices of both draws "
-        f"the training folds preferred a still wider gap and the crowded-recording check refused it, "
-        f"and the settings it did accept themselves lose a median {float(np.median(costs)):.3f} F1 on "
-        f"those recordings: the gain and the cost are the same size. Under the budget CoactDetect "
-        f"remains ahead of every net on average in {both(docs)} and in {n_folds - len(ahead)} of "
-        f"{n_folds} folds.")
+        "A detector's <b>merge gap</b> is how close two of its calls may be before they are combined "
+        "into one. The coded detectors' searches tuned theirs and the nets ran at a fixed 2 s; this "
+        "page tunes the nets' by the same rules, on their training folds, without retraining. "
+        f"<b>It is worth about one noise unit, and the check that bounds it refused a wider gap every "
+        f"time.</b> Each chorus net gains {lo:.3f} to {hi:.3f} F1 against CoactDetect counting every "
+        f"refit, and {alo:.3f} to {ahi:.3f} F1 with the refits under {LOW_F1:g} F1 set aside on both "
+        f"sides, against a between-draw scale of {noise:.3f} F1; <code>tube</code> gains a fifth of "
+        f"that. In all {len(costs)} choices of {both(docs)} the training folds preferred a still wider "
+        f"gap and the crowded-recording check refused it. Under the budget CoactDetect remains ahead "
+        f"of every net on average in {both(docs)} and in {n_folds - len(ahead)} of {n_folds} "
+        f"net-folds. Two things the reader should carry into the rest: on F1 alone the <b>sign</b> of "
+        "the margin depends on whether the refits that failed are set aside, and every gap on this "
+        f"page is decided by a {drop:g} F1 allowance the project lead has not signed.")
 
 
 def question_text(docs, n_fits):
@@ -493,26 +561,36 @@ def question_text(docs, n_fits):
         "letting either side re-choose; the project lead asked for the measurement (2026-09-19).")
 
 
-def crowded_text(docs, costs, refusals, inner_spread, fails, drop, sce):
+def crowded_text(docs, costs, refusals, inner_spread, fails, drop, sce, head, margin, nonmono, n_rows):
     n = len(costs)
     over = [c for c in costs if c > drop]
     claim(refusals == 1.0, "a wider setting was refused in every choice")
+    lo_h = min(v for _, v in head)
+    hi_h = max(v for _, v in head)
     return (
         f"In every one of the {n} choices the inner fits preferred at least one setting the check "
-        "refused, and in every one at least one of those was a wider gap. The bench cannot see the "
-        "harm: its planted events are at least 120 s apart, so a wider merge there only deletes "
-        "duplicate calls, and the crowded recordings are the only thing that charges for fusing two "
-        "real events. " + sce + " What the check does not do is make the accepted settings free. "
-        f"Re-measured on the five outer refits, the chosen gaps lose a median {np.median(costs):.3f} "
-        f"F1 on the crowded recordings and up to {max(costs):.3f}, against a held-out gain of about "
-        f"0.010 F1 — the same size. {len(over)} of {n} lose more than the {drop:g} the check allows: "
-        + and_join(fails) + ". And the check is soft where it is applied: a choice's crowded cost "
-        f"moves by a median {inner_spread[0]:.3f} F1 and as much as {inner_spread[1]:.3f} between the "
-        "inner fits the check is enforced on and the outer refits that produce the reported number, "
-        f"against a limit of {drop:g}.")
+        "refused, and in every one at least one of those was a wider gap. The bench barely charges "
+        "for merging: its planted events are a floor of 120 s apart, so a wider merge there mostly "
+        "deletes duplicate calls — held-out F1 is largest at the widest gap in every one of the "
+        f"{n_rows} fold-rows, though it dips somewhere along the way in {nonmono} of them, which a "
+        "pure duplicate-deletion account does not predict. The crowded recordings are what charges "
+        "for fusing two real events. " + sce + " What the check does not do is make the accepted "
+        f"settings free: re-measured on the five outer refits, the chosen gaps lose a median "
+        f"{np.median(costs):.3f} F1 there, up to {max(costs):.3f}, against a held-out gain of about "
+        f"0.010 F1 — the same size, and {sum(1 for c in costs if c < 0)} of {n} choices lose nothing "
+        f"at all. {len(over)} of {n} lose more than the {drop:g} the check allows: " + and_join(fails)
+        + ". <b>That cost is each net against its own 2 s, not against CoactDetect</b>, and the two "
+        "comparisons point different ways: on the same crowded recordings the tuned chorus nets "
+        f"score {lo_h:+.3f} to {hi_h:+.3f} F1 against CoactDetect (Figure 5, what the chosen gaps "
+        f"cost on the crowded recordings), while <code>tube</code> loses {margin:.3f}. And the check "
+        f"is applied at margins near its own instability: a choice's crowded cost moves by a median "
+        f"{inner_spread[0]:.3f} F1 and as much as {inner_spread[1]:.3f} between the inner fits it is "
+        f"enforced on and the outer refits that produce the reported number, against a {drop:g} "
+        "limit, and the finest refusal on the page turned on 0.0009 F1.")
 
 
-def budget_text(docs, gained, ahead, n_folds, noise, thr_same, thr_n, over_budget, over_n):
+def budget_text(docs, gained, ahead, n_folds, noise, thr_same, thr_n, over_budget, over_n,
+                over_budget_asrun):
     claim(all(s["mean"] < 0 for k in docs for m in NETS for s in [stats(docs[k], m, "gated", "config_kept")]),
           "every net trails CoactDetect on average under the budget, in every draw")
     inside = [f"<code>{m}</code> in {name_of(k)}" for k in docs for m in NETS
@@ -522,18 +600,36 @@ def budget_text(docs, gained, ahead, n_folds, noise, thr_same, thr_n, over_budge
         "Held to the shared cap on false alarms, every net gains from the wider gap and every net "
         f"still trails CoactDetect on average, in {both(docs)}, whether or not the low refits are set "
         f"aside. Fold by fold, {ahead_phrase(ahead, n_folds)}. The mechanism is not the one to reach "
-        f"for: the gap widened in nearly every choice, but the chosen threshold is unchanged in "
-        f"{thr_same} of {thr_n} of them, so the gain comes from merging at the same threshold rather "
-        "than from buying a lower one. Two things the comparison does not hold level. The budget "
-        "never bound CoactDetect — its F1 under the budget equals its F1 alone in every fold of both "
-        f"draws — while {over_budget} of the {over_n} nets' budget-chosen refits are over budget on "
-        "the fold they were scored on. And with the low refits set aside "
+        f"for: every one of the {thr_n} gated choices widened its gap, but the chosen threshold is "
+        f"unchanged in {thr_same} of them, so the gain comes from merging at the same threshold "
+        "rather than from buying a lower one. Two things the comparison does not hold level, and "
+        "both cut the same way. The budget never bound CoactDetect — its F1 under the budget equals "
+        "its F1 alone in every fold of both draws — while for the nets it binds at selection, on the "
+        f"inner fits, and not at scoring: {over_budget} of the {over_n} budget-chosen refits are over "
+        f"budget on the fold they were scored on, against {over_budget_asrun} as run, so tuning the "
+        "gap left slightly more of them outside it. Read the heading as selected under the budget "
+        "rather than scored under it. And with the low refits set aside "
         + (f"{and_join(inside)} sits inside the noise band rather than clearly behind"
            if inside else "no net's margin sits inside the noise band") + ".")
 
 
 def alone_text(docs, noise, gained, aside_gained, carriers, systematic):
     here = {k: v for k, v in aside_gained.items() if k[2] == "ungated"}
+    # Who crosses zero and who was already above it, computed: the first draft asserted that the nets
+    # which end ahead were already ahead, and one of them crosses.
+    crossed, already = [], []
+    for k in docs:
+        for m in CHORUS:
+            a = stats(docs[k], m, "ungated", "as_run", True)["mean"]
+            c = stats(docs[k], m, "ungated", "config_kept", True)["mean"]
+            if c > 0 >= a:
+                crossed.append(f"<code>{m}</code> in {name_of(k)} ({signed(a)} → {signed(c)} F1)")
+            elif c > 0 and a > 0:
+                already.append(f"<code>{m}</code> in {name_of(k)}")
+    crossings = ((("The gap carries " + and_join(crossed) + " across zero; ") if crossed else "")
+                 + (and_join(already) + (" ended ahead having started there, inside the noise band "
+                    "either way." if already else "")
+                    if already else "no other net ends above zero."))
     parts = []
     for k, _, name in draws(docs):
         for m in CHORUS:
@@ -546,8 +642,12 @@ def alone_text(docs, noise, gained, aside_gained, carriers, systematic):
         "whether the refits that scored under " + f"{LOW_F1:g} F1 are set aside, and whether the "
         "baseline is scored the same way. Set aside on both sides, " + "; ".join(parts) + ". So on "
         f"this selection the gap itself is worth {min(here.values()):.3f} to {max(here.values()):.3f} "
-        f"F1, about the {noise:.3f} F1 between-draw scale, and the nets that end ahead were already "
-        "ahead before the gap moved. " + carriers + " " + systematic)
+        f"F1, about the {noise:.3f} F1 between-draw scale. " + crossings + " The set-aside is not "
+        "even-handed and cannot be: CoactDetect has one value per fold and no refits, so dropping low "
+        "refits can only move a net's margin upward — every set-aside column in Table 1 is at or "
+        "above the column beside it. The parent report's position is the stricter one, that a user of "
+        "these models gets the failures too; this page reports the set-aside as the sensitivity, not "
+        "as an equal accounting. " + carriers + " " + systematic)
 
 
 def ahead_phrase(ahead, n_folds):
@@ -611,6 +711,8 @@ def body(docs, report_href: str) -> str:
                       for k, m, w, r in choices if w == "gated" and r["config_kept"]["heldout"])
     over_n = sum(r["config_kept"]["heldout"]["n_seeds"]
                  for k, m, w, r in choices if w == "gated" and r["config_kept"]["heldout"])
+    over_budget_asrun = sum(r["as_run"]["heldout"]["seeds_over_budget"]
+                            for k, m, w, r in choices if w == "gated" and r["as_run"]["heldout"])
     # The crowded check's own spread: inner fits against outer refits, on the same choice.
     spread = [abs((r["config_kept"]["reference_crowded_f1"] - r["config_kept"]["crowded_f1"])
                   - (r["config_kept"]["outer_crowded_f1_as_run"] - r["config_kept"]["outer_crowded_f1"]))
@@ -619,28 +721,73 @@ def body(docs, report_href: str) -> str:
              f"{r['config_kept']['outer_crowded_f1_as_run'] - r['config_kept']['outer_crowded_f1']:.3f} F1"
              for k, m, w, r in choices if r["config_kept"].get("outer_crowded_f1") is not None
              and r["config_kept"]["outer_crowded_f1_as_run"] - r["config_kept"]["outer_crowded_f1"] > drop]
-    collapsed, nocall = low_kinds(docs)
     maxgap = {max(r["config_kept"]["heldout_f1_by_gap"],
                   key=lambda g: r["config_kept"]["heldout_f1_by_gap"][g])
               for k, m, w, r in choices if r["config_kept"].get("heldout_f1_by_gap")}
     claim(maxgap == {f"{first(docs)['gaps_sec'][-1]:g}"},
           "held-out F1 is largest at the top of the grid in every fold")
     sce = ("This is the check that decided the report's own headline: binned SCE's first place on F1 "
-           "alone did not stand because its 30 s gap failed the same check in 7 of 8 folds (the "
-           "report's section 9, the coded detectors' choices). The nets meet it — and they meet it "
-           "by being stopped at the same place.")
+           "alone did not stand because its 30 s gap failed the same check in 7 of its 8 choices (the "
+           "report's section 9, the coded detectors' choices), and CoactDetect's grid stops at 8 s "
+           "because goal 1's crowded check refused its 16 s. The nets meet the check — and they meet "
+           "it by being stopped at the same place.")
     systematic = ("One more reason not to read the replicate's lead as corroboration: the source of "
                   f"the {noise:.3f} F1 scale also measures a systematic shift of about +0.015 F1 in "
                   "the nets' favour in that second draw, which is the size of the lead itself.")
     n_edge = sum(1 for k, m, w, r in choices if r["config_kept"]["heldout"]
                  for x in r["config_kept"]["heldout"]["per_seed"] if x.get("threshold_at_grid_edge"))
+    # The crowded recordings, net against CoactDetect: the comparison the per-net cost is not.
+    coact_crowded = {}
+    cc = first(docs).get("coact_crowded") or {}
+    for key, val in cc.items():
+        f, w = key.split(" ")
+        coact_crowded[(int(f), w)] = val
+    head_pairs, tube_margin = [], 0.0
+    for m in NETS:
+        vals = [r["config_kept"]["outer_crowded_f1"] - coact_crowded[(r["outer_fold"], w)]
+                for k in docs for w in SEL for r in rows_of(docs[k], m, w)
+                if r["config_kept"].get("outer_crowded_f1") is not None
+                and (r["outer_fold"], w) in coact_crowded]
+        if not vals:
+            continue
+        if m in CHORUS:
+            head_pairs.append((m, float(np.mean(vals))))
+        elif m == "tube":
+            tube_margin = abs(float(np.mean(vals)))
+    nonmono = sum(1 for k, m, w, r in choices
+                  if (c := r["config_kept"].get("heldout_f1_by_gap"))
+                  and any(c[f"{g2:g}"] < c[f"{g1:g}"] - 1e-12
+                          for g1, g2 in zip(first(docs)["gaps_sec"], first(docs)["gaps_sec"][1:])))
+    n_rows = sum(1 for k, m, w, r in choices if r["config_kept"].get("heldout_f1_by_gap"))
+    hosts = {doc["provenance"]["host"] for doc in docs.values()}
+    claim(len(hosts) == 1, "both draws were re-decoded on one machine")
+    host = hosts.pop()
+    # The refits under LOW_F1, counted as refits rather than as decodings: each is scored once as run
+    # and once at the tuned gap, and counting the decodings doubles the population silently.
+    low_seen: dict = {}
+    for k in docs:
+        for m in NETS:
+            for w in SEL:
+                for r in rows_of(docs[k], m, w):
+                    for v in ("as_run", "config_kept"):
+                        h = r[v].get("heldout")
+                        for x in (h or {}).get("per_seed", []):
+                            if x["f1"] < LOW_F1:
+                                low_seen.setdefault((k, m, w, r["outer_fold"], x["seed"]),
+                                                    bool(x.get("failed_training_signature")))
+    n_collapsed = sum(1 for v in low_seen.values() if v)
+    n_nocall = len(low_seen) - n_collapsed
+    lowest_kept = min(x["f1"] for k in docs for m in NETS for w in SEL
+                      for r in rows_of(docs[k], m, w)
+                      for v in ("as_run", "config_kept", "config_rechosen")
+                      for x in (r[v].get("heldout") or {}).get("per_seed", []) if x["f1"] >= LOW_F1)
 
     P = [f"""
 <h1>The nets' merge gap, tuned</h1>
 <p class=dim>An addendum to <a href="{report_href}">the fair comparison's report</a>, which it assumes
 you have read: goal 2's weekend run of 2026-09-18 and its replicate on a second draw of recordings.
 Simulated recordings, baseline periods, the fast stream.</p>
-<p class=lede>{lede(docs, noise, gained, aside_gained, ahead, n_gated_folds, refusals, costs)}</p>
+<p class=lede>{lede(docs, noise, gained, aside_gained, ahead, n_gated_folds, refusals, costs, drop)}</p>
 
 <h2 id="question">1. The question</h2>
 <p>{question_text(docs, n_fits)}</p>
@@ -650,23 +797,32 @@ its recordings and decoded at every gap in the grid, and the gap was then chosen
 folds by the rules section 5 sets out.</p>
 
 <h2 id="crowded">2. What the search ran into: the crowded-recording check</h2>
-<p>Every fold's training fits wanted a wider gap than the fold was allowed to take, and held-out F1
-keeps climbing to the top of the grid — so what the nets chose is a boundary, not an optimum.</p>
+<p>Every fold's training fits wanted a wider gap than the fold was allowed to take, and held-out F1 is
+largest at the top of the grid in every one of them — so what the nets chose is a boundary the check
+imposed, not an optimum they found (Figure 1, held-out F1 against the merge gap; Figure 2, the gap
+each fold chose and the settings refused).</p>
 {figure(1, "Held-out F1 against the merge gap, choices on F1 alone", fig_curve(docs, "ungated"),
         "Each line is one chorus net's held-out F1, the mean over its five refits and then over the "
         "four outer folds, decoded at each gap in the grid; dots mark the gaps some fold chose. The "
         "x axis is the eight grid values evenly spaced, not a time axis, so equal steps are not "
-        "equal seconds. F1 rises to the widest gap in every fold of both draws, which is what the "
-        "crowded-recording check exists to stop: on this bench a wider merge can only delete "
-        "duplicate calls. These are held-out scores and no choice was made on them.")}
+        f"equal seconds. F1 is largest at the widest gap in every fold of {both(docs)}, which is what "
+        "the crowded-recording check exists to stop — though the climb is not monotone: it dips "
+        f"somewhere in {nonmono} of the {n_rows} fold-rows, so a wider merge does more here than "
+        "delete duplicate calls. These are held-out scores and no choice was made on them.")}
 {figure(2, "The gap each fold chose, and the settings refused", fig_gaps(docs),
         "Configuration kept, all four nets. A dot is a gap chosen by one or more of the four folds, "
         "with the count where more than one chose it; ×n counts the folds in which a setting at that "
         "gap beat the chosen one on the inner fits and was refused for losing more than "
-        f"{drop:g} mean F1 on the crowded recordings. The shaded column is CoactDetect's 8 s, which "
-        "is the top of its own grid — it was never offered a wider one.")}
+        f"{drop:g} mean F1 on the crowded recordings. The shaded column is CoactDetect's 8 s: the top "
+        "of its own grid, which stops there because goal 1's crowded check refused its 16 s.")}
+{figure(5, "What the chosen gaps cost on the crowded recordings", fig_crowded(docs, coact_crowded),
+        "Each mark is one outer fold of one draw, at the gap that fold chose, measured on the five "
+        "outer refits. <b>A</b>: what the chosen gap costs the same net against its own 2 s, with the "
+        f"{drop:g} limit the check allows; two folds are past it. <b>B</b>: the same net against "
+        "CoactDetect on those recordings, which is the comparison the cost in A is not. The chorus "
+        "nets sit right of zero there and <code>tube</code> far left of it.")}
 <p>{crowded_text(docs, costs, refusals, (float(np.median(spread)), float(max(spread))), fails, drop,
-               sce)}</p>
+               sce, head_pairs, tube_margin, nonmono, n_rows)}</p>
 
 <h2 id="budget">3. Under the budget, the answer holds</h2>
 <p>Every net gains from a wider gap and every net stays behind CoactDetect.</p>
@@ -677,20 +833,24 @@ keeps climbing to the top of the grid — so what the nets chose is a boundary, 
         f"and once with the refits under {LOW_F1:g} F1 set aside, so the baseline and the tuned "
         "choice are scored the same way. The shaded band is the between-draw scale. Right of the "
         "dashed zero line the net is ahead.")}
-<p>{budget_text(docs, gained, ahead, n_gated_folds, noise, thr_same, len(thr_pairs), over_budget, over_n)}</p>
+<p>{budget_text(docs, gained, ahead, n_gated_folds, noise, thr_same, len(thr_pairs), over_budget,
+                over_n, over_budget_asrun)}</p>
 
 <h2 id="alone">4. On F1 alone, the sign depends on how the failed refits are counted</h2>
-<p>Scored the same way on both sides, the gap moves each chorus net by about one noise unit.</p>
+<p>Scored the same way on both sides, the gap moves each chorus net by about one noise unit (Figure 4,
+the chorus nets minus CoactDetect on F1 alone).</p>
 {figure(4, "The chorus nets minus CoactDetect, choices on F1 alone", fig_margins(docs, "ungated"),
         "The rows, marks and key of Figure 3, for the choices made on F1 alone. Note the x "
         "axis: it is scaled to the folds whose refits all trained, and a fold beyond its left end is "
         "written in the gutter with its value, so one collapsed fold cannot flatten every other "
         "margin.")}
 <p>{alone_text(docs, noise, gained, aside_gained, carrier_text(docs), systematic)}</p>
-<p>Of the refits under {LOW_F1:g} F1, {collapsed} carry the run's failed-training signature — one call
-per recording, at the bottom of the threshold grid — and {nocall} made no calls at all at the
+<p>Counted as refits rather than as decodings — each is scored once as run and once at the tuned gap —
+{len(low_seen)} refit scorings of {both(docs)} fall under {LOW_F1:g} F1: {n_collapsed} carry the run's
+failed-training signature, one call per recording, and {n_nocall} made no calls at all at the
 threshold their selection chose, which the report counts as a different failure. The set-aside covers
-both, and the cut sits in an empty band: no refit of either draw scores between {LOW_F1:g} and 0.39.</p>
+both, and the cut sits in an empty band: no refit of either draw scores between {LOW_F1:g} and
+{lowest_kept:.3f}.</p>
 
 <h2 id="how">5. How the gap was chosen</h2>
 <ul>
@@ -699,8 +859,10 @@ both, and the cut sits in an empty band: no refit of either draw scores between 
 the pooled F1 of the nine inner fits — three training seeds by three inner folds — that never saw
 it.</li>
 <li><b>The grid</b>: {", ".join(f"{x:g}" for x in first(docs)["gaps_sec"])} s. It holds every value of
-CoactDetect's own grid and reaches binned SCE's top, so it spans the full range any coded detector was
-allowed; it is coarser than the union of their grids, which also holds 0.5, 4, 10 and 20 s.</li>
+CoactDetect's own grid and reaches the top of binned SCE's — the synchronous-calcium-event detector —
+so it spans the full range any coded detector was allowed. It is coarser than the union of their
+grids, which also holds 0.1, 0.5, 4, 10 and 20 s, and the coarseness probably understates the nets:
+10 s was refused nowhere because it was never offered, while 15 s was refused nearly everywhere.</li>
 <li><b>On F1 alone</b> the gap is a configuration setting and each fit still picks its own threshold
 by its own rule, at that gap, on its two threshold recordings (pooled as four draws, as the run's own
 picker does). <b>Under the budget</b> threshold and gap are chosen together, and a pair is allowed
@@ -720,21 +882,26 @@ retrains.</li>
 at the chosen gap, each at the threshold its own rule picks there, or at the chosen threshold under
 the budget.</li>
 </ul>
-<p>At 2 s the re-decoding reproduces the run exactly: every fit's picked threshold, every recording's
+<p>At 2 s the re-decoding reproduces both runs exactly: every fit's picked threshold, every recording's
 counts and every empty recording's call count match the run's own files, for all {n_fits:,} fits, and
-so do both selections' inner and held-out F1. The re-decoding ran on the same GPU as the run, which is
-why the match is bit-for-bit where the report's CPU re-scoring in its Figure 11 matched only to
-0.0015 F1.</p>
+so do both selections' inner and held-out F1. Both draws were re-decoded on one machine, {host}, on a
+GPU — the machine that trained this draw's fits, and not the one that trained the replicate's, whose
+rows matched exactly all the same. That is why the match here is bit-for-bit where the report's CPU
+re-scoring, in its Figure 11, what the merge gap is worth on each side, matched only to 0.0015 F1 per
+refit.</p>
 
 <h2 id="table">6. Every net, {both(docs)}</h2>
 <p class=tcap><b>Table 1.</b> Held-out F1, net minus CoactDetect, mean of four outer folds, with the
 folds the net leads and the paired <i>t</i> over folds (3 degrees of freedom, two-sided 5% critical
 value 3.18), plain and with the Nadeau–Bengio correction for the overlap between folds' training sets
 (2003, Machine Learning 52:239–281, doi:10.1023/A:1024068626366; factor
-{first(docs)["nb_factor"]:.3f} = √(3/7), derived and bounded in the report's section 4.1). Each value
-column is the same quantity under one more rule than the last. A ° marks a mean inside the
-±{noise:.3f} F1 between-draw scale; a ⚠ marks a row whose chosen gap fails the crowded check when it
-is re-measured on the outer refits. No correction is made for the many comparisons in this table.</p>
+{first(docs)["nb_factor"]:.3f} = √(3/7), derived and bounded in the report's section 4.1). The five
+value columns are the same quantity under different rules: as run; as run with the low refits set
+aside; the gap tuned; the gap tuned with them set aside; and the gap with the configuration re-chosen
+too, which is scored only where the run happened to refit that configuration. A † marks a mean inside
+the ±{noise:.3f} F1 between-draw scale; a ⚠ marks a value at a chosen gap that fails the crowded check
+when it is re-measured on the outer refits. Folds are numbered 1 to 4, as in the report; the JSON
+counts them from 0. No correction is made for the many comparisons in this table.</p>
 {results_table(docs)}
 
 <h2 id="limits">7. Limits</h2>
@@ -743,11 +910,12 @@ is re-measured on the outer refits. No correction is made for the many compariso
 is no longer tuned for one side only, and the nets are now scored on crowded recordings. The rest
 stand, including simulated recordings, baseline periods and the fast stream only, and a bench fitted
 to an export folder with a known, uncleared contamination of about 0.03% of firings.</li>
-<li><b>The crowded check is not the same test on both sides.</b> For the nets it compares a wider gap
-against their as-run 2 s. For CoactDetect the reference the run declared already carries the 8 s gap,
-and 8 s is the top of its own grid, so its check had nothing to refuse: it passed a test it could not
-fail. Against no merging at all it does gain on the crowded recordings, which is the comparison worth
-making and is not the one the run recorded.</li>
+<li><b>The crowded check bound the two sides at different times, not only one of them.</b> For the
+nets it runs inside this selection, comparing a wider gap against their as-run 2 s. For CoactDetect it
+had already run in goal 1, which tried 16 s and refused it — which is why its grid stops at 8 s (the
+report's section 11). Inside this run its declared reference already carries that 8 s, so the
+after-the-fact check had nothing left to refuse, and reading it as a pass would credit a test that
+could not fail.</li>
 <li><b>Every chosen gap is a boundary.</b> Held-out F1 is largest at the widest gap in the grid in
 every fold of {both(docs)} (Figure 1, held-out F1 against the merge gap), so the nets stopped where
 the check stopped them, and CoactDetect stopped where its grid ended. Neither is an optimum, and the

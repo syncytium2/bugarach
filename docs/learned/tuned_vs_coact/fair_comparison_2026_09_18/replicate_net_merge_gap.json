@@ -6,7 +6,7 @@
   "host": "WSMIP064",
   "torch": "2.14.0+cu126",
   "cuda": true,
-  "this_tree": "f7a12e5",
+  "this_tree": "dc01548",
   "tuning_tool": "tune_learned_vs_coact.py",
   "tuning_tree": "666499d"
  },
@@ -15615,6 +15615,17 @@
    }
   }
  },
+ "coact_crowded": {
+  "0 ungated": 0.8258843361951436,
+  "0 gated": 0.8258843361951436,
+  "1 ungated": 0.8258843361951436,
+  "1 gated": 0.8258843361951436,
+  "2 ungated": 0.8258843361951436,
+  "2 gated": 0.8258843361951436,
+  "3 ungated": 0.8258843361951436,
+  "3 gated": 0.8258843361951436
+ },
+ "coact_crowded_no_merge": 0.807663904118322,
  "coact": {
   "f1": {
    "ungated": [
