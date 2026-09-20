@@ -67,8 +67,18 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Released when:** the replicate's report has landed and both scheduled tasks are deleted, or the
   work is abandoned.
 
-### WSMIP064/fair-comparison-run — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-fair-comparison-run/`
-- **Status:** ACTIVE (WSMIP064), claimed before writing. Goal 2, the fair comparison: the weekend
+### WSMIP064/fair-comparison-run — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-18-fair-comparison-run/`
+- **Released 2026-09-20**, its condition met: the run ended and both readouts landed — the report
+  (#665) and the merge-gap addendum (#671). The folder is finished and nothing more will be written
+  to it. It holds `progress.json` and `external/` from the run itself; `results/` (the
+  declaration and summaries, `configs/`, the per-fold `selections/`, the refit models in `chosen/`,
+  the run log, and the inner fits and per-threshold score tables as `fits.tar.gz` and
+  `scores.tar.gz`); and `report/` — `index.html`, the comparison's report for a new reader, and
+  `merge-gap.html`, the addendum that tunes the nets' merge gap by the same rules, each with its
+  murderboard role archives beside it. Rebuild either with `tools/build_fair_comparison_report.py`
+  or `tools/build_net_merge_gap_page.py` from the repo copies in
+  `docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/`.
+- **Status:** was ACTIVE (WSMIP064), claimed before writing. Goal 2, the fair comparison: the weekend
   tuning run of the nets against the six coded detectors on the bench, from branch
   `tune-bench-comparison` (Tony, 2026-09-18: fold defect fixed first, coded side searched sliding,
   12 seeds per fold, `--gpu-jobs 1`).
@@ -87,7 +97,7 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   figures).
 - **Simulation only**, so nothing here is derived from a real recording.
 - **Goal:** learned-model-family (goal 2).
-- **Released when:** the run has ended and its readout has landed, or the run is abandoned.
+- **Released when:** the run has ended and its readout has landed, or the run is abandoned. (Met.)
 
 ### 065/interface2-mirror — DONE 2026-09-18, RELEASED: interface2 is on GitHub and GitHub is its only remote
 - **Status:** **DONE — released, nothing held.** Implemented `HANDOFF-interface2-mirror.md` (PR
