@@ -107,8 +107,8 @@ murderboard findings and its round-2 repairs not blind-verified**. Its readout
 ⚠ **A claim this page carried is withdrawn.** It read the **111** inner fits that collapse in *both*
 draws as the same fits failing twice, and called the failure deterministic given configuration, seed
 and fold pair. It is not evidence of that. Draws share their configurations, seeds and fold pairs and
-differ only in recordings, so the per-configuration collapse rates predict an overlap of **112.6** on
-their own — against the 111 observed, and 40.4 against 38 for `chorus_gain_norm`. The overlap is what
+differ only in recordings, so the per-configuration collapse rates predict an overlap of **111.5** on
+their own — against the 111 observed, and 39.6 against 38 for `chorus_gain_norm`. The overlap is what
 chance gives. Whether a collapse is reproducible is a question the replay tool can answer and nobody
 has asked. Found by round 2 of the chorus-collapse murderboard; the same misreading in the replicate
 report is in the todo above.
