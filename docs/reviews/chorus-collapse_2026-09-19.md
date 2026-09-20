@@ -79,9 +79,22 @@ across roles.
 - ⚠ **The round-2 repairs are unreviewed.** These include a rebuilt Figure 1, a new Figure 4 (#596's
   test), a merged Figure 5, the interior census and replays, the selection split, and rewritten
   §§1–6. Run a blind round on the new page, or accept it with this flag.
+  **ANSWERED 2026-09-20, and the flag stays.** The blind round ran, 11 of 11 roles:
+  [`chorus-collapse-verify_2026-09-20.md`](chorus-collapse-verify_2026-09-20.md). Three of the six
+  repairs hold — the matched-pair Figure 1, the merged Figure 5, the interior measures. Three do
+  not: Figure 4's replacement test still under-detects the deaf population, Table 2's budgeted
+  column counts refits that in fact called nothing, and the "correction" of the replicate report
+  (the bullet below) addresses a sentence that report does not contain. Blocking went 3 → 4 → **6**,
+  so that round escalated without repairing and the page on `main` is byte-for-byte the one this
+  record describes.
 - ⚠ **The replicate report still reads the 111-fit overlap as the same fits failing twice**, and its
   builder asserts it. This page corrects that reading, and the fix to the report itself is filed in
   [`todo/2026-09-19-chorus-norm-does-not-train-at-lr-0.03.md`](../todo/2026-09-19-chorus-norm-does-not-train-at-lr-0.03.md).
+  **CONTESTED 2026-09-20.** Roles 2 and 4 of the verify round read that report independently and
+  both found it already attributes the overlap to *"shared configurations and training seeds"* — the
+  same explanation. On their reading there is nothing to correct, and this bullet, the page's §3
+  sentence and the todo's last item all rest on the same misreading. Settle it against the report's
+  own words before acting on any of the three.
 - ⚠ **The counterfactual replays are judged by training loss, not by calls on held-out
   recordings.** Role 4 asked for held-out scoring before the page says "prevents"; it now says
   "trains".
