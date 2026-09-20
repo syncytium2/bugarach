@@ -10,6 +10,24 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/kosson-prior-art — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** **RELEASED 2026-09-20** with this PR. The write was made and verified: the folder's
+  `index.html` moved from `0dfdc1e5…` to `9083d574…`, matching the repo copy byte for byte. Was:
+  ACTIVE (WSMIP065), claimed before writing. The one literature question left open by the
+  blind round: is Kosson et al. 2024 the failure this page claims as its own? Ruled **adjacent, not
+  the same**; the novelty sentence is withdrawn and both Kosson and Lu et al. 2020 are now cited with
+  the difference stated. The page is therefore **rebuilt**, so the darkroom copy has to move with it.
+- **Writes:** `index.html` in the folder below, replacing the copy the page's own §8 points at.
+  Nothing else in the darkroom, and no JSON changes — the data are untouched, only the prose.
+- **Touches:** this block, `tools/diagnose_chorus_collapse.py` (Related work + two references only),
+  the rebuilt `docs/learned/chorus_collapse/index.html`, and one residual in
+  `docs/reviews/chorus-collapse-verify_2026-09-20.md`. **Nothing else on that page** — the ranked
+  list from #674 is Tony's to rule on and the census re-run needs his GPU decision.
+- **Holds:** the folder below, until this lands.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the rebuilt page and its verdict are on `main`.
+
 ### 065/chorus-verify — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-19-chorus-collapse/`
 - **Status:** **RELEASED 2026-09-20.** The blind verify round ran, 11 of 11 roles, and escalated
   without repairing (blocking 3 → 4 → 6), so **the page and its JSON were never rewritten** — the
