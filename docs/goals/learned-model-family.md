@@ -102,7 +102,7 @@ effective grid rather than a wrong answer; `chorus_gain_norm` is the exception, 
 [PR #667](https://github.com/syncytium2/bugarach/pull/667), ⚠ **landed at Tony's call with four open
 murderboard findings and its round-2 repairs not blind-verified**. Its readout
 [`chorus_collapse/`](../learned/chorus_collapse/index.html) and its
-[todo](../todo/2026-09-19-chorus-norm-does-not-train-at-lr-0.03.md) arrive with that PR.
+[todo](../todo/2026-09-19-chorus-norm-does-not-train-at-lr-0.03.md) are on `main` with it.
 
 ⚠ **A claim this page carried is withdrawn.** It read the **111** inner fits that collapse in *both*
 draws as the same fits failing twice, and called the failure deterministic given configuration, seed
@@ -113,9 +113,57 @@ chance gives. Whether a collapse is reproducible is a question the replay tool c
 has asked. Found by round 2 of the chorus-collapse murderboard; the same misreading in the replicate
 report is in the todo above.
 
-**Next:** tune the nets' merge gap like any other setting, reporting both selections separately, with
-the crowded-recording check applied to the nets' chosen gaps for the first time. **Running on
-WSMIP064 since 2026-09-19**, which reported selection about three hours out at 16:14 EDT.
+### The nets' merge gap, tuned like any other setting: it does not change the answer
+
+**The setting only the coded side had been allowed to tune is now tuned for both, and no verdict
+moves.** Each net's gap is re-selected on the inner fits of its training folds, as the run selected
+every other setting: on F1 alone the gap is a configuration setting and each fit still picks its own
+threshold at that gap; under the budget threshold and gap are chosen together among admissible pairs.
+The search starts from the run's 2 s and moves only for 0.002 inner F1, goal 1's step, and only if the
+move passes goal 1's crowded-recording check. **It needs no retraining** — a merge gap is applied when
+a net's per-frame output is decoded, after the network has run, so the gaps are re-selected from the
+saved fits (`tools/tune_net_merge_gap.py`, whose output records exactly that). At 2 s the re-decoding
+reproduces both runs: all 3,881 fits' picked thresholds, rows and empty-recording counts, and both
+selections' inner and held-out F1. **Both draws**: WSMIP064's fits and WSMIP065's, re-decoded by the
+same tool on one machine.
+
+**Under the budget CoactDetect still wins**, on average against every net in both draws and in 29 of
+32 net-folds. Tuning closes 0.009 to 0.014 F1 of the chorus nets' shortfall: in this draw
+`chorus_norm` −0.032 → **−0.018** (*t* corrected −1.19) and `chorus_gain_norm` −0.030 → **−0.017**;
+in the replicate −0.092 → −0.083 and −0.025 → −0.015. The mechanism is not the obvious one: the
+chosen threshold is **unchanged in 26 of the 32 gated choices**, so the gain comes from merging at
+the same threshold, not from buying a lower one.
+
+**On F1 alone the sign depends on two accounting choices, and the gap is worth about one noise unit
+either way.** Scored the same way on both sides — the report's under-0.2-F1 refits set aside on the
+baseline as well as the tuned choice — `chorus_norm` goes +0.005 → **+0.015** in the replicate and
+−0.007 → **+0.004** here; `chorus_gain_norm` +0.003 → **+0.013** and −0.015 → −0.007. So the nets
+that end ahead **were already ahead before the gap moved**, and on this selection the gap itself buys
+0.008 to 0.011 F1, about the 0.010 F1 between-draw scale. ⚠ That scale's own source measures a **systematic +0.015 F1
+shift in the nets' favour in the replicate's draw**, which is the size of the lead there, and the two
+draws differ in machine as well as recordings.
+
+**The long-gap inflation is not specific to the coded side.** In all 64 choices of both draws the
+inner fits preferred a wider gap and the crowded-recording check refused it — 30 s for every net. This
+is the veto that took binned SCE's F1-alone first place, now applied to the nets for the first time.
+Two things it does not settle. ⚠ The settings it **accepted** lose a median 0.012 F1 on the crowded
+recordings themselves, the same size as the gain, and two of them fail the check outright when it is
+re-measured on the outer refits (`chorus_gain_norm` on F1 alone here, fold 3, by 0.063; the same net
+under the budget in the replicate, fold 2, by 0.024). ⚠ And held-out F1 is largest at the **top of the
+grid in all 64 folds**, so every chosen gap is a boundary the check imposed rather than an optimum —
+as CoactDetect's 8 s is the top of its own grid. The two landing together is not agreement.
+
+⚠ **The check is not the same test on both sides.** CoactDetect's reference in the run already carries
+its 8 s gap, so its crowded check had nothing to refuse; the nets' compares a wider gap against their
+as-run 2 s. And the 0.02 allowance that decides every gap here is still unsigned.
+
+Source: [`net_merge_gap.json`](../learned/tuned_vs_coact/fair_comparison_2026_09_18/net_merge_gap.json)
+and `replicate_net_merge_gap.json` beside it, and the page
+[`net_merge_gap.html`](../learned/tuned_vs_coact/fair_comparison_2026_09_18/net_merge_gap.html) —
+WSMIP064's draw (seeds 1000–1047) and WSMIP065's (2000–2047), both re-decoded on WSMIP064.
+Murderboarded in one round of all eleven roles plus a blind verify round,
+[`net-merge-gap-2026-09-19.md`](../reviews/net-merge-gap-2026-09-19.md); what the review changed is
+listed there and in the page builder's docstring.
 
 ⚠ **The bench's values were re-measured on the de-pinned export** on 2026-09-17 by both workstations,
 every value inside its own bootstrap interval — commit `2120516` on `tune-bench-comparison`, **not on
