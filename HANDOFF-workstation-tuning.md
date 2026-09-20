@@ -679,7 +679,7 @@ needs his password):** a hidden Windows-side `wsl.exe -d Ubuntu -- bash -l
 ~/runs/tune-learned-vs-coact-launch.sh`, started with `Start-Process`. It survives closing VS Code,
 terminals and the session, and that client keeps WSL from idling out; it stops on sign-out or a Windows
 restart. **Idle proof on the real run (Tony's choice):** with every VS Code window and Ubuntu terminal
-closed, `\\wsl$\Ubuntu\home\defazio\runs\tune-learned-vs-coact\progress.json` should show a recent `at`.
+closed, the run's `progress.json` under `\\wsl$\Ubuntu\home\<your-user>\runs\tune-learned-vs-coact\` should show a recent `at`.
 **The run executes from this worktree: do not change `tools/` or `src/` here until it ends** (a restart
 would load them, and `meta.json` refuses a changed declaration). **If the run stopped:** read `run.log`
 and `progress.json`, then start the launch script the same way
