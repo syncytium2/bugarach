@@ -8,6 +8,13 @@ filed: 2026-09-19
 The diagnosis is in [`docs/learned/chorus_collapse/index.html`](../learned/chorus_collapse/index.html),
 built by `tools/diagnose_chorus_collapse.py`.
 
+> **The blind verify round ran on 2026-09-20 and did not clear the page** —
+> [`docs/reviews/chorus-collapse-verify_2026-09-20.md`](../reviews/chorus-collapse-verify_2026-09-20.md),
+> 11 of 11 roles, blocking 3 → 4 → 6, escalated without repair. **The diagnosis below survives it**:
+> the collapse table was re-derived from the raw archives with zero differences in 1,938 rows, and
+> every count, p-value and replay number reproduced. Three things it records here need correcting
+> before they are acted on, and they are marked in place below.
+
 ## What was found
 
 - **Where collapse happens.** Across both draws, 292 of chorus_norm's 396 inner (tuning) fits at a
@@ -62,3 +69,21 @@ the results can be compared.
   (`docs/learned/tuned_vs_coact/replicate1/`) should be rebuilt with the corrected sentence, and its
   builder's assert on that overlap, at `tools/make_replicate_report.py` around line 1190, should be
   dropped.
+  - ⚠ **CONTESTED, 2026-09-20, and do not act on this item until it is settled.** Roles 2 and 4 of
+    the verify round read the replicate report independently and both quote it saying *"The two
+    draws share their configurations and training seeds, so the same fits largely fail in both"* —
+    which is the same explanation, not the misreading. If they are right, there is nothing to
+    correct, the page's §3 sentence is a straw man about a sibling public report, and this item
+    should be withdrawn rather than done. Role 2 adds that the report's further conclusion — that
+    the draws are not two independent measurements of the rate — **survives** either way, because
+    shared configurations are exactly why they are not independent.
+- ⚠ **Two numbers in this file inherit errors the verify round found in the page.** "153 of 153
+  chorus_norm, 75 of 75 chorus_gain_norm" and the rest of the census counts reproduce exactly. But
+  the page's sentence that a sign-based rule *"counted 1 working fit as dead"* is wrong — it is
+  **5** (1 chorus_norm, 4 chorus_gain_norm), and that rule would also have **missed 3 collapsed
+  chorus_gain_norm fits**. Recomputed independently by roles 1 and 6. Correcting it strengthens the
+  case for the variation test, so it is worth doing whichever repair is chosen.
+- ⚠ **The expected-overlap number disagrees across three documents.** This file and the page say
+  **111.5** (and 39.6); `docs/goals/learned-model-family.md` says **112.6** (and 40.4). The page's
+  figure is the one the tested builder computes and the byte-for-byte rebuild pins. `docs/goals/`
+  belongs to #664, so the correction is theirs to make, not this thread's.

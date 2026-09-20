@@ -10,6 +10,25 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/chorus-verify — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** **RELEASED 2026-09-20.** The blind verify round ran, 11 of 11 roles, and escalated
+  without repairing (blocking 3 → 4 → 6), so **the page and its JSON were never rewritten** — the
+  only write was the run record and the 11 role reports into the folder, beside the page they judge.
+  Verdict: [`docs/reviews/chorus-collapse-verify_2026-09-20.md`](reviews/chorus-collapse-verify_2026-09-20.md).
+  Was: ACTIVE (WSMIP065), claimed before writing — the blind verify round on the chorus-collapse
+  page's round-2 repairs, the open flag #667 landed with at Tony's call to land with flags. The
+  folder was released when #667 landed; this re-claimed it because a repair to the page would have
+  had to reach the darkroom copy as well as the repo one.
+- **Writes:** only inside the folder that already holds this page — a rebuilt `index.html` and, if a
+  repair changes them, the small JSON tables beside it. The two runs' `results/` folders are read,
+  never written. Nothing else in the darkroom is touched.
+- **Touches:** this block, `docs/learned/chorus_collapse/`, and the review record plus its role
+  archive under `docs/reviews/`. Not `docs/goals/` (#664 owns it).
+- **Holds:** the folder above.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the verify round's verdict has landed on `main`.
+
 ### 065/chorus-collapse — DARKROOM claim DONE 2026-09-19: `bugarach/2026-09-19-chorus-collapse/`
 - **Status:** DONE (WSMIP065), released. The diagnosis landed with its murderboard flags (Tony's call:
   "land with flags"); the folder holds the page and its data, and nothing more will be written.
