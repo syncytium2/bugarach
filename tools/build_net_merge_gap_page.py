@@ -33,6 +33,8 @@ from build_fair_comparison_report import (DARKROOM_FOLDER, GREY, NET_INK, REPL_I
                                           SEL_NAME, and_join, claim, fmt_diff, fold_label, signed,
                                           tnum, x_axis)
 from build_surrogate_report import Svg, esc, figure, page, table  # noqa: E402
+from fair_comparison_evidence import LOW_F1  # noqa: E402
+from tune_net_merge_gap import _paired  # noqa: E402
 
 from bugarach import provenance  # noqa: E402
 
@@ -44,6 +46,10 @@ CHORUS = ("chorus_norm", "chorus_gain_norm")
 SEL = ("ungated", "gated")
 VARIANTS = (("as_run", "as run, 2 s"), ("config_kept", "gap tuned"),
             ("config_rechosen", "gap and configuration re-chosen"))
+#: The rows of Figures 1 and 2: a choice, and whether refits that failed to train are set aside.
+ROWS = (("as_run", False, "as run, 2 s"), ("config_kept", False, "gap tuned"),
+        ("config_kept", True, "gap tuned, failed refits set aside"),
+        ("config_rechosen", False, "gap and configuration re-chosen"))
 NOISE_INK = "#ececec"
 
 
@@ -69,11 +75,40 @@ def heldout(entry):
     return None if h is None else h["f1_mean"]
 
 
-def margins(doc, m, w, variant):
-    """Net minus CoactDetect per fold, held-out F1; None where the choice has no refits."""
-    coact = doc["coact"]["f1"][w]
-    return [None if heldout(r[variant]) is None else heldout(r[variant]) - coact[r["outer_fold"]]
+def kept_refits(entry):
+    """The refits that trained: F1 at or above the report's LOW_F1 set-aside (its section 6)."""
+    h = entry.get("heldout") if isinstance(entry, dict) else None
+    return None if h is None else [x for x in h["per_seed"] if x["f1"] >= LOW_F1]
+
+
+def low_refits(doc, m, w, variant):
+    """How many refits of each fold fall under LOW_F1 — the chorus nets' failed trainings."""
+    return [0 if (k := kept_refits(r[variant])) is None else len(r[variant]["heldout"]["per_seed"]) - len(k)
             for r in doc["nets"][m][w]]
+
+
+def margins(doc, m, w, variant, without_low=False):
+    """Net minus CoactDetect per fold, held-out F1; None where the choice has no refits, or (with
+    ``without_low``) where every refit of that fold failed to train."""
+    coact = doc["coact"]["f1"][w]
+    out = []
+    for r in doc["nets"][m][w]:
+        if not without_low:
+            out.append(None if heldout(r[variant]) is None
+                       else heldout(r[variant]) - coact[r["outer_fold"]])
+            continue
+        keep = kept_refits(r[variant])
+        out.append(None if not keep
+                   else float(np.mean([x["f1"] for x in keep])) - coact[r["outer_fold"]])
+    return out
+
+
+def stats(doc, m, w, variant, without_low=False):
+    """The paired comparison over folds, recomputed here when refits are set aside."""
+    if not without_low:
+        return comp(doc, m, w, variant)
+    d = margins(doc, m, w, variant, without_low=True)
+    return None if any(v is None for v in d) else _paired(d, [0.0] * len(d))
 
 
 def comp(doc, m, w, variant):
@@ -93,14 +128,26 @@ def fmt_gaps(gs):
 def fig_margins(docs, w) -> Svg:
     """Per fold, net minus CoactDetect, for the two chorus nets as run, with the gap tuned, and with
     the configuration re-chosen too; one panel per draw; the noise scale shaded around zero."""
-    rows = [(m, v, lab) for m in CHORUS for v, lab in VARIANTS]
+    rows = [(m, v, low, lab) for m in CHORUS for v, low, lab in ROWS]
     top, rh = 50, 30
     yb = top + len(rows) * rh
-    svg = Svg(900, yb + 110, f"The two chorus nets minus CoactDetect per outer fold, {SEL_NAME[w]}, "
+    svg = Svg(900, yb + 134, f"The two chorus nets minus CoactDetect per outer fold, {SEL_NAME[w]}, "
                              "as run, with the merge gap tuned, and with the configuration re-chosen "
                              "too, for each draw of recordings")
-    vals = [v for d in docs.values() for m, var, _ in rows for v in margins(d, m, w, var)
-            if v is not None]
+    # The axis is scaled to the folds that trained. A fold holding a failed refit can sit a quarter of
+    # an F1 out, and letting it set the range hides every margin this page is about; those dots are
+    # drawn at the edge with their value instead, and they are ringed, so none is lost.
+    vals, all_vals = [], []
+    for d in docs.values():
+        for m, var, low, _ in rows:
+            nlow = low_refits(d, m, w, var)
+            for j, v in enumerate(margins(d, m, w, var, low)):
+                if v is None:
+                    continue
+                all_vals.append(v)
+                if not nlow[j] or low:
+                    vals.append(v)
+    vals = vals or all_vals
     step = 0.02 if max(vals) - min(vals) <= 0.1 else 0.04    # labels 11 px wide need the room
     lo = min(-step, math.floor(min(vals) / step) * step)
     hi = max(step, math.ceil(max(vals) / step) * step)
@@ -115,25 +162,39 @@ def fig_margins(docs, w) -> Svg:
         svg.rect(X(-noise), top - 6, X(noise) - X(-noise), yb - top + 6, fill=NOISE_INK)
         x_axis(svg, X, x0, x1, yb, ticks, fmt_diff, "net minus CoactDetect, held-out F1",
                zero_rule=True, top=top - 6)
-        for i, (m, var, _) in enumerate(rows):
+        for i, (m, var, low, _) in enumerate(rows):
             yc = top + i * rh + rh / 2
-            d = margins(docs[k], m, w, var)
+            d = margins(docs[k], m, w, var, low)
+            nlow = low_refits(docs[k], m, w, var)
             ink = GREY if var == "as_run" else NET_INK
+            off: list = []
             for j, v in enumerate(d):
-                if v is not None:
-                    svg.circle(X(v), yc + (j - 1.5) * 3.2, 3.4, fill=ink)
+                if v is None:
+                    continue
+                y = yc + (j - 1.5) * 3.2
+                if v < lo:      # off the left of the axis: named at the edge, with the mean, below
+                    off.append(v)
+                    continue
+                svg.circle(X(v), y, 3.4, fill=ink)
+                if nlow[j] and not low:
+                    svg.circle(X(v), y, 7.5, fill="none", stroke=ink)
             got = [v for v in d if v is not None]
-            if len(got) == len(d):
-                svg.line(X(float(np.mean(got))), yc - 11, X(float(np.mean(got))), yc + 11,
-                         stroke=ink, w=2.4)
-            else:
-                # No mean: a fold is missing. Said at the row's top left, clear of the dots.
+            mean = float(np.mean(got)) if len(got) == len(d) else None
+            if mean is not None and mean >= lo:
+                svg.line(X(mean), yc - 11, X(mean), yc + 11, stroke=ink, w=2.4)
+            if off:
+                note = "◀ " + ", ".join(f"{v:.2f}" for v in off).replace("-", "−")
+                if mean is not None and mean < lo:
+                    note += f", mean {mean:.2f}".replace("-", "−")
+                svg.text(x0 + 3, yc + 4, note, size=10, fill=ink)
+            if mean is None:
+                # A fold has no refits, so the row has no mean. Said at its top left, off the dots.
                 svg.text(x0 + 2, yc - 7, f"{len(got)} of {len(d)} folds refitted, so no mean",
                          size=10, fill=GREY)
-    for i, (m, var, lab) in enumerate(rows):
+    for i, (m, var, low, lab) in enumerate(rows):
         yc = top + i * rh + rh / 2
         svg.text(320, yc + 4, f"{m}, {lab}", anchor="end", size=12)
-        if i and i % len(VARIANTS) == 0:
+        if i and i % len(ROWS) == 0:
             svg.line(20, top + i * rh, 890, top + i * rh, stroke="#bbb", dash="3 3")
     y = yb + 74
     svg.circle(30, y, 3.4, fill=GREY)
@@ -144,6 +205,10 @@ def fig_margins(docs, w) -> Svg:
     svg.text(418, y + 4, "mean of 4 folds", size=12)
     svg.rect(540, y - 8, 22, 16, fill=NOISE_INK)
     svg.text(570, y + 4, f"within ±{noise:.3f} F1, the noise scale", size=12)
+    svg.circle(30, y + 20, 3.4, fill=NET_INK)
+    svg.circle(30, y + 20, 7.5, fill="none", stroke=NET_INK)
+    svg.text(44, y + 24, f"a fold holding a refit under {LOW_F1:g} F1, one that failed to train, "
+                         "counted in that row's mean", size=12)
     return svg
 
 
@@ -215,11 +280,14 @@ def results_table(docs) -> str:
                 rows.append([name, SEL_NAME[w], f"<code>{m}</code>", fmt_gaps(gaps(d, m, w)),
                              stat_cell(comp(d, m, w, "as_run")),
                              stat_cell(comp(d, m, w, "config_kept")),
+                             stat_cell(stats(d, m, w, "config_kept", without_low=True),
+                                       margins(d, m, w, "config_kept", without_low=True)),
                              stat_cell(comp(d, m, w, "config_rechosen"),
                                        margins(d, m, w, "config_rechosen"))])
     return table(["draw", "selection", "net", "gap chosen, folds 1 to 4",
                   "as run: net minus CoactDetect, F1 (folds ahead; <i>t</i>)",
-                  "gap tuned", "gap and configuration re-chosen"], rows,
+                  "gap tuned", f"gap tuned, refits under {LOW_F1:g} F1 set aside",
+                  "gap and configuration re-chosen"], rows,
                  f"Table 1, every net in {both(docs)}")
 
 
@@ -247,8 +315,14 @@ def body(docs, report_href: str) -> str:
     gated_ahead_folds = [(k, m, i, v) for k in docs for m in NETS
                          for i, v in enumerate(margins(docs[k], m, "gated", "config_kept")) if v > 0]
     n_gated_folds = sum(len(margins(docs[k], m, "gated", "config_kept")) for k in docs for m in NETS)
+    # The same choices with the refits that failed to train set aside, the report's post hoc rule.
+    us = {k: {m: stats(docs[k], m, "ungated", "config_kept", True) for m in CHORUS} for k in docs}
+    gs_ = {k: {m: stats(docs[k], m, "gated", "config_kept", True) for m in NETS} for k in docs}
     lead_u = {k: max(CHORUS, key=lambda m: u[k][m]["mean"]) for k in docs}
+    lead_us = {k: max(CHORUS, key=lambda m: us[k][m]["mean"]) for k in docs}
     ungated_under_noise = all(abs(u[k][lead_u[k]]["mean"]) < noise for k in docs)
+    set_aside_leads = [(k, m, us[k][m]) for k in docs for m in CHORUS if us[k][m]["mean"] > noise]
+    gated_behind_set_aside = all(s["mean"] < 0 for k in docs for m in NETS for s in [gs_[k][m]])
 
     all_gaps = [gg for k in docs for m in NETS for w in SEL for gg in gaps(docs[k], m, w)]
     n_moved = sum(gg != 2.0 for gg in all_gaps)
@@ -265,7 +339,7 @@ weekend run of 2026-09-18, and WSMIP065's replicate), which it assumes. Simulate
 baseline periods, the fast stream.</p>
 <h1>The nets' merge gap, tuned</h1>
 <p class=lede><b>{lede(docs, u, closed, noise, lead_u, ungated_under_noise, gated_ahead_folds,
-                        n_gated_folds)}</b></p>
+                        n_gated_folds, set_aside_leads, gated_behind_set_aside)}</b></p>
 
 <h2 id="question">1. The question</h2>
 <p>A detector's calls closer together than its <b>merge gap</b> are merged into one (the report's
@@ -310,15 +384,19 @@ threshold (under the budget).</li>
 every recording's counts and every empty recording's call count equal the run's own files, for all
 {n_fits:,} fits, and so do both selections' inner and held-out F1.</p>
 
-<h2 id="alone">3. On F1 alone: a tie, still</h2>
+<h2 id="alone">3. On F1 alone: it depends on the failed trainings</h2>
 <p>{alone_text(docs, u, u0, lead_u, noise)}</p>
+<p>{alone_set_aside_text(docs, us, noise)}</p>
 {figure(1, "The chorus nets minus CoactDetect, choices on F1 alone", fig_margins(docs, "ungated"),
         "Each dot is one outer fold's held-out F1, the net's mean over its five refits minus "
         "CoactDetect's; the bar is the mean of the four folds. Grey: the net at its 2 s, as run. Blue: "
-        "the gap chosen on the inner fits, with the configuration kept, then re-chosen too. The shaded "
-        f"band is ±{noise:.3f} F1, the median change in F1 from changing the recordings alone "
-        "(WSMIP065's replicate); a mean inside it is not a result. Right of the dashed zero line, the "
-        "net is ahead.")}
+        "the gap chosen on the inner fits — with the configuration kept, then with the refits that "
+        f"failed to train (under {LOW_F1:g} F1) set aside, then with the configuration re-chosen "
+        f"too. The shaded band is ±{noise:.3f} F1, the median change in F1 from changing the "
+        "recordings alone (WSMIP065's replicate); a mean inside it is not a result. Right of the "
+        "dashed zero line, the net is ahead. The axis is scaled to the folds whose refits all "
+        "trained; a fold or a mean beyond its left end is written at the edge with its value, so "
+        "that one collapsed fold does not flatten every other margin.")}
 
 <h2 id="budget">4. Under the budget: closer, and behind</h2>
 <p>{budget_text(docs, g, g0, closed, gated_ahead_folds, n_gated_folds, noise)}</p>
@@ -383,34 +461,69 @@ def ahead_phrase(ahead, n_folds):
                         for k, m, i, v in ahead))
 
 
-def lede(docs, u, closed, noise, lead_u, under_noise, ahead, n_folds):
-    claim(under_noise, "on F1 alone the leading chorus net's margin is inside the noise scale in both draws")
-    claim(all(v < noise for *_, v in ahead), "under the budget no net leads a fold by the noise scale")
+def lede(docs, u, closed, noise, lead_u, under_noise, ahead, n_folds, set_aside, gated_behind):
     claim(all(closed[k][m] > 0 for k in docs for m in CHORUS), "tuning the gap helps each chorus net "
           "under the budget")
+    claim(gated_behind, "under the budget every net trails on average even with failed refits set aside")
     lo = min(closed[k][m] for k in docs for m in CHORUS)
     hi = max(closed[k][m] for k in docs for m in CHORUS)
+    names = {k: n for k, _, n in DRAWS}
+    aside = ("" if not set_aside else
+             f" Set the refits under {LOW_F1:g} F1 aside, as the report does, and the lead clears "
+             "that scale: "
+             + and_join([f"<code>{m}</code> {signed(s['mean'])} in {names[k]}, {s['folds_ahead']} of "
+                         f"{s['folds']} folds" for k, m, s in set_aside]) + ".")
     return (f"Tuned like any other setting, the nets' merge gap moves each chorus net toward "
-            f"CoactDetect, and past it by no more than the noise. On F1 alone the better chorus net "
-            + and_join([f"ends {signed(u[k][lead_u[k]]['mean'])} F1 from CoactDetect in {name}"
-                        for k, _, name in draws(docs)])
-            + f", inside ±{noise:.3f}: still a tie. Under the budget, tuning the gap closes "
-            f"{lo:.0%} to {hi:.0%} "
-            f"of the chorus nets' shortfall, and {ahead_phrase(ahead, n_folds)}.")
+            f"CoactDetect, and it settles nothing that was open. <b>Under the budget the answer "
+            f"holds</b>: tuning closes {lo:.0%} to {hi:.0%} of the chorus nets' shortfall and "
+            f"CoactDetect is still ahead of every net on average in {both(docs)}, and in "
+            f"{n_folds - len(ahead)} of {n_folds} folds. <b>On F1 alone the sign depends on how the "
+            "chorus nets' failed trainings are counted</b>. Counting every refit, the better chorus "
+            "net " + and_join([f"ends {signed(u[k][lead_u[k]]['mean'])} F1 from CoactDetect in {name}"
+                               for k, _, name in draws(docs)])
+            + f", against a draw-to-draw scale of {noise:.3f}." + aside)
 
 
 def alone_text(docs, u, u0, lead_u, noise):
     parts = []
     for k, _, name in draws(docs):
-        m = lead_u[k]
-        c, c0 = u[k][m], u0[k][m]
-        parts.append(f"In {name}, <code>{m}</code> goes from {signed(c0['mean'])} as run to "
-                     f"{signed(c['mean'])} with its gap tuned ({c['folds_ahead']} of 4 folds ahead; "
-                     f"<i>t</i> {tnum(c['t'])}, corrected {tnum(c['t_corrected'])}), choosing "
-                     f"{fmt_gaps(gaps(docs[k], m, 'ungated'))}.")
-    return (" ".join(parts) + f" {'Both margins are' if len(parts) > 1 else 'That margin is'} under "
-            f"{noise:.3f} F1, the change that swapping the recordings alone produces, so on F1 alone "
-            "the two stay tied (Figure 1).")
+        for m in CHORUS:
+            c, c0 = u[k][m], u0[k][m]
+            parts.append(f"in {name} <code>{m}</code> goes from {signed(c0['mean'])} as run to "
+                         f"{signed(c['mean'])} with its gap tuned ({c['folds_ahead']} of "
+                         f"{c['folds']} folds ahead; <i>t</i> {tnum(c['t'])}, corrected "
+                         f"{tnum(c['t_corrected'])}), choosing {fmt_gaps(gaps(docs[k], m, 'ungated'))}")
+    return ("Counting every refit, " + "; ".join(parts) + f". The scale to read these against is "
+            f"{noise:.3f} F1, the median change from swapping the recordings alone (Figure 1).")
+
+
+def alone_set_aside_text(docs, us, noise):
+    """The same choices with the failed trainings set aside — which is where the sign lives."""
+    names = {k: n for k, _, n in DRAWS}
+    parts, n_low, n_refits = [], {}, {}
+    for k, _, name in draws(docs):
+        n_low[k] = sum(sum(low_refits(docs[k], m, "ungated", "config_kept")) for m in CHORUS)
+        n_refits[k] = sum(len(r["config_kept"]["heldout"]["per_seed"])
+                          for m in CHORUS for r in docs[k]["nets"][m]["ungated"])
+        for m in CHORUS:
+            s = us[k][m]
+            parts.append(f"<code>{m}</code> {signed(s['mean'])} in {name} ({s['folds_ahead']} of "
+                         f"{s['folds']} folds; <i>t</i> {tnum(s['t'])}, corrected "
+                         f"{tnum(s['t_corrected'])})")
+    over = [(k, m) for k in docs for m in CHORUS if us[k][m]["mean"] > noise]
+    by_draw = {k: [m for kk, m in over if kk == k] for k, _ in over}
+    tail = ("None of those means clears the noise scale either" if not over else
+            "Past the noise scale: " + and_join(
+                [(f"both chorus nets in {names[k]}" if len(ms) == len(CHORUS) else
+                  f"<code>{ms[0]}</code> in {names[k]}") for k, ms in by_draw.items()]))
+    return ("The chorus nets often fail to train, collapsing to one call per recording (the report's "
+            "section 6), and those refits are inside the means above: "
+            + and_join([f"{n_low[k]} of the {n_refits[k]} refits behind them in {names[k]}"
+                        for k in docs])
+            + f" score under {LOW_F1:g} F1. Setting them aside, as the report does, and keeping "
+            "everything else: " + "; ".join(parts) + f". {tail}. Which treatment is right is not "
+            "settled here: setting aside a fold's worst refits is a post hoc rule, and the failures "
+            "are a property of the net that a user would meet.")
 
 
 def budget_text(docs, g, g0, closed, ahead, n_folds, noise):
@@ -421,11 +534,12 @@ def budget_text(docs, g, g0, closed, ahead, n_folds, noise):
                          f"{signed(g[k][m]['mean'])} tuned ({closed[k][m]:.0%} of the shortfall "
                          f"closed; <i>t</i> {tnum(g[k][m]['t'])}, corrected "
                          f"{tnum(g[k][m]['t_corrected'])})")
-    claim(all(v < noise for *_, v in ahead), "no fold led by the noise scale under the budget")
+    claim(all(s["mean"] < 0 for k in docs for m in NETS for s in [comp(docs[k], m, "gated", "config_kept")]),
+          "every net trails CoactDetect on average under the budget, in every draw")
     return ("Held to the shared false-alarm budget, a wider gap lets a net call less and so fit the "
             "budget at a lower threshold, and every chorus net gains: " + "; ".join(parts) + ". "
-            f"Across the four nets and {both(docs)}, {ahead_phrase(ahead, n_folds)}"
-            + (f", inside ±{noise:.3f}" if ahead else "") + " (Figure 2).")
+            f"Every net still trails on average in {both(docs)}, whether or not the failed trainings "
+            f"are set aside (Table 1). Fold by fold, {ahead_phrase(ahead, n_folds)} (Figure 2).")
 
 
 def count(n, of):
