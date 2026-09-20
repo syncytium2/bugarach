@@ -121,9 +121,49 @@ def test_paired_statistics_by_hand():
     assert G._paired([0.5, 0.5], [0.495, 0.497])["within_noise"] is True
 
 
-def test_the_gap_grid_reaches_every_gap_a_coded_detector_was_allowed():
+def test_the_gap_grid_spans_the_coded_range_and_holds_coactdetects_own_values():
+    """What the grid actually promises. It is coarser than the union of the coded grids — the page
+    says so — but it covers CoactDetect's values exactly and reaches the widest gap any of them had.
+    The first draft's test only checked the top while the page claimed membership."""
     run_meta = json.loads((RUN / "meta.json").read_text())["declaration"]
-    coded_tops = [dict(ax)["merge_gap_sec"][-1] for det, ax in run_meta["hand_axes"].items()
-                  if "merge_gap_sec" in dict(ax)]
-    assert max(coded_tops) <= G.GAPS_SEC[-1]
+    axes = {det: dict(ax) for det, ax in run_meta["hand_axes"].items()}
+    coded = {g for ax in axes.values() for g in ax.get("merge_gap_sec", [])}
+    assert max(coded) <= G.GAPS_SEC[-1] and min(coded) >= G.GAPS_SEC[0]
+    assert set(axes["coact"]["merge_gap_sec"]) <= set(G.GAPS_SEC)
+    assert not coded <= set(G.GAPS_SEC), "the grid now covers every coded value: say so on the page"
     assert G.AS_RUN_SEC in G.GAPS_SEC
+
+
+def test_every_refit_carries_the_runs_own_failure_flags(doc):
+    """A refit under LOW_F1 is a collapsed training or a refit that called nothing, and the run
+    distinguishes them. The page may not call them all failed trainings."""
+    seen = 0
+    for m, by_w in doc["nets"].items():
+        for w, rows in by_w.items():
+            for row in rows:
+                for v in ("as_run", "config_kept"):
+                    held = row[v].get("heldout")
+                    if held is None:
+                        continue
+                    for x in held["per_seed"]:
+                        assert {"failed_training_signature", "f1_was_nan",
+                                "threshold_at_grid_edge"} <= set(x), (m, w, v)
+                        seen += 1
+    assert seen > 0
+
+
+def test_the_output_records_what_it_ran_on(doc):
+    """The nets and the tuning tool live on another branch, so a reader cannot repeat this without
+    the commit of both trees, the machine and the torch version."""
+    p = doc["provenance"]
+    assert p["host"] and p["torch"]
+    assert p["this_tree"] and p["tuning_tree"], "a tree commit is missing"
+
+
+def test_the_correction_is_derived_from_the_fold_count(doc):
+    folds = {len(doc["comparisons"][w][k]["per_fold"]) for w in doc["comparisons"]
+             for k in doc["comparisons"][w]}
+    assert folds == {4}
+    assert doc["nb_factor"] == pytest.approx(G.nb_factor(4))
+    assert G.nb_factor(4) == pytest.approx(math.sqrt(3 / 7))
+    assert G.nb_factor(5) != pytest.approx(G.nb_factor(4)), "the factor must move with the folds"

@@ -373,8 +373,11 @@ load-bearing terms with no glossary entry.
   whether a call on one should count against a detector is an open question
   (`score.py`); today it counts as a false alarm, for every detector alike.
 - **merge gap** — how close two calls may be before a detector merges them into one.
-  Tuned for the coded detectors (`merge_gap_sec`, `merge_gap_s`); fixed at 20 frames
-  for the learned models (`pick_threshold`). On the bench, where planted events are at
+  Tuned for the coded detectors (`merge_gap_sec`, `merge_gap_s`); the learned models decode
+  at `pick_threshold`'s default of 20 frames, which is what the fair comparison ran, and it
+  is **tuned for them too since 2026-09-19** — chosen on the inner fits after the fact and
+  without retraining (`tools/tune_net_merge_gap.py`). Matched by name is not matched by
+  operation, which is why the three rules below matter. On the bench, where planted events are at
   least 120 s apart, a wider gap rarely costs recall, so bench F1 rises with it for a
   detector whose calls come in short bursts; that is why the crowded-recording check
   exists. Merging chains, so a detector that calls almost continuously can lose events

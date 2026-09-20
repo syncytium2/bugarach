@@ -67,15 +67,19 @@ DEFAULT_OUT = (REPO / "docs" / "learned" / "tuned_vs_coact" / "fair_comparison_2
 
 NETS = ("chorus_norm", "chorus_gain_norm", "line_length", "tube")
 SELECTIONS = ("ungated", "gated")
-#: Seconds. Goal 1's CoactDetect grid (0 to 8 s) and binned SCE's top (30 s), with 15 s between, so
-#: a net can reach every gap a coded detector was allowed. The run's is 2 s.
+#: Seconds. Every value of CoactDetect's own grid (0 to 8 s), plus 15 s and binned SCE's top of 30 s,
+#: so the grid spans the whole range any coded detector was allowed. It is coarser than the union of
+#: their grids, which also holds 0.5, 4, 10 and 20 s. The run's gap is 2 s.
 GAPS_SEC = (0.0, 1.0, 2.0, 3.0, 5.0, 8.0, 15.0, 30.0)
 AS_RUN_SEC = 2.0
 FIELDS = ("n_planted", "n_detected", "n_hit", "n_fa", "hot_fa", "distractor_hits")
 TWIN_KEYS = ("null_quiet", "null_busy")
 TAIL_SEEDS = tuple(range(1, 13))     # goal 1's selection-stage crowded recordings (search_all_settings)
 TAIL = {"tail_quiet": "baseline_quiet", "tail_busy": "baseline_busy"}
-NB_FACTOR = math.sqrt(3 / 7)         # Nadeau-Bengio: 4 folds, one held out, three trained on
+#: Nadeau and Bengio's corrected resampled t, as the report computes it: the variance's 1/J becomes
+#: 1/J + n2/n1. Derived from the run's own fold count rather than hardcoded for four folds.
+def nb_factor(folds: int) -> float:
+    return math.sqrt((1.0 / folds) / (1.0 / folds + 1.0 / (folds - 1)))
 NOISE_F1 = 0.010                     # median F1 change from a recordings-only change (WSMIP065)
 
 
@@ -90,6 +94,26 @@ def _tool():
 
 def read_json(p):
     return json.loads(Path(p).read_text(encoding="utf-8"))
+
+
+def _provenance() -> dict:
+    """What the re-decoding ran on. The run records the same of itself, and nobody can repeat this
+    without it: the nets and the tuning tool live on another branch, in another worktree."""
+    import socket
+    import subprocess
+    import torch
+
+    def head(path):
+        try:
+            return subprocess.run(["git", "-C", str(path), "rev-parse", "--short", "HEAD"],
+                                  capture_output=True, text=True, timeout=30).stdout.strip() or None
+        except Exception:                                        # noqa: BLE001 - recorded as unknown
+            return None
+    T = _tool()
+    return dict(host=socket.gethostname(), torch=torch.__version__,
+                cuda=torch.cuda.is_available(),
+                this_tree=head(REPO), tuning_tool=Path(T.__file__).name,
+                tuning_tree=head(Path(T.__file__).resolve().parent.parent))
 
 
 def gap_index(sec) -> int:
@@ -358,7 +382,7 @@ def _paired(a, b):
     sd = float(np.std(d, ddof=1)) if len(d) > 1 else float("nan")
     t = float(np.mean(d) / (sd / math.sqrt(len(d)))) if len(d) > 1 and sd > 0 else None
     return dict(per_fold=d, mean=float(np.mean(d)), sd=sd, t=t,
-                t_corrected=None if t is None else t * NB_FACTOR, df=len(d) - 1,
+                t_corrected=None if t is None else t * nb_factor(len(d)), df=len(d) - 1,
                 folds_ahead=sum(x > 0 for x in d), folds=len(d),
                 within_noise=bool(abs(float(np.mean(d))) < NOISE_F1))
 
@@ -390,6 +414,11 @@ class Selector:
                 self.n_params[k] = int(peek(Path(r["fit"]))["n_params"])
         self.needs_crowded: set = set()
         self.needs_pairs: set = set()
+        # The run's recorded threshold indices only mean anything against the grid they were written
+        # against: a grid that changed length or spacing since would re-point every gated selection.
+        declared = [float(t) for t in self.decl["threshold_grid"]]
+        assert self.grid == declared, ("the live THRESHOLD_GRID is not the one the run recorded: "
+                                       f"{len(self.grid)} values against {len(declared)}")
 
     def training_folds(self, h):
         return [f for f in self.folds if f != h]
@@ -467,7 +496,10 @@ class Selector:
             cr = self.crowded(m, c["config_key"], h, w, c["gi"], c["ti"])
             if cr is None or ref is None:
                 return None, walked
-            ok = cr >= ref - self.max_drop
+            # Not scored there is not admissible, as goal 1's search has it (make_admissible) and as
+            # the coded side's after-the-fact check has it: both sides must be finite, or the veto
+            # would switch itself off in the direction that admits.
+            ok = bool(math.isfinite(cr) and math.isfinite(ref) and cr >= ref - self.max_drop)
             walked.append(dict(config_key=c["config_key"], gap_sec=c["gap_sec"],
                                threshold=None if c["ti"] is None else self.grid[c["ti"]],
                                inner_f1=c["f1"], crowded_f1=cr, reference_crowded_f1=ref,
@@ -483,7 +515,16 @@ class Selector:
                 continue
             t = self._ti(w, r, gi, ti)
             items = self.S.items(r, h, gi, t)
-            x = dict(seed=r["seed"], f1=self.T.objective(items, m), threshold=self.grid[t])
+            # The run's own two flags, by its own expressions (_heldout): a refit that scores low
+            # because it collapsed to one call is not the same thing as one that called nothing at
+            # the threshold its selection chose, and the report's set-aside rule covers both.
+            p = self.T.pooled([row for _, row in items], m)
+            f1 = self.T.objective(items, m)
+            x = dict(seed=r["seed"], f1=f1, threshold=self.grid[t],
+                     f1_was_nan=not bool(np.isfinite(p.f1)),
+                     failed_training_signature=bool(np.isfinite(p.f1) and abs(p.f1 - 0.125) < 0.01
+                                                    and self.grid[t] <= 1e-4 + 1e-12),
+                     threshold_at_grid_edge=t in (0, len(self.grid) - 1))
             if w == "gated":
                 probe = self.T.probe_rates(items, self.plan)
                 quiet = self.T.quiet_rate(self.S.twins(r, h, self.gate, gi, t))
@@ -644,12 +685,12 @@ def main(argv=None) -> int:
     doc = dict(
         what="the nets' merge gap tuned like any other setting, re-selected from the fair "
              "comparison's saved fits without retraining",
-        generator="tools/tune_net_merge_gap.py", run=a.run.name,
+        generator="tools/tune_net_merge_gap.py", run=a.run.name, provenance=_provenance(),
         gaps_sec=list(GAPS_SEC), as_run_gap_sec=AS_RUN_SEC, min_gain=sel.min_gain,
         max_crowded_drop=sel.max_drop, crowded_recordings=dict(builder="bench.make_tail_recording",
                                                                backgrounds=list(TAIL.values()),
                                                                seeds=list(TAIL_SEEDS)),
-        noise_f1=NOISE_F1, nb_factor=NB_FACTOR,
+        noise_f1=NOISE_F1, nb_factor=nb_factor(sel.decl["folds"]),
         reproduction=dict(
             fits=len(repro),
             own_threshold_at_2s=sum(bool(x["own_index"]) for x in repro),
