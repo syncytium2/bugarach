@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/chorus-verify — DARKROOM claim ACTIVE 2026-09-20: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** ACTIVE (WSMIP065), claimed before writing. The blind verify round on the chorus-collapse
+  page's round-2 repairs — the open flag #667 landed with, at Tony's call to land with flags. The
+  folder below was released when #667 landed; this re-claims it, because a repair to the page has to
+  be rebuilt into the darkroom copy as well as the repo one.
+- **Writes:** only inside the folder that already holds this page — a rebuilt `index.html` and, if a
+  repair changes them, the small JSON tables beside it. The two runs' `results/` folders are read,
+  never written. Nothing else in the darkroom is touched.
+- **Touches:** this block, `docs/learned/chorus_collapse/`, and the review record plus its role
+  archive under `docs/reviews/`. Not `docs/goals/` (#664 owns it).
+- **Holds:** the folder above.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the verify round's verdict has landed on `main`.
+
 ### 065/chorus-collapse — DARKROOM claim DONE 2026-09-19: `bugarach/2026-09-19-chorus-collapse/`
 - **Status:** DONE (WSMIP065), released. The diagnosis landed with its murderboard flags (Tony's call:
   "land with flags"); the folder holds the page and its data, and nothing more will be written.
