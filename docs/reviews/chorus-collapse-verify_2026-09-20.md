@@ -126,12 +126,27 @@ Two more, outside this claim's scope and named rather than touched:
 - **`docs/goals/learned-model-family.md` states 112.6 and 40.4** where this page and the todo state
   111.5 and 39.6 (role 3). The page's numbers are the ones the tested builder computes. `docs/goals/`
   belongs to #664, so it is flagged here, not edited.
+  **CLOSED 2026-09-20 by #678**, which moved the goal page to 111.5 / 39.6. The estimator the goal
+  page had used pooled each configuration's rate across the two draws and squared it; the product of
+  each draw's own rate is the unbiased one. The reading did not change.
 - **Prior art sits under the page's novelty claim** (role 2, verified against the arXiv API here):
   Kosson et al. 2024 (arXiv:2410.23922) already reports that large initial updates permanently
   deactivate units and that warm-up prevents it. The delta is real — the *form* of the failure here
   is a head silent at initialisation that is never woken — but *"That it prevents this collapse is
   this page's result"* overstates it as written. Lu et al. (arXiv:1903.06733) predicts the
   encoder-shape direction in Table 1.
+  **CLOSED 2026-09-20 — ruled ADJACENT, NOT THE SAME, and the novelty sentence is withdrawn.** Both
+  papers were read, not searched. Kosson's dead-unit result is an appendix on a small image network
+  where large updates **kill units that were alive**, counted at the end of training, and his remedy
+  is a leaky rectified-linear unit — which works because a ReLU has an exact zero region to be stuck
+  in. A GELU has none, so that repair is unavailable here and no layer of this head is dead in his
+  sense, only silent. This page's head is already silent **before the first step**, in every replayed
+  fit, working and collapsed alike. Lu et al. turned out to be the **closer** neighbour: *born dead*
+  is dead-before-training, their theorem sends a gradient method (Adam named) to a constant function,
+  and their depth-up / width-down ordering matches Table 1 in all four comparisons at lr 0.03
+  (recomputed: 69→90% and 46→81% with depth, 69→46% and 90→81% with width). But their theory is
+  ReLU-only and forbids the recovery this page demonstrates. The page now cites both, states the
+  difference, and says what is left — which is narrower than the sentence it replaced.
 
 ## What generalises beyond this page
 

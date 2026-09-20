@@ -1347,16 +1347,40 @@ judged by training loss, not by calls on held-out recordings.</p>
           "the warm-up. Dashed: loss 0.5, the line this page uses between training and not. "
           f"The highest single logged loss, {spike:.1f}, is in an early spike the smoothing shortens.")
     body += t_wu + f"""
-<p><b>Related work.</b> Dead ReLU units, which output zero for every input, have been measured to grow
-with the learning rate (Gulcehre et al. 2022, in offline reinforcement learning), and Sokar et al.
-(2023) call a unit dormant when its mean absolute activation, relative to its layer's, falls below a
-threshold. This page thresholds variation instead, and here every head starts mostly silent, working or not:
-what fails is training's waking it, so these are related observations, not this mechanism. A
+<p><b>Related work.</b> The share of dead rectified-linear units (ReLU units, which output zero for
+every input) has been measured to grow with the learning rate (Gulcehre et al. 2022, in offline
+reinforcement learning), and Sokar et al. (2023) call a unit dormant when its mean absolute activation,
+relative to its layer's, falls below a threshold. This page thresholds variation instead, and here every
+head starts mostly silent, working or not: what fails is training's waking it, so these are related
+observations, not this mechanism. A
 learning-rate
 warm-up is the standard remedy for unstable early training at a large step size (He et al. 2016;
 Goyal et al. 2017); why it helps Adam is disputed (Liu et al. 2020; Ma &amp; Yarats 2021), and Ma &amp;
-Yarats's rule of thumb, 2/(1 − 0.999) = 2,000 steps, is ten times the ramp tried here. That it
-prevents this collapse is this page's result.</p>
+Yarats's rule of thumb, 2/(1 − 0.999) = 2,000 steps, is ten times the ramp tried here.</p>
+
+<p><b>Two papers describe something close enough that the difference is worth stating.</b>
+Kosson et al. (2024) argue a warm-up works by holding down the size of the early update, and report
+that large initial updates leave a small image network with a high share of permanently dead ReLU
+units and a lasting loss of accuracy — the same chain this page walks, from too large an early step to
+damage training does not undo. It differs in direction and in the activation. There the units are alive
+and the update kills them, counted at the end of training; here 5 to 8 of the head's 8 layers already
+pass nothing that varies at the starting weights, before the first step, in every replayed fit, and
+what separates a collapsed fit from a working one is only whether training wakes them. Their remedy is
+a leaky ReLU, which works because a ReLU has an exact zero region to be stuck in. A GELU has none, so
+that repair is not available here and a layer of this head is never dead in their sense, only silent.
+Lu et al. (2020) come closer: they call a network <i>born dead</i> when it is dead before training,
+prove that a gradient method — Adam among those they name — then optimizes it to a constant function,
+and show the probability rises with depth and falls with width — the order in Table 1, collapse by
+shape, where at lr 0.03 the narrow deep 4 × 6 encoder collapses most and the wide shallow 8 × 4 least,
+and each of the four comparisons runs that way. Their
+theory is ReLU-only, and their result forbids what this page measures: a born-dead network cannot be
+recovered, while these fits do train at a lower rate or behind a 200-step ramp.
+<b>So what is left here is narrower than "a warm-up prevents a collapse", which is published.</b> It is
+that a head can start almost silent in a network with no zero region to be stuck in, that whether
+training wakes it is what decides the fit, and that the failure is recoverable — shown by replaying one
+fit bit for bit and changing one thing at a time. The warm-up, dying-ReLU and dormant-unit literatures
+were searched for this. Whether a learned event detector has been reported collapsing to one call
+covering a whole recording was not.</p>
 
 <h2>6. The choice it leaves</h2>
 <ul>
@@ -1421,8 +1445,12 @@ arXiv:1512.03385.</li>
 <li>Hendrycks D., Gimpel K. (2016). Gaussian error linear units (GELUs). arXiv:1606.08415.</li>
 <li>Kingma D. P., Ba J. (2015). Adam: a method for stochastic optimization. ICLR;
 arXiv:1412.6980.</li>
+<li>Kosson A., Messmer B., Jaggi M. (2024). Analyzing &amp; reducing the need for learning rate warmup
+in GPT training. NeurIPS; arXiv:2410.23922.</li>
 <li>Liu L. et al. (2020). On the variance of the adaptive learning rate and beyond. ICLR;
 arXiv:1908.03265.</li>
+<li>Lu L., Shin Y., Su Y., Karniadakis G. E. (2020). Dying ReLU and initialization: theory and
+numerical examples. Communications in Computational Physics 28(5); arXiv:1903.06733.</li>
 <li>Ma J., Yarats D. (2021). On the adequacy of untuned warmup for adaptive optimization. AAAI;
 arXiv:1910.04209.</li>
 <li>Sokar G., Agarwal R., Castro P. S., Evci U. (2023). The dormant neuron phenomenon in deep
