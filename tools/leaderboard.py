@@ -59,9 +59,27 @@ DRAWS = [
 ]
 
 SELECTIONS = [
-    ("gated", "under the shared false-alarm budget"),
+    ("gated", "with false alarms held to CoactDetect's level"),
     ("ungated", "on F1 alone"),
 ]
+
+# Plain names for a person reading the page (docs/GLOSSARY.md, 2026-09-21). The code and
+# the run files keep their own words — `gated`, `passes_veto`, `crowded_check.json`.
+CLOSE_EVENTS = "close-events test"
+
+
+def shown(key: str) -> str:
+    """The name a person sees: ``cicada`` prints as locust, ``coact`` as CoactDetect.
+
+    From ``bugarach.detectors.DISPLAY_NAMES``. The key on a page reads as the Cossart lab's
+    CICADA, which locust is a modified partial port of (FOUNDATIONS §7). Falls back to the
+    key where the package cannot be imported, so the page still builds.
+    """
+    try:
+        from bugarach.detectors import display_name
+    except Exception:                      # noqa: BLE001 — a page with keys beats no page
+        return key
+    return display_name(key)
 
 # What each comparison variant means, in the source files' own vocabulary.
 VARIANTS = {
@@ -159,11 +177,12 @@ def field_standing(players: list[Player]) -> str:
         top = here[0]
         admissible = [p for p in here if p.admissible]
         best_net = next((p for p in here if p.kind == "net"), None)
-        part = f"{gloss.capitalize()}, {top.name} leads the field at {top.f1:.3f} F1"
+        # First letter only: str.capitalize() lowercases the rest ("coactdetect's", "f1").
+        part = f"{gloss[:1].upper() + gloss[1:]}, {shown(top.name)} leads the field at {top.f1:.3f} F1"
         if admissible and admissible[0].name != top.name:
             part += (
-                f", but its settings fail the crowded veto; the best admissible "
-                f"detector is {admissible[0].name} at {admissible[0].f1:.3f}"
+                f", but its settings fail the {CLOSE_EVENTS}; the best admissible "
+                f"detector is {shown(admissible[0].name)} at {admissible[0].f1:.3f}"
             )
         if best_net is not None:
             rank = here.index(best_net) + 1
@@ -330,7 +349,8 @@ def render(rows: list[Row], constants: dict, players: list[Player]) -> str:
         parts.append("<div class='scroll'><table><thead><tr>")
         parts.append(
             "<th>#</th><th>detector</th><th>kind</th>"
-            "<th class='n'>mean held-out F1</th><th class='n'>crowded veto</th>"
+            f"<th class='n'>mean held-out F1</th><th class='n'>{CLOSE_EVENTS} "
+            "(folds passing)</th>"
             "</tr></thead><tbody>"
         )
         for i, pl in enumerate(here, 1):
@@ -342,7 +362,7 @@ def render(rows: list[Row], constants: dict, players: list[Player]) -> str:
             )
             parts.append(
                 f"<tr><td class='note'>{i}</td>"
-                f"<td><code>{esc(pl.name)}</code></td>"
+                f"<td>{esc(shown(pl.name))}</td>"
                 f"<td class='note'>{kind}</td>"
                 f"<td class='n'>{pl.f1:.4f}</td>"
                 f"<td class='n {veto_cls}'>{esc(pl.veto_label)}</td></tr>"
@@ -352,17 +372,20 @@ def render(rows: list[Row], constants: dict, players: list[Player]) -> str:
         "<p class='note'>All six coded detectors were tuned per outer fold by the "
         "every-knob search, and all four nets were trained against them. "
         "<strong>The raw leader is not the admissible leader</strong>: binned SCE tops "
-        "both selections and its chosen settings fail the crowded-recording veto, "
+        "both selections and its chosen settings fail the close-events test, "
         "because it gets there with a 30 s merge gap that fuses genuinely separate "
-        "events on crowded recordings. The veto was not applied to the nets in this "
-        "run — they decoded at a fixed 2 s gap, and the veto reached them only in the "
-        "later merge-gap work, where it refused a wider gap in all 64 choices.</p>"
+        "events when they come close together. The test was not applied to the nets in "
+        "this run — they decoded at a fixed 2 s gap, and it reached them only in the "
+        "later merge-gap work, where it refused a wider gap in all 64 choices. "
+        "<em>locust</em> is this project's modified partial port of the Cossart lab's "
+        "CICADA; its numbers are not measurements of CICADA.</p>"
     )
 
     parts.append("<h2>Against the admissible leader</h2>")
     parts.append(
         "<p class='note'>CoactDetect is the reference below because it is the "
-        "highest-scoring coded detector whose settings survive the veto in every fold "
+        "highest-scoring coded detector whose settings pass the close-events test in "
+        "every fold "
         "— not because the other five were set aside.</p>"
     )
     parts.append(f"<p>{esc(standing(rows))}</p>")

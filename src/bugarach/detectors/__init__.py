@@ -30,7 +30,29 @@ The shared peak-gating kernel (if2_peak_gate + findpeaksTD half-prominence
 extents) is ported in peaks.py.
 """
 
-from bugarach.detectors.cicada import (
+DISPLAY_NAMES = {
+    "rate": "rate+context",
+    "coact": "CoactDetect",
+    "loco": "LoCo",
+    "sce": "binned SCE",
+    "cicada": "locust",
+    "sync": "SPIKE-synch",
+}
+"""The name a person sees, by code key — the table above, as data.
+
+Anything a person reads prints these, never the key: the key ``cicada`` on a page
+reads as the Cossart lab's CICADA, which locust is a modified partial port of and
+whose results locust's are not (FOUNDATIONS §7; Tony, 2026-09-21, on the
+leaderboard printing it)."""
+
+
+def display_name(key: str) -> str:
+    """``DISPLAY_NAMES[key]``, or the key itself for anything not a coded detector
+    (a net's name is already its display name)."""
+    return DISPLAY_NAMES.get(key, key)
+
+
+from bugarach.detectors.cicada import (  # noqa: E402
     CicadaDetection,
     CicadaStream,
     DurationIsNotOursToDerive,
