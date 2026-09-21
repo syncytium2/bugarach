@@ -303,7 +303,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--role", default="steps_excluded")
+    ap.add_argument("--role", default="steps_and_pins_excluded")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--jobs", type=int, default=12)
@@ -313,7 +313,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     import os
     os.environ[lr.ROLE_ENV] = a.role
-    lab = a.role == "steps_excluded"
+    lab = lr.is_lab_folder()          # the folder's streams, not the role's name
     streams = ("fast", "slow") if lab else ("events",)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)

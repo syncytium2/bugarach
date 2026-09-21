@@ -143,7 +143,7 @@ def split():
 
 def real_recordings():
     if "real" not in _CACHE:
-        os.environ.setdefault("LOOK_ROLE", "steps_excluded")
+        os.environ.setdefault("LOOK_ROLE", "steps_and_pins_excluded")
         import look_rigid_shift as lr
         recs, _ = lr.load("fast", None)
         from bugarach import surrogate_discriminator as sd

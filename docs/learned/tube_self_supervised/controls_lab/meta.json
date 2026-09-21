@@ -1,7 +1,7 @@
 {
   "tag": "look-2026-09-15-controls",
-  "role": "steps_excluded",
-  "started": "2026-09-17T06:36:49-0400",
+  "role": "steps_and_pins_excluded",
+  "started": "2026-09-17T22:35:09-0400",
   "limit": null,
   "quick": false,
   "n_boot": 1000,
@@ -48,6 +48,6 @@
   "slow_window_sources": [
     "baseline region 'baseline', analysis window as the folder states it"
   ],
-  "finished": "2026-09-17T06:37:46-0400",
-  "seconds": 55.168426752090454
+  "finished": "2026-09-17T22:36:05-0400",
+  "seconds": 54.68130397796631
 }

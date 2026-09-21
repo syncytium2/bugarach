@@ -78,7 +78,29 @@ def k_scan(n_roi: int) -> tuple[int, ...]:
 
 def role() -> str:
     import os
-    return os.environ.get(ROLE_ENV, "steps_excluded")
+    return os.environ.get(ROLE_ENV, "steps_and_pins_excluded")
+
+
+_LAB_STREAMS: dict[str, bool] = {}
+
+
+def is_lab_folder() -> bool:
+    """Whether the current export is one of the lab's two-stream folders.
+
+    Answered from the folder's own streams, never from the role's NAME. Three places used
+    to test ``role() == "steps_excluded"`` for this, and on 2026-09-17, when the producer's
+    de-pinned export arrived under a new role name, all three went wrong at once: two sent
+    the tools looking for Cossart's single ``events`` stream (a hard failure, 0 recordings),
+    and the third — the guard refusing non-baseline windows — **stopped applying silently**,
+    which is the half that would have shipped numbers.
+    """
+    r = role()
+    if r not in _LAB_STREAMS:
+        from bugarach import dataset
+        from bugarach.io import load_folder
+        first = load_folder(dataset.current(r))[:1]
+        _LAB_STREAMS[r] = bool(first) and "fast" in set(first[0].streams)
+    return _LAB_STREAMS[r]
 
 
 # -- data -------------------------------------------------------------------------------------
@@ -92,7 +114,7 @@ def load(stream: str, limit: int | None):
     if limit:
         slices = slices[:limit]
     recs, skipped = ss.recordings_from_slices(slices, stream)
-    if role() == "steps_excluded":
+    if is_lab_folder():
         refused = [r.recording_id for r in recs
                    if not r.window_source.startswith("baseline region")]
         if refused:
@@ -314,8 +336,9 @@ def main(argv=None):
                     help="displacements for slow, seconds (default 1.4 2.8 5.6)")
     ap.add_argument("--J-events", nargs="*", type=float, default=None,
                     help="displacements for a single-stream folder, seconds")
-    ap.add_argument("--role", default="steps_excluded",
-                    help="export role from current_export.toml (steps_excluded, cossart)")
+    ap.add_argument("--role", default="steps_and_pins_excluded",
+                    help="export role from current_export.toml (steps_and_pins_excluded, cossart; "
+                         "steps_excluded is the contaminated predecessor and the stop refuses it)")
     ap.add_argument("--twins", type=int, default=20)
     ap.add_argument("--draws", type=int, default=20)
     a = ap.parse_args(argv)
@@ -327,7 +350,7 @@ def main(argv=None):
         J_SEC["slow"] = tuple(a.J_slow)
     if a.J_events:
         J_SEC["events"] = tuple(a.J_events)
-    streams = ("fast", "slow") if a.role == "steps_excluded" else ("events",)
+    streams = ("fast", "slow") if is_lab_folder() else ("events",)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     n_boot = 40 if a.quick else 1000
