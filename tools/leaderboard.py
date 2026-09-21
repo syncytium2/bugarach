@@ -1,41 +1,39 @@
 #!/usr/bin/env python3
 # instrument: staleness
-"""The detector challenge's standing, derived from the runs' own files.
+"""The detector challenge's full field, derived from the runs' own files.
 
     python3 tools/leaderboard.py                 # darkroom copy
     python3 tools/leaderboard.py --also docs/learned/leaderboard.html
 
-**Nothing here is retyped.** Every margin, interval and verdict is read from the
-committed comparison files and recomputed on the spot. That is the whole point:
-`bakeoff.md` retypes nine rows a token could substitute, and one of its claims went
-stale for eight days
-(`docs/todo/2026-08-28-the-bakeoff-page-transcribes-what-a-token-could-substitute.md`),
-which is the failure a fourth hand-maintained table would inherit.
+**Every player, not a challenger against one champion.** All six coded detectors were
+tuned per outer fold by the every-knob search, and all four nets were trained against
+them, so the field is ten. An earlier draft of this tool ranked nets against CoactDetect
+alone, which made the other five coded detectors look ignored and made CoactDetect look
+like an arbitrary favourite. It is neither: it is the highest-scoring coded detector
+whose chosen settings pass the crowded-recording veto in every fold, and that sentence
+is what the earlier draft was missing.
 
-**Why this is not a ranking.** Sorted by F1 alone this page would have shown a net on
-top on the morning of 2026-09-20, and by that evening the review had established that
-the two selections disagree, that the margins sit at about one draw-to-draw noise unit,
-and that the two sides of the comparison are not the same kind of object — CoactDetect
-is one deterministic value per outer fold, each net is five refits, some of which fail
-to train. So the columns carry the qualification the rank would hide, and the verdict
-line is computed from the bar the goal page states rather than from who is highest.
+**The raw leader is not the admissible leader.** Binned SCE tops mean held-out F1 under
+both selections, and its chosen settings fail the veto in 3 of 4 folds under the budget
+and 4 of 4 on F1 alone, because it gets there with a 30 s merge gap that fuses genuinely
+separate events on crowded recordings. So the table carries a veto column, and the
+standing line names both leaders.
+
+**Nothing here is retyped.** Every score, rank and verdict is read from the committed
+run files and recomputed. That is the failure being avoided: `bakeoff.md` retypes nine
+rows a token could substitute and one of its claims went stale for eight days
+(`docs/todo/2026-08-28-the-bakeoff-page-transcribes-what-a-token-could-substitute.md`).
 
 **The bar** (`docs/goals/learned-model-family.md`): a learned detector earns its place
 only by clearing the coded detectors **separably** — by a margin the fold-to-fold
 variation cannot explain — and by being understood well enough that the margin is
-attributable to its shape rather than to its tuning budget. The first clause is what
-this page computes. The second is a judgement and is reported as an open question, not
-scored.
+attributable to its shape rather than to its tuning budget. The first clause is computed
+here against the admissible leader. The second is a judgement and is not scored.
 
-**Separability** uses the corrected *t* the runs already record: the paired statistic
-over outer folds times the Nadeau-Bengio factor for a train/test split reused across
-folds. A margin is called separable when the corrected two-sided interval excludes zero
-at 95 %, which at df = 3 means |t_corrected| > 3.182. That threshold is deliberately
-harsh for four folds and it is meant to be.
-
-**Attempts are counted and shown.** Every model-by-selection-by-variant comparison in
-the source files is one shot at the bar. At margins this size the count is not a
-footnote: the more configurations compared, the more likely one clears by chance.
+**Separability** uses the corrected *t* the runs record: the paired statistic over outer
+folds times the Nadeau-Bengio factor for a train/test split reused across folds. A margin
+counts as separable when the corrected two-sided 95 % interval excludes zero, which at
+df = 3 means |t| > 3.182 — harsh for four folds, deliberately.
 """
 
 from __future__ import annotations
@@ -45,6 +43,7 @@ import html
 import json
 import sys
 from dataclasses import dataclass
+from statistics import mean
 from datetime import date
 from pathlib import Path
 
@@ -70,6 +69,110 @@ VARIANTS = {
     "config_kept": "the net's merge gap tuned, its configuration kept",
     "config_rechosen": "the net's merge gap tuned and its configuration re-chosen",
 }
+
+
+@dataclass
+class Player:
+    """One detector's standing in one selection, coded or learned alike."""
+
+    name: str
+    kind: str  # "coded" or "net"
+    selection: str
+    f1: float
+    folds: int
+    veto_passed: int | None  # folds whose chosen settings survive the crowded veto
+    veto_folds: int | None
+
+    @property
+    def admissible(self) -> bool:
+        """Settings that survive the crowded-recording veto in every fold it was run on.
+
+        A detector with no veto verdict is not called admissible, because the run
+        never asked: the nets decoded at a fixed 2 s gap and the veto reached them
+        only in the later merge-gap work.
+        """
+        return self.veto_folds is not None and self.veto_passed == self.veto_folds
+
+    @property
+    def veto_label(self) -> str:
+        if self.veto_folds is None:
+            return "not applied"
+        return f"{self.veto_passed} of {self.veto_folds}"
+
+
+def read_field(runs: Path) -> list[Player]:
+    """Every player's mean held-out F1, from the run's own results, plus the veto."""
+    results = runs / "results.json"
+    if not results.exists():
+        return []
+    doc = json.loads(results.read_text())
+
+    veto: dict[tuple[str, str], list[int]] = {}
+    crowded = runs / "crowded_check.json"
+    if crowded.exists():
+        for choice in json.loads(crowded.read_text())["choices"]:
+            cell = veto.setdefault((choice["detector"], choice["selection"]), [0, 0])
+            cell[0] += 1 if choice["passes_veto"] else 0
+            cell[1] += 1
+
+    players: list[Player] = []
+    for selection, _ in SELECTIONS:
+        for name, records in doc.get("hand", {}).items():
+            scores = [
+                r[selection]["f1"]
+                for r in records
+                if r.get(selection) and r[selection].get("f1") is not None
+            ]
+            if not scores:
+                continue
+            passed, of = veto.get((name, selection), (None, None))
+            players.append(
+                Player(name, "coded", selection, mean(scores), len(scores), passed, of)
+            )
+        for name, records in doc.get("learned", {}).items():
+            # A net's fold score is the mean over its training seeds.
+            scores = [
+                r[selection]["f1_mean"]
+                for r in records
+                if r.get(selection) and r[selection].get("f1_mean") is not None
+            ]
+            if not scores:
+                continue
+            players.append(
+                Player(name, "net", selection, mean(scores), len(scores), None, None)
+            )
+    return players
+
+
+def field_standing(players: list[Player]) -> str:
+    """Who leads, who leads admissibly, and where the best net actually sits."""
+    if not players:
+        return "No committed results to rank."
+    lines = []
+    for selection, gloss in SELECTIONS:
+        here = sorted(
+            [p for p in players if p.selection == selection],
+            key=lambda p: -p.f1,
+        )
+        if not here:
+            continue
+        top = here[0]
+        admissible = [p for p in here if p.admissible]
+        best_net = next((p for p in here if p.kind == "net"), None)
+        part = f"{gloss.capitalize()}, {top.name} leads the field at {top.f1:.3f} F1"
+        if admissible and admissible[0].name != top.name:
+            part += (
+                f", but its settings fail the crowded veto; the best admissible "
+                f"detector is {admissible[0].name} at {admissible[0].f1:.3f}"
+            )
+        if best_net is not None:
+            rank = here.index(best_net) + 1
+            part += (
+                f". The best net is {best_net.name}, {rank} of {len(here)}, "
+                f"at {best_net.f1:.3f}"
+            )
+        lines.append(part + ".")
+    return " ".join(lines)
 
 
 @dataclass
@@ -166,7 +269,7 @@ def esc(text: object) -> str:
     return html.escape(str(text))
 
 
-def render(rows: list[Row], constants: dict) -> str:
+def render(rows: list[Row], constants: dict, players: list[Player]) -> str:
     noise = constants.get("noise_f1")
     nb = constants.get("nb_factor")
     draws = sorted({r.draw for r in rows}, key=lambda d: [n for n, _ in DRAWS].index(d))
@@ -213,7 +316,56 @@ def render(rows: list[Row], constants: dict) -> str:
         f"<p class='note'>Derived from the runs' own comparison files on "
         f"{esc(date.today().isoformat())}. Nothing on this page is retyped.</p>"
     )
-    parts.append(f"<p class='standing'>{esc(standing(rows))}</p>")
+    parts.append(f"<p class='standing'>{esc(field_standing(players))}</p>")
+
+    # The full field first: every player the run tuned and scored, not a
+    # challenger table against one champion.
+    for selection, gloss in SELECTIONS:
+        here = sorted(
+            [p for p in players if p.selection == selection], key=lambda p: -p.f1
+        )
+        if not here:
+            continue
+        parts.append(f"<h2>The field, {esc(gloss)}</h2>")
+        parts.append("<div class='scroll'><table><thead><tr>")
+        parts.append(
+            "<th>#</th><th>detector</th><th>kind</th>"
+            "<th class='n'>mean held-out F1</th><th class='n'>crowded veto</th>"
+            "</tr></thead><tbody>"
+        )
+        for i, pl in enumerate(here, 1):
+            kind = "learned" if pl.kind == "net" else "coded"
+            veto_cls = (
+                "v-clears"
+                if pl.admissible
+                else ("v-behind" if pl.veto_folds is None else "v-ahead")
+            )
+            parts.append(
+                f"<tr><td class='note'>{i}</td>"
+                f"<td><code>{esc(pl.name)}</code></td>"
+                f"<td class='note'>{kind}</td>"
+                f"<td class='n'>{pl.f1:.4f}</td>"
+                f"<td class='n {veto_cls}'>{esc(pl.veto_label)}</td></tr>"
+            )
+        parts.append("</tbody></table></div>")
+    parts.append(
+        "<p class='note'>All six coded detectors were tuned per outer fold by the "
+        "every-knob search, and all four nets were trained against them. "
+        "<strong>The raw leader is not the admissible leader</strong>: binned SCE tops "
+        "both selections and its chosen settings fail the crowded-recording veto, "
+        "because it gets there with a 30 s merge gap that fuses genuinely separate "
+        "events on crowded recordings. The veto was not applied to the nets in this "
+        "run — they decoded at a fixed 2 s gap, and the veto reached them only in the "
+        "later merge-gap work, where it refused a wider gap in all 64 choices.</p>"
+    )
+
+    parts.append("<h2>Against the admissible leader</h2>")
+    parts.append(
+        "<p class='note'>CoactDetect is the reference below because it is the "
+        "highest-scoring coded detector whose settings survive the veto in every fold "
+        "— not because the other five were set aside.</p>"
+    )
+    parts.append(f"<p>{esc(standing(rows))}</p>")
     parts.append(f"<p class='note'>{ACCOUNTING}</p>")
 
     parts.append("<h2>The bar</h2>")
@@ -319,11 +471,12 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     rows, constants = read_rows(args.runs)
-    if not rows:
-        print(f"no comparison files under {args.runs}", file=sys.stderr)
+    players = read_field(args.runs)
+    if not rows and not players:
+        print(f"no run files under {args.runs}", file=sys.stderr)
         return 2
 
-    page = render(rows, constants)
+    page = render(rows, constants, players)
 
     out = args.out
     if out is None:
@@ -339,7 +492,7 @@ def main(argv: list[str] | None = None) -> int:
         args.also.write_text(page)
         print(f"wrote {args.also}")
 
-    print(standing(rows))
+    print(field_standing(players))
     return 0
 
 
