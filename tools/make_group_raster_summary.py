@@ -646,6 +646,9 @@ def main(argv=None) -> int:
                          "files this reads — this is page space, not a data decision.")
     ap.add_argument("--lane-px", type=int, default=None,
                     help=f"height of one detector row in px (default {LANE_PX})")
+    ap.add_argument("--streams", nargs="+", default=None, metavar="STREAM",
+                    help="only these streams' pages (default: every stream). Tony, "
+                         "2026-09-21: fast only until the slow bench's run has finished")
     ap.add_argument("--png-scale", type=int, default=3,
                     help="device pixel ratio of the flat PNG (default 3; 6 doubles it — "
                          "Tony, 2026-09-21. A tall page can reach Chromium's ~16k px "
@@ -702,6 +705,8 @@ def main(argv=None) -> int:
 
     written, total_red = [], 0
     for (group, treatment, stream), spec in sorted(pages.items()):
+        if a.streams and stream not in a.streams:
+            continue
         blocks, red = build_page(spec["members"], ext=spec["ext"],
                                  manifest=manifest, width=a.width, stream=stream,
                                  lanes=lanes, not_run=not_run, lane_px=a.lane_px,
