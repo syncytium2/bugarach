@@ -50,11 +50,89 @@ def test_the_pointer_exists_and_parses():
 
 def test_it_declares_the_default_and_the_pensub_pair():
     roles = dataset.declared_exports()
-    assert "default" in roles, f"declared: {sorted(roles)}"
+    assert dataset.default_role() in roles, f"declared: {sorted(roles)}"
     assert "pensub" in roles, f"declared: {sorted(roles)}"
     for role, table in roles.items():
         assert table["name"], f"{role} has no name"
         assert table["name"].strip() == table["name"], f"{role} name has whitespace"
+
+
+def test_every_table_says_what_it_is_for_and_exactly_one_input_is_the_default():
+    """Tony, 2026-09-21: one default data folder. Every other table is an eval corpus
+    read on purpose or an archive kept for reproduction, and says which."""
+    roles = dataset.declared_exports()
+    for role, table in roles.items():
+        assert table.get("use") in dataset.USES, f"{role}: use = {table.get('use')!r}"
+        parent = table.get("parent")
+        assert parent is None or parent in roles, f"{role}: unknown parent {parent!r}"
+    assert roles[dataset.default_role()]["use"] == "input"
+    assert dataset.current_name("default") == roles[dataset.default_role()]["name"]
+
+
+def test_a_subset_inherits_its_parents_contamination():
+    """`ttx` and `senktide` hold all four pinned recordings of `steps_excluded` and
+    passed the contamination stop until 2026-09-21, because their own notes did not
+    repeat their parent's."""
+    roles = dataset.declared_exports()
+    for role, table in roles.items():
+        parent = table.get("parent")
+        if parent and dataset.contamination_note(parent):
+            assert dataset.contamination_note(role), (
+                f"{role} is a subset of {parent}, which declares a contamination, "
+                f"but {role} passes the stop")
+
+
+def test_an_archive_folder_does_not_open_without_saying_why(monkeypatch):
+    archives = [r for r, t in dataset.declared_exports().items() if t["use"] == "archive"]
+    assert archives, "nothing is archived — the old default went somewhere"
+    monkeypatch.delenv(dataset.REPRODUCE_ENV, raising=False)
+    for role in archives:
+        with pytest.raises(dataset.DataError, match="archive"):
+            dataset.current(role)
+
+
+# ------------------------------------------------ the per-session confirmation
+
+@pytest.fixture
+def in_a_session(monkeypatch, tmp_path):
+    monkeypatch.setenv("BUGARACH_STATE_DIR", str(tmp_path))
+    monkeypatch.setattr(dataset, "_session_id", lambda: "session-under-test")
+    return tmp_path
+
+
+def test_the_default_refuses_until_the_person_confirms_it(in_a_session):
+    with pytest.raises(dataset.UnconfirmedDefault) as exc:
+        dataset.require_confirmed()
+    assert dataset.current_name("default") in str(exc.value), "the stop must NAME it"
+    assert "python -m bugarach.dataset confirm" in str(exc.value)
+    assert dataset.confirm() == dataset.current_name("default")
+    dataset.require_confirmed()                                   # now passes
+
+
+def test_a_confirmation_is_of_a_folder_so_a_moved_default_asks_again(in_a_session):
+    (in_a_session / "confirmed").mkdir()
+    (in_a_session / "confirmed" / "session-under-test").write_text("an-older-folder\n")
+    with pytest.raises(dataset.UnconfirmedDefault, match="has moved"):
+        dataset.require_confirmed()
+
+
+def test_a_confirmation_belongs_to_one_session(in_a_session, monkeypatch):
+    dataset.confirm()
+    monkeypatch.setattr(dataset, "_session_id", lambda: "another-session")
+    with pytest.raises(dataset.UnconfirmedDefault):
+        dataset.require_confirmed()
+
+
+def test_no_session_means_no_gate(monkeypatch):
+    """A person at a terminal is their own confirmation, and the suite is a check."""
+    monkeypatch.setattr(dataset, "_session_id", lambda: None)
+    dataset.require_confirmed()
+
+
+def test_a_result_can_say_what_it_was_scored_on():
+    s = dataset.stamp()
+    assert s["name"] == dataset.current_name("default")
+    assert s["role"] == dataset.default_role() and s["use"] == "input"
 
 
 def test_the_export_directories_are_searched_before_the_bare_root():
@@ -97,7 +175,7 @@ def test_the_name_is_available_without_the_data_being_mounted():
 def test_an_unknown_role_names_the_ones_that_exist():
     with pytest.raises(dataset.DataError) as exc:
         dataset.current_name("no-such-role")
-    assert "default" in str(exc.value) and "pensub" in str(exc.value)
+    assert dataset.default_role() in str(exc.value) and "pensub" in str(exc.value)
 
 
 def test_it_carries_no_absolute_path():

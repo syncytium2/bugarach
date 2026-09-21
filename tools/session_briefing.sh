@@ -430,20 +430,33 @@ render() {
   # briefing's job is to make the search unnecessary; the gate's job is to catch the
   # session that searched anyway. Neither should pay for the other's message.
   echo
-  local ds_name ds_path
-  ds_name=$(sed -n '/^\[default\]/,/^\[[a-z]/p' current_export.toml 2>/dev/null \
+  #
+  # CONFIRMED EVERY SESSION (Tony, 2026-09-21). The top-level `default = "<table>"` names
+  # the one input; `dataset.default()` refuses inside a Claude session until the person
+  # has confirmed it, so this line is where the session learns what to ask. The results
+  # line under it is the other half of the same ruling: a benchmark scored on anything
+  # but the default is flagged here, not discovered later.
+  local ds_role ds_name ds_path
+  ds_role=$(sed -n 's/^default[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' \
+            current_export.toml 2>/dev/null | head -1)
+  [ -n "$ds_role" ] && ds_name=$(sed -n "/^\[${ds_role}\]/,/^\[[a-z]/p" current_export.toml \
             | sed -n 's/^name[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' | head -1)
+  # resolve(), not current(): locating the folder is not reading it, and current() is
+  # what refuses until the confirmation this line asks for.
   ds_path=$(PYTHONPATH=src python3 -c 'from bugarach import dataset
-try: print(dataset.current())
+try: print(dataset.resolve(dataset.current_name()))
 except Exception: pass' 2>/dev/null)
-  if [ -z "$ds_name" ]; then
+  if [ -z "${ds_name:-}" ]; then
     echo "!! data in: current_export.toml declares nothing readable. It is the ONLY"
     echo "   declaration of which export folder is the input — fix it before analysing."
   elif [ -n "$ds_path" ]; then
-    echo "data in: $ds_name — dataset.current() resolves it here"
+    echo "data in: $ds_name ($ds_role) — dataset.default() resolves it here."
+    echo "!! ASK THE PERSON TO CONFIRM this default before any analysis; on yes:"
+    echo "   python -m bugarach.dataset confirm"
   else
     echo "!! data in: $ds_name declared, NOT here — PYTHONPATH=src python3 -m bugarach.dataset"
   fi
+  PYTHONPATH=src python3 tools/check_scored_dataset.py --brief 2>/dev/null | head -1
 
   # --- 5b. where does figure output actually go on THIS machine? ------------------
   # Printed rather than left to be asked about. On 2026-08-17 a session reported the

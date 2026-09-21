@@ -58,9 +58,13 @@ POINTER="${ROOT}/current_export.toml"
 # depend on an interpreter being on a hook's login PATH — that is exactly the bug
 # colonel_kernel found in the sibling hook on 2026-08-18, where a missing `python`
 # turned a gate into a no-op across seven repos. sed is in POSIX.
+# The top-level `default = "<table>"` names the table (2026-09-21); its `name` is the folder.
 current_export() {
   [ -f "$POINTER" ] || return 0
-  sed -n '/^\[default\]/,/^\[[a-z]/p' "$POINTER" \
+  local role
+  role=$(sed -n 's/^default[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' "$POINTER" | head -1)
+  [ -n "$role" ] || return 0
+  sed -n "/^\[${role}\]/,/^\[[a-z]/p" "$POINTER" \
     | sed -n 's/^name[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' | head -1
 }
 

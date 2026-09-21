@@ -175,6 +175,15 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   producer's own export had it right. Contract revision 6 records it.
   If a folder looks like it contains something it should not, that is a
   **conversation with the producer**, not a filter in the consumer.
+- **One default dataset, confirmed every session** (Tony, 2026-09-21). Analyses call
+  `dataset.default()`; the top-level `default = "<table>"` in `current_export.toml` is the
+  one line that changes it, and no tool names a folder or a role of its own. **Ask Tony to
+  confirm the default at the start of the session** — the briefing prints it, and
+  `dataset.default()` refuses inside a Claude session until
+  `python -m bugarach.dataset confirm` has recorded his yes. Never run that on his behalf.
+  Other folders are `eval` (read by name on purpose) or `archive` (refused unless
+  `BUGARACH_REPRODUCE` says which run). A result records `"dataset": dataset.stamp()`, and
+  `tools/check_scored_dataset.py` flags at startup every result scored on anything else.
 - **A known contamination stops the work. It does not become a caveat.** (Tony,
   2026-09-17: *"there needs to be a full stop work if there's a known 'contamination'.
   there's no point in running all of this when you know there's a problem."*) When the
