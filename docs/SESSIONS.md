@@ -10,6 +10,25 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/lit-optimization — DARKROOM claim ACTIVE 2026-09-20: `bugarach/lit/optimization/` (NEW)
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony asked for a new shelf. #679 withdrew the
+  chorus-collapse page's novelty claim on the strength of two papers that were read, acted on, cited
+  publicly — and filed nowhere. `lit/README.md`'s own rule is that a PDF with no entry is
+  indistinguishable from one someone downloaded and forgot; these two decided something now live on
+  `main`, and neither `DL/` (learned detectors, set-structured inputs) nor `ml/` (the unlabelled
+  detector's claims) covers training failure, so the shelf is new rather than stretched.
+- **Writes:** `<darkroom>/bugarach/lit/optimization/` — NEW subdirectory: two PDFs and its own
+  `README.md`, each with the author / year / where-it-came-from / which-decision row the shelf
+  requires. One line touched outside it: the subfolder table in `<darkroom>/bugarach/lit/README.md`.
+- **Claims:** `lit/optimization/` exclusively. Being new, it cannot collide with the ACTIVE
+  `lit/radar/` claim (`WSMIP065/shelve-hansen-1973`) or with `lit/coordination/`, `lit/DL/`,
+  `lit/ml/`, `lit/surrogates/`, `lit/recombination/`, `lit/synchrony/`. Nothing else under
+  `<darkroom>/bugarach/` is touched.
+- **Fetched by hand**, as `lit/README.md` requires — murderboard's `fetch_paper.py` is deliberately
+  not vendored here (SAP004, personal paths in a public repo).
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** both PDFs and both README entries are in place.
+
 ### 065/kosson-prior-art — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-19-chorus-collapse/`
 - **Status:** **RELEASED 2026-09-20** with this PR. The write was made and verified: the folder's
   `index.html` moved from `0dfdc1e5…` to `9083d574…`, matching the repo copy byte for byte. Was:
