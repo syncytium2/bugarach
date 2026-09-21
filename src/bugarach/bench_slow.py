@@ -47,9 +47,10 @@ provisional and listed so it can be argued with:
   here — and a context wider than the 120 s spacing is refused by
   :func:`~bugarach.bench.context_fits_the_null` as it is on fast. **If the slow search
   presses against that, the spacing is the thing to move, not the rule.**
-- :data:`OPERATING_POINTS` are the FAST settings, as the start the search moves from and the
-  point the false-alarm budgets are re-measured at (Tony, 2026-09-21: *"remeasure"*). Slow
-  winners do **not** ship through ``bench.OPERATING_POINTS`` (``HANDOFF-slow-bench.md``).
+- :data:`OPERATING_POINTS`: **LoCo and CoactDetect at the slow search's picks** (adopted by
+  Tony, 2026-09-21), the other four at the FAST settings, which is where the search started
+  and what the false-alarm budgets were measured at (Tony: *"remeasure"*). Slow settings do
+  **not** ship through ``bench.OPERATING_POINTS`` (``HANDOFF-slow-bench.md``).
 """
 
 from __future__ import annotations
@@ -153,9 +154,47 @@ TAIL_RECORDING = dict(CROWDED_RECORDING, n_per_level=(60, 60, 60),
 """The close-events recordings: the fast bench's spacing on the slow background."""
 CROWDING_GAP_SEC = 30.0
 
-OPERATING_POINTS: dict[str, OperatingPoint] = dict(_fast.OPERATING_POINTS)
-"""The FAST settings, copied into a dict of this module's own. The search's start and the
-point the budgets below are measured at; nothing here is a slow calibration yet."""
+SLOW_SEARCH = ("tools/search_all_settings.py --bench slow --sliding, 2026-09-21: chosen on seeds "
+               "1-48, held out on 49-96, under the slow budgets and the close-events check; "
+               "docs/learned/runs/2026-09-21-full-search-slow/")
+
+OPERATING_POINTS: dict[str, OperatingPoint] = {
+    **_fast.OPERATING_POINTS,
+    "loco": OperatingPoint(
+        params=dict(bin_width_sec=1.0, context_win_sec=120.0, thr_step_sec=15.0,
+                    merge_gap_sec=4.0, threshold_pctile=99.995, n_surrogates=100, min_rois=3,
+                    null_context_mode="maxlt", guard_sec=0.0, detection_mode="threshold",
+                    peak_prominence=0.0, peak_min_distance_sec=0.0, window_mode="sliding"),
+        source=("SLOW, adopted by Tony 2026-09-21. " + SLOW_SEARCH + ". Sliding; threshold "
+                "99.5 -> 99.995 (bracketed: 99.9975 scored lower), merge gap 2 -> 4 s. Held out: "
+                "mean F1 0.846 against 0.802 at the fast settings, gain +0.044 [+0.038, +0.051]; "
+                "0 elevated-rate calls/hour on either background; 0.03 calls/hour on the "
+                "no-coordination test; close-events F1 0.982 (-0.003). The context sits at the "
+                "null rule's 120 s cap and did not move."),
+        knob=_fast.OPERATING_POINTS["loco"].knob,
+        grid=tuple(sorted(set(_fast.OPERATING_POINTS["loco"].grid) | {99.995, 99.9975}))),
+    "coact": OperatingPoint(
+        params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4, n_surrogates=100,
+                    min_rois=6, merge_gap_sec=8.0, guard_sec=0.0, guard_norm="compact",
+                    detection_mode="threshold", peak_prominence=0.0,
+                    peak_min_distance_sec=0.0, window_mode="sliding"),
+        source=("SLOW, adopted by Tony 2026-09-21. " + SLOW_SEARCH + ". Sliding; min_rois "
+                "3 -> 6, merge gap 3 -> 8 s. Held out: mean F1 0.861 against 0.780, gain +0.081 "
+                "[+0.072, +0.089]; 0 calls/hour on the no-coordination test, where min_rois 3 "
+                "makes about 4 (chance triples: nothing is planted there) against a slow budget "
+                "of 2; close-events F1 0.964 (-0.006). min_rois 6 sits under the smallest "
+                "planted event (about 7 of 32 ROIs) and excludes none of them, but it is the "
+                "setting that can learn the simulation's participation, which rests on the slow "
+                "measurement of 0.38. The anchor for goal 2's shared false-alarm budget on slow."),
+        knob=_fast.OPERATING_POINTS["coact"].knob,
+        grid=_fast.OPERATING_POINTS["coact"].grid),
+}
+"""LoCo and CoactDetect: the slow search's picks, adopted as the slow reference (Tony,
+2026-09-21). The other four: the FAST settings, which is where the search started and what
+the budgets below were measured at, held until the fast questions on them are settled
+(binned SCE 98 or 75, locust's anchor) and SPIKE-synch's C_min is bracketed. **None of these
+ships**: real-data detection reads ``bench.OPERATING_POINTS``, and a slow setting reaches a
+real recording only through a settings file with ``stream=slow`` rows (``HANDOFF-slow-bench.md``)."""
 DETECTORS = tuple(OPERATING_POINTS)
 
 SLOW_EXTRA: dict[str, dict[str, tuple]] = {
@@ -192,7 +231,8 @@ MAX_CROWDED_DROP = _fast.MAX_CROWDED_DROP
 still unsigned on fast (the crowded-allowance sweep is its input). Same number, same status."""
 
 BUDGETS_RECORD = "docs/learned/bench_slow_budgets.json"
-"""Written by ``tools/measure_slow_budgets.py``: each detector at :data:`OPERATING_POINTS` on
+"""Written by ``tools/measure_slow_budgets.py``: each detector at the FAST settings (measured before
+LoCo and CoactDetect were adopted, and kept as measured) on
 seeds 1–48 of this bench, and the same on the fast bench for comparison."""
 
 # Measured on THIS bench at OPERATING_POINTS (Tony, 2026-09-21: "remeasure"), then one rule

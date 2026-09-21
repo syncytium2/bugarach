@@ -206,3 +206,20 @@ Newest last. A session that finds this file picks up at the first step not marke
   LoCo (+0.044: threshold 99.995 bracketed by 99.9975, merge gap 4 s) and binned SCE
   (threshold 99, bin 5 s) are the clean ones. Nothing is set in `bench_slow.OPERATING_POINTS`;
   choosing is Tony's. Step 5 (the nets) waits on which slow coded settings are the reference.
+- 2026-09-21 (WSMIP064): **Tony adopted LoCo and CoactDetect as the slow reference**, now in
+  `bench_slow.OPERATING_POINTS` with their `source` strings; the other four stay at the fast
+  settings. What came out on the way to that ruling, for whoever picks this up:
+  **CoactDetect is fine on slow** — at `min_rois` 3 it scores 0.834 held out, but makes about 4
+  calls/hour on the no-coordination recording (chance triples; nothing is planted there)
+  against the slow budget of 2, and `min_rois` 6 takes that to 0 while excluding no planted
+  event (smallest about 7 ROIs); 0.861 at the adopted setting. **The slow bench is fast with
+  events twice as big**: at the same fast settings every detector scores higher on slow
+  (0.61–0.85 against 0.45–0.70), and giving the slow bench fast's participation (0.30/0.18/0.10)
+  puts the order back to fast's — CoactDetect 0.732, LoCo 0.725, rate+context 0.661, binned
+  SCE 0.608, locust 0.529, SPIKE-synch 0.498. So **slow participation, 0.38, is the value the
+  whole slow bench turns on**, and a bench where everything scores 0.8+ separates detectors
+  — and nets from coded ones — less well. **Step 5 is not started.** What it needs from here
+  is one fixed CoactDetect setting to anchor the shared false-alarm budget (this one); what
+  it needs first is Tony's call on whether to confirm the 0.38 before spending about 28
+  GPU-hours, or to run a short pilot. The tuning tool still lives on `tune-bench-comparison`
+  and needs the same `--bench` seam the search got.
