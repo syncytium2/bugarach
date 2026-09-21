@@ -839,7 +839,12 @@ co-authors). `binned SCE` descends from Cossart, Aronov & Yuste 2003 and is not 
 - Zhu Y, Li Y, Zhang Q (2023). *IEEE Trans Geosci Remote Sens* 61:1–14, doi:10.1109/TGRS.2023.3302472.
 ## Provenance and how to reproduce
 
-Branch `read-the-de-pinned-export`. **The input is the producer's de-pinned export**, declared in
+Produced on branch `read-the-de-pinned-export`, and landed on `main` by cherry-pick on 2026-09-21
+as `2188b83`, `840fc00`, `751ed6d` and `fbde6b3` — unchanged but for one citation `main` had
+corrected meanwhile (Hamon M, not Hamon L). ⚠ **The stamps in the table below name the originals on
+that branch, not the commits on `main`**: the records were written by the run and are not rewritten
+to match a later landing. `b3cfc16` there is `840fc00` here, and the branch is kept on `origin` so
+every stamped hash stays fetchable. **The input is the producer's de-pinned export**, declared in
 `current_export.toml` as the role `steps_and_pins_excluded`
 (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, 84 recordings, 2,630 ROIs, 264,075 events).
 Its contaminated predecessor, `steps_excluded`, is still declared and still refuses to load: a run
