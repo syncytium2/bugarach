@@ -1,0 +1,18 @@
+{
+ "detector": "cicada",
+ "params": {
+  "sce_percentile": 99.9,
+  "active_duration_mode": "per_event",
+  "duration_field": "width",
+  "n_surrogates": 100,
+  "n_synchronous_frames": 1,
+  "sce_min_distance_frames": 16,
+  "threshold_scope": "global"
+ },
+ "config_key": "9265d65bce615477",
+ "grid_index": null,
+ "is_shipped": null,
+ "chosen_by": "search_all_settings.choose_settings",
+ "outer_fold": 2,
+ "selection": "ungated"
+}

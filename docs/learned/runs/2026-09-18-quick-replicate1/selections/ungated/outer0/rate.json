@@ -1,0 +1,155 @@
+{
+ "detector": "rate",
+ "outer_fold": 0,
+ "selection": "ungated",
+ "config_key": "527191433234f31e",
+ "config": "configs/rate/527191433234f31e.json",
+ "budget": "meta.json budgets[0]",
+ "searched_by": "search_all_settings.choose_settings (goal 1's grids, per fold)",
+ "grids": {
+  "excess_threshold_hz": [
+   3.0,
+   3.5,
+   4.0,
+   4.5,
+   5.0,
+   6.0,
+   8.0
+  ],
+  "context_win": [
+   20.0,
+   30.0,
+   60.0,
+   120.0,
+   240.0
+  ],
+  "rate_win": [
+   0.5,
+   1.0,
+   2.0,
+   3.0,
+   5.0
+  ],
+  "merge_gap_s": [
+   0.1,
+   0.5,
+   1.0,
+   2.0,
+   3.0,
+   5.0,
+   8.0
+  ],
+  "guard_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   4.0
+  ],
+  "threshold_mode": [
+   "additive",
+   "multiplicative"
+  ],
+  "threshold_alpha": [
+   1.5,
+   2.0,
+   3.0,
+   4.0
+  ],
+  "detection_mode": [
+   "threshold",
+   "peak"
+  ],
+  "peak_prominence": [
+   0.0,
+   0.25,
+   0.5,
+   1.0,
+   2.0
+  ],
+  "peak_min_distance_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   5.0
+  ]
+ },
+ "min_gain": 0.002,
+ "max_rounds": 2,
+ "inner_f1": 0.6418325526932085,
+ "moves": [
+  {
+   "round": 1,
+   "setting": "excess_threshold_hz",
+   "old": 4.5,
+   "new": 5.0,
+   "old_f1": 0.6086907702672355,
+   "new_f1": 0.6117511520737327,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 1,
+   "setting": "context_win",
+   "old": 60.0,
+   "new": 20.0,
+   "old_f1": 0.6117511520737327,
+   "new_f1": 0.6294090700870362,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 1,
+   "setting": "merge_gap_s",
+   "old": 3.0,
+   "new": 8.0,
+   "old_f1": 0.6294090700870362,
+   "new_f1": 0.6349650349650351,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 1,
+   "setting": "guard_sec",
+   "old": 0.0,
+   "new": 2.0,
+   "old_f1": 0.6349650349650351,
+   "new_f1": 0.6418325526932085,
+   "rescued_from_inadmissible": false
+  }
+ ],
+ "edge_flags": {
+  "context_win": "low",
+  "merge_gap_s": "high"
+ },
+ "n_scored": 45,
+ "n_refused": 0,
+ "inner_probe_per_hour": {
+  "quiet": 45.0,
+  "busy": 66.0
+ },
+ "inner_quiet_per_hour": 0.0,
+ "pooled": {
+  "recordings": [
+   "quiet:2002",
+   "busy:2002",
+   "quiet:2003",
+   "busy:2003",
+   "quiet:2004",
+   "busy:2004",
+   "quiet:2005",
+   "busy:2005"
+  ],
+  "recording_seeds": [
+   2002,
+   2003,
+   2004,
+   2005
+  ],
+  "twin_seeds": [
+   102002,
+   102003,
+   102004,
+   102005
+  ]
+ },
+ "seconds": 9.719676099950448
+}
