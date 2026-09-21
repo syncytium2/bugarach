@@ -53,6 +53,22 @@ optimization and the training on it — the same pipeline as the weekend, second
   change, filed as `docs/todo/2026-09-21-bench-participation-to-0-19-after-the-meeting.md`.
   The slow bench measures its own participation fresh, so it is not blocked by that; but
   the two overnight reruns (fast with 0.19, slow from scratch) should be scheduled together.
+- **The slow measurement gets its own small tool; `tools/remeasure_bench.py` is not edited.**
+  Tony, 2026-09-21, asked whether that tool should take `--bench fast|slow`, answered that the
+  separate module exists *because* there was no time to expand what `bench.py` can do — and a
+  stream flag threaded through the shared measurement tool is that same expansion in a second
+  file. The tool is contested besides: claimed on WSMIP065, with an uncommitted `--folder`
+  change in its `opt-assess-revised-export` worktree. So write `tools/measure_slow_bench.py`,
+  **importing** `remeasure_bench`'s per-recording measurement and its `_values` summary rather
+  than copying them, reading `bench_slow`'s constants and writing `bench_slow.MEASURED_RECORD`
+  (`docs/learned/bench_measured_slow.json`), with a sibling of
+  `tests/test_bench_is_measured_on_the_declared_folder.py` that pins the slow record's stream
+  to `"slow"`. The duplication is a stopgap with a scheduled end:
+  [`docs/todo/2026-09-21-one-stream-aware-bench.md`](docs/todo/2026-09-21-one-stream-aware-bench.md)
+  turns every tool's `--bench` into a profile selector and deletes both the module and this
+  tool's reason to exist. The tools nobody has claimed — `tools/search_all_settings.py`,
+  `tools/leaderboard.py` — still take `--bench fast|slow` as step 2 says: choosing a module is
+  a selector, not a rebuild.
 - **Test names for anything a person reads** (glossary, 2026-09-21): *elevated-rate test*
   (was promiscuity probe), *no-coordination test* (was empty recording), *close-events test*
   (was crowded veto). *Quiet* and *busy* name the two backgrounds, never a test. The
@@ -60,6 +76,27 @@ optimization and the training on it — the same pipeline as the weekend, second
 - **A coordinated event's width and amplitude** have one definition for every detector:
   width = earliest to last onset in it, amplitude = cells ÷ width
   (`src/bugarach/call_measure.py`, PR #698). Not a detector's own `width_sec`.
+
+## Nothing a slow run writes may land on a fast result
+
+Tony, 2026-09-21, on reading this handoff: the code does not appear to be set up to handle two
+channels of data, and the fast fits and results must not get clobbered. Six places where a slow
+run overwrites a fast one, read off the tree at `a4db11d`. Five are one argument away from safe;
+two have no seam at all.
+
+| what a slow run would overwrite | where | what to do |
+| --- | --- | --- |
+| `docs/learned/bench_measured.json`, the fast bench's last measurement | `tools/remeasure_bench.py:224` writes that one path unconditionally — no `--stream`, no `--out`, only `--no-write` | the slow record is `bench_slow.MEASURED_RECORD`, its own file. This one is **caught after the fact today**: `tests/test_bench_is_measured_on_the_declared_folder.py` compares the record's `stream` field with `bench.MEASURED_STREAM` and separately pins that to `"fast"`, so a slow write reddens the suite and `git checkout` brings the fast record back — but only once it is already gone |
+| the shipped settings, `bench.OPERATING_POINTS` (`src/bugarach/bench.py:523`) | read by the viewer (`src/bugarach/ui/app.py:284`), by real-data detection (`src/bugarach/detect_folder.py:408` and `:477`), by the bake-off and by the figure tools | **the slow winners do not go here.** There is one operating point per detector and it is a fast one — locust's own entry says SLOW's percentile has no bench evidence at either duration. Ship slow settings as a settings CSV instead: `load_settings` (`detect_folder.py:376`) keys rows by `(detector, stream)`, and #700 (`acc6a16`) made `detect --settings` take any parameter a detector takes, so `stream=slow` rows reach real recordings without touching a fast number |
+| the search's output folder | `tools/search_all_settings.py:809` defaults to `<darkroom>/<date>-full-search` | pass `--out` on every run: a fast search and a slow search **on the same day write the same folder**. The tool has no bench seam either — it binds `bugarach.bench` at module scope (`:64`) and judges candidates against `_bench.BENCH_RECORDING` (`:121`) |
+| the training run's declaration | `tools/tune_learned_vs_coact.py`, branch `tune-bench-comparison` | `--out` is already required, so no folder collides. The danger is the other one: the bench is hardwired in roughly a dozen places, including what `meta.json` records as `bench_recording`, `backgrounds` and `null_recording`, and the provenance string `"bugarach.bench.make_recording"` (`:842`); `--simulation` offers only `bench` or `home` (`:1688`). **Without a seam a slow run trains on fast simulated recordings and stamps them slow** — step 2's trap, one tool further on |
+| the leaderboard page | `tools/leaderboard.py:51` defaults `--runs` to the fast run's folder; `:510` writes `leaderboard.html` under the darkroom, a fixed name | the slow page needs both `--runs` and a name of its own, or it replaces the fast one in place |
+| nothing — but it invalidates the slow nets | `src/bugarach/learn/encode.py:165`, `decode(..., merge_gap_frames=20)`, which `pick_threshold` uses | a gap sized for fast splits or truncates slow events. Check it before reading any slow net result, as "Nets' input timing" below says |
+
+What is **not** at risk: the run folders are name-stamped
+(`docs/learned/tuned_vs_coact/fair_comparison_2026_09_18`, `replicate1`), so the weekend's fast
+fits and chosen models survive any slow run given a folder name of its own — and #702 puts that
+weekend material in the repo, where a mistake is recoverable rather than disk-only.
 
 ## The steps
 
