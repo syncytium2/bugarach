@@ -1,6 +1,7 @@
 ---
-status: open
+status: done
 filed: 2026-09-10
+closed: 2026-09-21
 ---
 
 # Four recordings carry a known motion-correction contaminant that no column flags
@@ -119,3 +120,46 @@ Either the producer withdraws or flags them, or Tony rules that they stay unflag
 is recorded where a training run would read it. **Until then the stop stands**, and any analysis that
 proceeds does so with an acknowledgement naming why its measurement is unaffected — a reason about
 the measurement, not about the schedule.
+
+## Closed 2026-09-21 — the producer did both, and the stop cleared the way it was built to
+
+The answer arrived on **2026-09-17 evening**, the same day the stop was ruled: the producer shipped
+`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, declared here as the role
+`steps_and_pins_excluded`. It **withdraws** every event inside a pinned window, over the whole
+recording rather than around the artifact alone, and it **flags** them in a way a consumer can read
+— `moco_pinned_excluded.tsv`, 83 events, joinable on slice_id / roi / stream / time_sec, with
+`pin_window` grouping them. The window is an envelope from the first to the last frame over the
+detector's threshold, so it takes some real events with the artifact, deliberately and in the
+conservative direction, and the windows were reviewed by eye one panel per pinned ROI. Five (roi,
+stream) blocks were emptied and appear as `time_sec = NA`; the ROI stays in the population, which is
+FOUNDATIONS §9's rule that a zero-event ROI is not a dead ROI.
+
+So all three questions this todo asked are answered, and the mechanism worked as designed: the note
+left the pointer file for the new role, and `dataset.current()` stopped refusing **by the producer's
+answer**, not by a session deciding the effect was small.
+
+**What the answer showed, and it is the part worth keeping.** The whole rigid-shift chain reran on
+the de-pinned export overnight on 2026-09-17/18 and **every conclusion survived** — supervised
+models put 0.797–0.829 of their events on three or more ROIs against 0.799–0.830 before,
+`count_excess` 0.899 against 0.903, the per-ROI leak test unmoved at 0.489–0.504 (landed as
+`ba6f90c`, [#690](https://github.com/syncytium2/bugarach/pull/690)). The contamination was never the
+explanation. That is not an argument for having proceeded: it is only knowable after the removal,
+which is the whole reason the stop is a stop and not a caveat.
+
+**And a caution this answer produced.** An earlier sensitivity check dropped the four recordings
+whole and predicted a much larger fall than de-pinning them produced. Dropping a recording removes
+everything about it; de-pinning removed 83 events of 264,075. **A leave-one-out bounds an artifact's
+contribution; it never estimates it.**
+
+⚠ **What is not closed, and it is a narrower question for the producer.** The census cut at
+`n_exceed >= 100` leaves two slices with their events — `20260702_338` (1 ROI, 13 exceeding frames)
+and `20260630_325` (1 ROI, 10), against 515 to 2,195 for the four that were cleaned — and
+`20260629_314` is absent from the census altogether, with an interface2 todo from 2026-09-02 ranking
+it beside the known four on a blind whole-frame scan. So the honest statement is measured-and-tiny
+for two slices and unexamined for one. It is carried on `docs/MILESTONES.md`, in the open table, and
+in this pointer file's own note on the role — not here, because the question this file asks has an
+answer.
+
+The old role `steps_excluded` still declares the contamination and still stops an analysis by
+itself, which is correct: its folder is still contaminated, and runs made before the answer
+reproduce only against it.
