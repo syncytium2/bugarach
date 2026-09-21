@@ -116,12 +116,16 @@ N_SINGLE = 3
 """Single circular draws per recording, each scored against the 8-draw circular mean: how often a
 per-recording ratio from one surrogate realization exceeds 1 by chance. ``circular_ref8`` is a
 second 8-draw mean, the matching reference for arms that are themselves means of 8 draws."""
-LAB_ROLE = "steps_and_pins_excluded"
-"""The lab folder this analysis reads, named once rather than repeated in branches.
+from bugarach import dataset as _dataset  # noqa: E402
+
+LAB_ROLE = _dataset.default_role()
+"""The lab folder this analysis reads: the declared default (Tony, 2026-09-21), resolved to its
+table name so the result keys (``<role>/<stream>``) record which folder was measured.
 
 It moved on 2026-09-17, from ``steps_excluded`` to the producer's folder that also removes the
-moco floor-pinned windows. This is not a preference between two corpora: the earlier folder
-declared a contamination nothing in the data marked, and ``dataset.current`` refuses it outright.
+moco floor-pinned windows, and since 2026-09-21 it follows ``current_export.toml``'s ``default``
+rather than naming a role here. The earlier folder declared a contamination nothing in the data
+marked, and ``dataset.current`` refuses it outright.
 The branches below test against this constant because the lab folder is the one with two streams,
 baseline windows and a CoactDetect removal arm; the Dard et al. folder has none of those.
 """

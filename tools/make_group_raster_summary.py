@@ -81,10 +81,10 @@ MANIFEST = "field_steps_flagged.tsv"
 #: `MANIFEST` beside it, is what identifies the steps-excluded export.
 EXCLUDED_MANIFEST = "field_steps_excluded.tsv"
 
-#: The producer's analysis dataset — "for any new analysis, use this folder" — by
-#: its ROLE in `current_export.toml`, never by name: the pointer is the one place a
-#: folder name is declared (`tests/test_where_the_data_are.py`).
-EXCLUDED_ROLE = "steps_excluded"
+#: The analysis dataset: the declared default in `current_export.toml`, never a
+#: folder name or a role of our own (Tony, 2026-09-21 — one default dataset). It
+#: carries `field_steps_excluded.tsv`, which `resolve_folder` requires.
+EXCLUDED_ROLE = "default"
 
 #: Names the flagged review copy has shipped under. The producer's README calls
 #: it `..._STEPS_FLAGGED_FOR_REVIEW`; it arrived on this machine as

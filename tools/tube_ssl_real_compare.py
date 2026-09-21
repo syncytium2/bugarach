@@ -48,7 +48,6 @@ from __future__ import annotations
 import argparse
 import json
 import multiprocessing as mp
-import os
 import sys
 import time
 import warnings
@@ -58,7 +57,6 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-os.environ.setdefault("LOOK_ROLE", "steps_and_pins_excluded")
 
 import tube_self_supervised as ts                            # noqa: E402
 

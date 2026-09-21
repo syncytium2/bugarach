@@ -77,8 +77,19 @@ def k_scan(n_roi: int) -> tuple[int, ...]:
 
 
 def role() -> str:
+    """The export role this run reads: the declared default unless one was named.
+
+    Resolved to the table's own name, so output paths and results record which folder
+    it was rather than the word "default" (current_export.toml, 2026-09-21)."""
     import os
-    return os.environ.get(ROLE_ENV, "steps_and_pins_excluded")
+    from bugarach import dataset
+    return os.environ.get(ROLE_ENV) or dataset.default_role()
+
+
+def stamp() -> dict:
+    """What this run records about its data (``dataset.stamp``), for its meta.json."""
+    from bugarach import dataset
+    return dataset.stamp(role())
 
 
 _LAB_STREAMS: dict[str, bool] = {}
@@ -336,14 +347,14 @@ def main(argv=None):
                     help="displacements for slow, seconds (default 1.4 2.8 5.6)")
     ap.add_argument("--J-events", nargs="*", type=float, default=None,
                     help="displacements for a single-stream folder, seconds")
-    ap.add_argument("--role", default="steps_and_pins_excluded",
-                    help="export role from current_export.toml (steps_and_pins_excluded, cossart; "
-                         "steps_excluded is the contaminated predecessor and the stop refuses it)")
+    ap.add_argument("--role", default=None,
+                    help="export role from current_export.toml (default: the declared default; "
+                         "cossart for the other corpus)")
     ap.add_argument("--twins", type=int, default=20)
     ap.add_argument("--draws", type=int, default=20)
     a = ap.parse_args(argv)
     import os
-    os.environ[ROLE_ENV] = a.role          # spawned workers inherit it
+    os.environ[ROLE_ENV] = a.role or role()    # spawned workers inherit it
     if a.J_fast:
         J_SEC["fast"] = tuple(a.J_fast)
     if a.J_slow:
@@ -372,7 +383,7 @@ def main(argv=None):
             "quick": a.quick, "n_boot": n_boot, "n_twins": n_twins, "n_draws": n_draws,
             "n_assess_surrogates": n_assess, "J_sec": J_SEC, "bins_sec": BINS_SEC,
             "window_sec": WINDOW_SEC, "edge_thinning_sec": EDGE_THIN_SEC,
-            "exploratory": True, "role": a.role}
+            "exploratory": True, "role": role(), "dataset": stamp()}
     for stream in streams:
         recs, skipped = load(stream, a.limit)
         meta[f"{stream}_recordings"] = len(recs)

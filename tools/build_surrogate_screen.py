@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the surrogate screen's grid on one export folder and write the measurements.
 
-    python tools/build_surrogate_screen.py --role steps_excluded
+    python tools/build_surrogate_screen.py                  # the declared default dataset
     python tools/build_surrogate_screen.py --role cossart --jobs 12
     python tools/build_surrogate_screen.py --dataset some/export --J-frames 1 2 4
 
@@ -686,9 +686,9 @@ def _default_out(role: str) -> Path:
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    src = p.add_mutually_exclusive_group(required=True)
+    src = p.add_mutually_exclusive_group(required=False)
     src.add_argument("--role", help="export role from current_export.toml "
-                     "(steps_excluded, senktide, cossart)")
+                     "(default: the declared default; cossart for the other corpus)")
     _dataset_arg.add(src, want="export_folder", aliases=("--folder",), required=False)
     p.add_argument("--label", default=None,
                    help="name for the output folder when --dataset is used "
@@ -746,9 +746,9 @@ def main(argv=None) -> int:
     from bugarach import dataset
     from bugarach.io import load_folder
 
-    if args.role:
-        folder = dataset.current(args.role)
-        role = args.role
+    if args.role or not args.dataset:
+        role = args.role or dataset.default_role()     # outputs are named by the table
+        folder = dataset.current(role)
     else:
         folder = _dataset_arg.get(args, want="export_folder")
         role = args.label or Path(folder).name
@@ -769,7 +769,10 @@ def main(argv=None) -> int:
                 "destruction_draws": args.destruction_draws,
                 "destruction_assess_surrogates": args.destruction_assess_surrogates,
                 "skip_destruction": args.no_destruction}
-    meta = {"role": role, "folder": str(folder), "streams": {}, "settings": settings,
+    stamp = (dataset.stamp(role) if role in dataset.declared_exports()
+             else {"role": None, "name": Path(folder).name})
+    meta = {"role": role, "folder": str(folder), "dataset": stamp,
+            "streams": {}, "settings": settings,
             "cell_hard_seconds": hard, "cell_mem_gb": args.cell_mem_gb,
             "jobs": args.jobs, "started": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
             "holm_family": "per grid cell AND per scope, separately for each "
