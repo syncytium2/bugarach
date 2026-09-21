@@ -10,6 +10,20 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/census-rerun — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony's ruling on #674's list: items 1-3, and
+  the census re-run that decides whether the page's headline mechanism survives.
+- **Writes:** inside that folder only — a re-run `census.json` and a rebuilt `index.html`. The two
+  runs' `results/` folders are read, never written.
+- **Claims:** that folder exclusively. Reads `<darkroom>/bugarach/2026-09-18-*/results/` for the fit
+  archives, read-only.
+- **NO GPU, despite the authorisation.** `census` runs each fit on the CPU (`fit.model.cpu()`); CUDA
+  is reached only by `replay()`, which this task does not call. **No contention with WSMIP064's
+  allowance sweep, and none was ever possible.**
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the re-run census and the repaired page are on `main`.
+
 ### 065/kosson-prior-art — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-19-chorus-collapse/`
 - **Status:** **RELEASED 2026-09-20** with this PR. The write was made and verified: the folder's
   `index.html` moved from `0dfdc1e5…` to `9083d574…`, matching the repo copy byte for byte. Was:
