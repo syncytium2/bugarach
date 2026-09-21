@@ -29,10 +29,10 @@ the slow bench keeps the same window, and the test pins that.
 300 s burst shapes, ROI count, participation and the width table. **Chosen**, every one
 provisional and listed so it can be argued with:
 
-- ``jitter_sec`` **0.30 s** — what the same instrument gives at the fast bench's 1 s bin.
-  It is NOT a measurement: on both streams that instrument's jitter tracks bin/√12, so it
-  reports the bin (``tools/measure_slow_bench.py``, ``BINS``). Waiting on Tony: a single
-  value, or a range drawn per recording.
+- ``jitter_sec`` **0.30 s, fixed** (Tony, 2026-09-21), as the fast bench fixes 0.36: what
+  the same instrument gives at the same 1 s bin. On both streams that instrument's jitter
+  tracks bin/√12, so on both it is largely the bin (``tools/measure_slow_bench.py``,
+  ``BINS``); the two are treated alike.
 - **No 60 s burst term** (Tony, 2026-09-21: *"disable the burst for slow"*). The slow
   stream's 60 s burst shape is unbounded above — no clumping at a minute that the fit can
   tell from chance — so only the 300 s scale is simulated.
@@ -158,8 +158,34 @@ OPERATING_POINTS: dict[str, OperatingPoint] = dict(_fast.OPERATING_POINTS)
 point the budgets below are measured at; nothing here is a slow calibration yet."""
 DETECTORS = tuple(OPERATING_POINTS)
 
-FULL_GRIDS: dict[str, dict[str, tuple]] = {d: dict(g) for d, g in _fast.FULL_GRIDS.items()}
-"""The fast grids for now. Step 3 of ``HANDOFF-slow-bench.md`` widens them for slow timing."""
+SLOW_EXTRA: dict[str, dict[str, tuple]] = {
+    "loco": {"bin_width_sec": (8.0, 10.0), "merge_gap_sec": (16.0,),
+             "guard_sec": (8.0,), "peak_min_distance_sec": (10.0,)},
+    "sync": {"tau_max": (4.0, 8.0), "max_gap": (4.0, 8.0), "dt": (1.0,),
+             "peak_min_distance_sec": (10.0,)},
+    "coact": {"int_win_sec": (8.0, 10.0), "merge_gap_sec": (16.0,),
+              "guard_sec": (8.0,), "peak_min_distance_sec": (10.0,)},
+    "rate": {"rate_win": (8.0, 10.0), "merge_gap_s": (16.0,),
+             "guard_sec": (8.0,), "peak_min_distance_sec": (10.0,)},
+    "sce": {"bin_width_sec": (45.0, 60.0), "merge_gap_sec": (45.0, 60.0),
+            "peak_min_distance_sec": (20.0,)},
+    "cicada": {"n_synchronous_frames": (20, 40), "sce_min_distance_frames": (32, 64)},
+}
+"""Values added past the fast grids' top on every time-valued axis — about double each top
+value, the SPIKE-synch windows four to five times — because slow timing runs two to four times
+fast's: within-ROI intervals 5.7 s against 1.5 s at the 5th percentile, widths 2.0 s
+against 0.9 s at the median (``tools/measure_slow_bench.py``). The search still extends an
+edge past these and refuses an optimum that stays on one. **Context windows are not
+widened**: :func:`~bugarach.bench.context_fits_the_null` caps them at the 120 s event spacing,
+on slow as on fast, and a slow search pressing on that cap is a reason to move the spacing."""
+
+FULL_GRIDS: dict[str, dict[str, tuple]] = {
+    d: {k: tuple(sorted(set(v) | set(SLOW_EXTRA.get(d, {}).get(k, ())),
+                        key=lambda x: (isinstance(x, str), x)))
+        for k, v in g.items()}
+    for d, g in _fast.FULL_GRIDS.items()}
+"""The fast grids plus :data:`SLOW_EXTRA`. Same axes, so goal 2 and the search walk the same
+settings on either stream."""
 
 MAX_CROWDED_DROP = _fast.MAX_CROWDED_DROP
 """The close-events allowance is a judgement about noise, not a stream measurement, and it is
