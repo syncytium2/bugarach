@@ -33,6 +33,12 @@ path drift: a fix to one is a bug left in the other, and nothing but a test noti
   global. The fast profile's values are **byte-identical** to today's constants: this is a
   refactor, and a moved fast number is a regression.
 - `bench_slow.py` is deleted; its slow values become the slow profile.
+- `tools/measure_slow_bench.py` is deleted with it. It exists for the same reason the module
+  does — Tony declined a `--bench` flag on `tools/remeasure_bench.py` on 2026-09-21, because
+  threading a stream through the shared measurement tool is the expansion there was no time
+  for, and that tool is claimed on WSMIP065 besides. One tool measures a profile afterwards,
+  and it writes that profile's own record rather than the one path it writes today
+  (`tools/remeasure_bench.py:224`).
 - Every tool's `--bench fast|slow` (added for the slow work) selects a profile rather than a
   module.
 - The guard `tests/test_bench_slow.py` becomes a test that no scoring function reads a
