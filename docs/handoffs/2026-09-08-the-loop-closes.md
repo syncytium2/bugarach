@@ -1,10 +1,36 @@
 # Handoff — the loop closes; both of pipeline.md's blockers are gone
 
+> **Retired from the root on 2026-09-21**, where it had been the generically named
+> `HANDOFF.md`, and **relative link paths were rewritten** for this directory (`](docs/` → `](../`)
+> as `README.md` here requires — the body is otherwise untouched.
+>
+> **Retired just ahead of its last item rather than just after, and deliberately.** Its one
+> remaining in-flight item, [#466](https://github.com/syncytium2/bugarach/pull/466), was being
+> landed the same afternoon, and the moment it merges
+> `tests/test_handoff_is_honest.py::test_every_pr_the_handoff_claims_is_still_open` goes **red** on
+> `main` — CI sets `BUGARACH_REQUIRE_PR_API=1`, so that check fails rather than skips. Retiring the
+> file first closes the window instead of racing it. **Nothing else below is in flight.** Where its
+> open items went:
+>
+> | the file's item | where it lives now |
+> |---|---|
+> | MAHICE has never been run on the approved folder | `docs/MILESTONES.md`, the open table — **Tony's**, and it gates quoting any transfer figure |
+> | `performance_table.md` §1 has a superseded header and no argument in its place | [todo](../todo/2026-09-08-three-documents-argue-from-the-flat-field.md) |
+> | `background_curve.png` is the flat field's | the same todo |
+> | the ratio arm of the tube 2×2 does not gate on participation | [todo](../todo/2026-09-08-the-ratio-tube-cannot-count-cells.md) |
+> | binned SCE sits at 0.64× its own chance rate | [todo](../todo/2026-09-08-binned-sce-is-close-to-random-placement-here.md) |
+> | ⚠ SPIKE-synch's bake-off F1 was measured at a bound, not an operating point | [todo](../todo/2026-09-21-spike-synch-f1-was-measured-at-a-bound.md), filed with this retirement because nothing else carried it |
+>
+> Two things in it are still worth reading and are **not** duplicated anywhere: the
+> *"Do not break this"* section on Tony's detached `mahice` judging worktree and where his
+> verdicts live, and the settings/checkpoint lessons under *Two things to know*. `docs/INDEX.md`
+> points here for both.
+
 > ⚠ **OTHER GOALS ARE ALSO LIVE, and none of them is this one.** Four goals now have pages, and
-> [`docs/goals/README.md`](docs/goals/README.md) lists them: the label-free (unsupervised) detector,
+> [`docs/goals/README.md`](../goals/README.md) lists them: the label-free (unsupervised) detector,
 > the hand-written detectors' operating points, the learned model family, and the detector review
 > document. Start at the page for the goal you are picking up; each links that goal's own handoffs.
-> The label-free one is [`docs/goals/unsupervised-learning.md`](docs/goals/unsupervised-learning.md). The screen's code landed on `main` with PR #530 on 2026-09-14, but
+> The label-free one is [`docs/goals/unsupervised-learning.md`](../goals/unsupervised-learning.md). The screen's code landed on `main` with PR #530 on 2026-09-14, but
 > **Tony's stop of 2026-09-12 still stands**: no third reevaluation, no code findings, no run, until
 > the family-size question is discussed. **This file concerns none of that, and neither supersedes
 > the other.** When a thread lands, delete only its own file.
@@ -16,7 +42,7 @@ figure, still held because it is a figure with a caption and was never murderboa
 it was derived from), [#508](https://github.com/syncytium2/bugarach/pull/508) (a trained model
 outlives its process) and [#509](https://github.com/syncytium2/bugarach/pull/509) (weights
 cross in both directions). The predecessor is
-[`docs/handoffs/2026-09-08-mahice-is-usable-nobody-has-run-one.md`](docs/handoffs/2026-09-08-mahice-is-usable-nobody-has-run-one.md)
+[`docs/handoffs/2026-09-08-mahice-is-usable-nobody-has-run-one.md`](2026-09-08-mahice-is-usable-nobody-has-run-one.md)
 — its MAHICE section, its K-floor note and its trap list are NOT superseded by this file.
 
 > **Not murderboarded** — working material for sessions in this tree, same standing as

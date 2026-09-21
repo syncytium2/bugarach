@@ -1,6 +1,8 @@
 # Handoff — the detector review for outside readers (session 065, 2026-09-15 → 09-16)
 
-> Its own thread. The root `HANDOFF.md` is a different thread; neither supersedes the other.
+> Its own thread. The other root handoffs are other threads; none supersedes another. (The
+> generically named root `HANDOFF.md` this line used to point at was retired on 2026-09-21 —
+> [`docs/handoffs/2026-09-08-the-loop-closes.md`](docs/handoffs/2026-09-08-the-loop-closes.md).)
 > When this thread is finished, delete this file (or move it to `docs/handoffs/` if anything
 > below is still worth reading). Not murderboarded; working notes.
 
