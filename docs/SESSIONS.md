@@ -146,6 +146,27 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Released when:** the replicate's report has landed and both scheduled tasks are deleted, or the
   work is abandoned.
 
+### WSMIP064/merge-gap-demote-verdict — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-18-fair-comparison-run/report/merge-gap.html`
+- **Status:** ACTIVE (WSMIP064), claimed before writing. **Re-opens one file inside a released
+  folder**, which is why it is its own block rather than an edit to the one below: Tony took option A
+  on 2026-09-21 — the merge-gap addendum states its result as a measurement rather than a verdict.
+- **Writes:** `report/merge-gap.html` only, rebuilt by `tools/build_net_merge_gap_page.py`. Nothing
+  else in that folder is touched: not `results/`, not `external/`, not `report/index.html`, and none
+  of the murderboard role archives beside it.
+- **Touches:** this block; `tools/build_net_merge_gap_page.py` and the repo copy of the page land on
+  branch `nets/merge-gap-demote-verdict`. Not `docs/reviews/` — the review record stands as written.
+  Not `docs/goals/` (#664).
+- **What changes, so a reader of the old page knows:** the title drops "tuned" (every chosen gap is a
+  boundary the crowded check imposed, which the page's own §2 and §7 already said); §3's heading
+  stops saying "the answer holds", which its own body retracted four sentences later; and the lede
+  states the asymmetry between the two sides as the result. **No number changes**, and CoactDetect is
+  still ahead of every net on average in both draws and in 29 of 32 net-folds.
+- **Holds:** that one file.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the rebuilt page is in the folder and its PR has landed, or the rewrite is
+  abandoned.
+
 ### WSMIP064/fair-comparison-run — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-18-fair-comparison-run/`
 - **Released 2026-09-20**, its condition met: the run ended and both readouts landed — the report
   (#665) and the merge-gap addendum (#671). The folder is finished and nothing more will be written

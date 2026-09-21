@@ -537,8 +537,15 @@ def lede(docs, noise, gained, aside_gained, ahead, n_folds, refusals, costs, dro
         "A detector's <b>merge gap</b> is how close two of its calls may be before they are combined "
         "into one. The coded detectors' searches tuned theirs and the nets ran at a fixed 2 s; this "
         "page tunes the nets' by the same rules, on their training folds, without retraining. "
-        f"<b>It is worth about one noise unit, and the check that bounds it refused a wider gap every "
-        f"time.</b> Each chorus net gains {lo:.3f} to {hi:.3f} F1 against CoactDetect counting every "
+        f"<b>It is worth about one noise unit; the check that bounds it refused a wider gap every "
+        f"time; and the two sides of this comparison are not the same kind of object, so no "
+        f"accounting between them is neutral.</b> The last of those is a result, not a caveat on "
+        f"one: CoactDetect contributes one deterministic value per fold and no refits, while each "
+        f"net contributes five refits, some of which fail to train, so the set-aside, the budget "
+        f"and the crowded check each bear on one side harder than the other. Every section below "
+        f"says which way it bears, and the numbers themselves are sound: what they do not support "
+        f"is a single verdict read off them. "
+        f"Each chorus net gains {lo:.3f} to {hi:.3f} F1 against CoactDetect counting every "
         f"refit, and {alo:.3f} to {ahi:.3f} F1 with the refits under {LOW_F1:g} F1 set aside on both "
         f"sides, against a between-draw scale of {noise:.3f} F1; <code>tube</code> gains a fifth of "
         f"that. In all {len(costs)} choices of {both(docs)} the training folds preferred a still wider "
@@ -783,7 +790,7 @@ def body(docs, report_href: str) -> str:
                       for x in (r[v].get("heldout") or {}).get("per_seed", []) if x["f1"] >= LOW_F1)
 
     P = [f"""
-<h1>The nets' merge gap, tuned</h1>
+<h1>The nets' merge gap, and what it is worth</h1>
 <p class=dim>An addendum to <a href="{report_href}">the fair comparison's report</a>, which it assumes
 you have read: goal 2's weekend run of 2026-09-18 and its replicate on a second draw of recordings.
 Simulated recordings, baseline periods, the fast stream.</p>
@@ -824,7 +831,7 @@ each fold chose and the settings refused).</p>
 <p>{crowded_text(docs, costs, refusals, (float(np.median(spread)), float(max(spread))), fails, drop,
                sce, head_pairs, tube_margin, nonmono, n_rows)}</p>
 
-<h2 id="budget">3. Under the budget, the answer holds</h2>
+<h2 id="budget">3. Under the budget, every net gains and every net stays behind</h2>
 <p>Every net gains from a wider gap and every net stays behind CoactDetect.</p>
 {figure(3, "The chorus nets minus CoactDetect, choices under the budget", fig_margins(docs, "gated"),
         "Each dot is one outer fold's held-out F1, the net's mean over its five refits minus "
@@ -972,12 +979,13 @@ def build(run: Path, report_href: str) -> str:
     prov = (f'<h2 id="provenance">Provenance</h2><p class=dim>Built {time.strftime("%Y-%m-%d %H:%M %z")} '
             f"by <code>tools/build_net_merge_gap_page.py</code> at <code>{esc(ver)}</code>.{note} The "
             "review record for this page is <code>docs/reviews/net-merge-gap-2026-09-19.md</code>.</p>")
-    meta = ('<meta name="description" content="The fair comparison\'s nets with their merge gap tuned '
-            f'like any other setting, against CoactDetect, in {both(docs)} of recordings.">\n'
+    meta = ('<meta name="description" content="What the fair comparison\'s nets gain from choosing '
+            'their merge gap, against CoactDetect, and why no accounting between the two sides is '
+            f'neutral, in {both(docs)} of recordings.">\n'
             f'<meta name="generator" content="tools/build_net_merge_gap_page.py {esc(ver)}">\n'
             '<meta name="author" content="the bugarach project">\n'
             f'<meta name="date" content="{time.strftime("%Y-%m-%d")}">\n')
-    html = page("The nets' merge gap, tuned", body(docs, report_href) + prov)
+    html = page("The nets' merge gap, and what it is worth", body(docs, report_href) + prov)
     html = html.replace("</style>", EXTRA_CSS + "</style>", 1)
     html = html.replace('<meta name="viewport"', meta + '<meta name="viewport"', 1)
     return html.replace("<!doctype html>", '<!doctype html><html lang="en">', 1)
