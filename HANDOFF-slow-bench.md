@@ -86,6 +86,15 @@ it is not splitting or truncating slow events before reading any slow net result
 - **Darkroom writes** go under `<darkroom>/bugarach/`, claimed on `docs/SESSIONS.md` first
   (the darkroom is shared across machines). Use `python3 tools/show.py <file> --project bugarach`
   for anything you show Tony — the bare form writes to the darkroom root.
+- **Every run goes to Dropbox and the repo when it finishes** (Tony, 2026-09-21: *"ensure that
+  future runs go straight to repo and dropbox. crazy"*, after this weekend's chosen models turned up
+  on one disk). Schedule the status mirror with `--archive-as <dated-name>` and raise the task's
+  time limit to 60 minutes (`docs/windows_workstation_setup.md` §8, PR #703); then put the run in
+  the repo with `tools/archive_run.py <run> --name <name> --to-repo` and a PR. Check
+  `python3 tools/archive_run.py --pending` on WSMIP064 before starting: this weekend's
+  fair-comparison run there has no `ARCHIVED.json` yet (its copies exist — Dropbox
+  `2026-09-18-fair-comparison-run/results/` and the repo, #702 — so write the marker pointing
+  at them, as WSMIP065 did for its replicate, rather than copying again).
 - **A long run in a desktop session dies with a sign-out** (armory `FINDINGS.md` §20);
   WSMIP064's runs went under `%USERPROFILE%\runs\` with a status mirror
   (`docs/windows_workstation_setup.md` §8).
