@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Is recording identity visible in our data, to a classifier that cannot see coordination?
 
-    python tools/measure_recording_identity.py                 # steps_excluded, both streams
+    python tools/measure_recording_identity.py                 # the default dataset, both streams
     python tools/measure_recording_identity.py --quick         # small run, for a smoke test
 
 Design, gates and expectations are declared in ``docs/learned/recording_identity.md``,
@@ -388,7 +388,8 @@ def figure(results: dict, path: Path) -> None:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--role", default="steps_excluded", help="current_export.toml role")
+    ap.add_argument("--role", default="default",
+                    help="current_export.toml role (default: the declared default)")
     ap.add_argument("--streams", nargs="+", default=["fast", "slow"])
     ap.add_argument("--permutations", type=int, default=199)
     ap.add_argument("--quick", action="store_true", help="300 windows, 39 permutations")
@@ -405,7 +406,8 @@ def main(argv=None) -> int:
         a.out = Path(dr)
     a.out.mkdir(parents=True, exist_ok=True)
     n_perm = 39 if a.quick else a.permutations
-    results = {"figure_id": FIGURE_ID, "role": a.role, "folder": folder.name,
+    results = {"figure_id": FIGURE_ID, "role": dataset.stamp(a.role)["role"],
+               "dataset": dataset.stamp(a.role), "folder": folder.name,
                "window_sec": WINDOW_SEC, "pair_gap_sec": PAIR_GAP_SEC, "gate": GATE,
                "n_permutations": n_perm, "n_boot": N_BOOT, "quick": a.quick, "streams": {}}
     for stream in a.streams:

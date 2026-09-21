@@ -450,9 +450,7 @@ except Exception: pass' 2>/dev/null)
     echo "!! data in: current_export.toml declares nothing readable. It is the ONLY"
     echo "   declaration of which export folder is the input — fix it before analysing."
   elif [ -n "$ds_path" ]; then
-    echo "data in: $ds_name ($ds_role) — dataset.default() resolves it here."
-    echo "!! ASK THE PERSON TO CONFIRM this default before any analysis; on yes:"
-    echo "   python -m bugarach.dataset confirm"
+    echo "!! data in: $ds_name — ASK TONY TO CONFIRM; on yes: python -m bugarach.dataset confirm"
   else
     echo "!! data in: $ds_name declared, NOT here — PYTHONPATH=src python3 -m bugarach.dataset"
   fi

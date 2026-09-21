@@ -109,15 +109,14 @@ def main(argv=None) -> int:
 
     if a.brief:
         bad = n - ok
+        # One short line: the briefing runs within a byte budget measured against what
+        # the harness has refused (tests/test_session_briefing.py), and this line was
+        # what pushed it over on its first draft. The full list is one command away.
         if not bad:
-            print(f"results: all {n} result files scored on the default dataset "
-                  f"or a declared eval corpus")
+            print(f"results: all {n} files scored on the default")
         else:
-            older = ", ".join(p.stem for p, *_ in by["older"] + by["store"])
-            print(f"!! results scored on the default dataset: {len(by['current'])} of {n} files "
-                  f"({len(by['older'])} on an older export, {len(by['store'])} on the closed "
-                  f"store, {len(by['unstamped'])} unstamped{': ' + older if older else ''}) "
-                  f"- python tools/check_scored_dataset.py")
+            print(f"!! results on the default: {len(by['current'])} of {n} files "
+                  f"- tools/check_scored_dataset.py")
         return 1 if (a.strict and bad) else 0
 
     print(f"default dataset: {default_name}")

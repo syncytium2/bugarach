@@ -229,6 +229,7 @@ def require(spec, *, want: str, flag: str = "--dataset") -> Path:
     """
     path = resolve(spec)
     k = kind(path)
+    _gate_declared(path)
 
     if k.name in ("missing", "empty"):
         raise DataError(f"{flag} {path}: {k.detail}")
@@ -421,6 +422,27 @@ def require_confirmed() -> None:
         f"Ask them: \"Default dataset: {name}. Confirm?\" On a yes, run\n"
         f"    python -m bugarach.dataset confirm\n"
         f"and carry on. Do not confirm on their behalf.")
+
+
+def _gate_declared(path: Path) -> None:
+    """A declared folder reached by name or path passes the same gates as by role.
+
+    Without this, ``--dataset 2026-09-03_..._STEPS_EXCLUDED`` (or its path) walked past the
+    archive refusal, the contamination stop and the session confirmation that
+    ``current()`` enforces for the same folder by role — the checks would hold only for
+    callers polite enough to use the role.
+    """
+    try:
+        roles = declared_exports()
+    except DataError:
+        return                                  # no pointer: nothing declared to gate
+    for role, table in roles.items():
+        if str(table.get("name")) == Path(path).name:
+            refuse_if_archived(role)
+            refuse_if_contaminated(role)
+            if role == default_role():
+                require_confirmed()
+            return
 
 
 def default() -> Path:

@@ -129,6 +129,59 @@ def test_no_session_means_no_gate(monkeypatch):
     dataset.require_confirmed()
 
 
+#: Code that may still name a non-eval role, each with the reason. Keep it short.
+ROLE_LITERAL_ALLOWED = {
+    # The bench is measured on `steps_excluded` and its test pins that; moving it is the
+    # re-bench, which Tony paused on 2026-09-21. check_scored_dataset flags it meanwhile.
+    ("src/bugarach/bench.py", "steps_excluded"),
+    # Its docstring's history of the same folder; the tool reads bench.MEASURED_ROLE, and
+    # it is the re-bench's tool (claimed by another session on 2026-09-21).
+    ("tools/remeasure_bench.py", "steps_excluded"),
+}
+
+
+def test_no_tool_picks_an_input_folder_by_role_name():
+    """Tony, 2026-09-21: one default dataset, changed in one place. A tool that names
+    `steps_excluded` or `steps_and_pins_excluded` itself is a second place — which is how,
+    on main that morning, the tools were spread across three folders. Tools call
+    `dataset.default()` (or `dataset.default_role()` where they need the table name); only
+    an `eval` corpus is read by name.
+
+    Checked where a role is actually chosen: a `current("...")` call, a `--role` default,
+    and a module constant ending in ROLE (or `LAB`) assigned a string.
+    """
+    roles = dataset.declared_exports()
+    named = {r for r, t in roles.items() if t.get("use") != "eval"}
+    pats = (re.compile(r"""current\(\s*["']([A-Za-z0-9_]+)["']\s*\)"""),
+            re.compile(r"""add_argument\(\s*["']--role["'][^)]*default\s*=\s*["']([A-Za-z0-9_]+)["']"""),
+            re.compile(r"""^\s*[A-Z_]*(?:ROLE|LAB)\s*=\s*["']([A-Za-z0-9_]+)["']""", re.M),
+            re.compile(r"""setdefault\(\s*["']LOOK_ROLE["']\s*,\s*["']([A-Za-z0-9_]+)["']"""))
+    found = []
+    for path in sorted([*REPO.glob("tools/*.py"), *REPO.glob("src/bugarach/**/*.py")]):
+        rel = path.relative_to(REPO).as_posix()
+        text = path.read_text(encoding="utf-8")
+        for pat in pats:
+            for m in pat.finditer(text):
+                if m.group(1) in named and (rel, m.group(1)) not in ROLE_LITERAL_ALLOWED:
+                    line = text.count("\n", 0, m.start()) + 1
+                    found.append(f"{rel}:{line} names {m.group(1)!r}")
+    assert not found, ("these pick an input folder by name instead of dataset.default():\n  "
+                       + "\n  ".join(found))
+
+
+def test_a_declared_folder_passed_by_name_gets_the_same_gates(monkeypatch, tmp_path):
+    """`--dataset <declared name>` used to walk past the archive refusal and the
+    contamination stop, because `require()` only resolved and checked the shape."""
+    monkeypatch.delenv(dataset.REPRODUCE_ENV, raising=False)
+    archived = next(t["name"] for t in dataset.declared_exports().values()
+                    if t.get("use") == "archive")
+    fake = tmp_path / archived
+    fake.mkdir()
+    (fake / "a.csv").write_text("roi,time_sec\n1,0.5\n")
+    with pytest.raises(dataset.DataError, match="archive"):
+        dataset.require(fake, want="export_folder")
+
+
 def test_a_result_can_say_what_it_was_scored_on():
     s = dataset.stamp()
     assert s["name"] == dataset.current_name("default")
