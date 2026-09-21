@@ -363,10 +363,15 @@ load-bearing terms with no glossary entry.
   defaults, which are not all calibrated. The general sense — a *chosen* detector
   setting that carries where the choice came from, benched or freshly fitted — is
   under **Parameter vocabulary** above, with the three terms it is confused with.
-- **promiscuity probe** — a stretch of the synthetic recording with elevated
-  background and *no* planted events, used to see whether a detector keys on
-  rate rather than on coordination. Its firings are reported separately and kept
-  out of headline precision.
+- **elevated-rate test** (formerly *promiscuity probe*, *probe*; code: `hot_window`,
+  `probe_per_hour`, `MAX_PROBE_PER_MIN`) — a 5-minute stretch of every bench recording
+  (20:00–25:00, easing in over 30 s) where each cell's independent event rate is elevated
+  to 0.06 per second, about 12× the quiet background, with *no* planted events. It asks
+  whether a detector keys on rate rather than on coordination: a call there means more
+  events fooled it. Its calls are reported separately and kept out of headline precision.
+  Named on 2026-09-21 (Tony): "probe" said nothing, and "surge" and "firing" were
+  rejected — the first reads as a fault, the second implies spikes, which calcium events
+  are not.
 - **distractor** — a planted correlated burst: real cross-ROI coincidence that is
   not a coordinated event. A negative that is meant to be confusable. On the bench it
   is built exactly as an 18% planted event is built and differs only in its label, so
@@ -379,7 +384,7 @@ load-bearing terms with no glossary entry.
   without retraining (`tools/tune_net_merge_gap.py`). Matched by name is not matched by
   operation, which is why the three rules below matter. On the bench, where planted events are at
   least 120 s apart, a wider gap rarely costs recall, so bench F1 rises with it for a
-  detector whose calls come in short bursts; that is why the crowded-recording check
+  detector whose calls come in short bursts; that is why the close-events test
   exists. Merging chains, so a detector that calls almost continuously can lose events
   to it even here (the fair comparison's `line_length` and `tube`, 2026-09-19). Three
   rules share the name: a net merges runs of frames above threshold; sliding
@@ -390,24 +395,37 @@ load-bearing terms with no glossary entry.
   word for a per-ROI event, kept apart from a coordinated event.
 - **background** — the steady random firing rate a bench recording is simulated at:
   *quiet* (0.0052 per second per ROI) or *busy* (0.019), the 25th and 75th percentiles
-  of real baseline rates. The code's word is *regime*. Not the promiscuity probe.
-- **empty recording** — a bench recording with nothing planted, one per seed at each
-  background, used to count false alarms.
+  of real baseline rates. The code's word is *regime*. Not the elevated-rate test.
+  Every test below runs at one background or both; the tests are never named *quiet*
+  or *busy* themselves, so that "the quiet background" always means this.
+- **no-coordination test** (formerly *empty recording*, *null recording*; code:
+  `make_null_recording`, `null_quiet`, `quiet_per_hour`) — a whole bench recording whose
+  cells produce events independently at the background rate, with nothing coordinated
+  planted, one per seed at each background. Every call is a false alarm, counted per
+  hour. Not "empty": the cells are active throughout (at quiet, about 10 events a minute
+  across 33 cells); only coordination is absent. Named 2026-09-21 (Tony).
 - **refit** — one training of a chosen net configuration on the outer training folds,
   at one training seed; five per choice in goal 2's comparison.
 - **failed-training signature** — a refit that calls one long stretch per recording, so
   it finds an event or two at perfect precision and almost no recall (F1 0.125 on the
   bench). Recorded per refit as `failed_training_signature`.
-- **crowded-recording check** (also *crowded veto*) — `bench.MAX_CROWDED_DROP`: a
-  setting may not score more than that much mean F1 below the setting it replaces on
-  `bench.make_tail_recording`'s crowded recordings. Goal 1's fourth budget.
-- **shared false-alarm budget** — goal 2's second selection: a candidate may fire at
+- **close-events test** (formerly *crowded-recording check*, *crowded veto*; code:
+  `bench.MAX_CROWDED_DROP`, `make_tail_recording`, `crowded_mean_f1`) — a 3-hour bench
+  recording with 180 planted events, some as little as 6 s apart (spacing fitted to the
+  most crowded real recordings). A setting may not score more than 0.02 mean F1 below the
+  setting it replaces there. It catches a merge gap wide enough to fuse separate events,
+  which every false-alarm count misses because merging makes a detector call *less*.
+  Goal 1's fourth budget. For a net the setting it replaces is its own 2 s decoding, so a
+  pass count reads 4 of 4 by construction; compare F1 on the recording instead. Named
+  2026-09-21 (Tony).
+- **shared false-alarm budget** — goal 2's second selection: a candidate may call at
   most a declared margin (1.6) times as often as the reference CoactDetect, in the
-  promiscuity probe at each background and on the empty recordings at the quiet
-  background, on the training folds (the busy-background empty recordings are reported,
-  not gated).
+  elevated-rate test at each background and in the no-coordination test at the quiet
+  background, on the training folds (the busy-background no-coordination recordings are
+  reported, not gated). In a document for readers: *"false alarms held to CoactDetect's
+  level"*.
   A result is **admissible** if it was chosen within the budget and passes the
-  crowded-recording check.
+  close-events test.
 - **contaminated null** — a surrogate null estimated over a context window that
   contains real coordinated events, which inflates the threshold. Avoided by
   spacing events wider than the widest context window.
@@ -529,9 +547,10 @@ Added 2026-09-10, when that plan's review found them used undefined.
   shared change in block counts **from any source, events included**. In the code,
   `surrogates.window_circular_shift`, registered as a known-bad control. A variant of
   interval jitter, which re-places onsets independently inside fixed windows.
-- **promiscuity probe** — the benchmark generator's whole-field dense block
-  (`hot_window` in `generator_spec.json`, 1,200–1,500 s): every ROI's rate raised at
-  once, so it is also shared drift.
+- **elevated-rate test** (formerly *promiscuity probe*; see its main entry above) — in
+  this section's sense, the benchmark generator's whole-field dense block (`hot_window`
+  in `generator_spec.json`, 1,200–1,500 s): every ROI's rate raised at once, so it is
+  also shared drift.
 - **lit** — an ROI with at least one onset in the bin being counted. "Share of ROIs lit"
   is a count of ROIs, never of onsets.
 - **mask-matched null** — the null for an arm with stretches of time cut out of it.
