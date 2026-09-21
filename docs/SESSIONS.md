@@ -10,9 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 065/census-rerun — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-19-chorus-collapse/`
-- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony's ruling on #674's list: items 1-3, and
-  the census re-run that decides whether the page's headline mechanism survives.
+### 065/census-rerun — DARKROOM claim RELEASED 2026-09-21: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** **RELEASED 2026-09-21.** All four items done. The folder's `index.html` and
+  `census.json` were replaced and each verified to match its repo copy byte for byte; the review
+  record and the round-4 craft report were refreshed beside them. Nothing else in the folder touched.
+  The re-run **reproduced every pre-existing census field bit-identically across all 974 fits**, so
+  the two new fields are pure addition. Was: ACTIVE (WSMIP065), claimed before writing — Tony's
+  ruling on #674's list: items 1-3, and the census re-run that decides whether the page's headline
+  mechanism survives.
 - **Writes:** inside that folder only — a re-run `census.json` and a rebuilt `index.html`. The two
   runs' `results/` folders are read, never written.
 - **Claims:** that folder exclusively. Reads `<darkroom>/bugarach/2026-09-18-*/results/` for the fit

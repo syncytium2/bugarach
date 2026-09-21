@@ -26,6 +26,14 @@ built by `tools/diagnose_chorus_collapse.py`.
   - In the second draw, every collapsed inner fit ends with a silent head layer (153 of 153
     chorus_norm, 75 of 75 chorus_gain_norm), measured away from the ends of the recording. No
     working fit does.
+  - ⚠ **But the head is only the site for chorus_norm** — census re-run, 2026-09-21. The head is
+    handed three pooled statistics, and those are **already constant** in 10 of 153 collapsed
+    chorus_norm fits and in **32 of 75 of chorus_gain_norm's, 43%**. For those the signal never
+    reaches the head at all, so a silent head layer says where it was last seen, not where it
+    stopped. No working fit of either net is handed a constant head input (0 of 279, 0 of 357).
+    **This bears on the choice below:** options 2 and 3 act on or after the head, so neither can
+    help the 43% of chorus_gain_norm's failures that happen before it. Option 1 still can, because
+    it changes what gets trained rather than where the repair is applied.
   - For most collapsed chorus_norm fits the votes still respond to an event, so this is not the
     deaf-encoder failure that PR #596 diagnosed in plain chorus. 4 of 153 are as deaf as plain
     chorus.
