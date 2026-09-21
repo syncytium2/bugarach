@@ -1,5 +1,13 @@
 # HANDOFF — evaluate the revised LoCo and CoactDetect (sliding), and the settings the search found
 
+> **Retired from the root on 2026-09-21, exactly as its successor said it would be.**
+> [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) supersedes it and said *"when
+> that branch lands, that file moves to `docs/handoffs/`"*. `full-search` has landed, so it moved.
+> ⚠ **Four of its readings are corrected there**, in §2 — among them that the LoCo winner's 8 s
+> merge gap is the top of its grid, and that locust's 12.8 s minimum distance is where the search's
+> extension cap stopped it rather than an optimum. Read the correction before quoting a number
+> from here.
+
 **Written 2026-09-17** for a session with none of the context. Tony: *"the overnight run failed.
 create a new handoff with the revised models for evaluation by a new session."*
 

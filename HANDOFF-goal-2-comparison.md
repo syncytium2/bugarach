@@ -1,8 +1,10 @@
 # Handoff: goal 2's comparison landed, and the stopping rule is deliberately not set
 
 > ⚠ **This file covers goal 2 alone — the learned model family against the coded
-> detectors.** [`HANDOFF.md`](HANDOFF.md) beside it is a different thread and is NOT
-> superseded by this one; its in-flight item is #466. Delete only your own file.
+> detectors.** The other root handoffs are other threads and are NOT superseded by this
+> one. Delete only your own file. (The `HANDOFF.md` this line used to name was retired on
+> 2026-09-21, its in-flight #466 having landed —
+> [`docs/handoffs/2026-09-08-the-loop-closes.md`](docs/handoffs/2026-09-08-the-loop-closes.md).)
 
 **Written 2026-09-21 by the orchestration session**, which drove goal 2's two GPU runs
 from Friday evening through Monday morning and is ending here. `main` is green.
