@@ -14,9 +14,11 @@ This tool answers why, reading nothing but the two runs' result folders in the d
 - ``table`` joins every fit's collapse status (the report's Table 2 rule: exactly one call on every
   recording of every fold it was scored on, at its own threshold) to its role and configuration.
 - ``census`` reloads every second-draw chorus fit and runs it on one bench recording, recording for
-  each how many units of each head layer (the stack that maps the pooled per-ROI statistics to the
-  output) pass anything that varies, how much the output varies, and how well the head's input and
-  the output separate event frames from the rest.
+  each the share of units that pass anything that varies in **every** head layer (the stack that maps
+  the pooled per-ROI statistics to the output), how much that head's input varies, and how much the
+  output varies. The first two used to be promised here and not stored — only the minimum over the
+  layers reached the file, and the head's input never did — which left the page unable to tell a
+  signal that died inside the head from one that never reached it.
 - ``trace`` runs one collapsed fit and one working fit (``SHOWN``) on a recording held out from both
   and keeps their output over time, their calls and the planted events.
 - ``replay`` re-runs one second-draw chorus_norm inner fit exactly as ``bugarach.learn.train.train``
@@ -219,23 +221,37 @@ def _head_probe(model, raster) -> dict:
     """Run one fit on one recording and look inside its head: for each of the head's 8 GELU layers,
     the share of units whose output varies over the recording (standard deviation over its frames
     at least ``SILENT``) and the share that is ever above 0.001 (the sign rule round 1 of the review
-    used, kept for comparison); and the output logit."""
+    used, kept for comparison); and the output logit.
+
+    Also the head's INPUT — the largest standard deviation over frames of any of the ``3 * roi_width``
+    pooled channels handed to ``model.head``. Without it the census can say that some layer of the
+    head is silent but never whether the head was given anything to pass on, and those are different
+    failures with different repairs: a fit whose pooled statistics are already constant has not failed
+    in its head at all. This module's docstring has promised the field since the tool was written; it
+    was reduced away before it ever reached ``census.json``."""
     import numpy as np
     import torch
-    varying, positive = [], []
+    varying, positive, head_in = [], [], []
 
     def take_layer(mod, args, o):     # returns None, so it observes and changes nothing
         inner = o[0][:, EDGE:-EDGE]
         varying.append(float((inner.std(dim=1) >= SILENT).float().mean()))
         positive.append(float((inner > 1e-3).any(dim=1).float().mean()))
 
+    def take_head_input(mod, args):   # forward PRE hook: args[0] is z, (B, 3*roi_width, T)
+        inner = args[0][0][:, EDGE:-EDGE]
+        head_in.append(float(inner.std(dim=1).max()))
+
     hooks = [g.register_forward_hook(take_layer) for g in model.head
              if isinstance(g, torch.nn.GELU)]
+    hooks.append(model.head.register_forward_pre_hook(take_head_input))
     with torch.no_grad():
         logit = model(torch.from_numpy(np.asarray(raster, dtype=np.float32)).unsqueeze(0))[0]
     for h in hooks:
         h.remove()
-    return dict(varying=varying, positive=positive, logit=logit.numpy())
+    assert len(head_in) == 1, head_in          # one forward pass, one head input
+    return dict(varying=varying, positive=positive, head_input_sd=head_in[0],
+                logit=logit.numpy())
 
 
 def census(rows: list[dict]) -> dict:
@@ -257,6 +273,7 @@ def census(rows: list[dict]) -> dict:
         entry = dict(net=r["net"], cfg=r["cfg"], seed=r["seed"], recs=r["recs"], role=r["role"],
                      lr=r["lr"], collapsed=r["collapsed"],
                      min_share_varying=min(p["varying"]), min_share_positive=min(p["positive"]),
+                     share_varying=p["varying"], head_input_sd=p["head_input_sd"],
                      logit_sd=float(p["logit"][EDGE:-EDGE].astype("float64").std()),
                      onset_response=_onset_response(m),
                      threshold=float(fit.threshold))
@@ -960,6 +977,29 @@ def page(work: Path) -> str:
           for n in CHORUS for col in (True, False)}
     n_silent = {k: sum(silent(e) for e in v) for k, v in cz.items()}
     n_sign = {k: sum(e["min_share_positive"] == 0 for e in v) for k, v in cz.items()}
+    # What the sign rule of round 1 would have got wrong, in BOTH directions. The page used to print
+    # only chorus_norm's working-fit count, in a sentence about both nets, which understated it
+    # fivefold and left out the misses entirely. Derived, never typed, so it cannot go stale.
+    sign_wrong = {n: n_sign[(n, False)] for n in CHORUS}
+    sign_missed = {n: len(cz[(n, True)]) - n_sign[(n, True)] for n in CHORUS}
+    sign_wrong_total, sign_missed_total = sum(sign_wrong.values()), sum(sign_missed.values())
+    by_net = lambda d: " and ".join(f"{v} {n}" for n, v in d.items() if v)
+    plural = lambda k, word: f"{k} {word}" + ("" if k == 1 else "s")
+    # A stated bound rounds OUTWARD or it is false as printed. "at least 0.82" against a true minimum
+    # of 0.81986 claims more than the data support; the same went for two ranges. Upper bounds already
+    # round up through `:.2g`, so only these three needed a rule.
+    lo2, hi2 = lambda x: math.floor(x * 100) / 100, lambda x: math.ceil(x * 100) / 100
+    lo_pct, hi_pct = lambda x: math.floor(x * 100), lambda x: math.ceil(x * 100)
+    # WHERE the signal stops. `min_share_varying` says that some head layer is silent; it cannot say
+    # whether the head was handed anything to pass on, so until `head_input_sd` existed this page
+    # could not tell a signal that died INSIDE the head from one that never reached it. It matters:
+    # the two nets answer differently, and for chorus_gain_norm the commoner answer is the second.
+    deaf_in = {k: sum(e["head_input_sd"] < SILENT for e in v) for k, v in cz.items()}
+    med_in = {k: st.median(e["head_input_sd"] for e in v) for k, v in cz.items()}
+    assert all(deaf_in[(n, False)] == 0 for n in CHORUS), \
+        "no working fit is handed a constant head input"
+    assert all(0 < deaf_in[(n, True)] < len(cz[(n, True)]) for n in CHORUS), \
+        "and for the collapsed ones neither answer is the whole story in either net"
     assert all(n_silent[(n, True)] == len(cz[(n, True)]) and n_silent[(n, False)] == 0
                for n in CHORUS), "every collapsed fit has a silent layer and no working fit does"
     med = lambda v, f: st.median(e[f] for e in v)
@@ -1071,26 +1111,33 @@ def page(work: Path) -> str:
                   "and training length are described here, not tested.")
     t_chose = tab("chose", "What tuning chose: the learning rate of the configuration picked, over "
                   "both draws' 4 outer folds.", ["net", "selection", "lr 0.003", "lr 0.01", "lr 0.03",
-                                                  "refits that collapsed"],
+                                                  "refits of the picked configuration that failed"],
                   [[n, RULE_WORDS[rule]] + [f"{chose[(n, rule, lr)]} of {n_picks[(n, rule)]} folds"
                                             for lr in LRS] + [f"{bad_by_rule[(n, rule)]} refits"]
                    for n in CHORUS for rule in RULE_WORDS],
                   "Each fold's pick is refit and scored on the held-out fold. Both selections can pick "
-                  "the same configuration, so a collapsed refit can count under both.")
+                  "the same configuration, so one failed refit can count in two rows. The count is "
+                  "taken at the refit's own threshold, which is the only one both rules share; under "
+                  "the false-alarm budget the threshold carried over from the inner fits sits above "
+                  "everything these refits output, so the same trained model fails the other way and "
+                  "calls nothing at all. That is why the column is headed failed rather than "
+                  "collapsed: collapse on this page means exactly one call, and calling nothing is a "
+                  "different failure the budgeted threshold produces from the same weights.")
     t_wu = tab("warmup", "The 200-step linear warm-up at lr 0.03, fit by fit.",
-               ["fit", "encoder", "top m", "steps", "collapsed fits in its configuration (both "
-                "draws)", "final loss", "outcome"],
+               ["fit", "encoder", "top m", "steps", "collapsed fits in its configuration",
+                "final loss", "outcome"],
                [[f"{d['cfg'][:8]}, seed {d['seed']}" + (" (Figure 1's configuration)"
                                                         if d["cfg"] == SHOWN["collapsed"][0] else ""),
                  f"{cfg_row[d['cfg']]['width']} × {cfg_row[d['cfg']]['depth']}",
                  cfg_row[d["cfg"]]["top_m"], f"{d['steps']:,}",
                  f"{per_cfg[('chorus_norm', d['cfg'])][0]} of 36", f"{final(d):.2f}",
-                 ("trains" if trains(d) else "does not train")
-                 + (" (the same run as a longer twin's, stopped earlier)" if d in dup else "")]
+                 ("trains" if trains(d) else "does not train") + (" †" if d in dup else "")]
                 for d in wu],
-               "Final loss: the mean of the last 5 logged steps, on training batches. A fit trains "
-               "when that is below 0.5; the collapsed fits sit near 1.5, about what a constant output "
-               "scores on these batches.")
+               "Collapsed fits are counted over both draws. Final loss: the mean of the last 5 logged "
+               "steps, on training batches. A fit trains when that is below 0.5; the collapsed fits "
+               "sit near 1.5, about what a constant output scores on these batches. † is the same "
+               "training run as a longer twin's, stopped earlier, so the two are one run and are "
+               "counted once in the 6 of 7 above.")
 
     body = f"""
 <h1>Why a third of chorus_norm's tuning fits do not train</h1>
@@ -1138,12 +1185,23 @@ collapsed ({ref_('problem', 'a collapsed fit on a held-out recording')}).</li>
 {of(by_lr[('chorus_norm', 0.03)])} collapse at lr 0.03 and {of(cn_lo)} below it (the grid's rates
 are 0.003, 0.01 and 0.03). chorus_gain_norm follows its encoder's shape at least as much, described
 here, not tested.</li>
-<li><b>The signal stops in the head</b>, the eight layers that turn the pooled per-ROI votes into the
-output. Measured away from the recording's ends, every collapsed inner fit in the second draw has a
-head layer whose units' outputs do not vary ({n_silent[('chorus_norm', True)]} of
-{len(cz[('chorus_norm', True)])} chorus_norm, {n_silent[('chorus_gain_norm', True)]} of
-{len(cz[('chorus_gain_norm', True)])} chorus_gain_norm) and no working fit does
-({ref_('census', 'silent layers and flat outputs')}).</li>
+<li><b>Where the signal stops is not the same in the two nets.</b> Measured away from the recording's
+ends, every collapsed inner fit in the second draw has a head layer whose units' outputs do not vary
+({n_silent[('chorus_norm', True)]} of {len(cz[('chorus_norm', True)])} chorus_norm,
+{n_silent[('chorus_gain_norm', True)]} of {len(cz[('chorus_gain_norm', True)])} chorus_gain_norm) and
+no working fit does ({ref_('census', 'silent layers and flat outputs')}). But a silent head layer does
+not say the head is where the signal stopped, only where it was last seen. The head is handed three
+pooled statistics, and those are already constant in {deaf_in[('chorus_norm', True)]} of
+{len(cz[('chorus_norm', True)])} collapsed chorus_norm fits and in
+{deaf_in[('chorus_gain_norm', True)]} of {len(cz[('chorus_gain_norm', True)])} of
+chorus_gain_norm's — {deaf_in[('chorus_gain_norm', True)] / len(cz[('chorus_gain_norm', True)]):.0%}
+of them — so for those fits <b>the signal never reaches the head at all</b>. The head is the site in
+{len(cz[('chorus_norm', True)]) - deaf_in[('chorus_norm', True)]} of
+{len(cz[('chorus_norm', True)])} of chorus_norm's collapsed fits but only
+{len(cz[('chorus_gain_norm', True)]) - deaf_in[('chorus_gain_norm', True)]} of
+{len(cz[('chorus_gain_norm', True)])} of chorus_gain_norm's. No working fit of either net is handed a
+constant head input ({deaf_in[('chorus_norm', False)]} of {len(cz[('chorus_norm', False)])} and
+{deaf_in[('chorus_gain_norm', False)]} of {len(cz[('chorus_gain_norm', False)])}).</li>
 <li><b>For most chorus_norm fits it is not the failure diagnosed earlier in plain chorus</b> (pull
 request 596), whose votes did not respond to events. By that diagnosis's own test, one onset moves a
 collapsed chorus_norm fit's vote by a median of {med(cz[('chorus_norm', True)], 'onset_response'):.2f}
@@ -1178,7 +1236,7 @@ threshold sits there, as do {work_floor} working chorus_norm fits'.</p>
 
 <h2>2. Which configurations collapse</h2>
 <p>For chorus_norm the learning rate separates the configurations almost completely: every
-configuration at lr 0.03 collapses in {min(cn_hi):.0%} to {max(cn_hi):.0%} of its fits, and below 0.03
+configuration at lr 0.03 collapses in {lo_pct(min(cn_hi))}% to {hi_pct(max(cn_hi))}% of its fits, and below 0.03
 collapse is rare ({ref_('rates', 'collapse by configuration')}).</p>
 """ + fig("rates", fig_rates(rows),
           "<b>For chorus_norm, the top learning rate is where fits collapse.</b> Each mark is one "
@@ -1225,9 +1283,13 @@ of chorus_norm's (second draw, lr 0.01) and {len([r for r in ref_bad if r['net']
 of chorus_gain_norm's (lr 0.03, one per draw). They are the refits behind the † on those nets in the
 <a href="../tuned_vs_coact/replicate1/report.html">replicate report</a>, which footnotes it as a refit
 that "made one call per recording or called nothing on the held-out fold".</p>
-<p>That report reads the {both['chorus_norm']} fits collapsed in both draws as the same fits failing
-twice. The comparison in §2 shows that is what the configurations' rates alone predict: this page
-corrects that reading.</p>
+<p>That report already attributes the {both['chorus_norm']} fits collapsed in both draws to the two
+draws sharing their configurations and training seeds, and concludes that its table shows where
+training fails in this search rather than two independent measurements of how often. §2 adds the
+arithmetic rather than correcting it: the configurations' rates alone predict
+{exp_cfg['chorus_norm']:.1f} of the {both['chorus_norm']}, so no excess remains that this test could
+see, and the sharing that accounts for it is of the configuration rather than of the particular fit.
+That report's conclusion stands.</p>
 """ + t_chose + f"""
 
 <h2>4. What a collapsed fit looks like inside</h2>
@@ -1244,15 +1306,36 @@ suggested step size of 0.001.</p>
 background, simulation seed {census_doc['recording'].split(':')[1]}) that no fit trained on; call this
 the <i>census</i>. Call a head layer <i>silent</i> when none of its 8 units' outputs varies (standard
 deviation under {SILENT:g}), measured with {EDGE} frames trimmed from each end, where zero padding
-makes even a constant layer wiggle. This is a test of variation, not of sign: a GELU's negative dip
-carries signal without going positive, and a rule that asked only whether a unit ever went positive
-counted {n_sign[('chorus_norm', False)]} working fit as dead. Every collapsed inner fit has a silent
+makes even a constant layer wiggle. <b>This is a test of variation, not of sign, and the census says
+how much that choice is worth.</b> A GELU's negative dip carries signal without ever going positive,
+so a rule that asked instead whether a unit rose above 0.001 — the rule this page's first draft
+used — is wrong in both directions on these fits: it calls {plural(sign_wrong_total, 'working fit')}
+dead ({by_net(sign_wrong)}) and misses {plural(sign_missed_total, 'collapsed fit')}
+({by_net(sign_missed)}), where the variation test misses none. Every collapsed inner fit has a silent
 layer ({n_silent[('chorus_norm', True)]} of {len(cz[('chorus_norm', True)])} chorus_norm,
 {n_silent[('chorus_gain_norm', True)]} of {len(cz[('chorus_gain_norm', True)])} chorus_gain_norm) and
 no working one does ({n_silent[('chorus_norm', False)]} of {len(cz[('chorus_norm', False)])} and
 {n_silent[('chorus_gain_norm', False)]} of {len(cz[('chorus_gain_norm', False)])}); the second draw's
 {len(ref_census_bad)} collapsed refits all have one ({sum(silent(e) for e in ref_census_bad)} of
 {len(ref_census_bad)}). A silent layer passes nothing that changes, so the output is flat.</p>
+<p><b>But a silent head layer says where the signal was last seen, not where it stopped.</b> The head
+is handed three pooled statistics; if those are already constant it has nothing to pass on, and the
+failure is upstream of it. Measured the same way — the largest standard deviation over frames of any
+of those channels, {EDGE} frames trimmed from each end — the head's input is constant in
+{deaf_in[('chorus_norm', True)]} of {len(cz[('chorus_norm', True)])} collapsed chorus_norm fits and in
+{deaf_in[('chorus_gain_norm', True)]} of {len(cz[('chorus_gain_norm', True)])} of chorus_gain_norm's,
+and in no working fit of either net ({deaf_in[('chorus_norm', False)]} of
+{len(cz[('chorus_norm', False)])} and {deaf_in[('chorus_gain_norm', False)]} of
+{len(cz[('chorus_gain_norm', False)])}). <b>So the two nets fail in different places.</b> For
+chorus_norm the head is the site in
+{len(cz[('chorus_norm', True)]) - deaf_in[('chorus_norm', True)]} of
+{len(cz[('chorus_norm', True)])} collapsed fits, and its collapsed fits are handed a median
+{med_in[('chorus_norm', True)]:.2g} to work with. For chorus_gain_norm the median collapsed fit's head
+input is {med_in[('chorus_gain_norm', True)]:.2g}, about twice the {SILENT:g} this page calls silent,
+and in {deaf_in[('chorus_gain_norm', True)] / len(cz[('chorus_gain_norm', True)]):.0%} of its
+collapsed fits the votes never varied at all. A repair aimed at the head would miss those:
+whatever goal 2 chooses for chorus_gain_norm has to act before the head, and the warm-up tried in §5
+was tried on chorus_norm only.</p>
 """ + fig("census", fig_census(cen, sd_floor),
           f"<b>Every collapsed fit has a silent head layer and a flat output; no working fit has "
           f"either.</b> One dot per second-draw inner fit on the census recording, both measures "
@@ -1268,7 +1351,7 @@ answer for plain chorus was at most 0.0003, and the test gives the same here for
 chorus ({', '.join(f'{v:.4f}' for v in plain)}), so it can fail. Most collapsed chorus_norm fits pass
 it: one onset moves a vote by a median of {med(cz[('chorus_norm', True)], 'onset_response'):.2f},
 against {med(cz[('chorus_norm', False)], 'onset_response'):.2f} in working fits and
-{min(untrained):.2f} to {max(untrained):.2f} in this configuration untrained. For them the votes still
+{lo2(min(untrained)):.2f} to {hi2(max(untrained)):.2f} in this configuration untrained. For them the votes still
 respond and the head does not pass the response on. {as_deaf[('chorus_norm', True)]} of the
 {len(cz[('chorus_norm', True)])} collapsed chorus_norm fits and
 {as_deaf[('chorus_gain_norm', True)]} of the {len(cz[('chorus_gain_norm', True)])} collapsed
@@ -1392,7 +1475,7 @@ and was not tried. Each changes chorus_norm's numbers in goal 2 and needs both d
 compare.</li>
 <li><b>A fourth, which catches rather than prevents.</b> Measured away from the ends, the output's
 standard deviation on the census recording separates the groups without overlap, in both nets and in
-the refits: at most {sd_coll_max:.2g} logits in every collapsed fit, at least {sd_work_min:.2f} in
+the refits: at most {sd_coll_max:.2g} logits in every collapsed fit, at least {lo2(sd_work_min):.2f} logits in
 every working one. A check at the end of training could flag a fit whose held-out output does not
 vary. In a fair comparison a flagged fit must still count, as a failure or as a retraining charged to
 the net; dropping it would select on the outcome. The gap was found on one recording and one draw.</li>
