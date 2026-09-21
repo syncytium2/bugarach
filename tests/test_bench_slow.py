@@ -93,6 +93,24 @@ def test_the_slow_budgets_are_the_measured_ones():
         assert r["precision_swing"] <= r["ceiling_swing"]
 
 
+@pytest.mark.parametrize("det", ["loco", "coact"])
+def test_the_adopted_slow_settings_pass_the_slow_budgets(det):
+    op = bench_slow.OPERATING_POINTS[det]
+    assert op.source.startswith("SLOW, adopted")
+    assert op is not bench.OPERATING_POINTS[det]
+    seeds = tuple(range(49, 61))
+    for regime in bench_slow.REGIMES:
+        r = bench_slow.evaluate(det, regime, seeds)
+        assert r.hot_fa_per_min <= bench_slow.MAX_PROBE_PER_MIN[det], (regime, r.hot_fa_per_min)
+    assert (bench_slow.false_positives_per_hour(det, seeds=seeds)
+            <= bench_slow.MAX_FALSE_POSITIVES_PER_HOUR[det])
+
+
+def test_the_fast_operating_points_are_unchanged_by_the_slow_adoption():
+    assert bench.OPERATING_POINTS["loco"].params.get("window_mode", "binned") != "sliding"
+    assert bench.OPERATING_POINTS["coact"].params.get("min_rois", 3) == 3
+
+
 def test_choosing_on_the_slow_bench_refuses_a_detector_with_no_slow_budget():
     r = bench.BenchResult(detector="not_a_detector", regime="baseline_quiet")
     with pytest.raises(ValueError, match="measure_slow_budgets"):
