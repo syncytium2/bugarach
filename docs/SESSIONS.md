@@ -10,8 +10,13 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 065/lit-optimization — DARKROOM claim ACTIVE 2026-09-20: `bugarach/lit/optimization/` (NEW)
-- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony asked for a new shelf. #679 withdrew the
+### 065/lit-optimization — DARKROOM claim RELEASED 2026-09-20: `bugarach/lit/optimization/` (NEW)
+- **Status:** **RELEASED 2026-09-20.** The shelf exists and holds exactly three files:
+  `kosson_2024_warmup_update_size.pdf` (22 pp), `lu_2020_dying_relu_initialization.pdf` (34 pp) and a
+  `README.md` carrying both entries in the shelf's author / year / provenance / which-decision form.
+  Each PDF was verified by extracting its first page after the copy, not just by size. One row was
+  added to `lit/README.md`'s subfolder table and nothing else there was touched. Was:
+  ACTIVE (WSMIP065), claimed before writing. Tony asked for a new shelf. #679 withdrew the
   chorus-collapse page's novelty claim on the strength of two papers that were read, acted on, cited
   publicly — and filed nowhere. `lit/README.md`'s own rule is that a PDF with no entry is
   indistinguishable from one someone downloaded and forgot; these two decided something now live on
