@@ -396,11 +396,11 @@ load-bearing terms with no glossary entry.
   detector's own `width_sec`, which is six different rules (locust's is a window floor: every
   2026-09-09 senktide call read 0.3 s). Which events are *in* it: consecutive onsets no more
   than 0.5 s apart (fast; 2.5 s slow), the group with the most cells. Tony, 2026-09-21.
-- **amplitude of a coordinated event** — cells taking part divided by the mean interval
-  between their consecutive onsets, in cells per second (`amplitude`); the interval is
-  floored at the frame interval, and one cell has none. Proportional to the cells, inversely
-  proportional to the interval (Tony, 2026-09-21). **Not** the calcium events' own `amp`,
-  which travels separately as `member_amp_median`.
+- **amplitude of a coordinated event** — cells taking part divided by its width, in cells
+  per second (`amplitude`), so a reader can check it from the two columns beside it (Tony,
+  2026-09-21). The width is floored at the frame interval; one cell has no amplitude. It
+  measures packing, not size — the cell count is its own column. **Not** the calcium events'
+  own `amp`, which travels separately as `member_amp_median`.
 - **firing** — one entry in a cell's list of event times (an *onset*); the page-level
   word for a per-ROI event, kept apart from a coordinated event.
 - **background** — the steady random firing rate a bench recording is simulated at:

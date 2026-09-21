@@ -8,8 +8,8 @@ Reads the calls a ``bugarach detect`` run wrote and the export folder it ran on 
 default unless ``--dataset`` names another), and writes ``calls_measured.csv`` beside the
 detections: every detections column unchanged, then the measured ones from
 :mod:`bugarach.call_measure` — ``core_span_sec`` (the **width**: earliest to last onset in the
-coordinated event), ``amplitude`` (cells taking part divided by the mean interval between their
-onsets, cells per second), and the rest. The lengths the measurement used are columns too, so a
+coordinated event), ``amplitude`` (cells taking part divided by that width, cells per second),
+and the rest. The lengths the measurement used are columns too, so a
 row can be re-derived without this tool's defaults.
 
 **Region comes from the detections, unchanged.** ``region_idx`` and ``region_label`` are the

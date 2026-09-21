@@ -40,33 +40,29 @@ def test_a_straggler_does_not_stretch_the_width():
     assert m.span_sec == pytest.approx(0.9) and m.n_roi == 4     # still reported, separately
 
 
-def test_amplitude_is_cells_over_the_mean_interval():
-    # 4 cells, onsets 0.1 s apart: interval 0.1, amplitude 4 / 0.1 = 40 cells per second.
+def test_amplitude_is_cells_over_the_width():
+    """A reader must be able to check it from the two columns beside it (Tony, 2026-09-21)."""
+    # 4 cells, earliest 5.0, last 5.3: width 0.3 s, amplitude 4 / 0.3 cells per second.
     m = cm.measure_call(stream([[5.0], [5.1], [5.2], [5.3]]), 5.15, **FAST)
-    assert m.mean_interval_sec == pytest.approx(0.1)
-    assert m.amplitude == pytest.approx(40.0)
+    assert m.amplitude == pytest.approx(m.core_n_roi / m.core_span_sec)
+    assert m.amplitude == pytest.approx(4 / 0.3)
 
 
-def test_amplitude_doubles_with_twice_the_cells_at_the_same_spacing():
+def test_amplitude_doubles_with_twice_the_cells_in_the_same_width():
     four = cm.measure_call(stream([[5.0], [5.2], [5.4], [5.6]]), 5.3, **FAST)
     eight = cm.measure_call(stream([[5.0], [5.2], [5.4], [5.6]] * 2), 5.3, **FAST)
-    # Eight cells, onsets pairwise coincident: 8 onsets over 0.6 s -> interval 0.6/7.
-    assert four.amplitude == pytest.approx(4 / 0.2)
-    assert eight.amplitude == pytest.approx(8 / max(0.6 / 7, 0.1))
+    assert eight.amplitude == pytest.approx(2 * four.amplitude)
 
 
 def test_amplitude_doubles_when_the_same_cells_are_twice_as_tight():
-    loose = cm.measure_call(stream([[5.0], [5.4], [5.8]]), 5.4, gap_sec=0.5,
-                            half_aperture_sec=1.0, min_interval_sec=0.05)
-    tight = cm.measure_call(stream([[5.0], [5.2], [5.4]]), 5.2, gap_sec=0.5,
-                            half_aperture_sec=1.0, min_interval_sec=0.05)
+    loose = cm.measure_call(stream([[5.0], [5.4], [5.8]]), 5.4, **FAST)
+    tight = cm.measure_call(stream([[5.0], [5.2], [5.4]]), 5.2, **FAST)
     assert tight.amplitude == pytest.approx(2 * loose.amplitude)
 
 
 def test_onsets_in_one_frame_are_floored_at_the_frame_interval():
     m = cm.measure_call(stream([[7.0], [7.0], [7.0]]), 7.0, **FAST)
-    assert m.core_span_sec == 0.0
-    assert m.mean_interval_sec == pytest.approx(0.1) and m.amplitude == pytest.approx(30.0)
+    assert m.core_span_sec == 0.0 and m.amplitude == pytest.approx(3 / 0.1)
 
 
 def test_one_cell_is_not_coordination():

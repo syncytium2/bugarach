@@ -22,15 +22,16 @@ the width. From the core:
 
 - ``core_span_sec`` — last onset minus first: **the width of the coordinated event**
 - ``core_n_roi`` — distinct cells in it
-- ``amplitude`` — **the amplitude of the coordinated event**: ``core_n_roi`` divided by the
-  mean interval between consecutive onsets in the core, in cells per second. Tony,
-  2026-09-21: *"amplitude should be proportional to the number of ROIs participating and
-  inversely proportional to the intervals of the calcium events in the coordinated event."*
-  Twice the cells at the same spacing is twice the amplitude; the same cells twice as
-  tightly packed is twice the amplitude. The mean interval is ``core_span_sec / (n - 1)``
-  over the core's ``n`` onsets, floored at the recording's frame interval — onsets in the
-  same frame are as close as the recording can tell apart, and a zero would divide to
-  infinity. A single cell has no interval and is not coordination, so its amplitude is NaN.
+- ``amplitude`` — **the amplitude of the coordinated event**: ``core_n_roi`` divided by its
+  width, ``core_span_sec``, in cells per second. Tony, 2026-09-21: *"shouldn't amplitude be
+  number of ROIs / width of the coordinated event. reader sees 14 cells participating and
+  1.6 s width, then 130 cells/s makes no sense"* — so a reader can check it from the two
+  columns beside it. (The first draft divided by the mean interval between onsets, which is
+  roughly cells² over width and matched neither column.) The width is floored at the
+  recording's frame interval: onsets in one frame are as close as the recording can tell
+  apart, and a zero would divide to infinity. A single cell is not coordination, so its
+  amplitude is NaN. What it measures is **packing**: at a steady spacing a bigger event is
+  also a wider one, so the cell count is its own column and not folded in here.
 - ``member_amp_median`` — the member calcium events' own amplitude, in the producer's units
   (the export's ``amp``). **Not the amplitude above**, and named so it cannot be mistaken
   for it.
@@ -72,8 +73,7 @@ class CallMeasure:
     core_n_roi: int
     core_first_sec: float
     core_span_sec: float          # THE width: last minus first onset of the core
-    mean_interval_sec: float      # core_span / (n - 1), floored at the frame interval
-    amplitude: float              # THE amplitude: core_n_roi / mean_interval_sec, cells per second
+    amplitude: float              # THE amplitude: core_n_roi / core_span_sec (floored), cells/s
     member_amp_median: float      # the member calcium events' own amp — not `amplitude`
     member_width_median: float
     peak_coactivity: int          # most distinct cells with onsets inside any gap_sec window
@@ -146,7 +146,7 @@ def measure_call(stream, center_sec: float, *, gap_sec: float, half_aperture_sec
 
     ``stream`` is a :class:`bugarach.store.Stream`; ``locs`` must be the event onsets (an export
     folder's ``time_sec``, the t50rise). ``min_interval_sec`` is the recording's frame interval,
-    the floor under the mean interval. Raises on a non-positive length.
+    the floor under the width when the amplitude divides by it. Raises on a non-positive length.
 
     **Where to look** is ``center_sec ± half_aperture_sec``, widened to cover ``window`` — the
     call's own span, when the detector reported one. The first version looked only at the
@@ -164,7 +164,7 @@ def measure_call(stream, center_sec: float, *, gap_sec: float, half_aperture_sec
     on, roi, amp, wid = _collect(stream, lo, hi)
     nan = float("nan")
     if on.size == 0:
-        return CallMeasure(0, 0, nan, 0, 0, nan, nan, nan, nan, nan, nan, 0,
+        return CallMeasure(0, 0, nan, 0, 0, nan, nan, nan, nan, nan, 0,
                            gap_sec, half_aperture_sec, min_interval_sec)
     groups = _groups(on, gap_sec)
     # Most distinct cells; ties to more events, then to the group nearest the centre.
@@ -173,11 +173,8 @@ def measure_call(stream, center_sec: float, *, gap_sec: float, half_aperture_sec
     c_on = on[core]
     core_n_roi = len(set(roi[core].tolist()))
     span = float(c_on[-1] - c_on[0])
-    if core_n_roi < 2:
-        interval = amplitude = nan               # one cell: no interval, not coordination
-    else:
-        interval = max(span / (c_on.size - 1), min_interval_sec)
-        amplitude = core_n_roi / interval
+    # One cell is not coordination; otherwise cells over the width, floored at one frame.
+    amplitude = nan if core_n_roi < 2 else core_n_roi / max(span, min_interval_sec)
     return CallMeasure(
         n_events=int(on.size),
         n_roi=len(set(roi.tolist())),
@@ -186,7 +183,6 @@ def measure_call(stream, center_sec: float, *, gap_sec: float, half_aperture_sec
         core_n_roi=core_n_roi,
         core_first_sec=float(c_on[0]),
         core_span_sec=span,
-        mean_interval_sec=interval,
         amplitude=amplitude,
         member_amp_median=_nan_stat(np.median, amp[core]),
         member_width_median=_nan_stat(np.median, wid[core]),
