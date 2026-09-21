@@ -1,0 +1,54 @@
+{
+ "model": "tube",
+ "outer_fold": 2,
+ "budget": "meta.json budgets[2]",
+ "pooled": {
+  "training_seeds": [
+   0
+  ],
+  "recordings": [
+   "busy:2000",
+   "busy:2001",
+   "busy:2002",
+   "busy:2003",
+   "quiet:2000",
+   "quiet:2001",
+   "quiet:2002",
+   "quiet:2003"
+  ],
+  "recording_seeds": [
+   2000,
+   2001,
+   2002,
+   2003
+  ],
+  "fitted_on": [
+   "busy:2000",
+   "busy:2001",
+   "busy:2002",
+   "busy:2003",
+   "quiet:2000",
+   "quiet:2001",
+   "quiet:2002",
+   "quiet:2003"
+  ],
+  "twin_seeds": [
+   102000,
+   102001,
+   102002,
+   102003
+  ]
+ },
+ "n_configurations": 2,
+ "missing_configurations": [],
+ "selection": "ungated",
+ "config_key": "b30c08cd87a39df3",
+ "config": "configs/tube/b30c08cd87a39df3.json",
+ "draw_index": 23,
+ "inner_f1": 0.6213363643744418,
+ "edge_flags": {
+  "lr": false,
+  "steps": false,
+  "n_scales": false
+ }
+}

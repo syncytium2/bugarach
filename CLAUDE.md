@@ -145,6 +145,12 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
 - **Push important steps promptly.** A completed, verified step is committed and
   pushed in the same breath — never batched. Nothing below is a reason to sit on
   unpushed work.
+- **A finished run goes to Dropbox and the repo, not only `~/runs`** (Tony, 2026-09-21,
+  after the weekend's trained models turned up on one disk: *"crazy"*). Schedule the status
+  mirror with `--archive-as <dated-name>` and Dropbox happens by itself when `results.json`
+  appears. The repo half is a session's: the briefing names every finished run not yet in
+  the repo, and `tools/archive_run.py <run> --name <name> --to-repo` stages it. Bulk
+  (fits, scores) stays Dropbox-only. `docs/windows_workstation_setup.md` §8.
 - **Branch; land on `main` via a green PR** — full rules, and which of them fire
   by themselves, in [`docs/git_workflow.md`](docs/git_workflow.md). The two that
   are mechanized need no memory: `.githooks/pre-commit` refuses a commit on

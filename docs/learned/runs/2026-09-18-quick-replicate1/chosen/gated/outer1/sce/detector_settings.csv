@@ -1,0 +1,13 @@
+detector,stream,parameter,value
+sce,events,bin_width_sec,2.0
+sce,events,detection_mode,threshold
+sce,events,fitted_config_key,f1aed29f5fa06c72
+sce,events,fitted_on,"simulated recordings ['quiet:2000', 'busy:2000', 'quiet:2001', 'busy:2001', 'quiet:2004', 'busy:2004', 'quiet:2005', 'busy:2005']"
+sce,events,fitted_outer_fold,1
+sce,events,fitted_selection,gated
+sce,events,merge_gap_sec,30.0
+sce,events,min_rois,3
+sce,events,n_surrogates,200
+sce,events,peak_min_distance_sec,0.0
+sce,events,peak_prominence,0.0
+sce,events,threshold_pctile,95.0

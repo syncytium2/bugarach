@@ -458,6 +458,11 @@ except Exception: pass' 2>/dev/null)
   else
     echo "!! data in: $ds_name declared, NOT here — PYTHONPATH=src python3 -m bugarach.dataset"
   fi
+  # Finished runs under ~/runs that are not yet in Dropbox and the repo (Tony, 2026-09-21:
+  # "ensure that future runs go straight to repo and dropbox"). Prints NOTHING when there
+  # are none, so an ordinary briefing pays no bytes for it; tools/archive_run.py says why the
+  # repo half has to be a session's.
+  python3 tools/archive_run.py --pending --brief 2>/dev/null | head -1
 
   # --- 5b. where does figure output actually go on THIS machine? ------------------
   # Printed rather than left to be asked about. On 2026-08-17 a session reported the
