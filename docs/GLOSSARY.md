@@ -391,6 +391,16 @@ load-bearing terms with no glossary entry.
   CoactDetect and LoCo merge window positions; binned SCE merges by firing times.
 - **call** — a detector's claim that a coordinated event happened, over a span of time.
   Scored one to one against planted events (`score.score_detections`).
+- **width of a coordinated event** — the earliest to the last onset among the calcium events
+  in it (`core_span_sec`, `bugarach.call_measure`), the same rule for every detector. Not a
+  detector's own `width_sec`, which is six different rules (locust's is a window floor: every
+  2026-09-09 senktide call read 0.3 s). Which events are *in* it: consecutive onsets no more
+  than 0.5 s apart (fast; 2.5 s slow), the group with the most cells. Tony, 2026-09-21.
+- **amplitude of a coordinated event** — cells taking part divided by the mean interval
+  between their consecutive onsets, in cells per second (`amplitude`); the interval is
+  floored at the frame interval, and one cell has none. Proportional to the cells, inversely
+  proportional to the interval (Tony, 2026-09-21). **Not** the calcium events' own `amp`,
+  which travels separately as `member_amp_median`.
 - **firing** — one entry in a cell's list of event times (an *onset*); the page-level
   word for a per-ROI event, kept apart from a coordinated event.
 - **background** — the steady random firing rate a bench recording is simulated at:
