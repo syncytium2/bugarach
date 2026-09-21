@@ -47,8 +47,9 @@ question and opened the larger one: `bench.py` says in terms that **only the one
 detector was searched; every other parameter is as it was**.
 
 **A search over every *declared* setting finished** on 2026-09-16 at 17:02, into
-`<darkroom>/bugarach/2026-09-16-full-search/`. It was a **measurement, not an adoption**. Its handoff,
-`HANDOFF-evaluate-sliding-detectors.md` on branch `full-search` (⚠ unmerged), is **superseded** by
+`<darkroom>/bugarach/2026-09-16-full-search/`. It was a **measurement, not an adoption**. Its handoff, now
+[`docs/handoffs/2026-09-17-evaluate-sliding-detectors.md`](../handoffs/2026-09-17-evaluate-sliding-detectors.md)
+(`full-search` has landed; the file left the root on 2026-09-21), is **superseded** by
 [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md), which also corrects four of its
 readings. Two of them are in the table below.
 
@@ -83,7 +84,7 @@ is a ruling, *argued* is reasoning nobody has measured.
 | **The empty-recording false-alarm budget moved where a calibration can see it** — `MAX_FALSE_POSITIVES_PER_HOUR` and `false_positives_per_hour`, landed with the retune | built | [`bench.py`](../../src/bugarach/bench.py) |
 | **With LoCo retuned, CoactDetect's lead is 0.003 F1**, and the background-curve tests say so with a tie margin rather than asserting an order the spread does not support | measured | `tests/test_background_curve.py` |
 | **Two corrections landed immediately before the retune and moved every curve it reads**: locust holds each cell for the event's own width instead of a fixed second, and binned SCE's calls are scored over the bins they were made on | measured | [PR #594](https://github.com/syncytium2/bugarach/pull/594), [PR #593](https://github.com/syncytium2/bugarach/pull/593) |
-| **A long context wins held-out and loses on crowded recordings.** The 240 s contexts that lead the overnight search's held-out column cost LoCo 0.044 and CoactDetect 0.022 mean F1 on the crowded check — the bench plants events at least 120 s apart, and a window-shaped setting can learn that spacing. ⚠ Corrected 2026-09-17: the LoCo winner also carries an 8 s merge gap, the top of its grid, which fuses crowded events planted 6 s apart. Part of the loss may be that, not the context | measured, one run | `HANDOFF-evaluate-sliding-detectors.md` on branch `full-search` ⚠ **not on `main`**; correction in [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §2 |
+| **A long context wins held-out and loses on crowded recordings.** The 240 s contexts that lead the overnight search's held-out column cost LoCo 0.044 and CoactDetect 0.022 mean F1 on the crowded check — the bench plants events at least 120 s apart, and a window-shaped setting can learn that spacing. ⚠ Corrected 2026-09-17: the LoCo winner also carries an 8 s merge gap, the top of its grid, which fuses crowded events planted 6 s apart. Part of the loss may be that, not the context | measured, one run | [`docs/handoffs/2026-09-17-evaluate-sliding-detectors.md`](../handoffs/2026-09-17-evaluate-sliding-detectors.md), now on `main`; correction in [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §2 |
 | **locust's minimum distance climbed to 12.8 s (128 frames), +0.119 held-out mean F1 and +0.149 crowded, and was still climbing.** ⚠ Corrected 2026-09-17: 128 frames is where the search's extension cap (`MAX_EXTENSIONS = 3`) stopped it, silently, so it is an unbracketed edge and not an optimum. A score that rises as repeat calls are suppressed points at the anchor question below | measured, one run; unbracketed | same; correction in [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §2 |
 
 ## Tried and dropped — do not re-propose without new evidence
