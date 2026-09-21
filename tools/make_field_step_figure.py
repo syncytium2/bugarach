@@ -1,6 +1,6 @@
 """Does a confirmed field step COINCIDE with events, or GENERATE them?
 
-    python tools/make_field_step_figure.py --dataset 2026-09-03_revised_2v_long_PRE_ARTIFACT_KILLER
+    python tools/make_field_step_figure.py --dataset <the export that KEEPS the steps>
 
 interface2 shipped the draft-final-run export labelled ``PRE_ARTIFACT_KILLER``
 and asked one question with it (handoff 2026-09-03, §4 item 2). They measured
@@ -461,9 +461,14 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 2500,
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--width", type=int, default=1500)
-    p.add_argument("--dataset", default=None,
-                   help="export folder name or path; default is the folder the "
-                        "nine confirmed steps were adjudicated on")
+    p.add_argument("--dataset", required=True,
+                   help="REQUIRED: the export folder — a role from current_export.toml, a "
+                        "folder name, or a path. It must be one that KEEPS the field steps "
+                        "(the pre-artifact-killer member of the 2026-09-03 pair, on which "
+                        "the nine steps were adjudicated); a folder with them removed has "
+                        "nothing for this to measure. No default, because a folder name in "
+                        "code is a second declaration and current_export.toml is the only "
+                        "one (tests/test_where_the_data_are.py)")
     p.add_argument("--out", default=None,
                    help="destination; defaults to the darkroom")
     p.add_argument("--also", type=Path, default=None,
@@ -476,7 +481,7 @@ def main() -> int:
     from bugarach import dataset
     from bugarach.paths import darkroom, unresolved_message
 
-    name = a.dataset or "2026-09-03_revised_2v_long_PRE_ARTIFACT_KILLER"
+    name = a.dataset
     folder = Path(name) if Path(name).is_dir() else dataset.resolve(name)
     print(f"reading {folder}…")
     m = measure(folder)
