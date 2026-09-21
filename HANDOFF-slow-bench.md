@@ -147,3 +147,23 @@ it is not splitting or truncating slow events before reading any slow net result
   for the slow stream.
 - This file moved to `docs/handoffs/` (or deleted if nothing in it is still worth reading),
   and the goal pages updated in the same PR as the result.
+
+## Status
+
+Newest last. A session that finds this file picks up at the first step not marked done.
+
+- 2026-09-21 (WSMIP064, branch `opt/slow-bench`): **step 1 measured; two of its values need
+  a ruling before step 2 can set them.** `tools/measure_slow_bench.py` →
+  `docs/learned/bench_measured_slow.json` (84 baseline windows, slow stream, default folder;
+  95% bootstrap intervals over recordings). Slow against the fast bench: quiet background
+  0.0030 Hz per ROI (fast 0.0052), busy 0.0113 (fast 0.0190), rate shape 0.42 (fast 0.275),
+  300 s burst shape 3.5 (fast 1.547), ROI count 31.5, participation 0.38 (fast 0.18). Widths
+  from the producer's column: median 2.0 s, interquartile 1.7–2.5 s, max 5.5 s.
+  **Jitter is not identified by this instrument, on either stream**: `assess_coactivity`'s
+  cluster SD tracks bin/√12 from 0.5 s to 5 s (fast 0.17 → 2.03 s, slow 0.21 → 1.39 s), so
+  it reports the coincidence bin, and the fast bench's 0.36 s is what a 1 s bin gives.
+  Participation does not move with the bin. **The 60 s burst shape has no upper bound on
+  slow** (interval 5.2 to the fit's cap). Figure 1:
+  `<darkroom>/bugarach/2026-09-21-slow-bench-jitter-vs-bin.png`. **Real crowding is not
+  measured yet**: `tools/probe_real_crowding.py` runs CoactDetect at its fast setting,
+  which would be circular on slow; it comes after step 4 chooses slow settings.
