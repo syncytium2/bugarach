@@ -646,6 +646,10 @@ def main(argv=None) -> int:
                          "files this reads — this is page space, not a data decision.")
     ap.add_argument("--lane-px", type=int, default=None,
                     help=f"height of one detector row in px (default {LANE_PX})")
+    ap.add_argument("--png-scale", type=int, default=3,
+                    help="device pixel ratio of the flat PNG (default 3; 6 doubles it — "
+                         "Tony, 2026-09-21. A tall page can reach Chromium's ~16k px "
+                         "screenshot limit)")
     ap.add_argument("--roi-px", type=int, default=None,
                     help=f"raster height per ROI in px (default {RASTER_PX_PER_ROI}). "
                          f"Still proportional to the ROI count, so ink density reads the "
@@ -745,7 +749,7 @@ def main(argv=None) -> int:
         if not a.no_png:
             from make_diagnostic import _render_png
             shot = html.with_suffix(".png")
-            if _render_png(html, shot):
+            if _render_png(html, shot, scale=a.png_scale):
                 written.append(shot)
             else:
                 print("(no PNG: pip install playwright && python -m playwright "
