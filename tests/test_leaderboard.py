@@ -64,9 +64,17 @@ class TestFieldStanding:
                 player("chorus_norm", "net", 0.72),
             ]
         )
-        assert "sce leads the field" in text
-        assert "fail the crowded veto" in text
-        assert "best admissible detector is coact" in text
+        assert "binned SCE leads the field" in text
+        assert "fail the close-events test" in text
+        assert "best admissible detector is CoactDetect" in text
+
+    def test_a_person_never_sees_the_code_key_cicada(self):
+        """FOUNDATIONS §7: `cicada` is the key, locust the name a person reads. The key on a
+        page reads as the Cossart lab's CICADA, which locust is a modified port of."""
+        players = [player("cicada", "coded", 0.8, veto=4, of=4),
+                   player("coact", "coded", 0.7, veto=4, of=4)]
+        text = field_standing(players)
+        assert "locust leads the field" in text and "cicada" not in text.lower()
 
     def test_it_says_nothing_about_admissibility_when_the_leader_is_admissible(self):
         text = field_standing(
@@ -75,7 +83,7 @@ class TestFieldStanding:
                 player("chorus_norm", "net", 0.72),
             ]
         )
-        assert "fail the crowded veto" not in text
+        assert "fail the close-events test" not in text
 
     def test_it_places_the_best_net_in_the_whole_field(self):
         """Third of ten is the fact a nets-versus-champion table would hide."""
@@ -223,5 +231,6 @@ class TestAgainstTheCommittedRuns:
         """Without this the other five coded detectors look set aside."""
         rows, constants = parsed
         page = render(rows, constants, read_field(RUNS))
-        assert "highest-scoring coded detector whose settings survive the veto" in page
+        assert ("highest-scoring coded detector whose settings pass the close-events test"
+                in page)
         assert "not because the other five were set aside" in page
