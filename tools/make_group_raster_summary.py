@@ -117,6 +117,7 @@ RASTER_PX_PER_ROI = 3
 #: raster rather than a taller raster: the ink stays proportional and only the
 #: gap grows.
 LABEL_COL_PX = 18
+SCROLL_GUTTER_PX = 60  # empty page margin on the left: somewhere to scroll from
 LABEL_PX_PER_CHAR = 6.2
 BLOCK_GAP_PX = 6
 
@@ -735,7 +736,10 @@ def main(argv=None) -> int:
             tmp = Path(td) / "p.html"
             # write-then-replace: the darkroom is inside Dropbox, and writing in
             # place is what produced its 188 MB of hash-named orphans.
-            pn.Column(*items).save(str(tmp))
+            # A SCROLL GUTTER. The plots span the page, so there was nowhere to rest the
+            # cursor and scroll without landing on a plot (Tony, 2026-09-21: "need a
+            # little space on the left so there is a place to put the cursor to scroll").
+            pn.Column(*items, margin=(0, 0, 0, SCROLL_GUTTER_PX)).save(str(tmp))
             os.replace(tmp, html)
         written.append(html)
         if not a.no_png:
