@@ -127,6 +127,7 @@ BLOCK_GAP_PX = 6
 #: ten-detector block is about the height of the raster it sits on rather than
 #: twice it, and the page holds six recordings instead of three.
 LANE_PX = 13
+LANE_PAD_PX = 6  # above and below a lane block's rows; lane_panel's own floor is set aside
 REGION_PX = 14   # two strips in one lane: the period, and the window scored
 AXIS_PX = 30     # what the bottom raster adds for the page's one x-axis
 
@@ -431,7 +432,7 @@ def detector_lanes(*detections: Path):
 
 
 def build_page(members, *, ext, manifest, width: int, stream: str,
-               lanes=None, not_run=(), lane_px: int = None):
+               lanes=None, not_run=(), lane_px: int = None, roi_px: int = None):
     """Regions over detector lanes over raster, for ONE stream, per recording."""
     from bugarach.detect_folder import folder_analysis_windows
     from bugarach.ui.diagnostic import lane_panel, raster_panel, region_lane_panel
@@ -460,9 +461,19 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
             per_det = lanes.get((sl.slice_id, sname), {})
             if per_det or not_run:
                 shifted = {d: (on - anchor, wd) for d, (on, wd) in per_det.items()}
+                row = lane_px or LANE_PX
+                n_rows = len(set(per_det) | set(not_run))
+                # SIZED TO ITS ROWS, NOT TO lane_panel's FLOOR. The shared panel is
+                # max(90, rows x row_px + 46) tall: room for an axis and borders a
+                # standalone figure needs and this page strips. With two detectors
+                # that floor made the lanes as tall as a 30-cell raster (Tony,
+                # 2026-09-21: "the rasters themselves should dominate. the detection
+                # has too much white space"). The rows keep their size; the padding goes.
                 panels.append(lane_panel(shifted, ext=ext, width=width,
-                                         row_px=lane_px or LANE_PX, not_run=not_run,
-                                         names=LANE_NAMES, colors=LANE_COLORS))
+                                         row_px=row, not_run=not_run,
+                                         names=LANE_NAMES, colors=LANE_COLORS)
+                              .opts(height=row * n_rows + LANE_PAD_PX,
+                                    backend_opts=TIGHT))
             marked, n_red = [], 0
             for i in range(st.n_rois):
                 rid = (str(sl.roi_ids[i]) if sl.roi_ids is not None
@@ -476,7 +487,7 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
             # count. A rotated label inside a 30 px raster is clipped anyway.
             panels.append(raster_panel(
                 _shift_stream(st, anchor), ext=ext, width=width,
-                height=raster_px(st.n_rois), name=sname, marked=marked,
+                height=raster_px(st.n_rois, roi_px), name=sname, marked=marked,
                 ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"
             ).opts(ylabel="", backend_opts=TIGHT))
         blocks.append((sl, panels))
@@ -495,8 +506,8 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
     return blocks, red_drawn
 
 
-def raster_px(n_rois: int) -> int:
-    return RASTER_PX_PER_ROI * max(int(n_rois), 1)
+def raster_px(n_rois: int, roi_px: int | None = None) -> int:
+    return (roi_px or RASTER_PX_PER_ROI) * max(int(n_rois), 1)
 
 
 def block_heights(slice_id: str, n_rois: int) -> tuple[int, int]:
@@ -512,7 +523,7 @@ def block_heights(slice_id: str, n_rois: int) -> tuple[int, int]:
 def header_html(group: str, treatment: str, members, ext, folder: Path,
                 *, stream: str = "", unscanned: bool = False, ran=(), not_run=(),
                 excluded=(), note=None, removed: dict | None = None,
-                detections: Path | None = None) -> str:
+                detections: Path | None = None, roi_px: int | None = None) -> str:
     """The key, and the provenance. Outside every plot, per the conventions."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
 
@@ -598,7 +609,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         f"<div style='margin:5px 0 0;color:#777;font-size:11px'>"
         f"{folder.name}{src} &nbsp;·&nbsp; extent {ext[0] / 60:.0f}m to +{ext[1] / 60:.0f}m, "
         f"the full recorded length of the longest recording &nbsp;·&nbsp; "
-        f"raster height is proportional to ROI count ({RASTER_PX_PER_ROI} px per ROI); "
+        f"raster height is proportional to ROI count ({roi_px or RASTER_PX_PER_ROI} px per ROI); "
         f"slice id at the left of each recording</div></div>")
 
 
@@ -634,6 +645,11 @@ def main(argv=None) -> int:
                          "files this reads — this is page space, not a data decision.")
     ap.add_argument("--lane-px", type=int, default=None,
                     help=f"height of one detector row in px (default {LANE_PX})")
+    ap.add_argument("--roi-px", type=int, default=None,
+                    help=f"raster height per ROI in px (default {RASTER_PX_PER_ROI}). "
+                         f"Still proportional to the ROI count, so ink density reads the "
+                         f"same down the page; a larger value lets the raster dominate a "
+                         f"page with few detector lanes")
     ap.add_argument("--note", default=None,
                     help="one extra line for the header — a caveat this page must "
                          "carry that the files it reads cannot tell it")
@@ -683,7 +699,8 @@ def main(argv=None) -> int:
     for (group, treatment, stream), spec in sorted(pages.items()):
         blocks, red = build_page(spec["members"], ext=spec["ext"],
                                  manifest=manifest, width=a.width, stream=stream,
-                                 lanes=lanes, not_run=not_run, lane_px=a.lane_px)
+                                 lanes=lanes, not_run=not_run, lane_px=a.lane_px,
+                                 roi_px=a.roi_px)
         total_red += red
         html = dest / f"{group}_{treatment.replace(' ', '')}_{stream}.html"
 
@@ -692,7 +709,7 @@ def main(argv=None) -> int:
                                           unscanned=a.unscanned, ran=ran,
                                           not_run=not_run, excluded=a.exclude,
                                           detections=a.detections, note=a.note,
-                                          removed=removed))]
+                                          removed=removed, roi_px=a.roi_px))]
         for sl, panels in blocks:
             # THE ID, ROTATED, IN ITS OWN COLUMN — an HTML block and not the
             # raster's y-label. As a y-label it is clipped to the plot's height:
