@@ -167,3 +167,16 @@ Newest last. A session that finds this file picks up at the first step not marke
   `<darkroom>/bugarach/2026-09-21-slow-bench-jitter-vs-bin.png`. **Real crowding is not
   measured yet**: `tools/probe_real_crowding.py` runs CoactDetect at its fast setting,
   which would be circular on slow; it comes after step 4 chooses slow settings.
+- 2026-09-21 (WSMIP064, branch `opt/slow-bench`): **step 2 built; jitter is the one value
+  still waiting.** `src/bugarach/bench_slow.py` with its own copies of every function that
+  reads a stream constant, and `tests/test_bench_slow.py` guarding that none is the fast
+  object and that a slow recording has slow rates and slow widths. **One more place the trap
+  lived, outside `bench.py`:** `simulate._draw_widths` read the fast width table as a global,
+  so a slow recording would have handed locust fast widths; `simulate_coordination` now takes
+  `width_quantiles`. Tony's rulings the same evening: **no 60 s burst term on slow**, and the
+  **budgets re-measured** — `tools/measure_slow_budgets.py` → `docs/learned/bench_slow_budgets.json`,
+  at the fast settings on seeds 1–48 of both benches (19 s on 12 workers). ⚠ The headroom
+  rule (1.6 × measured, rounded up) is this session's and is tighter than several declared
+  fast ceilings, which were set at older settings. **Jitter**: 0.30 s placeholder; Tony was
+  offered a per-recording range (no extra cost) plus an F1-against-jitter curve at the end.
+  Next: step 3, `--bench fast|slow` in `tools/search_all_settings.py` and slow grids.

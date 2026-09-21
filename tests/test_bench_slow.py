@@ -79,9 +79,21 @@ def test_the_measured_constants_agree_with_the_slow_record():
     assert list(bench_slow.MEASURED_WIDTH_QUANTILES) == rec["width_quantiles"]
 
 
-def test_choosing_on_the_slow_bench_refuses_until_its_budgets_are_measured():
-    if bench_slow.MAX_PROBE_PER_MIN:
-        pytest.skip("slow budgets are measured")
-    r = bench.BenchResult(detector="coact", regime="baseline_quiet")
+def test_the_slow_budgets_are_the_measured_ones():
+    rec = json.loads((REPO / bench_slow.BUDGETS_RECORD).read_text(encoding="utf-8"))
+    rows = rec["rows"]["bugarach.bench_slow"]
+    assert set(rows) == set(bench_slow.DETECTORS)
+    for d, r in rows.items():
+        assert bench_slow.MAX_PROBE_PER_MIN[d] == r["ceiling_probe"], d
+        assert bench_slow.MAX_FALSE_POSITIVES_PER_HOUR[d] == r["ceiling_null"], d
+        assert bench_slow.MAX_PRECISION_DROP[d] == r["ceiling_swing"], d
+        # The starting settings pass the budgets measured at them, or the search cannot start.
+        assert r["probe_per_min"] <= r["ceiling_probe"]
+        assert r["null_per_hour"] <= r["ceiling_null"]
+        assert r["precision_swing"] <= r["ceiling_swing"]
+
+
+def test_choosing_on_the_slow_bench_refuses_a_detector_with_no_slow_budget():
+    r = bench.BenchResult(detector="not_a_detector", regime="baseline_quiet")
     with pytest.raises(ValueError, match="measure_slow_budgets"):
         bench_slow.pick_operating_point([r, r])

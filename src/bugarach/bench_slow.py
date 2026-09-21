@@ -165,12 +165,41 @@ MAX_CROWDED_DROP = _fast.MAX_CROWDED_DROP
 """The close-events allowance is a judgement about noise, not a stream measurement, and it is
 still unsigned on fast (the crowded-allowance sweep is its input). Same number, same status."""
 
-# Measured on THIS bench at OPERATING_POINTS by tools/measure_slow_budgets.py; filled in once
-# that has run. Until then pick_operating_point refuses to choose, rather than borrowing the
-# fast ceilings.
-MAX_PROBE_PER_MIN: dict[str, float] = {}
-MAX_FALSE_POSITIVES_PER_HOUR: dict[str, float] = {}
-MAX_PRECISION_DROP: dict[str, float] = {}
+BUDGETS_RECORD = "docs/learned/bench_slow_budgets.json"
+"""Written by ``tools/measure_slow_budgets.py``: each detector at :data:`OPERATING_POINTS` on
+seeds 1–48 of this bench, and the same on the fast bench for comparison."""
+
+# Measured on THIS bench at OPERATING_POINTS (Tony, 2026-09-21: "remeasure"), then one rule
+# turns a measurement into a ceiling: rates max(1, ceil(1.6 x measured)); precision swing
+# max(0.10, measured + 0.05 up to a 0.05 step). ⚠ The rule is this session's, not Tony's, and
+# it is TIGHTER than several fast ceilings: applied to the fast bench's own measurements it
+# gives locust 13 probe calls/min where bench.py declares 25, and binned SCE a 0.10 swing
+# where bench.py declares 0.50 — fast ceilings set at older settings and never tightened.
+# tests/test_bench_slow.py holds these equal to the record's ceilings.
+MAX_PROBE_PER_MIN: dict[str, float] = {
+    "loco": 1.0,      # measured: 0.14
+    "cicada": 5.0,    # measured: 2.59
+    "sce": 8.0,       # measured: 4.67
+    "coact": 1.0,     # measured: 0.07
+    "rate": 1.0,      # measured: 0.36
+    "sync": 1.0,      # measured: 0.05
+}
+MAX_FALSE_POSITIVES_PER_HOUR: dict[str, float] = {
+    "loco": 1.0,      # measured: 0.56
+    "cicada": 1.0,    # measured: 0.61
+    "sce": 5.0,       # measured: 3.08
+    "coact": 2.0,     # measured: 1.25
+    "rate": 1.0,      # measured: 0.00
+    "sync": 1.0,      # measured: 0.00
+}
+MAX_PRECISION_DROP: dict[str, float] = {
+    "loco": 0.10,     # measured: 0.034
+    "cicada": 0.10,   # measured: 0.011
+    "sce": 0.10,      # measured: 0.029
+    "coact": 0.15,    # measured: 0.070
+    "rate": 0.10,     # measured: 0.011
+    "sync": 0.10,     # measured: 0.002
+}
 
 
 def measured_constants() -> dict[str, float]:

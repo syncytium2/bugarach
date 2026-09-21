@@ -1,0 +1,155 @@
+{
+ "measured_on": "2026-09-21",
+ "rows": {
+  "bugarach.bench": {
+   "cicada": {
+    "ceiling_null": 2.0,
+    "ceiling_probe": 13.0,
+    "ceiling_swing": 0.15,
+    "declared_null": 6.0,
+    "declared_probe": 25.0,
+    "declared_swing": 0.2,
+    "f1_busy": 0.5207193119624707,
+    "f1_quiet": 0.5609436435124509,
+    "null_per_hour": 1.0555555555555556,
+    "precision_swing": 0.06468924923538577,
+    "probe_per_min": 7.829166666666667
+   },
+   "coact": {
+    "ceiling_null": 5.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "declared_null": 7.0,
+    "declared_probe": 1.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6476190476190476,
+    "f1_quiet": 0.7532149418248623,
+    "null_per_hour": 2.9166666666666665,
+    "precision_swing": 0.03893683826213945,
+    "probe_per_min": 0.0875
+   },
+   "loco": {
+    "ceiling_null": 3.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.15,
+    "declared_null": 3.0,
+    "declared_probe": 1.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6330935251798562,
+    "f1_quiet": 0.73875,
+    "null_per_hour": 1.6666666666666667,
+    "precision_swing": 0.07332144061130463,
+    "probe_per_min": 0.1625
+   },
+   "rate": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 3.0,
+    "ceiling_swing": 0.15,
+    "declared_null": 1.0,
+    "declared_probe": 2.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6009144350097976,
+    "f1_quiet": 0.6597510373443983,
+    "null_per_hour": 0.08333333333333333,
+    "precision_swing": 0.0898238069519316,
+    "probe_per_min": 1.675
+   },
+   "sce": {
+    "ceiling_null": 6.0,
+    "ceiling_probe": 10.0,
+    "ceiling_swing": 0.1,
+    "declared_null": 6.0,
+    "declared_probe": 9.0,
+    "declared_swing": 0.5,
+    "f1_busy": 0.4922779922779923,
+    "f1_quiet": 0.5572868927589367,
+    "null_per_hour": 3.388888888888889,
+    "precision_swing": 0.012444982769797663,
+    "probe_per_min": 5.779166666666667
+   },
+   "sync": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "declared_null": 1.0,
+    "declared_probe": 1.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.4657258064516129,
+    "f1_quiet": 0.4332281808622502,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.042510185892538854,
+    "probe_per_min": 0.5916666666666667
+   }
+  },
+  "bugarach.bench_slow": {
+   "cicada": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 5.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.5960088691796009,
+    "f1_quiet": 0.6186988367083154,
+    "null_per_hour": 0.6111111111111112,
+    "precision_swing": 0.010684690146834097,
+    "probe_per_min": 2.5875
+   },
+   "coact": {
+    "ceiling_null": 2.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.15,
+    "f1_busy": 0.7910614525139665,
+    "f1_quiet": 0.8433451118963486,
+    "null_per_hour": 1.25,
+    "precision_swing": 0.07042409647764836,
+    "probe_per_min": 0.075
+   },
+   "loco": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8194285714285715,
+    "f1_quiet": 0.8432178508514386,
+    "null_per_hour": 0.5555555555555556,
+    "precision_swing": 0.03430058568479688,
+    "probe_per_min": 0.1375
+   },
+   "rate": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8440797186400937,
+    "f1_quiet": 0.8515671200473093,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.011280480799159442,
+    "probe_per_min": 0.3625
+   },
+   "sce": {
+    "ceiling_null": 5.0,
+    "ceiling_probe": 8.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.751754945756222,
+    "f1_quiet": 0.818840579710145,
+    "null_per_hour": 3.0833333333333335,
+    "precision_swing": 0.02896346078164258,
+    "probe_per_min": 4.675
+   },
+   "sync": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.7354596622889307,
+    "f1_quiet": 0.7337948395217118,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.001944096427182851,
+    "probe_per_min": 0.05
+   }
+  }
+ },
+ "rule_rate": "max(1, ceil(1.6 x measured))",
+ "rule_swing": "max(0.10, ceil((measured + 0.05) / 0.05) x 0.05)",
+ "seeds": [
+  1,
+  48
+ ],
+ "slow_measured_on": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
+ "tool": "tools/measure_slow_budgets.py"
+}
