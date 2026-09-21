@@ -49,7 +49,7 @@ from bugarach.detectors.rate import (
 )
 from bugarach.detectors.sce import sce_detect
 from bugarach.detectors.sync import sync_detect
-from bugarach.score import score_stream
+from bugarach.score import TOL_SEC, score_stream
 from bugarach.simulate import simulate_coordination
 
 STREAM = "events"
@@ -70,7 +70,75 @@ this one **is** revisable: `optim_history/README.md` marks the whole campaign
 PROVISIONAL, and notes that the calibrated settings were adopted on 2026-08-05
 *without* the real-data validation the deck named as the deciding step. These
 numbers are measurements; the decision that rested on them was never checked.
+
+**Re-measured 2026-09-17 on the one folder the current program allows**
+(:data:`MEASURED_ROLE`), and none of the bench's measured values moved outside its
+bootstrap interval. The string above still names where the values were *first*
+taken from; :data:`MEASURED_RECORD` is where they were last *checked*, and
+``tests/test_bench_is_measured_on_the_declared_folder.py`` fails when the two
+stop agreeing.
 """
+
+MEASURED_ROLE = "steps_excluded"
+"""The ``current_export.toml`` role every measured value in this module is checked
+against.
+
+Tony, 2026-09-17: *"you should only work from the steps excluded folder. it is
+terrifying that you might use other data."* The same day it turned out that the
+bench's background shapes had been fitted on a closed ``.mat`` archive and its
+structural values taken from a MATLAB summary, and nothing had noticed, because a
+provenance string is prose. A role name is not prose: ``tools/remeasure_bench.py``
+resolves it, writes the folder it actually read into :data:`MEASURED_RECORD`, and
+the test compares that folder with what the pointer declares today. A new export
+under this role turns the suite red until the bench is re-measured on it.
+
+A role, not a folder name, because folder names are declared in
+``current_export.toml`` and nowhere else in code
+(``tests/test_where_the_data_are.py``).
+"""
+
+MEASURED_STREAM = "fast"
+"""The stream every measured value comes from. The slow stream gets its own bench
+later (goals README, *The current program*, decision 4)."""
+
+MEASURED_RECORD = "docs/learned/bench_measured.json"
+"""Repo-relative path of the last re-measurement: the folder read, each value with
+its 95% bootstrap interval, and whether the constant in this module sits inside it.
+Written by ``tools/remeasure_bench.py``."""
+
+MIN_BASELINE_SEC = 900.0
+"""A baseline window shorter than **15 minutes** is not measured. Tony, 2026-09-17:
+*"baselines shorter than 15 minutes should be ignored. they probably should not have been
+exported."*
+
+**It is a ruling, not a filter this repo derived**, and the distinction is the one CLAUDE.md
+draws in terms: which recordings are analysable is the producer's call, and a consumer that
+re-derives an exclusion has already made the error that once dropped a recording the lab had
+not withdrawn. So this threshold is Tony's, recorded where the code can apply it, and the
+place it really belongs is the exporter — *"they probably should not have been exported"*.
+He also said not to dwell on it, so nothing here goes looking through the folder for more.
+
+**Nothing in the current folder is affected.** Every baseline in the declared
+``steps_excluded`` folder is at least 17.0 minutes, raw period and scored window alike, so
+applying this changes no number measured before 2026-09-17. It is a guard against the next
+folder, and a tool that drops a window under it says which and why rather than quietly
+measuring fewer recordings.
+
+Not to be confused with ``region_min_sec`` in the detectors' own signatures, which is the
+MATLAB windowing rule for store input (FOUNDATIONS §4) and happens to carry the same 900 s.
+"""
+
+MEASURED_OUTSIDE_INTERVAL: dict[str, str] = {
+    "participation": (
+        "2026-09-17, awaiting Tony. The bench holds 0.18; steps_excluded measures 0.1905 "
+        "(6 median participants over 31.5 median ROIs) with a 95% interval whose lower "
+        "end is 0.1818, which is 6/33: the ratio BENCH_RECORDING's docstring derives "
+        "and then rounds to 0.18. A rounding, not a moved measurement, but moving it "
+        "moves every bench number, so it is not moved here."),
+}
+"""Measured constants knowingly left outside their interval, each with the reason and
+who decides. The test fails for any constant outside its interval that is not listed
+here, and for any entry here whose constant has come back inside."""
 
 MEASURED_RATE_SHAPE = 0.275
 """Gamma shape of the per-ROI background rate in real baseline windows.
@@ -95,11 +163,316 @@ A flat field at the same mean leaves 2% silent at a median of 10.0 mHz.
 Gamma is the simplest distribution that produces the silence and the skew
 together; it is not the last word on the busiest ROIs.
 
-⚠ **Not wired into the bench.** ``BENCH_RECORDING`` still runs a flat field, so
-every operating point and every score in this package is still measured on the
-old background. Switching it re-derives the whole bench and is not a default
-change — see ``docs/todo/2026-08-14-generator-background-model-is-flat.md``.
+**Wired into the bench 2026-08-28.** ``BENCH_RECORDING`` carries this shape, so
+every score in this package is measured on a heterogeneous field. It was held
+back for one reason — leaving it ``None`` kept the RNG stream identical, so old
+seeds reproduced — and Tony spent that: *"all the benchmarks have changed because
+the bench is changed."* Numbers published before that date were measured on a
+flat field and are not comparable to numbers after it.
 """
+
+MEASURED_BURST_SHAPE = (1.547, 1.388)
+"""Gamma shapes of the per-bin rate multiplier, for `MEASURED_BURST_BINS`.
+
+The temporal partner of `MEASURED_RATE_SHAPE`, and the same estimator turned
+ninety degrees. There, ROIs differed from one another. Here **one ROI is followed
+across time bins**: under a constant rate its counts would be Poisson with
+variance equal to mean, and a bursty ROI is over-dispersed. Fixing the ROI is
+what makes the estimate clean — rate heterogeneity across ROIs is held constant
+inside one of them, so the over-dispersion left over is temporal.
+
+Maximum likelihood over the ROIs carrying at least 10 events in their baseline
+window (784 of them, across 85 windows), each ROI keeping its own mean.
+Re-derive with `python tools/fit_background_shape.py`.
+
+**Two scales, because one cannot work.** A single bin width draws independent
+bins, so its over-dispersion stops growing once the window exceeds the bin. Real
+ROIs keep getting more over-dispersed the wider you look:
+
+| variance/mean | 30 s | 60 s | 120 s | 300 s |
+|---|---|---|---|---|
+| real | 1.82 | 2.61 | 3.88 | 5.69 |
+| flat background | 0.99 | 0.95 | 0.93 | 0.74 |
+| these two scales | 1.87 | 2.76 | 3.04 | 4.44 |
+
+Fine scales are reproduced; the coarse end is still short, so a busy stretch of
+several minutes is shorter here than in real tissue.
+
+⚠ The two shapes are fitted **per scale independently** and then multiplied. A
+joint fit would not give these two numbers, and the agreement above is partly
+that approximation being forgiving. It is an approximation on purpose — the
+joint likelihood has no closed form — and it is why the coarse end is the half
+that misses.
+
+**Wired into the bench 2026-08-28**, with `MEASURED_RATE_SHAPE`. Both axes of
+`BENCH_RECORDING`'s background are now the fitted ones; see that constant for
+what switching them cost and who decided to spend it.
+"""
+
+MEASURED_BURST_BINS = (300.0, 60.0)
+"""Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""
+
+FULL_GRIDS: dict[str, dict[str, tuple]] = {
+    "loco": {
+        "threshold_pctile": (97.0, 98.0, 99.0, 99.5, 99.9, 99.99),
+        "bin_width_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
+        "context_win_sec": (30.0, 60.0, 120.0, 240.0, 480.0),
+        "merge_gap_sec": (0.5, 1.0, 2.0, 4.0, 8.0),
+        "min_rois": (2, 3, 4, 5, 6, 8),
+        "null_context_mode": ("maxlt", "symmetric"),
+        "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.25, 0.5, 1.0, 2.0),
+        "peak_min_distance_sec": (0.0, 0.5, 1.0, 2.0, 5.0),
+    },
+    "sync": {
+        "C_threshold": (0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16),
+        "C_min": (0.02, 0.05, 0.1, 0.15, 0.2),
+        "tau_max": (0.1, 0.25, 0.5, 1.0, 2.0),
+        "max_gap": (0.1, 0.25, 0.5, 1.0, 2.0),
+        "min_n": (2, 3, 4, 5, 6, 8),
+        "tau_mode": ("isi_adaptive", "fixed"),
+        # The profile's own bin width, NOT the recording's frame interval (FOUNDATIONS §6).
+        "dt": (0.05, 0.1, 0.2, 0.5),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.01, 0.02, 0.05, 0.1),
+        "peak_min_distance_sec": (0.0, 0.5, 1.0, 2.0, 5.0),
+    },
+    "coact": {
+        "alpha": (1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6),
+        "int_win_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
+        "context_win_sec": (20.0, 30.0, 60.0, 120.0, 240.0),
+        "min_rois": (2, 3, 4, 5, 6, 8),
+        "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
+        "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
+        "guard_norm": ("compact", "exposure"),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.25, 0.5, 1.0, 2.0),
+        "peak_min_distance_sec": (0.0, 0.5, 1.0, 2.0, 5.0),
+    },
+    "rate": {
+        "excess_threshold_hz": (3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0),
+        "context_win": (20.0, 30.0, 60.0, 120.0, 240.0),
+        "rate_win": (0.5, 1.0, 2.0, 3.0, 5.0),
+        # ⚠ Starts at 0.1 s, not 0: at and below 0.001 s this detector returns NO calls at
+        # all, which is a defect rather than a setting —
+        # docs/todo/2026-09-17-rate-context-returns-nothing-at-a-zero-merge-gap.md.
+        "merge_gap_s": (0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 8.0),
+        "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
+        "threshold_mode": ("additive", "multiplicative"),
+        "threshold_alpha": (1.5, 2.0, 3.0, 4.0),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.25, 0.5, 1.0, 2.0),
+        "peak_min_distance_sec": (0.0, 0.5, 1.0, 2.0, 5.0),
+    },
+    "sce": {
+        "threshold_pctile": (70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5),
+        "bin_width_sec": (2.0, 5.0, 10.0, 15.0, 20.0, 30.0),
+        # This floor does NOTHING below about 8 here: 2, 4 and 6 give byte-identical output,
+        # because these episodes already recruit more cells than that. It starts binding at
+        # 10 and empties the output at 25, so the grid is where it can bite.
+        "min_rois": (3, 6, 8, 10, 12, 16),
+        # Shipped is NaN, which means "do not merge". NaN is not a grid value: the search
+        # carries it as the starting state, and this grid is what it may move to.
+        "merge_gap_sec": (0.0, 5.0, 10.0, 15.0, 20.0, 30.0),
+        "detection_mode": ("threshold", "peak"),
+        "peak_prominence": (0.0, 0.25, 0.5, 1.0, 2.0),
+        "peak_min_distance_sec": (0.0, 1.0, 2.0, 5.0, 10.0),
+    },
+    "cicada": {
+        "sce_percentile": (99.9, 99.95, 99.99, 99.995, 99.999, 99.9995, 99.9999),
+        "n_synchronous_frames": (1, 2, 3, 5, 10),
+        "sce_min_distance_frames": (1, 2, 4, 8, 16),
+        "threshold_scope": ("global", "regional"),
+    },
+}
+"""The values each detector's settings are searched over — **one declaration, both
+machines**.
+
+**Per axis, never a product.** The search that reads this
+(``tools/search_all_settings.choose_settings``) moves one setting at a time with the rest
+held at the current best, so what it visits is a **sum** over axes. A product of these
+axes is not runnable, and no caller should build one: goal 2's nested cross-validation
+calls the search inside each outer fold instead of enumerating a grid
+(``docs/todo/2026-09-17-how-is-the-coded-side-searched-inside-nested-cross-validation.md``,
+option A, decided 2026-09-17).
+
+**Two consumers, one list, on purpose.** Goal 1 searches these for the values the
+detectors ship at; goal 2 searches the same axes inside each of its outer folds, so the
+comparison tunes the coded side over the space the shipped values came from. Two copies of
+a grid is how the two machines came to tune different things on 2026-09-16.
+
+**Every knob the bench can see, since 2026-09-17** (goal 1 step 3). Widened from the four
+declared settings per detector to every parameter a detector takes bar the data's own —
+``min_rois``, the merge gaps, the guards, the peak-mode group and the categorical axes.
+What is deliberately NOT here is in :data:`NOT_SEARCHED`, each with the reason, because a
+parameter left out silently is a parameter nobody knows was left out.
+
+**Each axis was probed before it was declared.** A parameter that cannot move this bench's
+answer is not tunable here, and searching it anyway would report coverage nobody has. Three
+of the probes found more than they were looking for: ``rate``'s merge gap returns no calls
+at all at zero, ``sce``'s participation floor does nothing below about 8, and
+``sync``'s ``synchrony_statistic`` is inert because the generator never puts two events on
+the same timestamp. The first and third are filed as todos.
+
+**Categorical and conditional axes.** Some axes are names rather than numbers
+(``detection_mode``, ``tau_mode``, ``guard_norm``, …): a search must not extend them and an
+"edge" means nothing on them. Others apply only under another setting — the peak-mode pair
+under ``detection_mode="peak"``, ``guard_norm`` under a nonzero guard, ``threshold_alpha``
+under multiplicative thresholding. :func:`setting_applies` is that rule, and a search that
+varies an axis its parent has switched off is measuring nothing.
+"""
+
+NOT_SEARCHED: dict[str, dict[str, str]] = {
+    "coact": {
+        "window_mode": "a decision, not a score: sliding is chosen because calls should not "
+                       "move with the grid (forks.md §14), which F1 on this bench cannot see",
+    },
+    "loco": {
+        "window_mode": "as coact",
+    },
+    "sce": {
+        "analysis_mode": "measured inert: 'whole' and 'regional' give identical output on "
+                         "bench recordings, which carry one implicit window",
+        "surrogate_model": "only 'circular_shift' is implemented; 'jitter' raises",
+    },
+    "sync": {
+        "synchrony_statistic": "measured inert: it aggregates ROIs sharing an EXACT "
+                               "timestamp, and the generator draws times continuously so "
+                               "ties never happen. Live on real data, which is frame-"
+                               "quantized — docs/todo/2026-09-17-the-bench-does-not-put-"
+                               "events-on-the-frame-grid.md",
+        "artifact_threshold": "measured inert on the bench at 0.7 and 0.95: the artifact "
+                              "gate never engages on simulated recordings. It guards real "
+                              "data",
+        "artifact_threshold_fraction": "as artifact_threshold",
+        "artifact_threshold_plat90": "as artifact_threshold",
+    },
+    "cicada": {
+        "active_duration_mode": "settled by FOUNDATIONS §7: locust reads the event's own "
+                                "width column. 'If you find yourself asking which duration "
+                                "locust should use, the answer is the column'",
+        "active_duration_sec": "as active_duration_mode",
+    },
+}
+"""Parameters deliberately left out of :data:`FULL_GRIDS`, and why.
+
+Three classes are excluded across every detector and are not repeated here: **the data's
+own** (the events, the time range, the frame interval, column names, seeds, output
+switches); **the region rules** (``solution_delay_sec``, ``baseline_window_max_sec``,
+``treatment_window_sec``, ``region_min_sec``, ``clamp_context_to_region``), because an
+export folder's ``regions.csv`` is used as delivered (FOUNDATIONS §4); and **surrogate
+counts** (``n_surrogates``, ``thr_step_sec``), which trade compute for precision and are set
+by checking that the calls stop changing, not by chasing an F1.
+
+What is listed above is the rest: per detector, the parameter and the measured or decided
+reason it is not searched. A reader who wants to know whether a setting was tuned should be
+able to find it in one of the two places rather than in neither.
+"""
+
+
+def setting_applies(det: str, setting: str, params: dict) -> bool:
+    """Does this setting do anything, given the rest of them?
+
+    A conditional axis under a parent that is switched off is not a setting, it is dead
+    weight: varying it costs a search real evaluations and returns identical answers, and a
+    readout that lists it as searched is wrong. The three conditions here are the detectors'
+    own, read off their code.
+    """
+    if setting in ("peak_prominence", "peak_min_distance_sec"):
+        return params.get("detection_mode") == "peak"
+    if setting == "guard_norm":
+        return float(params.get("guard_sec", 0.0) or 0.0) > 0.0
+    if setting == "threshold_alpha":
+        return params.get("threshold_mode") == "multiplicative"
+    return True
+
+FULL_GRID_PAIRS: dict[str, tuple[str, str]] = {
+    "sce": ("threshold_pctile", "bin_width_sec"),
+    "loco": ("threshold_pctile", "context_win_sec"),
+    "cicada": ("sce_percentile", "n_synchronous_frames"),
+}
+"""Pairs worth walking as a full two-setting grid, where one setting's best depends on
+where the other sits. A coordinate search can miss a diagonal ridge, and these are the
+ridges this project has met. Optional for a caller: goal 2 leaves them off inside a fold,
+because a pair is a product and it pays for one per fold."""
+
+
+def context_fits_the_null(p: dict, min_sep_sec: float) -> bool:
+    """Is this setting's context window narrow enough for the null to be background only?
+
+    A detector estimates its threshold over a context window. If planted events are spaced
+    more tightly than that window, the window holds OTHER events, and the null the threshold
+    comes from is contaminated with the very thing being detected — the trap that made the
+    first upstream benchmark unusable and cost two weeks of tuning against it
+    (:data:`BENCH_RECORDING`, ``min_sep_sec``).
+
+    **It also flatters the setting that breaks it**, which is why a search needs this rule
+    and not only a test. A contaminated null sits too high, so the detector calls less,
+    precision rises and F1 with it. On 2026-09-17 the sliding search chose a 240 s context
+    for both LoCo and CoactDetect on a bench that plants events 120 s apart, under all four
+    budgets; ``tests/test_bench.py::test_the_bench_recording_keeps_the_null_clean`` refused
+    the result. The guard worked and the run was already spent.
+
+    ``min_sep_sec`` is the SCORED recordings' spacing, so a caller scoring something other
+    than :data:`BENCH_RECORDING` passes its own — goal 2's home spec plants at 171 s, and its
+    per-fold search binds this rule with that number.
+    """
+    context = p.get("context_win_sec", p.get("context_win"))
+    return context is None or context <= min_sep_sec
+
+
+def settings_are_valid(det: str, p: dict) -> bool:
+    """Do these settings make sense together?
+
+    Rejects a context window shorter than what fills it, and a floor above its own
+    threshold. It lives here rather than in the search so that a caller walking
+    :data:`FULL_GRIDS` rejects the same combinations this project's own search does.
+    """
+    # Sliding supports threshold detection only, in both detectors that have the mode: a
+    # sliding window has no bins to find a peak across (`loco.py`, `coact.py`). Encoded so a
+    # search in sliding mode does not spend evaluations on a pair the detector will refuse.
+    if p.get("window_mode") == "sliding" and p.get("detection_mode", "threshold") != "threshold":
+        return False
+    if det == "loco":
+        # The detector's own refusal, encoded here so a search does not spend an evaluation
+        # discovering it: a guard is supported only with the one-sided 'maxlt' null, because
+        # under 'symmetric' the guard would hole the middle of the window and the wrap would
+        # cross the hole (`loco.py`). Found by the 2026-09-17 every-knob search, the first
+        # thing ever to cross those two axes.
+        if p.get("guard_sec", 0.0) and p.get("null_context_mode", "maxlt") != "maxlt":
+            return False
+        return (p["bin_width_sec"] * 4 <= p["context_win_sec"]
+                and p["merge_gap_sec"] < p["context_win_sec"])
+    if det == "coact":
+        return p["int_win_sec"] * 4 <= p["context_win_sec"]
+    if det == "rate":
+        return p["rate_win"] * 4 <= p["context_win"]
+    if det == "sync":
+        return p["C_min"] <= p["C_threshold"]
+    return True
+
+
+def measured_constants() -> dict[str, float]:
+    """Every value in this module that claims to be measured off real recordings.
+
+    One table, so ``tools/remeasure_bench.py`` measures exactly these and the test
+    checks exactly these. A measured constant added to the bench and not added
+    here is a constant nobody re-checks, so add it here in the same change.
+
+    ``participation`` is the middle level of ``BENCH_RECORDING["participation"]``,
+    which its docstring derives as median participants over median ROI count.
+    """
+    return {
+        "rate_shape": MEASURED_RATE_SHAPE,
+        **{f"burst_shape_{b:.0f}s": s
+           for b, s in zip(MEASURED_BURST_BINS, MEASURED_BURST_SHAPE)},
+        "regime_quiet_hz": REGIMES["baseline_quiet"]["bg_rate_hz"],
+        "regime_busy_hz": REGIMES["baseline_busy"]["bg_rate_hz"],
+        "n_roi": float(BENCH_RECORDING["n_roi"]),
+        "jitter_sec": BENCH_RECORDING["jitter_sec"],
+        "participation": BENCH_RECORDING["participation"][1],
+    }
 
 
 @dataclass(frozen=True)
@@ -126,51 +499,132 @@ class OperatingPoint:
 # Provenance matters more than the numbers: a bench whose settings have no
 # recorded origin cannot be compared to constellation/'s MATLAB campaign, and
 # cannot be re-derived when a calibration moves.
+#
+# **All six swept knobs were retuned together on 2026-09-16** by
+# `tools/retune_operating_points.py` (RETUNE below): 48 bench recordings per point on
+# both backgrounds and on the empty recording, grids widened until no optimum sat on
+# an edge, candidates limited to values under BOTH false-alarm budgets
+# (MAX_PROBE_PER_MIN on both backgrounds, MAX_FALSE_POSITIVES_PER_HOUR), the best by F1
+# averaged over the two backgrounds — and a stored value moved ONLY where the gain's
+# 95% bootstrap interval excludes zero. Three moved (sce, loco, rate); three were
+# already best or within noise (coact, sync, cicada). Figure and numbers:
+# <darkroom>/bugarach/2026-09-16-best-parameters/. Only the one swept knob per
+# detector was searched; every other parameter below is as it was.
+RETUNE = ("tools/retune_operating_points.py 2026-09-16 (48 recordings per point, both "
+          "backgrounds, both false-alarm budgets, mean F1, moved only if the 95% "
+          "bootstrap gain interval excludes zero)")
+SLIDING_SEARCH = (
+    "tools/search_all_settings.py --sliding, 2026-09-17 "
+    "(<darkroom>/bugarach/2026-09-17-full-search/sliding5/): every parameter this bench can "
+    "see, one at a time in rounds, chosen on 48 recordings per background and scored on 48 "
+    "the search never saw, under FOUR budgets — the two false-alarm limits, the precision "
+    "swing, and MAX_CROWDED_DROP against what the detector ships at today — and refusing any "
+    "context window wider than the planted spacing (context_fits_the_null)")
 OPERATING_POINTS: dict[str, OperatingPoint] = {
     "loco": OperatingPoint(
+        # SLIDING since 2026-09-17, and calibrated IN that mode rather than inheriting the
+        # binned values. A window that slides: a sub-second shift of a real recording keeps
+        # 64% of the binned calls and 100% of the sliding ones
+        # (`tools/probe_sliding_vs_binned.py`), and on the 84 real baseline windows sliding
+        # is a superset of binned (`tools/compare_sliding_vs_binned.py`). `thr_step_sec` and
+        # `n_surrogates` do not apply in this mode and are kept for the binned path, which
+        # stays as the MATLAB port with its parity tests.
+        # ⚠ STILL BINNED HERE. The sliding values below are measured and chosen; they are
+        # NOT switched on in this change, because switching them moves the viewer's
+        # calibrated defaults while the browser still runs both detectors binned, and moves
+        # the calls a slow-comodulation analysis is pinned to. Both are consequences of
+        # shipping sliding rather than defects in the values. The switch, with those two
+        # handled, is on branch `opt-every-knob-run` and in HANDOFF-coded-detectors.md.
         params=dict(bin_width_sec=1.0, context_win_sec=120.0, thr_step_sec=15.0,
-                    merge_gap_sec=2.0, threshold_pctile=99.9, n_surrogates=100),
-        source="measured-regime F1 optimum, FAST (loco_detect docstring)",
-        knob="threshold_pctile", grid=(99.0, 99.5, 99.9, 99.99, 99.999, 99.9999)),
+                    merge_gap_sec=2.0, threshold_pctile=99.5, n_surrogates=100),
+        source=f"{RETUNE}: 99.9 -> 99.5, mean F1 0.669 -> 0.686, gain +0.017 "
+               "(interval +0.005 to +0.029); 0.16 firings/min in the empty stretch on "
+               "both backgrounds (limit 1), 1.7 calls/hour on the empty recording "
+               "(limit 3). Was the measured-regime F1 optimum of 2026-08-13 "
+               "(loco_detect docstring), found on an older bench. "
+               f"⚠ NOT YET SWITCHED TO SLIDING. {SLIDING_SEARCH} chose, for the sliding "
+               "mode: threshold 99.9, merge gap 8 s, symmetric null, context unchanged at "
+               "120 s — held-out mean F1 0.737 against this point's 0.699, 1.7 calls/hour "
+               "on the empty recording (limit 3) where sliding at THIS point fires 4.0 and "
+               "is over, crowded-recording mean F1 0.827 against this point's 0.816. The "
+               "switch waits on the browser port and one analysis; see the comment above.",
+        knob="threshold_pctile", grid=(97.0, 98.0, 99.0, 99.5, 99.9, 99.99, 99.999,
+                                       99.9999)),
     "cicada": OperatingPoint(
-        params=dict(sce_percentile=99.999, active_duration_sec=1.0, n_surrogates=100),
-        source="calibrated FAST pair (cicada_detect docstring); FAST percentile "
-               "retuned 99.99 -> 99.999 on 2026-08-20 with REGIMES — see cicada.py "
-               "for the measurement. Kept in step with the detector default on "
-               "purpose: a bench grading a configuration nobody deploys grades "
-               "nothing.",
+        # Each event held active for its own width, as the folder sent it
+        # (FOUNDATIONS §7). Until 2026-09-16 this was `active_duration_sec=1.0`, so
+        # every locust number — bench, bake-off and real recordings — came from a
+        # fixed second that ignored the width column. The anchor is unchanged: the
+        # default `locs`, which on a folder is the half-rise (export_folder_spec.md
+        # revision 8 calls that deliberate; the browser anchors on the peak).
+        params=dict(sce_percentile=99.999, active_duration_mode="per_event",
+                    duration_field="width", n_surrogates=100),
+        source="FAST percentile re-derived 2026-09-16 with per-event widths "
+               "(MEASURED_WIDTH_QUANTILES): pick_operating_point over 24 bench "
+               "recordings accepts 99.999 on baseline_quiet (F1 0.565, 7.9 firings/min "
+               "in the empty block) and 99.99 on baseline_busy (F1 0.540, 9.5/min); "
+               "mean F1 0.542 vs 0.548, a tie, so the setting that fires half as "
+               "often on nothing stays. Previously retuned 99.99 -> 99.999 on "
+               "2026-08-20 at the fixed 1 s (cicada.py). SLOW's percentile has no "
+               f"bench evidence at either duration. Confirmed by {RETUNE}: 99.99 "
+               "scores +0.010 mean F1 with an interval of -0.002 to +0.025, which "
+               "includes zero, so 99.999 stays.",
         # Extended 2026-08-20 when REGIMES moved to the approved export folder: at the
         # corrected (busier) quiet endpoint the old top, 99.99999, was still the
         # peak and the search was still climbing. A busier background needs a
         # stricter percentile, so the grid needs room above the operating point
         # rather than ending at it.
-        knob="sce_percentile", grid=(90.0, 99.0, 99.9, 99.99, 99.999, 99.9999,
-                                     99.99999, 99.999999, 99.9999999)),
+        knob="sce_percentile", grid=(90.0, 99.0, 99.9, 99.95, 99.99, 99.995, 99.999,
+                                     99.9995, 99.9999, 99.99999)),
     "sce": OperatingPoint(
-        params=dict(bin_width_sec=10.0, threshold_pctile=99.0, n_surrogates=200),
-        source="sce_detect defaults (generate_sce contract)",
-        # Extended downward for the same reason and in the opposite direction:
-        # on the approved recordings SCE's F1 peaked at the old floor of 90 and was
-        # still climbing, so it wants a LOOSER threshold where cicada wants a
-        # stricter one. Two detectors, one change of source recordings, opposite responses.
-        knob="threshold_pctile", grid=(75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0,
-                                       99.5, 99.9)),
+        params=dict(bin_width_sec=10.0, threshold_pctile=98.0, n_surrogates=200),
+        # ⚠ The F1 optimum is much looser — 75, mean F1 0.665 — and it is excluded by
+        # the empty-recording budget, not by noise: 41.8 calls/hour there against a
+        # limit of 6, where 98 makes 3.4. Whether that trade is worth it is Tony's call
+        # (docs/todo/2026-09-16-binned-sce-trades-false-alarms-for-f1.md). In the
+        # dense probe stretch this knob barely matters (about 5.7 firings/min at every
+        # threshold); on the empty recording it decides nearly everything.
+        source=f"{RETUNE}: 99 -> 98, mean F1 0.490 -> 0.525, gain +0.035 (interval "
+               "+0.022 to +0.048); 3.4 calls/hour on the empty recording (limit 6), "
+               "where 95 already makes 8.2. Was the sce_detect default (generate_sce "
+               "contract), never tuned. Scored over each call's own bins "
+               "(score.EXTENT_FIELD).",
+        knob="threshold_pctile", grid=(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 75.0,
+                                       80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5, 99.9)),
     "coact": OperatingPoint(
+        # ⚠ STILL BINNED HERE, for the reason on `loco` above: the sliding values are
+        # measured and chosen and are not switched on in this change.
         params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4,
                     n_surrogates=100),
         source="explore_sce viewer FAST point — NOT the coact_detect signature "
-               "default of alpha=0.01, which scores F1 0.72 here",
-        knob="alpha", grid=(1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7)),
+               f"default of alpha=0.01, which scores F1 0.72 here. Confirmed by {RETUNE}: "
+               "already the best value within both budgets (mean F1 0.700). "
+               f"⚠ NOT YET SWITCHED TO SLIDING. {SLIDING_SEARCH} chose, for the sliding "
+               "mode: alpha 1e-5, context 120 s, merge gap 8 s, guard 1 s — held-out mean "
+               "F1 0.746 against this point's 0.702, 5.8 calls/hour on the empty recording "
+               "(limit 7) where sliding at THIS point fires 7.7 and is over, "
+               "crowded-recording mean F1 0.818 against this point's 0.808.",
+        knob="alpha", grid=(1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6,
+                            1e-7)),
     "rate": OperatingPoint(
-        params=dict(excess_threshold_hz=5.0, context_win=60.0, rate_win=1.0,
+        params=dict(excess_threshold_hz=4.5, context_win=60.0, rate_win=1.0,
                     grid_dt=0.1),
-        source="rate_detect defaults; grid_dt is the generator's own 0.1 s grid",
-        knob="excess_threshold_hz", grid=(0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0),
+        source=f"{RETUNE}: 5.0 -> 4.5 Hz, mean F1 0.606 -> 0.630, gain +0.024 "
+               "(interval +0.012 to +0.037); 1.13 / 1.68 firings/min in the empty "
+               "stretch (quiet / busy, limit 2), 0.1 calls/hour on the empty recording "
+               "(limit 1). 4.0 scores about the same and is over the limit on busy. Was "
+               "the rate_detect default, never tuned. grid_dt is the generator's own "
+               "0.1 s grid.",
+        knob="excess_threshold_hz", grid=(0.5, 1.0, 2.0, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0,
+                                          8.0),
         takes_rng=False),
     "sync": OperatingPoint(
         params=dict(tau_max=0.25, max_gap=0.5, C_threshold=0.1, C_min=0.1),
-        source="viewer FAST defaults (sync_detect docstring)",
-        knob="C_threshold", grid=(0.005, 0.01, 0.02, 0.04, 0.08, 0.12),
+        source="viewer FAST defaults (sync_detect docstring). Confirmed by "
+               f"{RETUNE}: every looser value fires over the limit of 1/min in the busy "
+               "empty stretch, and 0.12 ties it (mean F1 0.449).",
+        knob="C_threshold", grid=(0.005, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16,
+                                  0.2, 0.3),
         takes_rng=False),
 }
 
@@ -278,6 +732,21 @@ BENCH_RECORDING = dict(
     n_per_level=(5, 5, 5),
     jitter_sec=0.36,
     min_sep_sec=120.0,
+    # THE BACKGROUND IS NOT FLAT, and as of 2026-08-28 this bench stops pretending
+    # it is. Both shapes are fitted, not chosen — see `MEASURED_RATE_SHAPE` (81
+    # baseline windows, 2 643 ROIs) and `MEASURED_BURST_SHAPE` (the same estimator
+    # turned on time). Wiring them in was held back for one reason and one only:
+    # leaving them `None` keeps the RNG stream identical, so every seed reproduced
+    # and every published number stayed comparable.
+    #
+    # Tony cut that knot, 2026-08-28: *"all the benchmarks have changed because the
+    # bench is changed."* The comparability those `None`s were protecting had
+    # already been spent by the bench revamp, so holding a measured background out
+    # of the bench was buying nothing and costing realism — a flat field leaves 2%
+    # of ROIs silent where real windows leave 35%.
+    bg_rate_shape=MEASURED_RATE_SHAPE,
+    bg_burst_shape=MEASURED_BURST_SHAPE,
+    bg_burst_bin_sec=MEASURED_BURST_BINS,
     hot_window=(1200.0, 1500.0),
     hot_rate_hz=0.06,
     ramp_sec=30.0,
@@ -348,7 +817,9 @@ def make_recording(regime: str, seed: int, **overrides):
     """One bench recording. ``regime`` selects the background rate.
 
     Every regime here is derived from untreated recordings; there is no
-    treatment regime to accept. See :data:`REGIMES`.
+    treatment regime to accept. See :data:`REGIMES`. Like every simulated
+    recording it carries per-event widths for locust — see
+    :data:`bugarach.simulate.MEASURED_WIDTH_QUANTILES`.
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
@@ -831,7 +1302,7 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
     return out
 
 
-def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = 1.5,
+def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
              gen: dict | None = None, **overrides) -> BenchResult:
     """Run one detector over several seeds and pool the outcome.
 
@@ -866,6 +1337,14 @@ detectors are flat from **0.75 s** upward and the ranking does not change betwee
 rests on it. The exception is **binned SCE**, still climbing at 1.5 s because its
 10 s bins make its detections coarse and only a loose tolerance credits them —
 which is exactly what a single number hides and a curve shows.
+
+⚠ **Superseded 2026-09-16: the exception was the scorer's.** SCE had been scored
+over ``[bin start, bin start + event spread]``, which ends before events late in
+the bin, so extra tolerance kept reaching events its calls were made on. Scored
+over its own bin (``SceStream.extent_sec``), its curve is flat from the narrowest
+gap on this grid, and all six settle at or below the shipped tolerance —
+``tests/test_tolerance_curve.py`` and
+``docs/todo/2026-09-15-binned-sce-calls-are-scored-over-the-wrong-stretch.md``.
 
 Same grid as ``docs/learned/tolerance_sweep.json``, so figures and bench runs
 describe one sweep rather than two.
@@ -941,7 +1420,8 @@ was about to fall off one. **``REGIMES`` is not changed by this** — moving the
 axis is a recalibration; this reports across the axis that already exists.
 
 **Why this matters more than the tolerance did.** Five of six detectors turned
-out flat across the tolerance grid, so that constant was granting slack nobody
+out flat across the tolerance grid (six, once binned SCE was scored over its own
+bin), so that constant was granting slack nobody
 used and no comparison rested on it. Nothing is flat across this one. And the
 treatment contrast the whole loop builds toward compares two windows at
 *different* backgrounds, so a detector's sensitivity to this axis is confounded
@@ -950,7 +1430,7 @@ with the effect being measured — and until now nothing reported it.
 
 
 def evaluate_background_curve(name: str, regime: str, seeds=(1, 2, 3), *,
-                              rates=BACKGROUND_GRID, tol_sec: float = 1.5,
+                              rates=BACKGROUND_GRID, tol_sec: float = TOL_SEC,
                               gen: dict | None = None,
                               **overrides) -> dict[float, BenchResult]:
     """One :class:`BenchResult` per background rate — the curve, not a point.
@@ -1071,6 +1551,80 @@ is — CICADA reads F1 0.09 that way against 0.68 upstream, on 599 hot-window
 detections out of 601 false alarms. The fix for "the alarm cannot ring" is to give
 the probe a gate at selection time, not to corrupt the score.
 `docs/todo/2026-08-16-promiscuity-probe-cannot-fail.md`.
+"""
+
+MAX_PRECISION_DROP = {
+    "loco": 0.10,      # measured: 0.01
+    "coact": 0.10,     # measured: 0.01
+    "rate": 0.10,      # measured: 0.01
+    "sync": 0.10,      # measured: 0.01
+    "cicada": 0.20,    # measured: 0.10
+    "sce": 0.50,       # measured: 0.46 — a real degradation, recorded not excused
+}
+"""How far precision may differ between the quiet and busy backgrounds at one setting.
+
+Tuned where events are easy to see, deployed where they are not: upstream measured
+precision falling 90 -> 45 (RateDetect) and 75 -> 30 (spike-sync) when dense-tuned
+settings met sparse data. **Moved here from ``tests/test_bench.py`` on 2026-09-16 for
+the third time that day's reason** — a budget a test holds cannot gate a calibration.
+Switching LoCo and CoactDetect to a sliding window broke it at their binned settings
+(precision 0.53 busy against 0.67 quiet for LoCo), and ``tools/search_all_settings.py``
+now refuses such a setting instead of proposing it.
+"""
+
+MAX_CROWDED_DROP = 0.02
+"""How much mean F1 a candidate setting may lose on the CROWDED recordings, against the
+setting it is proposed in place of.
+
+**The fourth budget, and the first one a search could not have been stopped without.** On
+2026-09-17 the every-knob search found large held-out gains for four of the six detectors —
+binned SCE +0.305 mean F1, rate+context +0.134, CoactDetect +0.122, LoCo +0.113 — and every
+one of them got there by running its **merge gap out to about a minute**. On a bench that
+plants events at least 120 s apart, merging within 60 s costs nothing and tidies away
+duplicate calls; on `make_tail_recording`, where planted events sit as little as 6 s apart,
+it fuses real events. The same four settings lose **0.251 to 0.318** mean F1 there.
+
+**The other three budgets cannot see it, and it is worth understanding why.** Merging makes
+a detector call LESS, so a merge-happy setting looks *cleaner* on every false-alarm measure:
+LoCo's empty-recording rate went 1.4 to 1.9 calls per hour against a limit of 3, well inside.
+A budget counting false alarms cannot catch a setting whose flaw is that it answers a
+different question — "was there coordination in the last minute" instead of "was there
+coordination here".
+
+**So the crowded recordings stop being only a report.** `bench.py` still forbids CALIBRATING
+on them — nothing is chosen for scoring well there — but a candidate that scores worse there
+than what it would replace is refused, in the search, before it can be proposed. Report and
+veto are different powers, and this is the second.
+
+⚠ **0.02 is a judgement, not a measurement.** It is meant to allow noise and refuse the
+artifact, which on the numbers above is a gap of more than ten to one. Tony has not signed
+it, and a detector genuinely better in both regimes will pass it easily.
+"""
+
+MAX_FALSE_POSITIVES_PER_HOUR = {
+    "rate": 1.0,       # measured: 0.0
+    "sync": 1.0,       # measured: 0.0
+    "loco": 3.0,       # measured: 1.3
+    "cicada": 6.0,     # measured: 3.1
+    "sce": 6.0,        # measured: 3.1
+    "coact": 7.0,      # measured: 4.4
+}
+"""Calls per hour each detector may report on :func:`make_null_recording`, where
+nothing was planted at all (:func:`false_positives_per_hour`).
+
+The **other** false-alarm budget, and not the same one as
+:data:`MAX_PROBE_PER_MIN`: the probe is a dense stretch inside an ordinary bench
+recording, this is a whole recording at the quiet background with nothing planted.
+A detector can pass one and fail the other — binned SCE fires about 6 times a
+minute in the probe at every threshold from 75 to 99.9, while on the empty
+recording its threshold decides nearly everything.
+
+**It lived in ``tests/test_bench.py`` until 2026-09-16 — the same defect the probe
+budget above had until 2026-08-22.** A regression test at the shipped setting
+cannot fail a calibration, so ``tools/retune_operating_points.py`` proposed a
+binned-SCE setting reporting 32 calls an hour here against this budget of 6, and
+found the budget only by failing it. Same convention as the probe: measured
+baselines plus slack, tightened in the commit that improves on them.
 """
 
 
@@ -1209,42 +1763,3 @@ def pick_operating_point(curve: list[BenchResult], *,
         "operating point")
 
 
-MEASURED_BURST_SHAPE = (1.547, 1.388)
-"""Gamma shapes of the per-bin rate multiplier, for `MEASURED_BURST_BINS`.
-
-The temporal partner of `MEASURED_RATE_SHAPE`, and the same estimator turned
-ninety degrees. There, ROIs differed from one another. Here **one ROI is followed
-across time bins**: under a constant rate its counts would be Poisson with
-variance equal to mean, and a bursty ROI is over-dispersed. Fixing the ROI is
-what makes the estimate clean — rate heterogeneity across ROIs is held constant
-inside one of them, so the over-dispersion left over is temporal.
-
-Maximum likelihood over the ROIs carrying at least 10 events in their baseline
-window (784 of them, across 85 windows), each ROI keeping its own mean.
-Re-derive with `python tools/fit_background_shape.py`.
-
-**Two scales, because one cannot work.** A single bin width draws independent
-bins, so its over-dispersion stops growing once the window exceeds the bin. Real
-ROIs keep getting more over-dispersed the wider you look:
-
-| variance/mean | 30 s | 60 s | 120 s | 300 s |
-|---|---|---|---|---|
-| real | 1.82 | 2.61 | 3.88 | 5.69 |
-| flat background | 0.99 | 0.95 | 0.93 | 0.74 |
-| these two scales | 1.87 | 2.76 | 3.04 | 4.44 |
-
-Fine scales are reproduced; the coarse end is still short, so a busy stretch of
-several minutes is shorter here than in real tissue.
-
-⚠ The two shapes are fitted **per scale independently** and then multiplied. A
-joint fit would not give these two numbers, and the agreement above is partly
-that approximation being forgiving. It is an approximation on purpose — the
-joint likelihood has no closed form — and it is why the coarse end is the half
-that misses.
-
-⚠ **Not wired into the bench**, exactly like `MEASURED_RATE_SHAPE`.
-`BENCH_RECORDING` still runs a homogeneous background in both axes.
-"""
-
-MEASURED_BURST_BINS = (300.0, 60.0)
-"""Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""

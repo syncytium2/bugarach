@@ -1,5 +1,5 @@
 ---
-status: open
+status: done
 filed: 2026-08-30
 ---
 
@@ -86,7 +86,7 @@ winners along the axis where the tests' own seeds found **one**, and they say
 plainly that gap is inside seed noise at that count. A rewrite needs a deliberate
 seed count and a stated regime — only `baseline_quiet` was swept.
 
-## ⚠ A quote in that branch needs correcting before it merges
+## ⚠ A quote in that branch needed correcting — DONE 2026-08-30
 
 `docs/handoffs/2026-08-28-the-winner-stopped-changing.md` opens:
 
@@ -103,3 +103,13 @@ only the framing of it as a granted decision is wrong.
 The reply that produced it is now caught by a user-level `UserPromptSubmit` hook
 (`~/.claude/hooks/ambiguous-reply-confirm.sh`, 2026-08-30) which fires on exactly
 that shape in every project on this machine.
+
+## Landed 2026-09-06
+
+Tony, asked what happens to the branch: *land it, in two PRs*. The documents went first
+(#486); the code followed with the three `test_background_curve` tests rewritten to what was
+measured at twelve seeds — one winner across the axis on the fitted field, the reordering
+the flat field showed lived in a tail it manufactured — and `docs/learned/bakeoff.json`
+regenerated at the 2.5 s tolerance with the same spec, folds and seeds, so the lab-server
+reproduction test compares like with like. The re-quote landed in `README.md` and
+`docs/learned/bakeoff.md`, from the JSON, not from memory.

@@ -62,6 +62,28 @@ SLACK = 1.0
 #: 3 units separates the two cases with room on both sides.
 Y_SLACK = 3.0
 
+#: Every box and every path sample is mapped into the viewBox's own units before any
+#: comparison. `getBBox()` and `getPointAtLength()` answer in the element's LOCAL space,
+#: which ignores every ancestor transform — and every draughtsman figure wraps its
+#: drawing in `<g class="ds-body" transform="translate(…)">` while its title and caption
+#: sit outside it. Measured locally, a label in the body is compared with the title as if
+#: the translate were not there: overlaps are reported across real gaps, and a label can
+#: run off the bottom by the whole translate unseen. All four corners are mapped, not
+#: just the origin, so a scale or rotation in some later figure still gives the extent.
+SVG_SPACE = r"""
+  const toSvg = svg.getScreenCTM().inverse();
+  const at = (el, x, y) =>
+    new DOMPoint(x, y).matrixTransform(toSvg.multiply(el.getScreenCTM()));
+  const box = el => {
+    const b = el.getBBox();
+    const c = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height],
+               [b.x + b.width, b.y + b.height]].map(([x, y]) => at(el, x, y));
+    const xs = c.map(p => p.x), ys = c.map(p => p.y);
+    const x = Math.min(...xs), y = Math.min(...ys);
+    return {x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y};
+  };
+"""
+
 MEASURE = r"""
 (svgText) => {
   const host = document.createElement('div');
@@ -70,17 +92,14 @@ MEASURE = r"""
   document.body.appendChild(host);
   const svg = host.querySelector('svg');
   const vb = svg.viewBox.baseVal;
+  // SVG_SPACE
   const out = [];
   svg.querySelectorAll('text').forEach(t => {
-    const b = t.getBBox();
-    out.push({
-      text: (t.textContent || '').trim().slice(0, 60),
-      x: b.x, y: b.y, w: b.width, h: b.height,
-    });
+    out.push({text: (t.textContent || '').trim().slice(0, 60), ...box(t)});
   });
   return {vb: {x: vb.x, y: vb.y, w: vb.width, h: vb.height}, texts: out};
 }
-"""
+""".replace("// SVG_SPACE", SVG_SPACE)
 
 
 MEASURE_PATHS = r"""
@@ -90,11 +109,10 @@ MEASURE_PATHS = r"""
   host.innerHTML = svgText;
   document.body.appendChild(host);
   const svg = host.querySelector('svg');
+  // SVG_SPACE
   const texts = [];
   svg.querySelectorAll('text').forEach(t => {
-    const b = t.getBBox();
-    out_push: { texts.push({text:(t.textContent||'').trim().slice(0,60),
-                            x:b.x, y:b.y, w:b.width, h:b.height}); }
+    texts.push({text: (t.textContent || '').trim().slice(0, 60), ...box(t)});
   });
   const paths = [];
   svg.querySelectorAll('path, line, polyline').forEach(el => {
@@ -107,14 +125,15 @@ MEASURE_PATHS = r"""
     const n = Math.max(8, Math.min(120, Math.round(len / 6)));
     const samples = [];
     for (let i = 0; i <= n; i++) {
-      const p = el.getPointAtLength((len * i) / n);
+      const q = el.getPointAtLength((len * i) / n);
+      const p = at(el, q.x, q.y);
       samples.push({x: p.x, y: p.y});
     }
     paths.push({d: el.getAttribute('d') || el.outerHTML.slice(0, 60), samples});
   });
   return {texts, paths};
 }
-"""
+""".replace("// SVG_SPACE", SVG_SPACE)
 
 
 def _measure_paths(svg_path: Path):
@@ -259,10 +278,15 @@ def test_no_stroked_path_lands_on_a_label(svg):
 def test_the_guard_can_fail():
     """Prove the check fires, so a green run means something.
 
-    Both assertions above pass on a tree where the figures are fine, which is exactly
+    All three checks above pass on a tree where the figures are fine, which is exactly
     when a broken check is invisible. This builds a deliberately damaged SVG — one
     label off the right edge, two overlapping on one baseline — and asserts the
     measurements catch both.
+
+    **And the same damage hidden behind a transform**, because that is how every
+    draughtsman figure is built. Each of the last three cases looks fine measured in
+    its element's local units and is only wrong once its group's `translate` is
+    applied — the blind spot the measurement had until `SVG_SPACE`.
     """
     import tempfile
     bad = ('<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">'
@@ -272,27 +296,53 @@ def test_the_guard_can_fail():
            # this guard could not see, because it only compared equal rounded y.
            '<text x="70" y="60" class="lbl">and one a baseline below</text>'
            '<text x="150" y="90" class="lbl">and this one runs off the edge</text>'
+           # Locally at y=14, twenty units clear; translated, exactly on top of it.
+           '<text x="10" y="34" class="lbl">a label up top</text>'
+           '<g transform="translate(0 20)">'
+           '<text x="10" y="14" class="lbl">lands on it once moved</text></g>'
+           # Locally at y=30, well inside; translated, ten units past the bottom.
+           '<g transform="translate(0 80)">'
+           '<text x="10" y="30" class="lbl">pushed off the bottom</text></g>'
+           # Locally left of every label; translated, it ends inside `a label up top`.
+           '<g transform="translate(100 0)">'
+           '<line x1="-70" y1="5" x2="-60" y2="30" stroke="#000" stroke-width="1"/>'
+           '</g>'
            '</svg>')
     with tempfile.TemporaryDirectory() as tmp:
         p = Path(tmp) / "broken.svg"
         p.write_text(bad)
         got = _measure(p)
-        vb = got["vb"]
-        escaped = [t for t in got["texts"]
-                   if t["x"] + t["w"] > vb["x"] + vb["w"] + SLACK]
-        texts = got["texts"]
-        same_row = cross_row = 0
-        for i, a in enumerate(texts):
-            for b in texts[i + 1:]:
-                dx = min(a["x"] + a["w"], b["x"] + b["w"]) - max(a["x"], b["x"])
-                dy = min(a["y"] + a["h"], b["y"] + b["h"]) - max(a["y"], b["y"])
-                if dx > SLACK and dy > Y_SLACK:
-                    if round(a["y"]) == round(b["y"]):
-                        same_row += 1
-                    else:
-                        cross_row += 1
+        drawn = _measure_paths(p)
+    vb = got["vb"]
+    texts = got["texts"]
+    escaped = [t for t in texts if t["x"] + t["w"] > vb["x"] + vb["w"] + SLACK]
+    sunk = [t["text"] for t in texts if t["y"] + t["h"] > vb["y"] + vb["h"] + SLACK]
+    same_row = cross_row = 0
+    clashes = set()
+    for i, a in enumerate(texts):
+        for b in texts[i + 1:]:
+            dx = min(a["x"] + a["w"], b["x"] + b["w"]) - max(a["x"], b["x"])
+            dy = min(a["y"] + a["h"], b["y"] + b["h"]) - max(a["y"], b["y"])
+            if dx > SLACK and dy > Y_SLACK:
+                clashes.add(frozenset((a["text"], b["text"])))
+                if round(a["y"]) == round(b["y"]):
+                    same_row += 1
+                else:
+                    cross_row += 1
+    top = next(t for t in drawn["texts"] if t["text"] == "a label up top")
+    end = next(pth for pth in drawn["paths"] if pth["d"].startswith("<line"))["samples"][-1]
     assert escaped, "the viewBox check did not catch a label off the edge"
     assert same_row, "the overlap check did not catch two labels on one baseline"
     assert cross_row, (
         "the overlap check did not catch two labels on ADJACENT baselines — this is "
         "the blind spot the first version of this guard shipped with")
+    assert "pushed off the bottom" in sunk, (
+        "the viewBox check did not see a label that its group's transform pushes off "
+        "the bottom — measured in local units, as it once was")
+    assert frozenset(("a label up top", "lands on it once moved")) in clashes, (
+        "the overlap check did not see two labels that meet only once a transform is "
+        "applied")
+    assert (top["x"] <= end["x"] <= top["x"] + top["w"]
+            and top["y"] <= end["y"] <= top["y"] + top["h"]), (
+        "the path check did not see a line that reaches a label only through its "
+        "group's transform")

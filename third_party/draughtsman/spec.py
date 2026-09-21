@@ -9,6 +9,7 @@ render time.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 
 from draughtsman import FORMAT
@@ -102,6 +103,26 @@ class Glyph:
     # limited one: a reader can count to about thirty and no further, so an axis
     # past that is drawn as a solid bar with its number rather than as marks
     # nobody could count. See MARK_MAX in render.py.
+    #
+    # "sheets" TAKES A THIRD AXIS, and it is the only style that may. n x m x p
+    # is drawn as n flat sheets of m x p, offset. axes are [depth, tall, wide]:
+    # axes[0] is the sheet COUNT, axes[1] and axes[2] are the face.
+    #
+    # WHY A THIRD AXIS IS ALLOWED HERE AND NOWHERE ELSE. The two-axis rule above
+    # exists because the eye reads a rectangle's AREA whether or not you meant it
+    # to, so both edges must come from one tensor or the reader is perceiving a
+    # product that means nothing. An offset stack is read the same way one step
+    # up: the eye reads the VOLUME of the stack -- face area times how deep it
+    # goes -- and three axes of one tensor multiply to something real exactly as
+    # two do. So the rule is not relaxed, it is the same rule at rank three, and
+    # `check` still refuses a glyph whose axes do not all come from one `of`.
+    #
+    # What this buys, measured on U-Net before the style existed: with axes
+    # [-3,-2] its glyph is CONSTANT at every encoder stage, because channels
+    # double at exactly the rate height halves. The figure reported "unchanging"
+    # for the quantity that is the architecture. The dropped axis halves too, so
+    # the volume runs 65536, 32768, 16384, 8192 and back -- the U the network is
+    # named for, invisible in any two of its three axes.
     style: str = "block"
 
 
@@ -117,6 +138,18 @@ class Stage:
     meters: list[Meter] = field(default_factory=list)
     glyph: Glyph | None = None
     repeat: Repeat | None = None
+    # PER STAGE, AND None MEANS "WHATEVER THE FIGURE SAYS". The rule the page
+    # runs on is about a stage, not a figure: a box is right when the content is
+    # words and wrong when the content is a drawing of the tensor, and a figure
+    # normally holds both. `layout.chrome` was the only way to say it, so a
+    # figure was all boxes or none of them -- which made `tube` draw its marks
+    # inside boxes because its last stage is words, and made the alternative
+    # strip the box off that stage to fix the other six.
+    #
+    # Inheriting rather than defaulting to "box" is what keeps every committed
+    # figure byte-identical: a spec that says nothing here renders exactly as it
+    # did, through the same path.
+    chrome: str | None = None
 
 
 @dataclass
@@ -147,6 +180,66 @@ class Layout:
     # colour family does not need one, and turning it on for every committed spec
     # would change every committed figure.
     legend: bool = False
+    # "box" (default) draws a filled, stroked rectangle per stage and sets the
+    # text inside it. "none" removes it and lets the TENSOR be the stage: the
+    # glyph is drawn large, the name floats over it, and the detail sits
+    # underneath on the page.
+    #
+    # WHY THIS IS A CHOICE AND NOT A DEFAULT. A box is the right container when
+    # the stage's content is words — a name, three detail lines, a lane stack —
+    # because it groups them and its fill carries the colour family. It is the
+    # wrong one when the content is a DRAWING of the tensor: the box is then a
+    # second rectangle around a rectangle, competing for the same reading, and
+    # the eye settles on the larger one. Every glyph in this gallery was drawn
+    # inside a box eight times its area, so the figure was a row of boxes with a
+    # small mark inside rather than a row of tensors.
+    #
+    # With no box the colour family moves onto the glyph itself, which is where
+    # it belonged once the glyph became the subject.
+    chrome: str = "box"
+
+
+# ONE PLACE THAT KNOWS WHAT A LENGTH MEANS.
+#
+# A figure had no physical size at all until now: the SVG said `width="1594.64"`,
+# unitless, which is pixels — so a journal page placed it at whatever scale fit
+# the column and took the type down with it. Measured across the gallery, that
+# put detail text between 1.45pt and 3.06pt in a 3.5in column and between 2.49pt
+# and 5.25pt at 6in. Nothing in the tool mentioned an inch.
+#
+# So a length is parsed here and nowhere else. Points are the internal currency
+# because type is specified in points and the floor is a type size.
+_PER_PT = {"pt": 1.0, "in": 72.0, "mm": 72.0 / 25.4, "cm": 720.0 / 25.4,
+           "px": 0.75}          # CSS px: 96 per inch
+
+
+def length_pt(text: str, where: str) -> float:
+    """`"6in"`, `"180mm"`, `"12pt"` -> points. The only length parser."""
+    m = re.fullmatch(r"\s*([0-9]*\.?[0-9]+)\s*(pt|in|mm|cm|px)\s*", str(text))
+    if not m:
+        raise ValueError(
+            f"{where}: {text!r} is not a length. Write a number and a unit, one "
+            f"of {', '.join(sorted(_PER_PT))} — for example '6in' or '180mm'.")
+    return float(m.group(1)) * _PER_PT[m.group(2)]
+
+
+@dataclass
+class Output:
+    """The size this figure will be PRINTED at, and the type it must keep there.
+
+    THE FIGURE IS DRAWN IN ARBITRARY UNITS AND THAT IS FINE — what was missing is
+    a statement of what those units become on a page. With `width` set, the
+    renderer emits a real physical width, layout is solved against the budget it
+    implies, and `check` refuses a figure whose smallest type would land under
+    `min_type` at that size.
+
+    NEVER THE TYPE. The one thing that may not give is the type size: a figure
+    that fits by shrinking its labels has solved the wrong problem. Layout wraps
+    harder and the graph gets smaller; if that is not enough the figure is
+    refused and the author is told by how much.
+    """
+    width: str | None = None        # "6in", "3.5in", "180mm"
+    min_type: str = "6pt"           # the floor the smallest label must clear
 
 
 @dataclass
@@ -165,6 +258,8 @@ class Spec:
     caption: str | None = None
     graph: str = "graph.json"
     layout: Layout = field(default_factory=Layout)
+    # How big this will be on the page, and the type it must keep at that size.
+    output: Output = field(default_factory=Output)
     # Reference path -> why that traced constant is an architectural quantity.
     # Required only when graph.json carries a bake hazard; see check.py.
     constants: dict[str, str] = field(default_factory=dict)
@@ -177,6 +272,18 @@ class Spec:
     @property
     def by_id(self) -> dict[str, Stage]:
         return {s.id: s for s in self.stages}
+
+
+def _stage_chrome(raw: dict) -> str | None:
+    """A typo here would silently draw a box, so it is refused instead."""
+    value = raw.get("chrome")
+    if value is None:
+        return None
+    if value not in ("box", "none"):
+        raise ValueError(
+            f"stage {raw.get('id')!r}: chrome must be 'box' or 'none', not "
+            f"{value!r}. A stage that says nothing takes the figure's.")
+    return value
 
 
 def load(doc: dict) -> Spec:
@@ -194,6 +301,7 @@ def load(doc: dict) -> Spec:
                     for m in raw.get("meters", [])],
             repeat=(Repeat(template=list(raw["repeat"]["template"]))
                     if raw.get("repeat") else None),
+            chrome=_stage_chrome(raw),
             glyph=(Glyph(of=raw["glyph"]["of"],
                          axes=list(raw["glyph"]["axes"]),
                          labels=list(raw["glyph"]["labels"]),
@@ -212,7 +320,11 @@ def load(doc: dict) -> Spec:
                 caption=doc.get("caption"), graph=doc.get("graph", "graph.json"),
                 layout=Layout(orientation=lay.get("orientation", "lr"),
                               wrap=lay.get("wrap"),
-                              legend=bool(lay.get("legend", False))),
+                              legend=bool(lay.get("legend", False)),
+                              chrome=lay.get("chrome", "box")),
+                output=Output(
+                    width=(doc.get("output") or {}).get("width"),
+                    min_type=(doc.get("output") or {}).get("min_type", "6pt")),
                 constants=dict(doc.get("constants") or {}),
                 batch_axis=doc.get("batch_axis"))
 
@@ -236,6 +348,8 @@ def dump(spec: Spec) -> dict:
                              for m in s.meters]
         if s.repeat:
             rec["repeat"] = {"template": s.repeat.template}
+        if s.chrome is not None:
+            rec["chrome"] = s.chrome
         if s.glyph:
             rec["glyph"] = {"of": s.glyph.of, "axes": s.glyph.axes,
                             "labels": s.glyph.labels}
@@ -261,13 +375,21 @@ def dump(spec: Spec) -> dict:
         out["caption"] = spec.caption
     # Omitted entirely when it is the default, so adding this field changes no
     # existing spec and no existing figure.
+    if spec.output.width or spec.output.min_type != "6pt":
+        out["output"] = {}
+        if spec.output.width:
+            out["output"]["width"] = spec.output.width
+        if spec.output.min_type != "6pt":
+            out["output"]["min_type"] = spec.output.min_type
     if (spec.layout.orientation != "lr" or spec.layout.wrap
-            or spec.layout.legend):
+            or spec.layout.legend or spec.layout.chrome != "box"):
         out["layout"] = {"orientation": spec.layout.orientation}
         if spec.layout.wrap:
             out["layout"]["wrap"] = spec.layout.wrap
         if spec.layout.legend:
             out["layout"]["legend"] = True
+        if spec.layout.chrome != "box":
+            out["layout"]["chrome"] = spec.layout.chrome
     return out
 
 

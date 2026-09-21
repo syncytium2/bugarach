@@ -77,7 +77,7 @@ no board catches, because it lives in the wording rather than the filing.
 |---|---|
 | document deliverables | the murderboard, line-editor and naive-reader roles |
 | commit messages, PR bodies | nothing — reviewer judgement |
-| docs under `docs/` | nothing automated |
+| docs under `docs/` | nothing automated, except SAP015's warning on singular *data* |
 | **a table in a chat reply** | **nothing, and it is where the units rule broke** |
 
 The last row is not a gap waiting for a tool. A chat reply reaches one reader
@@ -90,6 +90,27 @@ the repo's own vendoring stamps (`vendored from interface2 @ 9df9a16`) are
 legitimate bare shas, as are the provenance lines in this file's neighbours, so
 the rule would have fired mostly on correct text. Filed as a thought rather than
 a rule — see `docs/sapper_feedback/` if that changes.
+
+## "Data" is plural
+
+**House rule** (Tony, 2026-09-14): *data* is a plural noun, so every verb and
+pronoun that agrees with it is plural.
+
+> ✗ "The data is noisy, and it shows a gap where the recording was withdrawn."
+>
+> ✓ "The data are noisy, and they show a gap where the recording was withdrawn."
+
+The same goes for *were* not *was*, *have* not *has*, *do* not *does*, *themselves*
+not *itself*, and *these data* not *this data*. "Metadata" and "dataset" are
+different words with their own grammar ("the dataset is"). Inside a quotation,
+the speaker's grammar stands.
+
+**Mechanized, as a warning:** sapper SAP015 fires on a new line where a determiner
+and *data* are followed by a singular verb ("the data is", "their data has").
+It warns and does not block. The tree held 73 such lines when the rule was
+written, and some of them are other people's quoted words that must not be
+reworded, so a blocking rule would have needed a sweep and a set of exemptions
+first. It needs a determiner so it stays off code: `data is None` has none.
 
 ## American English
 
@@ -123,6 +144,26 @@ exactly the reader the bold was talking to.
 Emphasize the row a passage is *about* if you like. Do not emphasize a number
 unless it is the extreme of its column, and not even then when the document's own
 argument is that the differences are not separable.
+
+## Agreement between methods rules out one thing: that a single method invented it
+
+A result that holds for several detectors, or for a learned model and a
+zero-parameter counter, or for two different statistics over the same recordings,
+excludes exactly one explanation — *this came from the way we measured it* — and
+nothing else. Every explanation the methods share is untouched, and an artifact in
+the data is shared by all of them by construction.
+
+Two pages hit this on 2026-09-17 within an hour, in the same shape. One said a
+group ordering held "for the hand-written references and for a detector with no
+parameters, which is the least interesting of the explanations to rule out" — true,
+and phrased so it reads as support. The other called two measures agreeing on that
+ordering a cross-check. Both orderings had four recordings with a declared,
+unflagged contamination sitting at the top of them, and a perfect confound between
+group and imaging day underneath. Neither convergence could have seen either, because
+both problems are in the recordings rather than in the methods.
+
+Write the one thing it excludes, in those words, and then write what it leaves.
+Agreement between methods is evidence about methods.
 
 ## Every table column carries its units, and *dimensionless* is a unit
 

@@ -9,6 +9,13 @@ and how strongly, each row pinned to a commit. Its `strength` column separates *
 from **decided** from ⚠ **evidence**, and the last one is the point: a measurement whose
 decision has not been made cannot be restated as settled without failing a check.
 
+**For "where are we on *this goal*?": [`docs/goals/`](docs/goals/README.md)** — one page
+per goal: what it is, what is settled, what was dropped and why, what waits on Tony, where
+the work lives. Picking up work toward a goal? Read its page first, put `Goal:` on your
+board claim, and update the page in the same PR as the result. A long-lived goal branch
+was considered and rejected on 2026-09-14: sessions start from `main`, and a branch holds
+commits, not a summary.
+
 **Before you build anything, or when a lookup fails: [`docs/INDEX.md`](docs/INDEX.md).**
 Keywords — the words you would type into `grep`, not the ones in the filename —
 pointing at the file that owns the answer. It exists because on 2026-08-30 a session
@@ -88,6 +95,19 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
 - **Compact labeling**: no titles above plots; identity + counts live in
   y-axis labels ("fast · 30 ROI", "rate (27)"); one x-axis per linked group
   (bottom row only, with extra height so plot areas match).
+- **Number every figure, on every page that has one** (Tony, 2026-09-10: *"please always use
+  figure numbers"*; again 2026-09-11, *"always number the figures"*, on a status page whose
+  panels went out unnumbered — the rule then said "in a document", and a dashboard slipped
+  through that word). Captions or panel headings open `Figure 1.`, `Figure 2.`; a reference in
+  prose carries the number **and** the name — *"Figure 3, the candidate field"* — so the writing
+  convention against bare enumerated labels still holds: the name is what lets it read without
+  scrolling back. **Define every abbreviation** at first use, and every symbol (*J*, τ) before a
+  figure uses it.
+- **Every number carries its unit** — counts included (Tony, 2026-09-11, on a legend reading
+  "finished on the Mac · 327": *"327 what?"*). Write "327 cells", "99 surrogate draws", "8
+  frames", never a bare count or an abbreviated unit a reader has to decode ("fr"). Where two
+  panels use different units for the same quantity, say why beside them and give the
+  conversion (frames and seconds, with the frame interval).
 - **Unlinked y, linked x**: signal rows carry a unique value dimension per
   detector so y-ranges never link across rows; x links through the shared
   `t` dimension.
@@ -155,6 +175,29 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   producer's own export had it right. Contract revision 6 records it.
   If a folder looks like it contains something it should not, that is a
   **conversation with the producer**, not a filter in the consumer.
+- **A known contamination stops the work. It does not become a caveat.** (Tony,
+  2026-09-17: *"there needs to be a full stop work if there's a known 'contamination'.
+  there's no point in running all of this when you know there's a problem."*) When the
+  export's own note declares something the data do not mark, the analysis does not run
+  and the finding does not ship with a footnote — **the question goes to the producer
+  that day**, and work resumes when the answer does.
+  What this repository did instead is the reason it is mechanized. The producer's note
+  on `steps_excluded` said non-rigid motion correction pinned 12 ROIs to the frame floor
+  in four recordings and was "not flagged in any column". It was filed as a todo on
+  2026-09-10, verified by a review on 2026-09-14, and flagged again by two reviews on
+  2026-09-17 — while analyses kept running over those recordings, including a label-free
+  training set and a whole explainer page that then reported the contamination as a
+  caveat about its own result. Four rediscoveries, no question asked, for a week. **A
+  note everybody cites and nobody acts on is not a safeguard**, and "we disclosed it" is
+  not the same as "we asked".
+  **This one fires by itself**: `dataset.current()` refuses through
+  `dataset.refuse_if_contaminated()`, so every analysis resolving its input through the
+  pointer inherits the stop and none has to remember it. Proceeding needs
+  `BUGARACH_ACK_CONTAMINATION='<why this analysis is unaffected>'`, which prints what
+  was acknowledged. The stop clears when the producer's answer removes the note from
+  `current_export.toml` — withdrawn recordings, or a column a consumer can read — not
+  when a session decides the effect is probably small. Tests:
+  `tests/test_dataset.py`, the contamination stop.
 - **Machine-local inventory** (everything else lives in the repo): the
   `.venv` (rebuild: `python3 -m venv .venv && pip install -e ".[dev]"`),
   the export folders under `<data>/exports/bugarach/`, MATLAB + interface2
@@ -187,6 +230,26 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   `--also` for the repo copy; sapper SAP006 blocks the required form in page and
   report builders. Keep both copies: the repo one is what review and git history
   need, the darkroom one is what a person opens.
+  **Every image you show Tony goes there too — UI screenshots and headless checks
+  included** (Tony, 2026-09-14: *"please always use darkroom"*). A session rendered
+  its click-zoom check into the scratchpad, sent it with `SendUserFile` (which does
+  not deliver in VS Code and reports success anyway) and handed over scratchpad
+  paths. It had held back on purpose, because screenshots were deleted from the
+  darkroom on 2026-09-11. That deletion was a cleanup, not a ban. Put the image
+  there with `python3 tools/show.py <file> --project bugarach`, give the path it
+  prints, and note the write in your board block's `Holds:`.
+  **`--project bugarach` is not optional and this line used to omit it.** `show.py`
+  names its folder from `git rev-parse --show-toplevel`, which in a **worktree** is
+  the worktree, so the bare form writes `<darkroom>/<worktree-name>/` — a new folder
+  at the darkroom **root**, beside `bugarach/` and the producer team's
+  `constellation/`. bugarach owns `<darkroom>/bugarach/` and nothing above it. Filed
+  upstream on 2026-09-03
+  ([todo](docs/todo/2026-09-03-show-derives-the-project-from-the-worktree.md)), still
+  unfixed, and by 2026-09-17 it had left five folders at the root — Tony found them:
+  *"you are bugarach why are you posting to the root of dropbox?"*. **Sapper SAP016
+  now blocks the bare form**, which is why this line carries the flag rather than a
+  warning to remember it. For work under a board claim, prefer the figure tool's own
+  `--out <claimed folder>`, which lands inside the claim.
   Two paths, one directory: `~/Dropbox-<org>` is a **symlink** to
   `~/Library/CloudStorage/Dropbox-<org>`. Seeing a tool print one while looking in
   the other does not mean the file went somewhere else — check with `ls -ld`
@@ -202,6 +265,33 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   - WSL: `/mnt/c/Program Files/MATLAB/R2025b/bin/matlab.exe -batch "..."`
     (launch path only — script bodies use Windows `C:\...` paths, per
     interface2's SAP003 lesson).
+
+## CI runs the suite in parallel — two kinds of test must opt out
+
+`pytest -n auto --dist loadfile` on a 4-core runner, so a CI leg is ~7 minutes
+rather than ~15 and a whole run is ~10 rather than ~18 (merged 2026-09-16,
+`71950dd`). Three consequences when you add or move a test:
+
+- **A test that asserts on wall-clock time needs `@pytest.mark.serial`.** With four
+  workers loading the runner, a budget measures the other three as much as the code:
+  the briefing's 3-second budget read 3.1s and reddened 3.11 only. Marked tests run
+  after the parallel pass, alone and in file order, so the budget stays honest.
+- **A test that reads or writes the built `site/` needs it too.** `test_site_pages_render.py`
+  deletes and rebuilds that directory and `test_site_withholding.py` reads it; split across
+  workers, the reader's figure checks skipped on 3.13 and ran on 3.14 in the same run.
+  A skip that depends on scheduling is coverage nobody can count on.
+- **Tests in one file are NOT independent of each other, and `--dist loadfile` is why
+  they can stay that way.** The webapp suites share a module-scoped page and build on it
+  in order. Splitting per test (xdist's default) turned that into a coin toss: 3.11 went
+  red with `aimed_at: None` while the other legs happened to schedule the tests together.
+
+Two habits follow from the same change. CI prints every skip with its reason (`-rs`) and
+the 25 slowest tests, so read the log rather than a count — that is how the `site/` coin
+toss was found. And **a race the suite always had can start landing**: `backdate()` in
+`tests/test_worktree_sweep.py` walked live git repos and touched files git was deleting
+underneath it, which reddened `main` five times in two days before it was fixed
+(`5f96453`). A new red test in a parallel run is worth reading as a timing window before
+it is read as broken code.
 
 ## Multi-session coordination — assume you are not alone
 
@@ -342,6 +432,12 @@ is rare enough to be a conversation (his ruling, 2026-09-02).
 Name things; don't index them. Shas and dates are lookup keys, not content.
 Prefer the consequence to the label. Full version, with the examples that
 prompted it: [`docs/writing_conventions.md`](docs/writing_conventions.md).
+
+**"Data" is plural — house rule** (Tony, 2026-09-14). Its verbs and pronouns are
+plural everywhere you write: *the data **are***, *the data **show***, *the data
+**were***, *the data **themselves***, *these data*. "Metadata" and "dataset" keep
+their own grammar, and quoted words keep the speaker's. Sapper SAP015 warns on a
+new line that breaks it.
 
 ## Portfolio posture
 

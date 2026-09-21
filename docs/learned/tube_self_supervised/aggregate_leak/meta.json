@@ -1,0 +1,92 @@
+{
+  "tag": "tube-aggregate-2026-09-15",
+  "started": "2026-09-17T22:36:05-0400",
+  "limit": null,
+  "n_boot": 1000,
+  "banks": [
+    "init",
+    "fitted"
+  ],
+  "J_sec": {
+    "fast": [
+      1.6,
+      5.0,
+      10.0,
+      20.0,
+      40.0
+    ],
+    "slow": [
+      1.4,
+      5.6,
+      11.2,
+      22.4,
+      44.8
+    ]
+  },
+  "centres_frames": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "surround_ratio": 8.0,
+  "widen_frames": 1,
+  "n_twins": 20,
+  "features": [
+    "trace_mean",
+    "trace_sd",
+    "trace_p99",
+    "c1_sd",
+    "c1_p1",
+    "c1_p99",
+    "c1_max",
+    "c2_sd",
+    "c2_p1",
+    "c2_p99",
+    "c2_max",
+    "c4_sd",
+    "c4_p1",
+    "c4_p99",
+    "c4_max",
+    "c8_sd",
+    "c8_p1",
+    "c8_p99",
+    "c8_max",
+    "c16_sd",
+    "c16_p1",
+    "c16_p99",
+    "c16_max",
+    "c32_sd",
+    "c32_p1",
+    "c32_p99",
+    "c32_max",
+    "c64_sd",
+    "c64_p1",
+    "c64_p99",
+    "c64_max",
+    "c128_sd",
+    "c128_p1",
+    "c128_p99",
+    "c128_max"
+  ],
+  "fitted_models": [
+    "tube",
+    "line"
+  ],
+  "fitted_stream": "fast",
+  "provenance": {
+    "bugarach_version": "0.0.1",
+    "git_commit": "b3cfc1635fcf79e5ba73278990d27715904ad1e2",
+    "git_dirty": false,
+    "code_version": "0.0.1+gb3cfc16",
+    "python": "3.14.5",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "produced_by": "tools/tube_aggregate_leak.py"
+  },
+  "exploratory": true,
+  "seconds": 400.2626042366028
+}

@@ -1,5 +1,5 @@
 {
-  "_vendored": "vendored from draughtsman @ cb7fc2a — canonical source is examples/tube/spec.json there; do NOT edit here, update upstream and re-copy.",
+  "_vendored": "vendored from draughtsman @ 5705c46 — canonical source is examples/tube/front-page.json there; do NOT edit here, update upstream and re-copy.",
   "draughtsman": "0",
   "graph": "graph.json",
   "batch_axis": 0,
@@ -15,7 +15,8 @@
       ],
       "detail": [
         "{stage.out_shape}",
-        "cells × frames, binary"
+        "cells × frames",
+        "binary"
       ]
     },
     {
@@ -144,7 +145,8 @@
       "detail": [
         "kernel {node:n0197.weight_shape[2]}",
         "{stage.params} params",
-        "{stage.out_shape} — one score per frame"
+        "{stage.out_shape}",
+        "one score per frame"
       ]
     }
   ],
@@ -187,5 +189,9 @@
     "n0149.constants.dilation": "Architectural. _dilated_stack sets d = 2 ** i from the layer index, so the schedule is fixed by `depth` and no gradient reaches it.",
     "n0189.constants.dilation": "Architectural, as above — the last dilated layer, i = depth - 1."
   },
-  "caption": "Traced with torch.jit.trace; every quantity is read from graph.json by node id. The kernel bank collapses {stage:dog.nodes} traced operations."
+  "caption": "Drawn by draughtsman from a torch.jit.trace of the built model; every quantity is read off the trace by node id, none typed by hand. The kernel bank collapses {stage:dog.nodes} traced operations.",
+  "output": {
+    "width": "1203px",
+    "min_type": "9.5px"
+  }
 }

@@ -26,7 +26,8 @@ always by proper name:
   - **binned SCE** — surrogate-thresholded coactivity per trimmed region
     window (generate_sce port).
   - **locust** — sliding-window coactivity with per-cell roll null. Derived
-    from the Cossart lab's **CICADA** (Denis et al. 2020) and **modified**, in
+    from the Cossart lab's **CICADA** (software: Zenodo `10.5281/zenodo.10041434`;
+    framework: Hamon et al. 2026) and **modified**, in
     both cases by changing what it is *fed* rather than what it computes: it gets
     the events already in the folder rather than running CICADA's own transient
     detection, and it gets each event's duration from the producer rather than
@@ -124,12 +125,26 @@ app… let's start trying to be specific"*).
 Two more that are decisions rather than parameters, and should not be called
 settings at all:
 
-- **K** — the minimum number of participating ROIs an assessment reports at. A
-  **scan, not a setting**: the assessor reports every K that clears the floor and
-  refuses to pick one, because picking it is the analyst's call. It is the
-  clearest case of why the instrument is [MAHDCE](#the-instrument-that-finds-coordination)
-  rather than the machine alone — K moves the headline by an order of magnitude
-  across the range the assessor scans, and no arithmetic chooses it.
+- **K** — the coactivity floor. **Defined once, in
+  [the MAHICE section](#the-instrument-that-finds-coordination)**: a person sets it
+  during the review, as a **percentage** of each recording's ROI population, one
+  percentage per review. It is *not* re-defined here — this entry used to carry a
+  second definition, and the two disagreed (see below).
+  What belongs here is why K sits apart from the three settings above: those are
+  chosen by fitting, and K is not. It moves the headline by an order of magnitude
+  across the range the assessor scans and **no arithmetic chooses it**, which is the
+  clearest case of why the instrument is MAHICE rather than the machine alone.
+  `annotate.derive_k` reports what the labels alone would have put it at and **never
+  overrides** — a cross-check, not a proposal.
+
+  > ⚠ **This entry said "a scan, not a setting" until 2026-09-03**, and led with
+  > `derive_k`, which is the mechanism from before a person set K by hand. The
+  > MAHICE section had already been corrected; this one had not, so the file
+  > answered "what is K" two ways depending on where you opened it. A session read
+  > the stale half aloud to Tony as a live decision — *which K for the Cossart
+  > folder, 12 or 16* — a question the percentage mechanism had already dissolved.
+  > **Two entries for one term is the defect this file exists to prevent**, and it
+  > had one.
 - **tolerance** — the match window scoring uses to pair a detection with a planted
   event. One word; it needs no qualifier and should not acquire one.
 
@@ -145,7 +160,7 @@ recordings is a **simulated data set**; the real recordings the lab approved are
 
 ## The instrument that finds coordination
 
-> **MAHDCE is this project's own coinage** — Tony, 2026-08-24, and he said in the
+> **MAHICE is this project's own coinage** — Tony, 2026-08-24, and he said in the
 > same breath that he had just made it up. It is **not** a term of art, not a
 > published method, and not something a reader will find in the literature. It is
 > written down here because the thing it names is real and had no name, and
@@ -153,14 +168,41 @@ recordings is a **simulated data set**; the real recordings the lab approved are
 > like a citation. **Anything outward-facing spells it out on first use and says
 > whose word it is** — the same rule the detector attributions live under.
 
-- **MAHDCE** — *machine-assisted human detection of coordinated events.* The
+> ⚠ **RETIRED SPELLING: `MAHDCE`** — *machine-assisted human **detection** of
+> coordinated events*, which is how this section read from 2026-08-24 until
+> 2026-09-03. Same instrument, same coiner, one letter.
+>
+> **The D was wrong by this file's own rule.** "Detection" belongs to the
+> **detector axis** — *per-ROI events*, below, says in terms *"Never 'detection'
+> (that's the detector axis)"* — so the old spelling spent a reserved word on the
+> half of the pair that is a person. **Identification** is free, and it is the
+> more accurate verb besides: the machine detects candidates; what the person adds
+> is saying which of them are the thing.
+>
+> Two dated documents still spell it `MAHDCE` and are **left alone**, because they
+> record what was written on the day —
+> [`the null leaks`](todo/2026-08-24-the-null-leaks-and-the-excess-is-mostly-selection.md)
+> and [`the ADR that did not land`](handoffs/2026-08-25-the-adr-that-did-not-land.md).
+> Anyone grepping the old spelling lands here.
+
+- **MAHICE** — *machine-assisted human identification of coordinated events.* The
   instrument, and it is a **person and a program together**. The machine proposes
   candidate coordinated events and the statistics behind them; a person judges
   them; **neither half is the instrument on its own.** This is the reset's §1
   reversal given a name: there is no autonomous assessor, and a coordination
   number produced without anybody having looked at the recording is not a weaker
   result of the same kind — it is not a result.
-- **the assessor** — the **machine half** of MAHDCE: `bugarach assess`,
+  In code: `bugarach.annotate.MAHICE`.
+- **K** — the coactivity floor: how many ROIs firing together make one coordinated
+  event. **Set by the person during MAHICE, and expressed as a PERCENTAGE of that
+  recording's ROI population** (Tony, 2026-09-03). One percentage per review, never
+  a different one per slice — the absolute count then follows each field size on
+  its own, which is what makes a single setting fair across recordings running 10
+  to 51 ROIs. `assess.k_from_fraction` resolves it, using the generator's own
+  participation rule; `annotate.MahiceSession` records what was set, by whom, and
+  against which ROI counts. An **absolute** K is not comparable across recordings
+  and must never be transplanted between corpora.
+- **the assessor** — the **machine half** of MAHICE: `bugarach assess`,
   `assess_coactivity`, the browser's ported copy. It proposes; it does not
   conclude. Never *"the assessment says"* — an assessment is a record containing
   a judgement, and the judgement and the **view it was made in** travel with it
@@ -171,7 +213,7 @@ recordings is a **simulated data set**; the real recordings the lab approved are
   of (recording × rendering × observer) rather than of the recording.
 
 **The code keeps its names on purpose.** `assess.py` and `bugarach assess` are the
-machine half and are correctly named for it; renaming them MAHDCE would give one
+machine half and are correctly named for it; renaming them MAHICE would give one
 half the name of the pair and undo the distinction the term exists to draw.
 
 ## Data objects
@@ -213,18 +255,20 @@ Introduced by [`detector_history.md`](detector_history.md), which argues that
 three of the six detectors are re-derivations of this design space. Listed here
 so the words mean one thing.
 
-**That argument is no longer a reading — it is the attribution.** This paragraph
+**That argument is no longer a reading: the mechanisms are CFAR's.** This paragraph
 used to say the attributions were "flagged unverified and nothing below depends
-on them", which was true when it was written and stopped being true twice: two of
-the radar primaries were retrieved and read on 2026-08-22, and an interface2 audit
-on 2026-08-24 closed every lineage row — `rate_detect` is cell-averaging CFAR
-(Finn & Johnson 1968), `loco_detect`'s `maxlt` is GO-CFAR (Hansen 1973), and its
-percentile-of-pool is kin to OS-CFAR (Rohling 1983). **The words below name what
-these detectors are, not what they resemble.** None of it is a problem — priority
-is closed (Tony, 2026-08-24) and the reason to care is the engineering the radar
-literature is offering, which
+on them". Since then four radar papers were read in full (2026-08-22), and an
+interface2 audit (received 2026-08-24) matched each detector to a CFAR mechanism:
+`rate_detect` is cell-averaging in structure (Finn & Johnson 1968), `loco_detect`'s
+`maxlt` uses the greatest-of combination rule, and its percentile-of-pool is kin to
+OS-CFAR (Rohling 1983). One attribution that audit made, Hansen 1973 as the origin
+of greatest-of, is withdrawn: nobody had read that paper. Reading it on 2026-09-14
+neither confirmed nor ruled it out, and where greatest-of began is not established ([`detector_history.md` §4.1](detector_history.md#41-where-greatest-of-began)).
+**The words below name the mechanisms these detectors use.** The question of who got
+there first is closed for this project (Tony, 2026-08-24); the reason to care is the
+engineering the radar literature offers, which
 [the attribution note](todo/2026-08-24-the-methods-are-not-ours-and-the-app-says-otherwise.md)
-sets out.
+describes.
 
 - **CFAR** — constant false alarm rate: set the threshold from an estimate of
   the local background so the false-alarm probability stays put as the
@@ -250,8 +294,9 @@ sets out.
   clamp bounds a number during fitting. Different objects, different stage.
 - **self-masking / mutual masking** — an event raising its own bar; a second
   event inside the reference window raising it further.
-- **greatest-of / ordered-statistic selection** — combination rules for the
-  reference estimate. LoCo's `maxlt` is greatest-of; its percentile-of-pool is
+- **greatest-of (GO) / ordered-statistic (OS) selection** — combination rules for the
+  reference estimate. LoCo's `maxlt` uses the greatest-of rule over percentile
+  thresholds rather than means; its percentile-of-pool is
   kin to an ordered statistic.
 
 ## Validation vocabulary
@@ -264,6 +309,42 @@ sets out.
   `docs/clean_room/WORKFLOW.md`; they never see each other's code.
 - **sapper** — the mechanized rule gate (`tools/sapper.py`); a rule must
   prove it can fire (self-test fixtures) to exist.
+
+## Tuning the learned nets
+
+Terms from goal 2's comparison of coded detectors against learned nets. They were added on
+2026-09-19, when the chorus-collapse diagnosis (`docs/learned/chorus_collapse/`) used them.
+
+- **configuration** — one setting of a net's size and training: encoder width and depth, top m,
+  learning rate, step count and, for chorus_gain_norm, the vote gain's starting value. Each has
+  a hash name (`2736f584…`).
+- **inner fit** — one configuration trained at one training seed on 2 of a draw's 4 folds and
+  scored on the other 2. That gives 6 pairs of folds × 3 seeds per configuration. Tuning picks a
+  configuration from these; an inner fit is shared by every outer fold it did not use. Also
+  called a tuning fit.
+- **refit** — for each fold held out in turn, the configuration tuning picked, trained afresh on
+  the other 3 folds and scored on the held-out one. There is one pick per selection rule: on F1
+  alone, and under the false-alarm budget. The untuned default is also refit in every fold.
+- **training seed** — it sets a fit's starting weights and the order of its training crops. It
+  also sets which recordings of its folds the fit trains on, so it is not only a starting point.
+- **twin** (configurations) — two configurations identical except for step count. The learning
+  rate is constant and training is deterministic, so the shorter twin's fit is the longer twin's
+  fit stopped early: one trajectory, not two samples.
+- **census** — the chorus-collapse diagnosis's run of every second-draw chorus fit on one fresh
+  simulated recording that no fit trained on (quiet background, seed 9000).
+- **draw** — one complete run of the comparison on its own simulated recordings. There are two
+  so far.
+- **collapse** (of a fit) — exactly one call on every recording the fit was scored on, at its
+  own threshold. The whole recording becomes one event, and F1 is 0.125 against 15 planted
+  events.
+- **silent layer** — a layer none of whose units' outputs varies over a recording or training
+  crop: the standard deviation over its frames is under 0.001. It is measured with 400 frames
+  trimmed from each end, because zero padding makes even a constant layer wiggle there.
+  - This is **not** the ReLU sense of "dead", which means a unit whose output is exactly zero.
+    GELU's negative dip carries signal without ever going positive, so a test of the sign counts
+    layers that still transmit.
+  - It is not Sokar et al.'s "dormant" unit either, which is a threshold on the unit's mean
+    absolute activation, relative to its layer's.
 
 ## Bench and simulation
 
@@ -287,9 +368,202 @@ load-bearing terms with no glossary entry.
   rate rather than on coordination. Its firings are reported separately and kept
   out of headline precision.
 - **distractor** — a planted correlated burst: real cross-ROI coincidence that is
-  not a coordinated event. A negative that is meant to be confusable.
+  not a coordinated event. A negative that is meant to be confusable. On the bench it
+  is built exactly as an 18% planted event is built and differs only in its label, so
+  whether a call on one should count against a detector is an open question
+  (`score.py`); today it counts as a false alarm, for every detector alike.
+- **merge gap** — how close two calls may be before a detector merges them into one.
+  Tuned for the coded detectors (`merge_gap_sec`, `merge_gap_s`); the learned models decode
+  at `pick_threshold`'s default of 20 frames, which is what the fair comparison ran, and it
+  is **tuned for them too since 2026-09-19** — chosen on the inner fits after the fact and
+  without retraining (`tools/tune_net_merge_gap.py`). Matched by name is not matched by
+  operation, which is why the three rules below matter. On the bench, where planted events are at
+  least 120 s apart, a wider gap rarely costs recall, so bench F1 rises with it for a
+  detector whose calls come in short bursts; that is why the crowded-recording check
+  exists. Merging chains, so a detector that calls almost continuously can lose events
+  to it even here (the fair comparison's `line_length` and `tube`, 2026-09-19). Three
+  rules share the name: a net merges runs of frames above threshold; sliding
+  CoactDetect and LoCo merge window positions; binned SCE merges by firing times.
+- **call** — a detector's claim that a coordinated event happened, over a span of time.
+  Scored one to one against planted events (`score.score_detections`).
+- **firing** — one entry in a cell's list of event times (an *onset*); the page-level
+  word for a per-ROI event, kept apart from a coordinated event.
+- **background** — the steady random firing rate a bench recording is simulated at:
+  *quiet* (0.0052 per second per ROI) or *busy* (0.019), the 25th and 75th percentiles
+  of real baseline rates. The code's word is *regime*. Not the promiscuity probe.
+- **empty recording** — a bench recording with nothing planted, one per seed at each
+  background, used to count false alarms.
+- **refit** — one training of a chosen net configuration on the outer training folds,
+  at one training seed; five per choice in goal 2's comparison.
+- **failed-training signature** — a refit that calls one long stretch per recording, so
+  it finds an event or two at perfect precision and almost no recall (F1 0.125 on the
+  bench). Recorded per refit as `failed_training_signature`.
+- **crowded-recording check** (also *crowded veto*) — `bench.MAX_CROWDED_DROP`: a
+  setting may not score more than that much mean F1 below the setting it replaces on
+  `bench.make_tail_recording`'s crowded recordings. Goal 1's fourth budget.
+- **shared false-alarm budget** — goal 2's second selection: a candidate may fire at
+  most a declared margin (1.6) times as often as the reference CoactDetect, in the
+  promiscuity probe at each background and on the empty recordings at the quiet
+  background, on the training folds (the busy-background empty recordings are reported,
+  not gated).
+  A result is **admissible** if it was chosen within the budget and passes the
+  crowded-recording check.
 - **contaminated null** — a surrogate null estimated over a context window that
   contains real coordinated events, which inflates the threshold. Avoided by
   spacing events wider than the widest context window.
 - **participant floor** — the recruitment level below which a detector stops
   finding events. Reported as recall broken down by participation fraction.
+
+## Surrogate vocabulary
+
+Terms from the surrogate screen,
+[`proposals/2026-09-10-surrogate-evaluation-overnight.md`](proposals/2026-09-10-surrogate-evaluation-overnight.md).
+Added 2026-09-10, when that plan's review found them used undefined.
+
+- **surrogate** — a resampled copy of a recording that keeps each ROI's own timing
+  and destroys cross-ROI timing: the negatives a self-supervised detector trains
+  against, and the null a detector thresholds against. Distinct from a
+  **contaminated null** above, which is about *where* a null is estimated.
+- **leak** — a difference between real data and a surrogate that is visible
+  without any cross-ROI information. A model trained against a leaking surrogate
+  learns the leak instead of coordination. The known one: uniform per-onset
+  dither's sub-floor intervals.
+- ***J*** — jitter radius: how far a dither may move one onset, ± seconds. Other
+  surrogates' parameters are matched to it by root-mean-square displacement. For
+  **rigid shift** it is the radius of each ROI's whole-train offset, and for a **shared
+  offset** the radius of the one offset applied to every train; some pages call it the
+  displacement or shift radius.
+- **dead time, τ** — the shortest within-ROI interval the producer's event
+  extractor can emit; the producer's to declare. ⚠ **Not SPIKE-synch's τ**, which
+  is a coincidence window (see **ISI-adaptive**).
+- **floor, provisional floor *f*** — the shortest within-ROI interval *observed* in
+  real data, standing in for τ until it is declared; *f* is the value swept in its
+  place. A floor observed on the same windows it is tested on makes real data score
+  zero by construction.
+- **known-bad control** — a surrogate built to fail one statistic. A statistic
+  that does not flag it has no power there, and its verdicts there do not count.
+  The rigid-shift report calls the same thing a **positive control**. ⚠ A control only
+  shows power against the alternative it was built for: per-onset dither breaks
+  intervals, which rigid shift never does, so it cannot show power against a leak rigid
+  shift could have (the third murderboard of that report, 2026-09-17).
+- **small-J control** — rigid shift at a displacement too small to move slow
+  co-modulation (1.6 s on the fast stream). A scorer that separates real from rigid
+  shift at 10–20 s but not at the small *J* is reading slow shared modulation, not
+  sub-second coordination.
+- **shared-modulation twin / independent-modulation twin** — synthetic recordings with
+  no events whose ROIs' rates follow one slow sinusoid (shared) or one each
+  (independent). The first separates from its rigid shift for any scorer that sees
+  co-modulation; the second must read chance.
+- **count baselines** — zero-parameter scorers run through the same thresholds and
+  checks as a trained model: `count_share` (share of ROIs with an onset within ±2
+  frames), `count_excess` (that minus its 30 s moving mean) and `slow_modulation` (the
+  share averaged over 10 s). `tools/tube_self_supervised.py`.
+- **destruction test** — whether a surrogate removes planted cross-ROI
+  coordination. A surrogate can keep everything real data has and still keep the
+  coordination too; a do-nothing surrogate must fail this test.
+- **generation window / analysis window** — the span a surrogate is generated over
+  (the producer's baseline window, or the whole recording where a folder declares
+  no regions), and a 60-second cut of it, the unit its statistics are computed on.
+  "Analysis window" here is the 60-second cut, not the producer's
+  `analysis_start_sec`/`analysis_end_sec` span.
+- **rigid shift** — a surrogate that slides each ROI's **whole** train by its own offset
+  drawn in ±*J*, keeping that ROI's rate and intervals while destroying alignment
+  between ROIs. Published as whole-train shifting (Pipa, Riehle & Grün 2007; Pipa
+  et al. 2008; Louis, Borgelt & Grün 2010). ⚠ The published form **wraps** the
+  train; this project's does not, and drops onsets pushed past the window's end.
+  ⚠ The published form also shifts each **trial** separately (Stella et al. 2022 use a
+  25 ms dither); this project shifts a whole recording as one trial, by 10–20 s.
+- **shared offset** — the control for rigid shift: **one** offset applied to every
+  ROI of a recording. Each ROI's train moves exactly as rigid shift moves it while
+  the ROIs stay aligned, so a classifier that separates real from a shared offset is
+  reading a per-ROI or edge artifact rather than removed coordination.
+- **label-free threshold** — an operating point set from a recording's own surrogate:
+  scanning thresholds downward from the top, the last one before the model fires more
+  than a stated number of events per 10 minutes on any of three rigid shifts of that
+  recording. Reads no labels. Scanned downward because the event count is not monotone:
+  low enough, the whole recording merges into one detection. ⚠ It caps the rate on the
+  shifts, not on the recording, so a model can fire well above the stated rate on the
+  recording itself; and where no threshold ever exceeds the rate the scan falls to the
+  grid's lowest value, which the tool records. The idea is closer to a surrogate
+  threshold than to CFAR's (see **adaptive-threshold vocabulary**): Dard et al. 2022 set
+  their event threshold the same way, at the 99th percentile of a per-cell circular
+  shift.
+- **oracle threshold** — the F1-best threshold chosen **on planted truth**: a
+  comparison, never a usable rule. The rigid-shift report calls it the **truth-reading
+  threshold**. ⚠ Not a ceiling: it is picked on two validation recordings, and a
+  label-free threshold can score above it on held-out ones. ⚠ Distinct from the parity **oracle**
+  under *validation vocabulary*, which is a MATLAB reference output.
+
+**Shared-activity vocabulary** — added 2026-09-17 with
+[`learned/slow_comodulation/`](learned/slow_comodulation/README.md).
+
+- **shared modulation (co-modulation)** — every ROI's onset rate rising and falling
+  together without any two onsets being aligned. Distinct from a **coordinated event**,
+  where onsets align within a fraction of a second.
+- **drift** — shared modulation over a minute or more. Whether it is coordination,
+  background or a producer question is an open decision.
+- **excess coincidence** — onset pairs between distinct ROIs at a given lag *ℓ* (not τ,
+  which is the dead time above), pooled over
+  ROI pairs and recordings, divided by the count expected if each pair fired
+  independently at its observed totals, minus one. 0 means no more than chance at the
+  window's average rates; summed over every lag to the window's length it is zero by
+  construction. The **population cross-correlogram** is excess coincidence against lag
+  (Perkel, Gerstein & Moore 1967).
+- **peak / shoulder / dip** — on that correlogram: a narrow excess at sub-second lags, a
+  broad low excess out to tens of seconds or minutes, and a **dip**, fewer pairs than
+  chance at a given lag. Each is a shape, not a cause: what produces it is argued
+  separately, and the zero-sum construction above means a peak somewhere forces a
+  deficit elsewhere.
+- **arm** — one treatment of the same recording measured the same way: the recording as
+  it is, a surrogate of it, or the recording with something removed. Every arm is
+  divided by a **null** chosen to share everything with it but the structure under test.
+- **count-variance ratio** — the variance of the population onset count (onsets summed
+  over ROIs in a bin) divided by its variance after a **circular shift of the same
+  onsets**; 1 means no shared structure at that bin width. What a detector that counts
+  lit ROIs responds to. Schluter's (1984) variance ratio; it grows with the number of
+  ROIs for the same pairwise correlation.
+- **circular shift** — each ROI's whole train slid by its own lag, wrapping around the
+  window: removes every relation between ROIs at every timescale. The assessor's null.
+- **block control** — the circular shift done inside each fixed block (2 minutes on the
+  slow co-modulation page) separately. Keeps every ROI's count per block, so it keeps
+  shared change in block counts **from any source, events included**. In the code,
+  `surrogates.window_circular_shift`, registered as a known-bad control. A variant of
+  interval jitter, which re-places onsets independently inside fixed windows.
+- **promiscuity probe** — the benchmark generator's whole-field dense block
+  (`hot_window` in `generator_spec.json`, 1,200–1,500 s): every ROI's rate raised at
+  once, so it is also shared drift.
+- **lit** — an ROI with at least one onset in the bin being counted. "Share of ROIs lit"
+  is a count of ROIs, never of onsets.
+- **mask-matched null** — the null for an arm with stretches of time cut out of it.
+  Deleting onsets inside detected episodes cuts gaps that are shared across ROIs, so the
+  null has to carry the same gaps or they are scored as shared change. Built by shifting
+  each ROI circularly **inside the surviving stretches**, which keeps its onset count and
+  leaves the gaps where the arm has them.
+- **effective mice** — Kish's effective sample size on the weights a pooled number
+  actually uses, so a count of animals cannot stand in for how many the estimate leans
+  on. Fewer than the animals counted whenever the weights are uneven.
+
+Added 2026-09-16, with the label-free detector work:
+
+- ***line*** (detector axis, a proper name like **CoactDetect**) — a learned detector
+  that smooths each ROI on its own, bounds each ROI's vote in **height** with a sigmoid,
+  averages those votes over ROIs, and judges the result against its own background with
+  a difference of Gaussians. `src/bugarach/learn/nets/line.py`. ⚠ The bound is on height
+  only: a bursting ROI holds its vote for longer, and the stage after it reads the time
+  course, so a burst still counts as more than one onset. This entry said "votes once"
+  until 2026-09-17.
+- ***line_bound*** — `line` with each ROI's vote also bounded **in time** (scaled
+  wherever its local mass exceeds one onset's) and its empty-field floor subtracted. Two
+  changes, so a difference from `line` is not attributable to either alone.
+  `src/bugarach/learn/nets/line_bound.py`.
+- ***line_length*** — `line` with its orientation channels removed: the registered
+  ablation that says what the second sensor is worth.
+- **relative length** — the share of a field that is lit at one moment: `line`'s
+  first sensor, a **mean** over ROIs rather than a tally, so it does not move with
+  ROI count.
+- **orientation, as temporal concentration** — `line`'s second sensor: the count at a
+  narrow smear divided by the count at the next wider one, one channel per adjacent
+  pair. Near 1 when the lit ROIs arrive together, well below 1 when they are gathered
+  only as the smear widens. ⚠ **Not the orientation of the raster image.** These
+  models are permutation-invariant over ROIs and the encoder sorts rows by rate, so a
+  tilt is a fact about row order, which no order-free model reads.

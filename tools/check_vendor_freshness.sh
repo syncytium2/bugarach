@@ -44,7 +44,7 @@
 # ---------------------------------------------------------------------------
 #
 # USAGE
-#   bash tools/check_vendor_freshness.sh            check both families
+#   bash tools/check_vendor_freshness.sh            check all three families
 #   bash tools/check_vendor_freshness.sh --verbose  print verdicts even when current
 #
 # ENV
@@ -109,6 +109,18 @@ bash "$GATE" $VERBOSE \
 # The stamp lives on __init__.py rather than on all twelve modules, so a re-vendor
 # is one recursive copy plus one line, not a twelve-file diff.
 #
+# THIS FAMILY WAS ONCE WRITTEN TWICE, and the second copy left the spec out on
+# purpose: `architecture.spec.json` had diverged from draughtsman's gallery spec
+# (upstream's `layout.wrap` folds the figure into a column, wrong for a wide banner),
+# and listing it would have reported an intended deviation as staleness. That ended
+# at 5705c46, when draughtsman drew the front page's two figures from specs of their
+# own — `examples/tube/front-page.json` and `front-page-phone.json`, vendored here
+# verbatim — so both specs are listed and one invocation checks all three files.
+# What the second copy recorded is still the reason the family exists: on 2026-09-05
+# `third_party/draughtsman/` sat pinned at cb7fc2a while draughtsman fixed, in
+# bb83174, an edge routed through the box it bypassed, and the front page published
+# that figure for three days with nothing red.
+#
 # --clone is passed only when the env var names a real checkout. Written as a
 # string rather than an array because this runs under bash 3.2 on macOS, where
 # expanding an empty array under `set -u` is itself an error -- the same reason
@@ -122,6 +134,7 @@ bash "$GATE" $VERBOSE $DRAUGHTSMAN_CLONE \
   --slug syncytium2/draughtsman \
   --file third_party/draughtsman/__init__.py \
   --file docs/learned/architecture.spec.json \
+  --file docs/learned/architecture-phone.spec.json \
   || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
 
 # --- family 4: armory, the file-send gate and its remedy ----------------------

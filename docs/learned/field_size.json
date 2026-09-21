@@ -1,0 +1,604 @@
+{
+ "assumptions": {
+  "alpha_per_frame": 2.777777777777778e-05,
+  "dt_sec": 0.1,
+  "false_alarms_per_hour": 1.0,
+  "null": "independent cells, one homogeneous per-cell rate per corpus",
+  "widen_frames": 9
+ },
+ "corpora": [
+  {
+   "label": "this lab",
+   "n_roi_max": 62,
+   "n_roi_median": 32,
+   "n_roi_min": 9,
+   "n_roi_p25": 24,
+   "n_roi_p75": 37,
+   "n_rows": 340,
+   "n_windows_with_zero_median": 128,
+   "p_frame": 0.008735294117647058,
+   "participants_med": 7.0,
+   "rate_statistic": "median across windows of each window's mean per-ROI rate",
+   "roi_rate_mean_hz": 0.009705882352941175,
+   "roi_rate_med_hz_SUPERSEDED": 0.0008333333333333334,
+   "short": "this lab",
+   "source": "docs/learned/assessment_real.json"
+  },
+  {
+   "label": "Cossart / DANDI:000219",
+   "n_roi_max": 1050,
+   "n_roi_median": 566,
+   "n_roi_min": 117,
+   "n_roi_p25": 405,
+   "n_roi_p75": 696,
+   "n_rows": 531,
+   "n_windows_with_zero_median": 0,
+   "p_frame": 0.020961202124941868,
+   "participants_med": 42.0,
+   "rate_statistic": "median across windows of each window's mean per-ROI rate",
+   "roi_rate_mean_hz": 0.023290224583268744,
+   "roi_rate_med_hz_SUPERSEDED": 0.016361196023347287,
+   "short": "Cossart",
+   "source": "docs/learned/assessment_cossart.json"
+  }
+ ],
+ "detection_floor": [
+  {
+   "by_n_roi": [
+    {
+     "k_floor_cells": 4,
+     "k_floor_fraction": 0.4444444444444444,
+     "n_roi": 9
+    },
+    {
+     "k_floor_cells": 4,
+     "k_floor_fraction": 0.3076923076923077,
+     "n_roi": 13
+    },
+    {
+     "k_floor_cells": 4,
+     "k_floor_fraction": 0.2,
+     "n_roi": 20
+    },
+    {
+     "k_floor_cells": 5,
+     "k_floor_fraction": 0.15625,
+     "n_roi": 32
+    },
+    {
+     "k_floor_cells": 6,
+     "k_floor_fraction": 0.12,
+     "n_roi": 50
+    },
+    {
+     "k_floor_cells": 6,
+     "k_floor_fraction": 0.0967741935483871,
+     "n_roi": 62
+    },
+    {
+     "k_floor_cells": 8,
+     "k_floor_fraction": 0.06837606837606838,
+     "n_roi": 117
+    },
+    {
+     "k_floor_cells": 11,
+     "k_floor_fraction": 0.044,
+     "n_roi": 250
+    },
+    {
+     "k_floor_cells": 17,
+     "k_floor_fraction": 0.030035335689045935,
+     "n_roi": 566
+    },
+    {
+     "k_floor_cells": 25,
+     "k_floor_fraction": 0.023809523809523808,
+     "n_roi": 1050
+    }
+   ],
+   "corpus": "this lab",
+   "curve": [
+    {
+     "k_floor_cells": 4,
+     "n_roi": 9
+    },
+    {
+     "k_floor_cells": 4,
+     "n_roi": 11
+    },
+    {
+     "k_floor_cells": 4,
+     "n_roi": 13
+    },
+    {
+     "k_floor_cells": 4,
+     "n_roi": 16
+    },
+    {
+     "k_floor_cells": 4,
+     "n_roi": 20
+    },
+    {
+     "k_floor_cells": 5,
+     "n_roi": 25
+    },
+    {
+     "k_floor_cells": 5,
+     "n_roi": 32
+    },
+    {
+     "k_floor_cells": 5,
+     "n_roi": 40
+    },
+    {
+     "k_floor_cells": 6,
+     "n_roi": 50
+    },
+    {
+     "k_floor_cells": 6,
+     "n_roi": 62
+    },
+    {
+     "k_floor_cells": 7,
+     "n_roi": 80
+    },
+    {
+     "k_floor_cells": 8,
+     "n_roi": 100
+    },
+    {
+     "k_floor_cells": 8,
+     "n_roi": 117
+    },
+    {
+     "k_floor_cells": 9,
+     "n_roi": 150
+    },
+    {
+     "k_floor_cells": 10,
+     "n_roi": 200
+    },
+    {
+     "k_floor_cells": 11,
+     "n_roi": 250
+    },
+    {
+     "k_floor_cells": 13,
+     "n_roi": 320
+    },
+    {
+     "k_floor_cells": 14,
+     "n_roi": 400
+    },
+    {
+     "k_floor_cells": 16,
+     "n_roi": 500
+    },
+    {
+     "k_floor_cells": 17,
+     "n_roi": 566
+    },
+    {
+     "k_floor_cells": 19,
+     "n_roi": 700
+    },
+    {
+     "k_floor_cells": 22,
+     "n_roi": 850
+    },
+    {
+     "k_floor_cells": 25,
+     "n_roi": 1050
+    }
+   ],
+   "p_frame": 0.008735294117647058,
+   "short": "this lab"
+  },
+  {
+   "by_n_roi": [
+    {
+     "k_floor_cells": 4,
+     "k_floor_fraction": 0.4444444444444444,
+     "n_roi": 9
+    },
+    {
+     "k_floor_cells": 5,
+     "k_floor_fraction": 0.38461538461538464,
+     "n_roi": 13
+    },
+    {
+     "k_floor_cells": 6,
+     "k_floor_fraction": 0.3,
+     "n_roi": 20
+    },
+    {
+     "k_floor_cells": 7,
+     "k_floor_fraction": 0.21875,
+     "n_roi": 32
+    },
+    {
+     "k_floor_cells": 8,
+     "k_floor_fraction": 0.16,
+     "n_roi": 50
+    },
+    {
+     "k_floor_cells": 9,
+     "k_floor_fraction": 0.14516129032258066,
+     "n_roi": 62
+    },
+    {
+     "k_floor_cells": 12,
+     "k_floor_fraction": 0.10256410256410256,
+     "n_roi": 117
+    },
+    {
+     "k_floor_cells": 17,
+     "k_floor_fraction": 0.068,
+     "n_roi": 250
+    },
+    {
+     "k_floor_cells": 29,
+     "k_floor_fraction": 0.05123674911660778,
+     "n_roi": 566
+    },
+    {
+     "k_floor_cells": 44,
+     "k_floor_fraction": 0.0419047619047619,
+     "n_roi": 1050
+    }
+   ],
+   "corpus": "Cossart / DANDI:000219",
+   "curve": [
+    {
+     "k_floor_cells": 4,
+     "n_roi": 9
+    },
+    {
+     "k_floor_cells": 5,
+     "n_roi": 11
+    },
+    {
+     "k_floor_cells": 5,
+     "n_roi": 13
+    },
+    {
+     "k_floor_cells": 5,
+     "n_roi": 16
+    },
+    {
+     "k_floor_cells": 6,
+     "n_roi": 20
+    },
+    {
+     "k_floor_cells": 6,
+     "n_roi": 25
+    },
+    {
+     "k_floor_cells": 7,
+     "n_roi": 32
+    },
+    {
+     "k_floor_cells": 7,
+     "n_roi": 40
+    },
+    {
+     "k_floor_cells": 8,
+     "n_roi": 50
+    },
+    {
+     "k_floor_cells": 9,
+     "n_roi": 62
+    },
+    {
+     "k_floor_cells": 10,
+     "n_roi": 80
+    },
+    {
+     "k_floor_cells": 11,
+     "n_roi": 100
+    },
+    {
+     "k_floor_cells": 12,
+     "n_roi": 117
+    },
+    {
+     "k_floor_cells": 13,
+     "n_roi": 150
+    },
+    {
+     "k_floor_cells": 15,
+     "n_roi": 200
+    },
+    {
+     "k_floor_cells": 17,
+     "n_roi": 250
+    },
+    {
+     "k_floor_cells": 20,
+     "n_roi": 320
+    },
+    {
+     "k_floor_cells": 23,
+     "n_roi": 400
+    },
+    {
+     "k_floor_cells": 27,
+     "n_roi": 500
+    },
+    {
+     "k_floor_cells": 29,
+     "n_roi": 566
+    },
+    {
+     "k_floor_cells": 33,
+     "n_roi": 700
+    },
+    {
+     "k_floor_cells": 38,
+     "n_roi": 850
+    },
+    {
+     "k_floor_cells": 44,
+     "n_roi": 1050
+    }
+   ],
+   "p_frame": 0.020961202124941868,
+   "short": "Cossart"
+  }
+ ],
+ "produced_by": "tools/probe_field_size.py",
+ "threshold_carried_from_32_cells": [
+  {
+   "by_n_roi": [
+    {
+     "count_rule_fa_per_frame": 6.22401067938317e-09,
+     "count_rule_fa_ratio": 0.0002240643844577941,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 0.002637188174494692,
+     "fraction_rule_fa_ratio": 94.9387742818089,
+     "fraction_rule_k": 2,
+     "n_roi": 9,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 4
+    },
+    {
+     "count_rule_fa_per_frame": 6.174491195443671e-08,
+     "count_rule_fa_ratio": 0.0022228168303597214,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 0.0001785291857975627,
+     "fraction_rule_fa_ratio": 6.4270506887122565,
+     "fraction_rule_k": 3,
+     "n_roi": 13,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 4
+    },
+    {
+     "count_rule_fa_per_frame": 7.068176010751976e-07,
+     "count_rule_fa_ratio": 0.025445433638707115,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 2.522217358176852e-05,
+     "fraction_rule_fa_ratio": 0.9079982489436667,
+     "fraction_rule_k": 4,
+     "n_roi": 20,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 4
+    },
+    {
+     "count_rule_fa_per_frame": 8.413219353767449e-06,
+     "count_rule_fa_ratio": 0.30287589673562815,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 8.413219353767449e-06,
+     "fraction_rule_fa_ratio": 0.30287589673562815,
+     "fraction_rule_k": 5,
+     "n_roi": 32,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 5
+    },
+    {
+     "count_rule_fa_per_frame": 7.768913268118512e-05,
+     "count_rule_fa_ratio": 2.7968087765226644,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 1.3128152472142214e-08,
+     "fraction_rule_fa_ratio": 0.0004726134889971197,
+     "fraction_rule_k": 8,
+     "n_roi": 50,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 6
+    },
+    {
+     "count_rule_fa_per_frame": 0.00021756734146185125,
+     "count_rule_fa_ratio": 7.832424292626644,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 1.8387368942696037e-10,
+     "fraction_rule_fa_ratio": 6.6194528193705735e-06,
+     "fraction_rule_k": 10,
+     "n_roi": 62,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 6
+    },
+    {
+     "count_rule_fa_per_frame": 0.0037978309994907817,
+     "count_rule_fa_ratio": 136.72191598166813,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 1.1730007194288942e-18,
+     "fraction_rule_fa_ratio": 4.2228025899440186e-14,
+     "fraction_rule_k": 19,
+     "n_roi": 117,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 8
+    },
+    {
+     "count_rule_fa_per_frame": 0.06990733684072022,
+     "count_rule_fa_ratio": 2516.6641262659277,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 2.781737322725944e-37,
+     "fraction_rule_fa_ratio": 1.0014254361813398e-32,
+     "fraction_rule_k": 40,
+     "n_roi": 250,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 11
+    },
+    {
+     "count_rule_fa_per_frame": 0.5503924990800044,
+     "count_rule_fa_ratio": 19814.12996688016,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 3.845807482690596e-80,
+     "fraction_rule_fa_ratio": 1.3844906937686144e-75,
+     "fraction_rule_k": 89,
+     "n_roi": 566,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 17
+    },
+    {
+     "count_rule_fa_per_frame": 0.9512629140068356,
+     "count_rule_fa_ratio": 34245.46490424608,
+     "count_rule_k": 5,
+     "fraction_rule_fa_per_frame": 6.42247122631013e-147,
+     "fraction_rule_fa_ratio": 2.312089641471647e-142,
+     "fraction_rule_k": 165,
+     "n_roi": 1050,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 25
+    }
+   ],
+   "calibrated_at_n_roi": 32,
+   "calibrated_k": 5,
+   "corpus": "this lab"
+  },
+  {
+   "by_n_roi": [
+    {
+     "count_rule_fa_per_frame": 6.167930439916587e-11,
+     "count_rule_fa_ratio": 2.220454958369971e-06,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 0.014341119101149845,
+     "fraction_rule_fa_ratio": 516.2802876413944,
+     "fraction_rule_k": 2,
+     "n_roi": 9,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 4
+    },
+    {
+     "count_rule_fa_per_frame": 2.73042726604043e-09,
+     "count_rule_fa_ratio": 9.829538157745547e-05,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 0.002249741857433158,
+     "fraction_rule_fa_ratio": 80.99070686759367,
+     "fraction_rule_k": 3,
+     "n_roi": 13,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 5
+    },
+    {
+     "count_rule_fa_per_frame": 1.0839397976034355e-07,
+     "count_rule_fa_ratio": 0.0039021832713723673,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 4.821093892610473e-05,
+     "fraction_rule_fa_ratio": 1.7355938013397703,
+     "fraction_rule_k": 5,
+     "n_roi": 20,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 6
+    },
+    {
+     "count_rule_fa_per_frame": 3.773674721586562e-06,
+     "count_rule_fa_ratio": 0.13585228997711624,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 3.773674721586562e-06,
+     "fraction_rule_fa_ratio": 0.13585228997711624,
+     "fraction_rule_k": 7,
+     "n_roi": 32,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 7
+    },
+    {
+     "count_rule_fa_per_frame": 8.053578458084749e-05,
+     "count_rule_fa_ratio": 2.8992882449105095,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 6.028262811137118e-09,
+     "fraction_rule_fa_ratio": 0.00021701746120093623,
+     "fraction_rule_k": 11,
+     "n_roi": 50,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 8
+    },
+    {
+     "count_rule_fa_per_frame": 0.0003186520531470404,
+     "count_rule_fa_ratio": 11.471473913293455,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 3.568083959425232e-11,
+     "fraction_rule_fa_ratio": 1.2845102253930835e-06,
+     "fraction_rule_k": 14,
+     "n_roi": 62,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 9
+    },
+    {
+     "count_rule_fa_per_frame": 0.011946853436890175,
+     "count_rule_fa_ratio": 430.0867237280463,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 2.595410127666181e-19,
+     "fraction_rule_fa_ratio": 9.34347645959825e-15,
+     "fraction_rule_k": 26,
+     "n_roi": 117,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 12
+    },
+    {
+     "count_rule_fa_per_frame": 0.2724910705836547,
+     "count_rule_fa_ratio": 9809.678541011568,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 8.123512883885283e-39,
+     "fraction_rule_fa_ratio": 2.924464638198702e-34,
+     "fraction_rule_k": 55,
+     "n_roi": 250,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 17
+    },
+    {
+     "count_rule_fa_per_frame": 0.9522676353702297,
+     "count_rule_fa_ratio": 34281.63487332827,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 4.6140116072154516e-85,
+     "fraction_rule_fa_ratio": 1.6610441785975625e-80,
+     "fraction_rule_k": 124,
+     "n_roi": 566,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 29
+    },
+    {
+     "count_rule_fa_per_frame": 0.9999481935223035,
+     "count_rule_fa_ratio": 35998.13496680292,
+     "count_rule_k": 7,
+     "fraction_rule_fa_per_frame": 4.1070000025550266e-156,
+     "fraction_rule_fa_ratio": 1.4785200009198095e-151,
+     "fraction_rule_k": 230,
+     "n_roi": 1050,
+     "pivot_rule_fa_ratio": 1.0,
+     "pivot_rule_k": 44
+    }
+   ],
+   "calibrated_at_n_roi": 32,
+   "calibrated_k": 7,
+   "corpus": "Cossart / DANDI:000219"
+  }
+ ],
+ "tube_input_contrast": [
+  {
+   "bright_at_event": 0.21875,
+   "bright_background": 0.008735294117647058,
+   "contrast_ratio": 25.042087542087543,
+   "corpus": "this lab",
+   "n_roi_median": 32,
+   "participants_med": 7.0
+  },
+  {
+   "bright_at_event": 0.07420494699646643,
+   "bright_background": 0.020961202124941868,
+   "contrast_ratio": 3.5401093197879856,
+   "corpus": "Cossart / DANDI:000219",
+   "n_roi_median": 566,
+   "participants_med": 42.0
+  }
+ ]
+}

@@ -285,7 +285,7 @@ scored on the quarter it had never seen, all four rotations. **F1** is the usual
 harmonic mean of recall (what fraction of planted events were found) and precision
 (what fraction of calls were real), so 1.0 is perfect and a detector can reach it
 only by finding everything and inventing nothing. A call counts as finding a planted
-event if it lands within **1.5 s** of it — wide against a median *realized* event
+event if it lands within **2.5 s** of it — wide against a median *realized* event
 about 0.8 s across, and deliberately so: the alternative scored a detector at zero
 recall for calls that visibly covered the event. It buys a trustworthy ranking at the
 cost of any claim about timing accuracy, and it helps the imprecise detectors most.
@@ -294,21 +294,21 @@ cost of any claim about timing accuracy, and it helps the imprecise detectors mo
 
 | detector | F1 (mean of 4 folds) | fold range | probe firings | detect s | params |
 | --- | --- | --- | --- | --- | --- |
-| center−surround (learned) | 0.681 ± 0.049 | 0.63–0.74 | 20.5 | 0.023 | 1,149 |
-| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.062 | — |
-| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 2.5 | 0.248 | — |
+| center−surround (learned) | 0.686 ± 0.042 | 0.65–0.74 | 20.5 | 0.026 | 1,149 |
+| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 1.2 | 0.063 | — |
+| LoCo | 0.645 ± 0.057 | 0.57–0.70 | 2.5 | 0.252 | — |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 34.8 | 0.005 | — |
-| locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.117 | — |
-| binned SCE | 0.420 ± 0.079 | 0.31–0.49 | 59.2 | 0.012 | — |
-| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 8.8 | 0.095 | — |
-| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 0.228 | 2,393 |
-| pooled trace (learned) | 0.118 ± 0.015 | 0.10–0.12 | 0.0 | 0.022 | 2,065 |
+| locust | 0.541 ± 0.070 | 0.47–0.63 | 214.8 | 0.116 | — |
+| binned SCE | 0.451 ± 0.096 | 0.33–0.54 | 59.5 | 0.012 | — |
+| SPIKE-synch | 0.267 ± 0.072 | 0.21–0.34 | 8.8 | 0.096 | — |
+| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.0 | 0.230 | 2,393 |
+| pooled trace (learned) | 0.110 ± 0.018 | 0.09–0.12 | 0.0 | 0.022 | 2,065 |
 
 `detect s` is wall-clock to scan one held-out fold — two recordings, about 118
 minutes of data.
 
 **The top three tie on F1 and do not tie on the trap.** Four folds of thirty
-planted events cannot separate 0.681 from 0.651; the fold ranges overlap, and the
+planted events cannot separate 0.686 from 0.651; the fold ranges overlap, and the
 figure draws every fold so that is visible rather than hidden behind a bar. But
 `probe firings` is the column F1 cannot see — firings inside the no-event block are
 excluded from precision, by design, so a detector that keys on activity is not
@@ -332,7 +332,7 @@ across both is the ranking, not the factor.
 four folds, one training run each. The `±` above is the standard deviation across
 those four folds and the range column is their min and max; neither is a confidence
 interval, and seed variance within a fold was never measured. A hit is scored within
-a 1.5 s matching tolerance, against a median realized event about 0.8 s wide, so the
+a 2.5 s matching tolerance, against a median realized event about 0.8 s wide, so the
 ranking is meaningful and a bare F1 implying timing accuracy is not. The two learned models at the floor land
 their threshold on the low edge of the searched grid, which this project treats
 elsewhere as a search that stopped too early. The data set rests on one human choice
@@ -618,6 +618,7 @@ code from cSPIKE's MATLAB source.
 | --- | --- | --- |
 | [PySpike](https://github.com/mariomulansky/PySpike) | BSD | SPIKE-synchronization semantics ported from its (BSD) source; test-suite cross-check (its `max_tau` bug, live since 0.8.0, limits it to the uncapped regime — fix filed as [#89](https://github.com/mariomulansky/PySpike/pull/89)) |
 | [CICADA](https://gitlab.com/cossartlab/cicada) | MIT | **locust** is code-derived from it, by way of interface2, and modified; carries the upstream copyright notice |
+| [draughtsman](https://github.com/syncytium2/draughtsman) | BSD-3-Clause | **draws the model figure on the front page.** It traces `build_tube()`, checks that every traced operation lands in exactly one drawn box, and renders the SVG. Vendored in `third_party/draughtsman/`, with the spec it draws from in `docs/learned/architecture.spec.json` |
 | cSPIKE (MATLAB) | research/education only — **no code used** | reference outputs for parity tests only (research use, via interface2) |
 
 ⚠ SPIKE-synchronization is a **native port** rather than a PySpike wrapper because
@@ -631,8 +632,7 @@ that will fail the day upstream fixes it. PySpike stays a test-suite
 cross-check in the uncapped regime, where the two definitions agree.
 
 **Cite in any publication that uses results from this tool.** ° marks a work carried
-from interface2's attribution audit and **not read here** — this project's shelf
-holds only Finn & Johnson of the works below. Where each detector came from, which
+from interface2's attribution audit and **not read here**. Where each detector came from, which
 are this lab's own designs and which derive from published work, is
 [`docs/detector_history.md`](docs/detector_history.md).
 
@@ -649,11 +649,16 @@ are this lab's own designs and which derive from published work, is
   14(1):43–80, and *II. Nonstationary data*, 14(1):81–119. The shift-based null used
   here is nearer ° Amarasingham A., Harrison M.T., Hatsopoulos N.G., Geman S. (2012).
   *Conditional modeling and the jitter method of spike resampling*, J Neurophysiol
-  107(2):517–531, doi:10.1152/jn.00633.2011. LoCo's `maxlt` is greatest-of CFAR:
-  ° Hansen V.G. (1973). *Constant false alarm rate processing in search radars*, Proc.
-  IEE Int. Radar Conf., IEE Conf. Publ. 105, 325–332 — the origin; its detectability
-  cost is measured in Hansen V.G. & Sawyers J.H. (1980), IEEE T-AES AES-16(1):115–118,
-  which **is** on this project's shelf.
+  107(2):517–531, doi:10.1152/jn.00633.2011. LoCo's `maxlt` mode takes the
+  larger of two local thresholds (each a percentile of a surrogate null, one from
+  the trailing and one from the leading half of the context window), which is the
+  greatest-of combination rule of constant-false-alarm-rate (CFAR) radar detection.
+  **Where greatest-of began is not established**
+  ([`docs/detector_history.md` §4.1](docs/detector_history.md#41-where-greatest-of-began)).
+  In radar, the added detection loss of cell-averaging greatest-of over plain
+  cell-averaging is computed in Hansen V.G. & Sawyers J.H. (1980), *Detectability
+  loss due to "greatest of" selection in a cell-averaging CFAR*, IEEE T-AES
+  AES-16(1):115–118, doi:10.1109/TAES.1980.308885.
 - **PySpike**, for the measure under **SPIKE-synch** — Mulansky M., Kreuz T. (2016).
   *PySpike — A Python library for analyzing spike train synchrony*, SoftwareX 5,
   183–189, doi:10.1016/j.softx.2016.07.006. The measure is ° Kreuz T., Mulansky M.,

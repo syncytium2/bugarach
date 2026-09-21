@@ -118,6 +118,12 @@ def test_the_view_is_captured_at_the_verdict_not_at_export(page):
     again, and the two rows must disagree about the ordering."""
     pg, _ = page
     got = pg.evaluate("""async () => {
+      // Start from nothing. `startAnnotation` now refuses to discard verdicts
+      // already cast without a confirm() — protective for a person, and
+      // headless auto-dismisses dialogs, so a test that left a review in place
+      // silently went on judging the OLD sample and its counts came out high.
+      ANNOT = null; discardSavedReview();
+      ANNOT_BY_PARTICIPATION = false;   // the page-wide order, not participation
       startAnnotation();
       await showCandidate();
       ORDER = "file"; await showCandidate();
@@ -130,6 +136,64 @@ def test_the_view_is_captured_at_the_verdict_not_at_export(page):
     }""")
     assert got[0] == "file"
     assert got[1] == "by_events", got
+
+
+def test_blue_is_the_events_own_rois_in_every_order_and_can_be_turned_off(page):
+    """Tony, 2026-09-14: "never understood the blue color events. if it was
+    coloring events in the proposed coordinated event then it should be corrected
+    and toggleable. toggle by participation/by ROI order/by ROI freq".
+
+    Members are positions in the file's ROI order. The panel read them through
+    the order on screen, so under "by events" blue went on other ROIs. In every
+    order the inked set must be the candidate's own ROIs, and each of them must
+    have an onset near the candidate's centre. By participation they fill the top
+    rows. Off, nothing is inked.
+    """
+    pg, _ = page
+    got = pg.evaluate("""async () => {
+      ANNOT = null; discardSavedReview();
+      startAnnotation();
+      await showCandidate();
+      const cand = ANNOT.cands[ANNOT.i];
+      const d = await loadRecording(RECORDINGS.find(r => r.id === cand.recId));
+      const byRoi = d.streams.get(cand.stream);
+      const own = cand.members.map(i => d.order[i]).sort();
+      const out = {own, nearest: own.map(id => Math.min(
+        ...(byRoi.get(id) || []).map(t => Math.abs(t - cand.centre)))), views: {}};
+      for (const which of ["participation", "id", "rate"]) {
+        document.querySelector(`button[data-anorder="${which}"]`).click();
+        await showCandidate();
+        const {rows, name} = annotRowOrder(d, cand);
+        const drawn = drawCandidate(document.getElementById("anCv"), byRoi, rows,
+          cand, ANNOT.view.t0, ANNOT.view.t1, {fileOrder: d.order, ink: ANNOT_INK});
+        out.views[which] = {
+          inked: [...drawn.member].sort(), top: rows.slice(0, own.length).sort(),
+          stamped: ANNOT.view.order, name,
+          pressed: document.querySelector(`button[data-anorder="${which}"]`)
+                     .getAttribute("aria-pressed"),
+          legend: document.getElementById("anLegend").textContent};
+      }
+      document.getElementById("anInk").click();
+      await showCandidate();
+      out.off = {ink: ANNOT_INK, legend: document.getElementById("anLegend").textContent};
+      document.getElementById("anInk").click();
+      document.querySelector('button[data-anorder="participation"]').click();
+      return out;
+    }""")
+    own = got["own"]
+    assert own, "the candidate has no members to colour"
+    # the fixture's assessment gathers members within the window of the centre
+    assert max(got["nearest"]) < 5, got["nearest"]
+    for which, v in got["views"].items():
+        assert v["inked"] == own, f"{which}: blue went on {v['inked']}, the event is {own}"
+        assert v["pressed"] == "true", which
+        assert "blue: the" in v["legend"], v["legend"]
+    assert got["views"]["participation"]["top"] == own
+    assert got["views"]["participation"]["stamped"] == "participation"
+    assert got["views"]["id"]["stamped"] == "file"
+    assert got["views"]["rate"]["stamped"] == "by_events"
+    assert got["off"]["ink"] is False
+    assert "not coloured" in got["off"]["legend"], got["off"]["legend"]
 
 
 def test_one_verdict_counts_at_every_k_at_or_below_the_one_it_survived(page):
@@ -169,6 +233,11 @@ def test_a_verdict_writes_absolute_seconds_not_window_relative(page):
     field in the export contract is absolute on the recording's own clock."""
     pg, _ = page
     got = pg.evaluate("""async () => {
+      // Start from nothing. `startAnnotation` now refuses to discard verdicts
+      // already cast without a confirm() — protective for a person, and
+      // headless auto-dismisses dialogs, so a test that left a review in place
+      // silently went on judging the OLD sample and its counts came out high.
+      ANNOT = null; discardSavedReview();
       startAnnotation();
       await showCandidate();
       const c = ANNOT.cands[0];
@@ -190,6 +259,11 @@ def test_the_file_the_page_writes_is_a_file_the_python_accepts(tmp_path, page):
 
     pg, _ = page
     csv_text = pg.evaluate("""async () => {
+      // Start from nothing. `startAnnotation` now refuses to discard verdicts
+      // already cast without a confirm() — protective for a person, and
+      // headless auto-dismisses dialogs, so a test that left a review in place
+      // silently went on judging the OLD sample and its counts came out high.
+      ANNOT = null; discardSavedReview();
       startAnnotation();
       await showCandidate();
       recordVerdict("confirmed");
@@ -212,7 +286,7 @@ def test_the_file_the_page_writes_is_a_file_the_python_accepts(tmp_path, page):
     assert all(v.annotator == "tony" for v in verdicts)
     # the view survived the crossing, which is what the Python refuses without
     assert all(v.view_t1_sec > v.view_t0_sec for v in verdicts)
-    assert all(v.view_roi_order in ("file", "by_events") for v in verdicts)
+    assert all(v.view_roi_order in ("file", "by_events", "participation") for v in verdicts)
 
     # and the scan the page drew is the scan the Python computes
     page_scan = pg.evaluate(

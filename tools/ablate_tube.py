@@ -118,10 +118,19 @@ def run(spec: dict, *, folds: int, seeds_per_fold: int, steps: int) -> dict:
     # Slugged aliases: the report builder addresses stores with a narrow token
     # grammar ([A-Za-z0-9_.-]), so a label with spaces and parentheses cannot be
     # quoted from the page. Same objects, addressable names.
-    out["by_key"] = {
-        f"s{re.search(r'(\d+) scale', k).group(1)}"
-        f"_c{re.search(r'clamp (\d+)', k).group(1)}": v
-        for k, v in out["variants"].items()}
+    # The lookups are hoisted out of the f-string ON PURPOSE. A backslash inside
+    # a replacement field — the `\d` of `r'(\d+)'` — is a SyntaxError on 3.11 and
+    # became legal only in 3.12. No test imports this module, so nothing ever
+    # parsed it on the floor and the tree carried a tool that could not run on
+    # the oldest Python it claims to support. Found by
+    # `tests/test_syntax_floor.py`, which parses every file rather than only the
+    # ones something happens to import.
+    def slug(k: str) -> str:
+        scale = re.search(r"(\d+) scale", k).group(1)
+        clamp = re.search(r"clamp (\d+)", k).group(1)
+        return f"s{scale}_c{clamp}"
+
+    out["by_key"] = {slug(k): v for k, v in out["variants"].items()}
     return out
 
 

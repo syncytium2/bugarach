@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# instrument: staleness
 """How far behind `main` is the page at bugarach.tonydefazio.com?
 
     python tools/site_staleness.py             # the full report

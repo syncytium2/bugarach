@@ -44,6 +44,9 @@ class Rule:
 # Patterns for self-referential strings are assembled by concatenation so this
 # file never trips its own rules when scanned.
 _UM = "University of " + "Michigan"
+#: The retired spelling of the instrument (SAP014), assembled so this file does
+#: not trip its own rule even if the exclude were ever dropped.
+_OLD_INSTRUMENT = "MAH" + "DCE"
 
 RULES = [
     Rule(
@@ -339,12 +342,121 @@ RULES = [
         fixture_bad="it paints each cell active for the rise interval instead",
         fixture_good="it paints each cell active for the producer's width_sec",
     ),
+    Rule(
+        id="SAP014", level="BLOCK",
+        # One instrument, one acronym. The centrepiece of the loop was coined
+        # MAHDCE on 2026-08-24 and is MAHICE from 2026-09-03 — and the D was
+        # wrong by the glossary's own two-axis rule, which reserves "detection"
+        # for the algorithm and not for the person. Two spellings of one term is
+        # what GLOSSARY.md exists to prevent, and the window where both were live
+        # in this tree lasted one afternoon. This closes it.
+        pattern=_OLD_INSTRUMENT,
+        include=["src/bugarach/**", "tools/**", "README.md", "docs/**"],
+        # GLOSSARY.md is where the retired spelling is DEFINED as retired, so a
+        # reader grepping it lands somewhere. The two dated documents record what
+        # was written on the day and are not edited for later vocabulary — the
+        # same posture the withdrawn paragraphs in the export contract keep.
+        exclude=["docs/GLOSSARY.md", "tools/sapper.py",
+                 "docs/todo/2026-08-24-the-null-leaks-and-the-excess-is-"
+                 "mostly-selection.md",
+                 "docs/handoffs/2026-08-25-the-adr-that-did-not-land.md"],
+        message="ONE INSTRUMENT, ONE ACRONYM — it is MAHICE, machine-assisted "
+                "human IDENTIFICATION of coordinated events (Tony, 2026-09-03). "
+                "The retired spelling put \"detection\" in it, which "
+                "docs/GLOSSARY.md reserves for the DETECTOR axis — \"Never "
+                "'detection' (that's the detector axis)\" — so it spent a "
+                "reserved word on the half of the pair that is a person. "
+                "Identification is the more accurate verb besides: the machine "
+                "detects candidates, and what the person adds is saying which of "
+                "them are the thing. The retired spelling is defined, as retired, "
+                "in docs/GLOSSARY.md; two dated records keep it and are exempt.",
+        fixture_bad="the assessor is the machine half of " + _OLD_INSTRUMENT,
+        fixture_good="the assessor is the machine half of MAHICE",
+    ),
+    Rule(
+        id="SAP015", level="WARN",
+        # House rule, Tony 2026-09-14: "data" is plural. A WARN, not a BLOCK: the
+        # tree held 73 singular uses when this was written, some inside other
+        # people's quoted words, which are not ours to regrammar. A determiner is
+        # required before "data" so the rule reads prose and not code — `data is
+        # None` has none, "the data is" does.
+        pattern=r"(?i)\b(the|this|that|our|their|its|real|raw|input|source|no|"
+                r"synthetic|simulated|recorded|new|more|less|much|enough|which|"
+                r"whose|all|any|such|foreign|observed|imaging|calcium|same|your|"
+                r"my|his|her) data (is|was|has|does|doesn't|isn't|wasn't|hasn't|"
+                r"shows|says|suggests|indicates|contains|supports|refutes|lives|"
+                r"sits|comes|goes|looks|reads|means|needs|makes|gives|arrives|"
+                r"exists|stays|changes|tells|agrees|disagrees|belongs|matches|"
+                r"fits|lacks|carries|holds|reaches|lands|remains|seems|appears|"
+                r"allows|requires|proves|confirms|reveals|itself)\b",
+        include=["*.md", "*.py", "*.html", "*.sh", "*.js", "*.txt"],
+        # This file; vendored copies, which are re-copied rather than edited;
+        # the producer's own delivery notes; and the built viewer, whose
+        # template is already scanned. writing_conventions.md is where the wrong
+        # form is shown AS wrong, the way GLOSSARY.md is exempt from SAP014.
+        exclude=["tools/sapper.py", "docs/writing_conventions.md",".claude/agents/murderboard/*",
+                 ".claude/skills/murderboard/*", "docs/session_protocol.md",
+                 ".claude/hooks/session-start.sh", "tools/murderboard_freshness.sh",
+                 "docs/exports/*", "docs/site/raster_viewer.html"],
+        message="\"DATA\" IS PLURAL — house rule (Tony, 2026-09-14). Make its "
+                "verb and pronoun agree: the data ARE, the data SHOW, the data "
+                "WERE, the data HAVE, the data THEMSELVES, THESE data. "
+                "\"Metadata\" and \"dataset\" keep their own grammar. If this "
+                "line quotes someone, leave their words as they said them. "
+                "docs/writing_conventions.md, \"Data\" is plural.",
+        fixture_bad="the fit reaches 847 mHz where the data reaches 486",
+        fixture_good="the fit reaches 847 mHz where the data reach 486, and data is None",
+    ),
+    Rule(
+        id="SAP016", level="BLOCK",
+        # Tony, 2026-09-17: "you are bugarach why are you posting to the root of
+        # dropbox?" `tools/show.py` names its destination folder from
+        # `git rev-parse --show-toplevel`, which inside a WORKTREE is the
+        # worktree directory, not the repo. So `tools/show.py fig.png` run from
+        # any worktree creates `<darkroom>/<worktree-name>/` — a sibling of
+        # `bugarach/` and of the producer team's `constellation/`, at the
+        # darkroom root. Five such folders were sitting there when this fired
+        # first, three of them empty, and CLAUDE.md's own darkroom paragraph
+        # taught the bare form. `--project bugarach` pins the folder. show.py is
+        # vendored and read-only (its header says to raise findings here), so
+        # the fix is at the call site: docs/todo/2026-09-17-show-py-writes-to-the-darkroom-root.md
+        # Fires on a show.py call whose line never names --project. The first
+        # lookahead lets the argument-free forms through (--where, --selftest,
+        # --help), which write nothing a reader is meant to find.
+        # An invocation, not a mention: something has to be running it, and the
+        # line must never name --project. The first lookahead lets the
+        # argument-free forms through (--where, --selftest, --help), which write
+        # nothing a reader is meant to find.
+        pattern=r"(?:python3?|\$PY|bin/python)\s+tools/show\.py\s+"
+                r"(?!--where\b|--selftest\b|--help\b|-h\b)"
+                r"[^\s`|;&\\](?![^\n]*--project)",
+        include=["*.md", "*.py", "*.sh", "*.txt", "*.html"],
+        # This file; vendored files, re-copied rather than edited; and show.py's
+        # own usage block, which documents every form including the bare one.
+        exclude=["tools/sapper.py", "tools/show.py", ".claude/agents/murderboard/*",
+                 ".claude/skills/murderboard/*", "docs/session_protocol.md",
+                 ".claude/hooks/session-start.sh", "tools/murderboard_freshness.sh",
+                 "docs/exports/*",
+                 # Where the wrong form is shown AS wrong: the todo that reported
+                 # this defect reproduces the bare call and its output.
+                 "docs/todo/2026-09-03-show-derives-the-project-from-the-worktree.md"],
+        message="show.py NEEDS --project bugarach. It names its folder from the "
+                "git toplevel, which in a worktree is the WORKTREE, so the bare "
+                "form writes `<darkroom>/<worktree-name>/` at the darkroom root, "
+                "beside bugarach's own folder and the producer team's. bugarach "
+                "owns `<darkroom>/bugarach/` and nothing above it (CLAUDE.md, "
+                "FOUNDATIONS §5). Write `python3 tools/show.py <file> --project "
+                "bugarach`, and for work under a board claim prefer the figure "
+                "tool's own `--out <claimed folder>`.",
+        fixture_bad="run `python3 tools/show.py docs/site/fig.png` and give the path it prints",
+        fixture_good="run `python3 tools/show.py docs/site/fig.png --project bugarach`",
+    ),
 ]
 
 
 def _tracked_files() -> list[str]:
     out = subprocess.run(["git", "ls-files"], capture_output=True, text=True,
-                         check=True)
+                         encoding="utf-8", check=True)   # see scan_staged
     return out.stdout.splitlines()
 
 
@@ -395,8 +507,13 @@ def scan_all() -> list[tuple[Rule, str, int, str]]:
 
 
 def scan_staged() -> list[tuple[Rule, str, int, str]]:
+    # encoding="utf-8" is load-bearing on Windows: without it the diff is decoded in
+    # the locale codepage, the reader thread swallows the UnicodeDecodeError, and
+    # .stdout comes back None — so any staged ▼ or ✕ crashed the pre-commit hook
+    # (2026-09-14). check_quotes.py hit and fixed the same thing in #535.
     out = subprocess.run(["git", "diff", "--cached", "--unified=0"],
-                         capture_output=True, text=True, check=True).stdout
+                         capture_output=True, text=True, encoding="utf-8",
+                         errors="replace", check=True).stdout
     findings = []
     path = None
     lineno = 0

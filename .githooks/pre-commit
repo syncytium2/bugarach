@@ -27,7 +27,17 @@ elif command -v py >/dev/null 2>&1; then
     py tools/check_quotes.py --staged || exit $?
 fi
 
-# 4. sapper — content rules on the staged diff.
+# 4. pipelines index — a route that exists but is listed nowhere is the decay the
+#    index exists to prevent, and it is the silent one: the next session rebuilds it.
+#    Passes on a tree with no pipelines at all, so it cannot block a branch cut
+#    before they existed.
+if command -v python3 >/dev/null 2>&1; then
+    python3 tools/check_pipelines.py || exit $?
+elif command -v py >/dev/null 2>&1; then
+    py tools/check_pipelines.py || exit $?
+fi
+
+# 5. sapper — content rules on the staged diff.
 # python3 on mac/linux; py/python on Windows git-bash
 if command -v python3 >/dev/null 2>&1; then
     exec python3 tools/sapper.py --staged

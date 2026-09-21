@@ -39,7 +39,7 @@ registerDetector(
        exists, or declared `fixed`. */
     params: { excessThresholdHz: "dThr", rateWin: "dRate", contextWin: "dCtx" },
     knob: { key: "excessThresholdHz", input: "dThr", name: "excess threshold", unit: "Hz",
-            scale: "linear", grid: [0.5, 1, 2, 3, 4, 5, 6, 8] },
+            scale: "linear", grid: [0.5, 1, 2, 3, 3.5, 4, 4.5, 5, 6, 8] },
   }
 );
 

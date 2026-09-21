@@ -149,7 +149,7 @@ on them and you get a detector emulator.
 
 **How a detection is scored.** A detection is an interval `[onset, onset+width]`;
 it matches a planted event when that event falls inside the span, or within
-**`tol_sec = 1.5 s`** of its nearer edge. Matching is greedy and one-to-one:
+**`tol_sec = 2.5 s`** of its nearer edge (1.5 s until 2026-08-28, when the bench stopped running a flat background and the detectors' F1 plateaus moved above it — `bugarach.score.TOL_SEC` is the one home). Matching is greedy and one-to-one:
 closest pair first, each detection claiming at most one event. Recall is the
 fraction of planted events matched; precision is matched detections over all
 detections **outside the probe block**; F1 is their harmonic mean.

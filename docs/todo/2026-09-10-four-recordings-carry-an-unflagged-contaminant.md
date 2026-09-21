@@ -1,0 +1,165 @@
+---
+status: done
+filed: 2026-09-10
+closed: 2026-09-21
+---
+
+# Four recordings carry a known motion-correction contaminant that no column flags
+
+> **In or out of training — Tony's call**, and it needs the producer's view.
+
+## What it is
+
+[`current_export.toml`](../../current_export.toml), under `steps_excluded`, carries the producer's
+own caveat: non-rigid motion correction **pinned 12 ROIs to the frame floor** across four
+recordings. The note says in terms: *"Not flagged in any column."*
+
+All four are inside the senktide/TTX cohorts — the exact 67 recordings a self-supervised detector
+would train on.
+
+## Why it bites this work specifically
+
+A frame-floor-pinned ROI is a **cross-cell artifact**: several cells driven to a common value by the
+same registration failure. A surrogate-contrastive objective is trained to find precisely
+cross-cell structure that a rate-matched null cannot explain, so it is rewarded for finding this.
+
+That is the same mechanism as the field-step problem, which the producer *did* fix — and which the
+proposal correctly named as a precondition. This one has no such fix and no flag, so it is invisible
+to any consumer that trusts the columns.
+
+⚠ **Do not filter it here.** *"The export folder is the input. The store is closed."* Which
+recordings are analysable is the producer's call, already applied; going around that rule cost a
+real error once and Contract revision 6 records it. If a folder looks like it contains something it
+should not, that is **a conversation with the producer**, not a filter in the consumer.
+
+## What to ask the producer
+
+- Should those four be withdrawn from the export, or is the pinning tolerable for analysis?
+- If tolerable, can the affected ROIs be **flagged in a column** so a consumer can see them, the way
+  field steps were?
+- Is the pinning per-ROI for the whole recording, or windowed?
+
+## What happened instead, 2026-09-10 → 2026-09-17
+
+This page said *"conversation with the producer"* on the day it was filed. Nobody had that
+conversation for a week, and the work ran anyway:
+
+| date | what | and the contamination was |
+|---|---|---|
+| 2026-09-10 | filed here | named, with the question to ask |
+| 2026-09-14 | a review verified it | cited |
+| 2026-09-17 | the rigid-shift report's fourth blind round (role 1) | cited again |
+| 2026-09-17 | the slow-co-modulation page's review | cited again |
+| 2026-09-17 | the rigid-shift run trained and scored over all four recordings, and **shipped the contamination as a caveat about its own result** | disclosed |
+
+Four rediscoveries, no question asked. **A note everybody cites and nobody acts on is not a
+safeguard**, and disclosing is not asking.
+
+**Tony's ruling, 2026-09-17:** a known contamination is a full stop, not a caveat — *"there's no
+point in running all of this when you know there's a problem"*. Mechanized the same day:
+`dataset.current()` raises `ContaminatedExport` for any role whose note declares a contamination the
+folder does not flag, so every analysis resolving its input through the pointer inherits the stop
+(`src/bugarach/dataset.py`, `tests/test_dataset.py`). Today that is `steps_excluded` only.
+`BUGARACH_ACK_CONTAMINATION='<why this analysis is unaffected>'` overrides it and echoes the reason,
+so an override is visible in the run log.
+
+## What this cost the rigid-shift work, concretely
+
+All four recordings are among the 84 that run scored, and in the folds its real-trained models were
+fitted on. **All four are DI** (verified in `slices.csv`), which is the group whose co-activity reads
+highest in that report's own per-group breakdown — so the contamination is concentrated exactly where
+the strongest real-recording signal is. A frame-floor-pinned ROI is a cross-cell artifact and that
+report's objective is trained to find cross-cell structure a rate-matched null cannot explain, so it
+is rewarded for finding it. Nobody has measured the size of the effect, and nobody should: the
+consumer may not filter the export, so the answer is the producer's.
+
+The report now carries a stop notice at its head rather than a footnote, and the
+`docs/MILESTONES.md` row that quotes its real-recording numbers says they are not to be leaned on.
+
+## Also filed on the producer's side
+
+`interface2` main, `roi_exclusion` (commit `c1069da1`) carries the same question from that side:
+were the affected events cut on the producer side, can a consumer tell, is the pinning windowed or
+whole-recording, and did the census cover all 85 slices. ⚠ An open interface2 todo from 2026-09-02
+says the census may be incomplete and ranks `20260629_314` and `20260630_325` beside the known four —
+so *"four recordings"* may itself be the floor rather than the count.
+
+## What the answer will NOT clear
+
+⚠ **The producer's reply can only fix one of the two problems with any group comparison in this
+export.** Group is perfectly confounded with imaging day: 84 recordings, **48 imaging dates, and not
+one date holds more than one group** (measured from `slices.csv`, and independently on the
+slow-co-modulation branch). So every group difference is also a between-day difference, and a clean
+answer about the pinned ROIs removes the artifact while leaving that untouched. Do not let the reply
+read as clearance for a group claim; it is clearance for one of its two confounds.
+
+## Reads made while writing this up, recorded so the next session has a worked example
+
+Two reads of `slices.csv` were made on 2026-09-17 after the ruling and before the gate landed, both
+of metadata only — `slice_id`, `date`, `group_id`, no event data, no detector run:
+
+1. **which group the four contaminated recordings are in** (all DI), to check a claim before putting
+   it on a page;
+2. **how many imaging dates the export spans and whether any holds more than one group** (48 dates,
+   none), to establish the confound above.
+
+Both were used to **weaken** claims already published, not to produce a result, which is the
+distinction that matters when the gate is live and an acknowledgement is needed. The
+slow-co-modulation session declined the same read for the opposite reason and named it exactly: its
+honest override reason would have been *"I wanted a number for a sentence"*, which is the use the
+gate exists to refuse. Both calls look right from here — the difference is what the number was for,
+not how small the read was.
+
+Once `dataset.current()` refuses this folder, **even these reads need
+`BUGARACH_ACK_CONTAMINATION`**, and the reason should say which claim the number is being used to
+retract. A reason naming a deadline, a convenience, or a sentence that wants a figure is not one.
+
+## Closes when
+
+Either the producer withdraws or flags them, or Tony rules that they stay unflagged and the decision
+is recorded where a training run would read it. **Until then the stop stands**, and any analysis that
+proceeds does so with an acknowledgement naming why its measurement is unaffected — a reason about
+the measurement, not about the schedule.
+
+## Closed 2026-09-21 — the producer did both, and the stop cleared the way it was built to
+
+The answer arrived on **2026-09-17 evening**, the same day the stop was ruled: the producer shipped
+`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, declared here as the role
+`steps_and_pins_excluded`. It **withdraws** every event inside a pinned window, over the whole
+recording rather than around the artifact alone, and it **flags** them in a way a consumer can read
+— `moco_pinned_excluded.tsv`, 83 events, joinable on slice_id / roi / stream / time_sec, with
+`pin_window` grouping them. The window is an envelope from the first to the last frame over the
+detector's threshold, so it takes some real events with the artifact, deliberately and in the
+conservative direction, and the windows were reviewed by eye one panel per pinned ROI. Five (roi,
+stream) blocks were emptied and appear as `time_sec = NA`; the ROI stays in the population, which is
+FOUNDATIONS §9's rule that a zero-event ROI is not a dead ROI.
+
+So all three questions this todo asked are answered, and the mechanism worked as designed: the note
+left the pointer file for the new role, and `dataset.current()` stopped refusing **by the producer's
+answer**, not by a session deciding the effect was small.
+
+**What the answer showed, and it is the part worth keeping.** The whole rigid-shift chain reran on
+the de-pinned export overnight on 2026-09-17/18 and **every conclusion survived** — supervised
+models put 0.797–0.829 of their events on three or more ROIs against 0.799–0.830 before,
+`count_excess` 0.899 against 0.903, the per-ROI leak test unmoved at 0.489–0.504 (landed as
+`ba6f90c`, [#690](https://github.com/syncytium2/bugarach/pull/690)). The contamination was never the
+explanation. That is not an argument for having proceeded: it is only knowable after the removal,
+which is the whole reason the stop is a stop and not a caveat.
+
+**And a caution this answer produced.** An earlier sensitivity check dropped the four recordings
+whole and predicted a much larger fall than de-pinning them produced. Dropping a recording removes
+everything about it; de-pinning removed 83 events of 264,075. **A leave-one-out bounds an artifact's
+contribution; it never estimates it.**
+
+⚠ **What is not closed, and it is a narrower question for the producer.** The census cut at
+`n_exceed >= 100` leaves two slices with their events — `20260702_338` (1 ROI, 13 exceeding frames)
+and `20260630_325` (1 ROI, 10), against 515 to 2,195 for the four that were cleaned — and
+`20260629_314` is absent from the census altogether, with an interface2 todo from 2026-09-02 ranking
+it beside the known four on a blind whole-frame scan. So the honest statement is measured-and-tiny
+for two slices and unexamined for one. It is carried on `docs/MILESTONES.md`, in the open table, and
+in this pointer file's own note on the role — not here, because the question this file asks has an
+answer.
+
+The old role `steps_excluded` still declares the contamination and still stops an analysis by
+itself, which is correct: its folder is still contaminated, and runs made before the answer
+reproduce only against it.

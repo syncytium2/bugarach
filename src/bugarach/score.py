@@ -57,6 +57,29 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+TOL_SEC = 2.5
+"""How far a detection may sit from a planted onset and still count as a hit.
+
+**One home, because it was six bare ``1.5``s** — this module's dataclass field
+and two functions, plus two more defaults in :mod:`bugarach.bench`. A calibration
+repeated at every call site is one that gets changed at four of them.
+
+**Moved 1.5 → 2.5 on 2026-08-28**, when the bench stopped running a flat
+background. ``tests/test_tolerance_curve.py`` traces each detector's F1 against
+this gap and asks where it stops climbing; on the fitted field the answer moved
+above the shipped value — **LoCo and CoactDetect plateau at 2.5 s and RateDetect
+at 2.0 s**, where five of six had settled below 1.5 s on the flat one. A
+tolerance below the plateau does not make the bench stricter; it makes every F1
+understate its detector, and the ranking is what the bench is for.
+
+Tony, 2026-08-28: *"expand the tolerance."*
+
+⚠ This is a **scoring** window, not a claim about timing accuracy. Against a
+median realized event footprint near 0.8 s it is generous — read the ORDER of
+the bench's rows, never the decimal places of one. That caveat predates this
+change and is wider after it.
+"""
+
 
 @dataclass
 class Score:
@@ -80,7 +103,7 @@ class Score:
     """False alarms inside the dense-but-random window (the promiscuity probe)."""
     distractor_hits: int = 0
     """Distractors that a detection landed on. Counted, not penalized."""
-    tol_sec: float = 1.5
+    tol_sec: float = TOL_SEC
 
     @property
     def n_hit(self) -> int:
@@ -175,7 +198,7 @@ def _gap(planted, lo, hi):
     return np.maximum(0.0, np.maximum(lo - planted, planted - hi))
 
 
-def score_detections(gt, onsets, *, widths=None, tol_sec: float = 1.5) -> Score:
+def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC) -> Score:
     """Match detections against ``gt.events`` and report the breakdown.
 
     gt: a :class:`bugarach.simulate.GroundTruth`.
@@ -255,8 +278,22 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = 1.5) -> Score:
 
 _ONSET_FIELDS = (("onset_sec", "width_sec"), ("locs", "widths"))
 
+EXTENT_FIELD = "extent_sec"
+"""Where a detector declares the stretch a call covers, when its width is not it.
 
-def score_stream(gt, det, *, tol_sec: float = 1.5) -> Score:
+A reported width is whatever the detector's contract says it is, and for binned
+SCE that is the spread of the events inside the bin (``tlast - tfirst``), not the
+bin. Scored as ``[onset, onset + width]`` that stretch starts at the bin edge and
+can end seconds before the events the call was made on — a planted event late in
+its bin read as a miss plus a false alarm. The contract stays (parity locks it,
+and ``detections.csv`` carries it); the detector adds this field beside it, and
+:func:`score_stream` prefers it. A detector without the field is scored on its
+width exactly as before. Ruling: Tony, 2026-09-16,
+``docs/todo/2026-09-15-binned-sce-calls-are-scored-over-the-wrong-stretch.md``.
+"""
+
+
+def score_stream(gt, det, *, tol_sec: float = TOL_SEC) -> Score:
     """Score a detector's own result object, spans included.
 
     Prefer this to :func:`score_detections` whenever you have a detection object
@@ -267,13 +304,18 @@ def score_stream(gt, det, *, tol_sec: float = 1.5) -> Score:
     so the right call is the short one.
 
     Handles either field convention: ``onset_sec``/``width_sec`` (SCE, LoCo,
-    CICADA, CoactDetect) or ``locs``/``widths`` (RateDetect, spike-sync).
+    CICADA, CoactDetect) or ``locs``/``widths`` (RateDetect, spike-sync). A
+    result that carries :data:`EXTENT_FIELD` is scored over that stretch instead
+    of its width — binned SCE does, because its width is an event spread rather
+    than the stretch its call covers.
     """
     for onset_field, width_field in _ONSET_FIELDS:
         if hasattr(det, onset_field):
+            widths = getattr(det, EXTENT_FIELD, None)
+            if widths is None:
+                widths = getattr(det, width_field, None)
             return score_detections(gt, getattr(det, onset_field),
-                                    widths=getattr(det, width_field, None),
-                                    tol_sec=tol_sec)
+                                    widths=widths, tol_sec=tol_sec)
     raise TypeError(
         f"{type(det).__name__} carries no detection times — expected one of "
         f"{[f[0] for f in _ONSET_FIELDS]}. Pass the arrays to score_detections "

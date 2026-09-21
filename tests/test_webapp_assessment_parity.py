@@ -98,7 +98,15 @@ def _browser_result(folder: Path):
             page.goto(VIEWER.as_uri())
             page.set_input_files(
                 "#files", [str(q) for q in sorted(folder.iterdir())])
-            page.wait_for_selector("#view:not([hidden])", timeout=30000)
+            # What this needs is the FOLDER, not a particular panel. It used to
+            # wait on `#view` becoming visible, which stopped being a
+            # folder-loaded signal on 2026-09-10: this folder declares no
+            # regions, so the whole trace stands in for a baseline and the page
+            # lands in turbo with `#view` hidden behind it. The recordings are
+            # the actual precondition for the evaluate below.
+            page.wait_for_function(
+                "() => typeof RECORDINGS !== 'undefined' && RECORDINGS.length > 0",
+                timeout=30000)
             assert not errors, errors
             return page.evaluate(
                 JS, {"n": N_SURROGATES, "bin": BIN_SEC, "window": list(WINDOW)})

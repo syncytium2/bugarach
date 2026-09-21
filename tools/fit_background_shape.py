@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Fit the per-ROI background heterogeneity from real baseline windows.
 
-    python tools/fit_background_shape.py            # fit, compare, verdict
-    python tools/fit_background_shape.py --tol 0.05 # how far the constant may drift
+    python tools/fit_background_shape.py --folder <export folder>   # fit and compare
 
-Prints the maximum-likelihood Gamma shape for `bugarach.bench.MEASURED_RATE_SHAPE`
-and **exits 1 if the tree's constant no longer matches the data**, so the number
-in the source cannot quietly rot the way a transcribed one does.
+Prints the maximum-likelihood Gamma shapes for any export folder, beside the bench's
+constants for comparison. **The bench's own verdict is not here any more** (2026-09-17):
+`tools/remeasure_bench.py` re-fits these shapes on the folder the bench declares
+(`bench.MEASURED_ROLE`), with bootstrap intervals, and a test fails when the bench and
+that record disagree. This tool used to exit 1 at a fixed 5% drift, which called the
+300 s burst shape drifted on estimator noise alone.
 
 **The model.** Inside one baseline window, an ROI's rate is drawn from
 ``Gamma(shape, mean/shape)`` and its event count is Poisson over that rate;
@@ -97,7 +99,7 @@ def baseline_counts(sl):
     name = stream_name(sl)
     if name is None:
         return None
-    lo, hi = float(reg.start_sec), float(reg.end_sec)
+    lo, hi = _bounds(reg)
     dur = hi - lo
     if dur < MIN_DURATION_SEC:
         return None
@@ -113,6 +115,22 @@ def baseline_counts(sl):
     return c, dur
 
 
+def _bounds(reg):
+    """The part of the baseline region to measure: the folder's analysis window where
+    it states one, the raw period otherwise.
+
+    Until 2026-09-17 this tool measured the raw period even where the folder named an
+    analysis window. That is the defect `assess_folder.generation_window` records as
+    live for a few hours on 2026-08-18, and it had survived here. On `steps_excluded`
+    the rate shape does not notice (0.269 either way) and the 300 s burst shape does
+    (1.571 on the raw period, 1.799 in the analysis window): the raw baseline runs up
+    to 1,800 s, and the window stops at 1,200 s.
+    """
+    if reg.has_analysis_window:
+        return float(reg.analysis_start_sec), float(reg.analysis_end_sec)
+    return float(reg.start_sec), float(reg.end_sec)
+
+
 def _baseline(sl):
     """``(per-ROI times re-zeroed to the window, duration)`` or ``None``."""
     reg = next((r for r in sl.regions
@@ -122,7 +140,7 @@ def _baseline(sl):
     name = stream_name(sl)
     if name is None:
         return None
-    lo, hi = float(reg.start_sec), float(reg.end_sec)
+    lo, hi = _bounds(reg)
     dur = hi - lo
     if dur < MIN_DURATION_SEC:
         return None
@@ -137,19 +155,14 @@ def _baseline(sl):
     return trains, dur
 
 
-MIN_EVENTS_PER_ROI = 10
-"""Below this a within-ROI temporal fit has nothing to say."""
-
-
-def burst_rows(windows_t, bin_sec):
-    """Per-ROI binned-count vectors, for ROIs carrying enough events."""
-    rows = []
-    for trains, dur in windows_t:
-        edges = np.arange(0.0, dur + bin_sec, bin_sec)
-        for v in trains:
-            if v.size >= MIN_EVENTS_PER_ROI:
-                rows.append(np.histogram(v, bins=edges)[0].astype(float))
-    return rows
+# `burst_rows`, `fano` and their threshold live in `bugarach.count_dispersion`
+# since 2026-09-11, so the surrogate screen's rate-profile statistic is the same
+# computation as this fitter's diagnostic. Imported back under the same names.
+from bugarach.count_dispersion import (  # noqa: E402
+    MIN_EVENTS_PER_ROI,
+    burst_rows,
+    fano,
+)
 
 
 def fit_burst(windows_t, bin_sec) -> float:
@@ -162,12 +175,6 @@ def fit_burst(windows_t, bin_sec) -> float:
     if not rows:
         return float("nan")
     return fit(rows)
-
-
-def fano(rows) -> float:
-    """Mean variance/mean of per-bin counts — the diagnostic, never a target."""
-    vals = [c.var() / c.mean() for c in rows if c.mean() > 0]
-    return float(np.mean(vals)) if vals else float("nan")
 
 
 def negative_log_likelihood(log_shape: float, rows) -> float:
@@ -318,9 +325,6 @@ def main(argv=None) -> int:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--dead-roi-sensitivity", action="store_true",
                    help="simulate how 3%% structural zeros bend the fit; needs no data root")
-    p.add_argument("--tol", type=float, default=0.05,
-                   help="relative drift allowed against bench.MEASURED_RATE_SHAPE "
-                        "before this exits 1 (default 0.05)")
     p.add_argument("--folder", default=None,
                    help="export folder holding the real recordings "
                         "(docs/export_folder_spec.md)")
@@ -408,24 +412,9 @@ def main(argv=None) -> int:
           "bins.\nOne scale cannot reproduce that at any shape, which is why the "
           "generator\ntakes a sequence.")
 
-    burst_drift = max(
-        abs(burst_fits[b] - s) / s
-        for b, s in zip(MEASURED_BURST_BINS, MEASURED_BURST_SHAPE)
-        if b in burst_fits)
-    if burst_drift > args.tol:
-        print(f"\nDRIFT: the temporal fit is {burst_drift:.1%} from "
-              f"bench.MEASURED_BURST_SHAPE (tolerance {args.tol:.0%}). Update it, "
-              f"and re-derive anything calibrated on it.", file=sys.stderr)
-        return 1
-
-    drift = abs(shape - MEASURED_RATE_SHAPE) / MEASURED_RATE_SHAPE
-    if drift > args.tol:
-        print(f"\nDRIFT: fitted {shape:.3f} is {drift:.1%} from the tree's "
-              f"{MEASURED_RATE_SHAPE:.3f} (tolerance {args.tol:.0%}). Update "
-              f"bugarach.bench.MEASURED_RATE_SHAPE, and re-derive anything "
-              f"calibrated on it.", file=sys.stderr)
-        return 1
-    print(f"\nOK: both axes within {args.tol:.0%} of the tree's constants.")
+    print("\nWhether the bench's constants still hold is decided by "
+          "tools/remeasure_bench.py, on the folder the bench declares, with "
+          "bootstrap intervals.")
     return 0
 
 

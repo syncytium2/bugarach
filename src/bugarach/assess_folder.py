@@ -40,10 +40,110 @@ from bugarach.dataset import preferred_stream
 BASELINE_TOKENS = ("baseline", "base", "pre", "control", "acsf")
 
 
-def is_baseline(region) -> bool:
-    """True when a region's own name says it is untreated."""
+def is_baseline(region, designated: tuple[str, ...] | None = None) -> bool:
+    """True when this region is the untreated one.
+
+    ``designated`` is what the READER said their baseline is called, and when
+    it is given it REPLACES the vocabulary above rather than adding to it.
+    Replacing is the point: a lab that designates ``vehicle`` and also has a
+    period called ``pre-wash`` means the first one, and a rule that kept
+    guessing alongside the designation would quietly measure the other.
+
+    Tony, 2026-09-10 — *"can we use whatever the user provides as baseline.
+    maybe they call it control, or 'pre'"*. Both of those were already in the
+    list; the ones that were not (``vehicle``, ``naive``, ``ctrl``) had no way
+    in at all, and the folder walk skipped those recordings rather than asking.
+    The answer is not a longer list. This page's own rule is that **the
+    baseline is designated, not detected** — the tokens are the opening guess
+    for a reader who has not said, and nothing more.
+
+    Matching is a case-insensitive prefix either way, so ``vehicle`` covers
+    ``Vehicle 2`` the same way ``pre`` covers ``pre-drug``.
+    """
     name = (getattr(region, "name", None) or "").strip().lower()
-    return bool(name) and any(name.startswith(t) for t in BASELINE_TOKENS)
+    want = tuple(d.strip().lower() for d in (designated or ()) if d.strip())
+    return bool(name) and any(name.startswith(t) for t in (want or BASELINE_TOKENS))
+
+
+WHOLE_RECORDING_SOURCE = "whole recording (no regions declared)"
+"""The ``source`` :func:`generation_window` names when it had to assume."""
+
+
+class NoBaselineRegion(ValueError):
+    """The recording declares regions and none of them is a baseline.
+
+    Raised rather than returned, because the recording is skipped: coordination
+    properties are not taken from treatments (FOUNDATIONS §9). The message names
+    what the recording does call its periods, so the reader can designate one."""
+
+
+def generation_window(s, *, baseline_labels: tuple[str, ...] | None = None
+                      ) -> tuple[tuple[float, float] | None, str]:
+    """The span to measure one recording over, and who chose it.
+
+    Returns ``(window, source)``. ``window`` is ``(start_sec, end_sec)``, or
+    ``None`` for the whole recording; ``source`` is the sentence a report prints
+    beside the number, because the window is half of what a number means.
+
+    Two fallbacks, both kept deliberately:
+
+    * **No regions declared** — the whole recording, ``window=None``, with
+      :data:`WHOLE_RECORDING_SOURCE` as the source. The export contract gives such
+      a recording one implicit whole-recording window, so it is measured rather
+      than dropped, but a whole-recording window is an assumption and not a
+      baseline, and the source says so.
+    * **Regions declared, none a baseline** — :class:`NoBaselineRegion` is
+      raised and the recording is skipped.
+
+    Otherwise the longest baseline region wins, and the producer's own analysis
+    window wins inside it wherever the folder states one.
+
+    Moved here out of :func:`assess_folder` (2026-09-11) so the surrogate screen
+    reads the same rule rather than a sixth copy of it. The five older copies in
+    ``tools/`` are left for their own change.
+    """
+    regions = list(s.regions or [])
+    if not regions:
+        # A folder with no regions.csv is the common case for a lab that has
+        # not declared its periods. The contract gives such a recording one
+        # implicit whole-recording window, so it gets assessed rather than
+        # dropped — but the window it got is named in the report, because a
+        # whole-recording window is an assumption and not a baseline.
+        return None, WHOLE_RECORDING_SOURCE
+    base = [r for r in regions if is_baseline(r, baseline_labels)]
+    if not base:
+        # Name what IS there. The reader's next move is to designate one
+        # of these, and they cannot do that without knowing what the
+        # folder calls its periods — "none named as a baseline" alone
+        # sends them to open a CSV.
+        seen = sorted({(r.name or "(unnamed)") for r in regions})
+        how = (f"you designated {', '.join(baseline_labels)}"
+               if baseline_labels else
+               f"looked for {', '.join(BASELINE_TOKENS)}")
+        raise NoBaselineRegion(
+            f"{len(regions)} region(s), none named as a baseline "
+            f"({how}; this recording has {', '.join(seen)}) — "
+            f"coordination properties are not taken from treatments")
+    r = max(base, key=lambda r: r.end_sec - r.start_sec)
+    # The producer's own analysis window WINS wherever the folder states
+    # one. `start_sec`/`end_sec` are what happened; `analysis_*` is what
+    # to score, and they are rarely the same once a wash-in delay or a
+    # cap has been applied. Measuring the raw period while calling the
+    # result the analysis is the defect this line exists to prevent —
+    # and it was live for a few hours on 2026-08-18, with the viewer
+    # shading the analysis window and both assessors measuring the raw
+    # one.
+    # Who decided this region was the baseline travels with the window,
+    # because "we matched your word" and "we guessed from a built-in
+    # list" are different claims and only one of them is the reader's.
+    why = " (you designated it)" if baseline_labels else ""
+    if r.has_analysis_window:
+        return ((float(r.analysis_start_sec), float(r.analysis_end_sec)),
+                f"baseline region {r.name!r}{why}, "
+                f"analysis window as the folder states it")
+    return ((r.start_sec, r.end_sec),
+            f"baseline region {r.name!r}{why}, whole "
+            f"period (no analysis window sent)")
 
 
 @dataclass
@@ -81,11 +181,35 @@ class FolderAssessment:
     def skipped(self) -> list[RecordingAssessment]:
         return [r for r in self.records if r.skipped]
 
+    @property
+    def assumed(self) -> list[RecordingAssessment]:
+        """Assessed on the WHOLE RECORDING, because the folder declared no
+        periods for them.
+
+        The window is the right one — the export contract gives an unannotated
+        recording a single region spanning its own extent — but it is this
+        project's assumption rather than the producer's statement, and if such
+        a recording is in fact a treated preparation, nothing downstream would
+        say so. Each already carries it in ``window_source``; this counts them
+        so the summary can say it once, at the top, where a reader who is not
+        reading every block still meets it.
+
+        Keyed on ``window_source`` and NOT on ``window is None``: a measured
+        recording's window is backfilled from its own result once the extent is
+        known, so by the time anyone asks, the window is a pair of numbers
+        whichever way it was chosen. ``window_source`` is the part that still
+        remembers who chose it."""
+        return [r for r in self.measured
+                if "no regions declared" in r.window_source]
+
 
 def assess_folder(folder, *, stream: str | None = None,
                   n_surrogates: int = 1000, bin_width_sec: float | None = None,
                   limit: int | None = None, progress=None,
-                  min_rois=None) -> FolderAssessment:
+                  min_rois=None, min_rois_frac=None,
+                  min_rois_floor: int | None = None,
+                  baseline_labels: tuple[str, ...] | None = None,
+                  ) -> FolderAssessment:
     """Assess every recording in an export folder that may be assessed.
 
     Reads the folder with the same loader the rest of bugarach uses, so a folder
@@ -131,45 +255,25 @@ def assess_folder(folder, *, stream: str | None = None,
         rec.stream = want
         rec.n_roi = s.streams[want].n_rois
 
-        regions = list(s.regions or [])
-        if not regions:
-            # A folder with no regions.csv is the common case for a lab that has
-            # not declared its periods. The contract gives such a recording one
-            # implicit whole-recording window, so it gets assessed rather than
-            # dropped — but the window it got is named in the report, because a
-            # whole-recording window is an assumption and not a baseline.
-            window = None
-            rec.window_source = "whole recording (no regions declared)"
-        else:
-            base = [r for r in regions if is_baseline(r)]
-            if not base:
-                rec.skipped = (
-                    f"{len(regions)} region(s), none named as a baseline — "
-                    f"coordination properties are not taken from treatments")
-                continue
-            r = max(base, key=lambda r: r.end_sec - r.start_sec)
-            # The producer's own analysis window WINS wherever the folder states
-            # one. `start_sec`/`end_sec` are what happened; `analysis_*` is what
-            # to score, and they are rarely the same once a wash-in delay or a
-            # cap has been applied. Measuring the raw period while calling the
-            # result the analysis is the defect this line exists to prevent —
-            # and it was live for a few hours on 2026-08-18, with the viewer
-            # shading the analysis window and both assessors measuring the raw
-            # one.
-            if r.has_analysis_window:
-                window = (float(r.analysis_start_sec), float(r.analysis_end_sec))
-                rec.window_source = (f"baseline region {r.name!r}, "
-                                     f"analysis window as the folder states it")
-            else:
-                window = (r.start_sec, r.end_sec)
-                rec.window_source = (f"baseline region {r.name!r}, whole period "
-                                     f"(no analysis window sent)")
+        # The rule lives in `generation_window` so the surrogate screen reads
+        # the same one; both fallbacks are there, unchanged.
+        try:
+            window, rec.window_source = generation_window(
+                s, baseline_labels=baseline_labels)
+        except NoBaselineRegion as e:
+            rec.skipped = str(e)
+            continue
+        if window is not None:
             rec.window = window
 
         try:
             rec.results = assess_coactivity(
                 s, stream=want, window=window, n_surrogates=n_surrogates,
                 **({} if min_rois is None else {"min_rois": tuple(min_rois)}),
+                **({} if min_rois_frac is None
+                   else {"min_rois_frac": tuple(min_rois_frac)}),
+                **({} if min_rois_floor is None
+                   else {"min_rois_floor": int(min_rois_floor)}),
                 **({} if bin_width_sec is None else {"bin_width_sec": bin_width_sec}))
         except Exception as e:                        # noqa: BLE001
             rec.skipped = f"{type(e).__name__}: {e}"
@@ -200,6 +304,19 @@ def format_assessment(fa: FolderAssessment) -> str:
     L.append(f"export folder: {fa.folder}")
     L.append(f"{len(fa.records)} recording(s), {len(fa.measured)} assessed, "
              f"{len(fa.skipped)} not")
+    # Said once, at the top. The per-recording `window:` line has always
+    # carried it, but a reader scanning 84 blocks for numbers is not reading
+    # 84 window lines, and "we measured the whole recording because nobody told
+    # us what the periods were" is the kind of thing that has to arrive before
+    # the numbers rather than beside them.
+    if fa.assumed:
+        L.append(f"⚠ {len(fa.assumed)} of them declare no regions, so the WHOLE "
+                 f"RECORDING was used: "
+                 + ", ".join(r.slice_id for r in fa.assumed[:6])
+                 + (" …" if len(fa.assumed) > 6 else "")
+                 + ". That window is an assumption of ours, not the folder's "
+                   "statement — if any is a treated preparation, it is being "
+                   "read as a baseline.")
     bw = "1.0 (default)" if fa.bin_width_sec is None else f"{fa.bin_width_sec}"
     L.append(f"conventions: {fa.n_surrogates} circular-shift surrogates · "
              f"bin {bw} s · stream "
@@ -224,14 +341,30 @@ def format_assessment(fa: FolderAssessment) -> str:
                      f"none is printed")
             continue
 
-        L.append("       K   coact excess/min   clusters/min   participants   "
-                 "span (s)   tightness vs null")
+        # When K came from a percentage, BOTH numbers go in the row. The
+        # percentage is what a person set and is the same on every recording;
+        # the count is what it became here and is not. Printing only the first
+        # hides that 10% is a floor of 1 on a small field; only the second hides
+        # that one setting produced them.
+        by_frac = any(a.min_rois_frac is not None for a in rec.results)
+        head = "  K (% of ROI)" if by_frac else "       K"
+        L.append(f"{head}   coact excess/min   clusters/min   participants   "
+                 f"span (s)   tightness vs null")
         for a in rec.results:
             jit = (f"{_fmt(a.jit_excess)}"
                    if a.jit_defined else "undefined (no cluster in surrogates)")
-            L.append(f"      {a.min_rois:>2}   {_fmt(a.coact_excess):>15}   "
+            if by_frac:
+                pct = ("—" if a.min_rois_frac is None
+                       else f"{100.0 * a.min_rois_frac:g}%")
+                lead = f"  {a.min_rois:>3} ({pct:>5})"
+            else:
+                lead = f"      {a.min_rois:>2}"
+            L.append(f"{lead}   {_fmt(a.coact_excess):>15}   "
                      f"{_fmt(a.clusters_permin):>12}   {_fmt(a.part_n_obs, 1):>12}   "
                      f"{_fmt(a.span_med):>8}   {jit}")
+        if by_frac and any(a.min_rois == 1 for a in rec.results):
+            L.append("       ⚠ a percentage rounded to K=1 here — one co-active "
+                     "ROI is no floor at all")
         L.append("")
 
     if fa.region_counts:

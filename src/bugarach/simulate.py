@@ -55,6 +55,61 @@ from bugarach.detectors._shared import matlab_round
 from bugarach.io import slice_from_events
 from bugarach.store import Slice
 
+MEASURED_WIDTH_QUANTILE_LEVELS = tuple(float(q) for q in range(100)) + (
+    99.5, 99.9, 99.99, 100.0)
+MEASURED_WIDTH_QUANTILES = (
+    0.4, 0.4, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+    0.5, 0.5, 0.5, 0.5, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+    0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.7, 0.7,
+    0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.8, 0.8,
+    0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9,
+    0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 1.0,
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1,
+    1.1, 1.1, 1.1, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.3,
+    1.3, 1.3, 1.3, 1.4, 1.4, 1.4, 1.4, 1.5, 1.5, 1.6,
+    1.6, 1.7, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.7, 3.3,
+    4.2, 7.1, 17.93, 27.9)
+"""Seconds: the producer's FAST per-event ``width_sec``, at
+:data:`MEASURED_WIDTH_QUANTILE_LEVELS` percent. Every simulated event draws its
+width from this.
+
+**Measured 2026-09-16** over every FAST event inside a baseline region of the
+``default`` export folder (``current_export.toml``): 47,225 events in 84
+recordings. Median 0.9 s, interquartile 0.6–1.2 s, 99th percentile 3.3 s. The
+levels thin out above the 99th percentile because a 1 % step there would spread
+one draw in a hundred evenly between 3.3 s and 27.9 s.
+
+**Why a simulated recording needs it.** locust is the one detector that reads the
+width: it holds each cell active for that event's own duration. Until 2026-09-16
+its shipped setting ran a fixed 1 s instead and the percentile was tuned against
+that constant, so every locust number described a setting that ignores the column
+FOUNDATIONS §7 says it paints. A recording with no widths cannot run locust as it
+is meant to run, and `bench.OPERATING_POINTS` declines to pretend otherwise.
+
+Widths are drawn **independently of whether an event was planted**, so a
+simulated recording can re-derive a percentile under per-event widths but cannot
+show widths carrying signal. What the number *means* is the producer's business
+and is not written here (FOUNDATIONS §7, sapper SAP013).
+"""
+
+_WIDTH_SEED_OFFSET = 7_919
+"""Widths come off their own RNG, so drawing them moves no event time."""
+
+
+def _draw_widths(per_roi, seed, grid_sec):
+    """One measured width per event, per ROI, from a separate ``RandomState``."""
+    rng = np.random.RandomState(
+        None if seed is None else (int(seed) + _WIDTH_SEED_OFFSET) % 2**32)
+    levels = np.asarray(MEASURED_WIDTH_QUANTILE_LEVELS) / 100.0
+    table = np.asarray(MEASURED_WIDTH_QUANTILES)
+    out = []
+    for cell in per_roi:
+        w = np.interp(rng.random_sample(len(cell)), levels, table)
+        if grid_sec > 0:
+            w = np.maximum(grid_sec, np.round(w / grid_sec) * grid_sec)
+        out.append(w)
+    return out
+
 
 @dataclass(frozen=True)
 class PlantedEvent:
@@ -374,6 +429,9 @@ def simulate_coordination(
     bg_rate_shape: float | None = None,
     bg_burst_shape: float | None = None,
     bg_burst_bin_sec: float = 60.0,
+    bg_floor_sec: float | None = None,
+    bg_floor_cv: float = 1.0,
+    bg_roi_counts=None,
     participation=(1.0, 0.75, 0.50),
     n_per_level=(5, 5, 5),
     jitter_sec: float = 0.05,
@@ -450,6 +508,32 @@ def simulate_coordination(
       See ``bugarach.bench.MEASURED_BURST_SHAPE``. As with the rate shape this is
       **off by default and not used by the bench**, and leaving it ``None``
       leaves the RNG stream untouched.
+    bg_floor_sec / bg_floor_cv / bg_roi_counts: **a hard floor on each ROI's own
+      intervals**, opt-in. ``None`` (the default) leaves the background exactly as
+      it was and draws no extra random numbers, so every existing seed
+      reproduces. A positive ``bg_floor_sec`` places each ROI's background with
+      :func:`_place_renewal` at ``min_sep = bg_floor_sec`` — intervals are the
+      floor plus a Gamma excess of coefficient of variation ``bg_floor_cv`` — so
+      no two background onsets of one ROI are closer than the floor.
+      ``bg_roi_counts`` gives each ROI's background count directly (one integer
+      per ROI, e.g. drawn from a folder's per-ROI count distribution); without it
+      the count is Poisson at the ROI's rate, as elsewhere.
+
+      **Planted events replace background onsets** in this mode rather than
+      adding to them: each planted onset takes the place of its ROI's nearest
+      background onset, and any other background onset left closer than the
+      floor is dropped. So the floor holds in the planted recording as well as
+      in its unplanted twin — the same seed with no planted events — and the two
+      differ only in the cross-ROI timing the planted events carry. Counts of
+      replaced and dropped onsets are recorded in ``gt.params``.
+
+      Exists for the surrogate screen's destruction measure
+      (``docs/proposals/2026-09-10-surrogate-evaluation-overnight.md``): a
+      surrogate that leaks through sub-floor intervals has to be measured
+      against data that has a floor. Not combinable with ``bg_burst_shape``,
+      ``hot_window`` or distractors, which would place onsets without one; those
+      are refused rather than silently breaking the floor. A count too large to
+      fit at the floor is capped, and the number of capped ROIs recorded.
     participation / n_per_level: participating fractions and how many events at
       each. ``(1.0, 0.75, 0.5)`` with ``(5, 5, 5)`` plants 5 all-ROI events,
       5 at 75%, 5 at 50%, interleaved in time.
@@ -588,7 +672,46 @@ def simulate_coordination(
         # run's OWN ground truth rather than assuming they share one.
         bg_rates = rng.gamma(bg_rate_shape, bg_rate_hz / bg_rate_shape, size=nR)
 
-    if bg_burst_shape is None:
+    floor_info: dict | None = None
+    if bg_floor_sec is not None:
+        # The opt-in floor. Everything here is behind the `is not None`, so with
+        # the knob off no random number is drawn that was not drawn before and
+        # every existing seed reproduces — the same promise `bg_rate_shape` makes.
+        fl = float(bg_floor_sec)
+        if not fl > 0:
+            raise ValueError(f"bg_floor_sec must be positive, got {bg_floor_sec}")
+        if bg_burst_shape is not None:
+            raise ValueError(
+                "bg_floor_sec and bg_burst_shape cannot be combined: the clumped "
+                "background places onsets bin by bin with no floor")
+        if hot_window is not None or n_distractors:
+            raise ValueError(
+                "bg_floor_sec cannot be combined with hot_window or distractors: "
+                "both add onsets without a floor, and the floor is the point")
+        counts = None
+        if bg_roi_counts is not None:
+            counts = np.asarray(bg_roi_counts)
+            if counts.shape != (nR,) or np.any(counts < 0) or not np.all(
+                    np.asarray(counts, dtype=float) == np.floor(counts)):
+                raise ValueError(
+                    f"bg_roi_counts must be {nR} non-negative integers, one per "
+                    f"ROI, got shape {counts.shape}")
+            counts = counts.astype(np.int64)
+        # `_place_renewal` needs span/(m+1) > floor; this is the largest m that
+        # always satisfies it.
+        cap = max(0, int(np.floor(T / fl)) - 2)
+        n_capped = 0
+        for r in range(nR):
+            k = int(counts[r]) if counts is not None else int(rng.poisson(bg_rates[r] * T))
+            if k > cap:
+                k, n_capped = cap, n_capped + 1
+            if k:
+                trains[r].extend(_place_renewal(rng, k, 0.0, T, fl, None, bg_floor_cv))
+        floor_info = dict(bg_floor_sec=fl, bg_floor_cv=float(bg_floor_cv),
+                          bg_roi_counts_given=counts is not None,
+                          n_floor_capped=n_capped, n_bg_replaced=0,
+                          n_bg_dropped=0)
+    elif bg_burst_shape is None:
         # Homogeneous in time: one Poisson draw per ROI over the whole span.
         for r in range(nR):
             k = rng.poisson(bg_rates[r] * T)
@@ -700,19 +823,39 @@ def simulate_coordination(
         times = np.zeros(0, dtype=float)
 
     events: list[PlantedEvent] = []
+    # Floor mode keeps the background apart from the planted onsets, so a planted
+    # onset can replace a background one without ever displacing another planted
+    # one. Off, `planted_on` is unused and the loop below is what it always was.
+    planted_on = [[] for _ in range(nR)] if floor_info is not None else None
     for t, f in zip(times, fracs):
         np_ = max(1, matlab_round(f * nR))
         rois = np.sort(rng.choice(nR, size=np_, replace=False))
         got = []
         for r in rois:
             onset = min(max(t + jitter_sec * rng.randn(), 0.0), T)
-            trains[r].append(onset)
+            if planted_on is not None:
+                bg = trains[r]
+                if bg:
+                    # Replace the nearest background onset, then drop any other
+                    # left closer than the floor. No random number is drawn.
+                    arr = np.asarray(bg, dtype=float)
+                    bg.pop(int(np.argmin(np.abs(arr - onset))))
+                    floor_info["n_bg_replaced"] += 1
+                    keep = [u for u in bg if abs(u - onset) >= floor_info["bg_floor_sec"]]
+                    floor_info["n_bg_dropped"] += len(bg) - len(keep)
+                    bg[:] = keep
+                planted_on[r].append(onset)
+            else:
+                trains[r].append(onset)
             got.append(onset)
         events.append(PlantedEvent(
             time=float(t), frac=float(f), n_part=int(np_),
             rois=tuple(int(x) for x in rois), jitter_sec=float(jitter_sec),
             onsets=_quantize(got, grid_sec)))
     events.sort(key=lambda e: e.time)
+    if planted_on is not None:
+        for r in range(nR):
+            trains[r].extend(planted_on[r])
 
     # ---- quantize + sort ------------------------------------------------------
     per_roi = []
@@ -731,9 +874,13 @@ def simulate_coordination(
     # simulation no camera could have produced — and that recording honestly
     # has no sampling interval, which is a state the loader already has a name
     # for rather than a reason to invent 0.1.
+    widths = _draw_widths(per_roi, seed, grid_sec)
     slice_ = slice_from_events({name: per_roi for name in streams},
                                dt=grid_sec if grid_sec > 0 else None,
-                               slice_id=slice_id, regions=regions)
+                               slice_id=slice_id, regions=regions,
+                               durations={name: widths for name in streams},
+                               width_def={name: "simulate:MEASURED_WIDTH_QUANTILES"
+                                          for name in streams})
     gt = GroundTruth(
         events=events,
         distractors=distractors,
@@ -750,6 +897,10 @@ def simulate_coordination(
             streams=tuple(streams), seed=seed,
         ),
     )
+    if floor_info is not None:
+        # Only in floor mode, so a caller comparing params dicts from before the
+        # floor existed sees exactly the keys it always saw.
+        gt.params.update(floor_info)
     return slice_, gt
 
 

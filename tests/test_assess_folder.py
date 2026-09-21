@@ -59,6 +59,40 @@ def test_a_folder_with_no_regions_is_assessed_whole_and_says_so(tmp_path):
         assert "no regions declared" in rec.window_source
 
 
+def test_the_summary_says_how_many_windows_were_assumed(tmp_path):
+    """Said once at the top, not only per recording.
+
+    Tony, 2026-09-10: when no baseline is defined, use the whole trace and
+    **flag to the user that we did it**. The per-recording ``window:`` line has
+    always carried it, but a reader scanning 84 blocks for numbers is not
+    reading 84 window lines, and the assumption has to arrive before the
+    numbers rather than beside them.
+    """
+    fa = assess_folder(_write_folder(tmp_path / "f", regions=None),
+                       n_surrogates=25)
+    assert len(fa.assumed) == 2, [r.window_source for r in fa.measured]
+
+    head = format_assessment(fa).split("\n\n")[0]
+    assert "declare no regions" in head, head
+    assert "WHOLE" in head, head
+    # It names them, or the reader cannot go and check which.
+    for rec in fa.measured:
+        assert rec.slice_id in head, head
+
+
+def test_a_declared_baseline_is_not_reported_as_assumed(tmp_path):
+    """The counterpart: a folder that states its periods produces no flag, or
+    the warning becomes noise a reader learns to scroll past."""
+    regions = ("slice_id,region_idx,label,start_sec,end_sec\n"
+               "rec_1,1,baseline,0,1800\n"
+               "rec_2,1,baseline,0,1800\n")
+    fa = assess_folder(_write_folder(tmp_path / "f", regions=regions),
+                       n_surrogates=25)
+    assert fa.measured, [r.skipped for r in fa.records]
+    assert fa.assumed == []
+    assert "declare no regions" not in format_assessment(fa)
+
+
 def test_a_treatment_only_folder_is_refused_not_measured(tmp_path):
     """FOUNDATIONS §9: coordination properties are not taken from treatments.
 
@@ -73,6 +107,78 @@ def test_a_treatment_only_folder_is_refused_not_measured(tmp_path):
     for rec in fa.skipped:
         assert "none named as a baseline" in rec.skipped
     assert "not taken from treatments" in format_assessment(fa)
+
+
+def test_the_refusal_names_the_labels_the_folder_actually_uses(tmp_path):
+    """"None named as a baseline" without the names sends a reader to open a CSV.
+
+    The next move is to designate one of them, and nobody can designate a name
+    they have not been shown. The refusal also says which rule was applied, so
+    "we guessed from a list" and "we matched your word" are distinguishable."""
+    regions = ("slice_id,region_idx,label,start_sec,end_sec\n"
+               "rec_1,1,vehicle,0,1800\n"
+               "rec_2,1,vehicle,0,1800\n")
+    fa = assess_folder(_write_folder(tmp_path / "f", regions=regions),
+                       n_surrogates=25)
+    assert fa.measured == []
+    for rec in fa.skipped:
+        assert "vehicle" in rec.skipped, rec.skipped
+        assert "looked for" in rec.skipped, rec.skipped
+
+
+def test_a_designated_label_is_measured_and_the_report_says_who_chose(tmp_path):
+    """Tony, 2026-09-10: use whatever the reader provides as the baseline.
+
+    `vehicle` is untreated and no built-in token knows the word, so it is
+    refused until designated and measured after. The report must say the choice
+    was the reader's — "we matched your word" and "we guessed" are different
+    claims and only one of them is theirs to defend."""
+    regions = ("slice_id,region_idx,label,start_sec,end_sec\n"
+               "rec_1,1,vehicle,0,1800\n"
+               "rec_2,1,vehicle,0,1800\n")
+    folder = _write_folder(tmp_path / "f", regions=regions)
+
+    fa = assess_folder(folder, n_surrogates=25, baseline_labels=("vehicle",))
+    assert len(fa.measured) == 2, [r.skipped for r in fa.records]
+    for rec in fa.measured:
+        assert "vehicle" in rec.window_source
+        assert "you designated it" in rec.window_source
+    # Not an assumed whole-recording window: a designation is a statement.
+    assert fa.assumed == []
+
+
+def test_designating_replaces_the_builtin_guess_rather_than_joining_it(tmp_path):
+    """A folder with both a designated name and one the built-in list knows.
+
+    `pre-wash` matches the token `pre` and is the LONGER period, so "longest
+    baseline wins" would take it. Designating `vehicle` has to mean vehicle, or
+    the report claims a designation while measuring something else."""
+    regions = ("slice_id,region_idx,label,start_sec,end_sec\n"
+               "rec_1,1,vehicle,0,600\n"
+               "rec_1,2,pre-wash,600,1800\n"
+               "rec_2,1,vehicle,0,600\n"
+               "rec_2,2,pre-wash,600,1800\n")
+    folder = _write_folder(tmp_path / "f", regions=regions)
+
+    # Undesignated: the guess takes pre-wash, the longer of the two matches.
+    guessed = assess_folder(folder, n_surrogates=25)
+    assert all("pre-wash" in r.window_source for r in guessed.measured)
+
+    said = assess_folder(folder, n_surrogates=25, baseline_labels=("vehicle",))
+    assert len(said.measured) == 2, [r.skipped for r in said.records]
+    for rec in said.measured:
+        assert "vehicle" in rec.window_source, rec.window_source
+        assert "pre-wash" not in rec.window_source, rec.window_source
+
+
+def test_designation_is_a_prefix_and_case_insensitive(tmp_path):
+    """`vehicle` covers `Vehicle 2`, the way `pre` covers `pre-drug`."""
+    regions = ("slice_id,region_idx,label,start_sec,end_sec\n"
+               "rec_1,1,Vehicle 2,0,1800\n"
+               "rec_2,1,VEHICLE,0,1800\n")
+    fa = assess_folder(_write_folder(tmp_path / "f", regions=regions),
+                       n_surrogates=25, baseline_labels=("vehicle",))
+    assert len(fa.measured) == 2, [r.skipped for r in fa.records]
 
 
 def test_the_baseline_region_is_the_one_assessed(tmp_path):

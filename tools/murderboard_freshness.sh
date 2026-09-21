@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
+# vendored from syncytium2/murderboard @ 08f5ddb — do NOT edit here; update upstream and re-copy.
 # instrument: propagation
-# vendored from syncytium2/murderboard @ 564b944 — do NOT edit here; update upstream and re-copy.
 # murderboard_freshness.sh — is this repo's VENDORED murderboard current with upstream?
 #
 # THE GAP THIS CLOSES. `doc_review_process.md` step 0 tells a reviewer to confirm the
@@ -124,8 +124,14 @@ fetch_paper.py
 tools/murderboard_freshness.sh
 tools/murderboard_roster.sh
 murderboard_roster.sh
+tools/murderboard_prose.sh
+murderboard_prose.sh
+tools/murderboard_model_gate.sh
+murderboard_model_gate.sh
 tools/murderboard_revendor.py
 murderboard_revendor.py
+tools/murderboard_agents.py
+murderboard_agents.py
 .claude/hooks/require-commit-before-message.sh
 tools/require_commit_before_message.sh
 require_commit_before_message.sh

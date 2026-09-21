@@ -43,38 +43,57 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools"))
 
-COMMITTED = REPO / "docs" / "learned" / "architecture.svg"
+LEARNED = REPO / "docs" / "learned"
 
 make_architecture_diagram = pytest.importorskip("make_architecture_diagram")
 
+#: Every figure the generator writes, read from the generator rather than listed
+#: here — the front page inlines two drawings of the one model, and a second list
+#: of them is a list that forgets the next one.
+#:
+#: ⚠ **EVERY DRAWABLE ARCHITECTURE, not just the tube.** This read
+#: ``DRAWABLE["tube"]["figures"]`` while three more architectures had committed
+#: figures beside it, so `chorus`, `gauge` and `quorum` could each have drifted from
+#: their own model with the suite green — which is the exact failure this file
+#: exists to prevent, one model over. Naming the tube was right when it was the
+#: only entry and became wrong the moment it was not; reading the whole registry
+#: cannot go stale that way.
+FIGURES = tuple((arch, name)
+                for arch, entry in sorted(make_architecture_diagram.DRAWABLE.items())
+                for name in entry["figures"])
 
-def _regenerated(tmp_path: Path) -> str:
+
+def _regenerated(tmp_path: Path, arch: str) -> dict[str, str]:
     pytest.importorskip(
         "torch",
         reason="the diagram is generated FROM the built module; with no torch "
                "there is nothing to compare the committed file against")
-    rc = make_architecture_diagram.main(["--out", str(tmp_path)])
-    assert rc == 0, "the generator refused to build the model it draws"
-    return (tmp_path / "architecture.svg").read_text(encoding="utf-8")
+    rc = make_architecture_diagram.main(["--arch", arch, "--out", str(tmp_path)])
+    assert rc == 0, f"the generator refused to build the model it draws: {arch}"
+    return {name: (tmp_path / name).read_text(encoding="utf-8")
+            for name in make_architecture_diagram.DRAWABLE[arch]["figures"]}
 
 
-def test_the_committed_svg_is_what_the_generator_produces_now(tmp_path):
+@pytest.mark.parametrize("arch,name", FIGURES)
+def test_the_committed_svg_is_what_the_generator_produces_now(tmp_path, arch, name):
     """The whole file, byte for byte — not a spot-check on the total.
 
     Comparing only the parameter count would pass a figure whose dilation
     schedule, channel width or kernel size had moved, and those are exactly the
     quantities the generator was written to stop anyone from typing.
     """
-    assert COMMITTED.read_text(encoding="utf-8") == _regenerated(tmp_path), (
+    COMMITTED = LEARNED / name
+    assert COMMITTED.read_text(encoding="utf-8") == _regenerated(tmp_path, arch)[name], (
         f"{COMMITTED.relative_to(REPO)} is not what "
         f"tools/make_architecture_diagram.py produces from the model as it "
         f"stands. The model moved and the figure did not — the front page is "
         f"drawing the old one. Regenerate:\n\n"
-        f"    python tools/make_architecture_diagram.py\n\n"
+        f"    python tools/make_architecture_diagram.py --arch {arch}\n\n"
         f"and commit the result with whatever changed the model.")
 
 
-def test_the_generator_is_deterministic(tmp_path):
+@pytest.mark.parametrize("arch", sorted(make_architecture_diagram.DRAWABLE))
+def test_the_generator_is_deterministic(tmp_path, arch):
     """Two runs agree, so a failure above means the model moved and nothing else.
 
     Without this, the check above has a second reading — dict ordering, a float
@@ -102,8 +121,8 @@ def test_the_generator_is_deterministic(tmp_path):
     bakes a Python-arithmetic constant into a trace, and a spec may not quote such
     a constant until it declares why that one is architectural.
     """
-    first = _regenerated(tmp_path)
-    second = _regenerated(tmp_path / "again")
+    first = _regenerated(tmp_path, arch)
+    second = _regenerated(tmp_path / "again", arch)
     assert first == second, (
         "the diagram is not reproducible from one run to the next, so it is "
         "reading something that is not the architecture — most likely a "

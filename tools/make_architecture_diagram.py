@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Draw the network from the model, through draughtsman, and check nothing was lost.
 
-    python tools/make_architecture_diagram.py                 # -> docs/learned/architecture.svg
+    python tools/make_architecture_diagram.py     # -> docs/learned/architecture.svg + architecture-phone.svg
     python tools/make_architecture_diagram.py --arch tube --out /tmp
 
 **Why this exists, and why it replaces a hand-written SVG.** The original
@@ -93,13 +93,22 @@ sys.path.insert(0, str(ROOT / "third_party"))
 
 LEARNED = ROOT / "docs" / "learned"
 
-#: `arch` -> the draughtsman spec that says how to draw it, and the trace target
-#: and input shape to build it from. A spec is a per-architecture document, so an
-#: architecture without one cannot be drawn by this script and says so rather than
-#: falling back to something generic.
+#: `arch` -> the draughtsman specs that say how to draw it, one per figure written,
+#: and the trace target and input shape to build it from. A spec is a
+#: per-architecture document, so an architecture without one cannot be drawn by
+#: this script and says so rather than falling back to something generic.
+#:
+#: The tube has TWO specs over ONE trace, because the front page has one slot and
+#: two widths. draughtsman drew it one row wide for the laptop box (1203 px) and top
+#: to bottom for the phone box (395 px), each spec stating its slot as `output.width`
+#: with a `min_type` floor. `build_site.lead_model` picks between them; the learned
+#: pages inline only the wide one.
 DRAWABLE = {
     "tube": {
-        "spec": LEARNED / "architecture.spec.json",
+        "figures": {
+            "architecture.svg": LEARNED / "architecture.spec.json",
+            "architecture-phone.svg": LEARNED / "architecture-phone.spec.json",
+        },
         "target": "bugarach.learn.nets.tube:build_tube",
         # One recording's worth of cells and frames. The model is invariant to the
         # cell count -- it sums over cells -- so this is the shape the trace was
@@ -109,7 +118,7 @@ DRAWABLE = {
 }
 
 
-def build(arch: str, out_dir: Path, name: str) -> int:
+def build(arch: str, out_dir: Path) -> int:
     try:
         from draughtsman.check import check, report
         from draughtsman.facts import Graph
@@ -138,24 +147,27 @@ def build(arch: str, out_dir: Path, name: str) -> int:
         return 2
     graph = Graph(graph_doc)
 
-    spec_doc = json.loads(entry["spec"].read_text(encoding="utf-8"))
-    spec = load(spec_doc)
+    # -- 2 and 3, per figure: check, then render deterministically ----------------
+    # Every spec is checked before anything is written, so one that fails leaves
+    # no half-updated pair behind: the two figures always describe the same model.
+    drawn = {}
+    for name, spec_path in entry["figures"].items():
+        spec = load(json.loads(spec_path.read_text(encoding="utf-8")))
+        result = check(spec, graph)
+        if not result.ok:
+            print(report(result), file=sys.stderr)
+            print(f"\nmake_architecture_diagram: refusing to draw `{arch}` as "
+                  f"{name}. The spec no longer accounts for every operation the "
+                  f"model performs, so the figure would omit one silently — which "
+                  f"is the exact failure this pipeline exists to prevent. Re-run "
+                  f"draughtsman's stage 2 against a fresh trace and re-vendor "
+                  f"{spec_path.relative_to(ROOT)}.", file=sys.stderr)
+            return 1
+        drawn[name] = render(spec, graph)
 
-    # -- 2. the check that can fail -----------------------------------------------
-    result = check(spec, graph)
-    if not result.ok:
-        print(report(result), file=sys.stderr)
-        print(f"\nmake_architecture_diagram: refusing to draw `{arch}`. The spec no "
-              f"longer accounts for every operation the model performs, so the "
-              f"figure would omit one silently — which is the exact failure this "
-              f"pipeline exists to prevent. Re-run draughtsman's stage 2 against a "
-              f"fresh trace and re-vendor "
-              f"{entry['spec'].relative_to(ROOT)}.", file=sys.stderr)
-        return 1
-
-    # -- 3. render, deterministically ---------------------------------------------
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / name).write_text(render(spec, graph), encoding="utf-8")
+    for name, svg in drawn.items():
+        (out_dir / name).write_text(svg, encoding="utf-8")
     return 0
 
 
@@ -163,10 +175,9 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--arch", default="tube")
     ap.add_argument("--out", type=Path, default=LEARNED,
-                    help="directory to write the architecture SVG into")
-    ap.add_argument("--name", default="architecture.svg")
+                    help="directory to write the architecture SVGs into")
     a = ap.parse_args(argv)
-    return build(a.arch, a.out, a.name)
+    return build(a.arch, a.out)
 
 
 if __name__ == "__main__":

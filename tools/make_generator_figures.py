@@ -355,9 +355,17 @@ def main(argv=None):
     return 0
 
 
-def _write(page, dest: Path, stem: str, png: bool):
+def _write(page, dest: Path, stem: str, png: bool, viewport_width: int = 1120):
     """Write to a temporary name and move into place — the darkroom README
-    records 188 MB of hash-named orphans from writing into Dropbox in place."""
+    records 188 MB of hash-named orphans from writing into Dropbox in place.
+
+    ``viewport_width`` is the browser width the PNG is captured at, and the
+    default is unchanged for every existing caller. **A page wider than it loses
+    its rightmost column silently** — no error, and a PNG that looks finished. A
+    four-facet page rendered here at the default came out with three facets and
+    the fourth sliced down the middle, which is only visible if somebody opens
+    the file. A caller that knows how wide its own layout is should say so.
+    """
     with tempfile.TemporaryDirectory() as td:
         tmp_html = Path(td) / "page.html"
         page.save(str(tmp_html))
@@ -366,14 +374,15 @@ def _write(page, dest: Path, stem: str, png: bool):
     print(f"wrote {html}")
     if png:
         shot = dest / f"{stem}.png"
-        if _render_png(html, shot):
+        if _render_png(html, shot, viewport_width=viewport_width):
             print(f"      {shot}")
         else:
             print("      (PNG skipped — needs playwright chromium)",
                   file=sys.stderr)
 
 
-def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000) -> bool:
+def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000,
+                viewport_width: int = 1120) -> bool:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -381,7 +390,8 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000) -> bool
     try:
         with sync_playwright() as pw:
             browser = pw.chromium.launch()
-            page = browser.new_page(viewport={"width": 1120, "height": 1200},
+            page = browser.new_page(viewport={"width": int(viewport_width),
+                                              "height": 1200},
                                    device_scale_factor=2)
             page.goto(html_path.resolve().as_uri())
             page.wait_for_timeout(wait_ms)
@@ -424,7 +434,14 @@ def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 3000) -> bool
                         f"measured no rendered content ({w}x{h}) — the page "
                         f"did not draw, or every element matched the viewport")
                 clip_h = min(float(h) + 12, 4000.0)
-                clip_w = min(float(w) + 12, 1120.0)
+                # Against the VIEWPORT, never a literal. This line read `1120.0`
+                # — the old viewport as a constant — so widening the viewport
+                # widened the window and clipped the shot back to 1120 anyway,
+                # and a four-facet page came out with its fourth facet sliced
+                # down the middle. Same shape as the height lesson two comments
+                # up: a pixel constant standing in for the thing it was copied
+                # from, correct until the thing moves.
+                clip_w = min(float(w) + 12, float(viewport_width))
                 # A CLIP TALLER THAN THE VIEWPORT IS SILENTLY CUT TO IT. The
                 # measurement above is correct — it reads the document, not the
                 # window — but `screenshot(clip=...)` without `full_page` can

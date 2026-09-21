@@ -464,7 +464,21 @@ def _separation(judged, k: int) -> float:
 
 
 def derive_k(verdicts) -> KEstimate:
-    """Estimate K from a person's verdicts instead of taking it as an input.
+    """What the labels alone would put K at. **NOT where K comes from.**
+
+    ⚠ **K is set by the user during MAHICE** — machine-assisted human
+    identification of coordinated events — and recorded in
+    :class:`MahiceSession`. This is a **cross-check** on that setting, reached
+    through :func:`cross_check_k`, and it never overrides it: a person looking at
+    their own recordings has evidence this arithmetic does not, and a
+    disagreement between the two is something to put in front of them rather
+    than resolve for them.
+
+    It shipped on 2026-09-03 as the *source* of K, which was wrong, and Tony
+    corrected it the same day. The estimator is kept because a K set before the
+    reviewer had seen much is worth catching, and because *"your own labels do
+    not separate at any threshold"* is a finding about the assessor that nothing
+    else in the tree would report.
 
     Every proposed moment carries an observed co-active count and, after review, a
     human verdict; K is the count that best separates the two. This is the step
@@ -553,3 +567,221 @@ def derive_k(verdicts) -> KEstimate:
         why=(f"K={k} separates {n_conf} confirmed from {n_rej} rejected at "
              f"J={best:.2f}, proposed from a floor of {floor} co-active ROI, "
              f"labelled by {', '.join(who) or 'an unnamed annotator'}.{wide}"))
+
+
+# --------------------------------------------------------------------------
+# MAHICE — the review a person does, and the K they set while doing it
+# --------------------------------------------------------------------------
+
+#: The name of the step, as Tony says it: **machine-assisted human
+#: identification of coordinated events**. The assessor proposes candidates, a
+#: person judges them, and the person sets K while looking at the data.
+#: It is the centrepiece of the loop (`docs/RESET.md` §2) and had no name in this
+#: tree until 2026-09-03, which is part of why a session went looking for it in
+#: `workflow_plan.md` and reported it missing.
+MAHICE = "machine-assisted human identification of coordinated events"
+
+#: What :func:`write_session` writes and :func:`read_session` reads, beside the
+#: ``annotations.csv`` it belongs to.
+SESSION_FILE = "mahice.json"
+
+
+@dataclass
+class MahiceSession:
+    """One review, and the K the person set during it.
+
+    **K is a percentage, and that is what makes one setting fair over a folder.**
+    Tony, 2026-09-03: *"the human might want different K for a session, but it is
+    not fair to change K for each slice. We do need K expressed as a
+    percentage."* Three co-active ROIs out of 10 is a third of the field and
+    three out of 51 is six percent of it; both recordings are in the approved
+    export. So the person sets **one** number for the review and the absolute
+    floor follows each recording's own population through
+    :func:`bugarach.assess.k_from_fraction` — which is the opposite of setting a
+    different K per slice by hand, and the reason it is fair rather than merely
+    convenient.
+
+    **The absolute counts are stored too, and are not redundant.** The rounding
+    is one-way, so `k_absolute` cannot be recovered from `k_percent` without the
+    ROI population of every recording reviewed — and a reader a year from now
+    holding only this file should not have to go and find them. It is also what
+    lets a reader see that 10% meant K=1 somewhere, which is no floor at all.
+    """
+
+    k_percent: float
+    """The fraction the person set, in (0, 1]. Named `percent` because that is
+    what it is called in the interface and in conversation; stored as a fraction
+    because every consumer multiplies by it."""
+    annotator: str
+    decided_at: str
+    """When K was set — not when the review started. A K set before the reviewer
+    had seen much is the case :func:`cross_check_k` exists to catch."""
+    k_absolute: dict[str, int] = field(default_factory=dict)
+    """slice_id -> the count `k_percent` resolved to there."""
+    n_roi: dict[str, int] = field(default_factory=dict)
+    """slice_id -> the ROI population it resolved against. Every exported ROI,
+    including those with no events in the reviewed stream: FOUNDATIONS §9
+    forbids conditioning on having fired, and a denominator that dropped the
+    quiet ones would make one percentage mean two things."""
+    proposal_frac: float | None = None
+    """The fraction candidates were PROPOSED at, which must sit below the one
+    being set — otherwise the list is censored at the boundary the review is
+    meant to locate. :data:`MAX_PROPOSAL_FLOOR` is the absolute form."""
+    stream: str | None = None
+    note: str = ""
+    """The reviewer's own words about why this K, if they gave any. Free text,
+    never parsed."""
+
+    def __post_init__(self) -> None:
+        if not (0.0 < float(self.k_percent) <= 1.0):
+            raise ValueError(
+                f"k_percent must be a fraction in (0, 1], got "
+                f"{self.k_percent!r}. Ten percent goes in as 0.10, not 10.")
+        if not str(self.annotator).strip():
+            raise ValueError(
+                "a MAHICE session with no annotator cannot be disputed or "
+                "reproduced — K inherits whoever set it (docs/RESET.md §1).")
+        if not str(self.decided_at).strip():
+            raise ValueError("a MAHICE session must record when K was set")
+
+    def k_for(self, slice_id: str, n_roi: int | None = None) -> int:
+        """The absolute K for one recording. Stored value first, else resolved.
+
+        Prefers what was recorded, because that is what the review actually ran
+        at; falls back to resolving only for a recording this session never saw.
+        """
+        from bugarach.assess import k_from_fraction
+
+        if slice_id in self.k_absolute:
+            return int(self.k_absolute[slice_id])
+        if n_roi is None:
+            raise KeyError(
+                f"{slice_id!r} is not in this session and no n_roi was given, "
+                f"so its K cannot be resolved")
+        return k_from_fraction(self.k_percent, n_roi)
+
+    def to_dict(self) -> dict:
+        return {
+            "mahice": MAHICE,
+            "k_percent": float(self.k_percent),
+            "k_absolute": {str(k): int(v) for k, v in self.k_absolute.items()},
+            "n_roi": {str(k): int(v) for k, v in self.n_roi.items()},
+            "annotator": self.annotator,
+            "decided_at": self.decided_at,
+            "proposal_frac": self.proposal_frac,
+            "stream": self.stream,
+            "note": self.note,
+        }
+
+
+def write_session(path: Path | str, session: MahiceSession) -> Path:
+    """Write the MAHICE record. `path` may be the file or its folder."""
+    import json
+
+    p = Path(path)
+    if p.is_dir():
+        p = p / SESSION_FILE
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(session.to_dict(), indent=1, sort_keys=True) + "\n")
+    return p
+
+
+def read_session(path: Path | str) -> MahiceSession:
+    """Read the MAHICE record. `path` may be the file or its folder."""
+    import json
+
+    p = Path(path)
+    if p.is_dir():
+        p = p / SESSION_FILE
+    if not p.is_file():
+        raise FileNotFoundError(
+            f"no {SESSION_FILE} at {p}. K is set by a person during MAHICE and "
+            f"recorded there; without it, nothing downstream can say who chose "
+            f"the K it is using or what they were looking at.")
+    d = json.loads(p.read_text())
+    return MahiceSession(
+        k_percent=d["k_percent"],
+        annotator=d.get("annotator", ""),
+        decided_at=d.get("decided_at", ""),
+        k_absolute={k: int(v) for k, v in (d.get("k_absolute") or {}).items()},
+        n_roi={k: int(v) for k, v in (d.get("n_roi") or {}).items()},
+        proposal_frac=d.get("proposal_frac"),
+        stream=d.get("stream"),
+        note=d.get("note", ""))
+
+
+@dataclass
+class KCrossCheck:
+    """The person's K, what their labels would have said, and whether they agree.
+
+    **The person's K is the answer in every case.** This carries a second opinion
+    so a disagreement is visible; nothing here returns a replacement.
+    """
+
+    session: MahiceSession
+    estimate: KEstimate
+    k_set_median: int | None
+    """The absolute K the person's percentage came to, at the median recording of
+    those reviewed. The comparison has to happen in absolute counts because that
+    is the only space the labels live in, and the median is used rather than the
+    mean because the ROI population is skewed."""
+    agrees: bool | None
+    """True when the estimate's band contains the person's K; False when it does
+    not; **None when there is nothing to compare** — the estimate did not
+    identify a K, which is a statement about the labels, not about the person."""
+    message: str
+
+    def __bool__(self) -> bool:
+        """Truthy when nothing needs the reviewer's attention — agreement, or
+        no comparison available. A disagreement is the only falsy case."""
+        return self.agrees is not False
+
+
+def cross_check_k(verdicts, session: MahiceSession) -> KCrossCheck:
+    """Compare the K a person set against what their own labels separate at.
+
+    Reports; never overrides. Three outcomes and they are different
+    conversations: the labels agree with the setting, the labels cannot locate a
+    boundary at all (a finding about the assessor — see :func:`derive_k`), or the
+    labels separate somewhere the person did not choose, which is worth a look
+    before the spec is built and is still their call.
+    """
+    import statistics as _st
+
+    est = derive_k(verdicts)
+    reviewed = sorted({v.slice_id for v in verdicts})
+    ks = [session.k_absolute[s] for s in reviewed if s in session.k_absolute]
+    k_set = int(_st.median_low(ks)) if ks else None
+    pct = 100.0 * session.k_percent
+
+    if not est:
+        return KCrossCheck(
+            session=session, estimate=est, k_set_median=k_set, agrees=None,
+            message=(f"K = {pct:.3g}% of ROIs, set by {session.annotator} during "
+                     f"MAHICE. Not cross-checked: {est.why}"))
+
+    lo, hi = est.band
+    if k_set is None:
+        return KCrossCheck(
+            session=session, estimate=est, k_set_median=None, agrees=None,
+            message=(f"K = {pct:.3g}% of ROIs, set by {session.annotator}. Not "
+                     f"cross-checked: this session records no absolute K for any "
+                     f"recording that was labelled, so there is nothing to "
+                     f"compare in the space the labels live in."))
+    if lo <= k_set <= hi:
+        return KCrossCheck(
+            session=session, estimate=est, k_set_median=k_set, agrees=True,
+            message=(f"K = {pct:.3g}% of ROIs — {k_set} at the median recording "
+                     f"reviewed — set by {session.annotator} during MAHICE. "
+                     f"Their own labels separate at {est.k} "
+                     f"(band {lo}–{hi}, J={est.separation:.2f}), so the setting "
+                     f"and the labels agree."))
+    return KCrossCheck(
+        session=session, estimate=est, k_set_median=k_set, agrees=False,
+        message=(f"⚠ K = {pct:.3g}% of ROIs — {k_set} at the median recording "
+                 f"reviewed — set by {session.annotator} during MAHICE, but "
+                 f"their own labels separate at {est.k} (band {lo}–{hi}, "
+                 f"J={est.separation:.2f}). NOTHING HAS BEEN CHANGED and the "
+                 f"setting stands: a person looking at the recordings has "
+                 f"evidence this arithmetic does not. Worth a second look before "
+                 f"the spec is built."))

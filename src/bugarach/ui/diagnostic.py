@@ -61,7 +61,7 @@ from __future__ import annotations
 import holoviews as hv
 import numpy as np
 
-from bugarach.score import score_detections
+from bugarach.score import TOL_SEC, score_detections
 from bugarach.ui.app import COLORS, TITLES, _signal_row, _time_axis_hook
 
 FOUND = "#1b7f3b"
@@ -70,7 +70,24 @@ FALSE_ALARM = "#b3261e"
 #: One ink for every onset. The raster shows what the recording did; what a
 #: detector made of it belongs to the lanes above it.
 RASTER_INK = "#2b2b2b"
+#: The SECOND raster ink, for a partition the producer shipped with the events —
+#: never for anything this project inferred. See `raster_panel`'s `marked`.
+MARKED_INK = "#c1272d"
 PROBE_BAND = "#e8a33d"
+
+#: Treatment-region fills for `region_lane_panel`. Baseline is deliberately the
+#: quietest: it is the reference every other span is read against, and a
+#: reference that shouts is read as a result. Unknown labels fall back to grey
+#: rather than being dropped — a region drawn nowhere is a region a reader
+#: assumes was not there.
+REGION_FILL = {
+    "baseline": "#b9c3cc",
+    "TTX": "#3f7fbf",
+    "senktide": "#c86a1f",
+    "SB222200": "#7d5ba6",
+    "wash": "#8fa89b",
+    "high K+": "#8a8a8a",
+}
 
 #: How far apart, in pixels, two marks in one lane have to be before this figure
 #: is entitled to give them different verdicts. The ✕ is about 5 px across; two
@@ -80,7 +97,7 @@ PROBE_BAND = "#e8a33d"
 SEPARABLE_PX = 5.0
 
 
-def _spans(onsets, widths, ext, tol_sec: float = 1.5):
+def _spans(onsets, widths, ext, tol_sec: float = TOL_SEC):
     """(onset, width) -> [(t0, t1)] clipped to the extent.
 
     A zero or non-finite width becomes a small visible sliver rather than
@@ -89,7 +106,7 @@ def _spans(onsets, widths, ext, tol_sec: float = 1.5):
 
     **The sliver is capped at the matching tolerance, and the cap is the point.**
     The floor was 0.2% of the record and nothing else — 3.6 s on a 30-minute
-    figure, against a `tol_sec` of 1.5. Five of the six detectors report windows
+    figure, against the shipped `score.TOL_SEC`. Five of the six report windows
     of 0.3–2.1 s, so every one of their bars was drawn *wider than the window it
     is judged in*: a reader saw a bar covering a planted event while the scorer
     called that same detection a false alarm for missing by 2 s. The picture
@@ -133,18 +150,42 @@ def _base(ext, ydim: str):
     return hv.Scatter(([ext[0]], [0.0]), kdims=["t"], vdims=[ydim]).opts(alpha=0)
 
 
-def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
-               width: int = 1000, row_px: int = 26):
-    """Detector lanes with a real categorical y-axis (labels cannot collide)."""
+def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
+               width: int = 1000, row_px: int = 26, not_run=(), names=None,
+               colors=None):
+    """Detector lanes with a real categorical y-axis (labels cannot collide).
+
+    ``not_run`` NAMES THE ROWS THAT NEVER RAN, and they are drawn differently on
+    purpose. An empty lane already means something — the detector ran and called
+    nothing — so a detector that could not run at all cannot be shown as an
+    empty lane without saying the one thing that is not true. Those rows get a
+    hatched grey band across the whole extent and "(not run)" on the label, so
+    the absence is visible as an absence. Pass names that are also keys of
+    ``lanes`` (with empty arrays) or names that appear only here.
+
+    It exists because the pilot cohort's learned models cannot run on real data
+    at all — nothing persists a trained model — and leaving them off the page
+    made the gap invisible to the one reader who asked where they were.
+    """
     lanes = lanes or {}
+    not_run = set(not_run)
     # Ground truth goes at the TOP: it is what every other row is judged
     # against, and a reader scanning down should meet the answer before the
     # attempts at it (Tony, 2026-08-15). Distractors ride just above it and
     # still clear `ylim` — the top row sits 0.8 units below the limit and the
     # marker needs about 0.14.
     rows = (["planted"] if gt is not None else []) + list(lanes)
+    rows += [n for n in not_run if n not in rows]
     ypos = {name: len(rows) - 1 - i for i, name in enumerate(rows)}
     items = [_base(ext, "lane")]
+
+    # The "never ran" band goes down FIRST, so any lane drawn on top of it still
+    # reads. A row that is both in `lanes` and in `not_run` is a caller error,
+    # but drawing it this way makes the error visible rather than silent.
+    for name in not_run:
+        y = ypos[name]
+        items.append(hv.Rectangles([(ext[0], y - 0.34, ext[1], y + 0.34)]).opts(
+            color="#d8d8d8", line_color="#bdbdbd", line_width=0.6, alpha=0.55))
 
     if gt is not None:
         hw = gt.params.get("hot_window")
@@ -154,7 +195,7 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
 
     for key, ev in lanes.items():
         y = ypos[key]
-        colour = COLORS.get(key, "#555555")
+        colour = (colors or {}).get(key) or COLORS.get(key, "#555555")
         sp = _spans(ev[0], ev[1] if len(ev) > 1 else None, ext, tol_sec)
         if sp:
             # No stroke. A 1 px outline on a bar whose fill is under a pixel
@@ -244,7 +285,13 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
                     ).opts(marker="inverted_triangle", size=10, color=colour,
                            line_color="white", line_width=1))
 
-    yticks = [(ypos[n], TITLES.get(n, n)) for n in rows]
+    # `names` overrides the viewer's display map. It exists because that map
+    # still calls locust "sixth", a stale label with an open item against it, and
+    # a figure that goes to an outside reader must not carry a name the project
+    # has already retired just because the viewer has not caught up.
+    shown = {**TITLES, **(names or {})}
+    yticks = [(ypos[n], shown.get(n, n) + (" (not run)" if n in not_run else ""))
+              for n in rows]
     return hv.Overlay(items).opts(
         width=width, height=max(90, row_px * len(rows) + 46),
         xlim=tuple(ext), ylim=(-0.8, len(rows) - 0.2),
@@ -258,13 +305,36 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = 1.5,
 
 def raster_panel(stream, *, ext, gt=None, name="events",
                  width: int = 1000, height: int | None = None,
-                 mark_px: float = 2.0):
+                 mark_px: float = 2.0, marked=None, marked_ink=None,
+                 ydim: str = "roi", ticks: str = "auto", sort: str = "freq"):
     """ROI raster, quietest ROI at the bottom, every onset drawn identically.
 
     Takes no detection spans on purpose. Inking the onsets inside a detected
     window asserts which events a detector *recruited*, and none of the six
     reports that — they report a window, and membership was the figure's own
     inference. Detections belong to the lanes and the top markers.
+
+    ``marked`` IS NOT AN EXCEPTION TO THAT, AND THE DIFFERENCE IS THE WHOLE
+    REASON IT IS ALLOWED HERE. It takes one array of onset times per ROI, index-
+    aligned to ``stream.t50rise``, and draws those onsets in a second ink. The
+    rule it has to clear is *"one ink, one mark per event, and nothing competing
+    with it"* — and it clears it because nothing is added: each event is still
+    drawn exactly once, in exactly one place, and the ink says which of two
+    populations the producer put it in. The thing the rule forbids is a mark
+    that rides *over* the data and annotates it, which is what a detection span
+    is and what `gt`'s markers are — those still live in the lane above.
+
+    The distinction that decides it is **who is asserting**. A detection is this
+    project's claim about an event and belongs where its claims live; membership
+    of ``marked`` is a property the EXPORTER shipped, decided upstream and
+    already true of the row before anything here read it. Drawing the producer's
+    own partition of their own events is not annotation, it is the raster.
+
+    So the honest constraint is on the caller, not the parameter: pass something
+    that came in with the data. ``tools/make_group_raster_summary.py`` passes
+    interface2's confirmed field-step verdicts. Passing a detector's output here
+    would break the rule while satisfying the signature, and no check can tell
+    those apart — this paragraph is the check.
 
     **The raster is drawn short on purpose, and the marks short with it.** What
     the reader is asked to see is a *column* — many ROIs firing at once — and
@@ -277,41 +347,181 @@ def raster_panel(stream, *, ext, gt=None, name="events",
     own row makes every column look solid whether or not anything coordinated.
     So `mark_px` came down with it, from 5 px to 2, and wants to stay under
     about a third of the pitch (`height / n_roi`).
+
+    ``ydim`` MUST BE UNIQUE WHEN MORE THAN ONE RASTER IS ON A PAGE. The default
+    is fine for the single-recording diagnostic this was written for, and wrong
+    the moment a second raster appears: the y-dimension NAME is what links
+    y-ranges between panels, so eighteen rasters all called "roi" share one
+    range, and every recording is drawn against the ROI count of the largest one
+    on the page. A 19-ROI recording then fills the bottom 40% of its band and
+    reads as a sparse recording rather than a small one — the panels stay the
+    same height while the ink does not, which is precisely the comparison a
+    constant row height is for. `_base` documents the trap; this parameter is
+    how a caller avoids it. Same rule CLAUDE.md states for the signal rows:
+    unique value dimension per row, so y never links; x links through ``t``.
     """
     n_roi = stream.n_rois
-    counts = [int(np.sum(np.isfinite(np.asarray(v, dtype=float))))
-              for v in stream.t50rise]
-    order = np.argsort(counts, kind="stable")
+    # Order by what this raster actually DRAWS, which is `ext` — not by the whole
+    # recording. The two agree whenever a caller draws everything, and they come apart
+    # the moment one draws a window: a panel showing the 20-minute baseline of a
+    # 50-minute recording would otherwise sort its rows by drug and high-K+ activity,
+    # so the row a reader meets at the top as "the busiest" can be drawn nearly empty.
+    # Found in review on a baseline-only assessment figure, 2026-09-07.
+    #
+    # ``sort="freq"`` IS THE DEFAULT AND SHOULD STAY IT (Tony, 2026-09-08). Store
+    # order is an arbitrary label; firing frequency is a coordinate, and sorting
+    # by it is what turns a row's height into information — the same rule
+    # `learn.encode` follows when it ranks rows busiest-first before a model sees
+    # them. ``sort="store"`` keeps the producer's order for the rare case where a
+    # caller needs to point at "the third ROI in the file".
+    counts = []
+    for v in stream.t50rise:
+        a = np.asarray(v, dtype=float)
+        counts.append(int(np.sum(np.isfinite(a) & (a >= ext[0]) & (a <= ext[1]))))
+    if sort == "store":
+        order = np.arange(len(counts))
+    elif sort == "freq":
+        order = np.argsort(counts, kind="stable")
+    else:
+        raise ValueError(f"sort must be 'freq' or 'store', got {sort!r}")
 
-    ts, ys = [], []
+    ts, ys, mts, mys = [], [], [], []
     for row, roi in enumerate(order):
         v = np.asarray(stream.t50rise[roi], dtype=float)
         v = v[np.isfinite(v) & (v >= ext[0]) & (v <= ext[1])]
-        if v.size:
-            ts.append(v)
-            ys.append(np.full(v.size, row))
+        hit = np.zeros(v.size, dtype=bool)
+        if marked is not None and roi < len(marked):
+            m = np.asarray(marked[roi], dtype=float).ravel()
+            if m.size and v.size:
+                # Rounded rather than compared raw: both sides are written by the
+                # producer at %.6f and parsed by the same reader, so equality
+                # holds today — and a join that silently depends on that is one
+                # format-string change away from losing every mark it should draw.
+                hit = np.isin(np.round(v, 6), np.round(m, 6))
+        if np.any(~hit):
+            ts.append(v[~hit])
+            ys.append(np.full(int((~hit).sum()), row))
+        if np.any(hit):
+            mts.append(v[hit])
+            mys.append(np.full(int(hit.sum()), row))
     t = np.concatenate(ts) if ts else np.zeros(0)
     y = np.concatenate(ys) if ys else np.zeros(0)
+    mt = np.concatenate(mts) if mts else np.zeros(0)
+    my = np.concatenate(mys) if mys else np.zeros(0)
 
-    items = [_base(ext, "roi")]
+    items = [_base(ext, ydim)]
     if gt is not None:
         hw = gt.params.get("hot_window")
         if hw is not None:
             items.append(hv.VSpan(float(hw[0]), float(hw[1])).opts(
                 color=PROBE_BAND, alpha=0.16))
     if t.size:
-        items.append(hv.Scatter((t, y), kdims=["t"], vdims=["roi"]).opts(
+        items.append(hv.Scatter((t, y), kdims=["t"], vdims=[ydim]).opts(
             marker="dash", angle=90, size=mark_px, color=RASTER_INK,
             alpha=0.9))
+    if mt.size:
+        # LAST, and a size larger. Drawn first it disappears under the next
+        # thousand black dashes; drawn at the same size it is a third of a
+        # pixel, because the moment it stands for is two seconds wide on a page
+        # that is an hour across. The mark keeps its own time and its own ROI —
+        # only the ink and the stroke change.
+        items.append(hv.Scatter((mt, my), kdims=["t"], vdims=[ydim]).opts(
+            marker="dash", angle=90, size=max(mark_px * 2.5, 5.0),
+            color=marked_ink or MARKED_INK, alpha=1.0))
 
     if height is None:
         height = int(np.clip(20 + 6 * n_roi, 110, 320))
+    # ``ticks="minimal"`` keeps the two that bound the axis and drops the ladder
+    # between them. The row count is already in the y-LABEL, which is where this
+    # project puts identity and counts, so an auto ladder of 0/5/10/15/20/25 is
+    # the same fact five more times — and on a page of twelve stacked rasters it
+    # is the densest text on the page (Tony, 2026-09-08: "minimalist the ticks").
+    # An ROI's index is not a quantity anyone reads off a raster anyway; what the
+    # axis has to say is where the rows start and stop.
+    extra = {}
+    if ticks == "minimal":
+        extra["yticks"] = [(0, "1"), (max(n_roi - 1, 0), str(n_roi))]
     return hv.Overlay(items).opts(
         width=width, height=height, xlim=tuple(ext), ylim=(-1, n_roi),
         ylabel=f"{name} · {n_roi} ROI", title="",
-        fontsize={"ylabel": "10pt"},
+        fontsize={"ylabel": "10pt", "yticks": "8pt"}, **extra,
         show_legend=False, hooks=[_time_axis_hook],
         tools=["xwheel_zoom", "xpan", "reset", "hover"],
+        active_tools=["xpan"], default_tools=["reset"],
+    )
+
+
+def region_lane_panel(regions, *, ext, width: int = 1000, height: int = 30,
+                      shift: float = 0.0, ylabel: str = "", ydim: str = "region",
+                      analysis=None):
+    """The treatment regions, as a lane ABOVE the raster they describe.
+
+    A treatment window is exactly the kind of cue CLAUDE.md sends to a lane: it
+    is context about the recording, not an event in it, and painted across the
+    raster as a `VSpan` it tints every mark it covers — which is how a reader
+    ends up comparing ink density between a shaded half and an unshaded one and
+    seeing an effect that is the shading. So it gets its own strip, x-linked
+    through the shared ``t``, with the raster underneath it.
+
+    **No marker, so nothing to point down.** The down-triangle rule exists
+    because a directional glyph in a lane has to say which raster it belongs to;
+    a bar spanning a time range says that by its extent, and adding an arrowhead
+    to it would be decoration carrying a second meaning. The lane sits directly
+    above its own raster and touches it.
+
+    ``shift`` is subtracted from every bound, so a caller that has re-zeroed its
+    event times to some anchor can hand the regions over unmodified and get a
+    lane on the same axis. Label text is NOT drawn — at this height it would sit
+    on top of its own bar, and the key belongs in the header.
+    """
+    items = [_base(ext, ydim)]
+    for r in regions or []:
+        a = float(r.start_sec) - shift
+        b = float(r.end_sec) - shift
+        if b <= ext[0] or a >= ext[1]:
+            continue
+        label = (r.name or "").strip()
+        # The period bar keeps the TOP of the lane; the bottom third is reserved
+        # for the window that was scored, so the two never overlap and neither
+        # has to be read through the other.
+        floor = 0.40 if analysis else 0.0
+        items.append(hv.Rectangles(
+            [(max(a, ext[0]), floor, min(b, ext[1]), 1.0)]
+        ).opts(color=REGION_FILL.get(label, "#9e9e9e"),
+               line_color="white", line_width=0.6, alpha=0.95))
+
+    # THE WINDOW THAT WAS SCORED, under the period that was recorded. They are
+    # different facts and only the producer knows the second one: a period runs
+    # from when the drug went on to when it came off, and the analysis window is
+    # the part of it anyone agreed to measure. Where a producer declares no
+    # window, bugarach derives one by its own convention — so drawing it is the
+    # only way a reader can see whether what was scored is the whole period or
+    # some trimmed part of it, and whether the convention did anything at all.
+    # Drawn as a dark rule along the bottom edge of the bar it belongs to, which
+    # cannot be confused with the bar and cannot hide it.
+    for w in analysis or []:
+        a = float(w[0]) - shift
+        b = float(w[1]) - shift
+        if b <= ext[0] or a >= ext[1]:
+            continue
+        items.append(hv.Rectangles(
+            [(max(a, ext[0]), 0.0, min(b, ext[1]), 0.30)]
+        ).opts(color="#222222", line_color="white", line_width=0.6, alpha=0.9))
+    return hv.Overlay(items).opts(
+        width=width, height=height, xlim=tuple(ext), ylim=(0.0, 1.0),
+        # ONE BLANK TICK, not an empty list. `yticks=[]` reaches bokeh's
+        # `get_ticker_axis_props`, which unpacks the pairs and raises
+        # "not enough values to unpack" on the empty sequence — a strip with no
+        # y-axis has to be spelled as a tick with nothing written on it.
+        # A strip with no label needs no y-axis at all. Left on, the blank tick
+        # and the spine cross into a small "+" at the left end of every lane —
+        # a mark in no key, on a page whose whole discipline is that every mark
+        # means something (murderboard 2026-09-07, role 10).
+        yticks=[(0.5, "")], ylabel=ylabel, xlabel="", title="", xaxis=None,
+        **({} if ylabel else {"yaxis": None}),
+        fontsize={"ylabel": "8pt"},
+        show_legend=False, hooks=[_time_axis_hook],
+        tools=["xwheel_zoom", "xpan", "reset"],
         active_tools=["xpan"], default_tools=["reset"],
     )
 
@@ -389,7 +599,7 @@ def trace_panel(traces: dict, *, ext, width: int = 1000, height: int = 112):
 
 
 def coordination_diagnostic(stream, *, ext, lanes=None, gt=None,
-                            tol_sec: float = 1.5, name: str = "events",
+                            tol_sec: float = TOL_SEC, name: str = "events",
                             traces=None,
                             width: int = 1000, height: int | None = None,
                             mark_px: float | None = None):
@@ -551,7 +761,7 @@ def legend_html(lanes: dict, gt=None, member_source: str | None = None) -> str:
 </div>"""
 
 
-def score_table(gt, lanes: dict, *, tol_sec: float = 1.5) -> str:
+def score_table(gt, lanes: dict, *, tol_sec: float = TOL_SEC) -> str:
     """Plain-text scoreboard — the numbers behind the picture, in a form that
     can travel into a commit message or a log where a figure cannot.
 

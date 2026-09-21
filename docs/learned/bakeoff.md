@@ -39,15 +39,15 @@ noticing. Giving it one is filed as
 
 | detector | F1 (mean of 4 folds) | fold range | recall | precision | fit s | detect s | params | probe firings |
 |---|---|---|---|---|---|---|---|---|
-| **center−surround (learned)** | 0.681 ± 0.049 | 0.63–0.74 | 0.917 | 0.543 | 6.9 | 0.023 | 1,149 | 20.5 |
-| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 0.767 | 0.572 | 1.1 | 0.062 | — | 1.2 |
-| LoCo | 0.638 ± 0.053 | 0.57–0.70 | 0.733 | 0.569 | 4.4 | 0.246 | — | 2.5 |
+| **center−surround (learned)** | 0.686 ± 0.042 | 0.65–0.74 | 0.925 | 0.547 | 7.1 | 0.026 | 1,149 | 20.5 |
+| CoactDetect | 0.651 ± 0.044 | 0.61–0.71 | 0.767 | 0.572 | 1.5 | 0.063 | — | 1.2 |
+| LoCo | 0.645 ± 0.057 | 0.57–0.70 | 0.742 | 0.575 | 4.5 | 0.252 | — | 2.5 |
 | rate+context | 0.571 ± 0.085 | 0.46–0.65 | 0.700 | 0.485 | 0.2 | 0.005 | — | 34.8 |
-| locust | 0.541 ± 0.070 | 0.47–0.63 | 0.742 | 0.446 | 3.3 | 0.114 | — | 214.8 |
-| binned SCE | 0.420 ± 0.079 | 0.31–0.49 | 0.483 | 0.384 | 0.3 | 0.012 | — | 59.2 |
-| SPIKE-synch | 0.254 ± 0.065 | 0.21–0.34 | 0.167 | 0.538 | 1.7 | 0.093 | — | 8.8 |
-| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.067 | 1.000 | 75.6 | 0.226 | 2,393 | 0.0 |
-| pooled trace (learned) | 0.118 ± 0.015 | 0.10–0.12 | 0.067 | 0.792 | 8.6 | 0.023 | 2,065 | 0.0 |
+| locust | 0.541 ± 0.070 | 0.47–0.63 | 0.742 | 0.446 | 3.3 | 0.116 | — | 214.8 |
+| binned SCE | 0.451 ± 0.096 | 0.33–0.54 | 0.533 | 0.395 | 0.3 | 0.012 | — | 59.5 |
+| SPIKE-synch | 0.267 ± 0.072 | 0.21–0.34 | 0.175 | 0.569 | 1.8 | 0.096 | — | 8.8 |
+| per-cell bank (learned) | 0.125 ± 0.000 | 0.12–0.12 | 0.067 | 1.000 | 76.6 | 0.230 | 2,393 | 0.0 |
+| pooled trace (learned) | 0.110 ± 0.018 | 0.09–0.12 | 0.075 | 0.372 | 8.5 | 0.022 | 2,065 | 0.0 |
 
 `fit s` is time to calibrate (hand-written) or train (learned). `detect s` is
 wall-clock to run one held-out fold — 2 recordings, ~118 minutes of data.
@@ -93,7 +93,7 @@ order-of-magnitude comparison within a run, not between runs.
 
 Centre−surround leads on the mean. **It is still not ahead of CoactDetect.** Their
 fold ranges are 0.63–0.74 and 0.61–0.71, overlapping across most of both; four
-folds of 30 planted events cannot separate 0.681 from 0.651, and panel A draws
+folds of 30 planted events cannot separate 0.686 from 0.651, and panel A draws
 every fold so that overlap is visible rather than hidden behind a bar. Three
 detectors remain tied at the top and the honest statement is unchanged: the
 learned model **reaches the level of the best hand-written detectors in this
@@ -135,19 +135,29 @@ this project has measured it on a footing where the comparison means anything.
 
 ### On the two that still do not learn
 
-`pooled trace` and `per-cell bank` remain at the floor (0.118, 0.125). The
+`pooled trace` and `per-cell bank` remain at the floor (0.110, 0.125). The
 per-cell bank costs **75.6 s to train and 0.226 s to detect** — 11× the training
 and 9.6× the detection of the model that works, for a fifth of the F1. ⚠ Those were
 236 s and 2.45 s on the first run, and the drop is **not** an improvement to the
 architecture: pinning torch to one thread happens to suit this model, which spent
 its time contending across ten. Same code, different thread count.
 
-⚠ **Both land their threshold on the low edge of the searched grid**, which this
-project treats elsewhere as a search that stopped too early rather than an answer,
-so their F1 is reported for completeness and is not an operating point. On the
-first run that was true of the per-cell bank alone; the grid has since been opened
-at the bottom as well as the top, and under it the pooled trace joined it — three
-of its four folds sit at the floor. **That matters more than its F1 does**, because
+⚠ **The per-cell bank lands its threshold on the low edge of the searched grid** — all
+four folds at 0.0001 — which this project treats elsewhere as a search that stopped too
+early rather than an answer, so its F1 is reported for completeness and is not an
+operating point. **The pooled trace does so on one fold of four** (0.4, 0.45, **0.0001**,
+0.45).
+
+> ⚠ **Corrected 2026-09-08.** This paragraph said *"three of its four folds sit at the
+> floor"* of the pooled trace. `bakeoff.json` beside it says **one**, and has since
+> `78ebe26` re-scored the reference at the widened tolerance — that commit re-quoted the
+> tables from the JSON and left the prose behind it. Reported by another session. The
+> lesson is the shape rather than the number: in a document whose tables are generated
+> and whose sentences are typed, the sentences are what drift, and nothing here compares
+> the two.
+> [`../todo/2026-09-08-three-documents-argue-from-the-flat-field.md`](../todo/2026-09-08-three-documents-argue-from-the-flat-field.md)
+
+**That still matters more than its F1 does**, because
 the pooled trace is the *control*: it exists to answer whether giving up
 distinctness costs anything, and a control with no operating point cannot answer
 it. The centre−surround still beats it by a wide margin and the direction is what

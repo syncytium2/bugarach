@@ -107,7 +107,33 @@ def _collect(paths: list[str]) -> list[Path]:
     return files
 
 
+def _baseline_labels(raw: str | None) -> tuple[str, ...] | None:
+    """`--baseline vehicle` or `--baseline vehicle,naive` -> what to match.
+
+    ``None`` means the reader said nothing, which is NOT the same as saying
+    nothing matched: the built-in vocabulary is the default only in the first
+    case. An all-whitespace value is refused rather than silently treated as
+    "no designation", because `--baseline ""` is somebody's shell handing over
+    an unset variable and quietly guessing instead is how the wrong window gets
+    measured under a flag that says otherwise.
+    """
+    if raw is None:
+        return None
+    labels = tuple(s for s in (p.strip() for p in raw.split(",")) if s)
+    if not labels:
+        sys.exit("bugarach: --baseline was given nothing to match. Pass the "
+                 "label your folder uses for the untreated period, e.g. "
+                 "--baseline vehicle")
+    return labels
+
+
 def main(argv: list[str] | None = None) -> None:
+    # The one bugarach import at parser-build time, and it is here rather than
+    # at module top to keep that discipline: `assess_folder` reaches only
+    # stdlib and `bugarach.dataset`, so it costs nothing, while `--baseline`'s
+    # help has to NAME the built-in vocabulary rather than restate it and drift.
+    from bugarach.assess_folder import BASELINE_TOKENS
+
     ap = argparse.ArgumentParser(
         prog="bugarach",
         description="Browse event slices and tune coordination detectors "
@@ -130,6 +156,18 @@ def main(argv: list[str] | None = None) -> None:
     asr = sub.add_parser(
         "assess", help="how coordinated are these recordings? (no detector)")
     asr.add_argument("folder", help="the export folder to assess")
+    asr.add_argument("--baseline", default=None, metavar="LABEL[,LABEL…]",
+                     help="what YOUR folder calls its untreated period — "
+                          "'--baseline vehicle', or a comma-separated list. "
+                          "Matched case-insensitively on the start of the "
+                          "label, so 'vehicle' covers 'Vehicle 2'. Without it "
+                          "the guess is "
+                          + "/".join(BASELINE_TOKENS)
+                          + ", and a folder using anything else has its "
+                            "recordings skipped rather than measured on a "
+                            "treatment. When you pass this it REPLACES that "
+                            "list: designating 'vehicle' in a folder that also "
+                            "has 'pre-wash' means vehicle")
     asr.add_argument("--stream", default=None,
                      help="which stream; default is the first in each recording")
     asr.add_argument("--surrogates", type=int, default=1000,
@@ -140,13 +178,30 @@ def main(argv: list[str] | None = None) -> None:
                           "with what counts as one event — say which you used")
     asr.add_argument("--limit", type=int, default=None,
                      help="assess only the first N recordings")
+    asr.add_argument("--k-percent", default=None,
+                     help="scan K as PERCENTAGES of each recording's ROI "
+                          "population instead of absolute counts — e.g. "
+                          "'5,10,15,20,25', or 'default' for the standard scan. "
+                          "This is the space K is set in: three co-active ROIs "
+                          "is a third of a 10-ROI field and six percent of a "
+                          "51-ROI one, and both are in this corpus. The report "
+                          "names the count each percentage came to")
+    asr.add_argument("--k-floor", type=int, default=None,
+                     help="an absolute floor under --k-percent, applied per "
+                          "recording after the percentage meets that recording's "
+                          "ROI count. A percentage alone reaches K=1 on a small "
+                          "field and one co-active ROI is not coordination. The "
+                          "report says where the floor BOUND, because a floor "
+                          "that binds on part of the corpus means two K rules "
+                          "were running and a number pooled over them came from "
+                          "both")
     asr.add_argument("--for-annotation", action="store_true",
                      help="scan down to K=2 instead of stopping at 3. A proposal "
                           "list censored at the floor being estimated makes that "
                           "floor the answer, so use this when the candidates are "
-                          "going to a person and K will be derived from the "
-                          "verdicts. The default scan is what every published "
-                          "number was produced at — do not mix them")
+                          "going to a person to judge. The default scan is what "
+                          "every published number was produced at — do not mix "
+                          "them")
 
     win = sub.add_parser(
         "windows", help="what this folder says about its treatment periods — "
@@ -192,6 +247,29 @@ def main(argv: list[str] | None = None) -> None:
                           "else's microscope (FOUNDATIONS §6)")
     det.add_argument("--limit", type=int, default=None,
                      help="detect on only the first N recordings")
+    # THE FLAG THAT CLOSES THE LOOP. Without it every detector runs at its
+    # shipped operating point, so a calibration fitted on simulated data derived
+    # from these very recordings could not reach them from the command line —
+    # the instrument that was scored was not the instrument that ran. The file
+    # is `detector_settings.csv`: the one this command writes, and the one the
+    # browser's "Save these settings" writes, which are one format.
+    det.add_argument("--settings", default=None, type=Path,
+                     help="a detector_settings.csv to run at, instead of the "
+                          "shipped operating points. Takes the file this "
+                          "command writes and the file the browser saves — one "
+                          "format, either direction. Provenance rows travel "
+                          "into run.json rather than being dropped")
+    # THE OTHER HALF OF CLOSING THE LOOP. --settings lets a calibrated knob reach
+    # real recordings; this lets a trained model reach them. Until a checkpoint
+    # existed a model could not outlive its process, so this command had no way
+    # to be handed one and the learned branch stopped at the bake-off table.
+    det.add_argument("--model", action="append", default=None, type=Path,
+                     metavar="CKPT.json",
+                     help="a saved model to run beside the six; repeatable. "
+                          "Plain JSON, so it loads in the browser too and opening "
+                          "a stranger's model cannot execute their code. Its calls "
+                          "land in detections.csv in the same contract as the six, "
+                          "and run.json says which models ran")
 
     # Imported at module scope below rather than lazily: the help text quotes
     # the default port, so a reader of `bugarach lab --help` sees the number
@@ -253,7 +331,9 @@ def main(argv: list[str] | None = None) -> None:
             run = _load_or_exit(
                 detect_folder, folder, out_dir=out, detectors=names,
                 stream=args.stream, frame_interval_sec=args.frame_interval,
-                limit=args.limit, progress=_progress("detecting"))
+                limit=args.limit, settings=args.settings,
+                models=tuple(args.model or ()),
+                progress=_progress("detecting"))
         except NoRecordingDetectedOn as exc:
             # The refusal has to reach the EXIT CODE, because that is the only
             # thing a pipeline reads from this process — the same reasoning
@@ -282,13 +362,45 @@ def main(argv: list[str] | None = None) -> None:
         # measuring its own folder should not need the viewer installed
         from bugarach.assess_folder import assess_folder, format_assessment
 
-        from bugarach.assess import PROPOSAL_MIN_ROIS
+        from bugarach.assess import DEFAULT_MIN_ROIS_FRAC, PROPOSAL_MIN_ROIS
+
+        fracs = None
+        if args.k_percent is not None:
+            if args.k_percent.strip().lower() == "default":
+                fracs = DEFAULT_MIN_ROIS_FRAC
+            else:
+                try:
+                    fracs = tuple(float(x) / 100.0
+                                  for x in args.k_percent.split(",") if x.strip())
+                except ValueError:
+                    sys.exit(f"bugarach: --k-percent takes percentages, "
+                             f"comma-separated — got {args.k_percent!r}. "
+                             f"Ten percent is '10', not '0.10'.")
+            if not fracs:
+                sys.exit("bugarach: --k-percent was empty")
+            if any(not (0.0 < f <= 1.0) for f in fracs):
+                sys.exit(f"bugarach: --k-percent values must be in (0, 100] — "
+                         f"got {args.k_percent!r}")
+        if args.k_floor is not None and fracs is None:
+            sys.exit("bugarach: --k-floor applies to --k-percent. With an "
+                     "absolute K the floor is either already in the number or is "
+                     "a second opinion about it; pass one.")
+        if args.k_floor is not None and args.k_floor < 1:
+            sys.exit(f"bugarach: --k-floor must be at least 1, got "
+                     f"{args.k_floor}. A floor below one co-active ROI is not a "
+                     f"floor.")
+        if fracs is not None and args.for_annotation:
+            sys.exit("bugarach: --k-percent and --for-annotation are two ways of "
+                     "choosing the scan. Pass a low percentage instead — the "
+                     "proposal has to sit below the K being set either way.")
 
         fa = _load_or_exit(
             assess_folder, _folder_or_exit(args.folder), stream=args.stream,
             n_surrogates=args.surrogates, bin_width_sec=args.bin_width,
             limit=args.limit, progress=_progress("assessing"),
-            min_rois=PROPOSAL_MIN_ROIS if args.for_annotation else None)
+            min_rois=(PROPOSAL_MIN_ROIS if args.for_annotation else None),
+            min_rois_frac=fracs, min_rois_floor=args.k_floor,
+            baseline_labels=_baseline_labels(args.baseline))
         print(format_assessment(fa))
         # Exit 0 whether or not anything was assessable. This is a MEASUREMENT,
         # not a gate: "no recording carried a baseline region" is an answer about
