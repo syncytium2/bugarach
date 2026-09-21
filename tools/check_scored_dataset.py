@@ -112,11 +112,9 @@ def main(argv=None) -> int:
         # One short line: the briefing runs within a byte budget measured against what
         # the harness has refused (tests/test_session_briefing.py), and this line was
         # what pushed it over on its first draft. The full list is one command away.
-        if not bad:
-            print(f"results: all {n} files scored on the default")
-        else:
-            print(f"!! results on the default: {len(by['current'])} of {n} files "
-                  f"- tools/check_scored_dataset.py")
+        # A fragment the briefing appends to its data line, not a line of its own.
+        # Every byte here is paid for in the briefing's budget; docs/INDEX.md names the tool.
+        print(f"{len(by['current'])}/{n} results on it")    # eval corpora are not "on it"
         return 1 if (a.strict and bad) else 0
 
     print(f"default dataset: {default_name}")

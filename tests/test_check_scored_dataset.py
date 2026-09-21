@@ -60,4 +60,5 @@ def test_the_briefing_line_is_one_line_and_never_fails_the_hook():
                           "--brief"], capture_output=True, text=True, timeout=60)
     assert out.returncode == 0, out.stderr
     assert len(out.stdout.strip().splitlines()) == 1, out.stdout
-    assert "results" in out.stdout
+    assert "results on it" in out.stdout
+    assert len(out.stdout.strip()) <= 30, "it is appended to a budgeted briefing line"

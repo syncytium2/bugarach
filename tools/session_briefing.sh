@@ -450,11 +450,14 @@ except Exception: pass' 2>/dev/null)
     echo "!! data in: current_export.toml declares nothing readable. It is the ONLY"
     echo "   declaration of which export folder is the input — fix it before analysing."
   elif [ -n "$ds_path" ]; then
-    echo "!! data in: $ds_name — ASK TONY TO CONFIRM; on yes: python -m bugarach.dataset confirm"
+    # ONE line, results count folded in: a separate results line took CI's briefing to
+    # 9,182B against its 9,150B budget and degraded it to TERSE (2026-09-21).
+    local scored
+    scored=$(python3 tools/check_scored_dataset.py --brief 2>/dev/null | head -1)
+    echo "!! data in: $ds_name; confirm with Tony: python -m bugarach.dataset confirm${scored:+; $scored}"
   else
     echo "!! data in: $ds_name declared, NOT here — PYTHONPATH=src python3 -m bugarach.dataset"
   fi
-  PYTHONPATH=src python3 tools/check_scored_dataset.py --brief 2>/dev/null | head -1
 
   # --- 5b. where does figure output actually go on THIS machine? ------------------
   # Printed rather than left to be asked about. On 2026-08-17 a session reported the
