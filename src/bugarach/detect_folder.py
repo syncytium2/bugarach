@@ -340,6 +340,39 @@ def _coerce(value, like):
     return value
 
 
+def _signature_defaults(name: str) -> dict:
+    """Keyword parameters the detector function takes, with their defaults.
+
+    The data arguments (event times, spans, streams) come first and have no default
+    in any of the six, so only parameters with a default are settings.
+    """
+    import inspect
+
+    from bugarach.detectors.cicada import cicada_detect
+    from bugarach.detectors.coact import coact_detect
+    from bugarach.detectors.loco import loco_detect
+    from bugarach.detectors.rate import rate_detect
+    from bugarach.detectors.sce import sce_detect
+    from bugarach.detectors.sync import sync_detect
+
+    fn = {"rate": rate_detect, "coact": coact_detect, "loco": loco_detect,
+          "sce": sce_detect, "cicada": cicada_detect, "sync": sync_detect}[name]
+    return {p.name: p.default for p in inspect.signature(fn).parameters.values()
+            if p.default is not inspect.Parameter.empty}
+
+
+def _coerce_like(value, like):
+    """:func:`_coerce`, and for a default of ``None`` a number if it reads as one."""
+    if like is None:
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return value
+    return _coerce(value, like)
+
+
 def load_settings(path):
     """A settings CSV as ``({(detector, stream): {parameter: typed}}, provenance)``.
 
@@ -361,6 +394,16 @@ def load_settings(path):
 
     ``fitted_*`` rows come back separately: provenance to record, not arguments to
     pass.
+
+    **What counts as a parameter is the detector's own signature**, not the shipped
+    operating point. Until 2026-09-21 it was the shipped point, so a setting the bench
+    had tuned but not shipped could not reach a real folder: the weekend's every-knob
+    search chose CoactDetect's ``merge_gap_sec``, ``guard_sec`` and ``window_mode`` and
+    LoCo's ``null_context_mode`` and ``window_mode``, none of which the shipped points
+    name, and this function refused every one — the same break in the loop the
+    paragraph above describes, one knob further along. A typo is still refused: it is
+    in no signature. The type comes from the shipped value where there is one, then
+    from the signature's default.
     """
     from bugarach.bench import OPERATING_POINTS
     from bugarach.emit import read_detector_settings
@@ -375,6 +418,7 @@ def load_settings(path):
                 f"{', '.join(DETECTORS)}. A file naming a detector that is not "
                 f"here is not applied by halves.")
         shipped = OPERATING_POINTS[name].params
+        signature = _signature_defaults(name)
         for key, value in row.items():
             if key.startswith(PROVENANCE_PREFIX):
                 provenance.setdefault(f"{name}/{sname}" if sname else name,
@@ -392,17 +436,17 @@ def load_settings(path):
             if key == "rng_seed":
                 params.setdefault((name, sname), {})[key] = int(float(value))
                 continue
-            if key not in shipped:
+            if key not in shipped and key not in signature:
                 raise ValueError(
                     f"{path}: {name!r} has no parameter {key!r}. It takes "
-                    f"{', '.join(sorted(shipped))}.")
+                    f"{', '.join(sorted(set(shipped) | set(signature)))}.")
+            like = shipped[key] if key in shipped else signature[key]
             try:
-                params.setdefault((name, sname), {})[key] = _coerce(value,
-                                                                    shipped[key])
+                params.setdefault((name, sname), {})[key] = _coerce_like(value, like)
             except (TypeError, ValueError) as exc:
                 raise ValueError(
                     f"{path}: {name}.{key} = {value!r} is not a "
-                    f"{type(shipped[key]).__name__} ({exc})") from None
+                    f"{type(like).__name__} ({exc})") from None
     return params, provenance
 
 

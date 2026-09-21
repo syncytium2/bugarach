@@ -10,6 +10,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/full-cohort-default — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-21-full-cohort-default/` (NEW)
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-21: the full-cohort results
+  on the default dataset (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, confirmed this
+  session) with the weekend's settings — the every-knob sliding values for CoactDetect and LoCo
+  (`fair_comparison_2026_09_18/meta.json`, `coded_base`), the shipped points for the other four.
+- **Writes:** `detect/` (detections.csv, detector_settings.csv, run.json, calls_measured.csv),
+  `rasters/` (one page per group × treatment × stream), `before_after/` (per treatment). A new
+  folder, so nothing existing is touched.
+- **Touches:** this block; `src/bugarach/detect_folder.py` (`load_settings` takes a detector's own
+  signature as its parameter list) on branch `detect-settings-by-signature`.
+
 ### 065/census-rerun — DARKROOM claim RELEASED 2026-09-21: `bugarach/2026-09-19-chorus-collapse/`
 - **Status:** **RELEASED 2026-09-21.** All four items done. The folder's `index.html` and
   `census.json` were replaced and each verified to match its repo copy byte for byte; the review
