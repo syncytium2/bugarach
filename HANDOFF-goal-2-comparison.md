@@ -28,15 +28,22 @@ was written. Both work from `main`.
 | **WSMIP064** | the **crowded-allowance sensitivity sweep**, then options A and B on the merge-gap page, then deleting two stale virtual environments | every merge gap in the weekend's result is the boundary an unsigned 0.02 F1 constant imposes, so this decides whether the constant can be signed |
 | **WSMIP065** | chorus-collapse **items 1-3 plus the GPU census re-run** | the census never stored the head's **input**, and the signal never reached the head in **32 of 75** collapsed `chorus_gain_norm` fits, so the page's headline may be wrong for 43 % of one net |
 
-**Neither had pushed.** If either is idle when you arrive, poke it rather than assume it
-finished.
+**065 has since reported**: [#687](https://github.com/syncytium2/bugarach/pull/687),
+`census-rerun` — items 1-3 plus the census re-run, with the re-run reproducing every
+pre-existing field bit-identically across all 974 fits, so the two new fields are pure
+addition. It confirms the split above: the head is the site of the stall in 143 of
+chorus_norm's 153 collapsed fits, and is handed a constant input in 32 of
+chorus_gain_norm's 75, where **a repair aimed at the head cannot reach**. Merge on green.
+
+**064 has not.** It was still running when this was written. If it is idle when you
+arrive, poke it rather than assume it finished.
 
 ⚠ **Nothing under `runs\` on 064 may be deleted while the sweep is running** —
 `tune_net_merge_gap.py` reads the saved fits and writes the `-gaps` scratch, which are
 items on its own deletion list. The virtual environments are unaffected.
 
-**One PR of mine still open:** [#683](https://github.com/syncytium2/bugarach/pull/683),
-`nets/leaderboard`, in CI when this was written. Merge on green; its tests need no torch.
+**#683 landed** (`5f906ec`), so `tools/leaderboard.py` is on `main` and the field below
+is a command rather than a paragraph.
 
 ## What Tony decided on 2026-09-21
 
