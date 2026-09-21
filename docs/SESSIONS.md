@@ -2784,3 +2784,12 @@ session's work is not a sweep.
   finished) and `full_search.html` / `full_search.png` (the figure), from
   `tools/search_all_settings.py` on branch `full-search`. Measure-only: no operating point changes.
 - **Released:** 2026-09-17. The run finished 2026-09-16 17:02; holds nothing.
+
+### darkroom/bugarach/2026-09-21-full-search-slow/ — the every-knob search on the SLOW bench (WSMIP064/slow-result)
+- **Claimed:** 2026-09-21, ⚠ **after** the write, not before: the five files were copied in
+  first and this block written straight after. A new folder, so nothing existing was overwritten.
+- **Writes:** `search.log`, `search.json`, `search.err` (empty), `full_search.html` /
+  `full_search.png`, copied from `%USERPROFILE%\runs\2026-09-21-full-search-slow\` on WSMIP064
+  (`tools/search_all_settings.py --bench slow --sliding`). The same five files are in the repo
+  at `docs/learned/runs/2026-09-21-full-search-slow/`. Measure-only: nothing ships from it.
+- **Released:** 2026-09-21. Nothing further is written there.

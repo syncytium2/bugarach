@@ -180,3 +180,29 @@ Newest last. A session that finds this file picks up at the first step not marke
   fast ceilings, which were set at older settings. **Jitter**: 0.30 s placeholder; Tony was
   offered a per-recording range (no extra cost) plus an F1-against-jitter curve at the end.
   Next: step 3, `--bench fast|slow` in `tools/search_all_settings.py` and slow grids.
+- 2026-09-21 (WSMIP064): **jitter fixed at 0.30 s** (Tony: the fast bench fixes 0.36 the same
+  way); **budgets kept as measured** (Tony). **Step 3 tooling merged (#711)**; the slow
+  every-knob search ran: `--bench slow --sliding`, 12 workers, 11.2 min, empty `search.err`.
+  Files: `docs/learned/runs/2026-09-21-full-search-slow/` and the same in the darkroom.
+  ⚠ "shipped" in its table means the FAST settings on the slow bench, and its caption's
+  "bench.py" means `bench_slow`. **Held-out gains** (mean F1 over the two backgrounds, 95%
+  interval): locust +0.239 [+0.226, +0.252], SPIKE-synch +0.155 [+0.144, +0.166],
+  CoactDetect +0.081, LoCo +0.044, binned SCE +0.020, rate+context +0.005.
+  **Not adoptable as it stands, for reasons the fast search already met:**
+  (1) **SPIKE-synch's `C_min` 0.0025 is unbracketed** — the search ran out of extensions
+  (`MAX_EXTENSIONS = 3`, the silent cap this file's goal-1 twin named), and it also **fails the
+  close-events check held out** (−0.022 against an allowance of 0.02; it passed on the
+  selection recordings); its `max_gap` of 16 s is a window-shaped setting the bench can flatter.
+  (2) **locust's gain is `sce_min_distance_frames` 4 → 256 (25.6 s)**, bracketed this time
+  (512 was tried) — the same climb the fast search saw to 128 frames, which that handoff tied
+  to the anchor question; it is not a setting to ship until the anchor is settled.
+  (3) **CoactDetect's gain is `min_rois` 3 → 6** — against planted participation of about 7,
+  12 and 20 ROIs, which is the warning `min_rois` carries: it can learn the simulation.
+  (4) **The search extends integer floors by halving** (`sce.min_rois` 1.5 → 0.375, `loco.min_rois`
+  and `sync.min_n` the same): `extend` does not know `min_rois` / `min_n` are integers. None
+  of those values was chosen; filed rather than fixed here, because the fast search shares it.
+  (5) **LoCo's context sits at 120 s, the null-rule cap**, and did not move; the slow search
+  gives no evidence either way on whether slow wants a wider spacing.
+  LoCo (+0.044: threshold 99.995 bracketed by 99.9975, merge gap 4 s) and binned SCE
+  (threshold 99, bin 5 s) are the clean ones. Nothing is set in `bench_slow.OPERATING_POINTS`;
+  choosing is Tony's. Step 5 (the nets) waits on which slow coded settings are the reference.
