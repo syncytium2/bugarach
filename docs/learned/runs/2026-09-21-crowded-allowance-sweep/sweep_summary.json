@@ -1,0 +1,2296 @@
+{
+ "allowances": {
+  "0.005": {
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.00261,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.05151,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03806,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.11634,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.023,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.02468,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.04554,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.15397,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      5.0,
+      2.0,
+      5.0,
+      5.0
+     ],
+     "chorus_gain_norm ungated": [
+      5.0,
+      5.0,
+      2.0,
+      5.0
+     ],
+     "line_length ungated": [
+      5.0,
+      5.0,
+      8.0,
+      8.0
+     ],
+     "tube ungated": [
+      2.0,
+      2.0,
+      2.0,
+      5.0
+     ],
+     "chorus_norm gated": [
+      8.0,
+      5.0,
+      5.0,
+      5.0
+     ],
+     "chorus_gain_norm gated": [
+      5.0,
+      5.0,
+      5.0,
+      5.0
+     ],
+     "line_length gated": [
+      2.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "tube gated": [
+      2.0,
+      2.0,
+      2.0,
+      5.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.000987,
+      "net": "line_length",
+      "selection": "ungated",
+      "fold": 3,
+      "inner_margin": -0.004013
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "chorus_gain_norm",
+       "selection": "ungated",
+       "fold": 0,
+       "outer_margin": -0.05745,
+       "short_by": 0.05245
+      },
+      {
+       "net": "line_length",
+       "selection": "gated",
+       "fold": 2,
+       "outer_margin": -0.00666,
+       "short_by": 0.00166
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 2,
+     "inner_vs_outer_margin_max_abs_diff": 0.0569
+    },
+    "gaps_at_grid_edge": 0
+   }
+  },
+  "0.01": {
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.00261,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.05151,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03806,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.11634,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.02205,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.02225,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.04554,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.14917,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      5.0,
+      2.0,
+      5.0,
+      5.0
+     ],
+     "chorus_gain_norm ungated": [
+      5.0,
+      5.0,
+      2.0,
+      5.0
+     ],
+     "line_length ungated": [
+      5.0,
+      5.0,
+      8.0,
+      8.0
+     ],
+     "tube ungated": [
+      2.0,
+      2.0,
+      2.0,
+      5.0
+     ],
+     "chorus_norm gated": [
+      8.0,
+      8.0,
+      5.0,
+      5.0
+     ],
+     "chorus_gain_norm gated": [
+      5.0,
+      5.0,
+      5.0,
+      8.0
+     ],
+     "line_length gated": [
+      2.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "tube gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 6.3e-05,
+      "net": "tube",
+      "selection": "gated",
+      "fold": 2,
+      "inner_margin": -0.009937
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "chorus_gain_norm",
+       "selection": "ungated",
+       "fold": 0,
+       "outer_margin": -0.05745,
+       "short_by": 0.04745
+      },
+      {
+       "net": "chorus_gain_norm",
+       "selection": "gated",
+       "fold": 3,
+       "outer_margin": -0.01223,
+       "short_by": 0.00223
+      },
+      {
+       "net": "tube",
+       "selection": "gated",
+       "fold": 1,
+       "outer_margin": -0.01243,
+       "short_by": 0.00243
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 3,
+     "inner_vs_outer_margin_max_abs_diff": 0.0569
+    },
+    "gaps_at_grid_edge": 0
+   }
+  },
+  "0.02": {
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.04825,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.0185,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03149,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.09956,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.08269,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.01533,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.04253,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.1291,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      5.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm ungated": [
+      8.0,
+      8.0,
+      8.0,
+      2.0
+     ],
+     "line_length ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "tube ungated": [
+      2.0,
+      2.0,
+      2.0,
+      8.0
+     ],
+     "chorus_norm gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "line_length gated": [
+      8.0,
+      8.0,
+      15.0,
+      8.0
+     ],
+     "tube gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.000842,
+      "net": "chorus_norm",
+      "selection": "gated",
+      "fold": 0,
+      "inner_margin": -0.019158
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "chorus_gain_norm",
+       "selection": "gated",
+       "fold": 1,
+       "outer_margin": -0.02404,
+       "short_by": 0.00404
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 1,
+     "inner_vs_outer_margin_max_abs_diff": 0.02897
+    },
+    "gaps_at_grid_edge": 0
+   },
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.00431,
+       "folds_ahead": 3,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.03737,
+       "folds_ahead": 2,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03224,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.11409,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.01812,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.01668,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03718,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.14917,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      5.0,
+      8.0,
+      5.0,
+      8.0
+     ],
+     "chorus_gain_norm ungated": [
+      8.0,
+      5.0,
+      8.0,
+      8.0
+     ],
+     "line_length ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "tube ungated": [
+      8.0,
+      3.0,
+      2.0,
+      8.0
+     ],
+     "chorus_norm gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "line_length gated": [
+      8.0,
+      15.0,
+      8.0,
+      8.0
+     ],
+     "tube gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.00025,
+      "net": "line_length",
+      "selection": "gated",
+      "fold": 1,
+      "inner_margin": -0.01975
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "chorus_gain_norm",
+       "selection": "ungated",
+       "fold": 2,
+       "outer_margin": -0.06272,
+       "short_by": 0.04272
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 1,
+     "inner_vs_outer_margin_max_abs_diff": 0.04495
+    },
+    "gaps_at_grid_edge": 0
+   }
+  },
+  "0.03": {
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.04625,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.01684,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03149,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.09471,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.08269,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.01285,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03944,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.1291,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "line_length ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "tube ungated": [
+      15.0,
+      2.0,
+      2.0,
+      8.0
+     ],
+     "chorus_norm gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm gated": [
+      8.0,
+      8.0,
+      8.0,
+      15.0
+     ],
+     "line_length gated": [
+      8.0,
+      8.0,
+      15.0,
+      15.0
+     ],
+     "tube gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.001207,
+      "net": "line_length",
+      "selection": "gated",
+      "fold": 3,
+      "inner_margin": -0.028793
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "tube",
+       "selection": "ungated",
+       "fold": 0,
+       "outer_margin": -0.04467,
+       "short_by": 0.01467
+      },
+      {
+       "net": "line_length",
+       "selection": "gated",
+       "fold": 3,
+       "outer_margin": -0.04941,
+       "short_by": 0.01941
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 2,
+     "inner_vs_outer_margin_max_abs_diff": 0.02897
+    },
+    "gaps_at_grid_edge": 0
+   },
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.0009,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.03551,
+       "folds_ahead": 2,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03224,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.11409,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.01812,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.01668,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03032,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.14917,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "line_length ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "tube ungated": [
+      8.0,
+      3.0,
+      2.0,
+      8.0
+     ],
+     "chorus_norm gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "line_length gated": [
+      8.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "tube gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.001594,
+      "net": "line_length",
+      "selection": "gated",
+      "fold": 3,
+      "inner_margin": -0.028406
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "chorus_norm",
+       "selection": "ungated",
+       "fold": 2,
+       "outer_margin": -0.05238,
+       "short_by": 0.02238
+      },
+      {
+       "net": "chorus_gain_norm",
+       "selection": "ungated",
+       "fold": 2,
+       "outer_margin": -0.06272,
+       "short_by": 0.03272
+      },
+      {
+       "net": "line_length",
+       "selection": "gated",
+       "fold": 2,
+       "outer_margin": -0.03972,
+       "short_by": 0.00972
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 3,
+     "inner_vs_outer_margin_max_abs_diff": 0.04495
+    },
+    "gaps_at_grid_edge": 0
+   }
+  },
+  "0.05": {
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.04625,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.0141,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.02621,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.08343,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.08269,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.00617,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "line_length": {
+       "mean": -0.03283,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.12268,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm ungated": [
+      8.0,
+      15.0,
+      8.0,
+      8.0
+     ],
+     "line_length ungated": [
+      15.0,
+      8.0,
+      8.0,
+      15.0
+     ],
+     "tube ungated": [
+      15.0,
+      2.0,
+      15.0,
+      15.0
+     ],
+     "chorus_norm gated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm gated": [
+      8.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "line_length gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "tube gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.001178,
+      "net": "tube",
+      "selection": "ungated",
+      "fold": 2,
+      "inner_margin": -0.048822
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "chorus_gain_norm",
+       "selection": "gated",
+       "fold": 1,
+       "outer_margin": -0.06016,
+       "short_by": 0.01016
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 1,
+     "inner_vs_outer_margin_max_abs_diff": 0.02897
+    },
+    "gaps_at_grid_edge": 0
+   },
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.0009,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.03551,
+       "folds_ahead": 2,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.02255,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.11409,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.00245,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.00196,
+       "folds_ahead": 1,
+       "verdict": "inside noise"
+      },
+      "line_length": {
+       "mean": -0.02612,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.14263,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "chorus_gain_norm ungated": [
+      8.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "line_length ungated": [
+      8.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "tube ungated": [
+      8.0,
+      3.0,
+      2.0,
+      8.0
+     ],
+     "chorus_norm gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "chorus_gain_norm gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "line_length gated": [
+      8.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "tube gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.001736,
+      "net": "chorus_norm",
+      "selection": "gated",
+      "fold": 1,
+      "inner_margin": -0.048264
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "chorus_norm",
+       "selection": "ungated",
+       "fold": 2,
+       "outer_margin": -0.05238,
+       "short_by": 0.00238
+      },
+      {
+       "net": "chorus_gain_norm",
+       "selection": "ungated",
+       "fold": 2,
+       "outer_margin": -0.06272,
+       "short_by": 0.01272
+      },
+      {
+       "net": "chorus_gain_norm",
+       "selection": "gated",
+       "fold": 2,
+       "outer_margin": -0.06088,
+       "short_by": 0.01088
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 3,
+     "inner_vs_outer_margin_max_abs_diff": 0.04495
+    },
+    "gaps_at_grid_edge": 0
+   }
+  },
+  "0.1": {
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.03719,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.00355,
+       "folds_ahead": 3,
+       "verdict": "inside noise"
+      },
+      "line_length": {
+       "mean": -0.0204,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.08343,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.07253,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.0027,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "line_length": {
+       "mean": -0.01971,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.12268,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "chorus_gain_norm ungated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "line_length ungated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "tube ungated": [
+      15.0,
+      2.0,
+      15.0,
+      15.0
+     ],
+     "chorus_norm gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "chorus_gain_norm gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "line_length gated": [
+      15.0,
+      15.0,
+      30.0,
+      15.0
+     ],
+     "tube gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.002313,
+      "net": "line_length",
+      "selection": "gated",
+      "fold": 2,
+      "inner_margin": -0.097687
+     },
+     "accepted_but_fail_on_outer_refits": [],
+     "n_accepted_but_fail_on_outer_refits": 0,
+     "inner_vs_outer_margin_max_abs_diff": 0.04202
+    },
+    "gaps_at_grid_edge": 1
+   },
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.02697,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.02222,
+       "folds_ahead": 2,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.02782,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.10415,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.00245,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.00196,
+       "folds_ahead": 1,
+       "verdict": "inside noise"
+      },
+      "line_length": {
+       "mean": -0.02378,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.1324,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "chorus_gain_norm ungated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "line_length ungated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "tube ungated": [
+      15.0,
+      3.0,
+      2.0,
+      8.0
+     ],
+     "chorus_norm gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "chorus_gain_norm gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "line_length gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "tube gated": [
+      15.0,
+      15.0,
+      15.0,
+      30.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.010549,
+      "net": "chorus_gain_norm",
+      "selection": "ungated",
+      "fold": 2,
+      "inner_margin": -0.089451
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "line_length",
+       "selection": "ungated",
+       "fold": 0,
+       "outer_margin": -0.11447,
+       "short_by": 0.01447
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 1,
+     "inner_vs_outer_margin_max_abs_diff": 0.09635
+    },
+    "gaps_at_grid_edge": 1
+   }
+  },
+  "0.15": {
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.03719,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.00441,
+       "folds_ahead": 3,
+       "verdict": "inside noise"
+      },
+      "line_length": {
+       "mean": -0.0066,
+       "folds_ahead": 1,
+       "verdict": "inside noise"
+      },
+      "tube": {
+       "mean": -0.07118,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.07253,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.02715,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.02167,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.10217,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "chorus_gain_norm ungated": [
+      15.0,
+      30.0,
+      15.0,
+      15.0
+     ],
+     "line_length ungated": [
+      30.0,
+      15.0,
+      15.0,
+      30.0
+     ],
+     "tube ungated": [
+      15.0,
+      2.0,
+      15.0,
+      30.0
+     ],
+     "chorus_norm gated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "chorus_gain_norm gated": [
+      15.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.003672,
+      "net": "line_length",
+      "selection": "ungated",
+      "fold": 3,
+      "inner_margin": -0.146328
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "line_length",
+       "selection": "ungated",
+       "fold": 0,
+       "outer_margin": -0.1818,
+       "short_by": 0.0318
+      },
+      {
+       "net": "tube",
+       "selection": "ungated",
+       "fold": 3,
+       "outer_margin": -0.16554,
+       "short_by": 0.01554
+      },
+      {
+       "net": "line_length",
+       "selection": "gated",
+       "fold": 3,
+       "outer_margin": -0.1518,
+       "short_by": 0.0018
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 3,
+     "inner_vs_outer_margin_max_abs_diff": 0.04258
+    },
+    "gaps_at_grid_edge": 15
+   },
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.02697,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.02222,
+       "folds_ahead": 2,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.0161,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.05166,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": 0.05294,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03917,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.00596,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "tube": {
+       "mean": -0.1125,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "chorus_gain_norm ungated": [
+      15.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "line_length ungated": [
+      15.0,
+      30.0,
+      15.0,
+      15.0
+     ],
+     "tube ungated": [
+      30.0,
+      30.0,
+      30.0,
+      8.0
+     ],
+     "chorus_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length gated": [
+      15.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.000772,
+      "net": "chorus_norm",
+      "selection": "gated",
+      "fold": 1,
+      "inner_margin": -0.149228
+     },
+     "accepted_but_fail_on_outer_refits": [
+      {
+       "net": "tube",
+       "selection": "ungated",
+       "fold": 2,
+       "outer_margin": -0.19211,
+       "short_by": 0.04211
+      },
+      {
+       "net": "chorus_gain_norm",
+       "selection": "gated",
+       "fold": 2,
+       "outer_margin": -0.17555,
+       "short_by": 0.02555
+      }
+     ],
+     "n_accepted_but_fail_on_outer_refits": 2,
+     "inner_vs_outer_margin_max_abs_diff": 0.07024
+    },
+    "gaps_at_grid_edge": 19
+   }
+  },
+  "0.25": {
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.00645,
+       "folds_ahead": 3,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03548,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.00946,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "tube": {
+       "mean": -0.0532,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.0405,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03722,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.02167,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.10217,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.058515,
+      "net": "chorus_norm",
+      "selection": "ungated",
+      "fold": 1,
+      "inner_margin": -0.191485
+     },
+     "accepted_but_fail_on_outer_refits": [],
+     "n_accepted_but_fail_on_outer_refits": 0,
+     "inner_vs_outer_margin_max_abs_diff": 0.08163
+    },
+    "gaps_at_grid_edge": 32
+   },
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.06861,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.016,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.02751,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.02863,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": 0.05294,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03917,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.01516,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.1125,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.05427,
+      "net": "chorus_gain_norm",
+      "selection": "ungated",
+      "fold": 1,
+      "inner_margin": -0.19573
+     },
+     "accepted_but_fail_on_outer_refits": [],
+     "n_accepted_but_fail_on_outer_refits": 0,
+     "inner_vs_outer_margin_max_abs_diff": 0.07024
+    },
+    "gaps_at_grid_edge": 32
+   }
+  },
+  "0.35": {
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.00645,
+       "folds_ahead": 3,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03548,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.00946,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "tube": {
+       "mean": -0.0532,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.0405,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03722,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.02167,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.10217,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.158515,
+      "net": "chorus_norm",
+      "selection": "ungated",
+      "fold": 1,
+      "inner_margin": -0.191485
+     },
+     "accepted_but_fail_on_outer_refits": [],
+     "n_accepted_but_fail_on_outer_refits": 0,
+     "inner_vs_outer_margin_max_abs_diff": 0.08163
+    },
+    "gaps_at_grid_edge": 32
+   },
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.06861,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.016,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.02751,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.02863,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": 0.05294,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03917,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.01516,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.1125,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": {
+      "slack": 0.15427,
+      "net": "chorus_gain_norm",
+      "selection": "ungated",
+      "fold": 1,
+      "inner_margin": -0.19573
+     },
+     "accepted_but_fail_on_outer_refits": [],
+     "n_accepted_but_fail_on_outer_refits": 0,
+     "inner_vs_outer_margin_max_abs_diff": 0.07024
+    },
+    "gaps_at_grid_edge": 32
+   }
+  },
+  "nocheck": {
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.00645,
+       "folds_ahead": 3,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03548,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.00946,
+       "folds_ahead": 2,
+       "verdict": "inside noise"
+      },
+      "tube": {
+       "mean": -0.0532,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.0405,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03722,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.02167,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.10217,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": null,
+     "accepted_but_fail_on_outer_refits": [],
+     "n_accepted_but_fail_on_outer_refits": 0,
+     "inner_vs_outer_margin_max_abs_diff": 0.08163
+    },
+    "gaps_at_grid_edge": 32
+   },
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": 0.06861,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.016,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.02751,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.02863,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": 0.05294,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": 0.03917,
+       "folds_ahead": 4,
+       "verdict": "net ahead"
+      },
+      "line_length": {
+       "mean": 0.01516,
+       "folds_ahead": 3,
+       "verdict": "net ahead"
+      },
+      "tube": {
+       "mean": -0.1125,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube ungated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "chorus_gain_norm gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "line_length gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ],
+     "tube gated": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+     ]
+    },
+    "residuals": {
+     "closest_decision_to_the_line": null,
+     "accepted_but_fail_on_outer_refits": [],
+     "n_accepted_but_fail_on_outer_refits": 0,
+     "inner_vs_outer_margin_max_abs_diff": 0.07024
+    },
+    "gaps_at_grid_edge": 32
+   }
+  },
+  "0.0": {
+   "run": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.00464,
+       "folds_ahead": 1,
+       "verdict": "inside noise"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.04468,
+       "folds_ahead": 2,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03928,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.11634,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.02937,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.02468,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.04554,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.15397,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      2.0,
+      2.0,
+      5.0,
+      5.0
+     ],
+     "chorus_norm gated": [
+      5.0,
+      5.0,
+      2.0,
+      3.0
+     ],
+     "chorus_gain_norm ungated": [
+      2.0,
+      2.0,
+      2.0,
+      5.0
+     ],
+     "chorus_gain_norm gated": [
+      5.0,
+      5.0,
+      5.0,
+      5.0
+     ],
+     "line_length ungated": [
+      2.0,
+      5.0,
+      8.0,
+      2.0
+     ],
+     "line_length gated": [
+      2.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "tube ungated": [
+      2.0,
+      2.0,
+      2.0,
+      5.0
+     ],
+     "tube gated": [
+      2.0,
+      2.0,
+      2.0,
+      5.0
+     ]
+    },
+    "gaps_at_grid_edge": 0
+   }
+  }
+ },
+ "what": "crowded-allowance sensitivity of the merge-gap result"
+}

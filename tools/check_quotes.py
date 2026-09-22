@@ -254,7 +254,26 @@ def report(hits) -> int:
     return 1
 
 
+def printable_output() -> None:
+    """Survive printing a line that cp1252 cannot encode. See `sapper.py`'s twin.
+
+    This gate echoes the offending line, and it runs BEFORE sapper in
+    `.githooks/pre-commit`, so on native Windows it is the first thing a
+    non-Latin-1 character can take down. A gate lost to its own error message
+    blocks the commit while saying nothing useful about why.
+
+    Deliberately duplicated rather than imported: sapper is a line matcher and
+    this is not, and the two are kept independent on purpose.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass                        # a stream that cannot be reconfigured
+
+
 def main() -> int:
+    printable_output()
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--selftest", action="store_true")

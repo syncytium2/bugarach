@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/crowded-allowance — DARKROOM claim ACTIVE 2026-09-22: `bugarach/2026-09-21-crowded-allowance-sweep/` (NEW)
+- **Status:** ACTIVE (WSMIP064), claimed before writing. The overnight brief's WSMIP064 step 1
+  (`HANDOFF-overnight-2026-09-22.md`): the crowded-allowance sweep finished 2026-09-21 at 22 of 22
+  rows and was never pushed — its only copy was a session scratchpad. The run record and Figure 1
+  go to the repo; the 22 per-row grid files (7.8 MB) are bulk and go here, per CLAUDE.md's
+  Dropbox-and-repo rule.
+- **Writes:** `grid/` (22 JSON files), `crowded_allowance.png` and `.html`, and a copy of the run
+  record's `README.md`. A NEW folder, so nothing existing is touched. Nothing else under
+  `<darkroom>/bugarach/` is written, and `constellation/` is not touched.
+- **Claims:** that folder exclusively.
+- **Simulation only** — cached decodings from the 2026-09-18 fair comparison; no dataset read, no
+  retraining, no GPU.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the run record is on `main` (#682).
+
 ### 065/methods — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-methods/` (NEW)
 - **Status:** **RELEASED 2026-09-22.** Written: the methods `.docx`, `.pdf` (Word export) and `.html`,
   Figure 1 (`fig1_benchmark_recording.png/.html`), and the cover memo (`.md` and `.docx`). Was: ACTIVE

@@ -388,7 +388,7 @@ def _paired(a, b):
 
 
 class Selector:
-    def __init__(self, run: Path, work: Path):
+    def __init__(self, run: Path, work: Path, max_drop: float | None = None):
         from bugarach import bench
         self.T = _tool()
         self.run = Path(run)
@@ -401,7 +401,11 @@ class Selector:
         self.plan = SimpleNamespace(busy_sec=float(self.decl["busy_window_sec"]))
         self.gate = self.decl["gate_empty_recording"]
         self.min_gain = float(self.decl["hand_search"]["min_gain"])
-        self.max_drop = float(bench.MAX_CROWDED_DROP)
+        # The allowance the crowded check enforces. It defaults to what ships, so nothing about the
+        # selection changes unless a caller asks; an override exists because the constant is
+        # unsigned and the only way to find out whether it matters is to vary it and look
+        # (docs/todo/2026-09-20-why-the-merge-gap-page-would-not-converge.md, option B).
+        self.max_drop = float(bench.MAX_CROWDED_DROP if max_drop is None else max_drop)
         self.folds = list(range(self.decl["folds"]))
         self.tune_seeds = list(self.decl["tune_seeds"])
         self.configs = {m: sorted((read_json(p) for p in (self.run / "configs" / m).glob("*.json")),
@@ -633,6 +637,11 @@ def main(argv=None) -> int:
                     help="the run's committed summary folder (crowded_check.json)")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--workers", type=int, default=12)
+    ap.add_argument("--max-drop", type=float, default=None,
+                    help="select: the crowded-recording allowance to enforce, in mean F1. Defaults "
+                         "to bench.MAX_CROWDED_DROP (0.02), so leaving it out reproduces the run. "
+                         "A large value (say 9.0) disables the check, which is the other end of the "
+                         "sweep. The value used is recorded as max_crowded_drop in --out")
     ap.add_argument("--all", action="store_true",
                     help="crowded: every configuration, not only the ones a selection reaches. The "
                          "re-chosen walk passes over every candidate the crowded check refuses, so "
@@ -673,7 +682,7 @@ def main(argv=None) -> int:
         _pool_run(crowded_job, jobs, a.workers)
         return 0
 
-    sel = Selector(a.run, a.work)
+    sel = Selector(a.run, a.work, max_drop=a.max_drop)
     sel.run_summary = a.summary if (a.summary / "crowded_check.json").exists() else None
     doc = sel.select()
     if sel.needs_crowded:
