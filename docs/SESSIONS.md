@@ -10,20 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 064/coordination-rates — DARKROOM claim ACTIVE 2026-09-22: `bugarach/2026-09-23-coordination-rates/` (NEW)
-- **Status:** ACTIVE (WSMIP064), claimed before writing. The overnight brief's WSMIP064 step 2:
-  event frequency, participation, background and probe measured without defining an event
-  (`tools/measure_coordination_rates.py`, #737), on the default dataset **Tony confirmed in this
-  session**. Figure 1 was shown to him in the session, so it goes here as well as the repo —
-  every image he is shown does.
-- **Writes:** `coordination_rates.png`, `.html`, `coordination_rates.json` and a copy of the run
-  record's `README.md`. A NEW folder, so nothing existing is touched. Nothing else under
-  `<darkroom>/bugarach/` is written, and `constellation/` is not touched.
-- **Claims:** that folder exclusively.
-- **Reads the default export folder** (baseline analysis windows only, FOUNDATIONS §9). No GPU.
-- **Adopts nothing** — no bench constant moves; the adoption PR waits on #738.
+### 064/coordination-rates — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-23-coordination-rates/` (NEW)
+- **Status:** **RELEASED 2026-09-22**, on [#743](https://github.com/syncytium2/bugarach/pull/743)
+  merging (`f9bde16`). Written and verified byte-for-byte against the repo copies:
+  `coordination_rates.png`, `.html`, `coordination_rates.json` and the run record's `README.md`.
+  Was: ACTIVE (WSMIP064), claimed before writing — the overnight brief's WSMIP064 step 2, on the
+  default dataset **Tony confirmed in this session**. Figure 1 was shown to him, so the darkroom
+  copy was not optional. **Nothing of this thread is held now**: no darkroom folder, no CPU pool,
+  no GPU, no scheduled task.
+- **Writes:** that folder only. A NEW folder, so nothing existing was touched. Nothing else under
+  `<darkroom>/bugarach/` was written, and `constellation/` was not touched.
+- **Read the default export folder** (baseline analysis windows only, FOUNDATIONS §9). No GPU.
+- **Adopted nothing** — no bench constant moved. The adoption still waits on
+  [#738](https://github.com/syncytium2/bugarach/pull/738), which is still a draft and owns the
+  bench constants.
 - **Goal:** coded-detector-optimization + learned-model-family.
-- **Released when:** the run record is on `main`.
 
 ### candid-sorrel/correlogram — DARKROOM claim ACTIVE 2026-09-22: `bugarach/correlogram/` (NEW)
 - **Status:** ACTIVE, claimed before writing. Tony, 2026-09-22: *"run the correlogram on fast and
