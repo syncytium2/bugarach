@@ -223,3 +223,12 @@ Newest last. A session that finds this file picks up at the first step not marke
   it needs first is Tony's call on whether to confirm the 0.38 before spending about 28
   GPU-hours, or to run a short pilot. The tuning tool still lives on `tune-bench-comparison`
   and needs the same `--bench` seam the search got.
+- 2026-09-21 (WSMIP064): **SPIKE-synch adopted on slow at `max_gap` 4 s** (Tony), after two
+  corrections to the search's pick. **`C_min` was never unbracketed, it is off**: every value
+  0–0.03 gives identical calls (the profile steps by about 1/31), so the search was extending
+  along a flat stretch — the edge rule cannot tell a plateau from a climb. **Its +0.155 was
+  mostly a 16 s `max_gap`**, which fails the close-events check; at 4 s, on fresh seeds 97–144,
+  mean F1 0.845 (fast settings 0.728) and close-events 0.994. 8 s scored 0.856 and 0.961 and
+  was the rule's pick; 4 s is Tony's, the cautious one. Slow reference now: LoCo, CoactDetect,
+  SPIKE-synch. Held at the fast settings: binned SCE (fast's 98 or 75), locust (the anchor),
+  rate+context (+0.005, nothing to adopt).
