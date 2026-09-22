@@ -50,3 +50,65 @@ def test_independent_trains_have_no_peak_to_measure():
     trains = [np.sort(rng.randint(0, L, 400)) for _ in range(30)]
     o, e = mjc.pairs(trains, L)
     assert abs(mjc.excess(o, e)[0]) < 0.2
+
+
+# --- the per-group split (--by-group) -------------------------------------------------------
+
+SHORT = 20_000      # frames: 2000 s, enough peak for a width and fast enough for a test
+
+
+def records(spec, seed0=10):
+    """``(info, obs, exp)`` records from ``{group: {mouse: [sigma_sec, ...]}}``."""
+    out, seed = [], seed0
+    for group, mice in spec.items():
+        for mouse, sigmas in mice.items():
+            for k, s in enumerate(sigmas):
+                seed += 1
+                trains = trains_with_jitter(s, n_roi=20, n_events=200, bg_per_roi=120, seed=seed)
+                trains = [t[t < SHORT] for t in trains]
+                o, e = mjc.pairs(trains, SHORT)
+                out.append(({"slice_id": f"{group}_{mouse}_{k}", "group": group, "mouse": mouse,
+                             "rois": len(trains), "onsets": int(sum(t.size for t in trains)),
+                             "window_sec": SHORT * mjc.DT}, o, e))
+    return out
+
+
+def test_a_mouse_is_one_cluster_however_many_recordings_it_gave():
+    r = records({"A": {"m1": [0.2, 0.2, 0.2], "m2": [0.2]}})
+    assert len(r) == 4
+    assert sorted(len(v) for v in mjc.mice_of(r).values()) == [1, 3]
+
+
+def test_a_recording_with_no_group_is_left_out_of_the_split():
+    r = records({"A": {"m1": [0.2]}, "B": {"m2": [0.2]}})
+    r.append(({"slice_id": "x", "group": None, "mouse": "m9", "rois": 1, "onsets": 0,
+               "window_sec": 1.0}, np.zeros(mjc.MAX_LAG + 1), np.zeros(mjc.MAX_LAG + 1)))
+    assert sorted(mjc.by_group(r)) == ["A", "B"]
+    assert sum(len(v) for v in mjc.by_group(r).values()) == 2
+
+
+def test_the_permutation_test_finds_a_planted_difference():
+    r = records({"A": {f"a{i}": [0.1, 0.1] for i in range(5)},
+                 "B": {f"b{i}": [0.8, 0.8] for i in range(5)}})
+    obs = mjc.spread([mjc.hwhm(*mjc.pooled(v)) for v in mjc.by_group(r).values()])
+    null, dropped = mjc.label_permutation(r, mjc.hwhm, 200, np.random.RandomState(0))
+    assert dropped == 0
+    assert obs > np.percentile(null, 95), (obs, np.percentile(null, 95))
+
+
+def test_the_permutation_test_does_not_invent_one():
+    r = records({"A": {f"a{i}": [0.3, 0.3] for i in range(5)},
+                 "B": {f"b{i}": [0.3, 0.3] for i in range(5)}}, seed0=200)
+    obs = mjc.spread([mjc.hwhm(*mjc.pooled(v)) for v in mjc.by_group(r).values()])
+    null, _ = mjc.label_permutation(r, mjc.hwhm, 200, np.random.RandomState(0))
+    p = (null >= obs).sum() / null.size
+    assert p > 0.05, (obs, p, np.percentile(null, 95))
+
+
+def test_the_bootstrap_resamples_mice_and_brackets_the_width():
+    r = records({"A": {f"a{i}": [0.4, 0.4] for i in range(6)}})
+    recs = mjc.by_group(r)["A"]
+    w = mjc.hwhm(*mjc.pooled(recs))
+    wb = mjc.group_boot(recs, mjc.hwhm, 100, np.random.RandomState(3))
+    lo, hi = np.nanpercentile(wb, [2.5, 97.5])
+    assert lo <= w <= hi, (lo, w, hi)
