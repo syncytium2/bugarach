@@ -100,4 +100,6 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
    tokens and deploy tokens (Settings → Access tokens), deploy keys on the archived projects, and the
    Git Credential Manager OAuth grant (User settings → Applications → Authorized applications). The
    cluster's token-in-URL is among them.
-10. **Merge foundations #7, fireflies #8, downLow #2, no_peak #3** (item 5).
+10. ~~**Merge foundations #7, fireflies #8, downLow #2, no_peak #3.**~~ **Done 2026-09-22** (Tony:
+    *"merge the four prs"*), each squash-merged pinned to the head commit that was reviewed:
+    foundations `0733068e`, fireflies `7328dd71`, downLow `9833eeb3`, no_peak `c103d2be`.
