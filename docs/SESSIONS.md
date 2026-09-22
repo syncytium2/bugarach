@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/coordination-rates — DARKROOM claim ACTIVE 2026-09-22: `bugarach/2026-09-23-coordination-rates/` (NEW)
+- **Status:** ACTIVE (WSMIP064), claimed before writing. The overnight brief's WSMIP064 step 2:
+  event frequency, participation, background and probe measured without defining an event
+  (`tools/measure_coordination_rates.py`, #737), on the default dataset **Tony confirmed in this
+  session**. Figure 1 was shown to him in the session, so it goes here as well as the repo —
+  every image he is shown does.
+- **Writes:** `coordination_rates.png`, `.html`, `coordination_rates.json` and a copy of the run
+  record's `README.md`. A NEW folder, so nothing existing is touched. Nothing else under
+  `<darkroom>/bugarach/` is written, and `constellation/` is not touched.
+- **Claims:** that folder exclusively.
+- **Reads the default export folder** (baseline analysis windows only, FOUNDATIONS §9). No GPU.
+- **Adopts nothing** — no bench constant moves; the adoption PR waits on #738.
+- **Goal:** coded-detector-optimization + learned-model-family.
+- **Released when:** the run record is on `main`.
+
 ### candid-sorrel/correlogram — DARKROOM claim ACTIVE 2026-09-22: `bugarach/correlogram/` (NEW)
 - **Status:** ACTIVE, claimed before writing. Tony, 2026-09-22: *"run the correlogram on fast and
   slow, by group_id. are the widths different between the groups?"* and *"move the figures into

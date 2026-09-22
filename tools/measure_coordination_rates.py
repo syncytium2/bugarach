@@ -43,7 +43,13 @@ plants them) and ``binomial`` (each cell joins independently).
   floor (Tony's rulings, ``HANDOFF-overnight-2026-09-22.md``).
 * **quiet / busy**: the 25th / 75th percentile over recordings of the slice-mean per-cell rate —
   raw (what ``tools/remeasure_bench.py`` measures, so it reproduces ``bench.REGIMES``) and
-  **background** (raw minus the coordinated share).
+  **background** (raw minus the coordinated share). **Both are taken over the recordings that
+  clear ``fit_background_shape``'s floors** (:func:`shape_usable`), because that is the set
+  ``remeasure_bench`` used to set ``bench.REGIMES`` — otherwise the comparison is between two
+  recording sets and the difference reads as a measurement. The all-recordings pair is reported
+  beside it as ``*_all_recordings``. Corrected 2026-09-22, after the first run compared the two
+  sets: quiet appeared to fall 30% while busy agreed to 2%, which is the signature of the cut
+  and not of coordination.
 * **probe**: every 300 s stretch of every baseline window, slice-mean per-cell rate, 99th
   percentile over all stretches — raw and background — and the percentile the bench's current
   ``hot_rate_hz`` sits at.
@@ -201,12 +207,30 @@ def merge_streams(fast, slow, tol: int = 1) -> list[np.ndarray]:
     return out
 
 
+def shape_usable(n_roi: int, n_events: float, duration_sec: float) -> bool:
+    """``fit_background_shape``'s floors — the ones that decide the bench's own recording set.
+
+    ``tools/remeasure_bench.py`` computes ``regime_quiet_hz`` / ``regime_busy_hz``, which is
+    where ``bench.REGIMES`` came from, over ``[r for r in recs if r["shape_usable"]]`` only.
+    Measuring quiet/busy here over ALL recordings and comparing against that number compares
+    two different recording sets and reports the difference as though it were a measurement.
+
+    It is not a small effect, and the signature gives it away: the floors cut short, sparse and
+    few-ROI windows, which are the quiet tail, so **quiet moves and busy barely does**.
+    """
+    import fit_background_shape as fb
+
+    return bool(duration_sec >= fb.MIN_DURATION_SEC and n_events >= fb.MIN_EVENTS
+                and n_roi >= fb.MIN_ROIS)
+
+
 def measure(trains, L: int, rng, windows=WINDOWS, n_surr=N_SURR) -> dict:
     """Everything one recording contributes. ``trains`` in frames, window ``L`` frames long."""
     N = len(trains)
     T = L * DT
     counts = np.array([len(t) for t in trains], float)
-    out = dict(N=N, T=T, rate=float(counts.mean() / T) if N else float("nan"), cum={})
+    out = dict(N=N, T=T, rate=float(counts.mean() / T) if N else float("nan"),
+               shape_usable=shape_usable(N, float(counts.sum()), T), cum={})
     for w in windows:
         f2, f3 = excess_cumulants(trains, L, int(round(w / DT)), n_surr, rng)
         out["cum"][str(w)] = dict(f2=f2, f3=f3, n_win=L // int(round(w / DT)))
@@ -248,8 +272,18 @@ def summarize(recs, w: float = PRIMARY_W, probe_now: float | None = None) -> dic
     """The reported numbers from per-recording measurements, at window ``w``, under both models."""
     raw = np.array([r["rate"] for r in recs])
     st_raw = np.concatenate([np.asarray(r["stretches"]) for r in recs]) if recs else np.zeros(0)
+    # Quiet and busy are reported on the bench's OWN recording set, so that comparing them
+    # against bench.REGIMES compares measurements and not two different sets of recordings.
+    # The all-recordings pair is kept beside it, suffixed, because it is what the coordination
+    # statistic itself saw.
+    keep = np.array([bool(r.get("shape_usable", True)) for r in recs])
+    raw_u = raw[keep] if keep.any() else raw
     out = dict(recordings=len(recs), window_sec=w, stretches=int(st_raw.size),
-               quiet_raw_hz=float(np.percentile(raw, 25)), busy_raw_hz=float(np.percentile(raw, 75)),
+               recordings_shape_usable=int(keep.sum()),
+               quiet_raw_hz=float(np.percentile(raw_u, 25)),
+               busy_raw_hz=float(np.percentile(raw_u, 75)),
+               quiet_raw_hz_all_recordings=float(np.percentile(raw, 25)),
+               busy_raw_hz_all_recordings=float(np.percentile(raw, 75)),
                probe_raw_hz=float(np.percentile(st_raw, PROBE_PCT)) if st_raw.size else float("nan"))
     if probe_now is not None and st_raw.size:
         out["bench_probe_hz"] = probe_now
@@ -266,8 +300,10 @@ def summarize(recs, w: float = PRIMARY_W, probe_now: float | None = None) -> dic
             shared_moments_per_min=float(np.nanmedian([x["lam"] for x in pr]) * 60),
             coordinated_share_hz=float(np.nanmedian(shares)),
             coordinated_share_of_rate=float(np.nanmedian(shares / raw)),
-            quiet_background_hz=float(np.percentile(bg, 25)),
-            busy_background_hz=float(np.percentile(bg, 75)),
+            quiet_background_hz=float(np.percentile(bg[keep] if keep.any() else bg, 25)),
+            busy_background_hz=float(np.percentile(bg[keep] if keep.any() else bg, 75)),
+            quiet_background_hz_all_recordings=float(np.percentile(bg, 25)),
+            busy_background_hz_all_recordings=float(np.percentile(bg, 75)),
             probe_background_hz=(float(np.percentile(st_bg, PROBE_PCT)) if st_bg.size
                                  else float("nan")),
         )
