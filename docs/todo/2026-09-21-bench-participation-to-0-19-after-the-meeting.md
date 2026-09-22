@@ -6,6 +6,10 @@ priority: immediate — first thing after the 2026-09-22 meeting
 
 # Move the bench's participation from 0.18 to 0.19, the day after the meeting
 
+> **Approved 2026-09-22 evening (Tony: the meeting approved it; move it with the jitter).**
+> Being implemented overnight with the jitter change —
+> [`HANDOFF-overnight-2026-09-22.md`](../../HANDOFF-overnight-2026-09-22.md).
+
 ## The ruling
 
 Tony, 2026-09-21: keep the bench at 0.18 for now, and make the move to 0.19 an immediate

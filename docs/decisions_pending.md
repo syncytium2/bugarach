@@ -55,6 +55,11 @@ corpus, which they say plainly they have not checked and which is not theirs to 
 
 ## 2. The jitter constant is about three times too loose on both benches
 
+> **RULED 2026-09-22 evening (Tony): adopt the measured values**, fast 0.106 s and slow 0.135 s,
+> in both benches, with participation 0.18 → 0.19 in the same pass, and rerun. Being implemented
+> overnight — [`HANDOFF-overnight-2026-09-22.md`](../HANDOFF-overnight-2026-09-22.md). This item
+> leaves the page in the PR that changes the constants.
+
 **Decide:** whether the measured onset jitter replaces the bench constants, and when the
 re-measure and re-search run.
 
