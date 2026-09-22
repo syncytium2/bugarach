@@ -14,6 +14,7 @@ disagrees with this section is out of date. Fix it in the same change as whateve
 | 1 | **Full tuning of the coded detectors: every knob**, all six | [`coded-detector-optimization.md`](coded-detector-optimization.md) | WSMIP065 |
 | 2 | **A fair comparison of the coded detectors against the nets** | [`learned-model-family.md`](learned-model-family.md) | WSMIP064 |
 | 3 | **"Final" supervised-learning results on the current best simulation** | [`learned-model-family.md`](learned-model-family.md) | WSMIP064 |
+| 4 | **One stream for coordination**, fast and slow together, with each call naming the events it recruited from each — **added 2026-09-22, not started, no machine** | [`combined-stream-coordination.md`](combined-stream-coordination.md) | — |
 
 **Goals 2 and 3 have their first result** (2026-09-19). Both runs finished with no errors on
 disjoint draws, and each report was murderboarded in three blind rounds. **Under the shared
