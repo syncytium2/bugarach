@@ -75,10 +75,31 @@ Related: the slow bench's own 0.30 s already rested on an analogy that step A di
 the MATLAB summary gives 0.46 s for slow and that move alone costs locust −0.098 and
 SPIKE-synch −0.082 mean F1 (`docs/learned/runs/2026-09-21-slow-step-a/README.md`).
 
-**Recommendation:** rule the number, then run fast and slow together in one overnight pass with
-the participation change in item 11, since all three move the same constants. Until it is
-ruled, treat every operating point chosen this month as provisional — that is the honest
-statement, and it is cheaper to say now than to withdraw later.
+⚠ **Check one thing before ruling this, added 2026-09-22 on Tony's question — what else did the
+simulations absorb, and was it measured carefully?** The jitter is not a lone bad constant.
+`tools/remeasure_bench.py` takes `n_roi`, `jitter_sec` **and `participation`** from a single
+`assess_coactivity` call at K = 4, and inside it the jitter and the participation come out of
+the **same `_clusters(...)` invocation at the same 1.0 s bin**, so both are coupled to that bin
+by construction. **Participation was swept and held** — `tools/measure_slow_bench.py`'s `BINS`
+docstring records the 2026-09-21 result: the jitter tracks bin ÷ √12 from 0.5 s to 5 s on both
+streams while participation stays at fast 0.19 at every bin and slow 0.37–0.38 from 0.5 s to
+3 s. So the bench's recruitment constant survives the test its timing constant failed.
+
+Three residuals, none of them a reason to delay the ruling: the quoted flat range **stops at
+3 s** where the bins run to 5 s, and at `wm_factor` 1.5 a 5 s bin gathers participants within
+±7.5 s of a cluster centre; participation has **no null counterpart** (`jit_obs` at least has
+`jit_null` and `jit_excess` — which **the bench does not use**, it absorbed the uncorrected
+observation); and the flatness is empirical rather than structural, unlike `rate_shape`, which
+predicts the 35% silent-ROI figure it was never fitted to. Full audit, graded by how each
+constant was measured:
+[`todo/2026-09-22-what-else-came-from-the-clustering-instrument.md`](todo/2026-09-22-what-else-came-from-the-clustering-instrument.md).
+
+**Recommendation:** rule the jitter. The audit that was meant to precede it is done and it came
+back clean for participation, so there is nothing left to wait for. Move the constant in one
+overnight pass with the 0.19 change, and take the two residuals as follow-ups rather than
+blockers: extend the participation sweep to the top of the bin range, and decide whether the
+bench should absorb `jit_excess` rather than `jit_obs` now that the distinction is known to
+matter. Until it is ruled, every operating point chosen this month stays provisional.
 
 ## 3. The nets on the slow bench — run, re-pilot, or drop
 
