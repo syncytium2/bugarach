@@ -10,12 +10,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 065/methods — DARKROOM claim ACTIVE 2026-09-22: `bugarach/2026-09-22-methods/` (NEW)
-- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-21: a methods section for the
-  coordination pipeline, murderboarded in full, overnight.
-- **Writes:** the built `.docx`, `.html` and page renders of `docs/methods/coordination_pipeline_methods.md`,
-  its Figure 1 (`tools/make_methods_bench_figure.py`) and the cover memo. A new folder, so nothing
-  existing is touched.
+### 065/methods — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-methods/` (NEW)
+- **Status:** **RELEASED 2026-09-22.** Written: the methods `.docx`, `.pdf` (Word export) and `.html`,
+  Figure 1 (`fig1_benchmark_recording.png/.html`), and the cover memo (`.md` and `.docx`). Was: ACTIVE
+  (WSMIP065), claimed before writing. Tony, 2026-09-21: a methods section for the coordination pipeline,
+  murderboarded in full, overnight.
 - **Touches:** this block; `docs/methods/`, `docs/reviews/coordination_pipeline_methods_2026-09-22*`,
   `tools/make_methods_bench_figure.py`, `docs/conditioned_run.md` (records the 12-minute floor).
 

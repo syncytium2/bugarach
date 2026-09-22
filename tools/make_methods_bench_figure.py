@@ -69,14 +69,14 @@ def build(seed: int, width: int):
                 for r, f in zip((3, 2, 1), levels)]
         + [(0, "distractor "
                f"({matlab_round(BENCH_RECORDING['distractor_frac'] * n_roi)} cells)")],
-        ylabel="A", title="", show_legend=False, toolbar=None,
+        ylabel="", title="", show_legend=False, toolbar=None,
         fontsize=font, hooks=[_time_axis_hook])
 
     raster = raster_panel(s.streams["events"], ext=ext, name="events",
                           width=width, height=230, mark_px=2.0)
     raster = raster.opts(
         width=width, height=230 + 45, xlim=ext, ylim=(-1, n_roi),
-        ylabel=f"B   cell ({n_roi} cells)", xlabel="time", title="",
+        ylabel=f"cell ({n_roi} cells)", xlabel="time", title="",
         toolbar=None, fontsize=font, hooks=[_time_axis_hook])
     return (lane + raster).cols(1).opts(shared_axes=False, toolbar=None), gt
 
