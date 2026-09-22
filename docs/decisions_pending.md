@@ -26,14 +26,26 @@ the file it came from. Nothing here is for an outside reader.
 
 ---
 
-## 1. Pinning is not closed for three analyzed recordings
+## 1. Pinning — ASKED 2026-09-22, waiting on the producer
+
+**The ask is sent**, on Tony's instruction, as
+[syncytium2/interface2#1](https://github.com/syncytium2/interface2/issues/1) — the geometric
+check (`tools/check_roi_pinning.m`, pinned pixels against ROI masks) on `20250926_237`,
+`20260629_314` and `20260630_325`, and nothing else. It carries our answers to the three
+questions their 2026-09-18 note asked, including the two that are ours to own: nothing here
+reads their pinning manifest, and our earlier leave-one-out was quoted as an estimate of the
+artifact's share when it is only an upper bound. **Sent as a GitHub issue rather than a
+darkroom note** — their first since the migration — so the thread has a public, permanent
+address either side can cite.
+
+**Nothing is owed by this repository until they answer.** What is left here is the decision
+below, if their answer turns out to need one.
 
 **Rewritten 2026-09-22, and the rewrite is the point.** Tony asked whether this had been
 checked before. **It has — three separate ways — and the answer has been in the darkroom
 since 2026-09-18.** What was wrong was this repository's copy of it.
 
-**Decide:** whether the residual risk needs the one test nobody has run, and whether it is
-worth holding any result for.
+**Decide, once they answer:** whether the residual risk needs anything held.
 
 **What was already done, so nobody screens it a fourth time:**
 
@@ -66,19 +78,29 @@ is the most exposed case at 14 ROIs, the fewest of any DI slice. The settling te
 geometric — pinned pixels against ROI masks, interface2's `tools/check_roi_pinning.m` — and
 **that** has not been run on these three.
 
-**Recommendation:** ask for the geometric test on those three slices, and nothing else. The
+**Recommendation, as sent:** the geometric test on those three slices and nothing else. The
 producer's own reading is that the residual cuts in our favour, because a whole-frame artifact
 where no ROI sits cannot reach our event table at all. Do **not** arm the contamination stop
 for this: the folder addresses what was found, and the open part is a sensitivity limit rather
-than a declared contamination the data do not mark. Two of their three DI mice would be 2/2 or
-3/3 affected if the candidates are real, which is why it is worth asking at all.
+than a declared contamination the data do not mark. Three of the ten DI mice would be affected
+in every recording if the candidates are real, which is why it was worth asking at all.
 
-**Owed in the other direction, and four days late.** Their answer asked us three things.
-Question 2 — re-run the four against the new folder — is answered by the rigid-shift re-run
-above, and they have not been told. Question 1, whether their manifest reaches our loader, has
-an answer nobody has sent: **nothing in this tree reads `moco_pinned_excluded.tsv`** (the only
-manifest reader, `tools/make_group_raster_summary.py`, names the field-step files). Question 3,
-whether their shared cross-ROI gaps break our surrogate, is untouched. Send those with the ask.
+**What went back with it**, four days late and now sent. Their question about the re-run is
+answered by the rigid-shift chain above and by the by-group figures (DI slow 1.82 pooled, 1.76
+[1.20, 2.50] per slice, against the 1.49 the leave-one-out predicted). Their question about the
+manifest has the answer nobody had sent: **nothing in this tree reads
+`moco_pinned_excluded.tsv`** — the only manifest reader, `tools/make_group_raster_summary.py`,
+names the field-step files — and the manifest is still the right shape, because the windows are
+what a null would mask across. Their question about the shared gaps is answered honestly as
+untested, with the observation that **the gap outlives the fix**: clipping removes the events
+and leaves a stretch shared across ROIs, so a whole-trace circular shift can still manufacture
+or destroy coincidence at the offset. That last one is now open work here, not a question for
+them.
+
+⚠ **One thing shipped ahead of its own page.** The by-group numbers went to the producer while
+`docs/learned/slow_comodulation/README.md` still shows the superseded run (item 9). The issue
+says so and tells them to cite it rather than the page — but the page is now the thing that
+disagrees with what another team has been told, which moves item 9 up.
 
 ## 2. The jitter constant is about three times too loose on both benches
 
