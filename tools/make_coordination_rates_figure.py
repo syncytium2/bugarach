@@ -59,11 +59,12 @@ def read(folder: Path) -> dict:
         cal[key].sort()
 
     primary = d["primary_window_sec"]
-    measured = {}
+    measured, usable = {}, {}
     for stream in ("fast", "slow"):
         by_w = d["streams"][stream]["by_window"]
         row = by_w[str(primary)] if str(primary) in by_w else by_w[primary]
         fixed = row["fixed"]
+        usable[stream] = row.get("recordings_shape_usable", row["recordings"])
         measured[stream] = {
             "quiet": fixed["quiet_background_hz"],
             "busy": fixed["busy_background_hz"],
@@ -72,7 +73,7 @@ def read(folder: Path) -> dict:
             "busy_raw": row["busy_raw_hz"],
             "probe_raw": row["probe_raw_hz"],
         }
-    return {"cal": cal, "tol": tol, "measured": measured,
+    return {"cal": cal, "tol": tol, "measured": measured, "usable": usable,
             "primary": primary, "windows": d["windows_sec"],
             "dataset": d["dataset"], "surrogates": d["surrogates"],
             "probe_pct": d["probe_percentile"], "stretch": d["stretch_sec"]}
@@ -114,11 +115,15 @@ def build(m: dict, width: int):
     bitems = []
     for x, stream, level in cats:
         b = BENCH[stream][level]
+        raw = m["measured"][stream][level + "_raw"]
         g = m["measured"][stream][level]
-        bitems.append(hv.Curve(([x, x], [b, g])).opts(
-            color=GUIDE, line_width=1.6))
+        bitems.append(hv.Curve(([x, x], [b, g])).opts(color=GUIDE, line_width=1.6))
+        # Three marks: what the bench holds, what this run measures raw on the bench's own
+        # recording set, and what subtracting the coordinated share would leave.
         bitems.append(hv.Scatter(([x], [b])).opts(
-            color="#ffffff", line_color=INK, line_width=2, size=10))
+            color="#ffffff", line_color=INK, line_width=2, size=13))
+        bitems.append(hv.Scatter(([x], [raw])).opts(
+            color=GUIDE, size=6, line_color=None, marker="square"))
         bitems.append(hv.Scatter(([x], [g])).opts(
             color=STREAM_INK[stream], size=10, line_color=None))
     panel_b = hv.Overlay(bitems).opts(
@@ -150,25 +155,31 @@ flag is decided on this quantity alone. Filled dots cleared it, hollow ones did 
 2 s and +1.00 at 4 s. Fast's binomial case at {m['primary']:g} s clears by 0.002. So the
 fast numbers hold at exactly the window they were measured at, with no margin either
 side, and the slow ones travel.</p>
-<p><b>Panel B — what adoption would move</b>, bench value hollow, measured background
-filled, log scale. Quiet and busy fall on both streams (14% to 35%). The probe splits:
-<b>fast would more than double</b>, {BENCH['fast']['probe']:.3f} → {fast['probe']:.3f} Hz,
-while <b>slow would barely move</b>, {BENCH['slow']['probe']:.3f} → {slow['probe']:.3f} Hz
-— but for opposite reasons, and that is the part worth reading twice.</p>
-<p><b>The coordination correction runs opposite ways with rate on the two streams.</b>
-Going from the raw rate to the background one costs fast −7.2% at quiet, −11.8% at busy
-and <b>−0.6% at the probe</b>; it costs slow −11.5%, −25.4% and <b>−35.9%</b>. So fast's
-busiest stretches are not its coordinated ones and its probe move is purely a change of
-<i>definition</i> — a measured {m['probe_pct']:g}th percentile of {m['stretch']:g}-second
-stretches in place of a chosen multiple of the median. Slow's busiest stretches <i>are</i>
-its coordinated ones, so a third of its probe is the correction. Slow is also the stream
-whose ungated calibration terms are weakest (its moment rate reads −22.8%), so that 36%
-is the number to check before anything rests on it.</p>
+<p><b>Panel B — what adoption would move</b>, log scale. Three marks per column: the bench's
+current value (hollow), this run's <b>raw</b> rate (small grey square) and the
+<b>background</b> rate it proposes (filled). Quiet and busy are measured on the bench's own
+recording set — the {m['usable']['fast']} of {m['dataset']['recordings']} fast recordings
+(and {m['usable']['slow']} slow) that clear <code>fit_background_shape</code>'s floors,
+which is the set <code>remeasure_bench.py</code> used to set <code>bench.REGIMES</code>.</p>
+<p><b>The raw rates reproduce the bench, which is the reassuring part</b>: fast quiet
+−3.0%, fast busy +0.2%, slow quiet +0.6%, slow busy +0.3%. So the grey square sits on the
+hollow circle, and the whole of the proposed change is the coordination subtraction —
+<b>quiet and busy fall 13% to 22%</b> — rather than any disagreement about the rate.
+<i>An earlier version of this figure measured quiet and busy over all 84 recordings and
+reported a 30% fall; that was the two recording sets differing, not a measurement.</i></p>
+<p><b>The probes are the exception, and they split.</b> Raw → background costs fast
+<b>−0.6%</b> at the probe against −16.5% at quiet, so fast's busiest stretches are not its
+coordinated ones and its <b>+112%</b> is purely a change of <i>definition</i> — a measured
+{m['probe_pct']:g}th percentile of {m['stretch']:g}-second stretches in place of a chosen
+multiple of the median. Slow's costs <b>−35.9%</b>: its busiest stretches <i>are</i> its
+coordinated ones, and its small net −9% is two large opposite moves cancelling. Slow is
+also the stream whose ungated calibration terms are weakest (moment rate −22.8%), so that
+36% is the number to check before anything rests on it.</p>
 </div>"""
 
 
 def _render_png(html_path: Path, png_path: Path, *, wait_ms: int = 2500,
-                width: int = 1400, height: int = 1000) -> bool:
+                width: int = 1400, height: int = 1120) -> bool:
     try:
         from playwright.sync_api import sync_playwright
     except Exception as exc:                                   # noqa: BLE001
