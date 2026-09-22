@@ -284,8 +284,84 @@ def _shift_stream(stream, shift: float):
     return dataclasses.replace(stream, **moved)
 
 
+COMBINED = "fast+slow"
+
+# The slow ink, on the combined page. Vermillion rather than a red or a blue,
+# and the reason is measured rather than taste: against RASTER_INK (#2b2b2b) at
+# 2 px this is the pair a colour-blind reviewer can still separate. OKLab ΔE ×100
+# under the worst of protan/deutan, from the dataviz validator —
+#   #d55e00 vermillion 28.1   #0072b2 blue 26.2   #e8000b red 18.7   #c1272d red 15.0
+# A red reads as the punchiest choice to full-colour vision and is the WORST of
+# the four for a protan reader, because red against near-black is exactly the
+# pair that collapses. #ff6d00 scores higher still (35.0) and fails contrast
+# against white, which at a 2 px mark is the other way to be unreadable.
+STREAM_INK = "#d55e00"
+
+
+def _combined_stream(sl):
+    """Both streams as one raster, and the slow onsets to ink inside it.
+
+    Returns ``(stream, marked)`` — a stream whose events are the union of this
+    recording's fast and slow events per ROI, and the per-ROI slow onset times
+    that ``raster_panel(marked=...)`` inks a second colour. ``(None, None)``
+    when the recording does not carry both streams.
+
+    THIS IS THE SANCTIONED SECOND INK, NOT AN EXCEPTION TO THE RASTER RULE.
+    ``raster_panel``'s docstring draws the line at *who is asserting*: a
+    detection is this project's claim and belongs in the lane above, while a
+    partition the EXPORTER shipped is "already true of the row before anything
+    here read it" and "is not annotation, it is the raster". ``stream`` is that
+    partition — a column of the export contract
+    (``docs/export_folder_spec.md``), decided upstream. Nothing is added: the
+    union is drawn once per event, and the ink says which population the
+    producer put it in.
+
+    **It supersedes one page per stream for this mode only, and the earlier
+    ruling is right about what it forbade.** Tony, 2026-09-08, split the pages
+    because stacking a fast raster above a slow one per recording doubled the
+    page and invited a down-page comparison between two different measurements.
+    This draws ONE raster, so neither cost applies — and the combined-stream
+    goal Tony set on 2026-09-22 is the case that ruling did not contemplate:
+    there the streams are meant to be read as one tagged dataset.
+
+    **The combined stream declares no width rule, deliberately.** ``width_sec``
+    means different quantities in the two streams — ``halfprom_width_findpeaks_w``
+    in fast, ``rise_interval_peak_minus_t50rise`` in slow — and the contract says
+    a consumer comparing widths across streams must read ``width_def`` first. A
+    union carries no single rule, and spec rule 6 is that a width whose rule did
+    not travel is worse than no width, so ``width_def`` is ``None`` here. The
+    raster draws onsets and never a width, so nothing is lost on this page.
+    """
+    from bugarach.store import Stream
+
+    fast, slow = sl.streams.get("fast"), sl.streams.get("slow")
+    if fast is None or slow is None:
+        return None, None
+
+    def field(st, name, i):
+        v = getattr(st, name, None)
+        if v is None or i >= len(v):
+            return np.zeros(0, dtype=float)
+        return np.asarray(v[i], dtype=float).ravel()
+
+    n_roi = max(fast.n_rois, slow.n_rois)
+    locs, amp, width, t50, marked = [], [], [], [], []
+    for i in range(n_roi):
+        t = np.concatenate([field(fast, "t50rise", i), field(slow, "t50rise", i)])
+        order = np.argsort(t, kind="stable")
+        t50.append(t[order])
+        for name, out in (("locs", locs), ("amp", amp), ("width", width)):
+            both = np.concatenate([field(fast, name, i), field(slow, name, i)])
+            out.append(both[order] if both.size == order.size else both)
+        marked.append(field(slow, "t50rise", i))
+
+    return Stream(locs=locs, amp=amp, width=width, t50rise=t50,
+                  width_def=None, peak=None), marked
+
+
 def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False,
-            steps_excluded: bool = False, groups: tuple[str, ...] | None = None):
+            steps_excluded: bool = False, groups: tuple[str, ...] | None = None,
+            combined: bool = False):
     """Which recordings go on which page, and what each page's extent must be."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -317,7 +393,10 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
             # recording doubled every page while inviting exactly the comparison
             # down the page that "never pooled" exists to prevent. Split, each
             # page is one measurement of six recordings and half the height.
-            for sname in sorted(sl.streams):
+            # ``combined`` is the exception that ruling did not contemplate:
+            # one raster carrying both streams in two inks, for the
+            # combined-stream goal. See _combined_stream.
+            for sname in ([COMBINED] if combined else sorted(sl.streams)):
                 pages[(sl.meta.get("group_id") or "UNGROUPED", t, sname)].append(
                     (sl, anchor))
 
@@ -433,7 +512,8 @@ def detector_lanes(*detections: Path):
 
 
 def build_page(members, *, ext, manifest, width: int, stream: str,
-               lanes=None, not_run=(), lane_px: int = None, roi_px: int = None):
+               lanes=None, not_run=(), lane_px: int = None, roi_px: int = None,
+               slow_ink: str = STREAM_INK, zoom: bool = False):
     """Regions over detector lanes over raster, for ONE stream, per recording."""
     from bugarach.detect_folder import folder_analysis_windows
     from bugarach.ui.diagnostic import lane_panel, raster_panel, region_lane_panel
@@ -453,7 +533,10 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
                                     ydim=f"region_{sl.slice_id}",
                                     analysis=[(w.win_start, w.win_end) for w in wins])]
         for sname in (stream,):
-            st = sl.streams.get(sname)
+            if sname == COMBINED:
+                st, slow_onsets = _combined_stream(sl)
+            else:
+                st, slow_onsets = sl.streams.get(sname), None
             if st is None:
                 continue
             # The detector's calls sit between the periods and the raster they
@@ -476,12 +559,17 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
                               .opts(height=row * n_rows + LANE_PAD_PX,
                                     backend_opts=TIGHT))
             marked, n_red = [], 0
-            for i in range(st.n_rois):
-                rid = (str(sl.roi_ids[i]) if sl.roi_ids is not None
-                       and i < len(sl.roi_ids) else str(i + 1))
-                hits = manifest.get((sl.slice_id, sname, rid), ())
-                marked.append(np.asarray(hits, dtype=float) - anchor)
-                n_red += len(hits)
+            if slow_onsets is not None:
+                # The producer's own partition: slow events, inked inside the
+                # union raster. No manifest is involved and nothing is red.
+                marked = [np.asarray(m, dtype=float) - anchor for m in slow_onsets]
+            else:
+                for i in range(st.n_rois):
+                    rid = (str(sl.roi_ids[i]) if sl.roi_ids is not None
+                           and i < len(sl.roi_ids) else str(i + 1))
+                    hits = manifest.get((sl.slice_id, sname, rid), ())
+                    marked.append(np.asarray(hits, dtype=float) - anchor)
+                    n_red += len(hits)
             red_drawn += n_red
             # No y-label: the slice id sits rotated to the left of the block, the
             # stream is in the page title, and the top tick already says the ROI
@@ -489,6 +577,7 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
             panels.append(raster_panel(
                 _shift_stream(st, anchor), ext=ext, width=width,
                 height=raster_px(st.n_rois, roi_px), name=sname, marked=marked,
+                marked_ink=slow_ink if slow_onsets is not None else None,
                 ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"
             ).opts(ylabel="", backend_opts=TIGHT))
         blocks.append((sl, panels))
@@ -504,6 +593,19 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
     if flat:
         last_h = flat[-1].opts.get("plot").kwargs.get("height") or 0
         flat[-1].opts(height=last_h + AXIS_PX, toolbar=None)
+    # ONE TOOLBAR FOR THE WHOLE PAGE, and only when asked for. Every panel on
+    # this page was built with `toolbar=None` because the page's other life is a
+    # flat PNG, and a screenshot of eighteen toolbars is eighteen widgets nobody
+    # can press. That left the HTML with no way to zoom at all — which is the
+    # half of the page a reader actually opens when the question is whether a
+    # column of marks is a column. The panels already declare the right tools
+    # (`xwheel_zoom`, `xpan`, `reset`, with `xpan` active, per CLAUDE.md's
+    # "scroll wins"); this only stops discarding them. It goes on the FIRST
+    # panel so it is reachable without scrolling to the bottom of a long page,
+    # and x is linked through the shared `t` dimension, so zooming any panel
+    # zooms all of them — which is the comparison the page is for.
+    if zoom and flat:
+        flat[0].opts(toolbar="above")
     return blocks, red_drawn
 
 
@@ -524,6 +626,7 @@ def block_heights(slice_id: str, n_rois: int) -> tuple[int, int]:
 def header_html(group: str, treatment: str, members, ext, folder: Path,
                 *, stream: str = "", unscanned: bool = False, ran=(), not_run=(),
                 excluded=(), note=None, removed: dict | None = None,
+                slow_ink: str = STREAM_INK,
                 detections: Path | None = None, roi_px: int | None = None) -> str:
     """The key, and the provenance. Outside every plot, per the conventions."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
@@ -547,7 +650,26 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
     # accepted it and CI's 3.11 leg did not — this project supports >=3.11.
     red_key = chip(MARKED_INK, "event on a confirmed whole-field brightness step "
                                "(field-step artifact)")
-    if unscanned:
+    if stream == COMBINED:
+        # THE INK IS THE PRODUCER'S STREAM COLUMN, so the key names the two
+        # populations and nothing else. Saying "nothing on this page is marked"
+        # here — the removed-artifact wording below — would be false on a page
+        # where every slow event is inked, and a legend that contradicts the
+        # picture is worse than none.
+        removed_note = ""
+        if removed is not None:
+            n = sum(removed.get((sl.slice_id, s), 0)
+                    for sl, _ in members for s in ("fast", "slow"))
+            removed_note = (f" &nbsp;&nbsp; <span style='color:#777'>field-step "
+                            f"artifacts already removed by the producer: {n} events "
+                            f"across both streams on these {len(members)} recordings "
+                            f"({EXCLUDED_MANIFEST})</span>")
+        red_key = (chip(RASTER_INK, "<b>fast</b> event") + " &nbsp; "
+                   + chip(slow_ink, "<b>slow</b> event")
+                   + " &nbsp; <span style='color:#444'>one mark per event, each drawn "
+                     "once; the ink is the producer's own <code>stream</code> column, "
+                     "not a detector's claim</span>" + removed_note)
+    elif unscanned:
         # No red on this page, and the reader has to be told WHY there is none:
         # nobody looked, which is not the same as nothing being there.
         red_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
@@ -599,7 +721,9 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         f"{len(members)} recording(s), each row one recording, "
         f"<b>t = 0 is the end of that recording's baseline</b>"
         f"<div style='margin:5px 0 0;color:#444'>"
-        f"{chip(RASTER_INK, 'event')} &nbsp; "
+        # The combined key names both inks itself, so the generic "event" chip
+        # would sit in front of it saying the fast ink twice.
+        f"{'' if stream == COMBINED else chip(RASTER_INK, 'event') + ' &nbsp; '}"
         f"{red_key}"
         f"</div>"
         f"{note_html}"
@@ -646,6 +770,21 @@ def main(argv=None) -> int:
                          "files this reads — this is page space, not a data decision.")
     ap.add_argument("--lane-px", type=int, default=None,
                     help=f"height of one detector row in px (default {LANE_PX})")
+    ap.add_argument("--ink", choices=("field-steps", "stream"), default="field-steps",
+                    help="what the second ink means. 'field-steps' (default) inks the "
+                         "producer's flagged artifacts on one raster per stream. "
+                         "'stream' draws ONE raster per (group, treatment) carrying "
+                         "both streams, slow inked, for the combined-stream goal.")
+    ap.add_argument("--zoom", action="store_true",
+                    help="keep one toolbar on the page so the HTML can be zoomed "
+                         "and panned (x is linked, so one panel zooms all). The "
+                         "toolbar is then in the PNG too — pass --no-png for a "
+                         "clean flat render, or render twice.")
+    ap.add_argument("--slow-ink", default=STREAM_INK, metavar="HEX",
+                    help=f"the slow stream's ink on an --ink stream page "
+                         f"(default {STREAM_INK}). Changing it re-opens a measured "
+                         f"choice: check the new pair with the dataviz validator "
+                         f"before adopting it.")
     ap.add_argument("--streams", nargs="+", default=None, metavar="STREAM",
                     help="only these streams' pages (default: every stream). Tony, "
                          "2026-09-21: fast only until the slow bench's run has finished")
@@ -690,7 +829,8 @@ def main(argv=None) -> int:
     pages, manifest, skipped = measure(folder, tuple(a.treatments),
                                        unscanned=a.unscanned,
                                        steps_excluded=a.steps_excluded,
-                                       groups=tuple(a.groups) if a.groups else None)
+                                       groups=tuple(a.groups) if a.groups else None,
+                                       combined=a.ink == "stream")
     if not pages:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
@@ -710,7 +850,7 @@ def main(argv=None) -> int:
         blocks, red = build_page(spec["members"], ext=spec["ext"],
                                  manifest=manifest, width=a.width, stream=stream,
                                  lanes=lanes, not_run=not_run, lane_px=a.lane_px,
-                                 roi_px=a.roi_px)
+                                 roi_px=a.roi_px, slow_ink=a.slow_ink, zoom=a.zoom)
         total_red += red
         html = dest / f"{group}_{treatment.replace(' ', '')}_{stream}.html"
 
@@ -719,7 +859,8 @@ def main(argv=None) -> int:
                                           unscanned=a.unscanned, ran=ran,
                                           not_run=not_run, excluded=a.exclude,
                                           detections=a.detections, note=a.note,
-                                          removed=removed, roi_px=a.roi_px))]
+                                          removed=removed, roi_px=a.roi_px,
+                                          slow_ink=a.slow_ink))]
         for sl, panels in blocks:
             # THE ID, ROTATED, IN ITS OWN COLUMN — an HTML block and not the
             # raster's y-label. As a y-label it is clipped to the plot's height:
