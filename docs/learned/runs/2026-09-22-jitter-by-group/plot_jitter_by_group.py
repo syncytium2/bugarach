@@ -66,7 +66,10 @@ def draw(rec, out: Path) -> Path:
     k = np.arange(n_peak + 1) * dt
     fig, axes = plt.subplots(2, 3, figsize=(12.5, 6.6),
                              gridspec_kw={"width_ratios": [1.25, 1.0, 1.0]})
-    span: list[float] = []      # the width column's range, shared by both streams (Tony, 2026-09-22)
+    # Both right-hand columns run on one scale across the two streams, so fast and slow are read
+    # against each other rather than each against its own zoom (Tony, 2026-09-22).
+    span: list[float] = []              # the width column
+    spread_span: list[float] = []       # the permutation column
     for row, stream in enumerate(("fast", "slow")):
         st = rec["streams"][stream]
         groups = st["groups"]
@@ -150,20 +153,20 @@ def draw(rec, out: Path) -> Path:
                            f"{perm['draws']:,} label permutations",
                 transform=ax.transAxes, fontsize=8, color=INK, ha="center")
         ax.set_yticks([])
-        ax.set_xlim(0, max(null_95, c["spread_sec"]) * 1.45)
+        spread_span.extend([null_95, c["spread_sec"]])
         ax.set_ylabel(f"{stream} · spread of the four widths")
         ax.set_xlabel("widest group − narrowest group (s)")
         panel(ax, "c" if row == 0 else "f")
 
     # One x-axis for the shape column: both rows cover the same 0-3 s lag, so the label goes on
-    # the bottom panel only. The permutation column autoscales per row and keeps its own label.
+    # the bottom panel only.
     axes[1, 0].set_xlabel("lag between onsets in two different ROIs (s)")
-    # The width column is ONE scale across both streams, so fast and slow are read against each
-    # other rather than each against its own zoom.
     lo, hi = min(span), max(span)
     pad = 0.09 * (hi - lo)
     for ax in (axes[0, 1], axes[1, 1]):
         ax.set_xlim(lo - pad, hi + 2.4 * pad)       # room on the right for the value labels
+    for ax in (axes[0, 2], axes[1, 2]):
+        ax.set_xlim(0, max(spread_span) * 1.45)     # room on the right for the null's label
     stamp = rec["dataset"]
     mice = sum(g["mice"] for g in rec["streams"]["fast"]["groups"].values())
     caption = "\n".join([
@@ -182,8 +185,9 @@ def draw(rec, out: Path) -> Path:
         "has no measurable peak and no dot; where that happens the count is under the row.",
         "c, f: the spread — widest group minus narrowest — after mouse→group labels are shuffled "
         "with each group's number of mice",
-        "held fixed — grey to the null's 95th percentile, the observed spread in red. Baseline "
-        f"windows only (FOUNDATIONS §9), {stamp['name']}.",
+        "held fixed — grey to that stream's own null 95th percentile, the observed spread in red, "
+        "and these two share one scale as well.",
+        f"Baseline windows only (FOUNDATIONS §9), {stamp['name']}.",
     ])
     fig.text(0.005, 0.004, caption, fontsize=7, color=MUTED, va="bottom")
     fig.tight_layout(rect=(0, 0.135, 1, 0.985))
