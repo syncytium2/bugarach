@@ -57,18 +57,24 @@ together. A search that has run off the end of its own grid has not found a bett
 found that the grid stopped, so the allowances where the verdict changes are exactly the
 allowances where the measurement stops meaning what it says.
 
-**The strict end, added by the 2026-09-22 top-up, is the cleanest row in the sweep.** At an
-allowance of **0.000** — no drop permitted at all — the run draw puts CoactDetect ahead of every
-net under both selection rules, with **0 of 32 selections at the grid edge**:
+**The strict end, closed by the 2026-09-22 top-up, is the cleanest part of the sweep.** At an
+allowance of **0.000** — no drop permitted at all — CoactDetect is ahead of every net under both
+selection rules on **both** draws, with **0 of 32 selections at the grid edge**:
 
-| selection | chorus | chorus-gain | line-length | tube |
-|---|---|---|---|---|
-| ungated | −0.0046 (inside noise) | −0.0447 | −0.0393 | −0.1163 |
-| gated | −0.0294 | −0.0247 | −0.0455 | −0.1540 |
+| draw | selection | chorus | chorus-gain | line-length | tube |
+|---|---|---|---|---|---|
+| run | ungated | −0.0046 (inside noise) | −0.0447 | −0.0393 | −0.1163 |
+| run | gated | −0.0294 | −0.0247 | −0.0455 | −0.1540 |
+| replicate | ungated | −0.0574 | −0.0273 | −0.0387 | −0.1021 |
+| replicate | gated | −0.0916 | −0.0210 | −0.0542 | −0.1320 |
+
+Across the three strict allowances (0.000, 0.005, 0.010) the replicate has **no cell inside
+noise at all** — 24 of 24 read CoactDetect ahead. The run draw's one inside-noise cell is
+ungated chorus.
 
 So the two ends of the axis say different things for a reason that is visible rather than
-inferred: where the grid binds, CoactDetect leads; where the verdict flips, the grid does not
-bind.
+inferred: where the grid binds, CoactDetect leads on both draws; where the verdict flips, the
+grid does not bind.
 
 Three further things the sweep shows:
 
@@ -82,30 +88,39 @@ Three further things the sweep shows:
 - **tube never flips.** CoactDetect leads it at every allowance including no-check, by 0.028 to
   0.155 mean F1 across draws and selection rules.
 
-## The top-up: one row closed, three still open, and how the loop actually behaves
+## The top-up: all four rows closed, and how the loop actually behaves
 
 Four rows were planned and not scored, because they need crowded scores for configurations the
 2026-09-18 run never cached: run at 0.000, and replicate at 0.000, 0.005 and 0.010. The
 selections each wants are listed in `run_0p000.wanted.json` (40 configurations) and the three
 `replicate_*.wanted.json` (60 each).
 
-**`run` at 0.000 is now closed** and is in the table above. The other three are not, and the
-reason is worth recording so nobody re-derives it:
+**All four are now closed**, so the sweep is complete: 11 allowances × 2 draws, every cell
+measured. How that went is worth recording, because the earlier note under-estimated it and the
+next person to top up a cached run will hit the same wall.
 
-**The top-up does not converge in one pass, and the plain `crowded` stage cannot do it at all.**
-Once a fit's crowded file is partial, `crowded` refuses it — *"a partial file exists; say which
-pairs to add"* — so the only route is `select` → `crowded --pairs` → `select`, driven by the
-`crowded_pairs.json` that `select` writes. Each round also *reaches new configurations*: the
-re-chosen walk passes over every candidate the check refuses, so closing one set exposes the
-next. On the replicate the counts fell 5 → 2 → 2 → 1 configurations still wanted over four
-rounds without reaching zero. The run draw took one `--pairs` pass (18 fits, 9 s) plus a single
-`select`.
+**The plain `crowded` stage cannot do a top-up at all.** Once a fit's crowded file is partial it
+refuses — *"a partial file exists; say which pairs to add"* — so the only route is `select` →
+`crowded --pairs` → `select`, driven by the `crowded_pairs.json` that `select` writes. Each round
+also *reaches new configurations*, because the re-chosen walk passes over every candidate the
+check refuses, so closing one set exposes the next.
 
-Each `--pairs` pass is cheap — 1,053 fits in 9 to 31 s. The cost is the `select` between them,
-which at the strict end runs for minutes, and the rounds are serial by construction.
+| what | rounds | wall clock |
+|---|---|---|
+| run, 0.000 | 1 `--pairs` pass (18 fits, 9 s) + 1 `select` | about 4 min |
+| replicate, 0.000 | 6 | 17:30 → 17:50 |
+| replicate, 0.005 | 1 | 17:50 → 17:53 |
+| replicate, 0.010 | 1 | 17:53 → 17:56 |
 
-So on this record's numbers, **the replicate's three strict rows are perhaps ten to fifteen
-rounds of a loop nobody has bounded**, not the single top-up pass the earlier note assumed.
+**The cost is front-loaded and shared.** The 0.005 and 0.010 rows took one round each *because*
+0.000 had already filled the cache they needed — so the loop is far cheaper run strict-end-first
+than the per-row estimate suggests. Each `--pairs` pass is cheap in itself (1,053 fits in 9 to
+31 s); what costs is the `select` between them, and the rounds are serial by construction.
+
+**`crowded_wanted.json` is not a progress gauge.** It unions each round's requests into the
+previous ones and never removes a satisfied entry, so it *grows* while the work shrinks — it read
+60 before the loop and 61 after it converged. The number that falls is the `select` line *"N more
+configurations need the crowded recordings"*, which is the one to watch.
 
 ## What would settle the part the sweep could not
 

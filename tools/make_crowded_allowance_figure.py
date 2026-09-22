@@ -170,9 +170,8 @@ CoactDetect ahead</b>. The <b>crowded allowance</b> is how much mean F1 a wider 
 gap may cost on the crowded recordings before goal 1's move rule refuses it; the run
 used <b>0.02</b>, marked by the dashed vertical guide. <b>Ungated</b> picks the gap on
 F1 alone, <b>gated</b> picks gap and threshold together under the shared rate budget.
-Solid is the original seed draw, dashed the replicate. The replicate stops at 0.02
-going left: its three strict rows need crowded scores the 2026-09-18 run never
-cached, and topping them up is a loop that had not converged when this was drawn.</p>
+Solid is the original seed draw, dashed the replicate; both now span the whole axis,
+the four strict rows having been topped up on 2026-09-22.</p>
 <p><b>Panel C is the one that constrains the other two.</b> Every verdict that flips
 does so at an allowance where the chosen gap is pinned at 30 s, the top of the grid
 (<code>gaps_sec</code> ends there). At 0.10 that is 1 selection of 32; at 0.15, 19;
