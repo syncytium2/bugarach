@@ -26,8 +26,9 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-#: Participation levels, top to bottom in the lane, with their inks.
-LEVELS = ((0.30, "#1b7f3b"), (0.18, "#4c78a8"), (0.10, "#b279a2"))
+#: Inks for the participation levels, highest level first. The levels themselves come
+#: from ``BENCH_RECORDING`` so the figure follows the benchmark if a level moves.
+INKS = ("#1b7f3b", "#4c78a8", "#b279a2")
 DISTRACTOR_INK = "#5a5a5a"
 
 
@@ -35,6 +36,7 @@ def build(seed: int, width: int):
     import holoviews as hv
 
     from bugarach.bench import BENCH_RECORDING, make_recording
+    from bugarach.simulate import matlab_round
     from bugarach.ui.app import _time_axis_hook
     from bugarach.ui.diagnostic import raster_panel
 
@@ -46,7 +48,8 @@ def build(seed: int, width: int):
     # lane rows: 3 = 30 %, 2 = 18 %, 1 = 10 %, 0 = distractors
     lo, hi = BENCH_RECORDING["hot_window"]
     lane = hv.VSpan(lo, hi).opts(color="#d9a441", alpha=0.35)
-    for row, (frac, ink) in zip((3, 2, 1), LEVELS):
+    levels = sorted(BENCH_RECORDING["participation"], reverse=True)
+    for row, frac, ink in zip((3, 2, 1), levels, INKS):
         t = gt.times[np.isclose(gt.frac, frac)]
         lane = lane * hv.Scatter((t, np.full(t.size, row)), kdims=["t"],
                                  vdims=["lane"]).opts(
@@ -56,19 +59,25 @@ def build(seed: int, width: int):
                              vdims=["lane"]).opts(
         marker="inverted_triangle", size=9, color=DISTRACTOR_INK,
         fill_alpha=0.0, line_width=1.5)
+    # Sized for print: the page places this at 6.5 in, so one CSS px is 0.72 pt and
+    # 12 px type lands near 8.6 pt. The first render was drawn at 1,000 px with 9 pt
+    # labels and printed at about 5 pt, which is below what a journal accepts.
+    font = {"yticks": "12px", "xticks": "12px", "ylabel": "13px", "xlabel": "13px"}
     lane = lane.opts(
-        width=width, height=120, xlim=ext, ylim=(-0.7, 3.7), xaxis=None,
-        yticks=[(3, "30% · 10 cells"), (2, "18% · 6 cells"), (1, "10% · 3 cells"),
-                (0, "distractor · 6 cells")],
-        ylabel="", title="", show_legend=False, toolbar=None,
-        fontsize={"yticks": "9pt"}, hooks=[_time_axis_hook])
+        width=width, height=110, xlim=ext, ylim=(-0.7, 3.7), xaxis=None,
+        yticks=[(r, f"{round(f * 100)}% ({matlab_round(f * n_roi)} cells)")
+                for r, f in zip((3, 2, 1), levels)]
+        + [(0, "distractor "
+               f"({matlab_round(BENCH_RECORDING['distractor_frac'] * n_roi)} cells)")],
+        ylabel="A", title="", show_legend=False, toolbar=None,
+        fontsize=font, hooks=[_time_axis_hook])
 
     raster = raster_panel(s.streams["events"], ext=ext, name="events",
-                          width=width, height=300)
+                          width=width, height=230, mark_px=2.0)
     raster = raster.opts(
-        width=width, height=300 + 45, xlim=ext, ylim=(-1, n_roi),
-        ylabel=f"cells · {n_roi}", xlabel="time", title="", toolbar=None,
-        fontsize={"ylabel": "10pt"}, hooks=[_time_axis_hook])
+        width=width, height=230 + 45, xlim=ext, ylim=(-1, n_roi),
+        ylabel=f"B   cell ({n_roi} cells)", xlabel="time", title="",
+        toolbar=None, fontsize=font, hooks=[_time_axis_hook])
     return (lane + raster).cols(1).opts(shared_axes=False, toolbar=None), gt
 
 
@@ -76,7 +85,8 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--seed", type=int, default=1)
-    p.add_argument("--width", type=int, default=1000)
+    p.add_argument("--width", type=int, default=650,
+                   help="CSS px; the page places the figure at 6.5 in, so 650 px is print size")
     p.add_argument("--out", default=None,
                    help="destination directory; default <darkroom>/2026-09-22-methods")
     p.add_argument("--also", default=None, help="also copy the PNG here (repo copy)")
@@ -100,19 +110,11 @@ def main(argv=None):
     from make_generator_figures import _write
 
     hv.extension("bokeh")
+    # No header above the plot (house convention: no titles above plots). The lane's
+    # own row labels name each level with its cell count, and the caption keys the
+    # shaded block.
     fig, gt = build(args.seed, args.width)
-    key = " · ".join(f'<span style="color:{ink}">▼</span> {round(f * 100)}%'
-                     for f, ink in LEVELS)
-    page = pn.Column(
-        pn.pane.HTML(
-            '<div style="font:13px/1.5 system-ui,sans-serif;max-width:1000px;'
-            'color:#444">Benchmark recording, quiet background, seed '
-            f'{args.seed}: {len(gt.events)} planted events ({key}), '
-            f'<span style="color:{DISTRACTOR_INK}">▽</span> '
-            f'{len(gt.distractors)} distractors, '
-            '<span style="background:#f1dcae">&nbsp;elevated-rate block&nbsp;</span>'
-            '</div>'),
-        pn.pane.HoloViews(fig))
+    page = pn.Column(pn.pane.HoloViews(fig))
     stem = "fig1_benchmark_recording"
     _write(page, dest, stem, True, viewport_width=args.width + 120)
     if args.also:
