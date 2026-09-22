@@ -4,8 +4,9 @@
 holding up, where the evidence is, and what this repository would do absent a ruling. The
 linked file wins over the summary here, exactly as [`INDEX.md`](INDEX.md) does.
 
-**Why it exists.** On 2026-09-22 nine live rulings were spread across a cover memo, two root
-handoffs, an open pull request's body and a document in the darkroom. No session could see
+**Why it exists.** When this page was filed on 2026-09-22 there were nine live rulings, spread
+across a cover memo, two root handoffs, an open pull request's body and a document in the
+darkroom. It grows: a ruling that arises goes here rather than into a tenth place. No session could see
 the set, so each one rediscovered a subset and several restarted work that a ruling had
 already parked. The two rulings that *were* visible were visible because they use the
 mechanized channel: a todo carrying `status: waiting-on-tony`, which the session briefing
@@ -201,6 +202,31 @@ no longer true**.
 and a stale stop notice teaches sessions to ignore stop notices.
 
 ---
+
+## 10. The combined-stream goal: when it starts, and what shape it takes
+
+**Decide:** whether goal 4 starts before or after the jitter ruling and the slow stream's
+last step, and whether a combined stream **replaces** the two passes or sits beside them.
+
+**Blocking:** nothing today — the goal is new and nothing is built. It is here because two of
+its three open questions are yours and one is the producer's, and because the order matters:
+it would inherit benches that items 2 and 3 are about to move.
+
+**Evidence:** [`goals/combined-stream-coordination.md`](goals/combined-stream-coordination.md),
+set by Tony 2026-09-22. Fast and slow are detected one stream at a time today, so an event
+recruiting three fast cells and two slow ones is two small calls or none. The concern he
+raised with it — that the two streams may draw from **one pool of events** — is real and
+half-answered: the export contract settles that only the *width* rule differs between them
+and that the detection is methodically identical, but it says nothing about what assigns an
+event to a stream or whether one transient can appear in both. **That part is a producer
+question**, by the same rule as item 1.
+
+**Recommendation:** ask the producer the membership question in the same message as item 1's
+pinning question — they go to the same people and one of them is already overdue. Then run
+the one cheap measurement that does not wait on anybody: per ROI, the gap from each slow
+onset to the nearest fast onset, against the frame interval. A mass at zero is a shared pool.
+Start the build after items 2 and 3, and after the one-stream-aware bench rebuild — a third
+copy of the scoring path is the strongest argument yet for that refactor landing first.
 
 ## Already in the queue, listed so this page is the whole of it
 

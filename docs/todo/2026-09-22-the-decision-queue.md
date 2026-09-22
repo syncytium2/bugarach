@@ -3,14 +3,14 @@ status: waiting-on-tony
 filed: 2026-09-22
 ---
 
-# Nine rulings, one page, so a session can see the whole queue
+# The ruling queue: one page, so a session can see all of it at once
 
-waiting: Rule the nine items in `docs/decisions_pending.md` — the pinning question and the jitter constant come first; both are minutes, and every tuned number on both streams is provisional until the second is answered.
+waiting: Rule the ten items in `docs/decisions_pending.md` — the pinning question and the jitter constant come first; both are minutes, and every tuned number on both streams is provisional until the second is answered.
 
 **Read [`docs/decisions_pending.md`](../decisions_pending.md).** This file is the queue entry;
 that one is the content.
 
-## Why it is one entry rather than nine
+## Why it is one entry rather than one per ruling
 
 The briefing prints every `status: waiting-on-tony` todo first and loudly, which is exactly
 the channel these rulings needed — but it does it inside a size budget. The briefing sits at
@@ -26,7 +26,7 @@ add it to the page instead, or shorten something first.
 
 ## Why the page exists at all
 
-On 2026-09-22 nine live rulings were spread across a cover memo, two root handoffs, an open
+When this was filed on 2026-09-22 there were nine, spread across a cover memo, two root handoffs, an open
 pull request's body and a document in the darkroom. Tony, that morning: too many moving
 pieces. The two rulings that were visible to every session were the two using this channel;
 the other nine were visible only to whoever had read the right file that day, and sessions
