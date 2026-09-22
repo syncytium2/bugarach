@@ -93,7 +93,7 @@ def test_the_slow_budgets_are_the_measured_ones():
         assert r["precision_swing"] <= r["ceiling_swing"]
 
 
-@pytest.mark.parametrize("det", ["loco", "coact"])
+@pytest.mark.parametrize("det", ["loco", "coact", "sync"])
 def test_the_adopted_slow_settings_pass_the_slow_budgets(det):
     op = bench_slow.OPERATING_POINTS[det]
     assert op.source.startswith("SLOW, adopted")
