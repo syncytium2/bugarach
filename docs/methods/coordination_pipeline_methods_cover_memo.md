@@ -11,15 +11,26 @@ The run record is `docs/reviews/coordination_pipeline_methods_2026-09-22.md`.
 
 ## 0. A question for the producer today
 
-**Pinning is not closed for three analyzed recordings.** The export's own note says
-`20260629_314` has never been run through the pinning detector, while a whole-frame scan ranks it
-beside the four known pinned recordings. The producer's 2026-09-18 answer lists `20250926_237` and
-`20260630_325` as candidates still under review. All three are among the 67 analyzed recordings.
-All three are diestrus females, and each is the other recording of a mouse that already has a
-pinned one.
+**Pinning is not closed for three analyzed recordings** — `20250926_237`, `20260629_314` and
+`20260630_325`. All three are among the 67 analyzed recordings, all three are diestrus females,
+and each is the other recording of a mouse that already has a pinned one. A whole-frame scan
+ranks all three beside the four known pinned recordings.
 
-Under your rule a known contamination stops the work. The methods state the fact. I have not
-asked the producer; I leave that ask to you, because you decide whether this counts as known.
+**Corrected 2026-09-22.** This section said `20260629_314` had never been run through the
+pinning detector, taking that from the export's own note. It is false, and the producer withdrew
+it the day they wrote it — their answer of 2026-09-18 carries a same-day correction
+(`<darkroom>/bugarach/2026-09-18-pinned-rois-answer/README.md`). All 85 archive slices went
+through the per-ROI trace-derivative detector: `20260630_325` came back marginal and is in the
+census, and `20250926_237` and `20260629_314` came back with no ROI flagged. The note in
+`current_export.toml` has now been corrected too, which is where this section and the round-3
+review both read it from.
+
+**What is actually open is sensitivity, not coverage.** The census tests manually selected hROIs
+only, so a flooded patch holding no hROI leaves it silent; `20260629_314` is the most exposed case
+at 14 ROIs, the fewest of any DI slice. The producer reads the residual as cutting in our favour,
+because a whole-frame artifact where no ROI sits cannot reach the event table. The test that would
+settle it is geometric — pinned pixels against ROI masks — and that has not been run on these
+three. **That is the ask, and it is narrow.**
 
 ## 1. Stop before reporting results: five code defects
 

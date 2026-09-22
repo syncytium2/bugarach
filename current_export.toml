@@ -102,10 +102,26 @@ removed over the whole recording, listed in `field_steps_excluded.tsv`.
 `n_exceed >= 100`). Two slices sit below the cut and keep their events: `20260702_338`
 (1 ROI, 13 exceeding frames) and `20260630_325` (1 ROI, 10), against 515 to 2,195 for the
 four that were cleaned — two orders of magnitude weaker, measured rather than assumed. A
-third, `20260629_314`, is absent from the census altogether: an open interface2 todo from
-2026-09-02 ranks it beside the known four on a blind whole-frame scan, and the pinning
-detector has not been run over it. So the honest statement is measured-and-tiny for two
-slices, unexamined for one.
+third, `20260629_314`, is absent from the census: a blind whole-frame scan by interface2 on
+2026-09-02 ranks it beside the known four, along with `20250926_237` and `20260630_325`.
+
+**Corrected 2026-09-22, and this paragraph said otherwise for four days.** It used to end
+"the pinning detector has not been run over it … unexamined for one". **That is false, and
+the producer withdrew it the day they wrote it** — see the same-day correction in their
+answer, `<darkroom>/bugarach/2026-09-18-pinned-rois-answer/README.md`. All 85 archive
+slices went through the per-ROI trace-derivative detector, these three included:
+`20260630_325` came back **marginal** and is in the census (ROI 10, 3.6 s), with Tony
+reviewing its trace panel himself; `20250926_237` and `20260629_314` came back with **no
+ROI flagged**. So all three were screened, and two were cleared.
+
+What is open is **sensitivity, not coverage**: the census tests manually selected hROIs
+only, so a flooded patch holding no hROI leaves it silent while the frame is still
+corrupted — which is what the whole-frame scan sees and the census cannot. `20260629_314`
+is the most exposed case at 14 ROIs, the fewest of any DI slice. The producer's own reading
+is that this **cuts in the consumer's favour**: a whole-frame artifact in a region with no
+ROI in it cannot reach this event table at all. The test that would settle it is geometric —
+pinned pixels against ROI masks, interface2's `tools/check_roi_pinning.m` — and **that** has
+not been run on these three. Ask for that, not for the detector.
 """
 
 [steps_excluded]

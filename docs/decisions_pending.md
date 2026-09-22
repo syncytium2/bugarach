@@ -28,30 +28,57 @@ the file it came from. Nothing here is for an outside reader.
 
 ## 1. Pinning is not closed for three analyzed recordings
 
-**Decide:** whether this is a known contamination, which by your own rule stops the work and
-goes to the producer the same day — and, if it is, whether the pointer's note is amended so
-`dataset.refuse_if_contaminated()` arms for it.
+**Rewritten 2026-09-22, and the rewrite is the point.** Tony asked whether this had been
+checked before. **It has — three separate ways — and the answer has been in the darkroom
+since 2026-09-18.** What was wrong was this repository's copy of it.
 
-**Blocking:** every number measured on the default folder, including the methods section that
-landed yesterday and the full-cohort run. The stop is **not** armed today: the note for
-`steps_and_pins_excluded` says the folder *addresses* its contamination, and these three sit
-in the residual paragraph below that sentence, so analyses keep running over them right now.
+**Decide:** whether the residual risk needs the one test nobody has run, and whether it is
+worth holding any result for.
 
-**Evidence:** `current_export.toml`, the `steps_and_pins_excluded` note — `20260702_338`
-(1 ROI, 13 exceeding frames) and `20260630_325` (1 ROI, 10) sit below the census cut of 100
-exceeding frames, against 515 to 2,195 frames for the four that were cleaned; `20260629_314`
-is absent from the census altogether and the pinning detector has never been run over it, with
-an interface2 todo from 2026-09-02 ranking it beside the known four on a blind whole-frame
-scan. The producer's 2026-09-18 answer lists `20250926_237` and `20260630_325` as candidates
-under open challenge. All three are in the 67 first-treatment recordings, all three are
-diestrus females, and each is the second recording of a mouse that already has a pinned one —
-[`reviews/coordination-pipeline-methods-2026-09-22-roles-r3/01-prove-it.md`](reviews/coordination-pipeline-methods-2026-09-22-roles-r3/01-prove-it.md),
-finding 3.
+**What was already done, so nobody screens it a fourth time:**
 
-**Recommendation:** ask the producer today. It is one message, the rule has no exception for
-"probably small", and this is now the fourth review to raise it. Two of the three are already
-in the producer's own open review, so the question is narrow: has `20260629_314` been screened,
-and what is the verdict on the other two.
+| when | who | what |
+|---|---|---|
+| 2026-09-02 | interface2 | a blind whole-frame scan, knowing nothing about the ROI census, ranking `20250926_237`, `20260629_314` and `20260630_325` beside the four known pinned slices |
+| by 2026-09-18 | interface2 | the per-ROI trace-derivative detector over **all 85 archive slices** — 14 ROIs across 6 slices flagged, 12 across 4 strong |
+| 2026-09-18 | Tony | the trace panels by eye, one per pinned ROI, raw fluorescence against the frame minimum, `20260630_325` among them |
+| 2026-09-17/18 | bugarach | the whole rigid-shift chain re-run on the de-pinned export; every conclusion survived (`ba6f90c`) |
+
+**What the producer actually said**, in the same-day correction inside
+`<darkroom>/bugarach/2026-09-18-pinned-rois-answer/README.md`: all three candidates were
+inside the 85-slice sweep. `20260630_325` came back **marginal** and is in the census (ROI 10,
+3.6 s). `20250926_237` and `20260629_314` came back with **no ROI flagged**. Their note
+corrects an earlier sentence of their own that said the detector had not been run on them.
+
+**Why this repository kept saying otherwise.** The correction never reached
+`current_export.toml`, and everything downstream re-derives from that note: the cover memo,
+the round-3 review's finding 3, this item as first written. The round-**2** review caught it
+(`reviews/coordination-pipeline-methods-2026-09-22-roles-r2/01-prove-it.md`, F3) and said the
+producer should fix the pointer; nobody did, so round 3 read the pointer and restated the
+withdrawn claim. All the live copies are corrected as of this change; the verbatim morning
+summary and the review records keep their text, because they are the record of what was
+believed when.
+
+**What is genuinely open, and it is narrow: sensitivity, not coverage.** The census tests
+manually selected hROIs only, so a flooded patch holding no hROI leaves it silent while the
+frame is still corrupted — exactly what a whole-frame scan sees and it cannot. `20260629_314`
+is the most exposed case at 14 ROIs, the fewest of any DI slice. The settling test is
+geometric — pinned pixels against ROI masks, interface2's `tools/check_roi_pinning.m` — and
+**that** has not been run on these three.
+
+**Recommendation:** ask for the geometric test on those three slices, and nothing else. The
+producer's own reading is that the residual cuts in our favour, because a whole-frame artifact
+where no ROI sits cannot reach our event table at all. Do **not** arm the contamination stop
+for this: the folder addresses what was found, and the open part is a sensitivity limit rather
+than a declared contamination the data do not mark. Two of their three DI mice would be 2/2 or
+3/3 affected if the candidates are real, which is why it is worth asking at all.
+
+**Owed in the other direction, and four days late.** Their answer asked us three things.
+Question 2 — re-run the four against the new folder — is answered by the rigid-shift re-run
+above, and they have not been told. Question 1, whether their manifest reaches our loader, has
+an answer nobody has sent: **nothing in this tree reads `moco_pinned_excluded.tsv`** (the only
+manifest reader, `tools/make_group_raster_summary.py`, names the field-step files). Question 3,
+whether their shared cross-ROI gaps break our surrogate, is untouched. Send those with the ask.
 
 ## 2. The jitter constant is about three times too loose on both benches
 
