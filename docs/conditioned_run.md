@@ -72,6 +72,12 @@ below the 15-minute floor. **That is a conversation with the producer, not a fil
 CLAUDE.md's rule that the export folder is the input, and that which recordings are
 analysable is the producer's call, has already cost this project one real error.
 
+**The first-treatment floor is 12 minutes** (Tony, 2026-09-21, restricting what goes to the
+fireflies figures to TTX-first and senktide-first recordings, baseline and first treatment only).
+All 67 first-treatment windows meet it, the two above included, so nothing is dropped. The
+methods section (`docs/methods/coordination_pipeline_methods.md`) states 12 minutes, and this
+line is where that number is recorded.
+
 ⚠ **Unequal windows are not cosmetic.** The degenerate control models emit exactly one span
 per analysis window, so their before/after ratio *is* the window-length ratio. On the
 2026-09-09 run that ratio moved on 12 of 38 TTX recordings, one by 54%, and it was how the
