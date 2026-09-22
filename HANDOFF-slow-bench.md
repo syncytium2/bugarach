@@ -232,3 +232,20 @@ Newest last. A session that finds this file picks up at the first step not marke
   was the rule's pick; 4 s is Tony's, the cautious one. Slow reference now: LoCo, CoactDetect,
   SPIKE-synch. Held at the fast settings: binned SCE (fast's 98 or 75), locust (the anchor),
   rate+context (+0.005, nothing to adopt).
+- 2026-09-21 night (WSMIP064, on its own at Tony's instruction: *"A b then c. Try to proceed
+  autonomously"*). **Step A: participation confirmed, jitter not.** Record:
+  `docs/learned/runs/2026-09-21-slow-step-a/README.md`. Slow recruits 1.75–2.0× fast's share at
+  every floor K from 3 to 6, and the MATLAB summary independently gives 12.5 participants (slow)
+  against 6 (fast) at K = 4. But **the fast bench's jitter, 0.36, is that MATLAB summary's value,
+  and the same summary gives 0.46 s for slow** — the slow bench's 0.30 rested on an analogy (this
+  session's) that does not hold. 0.30 → 0.46 costs locust −0.098 and SPIKE-synch −0.082 mean F1.
+- **Step B: the pilot ran, and the slow bench separates far less** (record:
+  `docs/learned/runs/2026-09-21-slow-pilot/README.md`, Figure 1 in the darkroom as
+  `bugarach/2026-09-21-slow-pilot.png`). Two untuned nets × 3 seeds against the slow reference on
+  fresh recordings: everything within 0.827–0.859 on slow, against 0.29 of spread on fast; the
+  nets sit 0.016–0.032 below CoactDetect. Fits take 5–16 s on the GPU, so a full slow
+  comparison is hours, not the fast run's 14.
+- **Step C: HELD, not run**, for two reasons that are Tony's: the jitter ruling (it moves the
+  bench C would train on), and whether a comparison expected to come back a tie within about
+  0.02 F1 is worth running on this bench at all. Also still owed before C: the tuning tool's
+  `--bench` seam, on `tune-bench-comparison`, whose fate is unruled — not edited overnight.

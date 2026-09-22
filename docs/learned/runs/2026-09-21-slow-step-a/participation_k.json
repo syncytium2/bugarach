@@ -1,0 +1,54 @@
+{
+ "fast": {
+  "3": {
+   "participation": 0.12698412698412698,
+   "lo": 0.11935908691834943,
+   "hi": 0.17865259740259742,
+   "recordings_with_clusters": 65
+  },
+  "4": {
+   "participation": 0.19047619047619047,
+   "lo": 0.18175033921302577,
+   "hi": 0.22960382513661204,
+   "recordings_with_clusters": 52
+  },
+  "5": {
+   "participation": 0.2222222222222222,
+   "lo": 0.21212121212121213,
+   "hi": 0.26689655172413795,
+   "recordings_with_clusters": 46
+  },
+  "6": {
+   "participation": 0.25396825396825395,
+   "lo": 0.23529411764705882,
+   "hi": 0.30509651600753296,
+   "recordings_with_clusters": 39
+  }
+ },
+ "slow": {
+  "3": {
+   "participation": 0.2222222222222222,
+   "lo": 0.15613162878787878,
+   "hi": 0.3225806451612903,
+   "recordings_with_clusters": 56
+  },
+  "4": {
+   "participation": 0.38095238095238093,
+   "lo": 0.28125,
+   "hi": 0.45,
+   "recordings_with_clusters": 45
+  },
+  "5": {
+   "participation": 0.42063492063492064,
+   "lo": 0.375,
+   "hi": 0.5086937463471655,
+   "recordings_with_clusters": 42
+  },
+  "6": {
+   "participation": 0.47619047619047616,
+   "lo": 0.4296875,
+   "hi": 0.571494708994709,
+   "recordings_with_clusters": 40
+  }
+ }
+}
