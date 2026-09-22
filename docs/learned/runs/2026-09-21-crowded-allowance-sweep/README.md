@@ -57,6 +57,19 @@ together. A search that has run off the end of its own grid has not found a bett
 found that the grid stopped, so the allowances where the verdict changes are exactly the
 allowances where the measurement stops meaning what it says.
 
+**The strict end, added by the 2026-09-22 top-up, is the cleanest row in the sweep.** At an
+allowance of **0.000** — no drop permitted at all — the run draw puts CoactDetect ahead of every
+net under both selection rules, with **0 of 32 selections at the grid edge**:
+
+| selection | chorus | chorus-gain | line-length | tube |
+|---|---|---|---|---|
+| ungated | −0.0046 (inside noise) | −0.0447 | −0.0393 | −0.1163 |
+| gated | −0.0294 | −0.0247 | −0.0455 | −0.1540 |
+
+So the two ends of the axis say different things for a reason that is visible rather than
+inferred: where the grid binds, CoactDetect leads; where the verdict flips, the grid does not
+bind.
+
 Three further things the sweep shows:
 
 - **0.25, 0.35 and no-check are identical in every cell.** Above roughly 0.25 the crowded check
@@ -69,19 +82,30 @@ Three further things the sweep shows:
 - **tube never flips.** CoactDetect leads it at every allowance including no-check, by 0.028 to
   0.155 mean F1 across draws and selection rules.
 
-## What is missing, and it is the strict end
+## The top-up: one row closed, three still open, and how the loop actually behaves
 
 Four rows were planned and not scored, because they need crowded scores for configurations the
-2026-09-18 run never cached: **run at 0.000, and replicate at 0.000, 0.005 and 0.010.** The
-selections each one wants are listed in `run_0p000.wanted.json` (40 configurations) and the
-three `replicate_*.wanted.json` (60 each). Closing them needs a `crowded` top-up pass over those
-configurations and a re-select.
+2026-09-18 run never cached: run at 0.000, and replicate at 0.000, 0.005 and 0.010. The
+selections each wants are listed in `run_0p000.wanted.json` (40 configurations) and the three
+`replicate_*.wanted.json` (60 each).
 
-So **0.000 — the strictest allowance, where no drop at all is permitted — has no row on either
-draw**, and the replicate's two strictest measured rows are absent. Panels A and B begin at
-0.005 for the original draw and 0.02 for the replicate for that reason, not because the strict
-end was judged uninteresting. The board's earlier note that low allowances "run far slower"
-holds: the 0.000 attempt ran past 13 minutes before it was cut.
+**`run` at 0.000 is now closed** and is in the table above. The other three are not, and the
+reason is worth recording so nobody re-derives it:
+
+**The top-up does not converge in one pass, and the plain `crowded` stage cannot do it at all.**
+Once a fit's crowded file is partial, `crowded` refuses it — *"a partial file exists; say which
+pairs to add"* — so the only route is `select` → `crowded --pairs` → `select`, driven by the
+`crowded_pairs.json` that `select` writes. Each round also *reaches new configurations*: the
+re-chosen walk passes over every candidate the check refuses, so closing one set exposes the
+next. On the replicate the counts fell 5 → 2 → 2 → 1 configurations still wanted over four
+rounds without reaching zero. The run draw took one `--pairs` pass (18 fits, 9 s) plus a single
+`select`.
+
+Each `--pairs` pass is cheap — 1,053 fits in 9 to 31 s. The cost is the `select` between them,
+which at the strict end runs for minutes, and the rounds are serial by construction.
+
+So on this record's numbers, **the replicate's three strict rows are perhaps ten to fifteen
+rounds of a loop nobody has bounded**, not the single top-up pass the earlier note assumed.
 
 ## What would settle the part the sweep could not
 
