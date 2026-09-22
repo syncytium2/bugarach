@@ -34,6 +34,23 @@ All 200 bootstrap draws land on each calibration curve. **Both streams' onsets a
 times tighter than their benches assume, and slow is only slightly looser than fast.** Neither
 0.30 nor 0.46 s is supported for slow, and fast's 0.36 s is not supported either.
 
+## How it can be that tight on a 0.1 s frame grid (Figure 2)
+
+Tony, 2026-09-22: *"how can it be so tight if sampling is 0.1s"*. **Figure 2**,
+`explain_jitter.png` (script `explain_jitter.py`; darkroom `bugarach/2026-09-22-explain-jitter.png`).
+The producer's `t50rise` onsets sit exactly on the 0.1 s grid (checked: every offset under
+0.00001 frames), so every onset is rounded. Three things make the jitter measurable anyway:
+
+- **Rounding is small against the spread.** Rounding to a frame adds a uniform error of
+  ±0.05 s, whose standard deviation is 0.1/√12 = 0.029 s. A true σ of 0.11 s is recorded as
+  √(0.11² + 0.029²) = 0.114 s, and the calibration's simulated onsets are rounded the same way.
+- **σ = 0.11 s still spreads over several frames** (panel B): about 35% of a cell's onsets land
+  in the event's own frame, 24% in each neighbour and 7% two frames out. σ = 0.36 s spreads
+  over fifteen. The difference is visible frame by frame.
+- **The width is read from many pairs across that shape** (panel C), not from any one onset:
+  every pair of onsets from two different cells, over every event in 84 recordings, at each
+  frame of lag. The calibration (panel D) shows the measure still tells 0.05 s from 0.1 s.
+
 ## What to be careful about
 
 - **Shape (Figure 1, bottom).** Fast follows the simulated 0.1–0.15 s curves along its whole
