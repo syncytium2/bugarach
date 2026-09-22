@@ -1,6 +1,7 @@
 # How we measure the timing spread of coordinated firing, without first deciding what a coordinated event is
 
-Written 2026-09-22 for readers who are not math-oriented, in answer to the objection that measuring
+Written 2026-09-22 for readers who are not math-oriented, and not murderboarded (Tony, 2026-09-22:
+no time), in answer to the objection that measuring
 **jitter** is circular: *how can you measure how tightly cells fire together if you have not defined
 what firing together is?* Two figures; the script that draws them is
 [`explain_correlogram.py`](explain_correlogram.py), and the measurement they explain is the
@@ -60,26 +61,19 @@ settings are for illustration only.
 
 ![Figure 2](figure2_what_the_width_means.png)
 
-**Figure 2. What the width means, and what the real recordings show.**
+**Figure 2. From width to jitter, and the real recordings.**
 
-- **A. Tight against loose.** One shared moment joined by 12 cells, drawn twice: once with 0.11 s
-  of jitter, the value we measure on the fast stream, and once with 0.36 s, the value our simulated
-  benchmark recordings use today. With 0.36 s the cells straggle over most of a second.
-- **B. Their correlograms.** The toy recording of Figure 1 rebuilt at each jitter, with each peak
-  scaled so its top is 1 and its floor is 0, which makes only the width comparable. Looser jitter
-  gives a wider peak: 0.18 s half-width at 0.11 s of jitter, 0.57 s at 0.36 s. (These are the toy's
-  widths; panel C's ruler uses the benchmark simulations, which also contain stray firing and
-  bursts, so its 0.36 s reads slightly wider, 0.63 s.)
-- **C. The ruler.** To turn a width into a jitter, we simulated recordings where the jitter is
-  known, at ten values from 0.05 s to 1.0 s, 48 simulated recordings at each value and for each
-  stream, and measured each one's width. Width rises with jitter, which is the test the method had
-  to pass. The real recordings are read off it: **the fast stream's 0.18 s width means 0.11 s of
-  jitter, and the slow stream's 0.23 s means 0.14 s**. Converting by formula instead of by
+- **A. The ruler.** To turn a width into a jitter, we simulated recordings where the jitter is
+  known, at values from 0.05 s to 0.3 s (48 simulated recordings at each value, for each stream),
+  and measured each one's width. Width rises steadily with jitter, which is the test the method
+  had to pass. The real recordings are read off it: **the fast stream's 0.18 s width means 0.11 s
+  of jitter, and the slow stream's 0.23 s means 0.14 s.** Converting by formula instead of by
   simulation, assuming a bell-shaped scatter, gives 0.110 s and 0.138 s, so the answer does not
   depend on the simulator.
-- **D. The real recordings.** The measured correlograms of all 84 recordings' baseline periods, fast
-  (solid black) and slow (dashed black), scaled like panel B, against the benchmark simulations
-  at 0.1 s (blue) and 0.36 s (orange) of jitter. The fast stream follows the 0.1 s shape. The slow
+- **B. The real recordings against the simulations.** The measured correlograms of all 84
+  recordings' baseline periods, fast (solid blue) and slow (dashed orange), each scaled so its top
+  is 1 and its floor is 0, drawn over the simulated shape at the nearest simulated jitter (pale:
+  0.1 s for fast, 0.15 s for slow). The fast stream follows its simulation closely. The slow
   stream has the same tight centre with a longer tail, which looks more like a mix of tight and
   looser events than a single jitter; the half-width reports the tight centre.
 

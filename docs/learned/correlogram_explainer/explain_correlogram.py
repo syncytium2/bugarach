@@ -1,9 +1,8 @@
 """Two figures explaining the cross-ROI onset correlogram to a reader who is not math-oriented.
 
-Figure 1 builds the correlogram in four steps on a toy recording. Figure 2 shows what its width
-means and reads the real recordings off it. Figure 1 and panels A-B of Figure 2 are drawn from a
-toy simulation (numpy, fixed seed) with round-number settings chosen for legibility, not fitted to
-anything. Panels C-D of Figure 2 read the measured run record,
+Figure 1 builds the correlogram in four steps on a toy recording (numpy, fixed seed, round-number
+settings chosen for legibility, not fitted to anything; its jitter is the measured fast value).
+Figure 2 turns width into jitter and shows the real recordings; it reads only the measured run record,
 ``docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json``.
 
 Run: python docs/learned/correlogram_explainer/explain_correlogram.py
@@ -25,7 +24,7 @@ N_CELLS = 60
 BG_RATE = 0.012                # onsets per second per cell outside shared moments
 SHARED_RATE = 0.05             # shared moments per second (one every 20 s on average)
 JOIN = 0.3                     # chance a cell joins a given shared moment
-TIGHT, LOOSE = 0.11, 0.36      # s: measured fast jitter, and the fast bench's constant today
+TIGHT = 0.11                   # s: the measured fast-stream jitter
 BLUE, ORANGE = "#2a78d6", "#eb6834"   # validated categorical slots 1-2 (dataviz palette)
 INK, MUTED = "#0b0b0b", "#52514e"
 MAX_LAG = 3.0                  # s
@@ -181,76 +180,36 @@ fig.savefig(HERE / "figure1_building_the_correlogram.png", dpi=150, bbox_inches=
 plt.close(fig)
 print(f"figure 1: toy half-width {hw:.3f} s; pair shown cells 1 and {j + 1}")
 
-# ---------------------------------------------------------------- Figure 2: what the width means
+# ---------------------------------------------------------------- Figure 2: width to jitter, real data
 rec = json.loads(RUN.read_text())
-fig = plt.figure(figsize=(12, 8.6))
-gs = fig.add_gridspec(2, 2, hspace=0.5, wspace=0.28)
+fig, (axC, axD) = plt.subplots(1, 2, figsize=(12, 4.6), gridspec_kw=dict(wspace=0.28))
+STREAM_COLOUR = {"fast": BLUE, "slow": ORANGE}
 
-# A: one shared moment, twelve cells, tight against loose
-rng = np.random.RandomState(3)
-gA = gs[0, 0].subgridspec(2, 1, hspace=0.35)
-for k, (sigma, name) in enumerate(((TIGHT, "tight"), (LOOSE, "loose"))):
-    ax = fig.add_subplot(gA[k])
-    on = np.round(rng.randn(12) * sigma / DT) * DT
-    for r, t in enumerate(on):
-        ax.vlines(t, r + 0.6, r + 1.4, color=INK, lw=1.8)
-    ax.set_xlim(-1.5, 1.5)
-    ax.set_ylim(0.3, 12.7)
-    ax.set_yticks([])
-    colour = "blue" if k == 0 else "orange"
-    ax.set_ylabel(f"{name}: {sigma} s jitter\n({colour} in B)", fontsize=9)
-    if k == 1:
-        ax.set_xlabel("time from the shared moment (s)")
-    else:
-        ax.set_xticklabels([])
-        ax.text(-0.13, 1.1, "A", transform=ax.transAxes, fontsize=14, fontweight="bold")
-
-# B: the correlogram each one makes, peak scaled to 1
-ax = fig.add_subplot(gs[0, 1])
-for sigma, c, seed in ((LOOSE, ORANGE, 7), (TIGHT, BLUE, 7)):
-    o, e = correlogram(toy(sigma, seed)[0])
-    s = scaled(o / e, LAGS)
-    w = half_width(LAGS, s)
-    ax.plot(LAGS, s, color=c, lw=2, label=f"{sigma} s jitter\nhalf-width {w:.2f} s")
-    ax.plot([-w, w], [0.5, 0.5], color=c, lw=3, solid_capstyle="butt")
-ax.axhline(0, color=MUTED, lw=0.6)
-ax.set_xlim(-MAX_LAG, MAX_LAG)
-h, l = ax.get_legend_handles_labels()
-ax.legend(h[::-1], l[::-1], fontsize=8, loc="upper right", frameon=False, labelspacing=1.0)
-ax.text(1.2, 0.53, "half height", fontsize=8, color=MUTED)
-ax.set_xlabel("time between the two onsets (s)")
-ax.set_ylabel("peak height (top = 1)")
-ax.text(-0.13, 1.04, "B", transform=ax.transAxes, fontsize=14, fontweight="bold")
-
-# C: the ruler, made on simulated recordings whose jitter is known
-ax = fig.add_subplot(gs[1, 0])
+# A: the ruler, made on simulated recordings whose jitter is known
+ax = axC
 for stream, ls in (("fast", "-"), ("slow", "--")):
     h = rec["streams"][stream]["hwhm"]
     x = np.array([float(k) for k in h["calibration_sec"]])
     y = np.array(list(h["calibration_sec"].values()))
-    ax.plot(x, y, color=MUTED, lw=1.6, ls=ls, marker="o", ms=4,
+    keep = x <= 0.3
+    ax.plot(x[keep], y[keep], color=MUTED, lw=1.6, ls=ls, marker="o", ms=4,
             label=f"{stream} stream's simulated recordings")
     real, jit = h["real_sec"], h["jitter_sec"]
     ax.plot([0, jit], [real, real], color=INK, lw=1, ls=":")
     ax.plot([jit, jit], [0, real], color=INK, lw=1, ls=":")
-    ax.scatter([jit], [real], color=BLUE, s=60, zorder=5)
+    ax.scatter([jit], [real], color=STREAM_COLOUR[stream], s=70, zorder=5)
     ax.annotate(f"real {stream} stream: {real:.2f} s wide → {jit:.2f} s jitter",
-                xy=(jit, real), xytext=(0.45, 0.12 if stream == "fast" else 0.3), fontsize=9,
+                xy=(jit, real), xytext=(0.165, 0.09 if stream == "fast" else 0.3), fontsize=9,
                 arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
-bench = rec["streams"]["fast"]["hwhm"]["calibration_sec"]["0.36"]
-ax.scatter([0.36], [bench], color=ORANGE, s=60, zorder=5)
-ax.annotate(f"fast bench today: 0.36 s\nwould be {bench:.2f} s wide",
-            xy=(0.36, bench), xytext=(0.6, 0.5), fontsize=9,
-            arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
-ax.set_xlim(0, 1.05)
-ax.set_ylim(0, None)
+ax.set_xlim(0, 0.31)
+ax.set_ylim(0, 0.55)
 ax.set_xlabel("jitter planted in the simulated recordings (s)")
 ax.set_ylabel("half-width measured on them (s)")
 ax.legend(fontsize=8, loc="upper left", frameon=False)
-ax.text(-0.13, 1.04, "C", transform=ax.transAxes, fontsize=14, fontweight="bold")
+ax.text(-0.13, 1.04, "A", transform=ax.transAxes, fontsize=14, fontweight="bold")
 
-# D: the real recordings against the simulated shapes for 0.1 s and 0.36 s
-ax = fig.add_subplot(gs[1, 1])
+# B: each real stream against the simulated shape at the jitter read off for it
+ax = axD
 lag1 = np.arange(len(rec["streams"]["fast"]["real_excess"])) * rec["dt"]
 
 
@@ -258,24 +217,25 @@ def mirrored(ex):
     ex = np.asarray(ex, float)
     shoulder = ex[(lag1 >= 5) & (lag1 <= 10)].mean()
     s = (ex - shoulder) / (ex[0] - shoulder)
-    keep = lag1 <= MAX_LAG + 1e-9
+    keep = lag1 <= 1.5 + 1e-9
     return np.concatenate([-lag1[keep][:0:-1], lag1[keep]]), np.concatenate([s[keep][:0:-1], s[keep]])
 
 
-sim = rec["streams"]["fast"]["sim_excess"]
-for key, c, lab in (("0.1", BLUE, "simulated, 0.1 s"), ("0.36", ORANGE, "simulated, 0.36 s")):
-    x, y = mirrored(sim[key])
-    ax.plot(x, y, color=c, lw=2.2, label=lab)
-for stream, ls in (("fast", "-"), ("slow", "--")):
+for stream, key, ls in (("fast", "0.1", "-"), ("slow", "0.15", "--")):
+    c = STREAM_COLOUR[stream]
+    x, y = mirrored(rec["streams"][stream]["sim_excess"][key])
+    ax.plot(x, y, color=c, lw=5, alpha=0.35, ls=ls,
+            label=f"simulated {stream}, {key} s jitter")
     x, y = mirrored(rec["streams"][stream]["real_excess"])
-    ax.plot(x, y, color=INK, lw=1.6, ls=ls, label=f"real, {stream} stream")
+    ax.plot(x, y, color=c, lw=1.8, ls=ls, label=f"real {stream} stream")
 ax.axhline(0, color=MUTED, lw=0.6)
-ax.set_xlim(-MAX_LAG, MAX_LAG)
+ax.set_xlim(-1.5, 1.5)
 ax.set_xlabel("time between the two onsets (s)")
 ax.set_ylabel("peak height (top = 1)")
 ax.legend(fontsize=8, loc="upper right", frameon=False)
-ax.text(-0.13, 1.04, "D", transform=ax.transAxes, fontsize=14, fontweight="bold")
+ax.text(-0.13, 1.04, "B", transform=ax.transAxes, fontsize=14, fontweight="bold")
 
 fig.savefig(HERE / "figure2_what_the_width_means.png", dpi=150, bbox_inches="tight")
 plt.close(fig)
 print("figure 2 written")
+
