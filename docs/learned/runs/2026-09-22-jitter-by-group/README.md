@@ -46,6 +46,36 @@ Every group on both streams stays well under its bench's planted jitter (fast be
 bench 0.30 s), so the pooled finding — *both streams are about three times tighter than their
 benches* — is a statement about all four groups and not an average over a split field.
 
+## The dots in Figure 1 b and e, and why the group's number is not their average
+
+Each row carries one small dot per recording, an open circle at their mean, and the filled dot for
+the group's own width. The group's width is **not** an average over those dots: it is read off the
+group's **pooled** onset-pair counts, one correlogram built from every pair the group contributes,
+so a recording weighs by the pairs it brings. The three marks can be read against each other, and
+where they disagree the reason is in the last column.
+
+| stream | group | pooled (the filled dot) | mean over recordings | median over recordings | recordings with a measurable peak |
+|---|---|---:|---:|---:|---:|
+| fast | DI | 0.192 | 0.190 | 0.180 | 17 of 17 |
+| fast | MALE | 0.183 | 0.197 | 0.179 | 21 of 22 |
+| fast | ORX | 0.148 | 0.133 | 0.079 | 18 of 25 |
+| fast | OVX | 0.148 | 0.141 | 0.105 | 14 of 20 |
+| slow | DI | 0.214 | 0.248 | 0.235 | 17 of 17 |
+| slow | MALE | 0.261 | 0.270 | 0.242 | 20 of 22 |
+| slow | ORX | 0.183 | 0.232 | 0.175 | 16 of 25 |
+| slow | OVX | 0.235 | 0.176 | 0.083 | 9 of 20 |
+
+**This is why the measure pools rather than averages.** A recording with too few onset pairs has no
+measurable peak at all, and that is not rare in the quiet groups: 7 of 25 fast ORX recordings, and
+**11 of 20 slow OVX recordings**. A mean or a median over recordings is then taken over whichever
+recordings happened to be measurable — slow OVX reads 0.235 s pooled, 0.176 s as a mean and 0.083 s
+as a median, and the three differ because they are answers to three different questions. Pooling
+asks the question once, of every pair.
+
+The bootstrap agrees with the pooled dot rather than with the recording average: the median of the
+400 mouse-clustered draws sits within 0.002 s of the filled dot everywhere except fast ORX
+(0.138 s against 0.148 s), so the estimate is essentially unbiased under its own resampling.
+
 ## Three decisions the split needed, and why
 
 **The resampling unit is the mouse.** 84 recordings come from 44 mice, so two recordings from one
