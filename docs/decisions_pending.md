@@ -26,81 +26,32 @@ the file it came from. Nothing here is for an outside reader.
 
 ---
 
-## 1. Pinning — ASKED 2026-09-22, waiting on the producer
+## 1. Pinning — CLOSED 2026-09-22, the producer answered
 
-**The ask is sent**, on Tony's instruction, as
-[syncytium2/interface2#1](https://github.com/syncytium2/interface2/issues/1) — the geometric
-check (`tools/check_roi_pinning.m`, pinned pixels against ROI masks) on `20250926_237`,
-`20260629_314` and `20260630_325`, and nothing else. It carries our answers to the three
-questions their 2026-09-18 note asked, including the two that are ours to own: nothing here
-reads their pinning manifest, and our earlier leave-one-out was quoted as an estimate of the
-artifact's share when it is only an upper bound. **Sent as a GitHub issue rather than a
-darkroom note** — their first since the migration — so the thread has a public, permanent
-address either side can cite.
+**Answered the same afternoon it was asked**, in
+[syncytium2/interface2#1](https://github.com/syncytium2/interface2/issues/1). The geometric test
+ran on all three candidates — `tools/check_roi_pinning.m`, pinned pixels against ROI masks and
+penumbra rings, 4,000 frames sampled each, read-only on the turbo `complete/main set/` files.
+**The frames pin; the ROIs do not.** `20250926_237` shows no pinned frames at all;
+`20260629_314` pins in 44 frames and `20260630_325` in one, and in both the flooded patch sits
+where **no ROI or penumbra** is, so it cannot reach an extracted trace or this repository's event
+table. The known-pinned control fired as expected, 2 of 21 ROIs touched.
 
-**Nothing is owed by this repository until they answer.** What is left here is the decision
-below, if their answer turns out to need one.
+**So the group-level scenario does not hold**: mice 68, 82 and 83 are not affected in every
+recording at the ROI level, and nothing in the de-pinned export needs to change. The
+fast-stream DI result does not depend on those three slices hiding pinned ROIs.
 
-**Rewritten 2026-09-22, and the rewrite is the point.** Tony asked whether this had been
-checked before. **It has — three separate ways — and the answer has been in the darkroom
-since 2026-09-18.** What was wrong was this repository's copy of it.
+**Their caveat, which they volunteered and which belongs with the conclusion:** the geometric
+test undercounts — on the control it caught 2 of the 4 census ROIs, because its mask keeps only
+pixels at the frame minimum in more than half the pinned frames. A clean result is therefore not
+proof on its own. What carries it is **two tests sharing no code agreeing**: the per-ROI trace
+detector and the geometry. They also note 400 samples is too sparse to clear a slice; the table
+uses 4,000.
 
-**Decide, once they answer:** whether the residual risk needs anything held.
-
-**What was already done, so nobody screens it a fourth time:**
-
-| when | who | what |
-|---|---|---|
-| 2026-09-02 | interface2 | a blind whole-frame scan, knowing nothing about the ROI census, ranking `20250926_237`, `20260629_314` and `20260630_325` beside the four known pinned slices |
-| by 2026-09-18 | interface2 | the per-ROI trace-derivative detector over **all 85 archive slices** — 14 ROIs across 6 slices flagged, 12 across 4 strong |
-| 2026-09-18 | Tony | the trace panels by eye, one per pinned ROI, raw fluorescence against the frame minimum, `20260630_325` among them |
-| 2026-09-17/18 | bugarach | the whole rigid-shift chain re-run on the de-pinned export; every conclusion survived (`ba6f90c`) |
-
-**What the producer actually said**, in the same-day correction inside
-`<darkroom>/bugarach/2026-09-18-pinned-rois-answer/README.md`: all three candidates were
-inside the 85-slice sweep. `20260630_325` came back **marginal** and is in the census (ROI 10,
-3.6 s). `20250926_237` and `20260629_314` came back with **no ROI flagged**. Their note
-corrects an earlier sentence of their own that said the detector had not been run on them.
-
-**Why this repository kept saying otherwise.** The correction never reached
-`current_export.toml`, and everything downstream re-derives from that note: the cover memo,
-the round-3 review's finding 3, this item as first written. The round-**2** review caught it
-(`reviews/coordination-pipeline-methods-2026-09-22-roles-r2/01-prove-it.md`, F3) and said the
-producer should fix the pointer; nobody did, so round 3 read the pointer and restated the
-withdrawn claim. All the live copies are corrected as of this change; the verbatim morning
-summary and the review records keep their text, because they are the record of what was
-believed when.
-
-**What is genuinely open, and it is narrow: sensitivity, not coverage.** The census tests
-manually selected hROIs only, so a flooded patch holding no hROI leaves it silent while the
-frame is still corrupted — exactly what a whole-frame scan sees and it cannot. `20260629_314`
-is the most exposed case at 14 ROIs, the fewest of any DI slice. The settling test is
-geometric — pinned pixels against ROI masks, interface2's `tools/check_roi_pinning.m` — and
-**that** has not been run on these three.
-
-**Recommendation, as sent:** the geometric test on those three slices and nothing else. The
-producer's own reading is that the residual cuts in our favour, because a whole-frame artifact
-where no ROI sits cannot reach our event table at all. Do **not** arm the contamination stop
-for this: the folder addresses what was found, and the open part is a sensitivity limit rather
-than a declared contamination the data do not mark. Three of the ten DI mice would be affected
-in every recording if the candidates are real, which is why it was worth asking at all.
-
-**What went back with it**, four days late and now sent. Their question about the re-run is
-answered by the rigid-shift chain above and by the by-group figures (DI slow 1.82 pooled, 1.76
-[1.20, 2.50] per slice, against the 1.49 the leave-one-out predicted). Their question about the
-manifest has the answer nobody had sent: **nothing in this tree reads
-`moco_pinned_excluded.tsv`** — the only manifest reader, `tools/make_group_raster_summary.py`,
-names the field-step files — and the manifest is still the right shape, because the windows are
-what a null would mask across. Their question about the shared gaps is answered honestly as
-untested, with the observation that **the gap outlives the fix**: clipping removes the events
-and leaves a stretch shared across ROIs, so a whole-trace circular shift can still manufacture
-or destroy coincidence at the offset. That last one is now open work here, not a question for
-them.
-
-⚠ **One thing shipped ahead of its own page.** The by-group numbers went to the producer while
-`docs/learned/slow_comodulation/README.md` still shows the superseded run (item 9). The issue
-says so and tells them to cite it rather than the page — but the page is now the thing that
-disagrees with what another team has been told, which moves item 9 up.
+The substance now lives where the work reads it — the note in `current_export.toml` and the row
+in [`MILESTONES.md`](MILESTONES.md) — which is why this item is a stub rather than a section.
+**Still ours and untouched by this:** group and imaging day are perfectly aliased in this
+corpus, which they say plainly they have not checked and which is not theirs to check.
 
 ## 2. The jitter constant is about three times too loose on both benches
 

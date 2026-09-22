@@ -122,6 +122,21 @@ is that this **cuts in the consumer's favour**: a whole-frame artifact in a regi
 ROI in it cannot reach this event table at all. The test that would settle it is geometric —
 pinned pixels against ROI masks, interface2's `tools/check_roi_pinning.m` — and **that** has
 not been run on these three. Ask for that, not for the detector.
+
+**ANSWERED 2026-09-22, and this closes it.** The geometric test ran on all three
+(syncytium2/interface2#1; record: interface2 `docs/moco_floor_pinning.md`, *Update
+2026-09-22*, `5d8aa49`). **The frames pin; the ROIs do not.** `20250926_237` shows no
+pinned frames at 4,000 samples; `20260629_314` pins in 44 frames and `20260630_325` in
+one, and in both the flooded patch lies where no ROI or penumbra sits, so it cannot
+reach an extracted trace or this repository's event table. The known-pinned control
+fired as expected. So the three candidates are not carrying pinned events, the
+group-level scenario does not hold, and **nothing in this folder needs to change.**
+
+The producer's own caveat travels with that: the geometric test undercounts — on the
+control it caught 2 of the 4 census ROIs — so a clean result is not proof on its own.
+What carries the conclusion is two tests sharing no code agreeing, the per-ROI trace
+detector and the geometry. Their sampling note: 400 frames is too sparse to clear a
+slice; the result above uses 4,000.
 """
 
 [steps_excluded]

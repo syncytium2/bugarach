@@ -5,7 +5,7 @@ filed: 2026-09-22
 
 # The ruling queue: one page, so a session can see all of it at once
 
-waiting: Rule the ten items in `docs/decisions_pending.md` — the pinning question and the jitter constant come first; both are minutes, and every tuned number on both streams is provisional until the second is answered.
+waiting: Rule the nine open items in `docs/decisions_pending.md` — the jitter constant first, because every tuned number on both streams is provisional until it is answered. The pinning question closed itself on 2026-09-22: the producer ran the geometric test and the ROIs are clean.
 
 **Read [`docs/decisions_pending.md`](../decisions_pending.md).** This file is the queue entry;
 that one is the content.
