@@ -246,8 +246,8 @@ and readout plan: `HANDOFF-workstation-tuning.md` on that branch ⚠ **not on `m
 | finding | strength | source |
 |---|---|---|
 | **The folder is the registry.** Every module in `src/bugarach/learn/nets/` is imported by `pkgutil` and registers itself through `@register`, so to enumerate the family you list the folder. Nothing carries a hand-written name list that can drift | built | [`learn/nets/__init__.py`](../../src/bugarach/learn/nets/__init__.py) |
-| **On `main`: tube, tube_guard, tube_ratio, tube_ratio_guard, line, line_length, trace, tiny.** The four tube variants are the mechanism candidates; trace and tiny are controls | built | the folder |
-| **On branch `tune-learned-vs-coact`, seven more**: gauge, tube_no_bypass, chorus, chorus_gain, chorus_gain_norm, chorus_line, chorus_norm ⚠ **none of them is on `main`** | built | the folder on that branch |
+| **On `main`: tube, tube_guard, tube_ratio, tube_ratio_guard, tube_no_bypass, line, line_length, line_bound, trace, tiny, gauge, chorus, chorus_gain, chorus_gain_norm, chorus_line, chorus_norm.** The four tube variants are the mechanism candidates; trace and tiny are controls; plain `chorus` is the failed control its four repairs are measured against. Every one is in the lab server's capabilities and the browser's model picker, because the registry is the picker's only source | built | the folder; [`lab.py`](../../src/bugarach/lab.py) `_architectures()` |
+| **gauge, tube_no_bypass and the five chorus nets landed on `main` on 2026-09-21**, code only, from branch `tune-bench-comparison`; their run output stays on that branch and in the darkroom | built | #680 |
 | **`line` counts how many ROIs are lit and judges that count against its own background.** It takes the top mean F1 in the supervised bake-off (0.713) but **not separably from CoactDetect** (+0.063, *t*(3) = 1.31), and its one-sensor ablation is indistinguishable from CoactDetect (+0.005, *t*(3) = 0.34) | measured, held | [`MILESTONES.md`](../MILESTONES.md) section C; [`line.py`](../../src/bugarach/learn/nets/line.py) |
 | **`tube` reproduces its shipped 24-recording F1 of 0.656 exactly** after the bypass flag was added, so `tube_no_bypass` is a controlled ablation and not a redefinition | measured | [PR #596](https://github.com/syncytium2/bugarach/pull/596) |
 
@@ -268,9 +268,17 @@ The home spec is 32 ROIs, four folds of six recordings, two torch training seeds
 
 | finding | strength | source |
 |---|---|---|
-| **`chorus` as first built does not train**: F1 0.125 flat, every fold, both seeds, threshold pinned to the grid floor. Diagnosed — its per-cell encoder **starts deaf**, at any learning rate — and repaired four ways, all of which now train | measured, then repaired | [PR #596](https://github.com/syncytium2/bugarach/pull/596); `docs/learned/field_size_candidates/why_chorus.txt` ⚠ **not on `main`** |
+| **`chorus` as first built does not train**: F1 0.125 flat, every fold, both seeds, threshold pinned to the grid floor. Diagnosed — its per-cell encoder **starts deaf**, at any learning rate — and repaired four ways, all of which now train | measured, then repaired | [PR #596](https://github.com/syncytium2/bugarach/pull/596); [`why_chorus.txt`](../learned/field_size_candidates/why_chorus.txt), landed alone because `chorus.py` cites it — the rest of that folder is still on the PR's branch |
 | **`trace` and `tiny` show the same signature and were never diagnosed.** Their thresholds pin to the grid floor on three and four folds of four, so "detect everything" beat every stricter setting. The filed todo names those two; chorus makes it three, and chorus is the one that turned out to be a fixable defect rather than a property of the shape | measured | [the todo](../todo/2026-08-28-two-architectures-have-no-operating-point.md) |
 | **A model that starts deaf is a bug, not a verdict on the architecture.** That is the general lesson, and it is why a failed-training result now has to be diagnosed before it is reported as a finding about a shape | argued, from the chorus repair | the same readout ⚠ **not on `main`** |
+
+### gauge and chorus stay in the model picker (decided, Tony, 2026-09-22)
+
+They reached it with #680, which landed their code and therefore registered them: the registry is the
+picker's only source. That was the question PR #596 had held open — a model in the picker is one a
+colleague can run on their own recordings, and these have seen simulation only, with `gauge` firing
+freely on an empty field. **Ruled: leave them there**, each carrying its registration note (`gauge`:
+*SIMULATION ONLY*; `chorus`: *DOES NOT TRAIN*).
 
 ### Where the label-free half stands
 
@@ -303,7 +311,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 | decision | why it gates the goal | filed |
 |---|---|---|
 | **Which models and detectors to keep** (Tony, 2026-09-17: *"we're still troubleshooting and figuring out what models/detectors to keep"*) | Decides what the next comparison, on the bench and against every-knob coded detectors, includes. (The Gate 1 step-3 stop that stood here was ruled on 2026-09-16: a low seed draw, not a defect) | [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §4; `docs/learned/tuned_vs_coact/gate1/README.md` ⚠ **not on `main`** |
-| **Whether [PR #596](https://github.com/syncytium2/bugarach/pull/596) merges.** Registering chorus and gauge puts them in the lab server's capabilities and in the browser's model picker | A model in the picker is a model a colleague can run on their own recordings; these have been run on simulation only, and gauge fires freely on an empty field | the PR, deliberately not set to auto-merge |
+| **Whether [PR #596](https://github.com/syncytium2/bugarach/pull/596)'s run output lands.** Its registration question is ruled (see *gauge and chorus stay in the model picker*); what remains is its results folder and tools | Decides whether the field-size readout is citable from `main` or only from the branch | the PR, deliberately not set to auto-merge |
 | **Bake-off promotion**, for `line` and for anything the tuning run returns | [`MILESTONES.md`](../MILESTONES.md) reserves it; the `line` row is `held` | [`MILESTONES.md`](../MILESTONES.md) section C |
 | **Whether `trace` and `tiny` get the chorus treatment** — diagnosed as possibly-deaf, or recorded as shapes that cannot learn this task | Decides whether the no-operating-point todo is a bug report or a result | [todo](../todo/2026-08-28-two-architectures-have-no-operating-point.md) |
 

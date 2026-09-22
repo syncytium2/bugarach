@@ -53,12 +53,14 @@ can find.
 | the chorus-collapse findings | **items 1-3 now, plus the census re-run** |
 | 064's disk | **the two stale virtual environments only**, 8.60 GB. Every run folder stays |
 
-**Still deliberately unruled — do not infer either:**
+**Ruled since this was written (2026-09-22):** `gauge` and `chorus` stay in the lab
+server's capabilities and the browser's model picker. #680 had already put them there —
+registering a net is what lists it — and Tony chose to leave them, each with its warning
+note. Whether [#596](https://github.com/syncytium2/bugarach/pull/596)'s run output lands
+is still open.
 
-- **[#596](https://github.com/syncytium2/bugarach/pull/596)**, registering `gauge` and
-  `chorus` into the lab server's capabilities and the browser's model picker. They have
-  only ever seen simulation, and `gauge` fires 57 to 77 times an hour on an emptying
-  field with nothing planted.
+**Still deliberately unruled — do not infer it:**
+
 - **the fate of `tune-bench-comparison` itself.** Its scan is
   [`docs/todo/2026-09-19-landing-tune-bench-comparison.md`](docs/todo/2026-09-19-landing-tune-bench-comparison.md);
   gate 3 closed with #672 and gate 5 is answered by #680, so gates 2 and 4 remain. The
