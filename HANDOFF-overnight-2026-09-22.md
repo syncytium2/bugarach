@@ -99,6 +99,28 @@ Start from `main`, pull first, claim both boards. Tony confirms the dataset defa
    adopts quiet/busy and the probe level per the table above, rebased on WSMIP065's constants PR.
 3. When done, write one line at the bottom of this section.
 
+**Step 1 DONE 2026-09-22 22:10 UTC — #682, #740, #741 merged.** The sweep is complete (11
+allowances × 2 draws, every cell measured) and the 4-row top-up is **closed, not skipped**: it was
+cheap once run strict-end-first — the replicate's 0.000 took 6 rounds, then 0.005 and 0.010 took
+one each off the cache it had filled. **The verdict only flips where the search is pinned at the
+30 s gap-grid edge**: 0 of 32 selections sit there below an allowance of 0.10, all 32 at 0.25 and
+looser, and at the strict end both draws put CoactDetect ahead in 31 of 32 cells. Record and
+Figure 1 in `docs/learned/runs/2026-09-21-crowded-allowance-sweep/`; bulk in the darkroom, claim
+released. **Adjudicates nothing** — no operating point moved, `MAX_CROWDED_DROP` still 0.02.
+*Found and fixed on the way:* `sapper.py --staged`, the pre-commit gate, crashed on native Windows
+(cp1252) printing any staged line containing `→`, `⚠` or an em dash, and `check_quotes.py` had the
+same defect and runs first in the hook. CI is UTF-8, so only this workstation ever saw it —
+`test_tracked_tree_is_clear` included, which asserts `--all` exits 0 and could not pass here. Both
+forced to UTF-8, two regression tests that force cp1252 (#682).
+
+**Step 2 NOT STARTED, blocked on the dataset confirm and not on code.**
+`tools/measure_coordination_rates.py` is on `main` (#737, verified) and has been read.
+`dataset.default()` refuses with `UnconfirmedDefault`, and its own message says to ask the person
+and *"do not confirm on their behalf"* — so the ask went to Tony and this session did not run it.
+The orchestrator's 21:36 note agrees the confirm is his to give. On a yes: run the tool over the
+default dataset's baseline windows for fast, slow and combined with its calibration, record into
+`docs/learned/runs/2026-09-23-coordination-rates/`, and only then consider the adoption PR.
+
 ## Orchestrator (cloud)
 
 Writes `tools/measure_coordination_rates.py`, tests it on simulations with known answers, merges
