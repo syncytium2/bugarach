@@ -277,6 +277,25 @@ onset to the nearest fast onset, against the frame interval. A mass at zero is a
 Start the build after items 2 and 3, and after the one-stream-aware bench rebuild — a third
 copy of the scoring path is the strongest argument yet for that refactor landing first.
 
+## Under check — claims that are not rulings yet
+
+**These are not decisions.** They are things somebody noticed that would change a result if
+true, filed here so they are visible beside the rulings rather than in a todo nobody opens. An
+item leaves this section when it is confirmed or dismissed — and if confirming it produces a
+decision, that decision joins the numbered list above.
+
+- **CoactDetect's event times are bin edges, so they cannot line up with chorus or with the
+  data** (Tony, 2026-09-22, by eye). A mechanism that produces exactly that is in the code:
+  `coact.py:278` takes a call's onset from the **left edge of its bin**, quantised to the shipped
+  `int_win_sec` of 2.0 s, while the nets decode at frame resolution and the data are event
+  onsets. `emit.py` writes that bin-edge onset into `detections.csv`, which is what the rasters,
+  the figures and fireflies read. ⚠ **It does not automatically invalidate goal 2** — scoring
+  matches within a tolerance, and a tolerance wider than a bin absorbs the offset, which would
+  explain why F1 never showed it. Check that first. Full write-up, what to measure, and the fix
+  that is already half-built by #698:
+  [`todo/2026-09-22-coactdetect-onsets-are-bin-edges.md`](todo/2026-09-22-coactdetect-onsets-are-bin-edges.md).
+  **Needs a real recording**, so it belongs on 064 or 065.
+
 ## Already in the queue, listed so this page is the whole of it
 
 - **Two scorers, two winners, and nothing decides between them** —
