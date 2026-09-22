@@ -1,8 +1,17 @@
 ---
-status: open
+status: superseded
 filed: 2026-09-22
-priority: high — it touches the detector that wins goal 2's comparison
+superseded_by: 2026-09-22-what-the-full-cohort-rasters-show.md
 ---
+
+> ⚠ **SUPERSEDED THE SAME DAY, and wrong in its headline.** CoactDetect ran **sliding** in the run
+> this was written about, and its onsets sit on member events (median offset 0.00 s, 48/77 fast and
+> 108/127 slow within 0.1 s). The bin-edge mechanism below is real but belongs to **binned SCE**,
+> whose 10 s bin puts its marks a median 3.5 s before the first member event; locust is off for a
+> different reason, peak versus half-rise. The measurements, and three further misreadings of the
+> same figure, are in
+> [`2026-09-22-what-the-full-cohort-rasters-show.md`](2026-09-22-what-the-full-cohort-rasters-show.md).
+> Kept unedited below as the record of what was believed.
 
 # CoactDetect's event times are bin edges, so they cannot line up with chorus or with the data
 
