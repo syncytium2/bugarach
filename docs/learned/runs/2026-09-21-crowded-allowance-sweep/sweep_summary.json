@@ -127,6 +127,106 @@
      "inner_vs_outer_margin_max_abs_diff": 0.0569
     },
     "gaps_at_grid_edge": 0
+   },
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.05312,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.02905,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03707,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.10212,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.08804,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.01987,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.05419,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.13203,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      5.0,
+      5.0,
+      5.0,
+      5.0
+     ],
+     "chorus_norm gated": [
+      5.0,
+      5.0,
+      5.0,
+      5.0
+     ],
+     "chorus_gain_norm ungated": [
+      5.0,
+      5.0,
+      5.0,
+      2.0
+     ],
+     "chorus_gain_norm gated": [
+      5.0,
+      8.0,
+      5.0,
+      8.0
+     ],
+     "line_length ungated": [
+      8.0,
+      5.0,
+      5.0,
+      5.0
+     ],
+     "line_length gated": [
+      5.0,
+      5.0,
+      2.0,
+      8.0
+     ],
+     "tube ungated": [
+      2.0,
+      2.0,
+      2.0,
+      2.0
+     ],
+     "tube gated": [
+      2.0,
+      2.0,
+      2.0,
+      2.0
+     ]
+    },
+    "gaps_at_grid_edge": 0
    }
   },
   "0.01": {
@@ -261,6 +361,106 @@
      ],
      "n_accepted_but_fail_on_outer_refits": 3,
      "inner_vs_outer_margin_max_abs_diff": 0.0569
+    },
+    "gaps_at_grid_edge": 0
+   },
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.05312,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.02905,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03707,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.10212,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.08804,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.01781,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.05419,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.12976,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      5.0,
+      5.0,
+      5.0,
+      5.0
+     ],
+     "chorus_norm gated": [
+      5.0,
+      5.0,
+      5.0,
+      5.0
+     ],
+     "chorus_gain_norm ungated": [
+      5.0,
+      5.0,
+      5.0,
+      2.0
+     ],
+     "chorus_gain_norm gated": [
+      5.0,
+      8.0,
+      8.0,
+      8.0
+     ],
+     "line_length ungated": [
+      8.0,
+      5.0,
+      5.0,
+      5.0
+     ],
+     "line_length gated": [
+      5.0,
+      5.0,
+      2.0,
+      8.0
+     ],
+     "tube ungated": [
+      2.0,
+      2.0,
+      2.0,
+      2.0
+     ],
+     "tube gated": [
+      8.0,
+      8.0,
+      8.0,
+      2.0
+     ]
     },
     "gaps_at_grid_edge": 0
    }
@@ -2286,6 +2486,106 @@
       2.0,
       2.0,
       5.0
+     ]
+    },
+    "gaps_at_grid_edge": 0
+   },
+   "replicate": {
+    "noise_f1": 0.01,
+    "selections": {
+     "ungated": {
+      "chorus_norm": {
+       "mean": -0.05736,
+       "folds_ahead": 3,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.02731,
+       "folds_ahead": 2,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.03874,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.10212,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     },
+     "gated": {
+      "chorus_norm": {
+       "mean": -0.09163,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "chorus_gain_norm": {
+       "mean": -0.02103,
+       "folds_ahead": 1,
+       "verdict": "coact ahead"
+      },
+      "line_length": {
+       "mean": -0.05419,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      },
+      "tube": {
+       "mean": -0.13203,
+       "folds_ahead": 0,
+       "verdict": "coact ahead"
+      }
+     }
+    },
+    "gaps": {
+     "chorus_norm ungated": [
+      2.0,
+      2.0,
+      2.0,
+      2.0
+     ],
+     "chorus_norm gated": [
+      2.0,
+      2.0,
+      2.0,
+      2.0
+     ],
+     "chorus_gain_norm ungated": [
+      2.0,
+      5.0,
+      5.0,
+      2.0
+     ],
+     "chorus_gain_norm gated": [
+      2.0,
+      8.0,
+      5.0,
+      8.0
+     ],
+     "line_length ungated": [
+      2.0,
+      2.0,
+      2.0,
+      2.0
+     ],
+     "line_length gated": [
+      5.0,
+      5.0,
+      2.0,
+      8.0
+     ],
+     "tube ungated": [
+      2.0,
+      2.0,
+      2.0,
+      2.0
+     ],
+     "tube gated": [
+      2.0,
+      2.0,
+      2.0,
+      2.0
      ]
     },
     "gaps_at_grid_edge": 0
