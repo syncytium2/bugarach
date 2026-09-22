@@ -31,8 +31,8 @@ For context, drive C: has **79.3 GB free** of about 951 GB, so nothing here is u
 | `runs\fair-comparison-2026-09-18` | 1.22 GB | 8,000 | 2026-09-19 | **yes — verified**, see below | only by re-running the 12-hour GPU run |
 | `runs\replicate-2026-09-18` | 1.21 GB | 7,807 | 2026-09-19 | **yes** — it *is* an unpacked copy of the darkroom's `fits.zip`/`scores.zip` (board's own note) | unpacking those archives again |
 | `runs\tune-gpu-shakedown` | 0.42 GB | 8,148 | 2026-09-18 | summary only, in `docs/learned/tuned_vs_coact/shakedown_home_spec/` | only by re-running the 13 h 53 min shakedown |
-| `runs\fair-comparison-2026-09-18-gaps` | 0.13 GB | 3,878 | 2026-09-19 | no | `tools/tune_net_merge_gap.py` re-decodes it |
-| `runs\replicate-2026-09-18-gaps` | 0.10 GB | 3,468 | 2026-09-19 | no | same |
+| `runs\fair-comparison-2026-09-18-gaps` | 0.13 GB | 3,878 | 2026-09-19 | no — ⚠ **do not delete**, see item 2 | a serial `select`/`--pairs` loop; 6 rounds for one allowance on one draw |
+| `runs\replicate-2026-09-18-gaps` | 0.10 GB | 3,468 | 2026-09-19 | no — ⚠ **do not delete**, see item 2 | same |
 | `runs\gpu-weekend-*` (6 folders) | 0.04 GB | ~1,050 | 2026-09-18 | no | timing probes; the board already calls them safe to delete |
 | `runs\tune-*`, `gpu-correctness*`, `cpu-check-*` (9 folders) | 0.02 GB | ~1,050 | 2026-09-17 | no | smoke and correctness probes from the setup days |
 | loose files in `runs\` (logs, launch wrappers) | 0.08 GB | 30 | — | the launch wrappers are the only record of how the tasks were invoked | — |
@@ -61,6 +61,15 @@ extra, in 98.3 MB compressed against 1.22 GB on disk. The replicate's archive is
    them. **This is the whole reclaim; the rest is rounding.**
 2. **The `-gaps` scratch and the probe folders — 0.29 GB.** Re-decoded arrays and smoke runs; the
    tools regenerate them.
+   ⚠ **Amended 2026-09-22 — do NOT delete the two `-gaps` folders, and "the tools regenerate them"
+   is the part that was wrong.** The crowded-allowance top-up
+   (`docs/learned/runs/2026-09-21-crowded-allowance-sweep/`) wrote into
+   `fair-comparison-2026-09-18-gaps\crowded\` and `replicate-2026-09-18-gaps\crowded\`, and every
+   strict row in that record reproduces from them. Regenerating is not one command: once a fit's
+   crowded file is partial the plain `crowded` stage refuses it outright, so the only route is a
+   serial `select` → `crowded --pairs` → `select` loop that took **six rounds and 20 minutes** for
+   one allowance on one draw. Reclaiming 0.29 GB would cost that back, and the record says so.
+   The probe and `-gaps-smoke` folders are still fine to delete.
 3. **`runs\replicate-2026-09-18` — 1.21 GB.** An unpacked copy of darkroom archives, by the board's
    own description. Unpack again if needed.
 4. **`runs\fair-comparison-2026-09-18` — 1.22 GB.** Covered by the darkroom, verified above. This is

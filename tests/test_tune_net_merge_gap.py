@@ -160,6 +160,33 @@ def test_the_output_records_what_it_ran_on(doc):
     assert p["this_tree"] and p["tuning_tree"], "a tree commit is missing"
 
 
+def test_the_crowded_allowance_can_be_varied_without_moving_the_shipped_default():
+    """The 0.02 F1 allowance decides every gap on the page and nobody has signed it.
+
+    The only way to find out whether it matters is to vary it and look, so `select` takes
+    `--max-drop`. The part that has to be nailed down is the default: it stays ``None``, which
+    means ``bench.MAX_CROWDED_DROP``, so a run that does not ask reproduces what shipped. A
+    literal default here would let the tool drift away from the constant silently.
+    """
+    import inspect
+
+    sig = inspect.signature(G.Selector.__init__)
+    assert "max_drop" in sig.parameters, "select must be able to enforce a different allowance"
+    assert sig.parameters["max_drop"].default is None, (
+        "the default has to be None -- the shipped allowance is bench.MAX_CROWDED_DROP, and "
+        "repeating its value here is how the two come apart"
+    )
+    source = (REPO / "tools" / "tune_net_merge_gap.py").read_text(encoding="utf-8")
+    assert "--max-drop" in source, "the override has to be reachable from the command line"
+
+
+def test_the_committed_outputs_were_selected_at_the_shipped_allowance(doc):
+    """Whatever the sweep finds, what is on `main` must still be the shipped rule's answer."""
+    from bugarach import bench
+
+    assert doc["max_crowded_drop"] == pytest.approx(float(bench.MAX_CROWDED_DROP))
+
+
 def test_the_correction_is_derived_from_the_fold_count(doc):
     folds = {len(doc["comparisons"][w][k]["per_fold"]) for w in doc["comparisons"]
              for k in doc["comparisons"][w]}

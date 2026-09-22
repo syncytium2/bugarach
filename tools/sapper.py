@@ -556,7 +556,30 @@ def report(findings) -> int:
     return 1 if blocked else 0
 
 
+def printable_output() -> None:
+    """Make stdout survive a line this repository is full of.
+
+    A gate that refuses a commit because it could not PRINT is worse than no
+    gate: what crashed is the message the person needs. On native Windows the
+    console encoding is cp1252, so echoing a staged line containing an arrow, a
+    warning sign, an em dash or a multiplication sign — all ordinary here —
+    raised UnicodeEncodeError and took `--staged` down with it, which is the
+    pre-commit hook. `--all` died mid-report the same way, part-way through the
+    tree, which reads as a broken tool rather than as a scan that found things.
+
+    Found on 2026-09-22, blocking a merge commit on `→`. Switching the streams
+    to UTF-8 with ``errors="replace"`` makes the worst case a substituted
+    character in one echoed line, never a lost gate.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass                        # a stream that cannot be reconfigured
+
+
 def main() -> int:
+    printable_output()
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--selftest", action="store_true")
