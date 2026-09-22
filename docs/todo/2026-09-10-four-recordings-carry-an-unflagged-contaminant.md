@@ -155,8 +155,15 @@ contribution; it never estimates it.**
 `n_exceed >= 100` leaves two slices with their events — `20260702_338` (1 ROI, 13 exceeding frames)
 and `20260630_325` (1 ROI, 10), against 515 to 2,195 for the four that were cleaned — and
 `20260629_314` is absent from the census altogether, with an interface2 todo from 2026-09-02 ranking
-it beside the known four on a blind whole-frame scan. So the honest statement is measured-and-tiny
-for two slices and unexamined for one. It is carried on `docs/MILESTONES.md`, in the open table, and
+it beside the known four on a blind whole-frame scan.
+
+**Corrected 2026-09-22.** That last clause used to read "unexamined for one", and it was wrong: the
+producer's own answer carries a same-day correction saying all three candidates were inside the
+85-slice per-ROI sweep, `20260630_325` marginal and in the census, `20250926_237` and `20260629_314`
+with no ROI flagged. The open question is the census's **sensitivity** — it tests manually selected
+hROIs only — and the geometric test that settles it, pinned pixels against ROI masks, has not been
+run on those three. The correction is now in `current_export.toml`, `docs/MILESTONES.md` and
+`docs/decisions_pending.md` item 1, which is where it should have gone on 2026-09-18. It is carried on `docs/MILESTONES.md`, in the open table, and
 in this pointer file's own note on the role — not here, because the question this file asks has an
 answer.
 
