@@ -25,6 +25,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Goal:** coded-detector-optimization + learned-model-family.
 - **Released when:** the run record is on `main`.
 
+### candid-sorrel/correlogram — DARKROOM claim ACTIVE 2026-09-22: `bugarach/correlogram/` (NEW)
+- **Status:** ACTIVE, claimed before writing. Tony, 2026-09-22: *"run the correlogram on fast and
+  slow, by group_id. are the widths different between the groups?"* and *"move the figures into
+  darkroom bugarach correlogram folder"* — so the correlogram figures gather in one named folder
+  instead of scattering as dated PNGs at the root.
+- **Writes:** `<darkroom>/bugarach/correlogram/` only, a NEW folder. It receives the new per-group
+  figure, and the three loose correlogram/jitter PNGs already at the root are **moved** into it
+  (`2026-09-22-jitter-correlogram.png`, `2026-09-22-explain-jitter.png`,
+  `2026-09-21-slow-bench-jitter-vs-bin.png`), keeping their dated names. The two explainer figures
+  that existed only in the repo are copied in. Nothing else under `<darkroom>/bugarach/` is touched,
+  and `constellation/` is not touched.
+- **Reads:** the default export `steps_and_pins_excluded`, confirmed by Tony this session. CPU only,
+  no GPU.
+- **Goal:** none of the four — it measures a bench constant, per group.
+
 ### 064/allowance-strict-rows — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-21-crowded-allowance-sweep/` (RE-CLAIM)
 - **Status:** **RELEASED 2026-09-22**, on [#741](https://github.com/syncytium2/bugarach/pull/741)
   merging. The folder holds the completed sweep: **26** grid files, and `README.md`,
