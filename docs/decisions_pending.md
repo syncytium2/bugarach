@@ -61,14 +61,15 @@ re-measure and re-search run.
 happened, and the constants the methods section describes. It also decides whether step C
 below has a stable bench to train on.
 
-**Evidence:** [#718](https://github.com/syncytium2/bugarach/pull/718), ⚠ **open, not yet on
-`main`** — its run record is `docs/learned/runs/2026-09-22-jitter-correlogram/` on that branch.
+**Evidence:** [#718](https://github.com/syncytium2/bugarach/pull/718), merged 2026-09-22
+(`05769ce`); its run record is `docs/learned/runs/2026-09-22-jitter-correlogram/`.
 Read off the half-width of the cross-ROI
 onset correlogram at 0.1 s lags rather than from a within-cluster spread: **fast 0.106 s
 [0.091, 0.120] and slow 0.135 s [0.126, 0.149], against benches of 0.36 s and 0.30 s**, with
 theory giving 0.110 s and 0.138 s. Both old values tracked bin ÷ √12 — bugarach's and the
 MATLAB summary's alike. Slow's peak carries a tail one jitter does not make, and a shared
-same-frame artefact would read the same way. No bench constant was changed in that branch.
+same-frame artefact would read the same way. **The measurement landed; no bench constant moved
+with it**, which is what makes this a ruling rather than a change already made.
 Related: the slow bench's own 0.30 s already rested on an analogy that step A disproved, where
 the MATLAB summary gives 0.46 s for slow and that move alone costs locust −0.098 and
 SPIKE-synch −0.082 mean F1 (`docs/learned/runs/2026-09-21-slow-step-a/README.md`).
