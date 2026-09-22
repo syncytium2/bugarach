@@ -10,20 +10,18 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 064/allowance-strict-rows — DARKROOM claim ACTIVE 2026-09-22: `bugarach/2026-09-21-crowded-allowance-sweep/` (RE-CLAIM)
-- **Status:** ACTIVE (WSMIP064), claimed before writing. The re-claim the released block below
-  said to expect: the three replicate strict rows converged at 17:56 and the sweep is now
-  complete, so the folder's record, Figure 1, summary and grid must move with the repo copy.
-  **This supersedes the block below for the duration** — same folder, and only one of the two is
-  ever ACTIVE.
-- **Writes:** `README.md`, `crowded_allowance.png`, `crowded_allowance.html`,
-  `sweep_summary.json` (all replaced), and 3 new files in `grid/` (26 total). Nothing else under
-  `<darkroom>/bugarach/` is touched, and `constellation/` is not touched.
-- **Claims:** that folder exclusively.
+### 064/allowance-strict-rows — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-21-crowded-allowance-sweep/` (RE-CLAIM)
+- **Status:** **RELEASED 2026-09-22**, on [#741](https://github.com/syncytium2/bugarach/pull/741)
+  merging. The folder holds the completed sweep: **26** grid files, and `README.md`,
+  `crowded_allowance.png`, `crowded_allowance.html` and `sweep_summary.json` replaced — the record
+  and the figure each verified byte-for-byte against the repo copy after the write. Was: ACTIVE,
+  claimed before writing, the re-claim the block below said to expect. **Nothing of this thread is
+  held now**: no darkroom folder, no CPU pool, no GPU, no scheduled task.
+- **Writes:** that folder only. Nothing else under `<darkroom>/bugarach/` was touched, and
+  `constellation/` was not touched.
 - **Simulation only** — cached decodings from the 2026-09-18 fair comparison; no dataset read,
   no retraining, no GPU.
 - **Goal:** learned-model-family (goal 2).
-- **Released when:** the completed record is on `main`.
 
 ### 064/crowded-allowance — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-21-crowded-allowance-sweep/` (NEW)
 - **Status:** **RELEASED 2026-09-22**, on [#682](https://github.com/syncytium2/bugarach/pull/682)
