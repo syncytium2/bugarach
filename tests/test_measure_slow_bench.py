@@ -1,7 +1,7 @@
 """The slow stream's measurement is its own record, of the slow stream, on the default folder.
 
 The sibling of ``test_bench_is_measured_on_the_declared_folder.py`` that
-``HANDOFF-slow-bench.md`` asks for. Tony, 2026-09-21: nothing a slow run writes may land on
+``docs/handoffs/2026-09-21-slow-bench.md`` asks for. Tony, 2026-09-21: nothing a slow run writes may land on
 a fast result. So these tests read only the committed record and the pointer — no data on
 the machine — and turn red when:
 

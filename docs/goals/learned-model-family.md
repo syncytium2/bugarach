@@ -349,7 +349,7 @@ operating points belong to [`coded-detector-optimization.md`](coded-detector-opt
 | The architectures | [`src/bugarach/learn/nets/`](../../src/bugarach/learn/) — the folder is the registry |
 | The bake-off | [`tools/fair_bakeoff.py`](../../tools/fair_bakeoff.py) — `--learned`, `--null-rates`, `--skip-hand-written`, `--train-seed` |
 | The tuning run's specification, and Tony's decisions of 2026-09-16 | `HANDOFF-workstation-tuning.md` on branch `tune-bench-comparison` ([PR #642](https://github.com/syncytium2/bugarach/pull/642)) ⚠ **not on `main`**. The copy on `tune-learned-vs-coact`, which this row named until 2026-09-20, is the shakedown's and stops 192 lines earlier |
-| What the two readouts left open, and why the tool behind them is not on `main` | [`HANDOFF-the-readouts-landed-the-code-behind-them-did-not.md`](../../HANDOFF-the-readouts-landed-the-code-behind-them-did-not.md) at the root |
+| What the two readouts left open, and why the tool behind them is not on `main` | [the 2026-09-20 handoff](../handoffs/2026-09-20-the-readouts-landed-the-code-behind-them-did-not.md), retired 2026-09-22; its header says where each item went |
 | The current scoreboard | `docs/learned/field_size_candidates/README.md` on that branch ⚠ **not on `main`** |
 | Gate 1, and the stop | `docs/learned/tuned_vs_coact/gate1/README.md` on that branch ⚠ **not on `main`** |
 | The proposal the three new shapes came from, and `quorum` | branch `claude/net-design-proposal-hw8rve` ⚠ **not on `main`**; its tip is an ancestor of `main` but the files were stripped back out before it merged |

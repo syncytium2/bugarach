@@ -10,7 +10,7 @@ priority: high — right after the 2026-09-22 meeting
 
 Tony, 2026-09-21: *"we don't have time to rebuild bench.py to handle more than one stream.
 this has to be a high priority todo after tomorrows meeting."* So the slow-stream bench is
-being built as a separate `src/bugarach/bench_slow.py` (`HANDOFF-slow-bench.md`, step 2, on
+being built as a separate `src/bugarach/bench_slow.py` (`docs/handoffs/2026-09-21-slow-bench.md`, step 2, on
 WSMIP064), and this todo is the rebuild that makes that module unnecessary.
 
 ## Why the separate module is a stopgap

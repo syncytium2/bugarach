@@ -2,7 +2,7 @@
 
 The search reads its bench in five places, four of them inside worker processes. A run that
 chose on slow recordings and held out on fast ones would look like any other run, so these
-check the seam rather than trust it (``HANDOFF-slow-bench.md``, *Nothing a slow run writes
+check the seam rather than trust it (``docs/handoffs/2026-09-21-slow-bench.md``, *Nothing a slow run writes
 may land on a fast result*).
 """
 

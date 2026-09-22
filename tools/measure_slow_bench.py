@@ -8,7 +8,7 @@
 ``docs/learned/bench_measured.json`` unconditionally. Tony, 2026-09-21: the slow bench is
 a separate module because there was no time to make ``bench.py`` handle two streams, and
 a stream flag threaded through the shared tool is that same expansion in a second file
-(``HANDOFF-slow-bench.md``). So this tool **imports** ``remeasure_bench``'s per-recording
+(``docs/handoffs/2026-09-21-slow-bench.md``). So this tool **imports** ``remeasure_bench``'s per-recording
 measurement and its summary rather than copying them, and writes its own record. It
 cannot overwrite the fast one: :data:`RECORD` is a different path, and the test pins it.
 The duplication ends with ``docs/todo/2026-09-21-one-stream-aware-bench.md``.
