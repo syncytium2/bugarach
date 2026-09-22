@@ -18,6 +18,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Touches:** this block; `docs/methods/`, `docs/reviews/coordination_pipeline_methods_2026-09-22*`,
   `tools/make_methods_bench_figure.py`, `docs/conditioned_run.md` (records the 12-minute floor).
 
+### 065/slow-cohort-rasters — DARKROOM claim ACTIVE 2026-09-22: `bugarach/2026-09-22-full-cohort-slow/` (NEW)
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-22: the slow-stream twin of
+  `2026-09-21-full-cohort-default/rasters/`, on the default dataset (confirmed this session), at the
+  adopted slow settings (`bench_slow.OPERATING_POINTS`: CoactDetect, LoCo, SPIKE-synch). The other
+  three detectors are still at fast settings on slow and are not drawn.
+- **Writes:** `slow_settings.csv`, `detect/`, `rasters/`. A new folder, so nothing existing is touched.
+- **Touches:** this block.
+
 ### 065/full-cohort-default — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-21-full-cohort-default/` (NEW)
 - **Status:** ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-21: the full-cohort results
   on the default dataset (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, confirmed this
