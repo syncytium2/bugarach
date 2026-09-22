@@ -79,9 +79,9 @@ taken from; :data:`MEASURED_RECORD` is where they were last *checked*, and
 stop agreeing.
 """
 
-MEASURED_ROLE = "steps_excluded"
+MEASURED_ROLE = "default"
 """The ``current_export.toml`` role every measured value in this module is checked
-against.
+against — **the default dataset**, resolved through ``dataset.default_role()``.
 
 Tony, 2026-09-17: *"you should only work from the steps excluded folder. it is
 terrifying that you might use other data."* The same day it turned out that the
@@ -91,6 +91,14 @@ provenance string is prose. A role name is not prose: ``tools/remeasure_bench.py
 resolves it, writes the folder it actually read into :data:`MEASURED_RECORD`, and
 the test compares that folder with what the pointer declares today. A new export
 under this role turns the suite red until the bench is re-measured on it.
+
+**It was the literal ``"steps_excluded"`` until 2026-09-22**, which outlived the folder:
+that role became an ``archive`` on 2026-09-21 and declares a contamination, so the bench
+was pinned to a folder no analysis may read, and ``tools/check_scored_dataset.py`` flagged
+it at every session start. Naming ``"default"`` puts the bench on the one folder the person
+confirms each session, and leaves ``current_export.toml`` as the only place that choice is
+written down — which is why the two entries this module and its tool held in
+``ROLE_LITERAL_ALLOWED`` (``tests/test_where_the_data_are.py``) came out with the move.
 
 A role, not a folder name, because folder names are declared in
 ``current_export.toml`` and nowhere else in code
@@ -128,17 +136,15 @@ Not to be confused with ``region_min_sec`` in the detectors' own signatures, whi
 MATLAB windowing rule for store input (FOUNDATIONS §4) and happens to carry the same 900 s.
 """
 
-MEASURED_OUTSIDE_INTERVAL: dict[str, str] = {
-    "participation": (
-        "2026-09-17, awaiting Tony. The bench holds 0.18; steps_excluded measures 0.1905 "
-        "(6 median participants over 31.5 median ROIs) with a 95% interval whose lower "
-        "end is 0.1818, which is 6/33: the ratio BENCH_RECORDING's docstring derives "
-        "and then rounds to 0.18. A rounding, not a moved measurement, but moving it "
-        "moves every bench number, so it is not moved here."),
-}
+MEASURED_OUTSIDE_INTERVAL: dict[str, str] = {}
 """Measured constants knowingly left outside their interval, each with the reason and
 who decides. The test fails for any constant outside its interval that is not listed
-here, and for any entry here whose constant has come back inside."""
+here, and for any entry here whose constant has come back inside.
+
+Empty since 2026-09-22. It held ``participation`` from 2026-09-17, where the bench's
+0.18 sat just under a 95% interval starting at 0.1818 — a rounding of 6/33 rather than a
+moved measurement, but moving it moves every number the bench produces, so it waited for
+Tony. The meeting approved 0.19 and it was adopted with the jitter in the same pass."""
 
 MEASURED_RATE_SHAPE = 0.275
 """Gamma shape of the per-ROI background rate in real baseline windows.
@@ -728,9 +734,9 @@ quiet. Report it with its rate attached, and do not read it as a ranking.
 BENCH_RECORDING = dict(
     duration_sec=2700.0,
     n_roi=33,
-    participation=(0.30, 0.18, 0.10),
+    participation=(0.30, 0.19, 0.10),
     n_per_level=(5, 5, 5),
-    jitter_sec=0.36,
+    jitter_sec=0.106,
     min_sep_sec=120.0,
     # THE BACKGROUND IS NOT FLAT, and as of 2026-08-28 this bench stops pretending
     # it is. Both shapes are fitted, not chosen — see `MEASURED_RATE_SHAPE` (81
@@ -765,20 +771,35 @@ knob                 was         measured                       effect
 ===================  ==========  =============================  ==============
 ``n_roi``            30          ~33                            (was right)
 ``bg_rate_hz``       0.05 Hz     0.0096 Hz/ROI                  5× too busy
-``jitter_sec``       0.05 s      0.36 s                         7× too tight
-``participation``    50–100%     6 of ~33 ROI = 18%             3–6× too many
+``jitter_sec``       0.05 s      0.106 s                        2× too tight
+``participation``    50–100%     6 of ~33 ROI = 19%             3–5× too many
 ===================  ==========  =============================  ==============
 
 The consequence was not subtle. On the invented values every detector scored
 F1 ≈ 0.9–1.0 and the bench could not tell them apart; on the measured ones they
 range 0.20–0.75 and separate sharply, because a real coordinated event recruits
-about **six ROIs with a third of a second of spread** — which sits just above
+about **six ROIs within about a tenth of a second** — which sits just above
 the ``min_rois`` floor the detectors ship with. That is the regime the
 instruments were designed for, and it is where they differ.
 
-``participation`` keeps a spread (30 / 18 / 10%) around the measured median
+**``jitter_sec`` was 0.36 s until 2026-09-22, and that value measured the
+instrument rather than the recordings.** It came from ``assess_coactivity``'s
+within-cluster onset spread, which tracks the coincidence bin ÷ √12 from 0.5 s
+to 5 s on both streams — so the 2026-09-17 re-measure "confirmed" it with the
+same instrument at the same bin. ``tools/measure_jitter_correlogram.py`` measures
+the width of the cross-ROI correlogram's peak instead, calibrated against
+simulations of this bench at a grid of planted jitters, and gives **0.106 s
+[0.091, 0.120]** on the default folder's fast stream. Tony ruled on 2026-09-22
+to adopt it. The scale of the correction is the point: the bench was planting
+events about **three times looser** than the recordings it is fitted to.
+
+``participation`` keeps a spread (30 / 19 / 10%) around the measured median
 rather than collapsing to it, so recall still resolves a participant floor. The
-10% level is ~3 ROIs, at the floor itself.
+10% level is ~3 ROIs, at the floor itself. The middle level moved 0.18 → 0.19 on
+2026-09-22, the meeting having approved it: 0.18 was this docstring's own
+rounding of 6/33, and the folder measures 0.1905. Unlike the jitter, this
+constant was **swept across five coincidence bins and held** (0.19 at every bin),
+so the recruitment number survived the test the timing number failed.
 
 ``hot_rate_hz`` moved with them. At 0.30 it was 6x the invented background and
 **31x the measured one** — a probe that severe stops asking whether a detector

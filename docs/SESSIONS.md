@@ -10,6 +10,19 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/bench-jitter — DARKROOM claim ACTIVE 2026-09-22: the every-knob searches on the re-measured bench
+- **Status:** **ACTIVE (WSMIP065)**, claimed before any write. **Nothing written yet.** Tony,
+  2026-09-22 evening: adopt the measured jitter (fast 0.106 s, slow 0.135 s) and participation 0.19,
+  then rerun the search on the new bench — `HANDOFF-overnight-2026-09-22.md`, WSMIP065 steps 1–5.
+- **Writes (step 5, not started):** two NEW folders, `bugarach/2026-09-23-full-search-fast/` and
+  `bugarach/2026-09-23-full-search-slow/`, via `tools/search_all_settings.py --bench fast|slow
+  --archive-as`. New folders, so nothing existing is overwritten. Measure-only: `OPERATING_POINTS`
+  is not edited, and adopting any proposed setting stays Tony's.
+- **Blocked:** step 5 follows the re-measure in step 3, which needs `dataset.default()` confirmed by
+  Tony in a session on this machine. If that confirmation does not come tonight, this claim is
+  released unwritten rather than held.
+- **Touches:** this block.
+
 ### 065/methods — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-methods/` (NEW)
 - **Status:** **RELEASED 2026-09-22.** Written: the methods `.docx`, `.pdf` (Word export) and `.html`,
   Figure 1 (`fig1_benchmark_recording.png/.html`), and the cover memo (`.md` and `.docx`). Was: ACTIVE

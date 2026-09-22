@@ -17,9 +17,14 @@ The duplication ends with ``docs/todo/2026-09-21-one-stream-aware-bench.md``.
 recording's baseline analysis window (``assess_folder.generation_window``, the rule
 ``bugarach assess`` reads; baseline only, FOUNDATIONS §9):
 
-- the eight values ``remeasure_bench._values`` measures for the fast bench — the
-  background's rate and burst shapes, the quiet and busy backgrounds (25th and 75th
-  percentiles of per-recording mean ROI rate), ROI count, onset jitter and participation;
+- the values ``remeasure_bench._values`` measures for the fast bench — the background's
+  rate and burst shapes, the quiet and busy backgrounds (25th and 75th percentiles of
+  per-recording mean ROI rate), ROI count and participation;
+- ``jitter_sec``, read from the cross-ROI correlogram record (``rb.JITTER_RECORD``,
+  written by ``tools/measure_jitter_correlogram.py``) for this stream, with that tool's
+  own bootstrap interval. It is **not** derived from the per-bin assessment below: that
+  instrument's within-cluster spread tracks the bin ÷ √12 rather than the recordings'
+  timing, which is the defect the correlogram was built to get around;
 - **jitter and participation again at each coincidence bin in** ``--bins``. The
   assessment's 1.0 s bin is the MATLAB default *for the faster stream*
   (``assess_coactivity``'s docstring) and there is no slow-stream convention anywhere in
@@ -137,6 +142,9 @@ def main(argv=None) -> int:
     p.add_argument("--jobs", type=int, default=1)
     p.add_argument("--no-write", action="store_true",
                    help="print the table; do not write the record")
+    p.add_argument("--jitter-record", type=Path, default=REPO / rb.JITTER_RECORD,
+                   help=f"the correlogram record jitter_sec is read from "
+                        f"(default {rb.JITTER_RECORD})")
     a = p.parse_args(argv)
     bins = tuple(float(b) for b in a.bins.split(","))
 
@@ -170,12 +178,21 @@ def main(argv=None) -> int:
         for k, v in _all_values(pick, bins).items():
             draws[k].append(v)
 
+    jitter = rb._jitter_from_record(a.jitter_record, STREAM, stamp["name"])
+    print(f"jitter_sec from {jitter['record']} ({jitter['stat']}, "
+          f"{jitter['recordings']} recordings): {jitter['point']:.4f} s")
+
     rows = {}
     print(f"\n{'value':20s} {'measured':>10s} {'95% interval':>21s}")
     for k in point:
         lo, hi = (float(x) for x in np.nanpercentile(draws[k], [2.5, 97.5]))
         rows[k] = {"measured": float(point[k]), "lo": lo, "hi": hi}
         print(f"{k:20s} {point[k]:10.4f} {lo:10.4f} - {hi:<8.4f}")
+    rows["jitter_sec"] = {"measured": jitter["point"], "lo": jitter["interval"][0],
+                          "hi": jitter["interval"][1], "source": jitter["record"],
+                          "statistic": jitter["stat"]}
+    print(f"{'jitter_sec':20s} {jitter['point']:10.4f} "
+          f"{jitter['interval'][0]:10.4f} - {jitter['interval'][1]:<8.4f}")
 
     wq = width_quantiles(recs)
     n_w = sum(len(r["widths"]) for r in recs)
@@ -198,6 +215,12 @@ def main(argv=None) -> int:
         "measured_on": _dt.date.today().isoformat(),
         "commit": rb._commit(),
         "tool": "tools/measure_slow_bench.py",
+        "jitter_source": {
+            "record": jitter["record"],
+            "statistic": jitter["stat"],
+            "recordings": jitter["recordings"],
+            "tool": "tools/measure_jitter_correlogram.py",
+        },
         "values": rows,
         "width_events": n_w,
         "width_quantiles": wq,

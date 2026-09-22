@@ -217,7 +217,8 @@ def test_recall_is_broken_down_by_participation(bench):
     headline recall."""
     for name in DETECTORS:
         by = bench[(name, "baseline_quiet")].by_frac
-        assert set(by) == {0.30, 0.18, 0.10}, f"{name} lost a participation level"
+        assert set(by) == set(BENCH_RECORDING["participation"]), (
+            f"{name} lost a participation level")
         assert sum(n for n, _ in by.values()) == bench[(name, "baseline_busy")].n_planted
 
 
