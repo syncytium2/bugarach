@@ -1,0 +1,63 @@
+{
+ "model": "tube",
+ "outer_fold": 1,
+ "budget": "meta.json budgets[1]",
+ "pooled": {
+  "training_seeds": [
+   0
+  ],
+  "recordings": [
+   "busy:2000",
+   "busy:2001",
+   "busy:2004",
+   "busy:2005",
+   "quiet:2000",
+   "quiet:2001",
+   "quiet:2004",
+   "quiet:2005"
+  ],
+  "recording_seeds": [
+   2000,
+   2001,
+   2004,
+   2005
+  ],
+  "fitted_on": [
+   "busy:2000",
+   "busy:2001",
+   "busy:2004",
+   "busy:2005",
+   "quiet:2000",
+   "quiet:2001",
+   "quiet:2004",
+   "quiet:2005"
+  ],
+  "twin_seeds": [
+   102000,
+   102001,
+   102004,
+   102005
+  ]
+ },
+ "n_configurations": 2,
+ "missing_configurations": [],
+ "selection": "gated",
+ "config_key": "b30c08cd87a39df3",
+ "config": "configs/tube/b30c08cd87a39df3.json",
+ "draw_index": 23,
+ "inner_f1": 0.6222751419673933,
+ "edge_flags": {
+  "lr": false,
+  "steps": false,
+  "n_scales": false
+ },
+ "threshold": 0.9990418276418752,
+ "threshold_index": 36,
+ "threshold_at_grid_edge": false,
+ "inner_probe_per_hour": {
+  "quiet": 9.0,
+  "busy": 12.0
+ },
+ "inner_quiet_per_hour": 0.0,
+ "n_admissible": 15
+}

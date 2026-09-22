@@ -1,0 +1,77 @@
+{
+ "detector": "cicada",
+ "outer_fold": 0,
+ "selection": "gated",
+ "config_key": "5db797d4b04a6991",
+ "config": "configs/cicada/5db797d4b04a6991.json",
+ "budget": "meta.json budgets[0]",
+ "searched_by": "search_all_settings.choose_settings (goal 1's grids, per fold)",
+ "grids": {
+  "sce_percentile": [
+   99.9,
+   99.95,
+   99.99,
+   99.995,
+   99.999,
+   99.9995,
+   99.9999
+  ],
+  "n_synchronous_frames": [
+   1,
+   2,
+   3,
+   5,
+   10
+  ],
+  "sce_min_distance_frames": [
+   1,
+   2,
+   4,
+   8,
+   16
+  ],
+  "threshold_scope": [
+   "global",
+   "regional"
+  ]
+ },
+ "min_gain": 0.002,
+ "max_rounds": 2,
+ "inner_f1": 0.5196480938416422,
+ "moves": [],
+ "edge_flags": {
+  "n_synchronous_frames": "low"
+ },
+ "n_scored": 16,
+ "n_refused": 16,
+ "inner_probe_per_hour": {
+  "quiet": 459.0,
+  "busy": 180.0
+ },
+ "inner_quiet_per_hour": 0.0,
+ "pooled": {
+  "recordings": [
+   "quiet:2002",
+   "busy:2002",
+   "quiet:2003",
+   "busy:2003",
+   "quiet:2004",
+   "busy:2004",
+   "quiet:2005",
+   "busy:2005"
+  ],
+  "recording_seeds": [
+   2002,
+   2003,
+   2004,
+   2005
+  ],
+  "twin_seeds": [
+   102002,
+   102003,
+   102004,
+   102005
+  ]
+ },
+ "seconds": 67.32974610000383
+}

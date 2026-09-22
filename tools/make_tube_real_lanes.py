@@ -63,7 +63,7 @@ def build(events, slice_id, zoom_sec, width):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        slices = {s.slice_id: s for s in load_folder(dataset.current("steps_excluded"))}
+        slices = {s.slice_id: s for s in load_folder(dataset.default())}
     sl, windows = folder_analysis_windows(slices[slice_id])
     base = next(w for w in windows if (w.label or "").strip().lower().startswith("baseline"))
     full = (float(base.win_start), float(base.win_end))

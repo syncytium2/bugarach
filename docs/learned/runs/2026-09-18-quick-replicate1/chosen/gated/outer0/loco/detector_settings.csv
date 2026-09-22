@@ -1,0 +1,18 @@
+detector,stream,parameter,value
+loco,events,bin_width_sec,1.0
+loco,events,context_win_sec,120.0
+loco,events,detection_mode,threshold
+loco,events,fitted_config_key,5382dd2a3f4253be
+loco,events,fitted_on,"simulated recordings ['quiet:2002', 'busy:2002', 'quiet:2003', 'busy:2003', 'quiet:2004', 'busy:2004', 'quiet:2005', 'busy:2005']"
+loco,events,fitted_outer_fold,0
+loco,events,fitted_selection,gated
+loco,events,guard_sec,0.0
+loco,events,merge_gap_sec,8.0
+loco,events,min_rois,3
+loco,events,n_surrogates,100
+loco,events,null_context_mode,symmetric
+loco,events,peak_min_distance_sec,0.0
+loco,events,peak_prominence,0.0
+loco,events,thr_step_sec,15.0
+loco,events,threshold_pctile,99.99
+loco,events,window_mode,sliding

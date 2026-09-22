@@ -143,8 +143,7 @@ def split():
 
 def real_recordings():
     if "real" not in _CACHE:
-        os.environ.setdefault("LOOK_ROLE", "steps_excluded")
-        import look_rigid_shift as lr
+        import look_rigid_shift as lr        # reads the declared default unless LOOK_ROLE says
         recs, _ = lr.load("fast", None)
         from bugarach import surrogate_discriminator as sd
         mice = [r.mouse for r in recs]

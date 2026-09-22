@@ -104,6 +104,10 @@ roles, except the blocking column, which is deduplicated because it drives the s
 
 ## What Tony has to decide
 
+> **RULED AND DONE, 2026-09-21.** Tony took all four. Every item below is closed, and the page on
+> `main` is the repaired one — see *What the census re-run found* at the end of this section, because
+> item 4 did not merely confirm the headline, it replaced it.
+
 Three of these are cheap and unambiguous; the fourth is a run.
 
 1. **The wrong numbers.** "Counted 1 working fit as dead" is **5** (1 chorus_norm, 4
@@ -120,6 +124,89 @@ Three of these are cheap and unambiguous; the fourth is a run.
 4. **The mechanism sentence needs a census re-run**, or it needs narrowing to what the stored data
    support. This is the only item that costs GPU time, and it is the one that decides whether the
    page's headline can stay as written.
+
+### How each was closed
+
+1. **Done.** The sign-rule sentence now derives both directions from the census rather than printing
+   one net's count in a sentence about two: it calls **5** working fits dead (1 chorus_norm, 4
+   chorus_gain_norm) and **misses 3** collapsed chorus_gain_norm fits, where the variation test
+   misses none — which is an argument *for* the page's choice, and is written that way. Table 2's
+   column is retitled from "refits that collapsed" to "refits of the picked configuration that
+   failed", and its note now says what I confirmed from the raw score archives: at the budgeted
+   threshold (index 30) those two chorus_norm refits return `n_detected = 0` on every one of the 24
+   recordings — they **call nothing**, which is a different failure from collapse and the one the
+   page had been quoting half a footnote about. The three inward-rounded bounds now round outward
+   through a rule in the builder, so "at least 0.82" is "at least 0.81 logits" and cannot regress.
+2. **Done** — restated, not withdrawn. §3 now says the replicate report *already* attributes the
+   overlap to shared configurations and training seeds, that §2 adds the arithmetic rather than
+   correcting it, and that the report's conclusion stands.
+3. **Done and measured.** The long parenthetical moved out of the `outcome` cell into the table note
+   behind a †, and the widest header lost "(both draws)". Table 3 now renders `scrollWidth` 1000 px
+   into `clientWidth` 1000 px — **zero clipped**, with the `outcome` header visible at 1440 px.
+4. **Done, and it changed the headline.** See below.
+
+### What the census re-run found
+
+`census.json` now stores the two fields the builder's own docstring had promised since the tool was
+written: `share_varying`, the full eight-layer vector rather than only its minimum, and
+`head_input_sd`, the largest standard deviation over frames of any of the three pooled channels the
+head is handed.
+
+**The re-run reproduced every pre-existing field bit-identically across all 974 fits**, controls and
+recording included, so nothing already on the page moved and the two fields are pure addition. That
+is also a check that could have failed and did not.
+
+What they show, and it is not the old headline:
+
+| | collapsed fits whose **head input is already constant** | median head-input SD |
+|---|---|---|
+| chorus_norm | **10 of 153** (7%) | 0.081 |
+| chorus_gain_norm | **32 of 75 (43%)** | 0.0019 — about twice the 0.001 called silent |
+| either net, working fits | **0 of 279 and 0 of 357** | 0.13 and 0.24 |
+
+So *"the signal stops in the head"* was right for chorus_norm — the head is the site in 143 of its
+153 — and wrong for nearly half of chorus_gain_norm's failures, where the votes never varied and the
+head was handed nothing to pass on. The page now says that, and says the consequence: **a repair
+aimed at the head cannot help those fits**, and the warm-up tried in §5 was tried on chorus_norm
+only. The new negative result is worth as much as the split — **no working fit of either net is
+handed a constant head input**, which the builder now asserts.
+
+### What round ran on the repaired page, and what is left
+
+**Not a fourth full round.** The repairs are narrow, each was verified by direct measurement rather
+than by reading, and a fourth eleven-role pass on a page whose blocking count had gone 3 → 4 → 6
+would mostly have manufactured new text to review. But this process says role 10 re-runs **in full**
+on any blind pass, and the render is precisely what changed — so the craft gate ran blind against the
+rebuilt page and the other ten did not. Its report is archived beside the others as
+`10-ship-it-round4.md`, labelled so the archive cannot be misread as an eleven-role round.
+
+**Its verdict: 0 blocking, 2 major, 10 minor**, against 1 blocking + 2 major + 10 minor from the same
+role in round 3. It confirmed the three repairs independently: Table 3 shows **no overflow at any of
+twelve widths from 320 to 2,560 px** and the † is explained and visible; the build is byte-identical
+to a fresh rebuild; tests pass; no personal paths; all 13 internal anchors resolve.
+
+**It also caught a defect this round introduced**, and it was mine: Table 3's note had begun narrating
+the page's own editing history — explaining that the verdict column *used* to be clipped. True, and no
+business of a reader who never saw the broken version. Removed; the note now says only what the table
+means.
+
+**Both remaining majors are pre-existing and neither is a regression** — the same role raised both in
+round 3, and they are figure craft rather than claims:
+
+- **Figure 6 separates five series by colour alone**, and under a deuteranope simulation the as-run
+  curve and the lr-0.01 replay render as the same yellow-green — which is exactly the comparison the
+  figure exists to make. In greyscale the four coloured strokes span 38 luminance levels out of 255.
+- **Figure 4 has no on-figure legend.** Its key is the tail of a grey caption, and "gray, untrained"
+  is identified by the *word* "gray" set in that same grey, with no swatch — while Figure 3, in the
+  same idiom, carries a proper legend row.
+
+Both were left deliberately: Tony ruled on items 1–4, and redrawing two figures is neither of those.
+They head the residual list.
+
+**So the residual list is much shorter.** Blocking **6 → 0**. The two structural findings that drove
+the escalation are closed — the census now stores what the mechanism claim needs, and the claim has
+been rewritten to what the data support. What remains is one figure to recolour, one legend to draw,
+and a tail of minors, none of which touches a number or a conclusion.
 
 Two more, outside this claim's scope and named rather than touched:
 

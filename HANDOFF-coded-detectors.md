@@ -2,8 +2,9 @@
 
 **Written 2026-09-17 on WSMIP065**, at Tony's request: *"create a revised handoff file recognizing you
 probably have context to handle a good chunk of it. prepare to relaunch the tuning run."* It
-**supersedes** `HANDOFF-evaluate-sliding-detectors.md` on branch `full-search`. When that branch lands,
-that file moves to `docs/handoffs/`.
+**supersedes** the sliding-detectors handoff, which is now
+[`docs/handoffs/2026-09-17-evaluate-sliding-detectors.md`](docs/handoffs/2026-09-17-evaluate-sliding-detectors.md)
+— `full-search` landed, so that file left the root on 2026-09-21 as this one said it would.
 
 > **Read [`docs/goals/README.md`](docs/goals/README.md), section *The current program*, first.** It
 > holds Tony's three goals and five decisions of 2026-09-17. This file is goal 1's working plan and

@@ -10,6 +10,52 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/methods — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-methods/` (NEW)
+- **Status:** **RELEASED 2026-09-22.** Written: the methods `.docx`, `.pdf` (Word export) and `.html`,
+  Figure 1 (`fig1_benchmark_recording.png/.html`), and the cover memo (`.md` and `.docx`). Was: ACTIVE
+  (WSMIP065), claimed before writing. Tony, 2026-09-21: a methods section for the coordination pipeline,
+  murderboarded in full, overnight.
+- **Touches:** this block; `docs/methods/`, `docs/reviews/coordination_pipeline_methods_2026-09-22*`,
+  `tools/make_methods_bench_figure.py`, `docs/conditioned_run.md` (records the 12-minute floor).
+
+### 065/slow-cohort-rasters — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-full-cohort-slow/`
+- **Status:** **RELEASED 2026-09-22** — `slow_settings.csv`, `detect/` (6,611 calls on 84 recordings,
+  22.8 s) and `rasters/` (16 pages, HTML + PNG) written. Was: ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-22: the slow-stream twin of
+  `2026-09-21-full-cohort-default/rasters/`, on the default dataset (confirmed this session), at the
+  adopted slow settings (`bench_slow.OPERATING_POINTS`: CoactDetect, LoCo, SPIKE-synch). The other
+  three detectors are still at fast settings on slow and are not drawn.
+- **Writes:** `slow_settings.csv`, `detect/`, `rasters/`. A new folder, so nothing existing is touched.
+- **Touches:** this block.
+
+### 065/full-cohort-default — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-21-full-cohort-default/` (NEW)
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-21: the full-cohort results
+  on the default dataset (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, confirmed this
+  session) with the weekend's settings — the every-knob sliding values for CoactDetect and LoCo
+  (`fair_comparison_2026_09_18/meta.json`, `coded_base`), the shipped points for the other four.
+- **Writes:** `detect/` (detections.csv, detector_settings.csv, run.json, calls_measured.csv),
+  `rasters/` (one page per group × treatment × stream), `before_after/` (per treatment). A new
+  folder, so nothing existing is touched.
+- **Touches:** this block; `src/bugarach/detect_folder.py` (`load_settings` takes a detector's own
+  signature as its parameter list) on branch `detect-settings-by-signature`.
+
+### 065/census-rerun — DARKROOM claim RELEASED 2026-09-21: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** **RELEASED 2026-09-21.** All four items done. The folder's `index.html` and
+  `census.json` were replaced and each verified to match its repo copy byte for byte; the review
+  record and the round-4 craft report were refreshed beside them. Nothing else in the folder touched.
+  The re-run **reproduced every pre-existing census field bit-identically across all 974 fits**, so
+  the two new fields are pure addition. Was: ACTIVE (WSMIP065), claimed before writing — Tony's
+  ruling on #674's list: items 1-3, and the census re-run that decides whether the page's headline
+  mechanism survives.
+- **Writes:** inside that folder only — a re-run `census.json` and a rebuilt `index.html`. The two
+  runs' `results/` folders are read, never written.
+- **Claims:** that folder exclusively. Reads `<darkroom>/bugarach/2026-09-18-*/results/` for the fit
+  archives, read-only.
+- **NO GPU, despite the authorisation.** `census` runs each fit on the CPU (`fit.model.cpu()`); CUDA
+  is reached only by `replay()`, which this task does not call. **No contention with WSMIP064's
+  allowance sweep, and none was ever possible.**
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the re-run census and the repaired page are on `main`.
 ### 065/lit-optimization — DARKROOM claim RELEASED 2026-09-20: `bugarach/lit/optimization/` (NEW)
 - **Status:** **RELEASED 2026-09-20.** The shelf exists and holds exactly three files:
   `kosson_2024_warmup_update_size.pdf` (22 pp), `lu_2020_dying_relu_initialization.pdf` (34 pp) and a
@@ -2755,3 +2801,12 @@ session's work is not a sweep.
   finished) and `full_search.html` / `full_search.png` (the figure), from
   `tools/search_all_settings.py` on branch `full-search`. Measure-only: no operating point changes.
 - **Released:** 2026-09-17. The run finished 2026-09-16 17:02; holds nothing.
+
+### darkroom/bugarach/2026-09-21-full-search-slow/ — the every-knob search on the SLOW bench (WSMIP064/slow-result)
+- **Claimed:** 2026-09-21, ⚠ **after** the write, not before: the five files were copied in
+  first and this block written straight after. A new folder, so nothing existing was overwritten.
+- **Writes:** `search.log`, `search.json`, `search.err` (empty), `full_search.html` /
+  `full_search.png`, copied from `%USERPROFILE%\runs\2026-09-21-full-search-slow\` on WSMIP064
+  (`tools/search_all_settings.py --bench slow --sliding`). The same five files are in the repo
+  at `docs/learned/runs/2026-09-21-full-search-slow/`. Measure-only: nothing ships from it.
+- **Released:** 2026-09-21. Nothing further is written there.

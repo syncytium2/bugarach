@@ -95,6 +95,20 @@ def test_a_recording_without_the_treatment_is_skipped_and_named(tmp_path):
     assert not any(sid == "s2" for _, _, sid, _, _, _, _, _ in rows)
 
 
+def test_first_only_takes_the_treatment_only_where_it_comes_first(tmp_path):
+    """Tony, 2026-09-21: baseline and the first treatment only. In s1 `high K+` comes
+    after APV+CNQX+GZ, so it is a second exposure and --first-only leaves s1 out of it."""
+    folder, det = _write(tmp_path)
+    rows, _, _, missing = mod.rates(folder, det, baseline="baseline", treatment="high K+")
+    assert any(sid == "s1" for _, _, sid, *_ in rows), "by label alone s1 is taken"
+    rows, _, _, missing = mod.rates(folder, det, baseline="baseline", treatment="high K+",
+                                    first_only=True)
+    assert rows == [] and "s1" in missing
+    rows, _, _, _ = mod.rates(folder, det, baseline="baseline", treatment="APV+CNQX+GZ",
+                              first_only=True)
+    assert any(sid == "s1" for _, _, sid, *_ in rows), "its first treatment is still taken"
+
+
 def test_both_periods_are_named_by_the_caller(tmp_path):
     """No slot is assumed: asking for a period the folder does not have draws nothing."""
     folder, det = _write(tmp_path)

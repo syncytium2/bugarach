@@ -96,12 +96,19 @@ _WIDTH_SEED_OFFSET = 7_919
 """Widths come off their own RNG, so drawing them moves no event time."""
 
 
-def _draw_widths(per_roi, seed, grid_sec):
-    """One measured width per event, per ROI, from a separate ``RandomState``."""
+def _draw_widths(per_roi, seed, grid_sec, quantiles=None):
+    """One measured width per event, per ROI, from a separate ``RandomState``.
+
+    ``quantiles`` is a width table at :data:`MEASURED_WIDTH_QUANTILE_LEVELS`;
+    ``None`` is the fast one, :data:`MEASURED_WIDTH_QUANTILES`."""
     rng = np.random.RandomState(
         None if seed is None else (int(seed) + _WIDTH_SEED_OFFSET) % 2**32)
     levels = np.asarray(MEASURED_WIDTH_QUANTILE_LEVELS) / 100.0
-    table = np.asarray(MEASURED_WIDTH_QUANTILES)
+    table = np.asarray(MEASURED_WIDTH_QUANTILES if quantiles is None else quantiles,
+                       dtype=float)
+    if table.shape != levels.shape:
+        raise ValueError(f"width_quantiles needs {levels.size} values, one per level in "
+                         f"MEASURED_WIDTH_QUANTILE_LEVELS; got {table.size}")
     out = []
     for cell in per_roi:
         w = np.interp(rng.random_sample(len(cell)), levels, table)
@@ -451,6 +458,7 @@ def simulate_coordination(
     slice_id: str = "synthetic",
     regions=None,
     seed: int | None = None,
+    width_quantiles=None,
 ) -> tuple[Slice, GroundTruth]:
     """Build a synthetic recording with planted coordinated events.
 
@@ -573,6 +581,11 @@ def simulate_coordination(
       protocol that is not in the data. Pass ``regions`` explicitly to simulate
       one on purpose — that is the only way it should ever happen.
     seed: ``None`` is nondeterministic; an int is reproducible everywhere.
+    width_quantiles: the per-event width table, at
+      :data:`MEASURED_WIDTH_QUANTILE_LEVELS`. ``None`` draws from the FAST table,
+      :data:`MEASURED_WIDTH_QUANTILES`; the slow bench passes its own
+      (``bench_slow.MEASURED_WIDTH_QUANTILES``), so locust reads slow widths on a slow
+      recording. Widths come off their own RNG, so the table moves no event time.
 
     Returns ``(slice, ground_truth)``.
     """
@@ -874,13 +887,15 @@ def simulate_coordination(
     # simulation no camera could have produced — and that recording honestly
     # has no sampling interval, which is a state the loader already has a name
     # for rather than a reason to invent 0.1.
-    widths = _draw_widths(per_roi, seed, grid_sec)
+    widths = (_draw_widths(per_roi, seed, grid_sec) if width_quantiles is None
+              else _draw_widths(per_roi, seed, grid_sec, width_quantiles))
+    wdef = ("simulate:MEASURED_WIDTH_QUANTILES" if width_quantiles is None
+            else "simulate:width_quantiles")
     slice_ = slice_from_events({name: per_roi for name in streams},
                                dt=grid_sec if grid_sec > 0 else None,
                                slice_id=slice_id, regions=regions,
                                durations={name: widths for name in streams},
-                               width_def={name: "simulate:MEASURED_WIDTH_QUANTILES"
-                                          for name in streams})
+                               width_def={name: wdef for name in streams})
     gt = GroundTruth(
         events=events,
         distractors=distractors,
@@ -895,6 +910,8 @@ def simulate_coordination(
             hot_rate_hz=hot_rate_hz, ramp_sec=ramp_sec,
             n_distractors=n_distractors, distractor_frac=distractor_frac,
             streams=tuple(streams), seed=seed,
+            width_quantiles=(None if width_quantiles is None
+                             else tuple(float(w) for w in width_quantiles)),
         ),
     )
     if floor_info is not None:

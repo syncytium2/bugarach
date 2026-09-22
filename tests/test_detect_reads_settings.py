@@ -176,6 +176,39 @@ def test_a_flat_port_takes_per_stream_values(tmp_path):
     assert (fast["int_win_sec"], slow["int_win_sec"]) == (1.0, 4.0)
 
 
+#: The weekend's every-knob sliding settings (fair_comparison_2026_09_18/meta.json,
+#: coded_base) — knobs the detectors take that the shipped points do not name.
+WEEKEND = [("coact", "", "int_win_sec", 2.0), ("coact", "", "context_win_sec", 120.0),
+           ("coact", "", "alpha", 1e-05), ("coact", "", "merge_gap_sec", 8.0),
+           ("coact", "", "guard_sec", 1.0), ("coact", "", "window_mode", "sliding"),
+           ("loco", "", "merge_gap_sec", 8.0), ("loco", "", "threshold_pctile", 99.9),
+           ("loco", "", "null_context_mode", "symmetric"),
+           ("loco", "", "window_mode", "sliding")]
+
+
+def test_a_knob_the_detector_takes_but_the_shipped_point_does_not_name_is_applied(tmp_path):
+    """The weekend's settings were refused by name until 2026-09-21, because the loader
+    took the shipped point as the list of parameters. The signature is the list."""
+    assert "window_mode" not in OPERATING_POINTS["coact"].params, "fixture premise"
+    overrides, _ = load_settings(_settings_csv(tmp_path / "s.csv", WEEKEND))
+    coact = detector_params("coact", frame_interval_sec=0.05, overrides=overrides,
+                            stream="fast")
+    loco = detector_params("loco", frame_interval_sec=0.05, overrides=overrides,
+                           stream="fast")
+    assert (coact["window_mode"], coact["guard_sec"], coact["merge_gap_sec"]) == \
+        ("sliding", 1.0, 8.0)
+    assert (loco["window_mode"], loco["null_context_mode"]) == ("sliding", "symmetric")
+
+
+def test_the_weekends_settings_run_end_to_end(tmp_path):
+    folder = _folder(tmp_path)
+    csv = _settings_csv(tmp_path / "s.csv", WEEKEND)
+    out = tmp_path / "out"
+    detect_folder(folder, out_dir=out, settings=csv, detectors=("coact", "loco"))
+    ran = (out / "detector_settings.csv").read_text()
+    assert "window_mode" in ran and "sliding" in ran
+
+
 def test_an_empty_stream_row_applies_to_every_stream(tmp_path):
     """What the browser writes when no stream is chosen."""
     csv = _settings_csv(tmp_path / "s.csv",

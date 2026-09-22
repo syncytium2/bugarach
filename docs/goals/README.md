@@ -14,6 +14,7 @@ disagrees with this section is out of date. Fix it in the same change as whateve
 | 1 | **Full tuning of the coded detectors: every knob**, all six | [`coded-detector-optimization.md`](coded-detector-optimization.md) | WSMIP065 |
 | 2 | **A fair comparison of the coded detectors against the nets** | [`learned-model-family.md`](learned-model-family.md) | WSMIP064 |
 | 3 | **"Final" supervised-learning results on the current best simulation** | [`learned-model-family.md`](learned-model-family.md) | WSMIP064 |
+| 4 | **One stream for coordination**, fast and slow together, with each call naming the events it recruited from each — **added 2026-09-22, not started, no machine** | [`combined-stream-coordination.md`](combined-stream-coordination.md) | — |
 
 **Goals 2 and 3 have their first result** (2026-09-19). Both runs finished with no errors on
 disjoint draws, and each report was murderboarded in three blind rounds. **Under the shared
@@ -28,7 +29,14 @@ not fair, and that was the objection to the untuned bake-off in the first place.
 
 **The five decisions (Tony, 2026-09-17):**
 
-1. **One folder of real data: `dataset.current("steps_excluded")`**
+1. **Superseded 2026-09-21 — the folder is now `dataset.default()`**, which is
+   `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED` (84 recordings) and is confirmed by the
+   person at the start of every session. Tony, 2026-09-21: one default data folder, confirmed each
+   session; `steps_and_pins_excluded` is it. `steps_excluded` is now an **archive** role — it
+   declares a contamination and `dataset.current()` refuses it. The bench is still measured on it
+   (`bench.MEASURED_ROLE`), and `tools/check_scored_dataset.py` flags that at session start until
+   the bench is re-measured. The ruling as it stood on 2026-09-17, kept for the record:
+   **One folder of real data: `dataset.current("steps_excluded")`**
    (`2026-09-03_revised_2v_long_STEPS_EXCLUDED`, 84 recordings). Tony: *"you should only work from
    the steps excluded folder. it is terrifying that you might use other data."* The senktide and
    TTX recordings are **inside** that folder. The separately declared roles `senktide` and `ttx`,

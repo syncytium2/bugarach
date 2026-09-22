@@ -169,6 +169,19 @@ can be scheduled before the run starts, which is the safer order.
 
 **Claim the darkroom folder first**, on `docs/SESSIONS.md` and the machine-local board (CLAUDE.md).
 
+**And give it `--archive-as <dated-name>`, so the finished run goes to Dropbox by itself.**
+(Tony, 2026-09-21: *"ensure that future runs go straight to repo and dropbox."* The weekend's two
+runs sat in `~/runs` until a session copied them by hand; one run's chosen models were found on one
+disk.) Once the run writes `results.json`, the same scheduled task hands it to
+`tools/archive_run.py`, which puts the whole run under `<darkroom>/bugarach/runs/<name>/` with the
+bulk folders packed, verifies every file, and records it in `ARCHIVED.json`. That happens once. The
+repo half needs a session: the briefing lists every finished run not yet in the repo, and
+`python3 tools/archive_run.py <run> --name <name> --to-repo` stages it for a normal branch and PR.
+**Raise the task's `-ExecutionTimeLimit` when you add it**, to 60 minutes: packing a run's scores
+(1.1 GB on the weekend's) takes far longer than the 2 minutes the mirror alone needs, and a task
+killed mid-pack on every tick never finishes. `-MultipleInstances IgnoreNew` already keeps a second
+tick from starting while the first is still packing.
+
 ### Proven on WSMIP065, 2026-09-18
 
 The run this watches: the goal-2 replicate, launched as `bench-replicate1` through
