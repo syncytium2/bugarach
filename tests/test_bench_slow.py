@@ -1,6 +1,6 @@
 """The slow bench scores SLOW recordings, and nothing in it quietly reaches the fast bench.
 
-``HANDOFF-slow-bench.md`` step 2's trap: re-exporting a ``bench`` function that reads a
+``docs/handoffs/2026-09-21-slow-bench.md`` step 2's trap: re-exporting a ``bench`` function that reads a
 module constant scores fast recordings under a slow label, and nothing looks wrong. These
 tests fail if a copied name IS the ``bench`` object, and build real slow recordings to check
 that what comes out is slow — rates, widths, and the budgets the choosing reads.

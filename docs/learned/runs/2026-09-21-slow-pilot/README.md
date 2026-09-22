@@ -1,6 +1,6 @@
 # Step B of the slow bench: a pilot of the nets against the coded reference, both benches
 
-Written 2026-09-21 on WSMIP064 for `HANDOFF-slow-bench.md`. Working material, not murderboarded.
+Written 2026-09-21 on WSMIP064 for `docs/handoffs/2026-09-21-slow-bench.md`. Working material, not murderboarded.
 A pilot, not the comparison: two nets, untuned, no false-alarm gating, one draw.
 
 **Protocol** (`slow_pilot.py`, run once per bench): `chorus_norm` and `tube` at goal 2's

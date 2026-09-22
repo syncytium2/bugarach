@@ -1,5 +1,17 @@
 # Handoff: build the slow-stream bench on WSMIP064, then search and train on it
 
+> **Retired from the root on 2026-09-22.** Its own *Current state* says nothing of the thread is
+> running or held, and the one PR it waited on (#727) has merged. Written at the root as
+> `HANDOFF-slow-bench.md`; link paths rewritten for this directory, body otherwise untouched.
+> Where its open items went:
+> - **Blocked on Tony**: items 2, 3 and 8 of [`decisions_pending.md`](../decisions_pending.md).
+> - **Re-measure at two bins**, and **the simulators' long-lag level**:
+>   [`todo/2026-09-22-what-else-came-from-the-clustering-instrument.md`](../todo/2026-09-22-what-else-came-from-the-clustering-instrument.md).
+> - **Goal 4's onset-gap measurement**: queue item 10.
+> - **The one stream-aware bench**: [its todo](../todo/2026-09-21-one-stream-aware-bench.md).
+> - **The two search-tool defects**: [`todo/2026-09-22-the-search-extends-counts-by-halving-and-reads-a-plateau-as-a-climb.md`](../todo/2026-09-22-the-search-extends-counts-by-halving-and-reads-a-plateau-as-a-climb.md),
+>   filed at the move.
+
 > ⚠ **This file covers the slow-stream bench alone.** The other root handoffs are other
 > threads and are NOT superseded by it. Delete only your own file.
 
@@ -41,7 +53,7 @@ darkroom claim. Everything is merged except [#727](https://github.com/syncytium2
 
 ### Waiting on Tony — the thread is blocked here
 
-All are in [`docs/decisions_pending.md`](docs/decisions_pending.md), which is the queue; this
+All are in [`docs/decisions_pending.md`](../decisions_pending.md), which is the queue; this
 file does not duplicate them.
 
 1. **Item 2, the jitter constant.** Adopt the measured values on both benches, keep the old
@@ -113,8 +125,8 @@ optimization and the training on it — the same pipeline as the weekend, second
 ## Before you touch anything
 
 1. **Read** `docs/FOUNDATIONS.md` (§7 and §9 in particular), `docs/GLOSSARY.md`, and
-   [`docs/goals/learned-model-family.md`](docs/goals/learned-model-family.md) and
-   [`docs/goals/coded-detector-optimization.md`](docs/goals/coded-detector-optimization.md)
+   [`docs/goals/learned-model-family.md`](../goals/learned-model-family.md) and
+   [`docs/goals/coded-detector-optimization.md`](../goals/coded-detector-optimization.md)
    — the fast-stream versions of exactly this work.
 2. **Confirm the default dataset with Tony.** `dataset.default()` refuses inside a Claude
    session until he has (merged 2026-09-21, #692). Ask:
@@ -152,7 +164,7 @@ optimization and the training on it — the same pipeline as the weekend, second
   (`docs/learned/bench_measured_slow.json`), with a sibling of
   `tests/test_bench_is_measured_on_the_declared_folder.py` that pins the slow record's stream
   to `"slow"`. The duplication is a stopgap with a scheduled end:
-  [`docs/todo/2026-09-21-one-stream-aware-bench.md`](docs/todo/2026-09-21-one-stream-aware-bench.md)
+  [`docs/todo/2026-09-21-one-stream-aware-bench.md`](../todo/2026-09-21-one-stream-aware-bench.md)
   turns every tool's `--bench` into a profile selector and deletes both the module and this
   tool's reason to exist. The tools nobody has claimed — `tools/search_all_settings.py`,
   `tools/leaderboard.py` — still take `--bench fast|slow` as step 2 says: choosing a module is

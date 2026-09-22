@@ -53,7 +53,7 @@ provisional and listed so it can be argued with:
 - :data:`OPERATING_POINTS`: **LoCo, CoactDetect and SPIKE-synch at slow settings** (adopted by
   Tony, 2026-09-21), the other three at the FAST settings, which is where the search started
   and what the false-alarm budgets were measured at (Tony: *"remeasure"*). Slow settings do
-  **not** ship through ``bench.OPERATING_POINTS`` (``HANDOFF-slow-bench.md``).
+  **not** ship through ``bench.OPERATING_POINTS`` (``docs/handoffs/2026-09-21-slow-bench.md``).
 """
 
 from __future__ import annotations
@@ -217,7 +217,7 @@ other three: the FAST settings, which is where the search started and what the b
 were measured at, held until the fast questions on them are settled (binned SCE 98 or 75,
 locust's anchor); rate+context's slow gain was +0.005, nothing to adopt. **None of these
 ships**: real-data detection reads ``bench.OPERATING_POINTS``, and a slow setting reaches a
-real recording only through a settings file with ``stream=slow`` rows (``HANDOFF-slow-bench.md``)."""
+real recording only through a settings file with ``stream=slow`` rows (``docs/handoffs/2026-09-21-slow-bench.md``)."""
 DETECTORS = tuple(OPERATING_POINTS)
 
 SLOW_EXTRA: dict[str, dict[str, tuple]] = {

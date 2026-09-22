@@ -35,7 +35,9 @@ was written. Both work from `main`.
 pre-existing field bit-identically across all 974 fits, so the two new fields are pure
 addition. It confirms the split above: the head is the site of the stall in 143 of
 chorus_norm's 153 collapsed fits, and is handed a constant input in 32 of
-chorus_gain_norm's 75, where **a repair aimed at the head cannot reach**. Merge on green.
+chorus_gain_norm's 75, where **a repair aimed at the head cannot reach**. Merged 2026-09-21.
+**So of this file's delete condition, only 064's sweep is left** (its tooling is
+[#682](https://github.com/syncytium2/bugarach/pull/682), held open for the sweep's findings).
 
 **064 has not.** It was still running when this was written. If it is idle when you
 arrive, poke it rather than assume it finished.

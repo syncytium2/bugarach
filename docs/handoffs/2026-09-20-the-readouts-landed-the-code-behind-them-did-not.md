@@ -1,14 +1,28 @@
 # Handoff — goal 2's two readouts are on `main`; the tool that produced them is not
 
+> **Retired from the root on 2026-09-22**, nothing in it being in flight. Written at the root as
+> `HANDOFF-the-readouts-landed-the-code-behind-them-did-not.md`; link paths rewritten for this
+> directory, body otherwise untouched. What has happened to its items since:
+> - **The crowded allowance** is still unsigned. Tony ruled on 2026-09-21 to sweep its sensitivity
+>   first; it is tracked in `HANDOFF-goal-2-comparison.md` and the
+>   [goal page](../goals/learned-model-family.md).
+> - **#596's picker question is ruled**: #680 registered gauge and chorus, and Tony left them in the
+>   picker on 2026-09-22. What remains of #642 is queue item 8 in
+>   [`decisions_pending.md`](../decisions_pending.md).
+> - **The comma-splitting launcher** was fixed on `tune-bench-comparison` by #676.
+> - **The roster gate's underscores** stay filed in `docs/sapper_feedback/`.
+> - **WSMIP064's disk**: the "about 30 GB" below measured 3.14 GB; Tony ruled on 2026-09-21 to delete
+>   the two stale virtual environments only.
+
 > **Its own thread.** The root `HANDOFF.md` and the other root handoffs are different threads;
 > none supersedes another. When this one is finished, delete this file — or move it to
-> [`docs/handoffs/`](docs/handoffs/README.md) if anything in it is still worth reading.
+> [`docs/handoffs/`](README.md) if anything in it is still worth reading.
 
 > **Working material, not murderboarded.** Same standing as `docs/run_records.md`. Nothing here is
 > written for an outside reader; the two pages named below are.
 
 **Start at the goal page**, not here:
-[`docs/goals/learned-model-family.md`](docs/goals/learned-model-family.md). This file only records
+[`docs/goals/learned-model-family.md`](../goals/learned-model-family.md). This file only records
 what a session on 2026-09-19/20 left in an odd state, and the one question that is Tony's.
 
 **No counts in this file.** Derive them: `git rev-parse --short origin/main` · `pytest -q` ·
@@ -95,7 +109,7 @@ So:
 - **The murderboard roster gate cannot see an archive whose name contains an underscore** — it
   strips `_` as markdown emphasis and then reports a complete archive as missing. Filed with the
   reasoning and the upstream fix in
-  [`docs/sapper_feedback/2026-09-19-the-roster-gate-eats-underscores.md`](docs/sapper_feedback/2026-09-19-the-roster-gate-eats-underscores.md).
+  [`docs/sapper_feedback/2026-09-19-the-roster-gate-eats-underscores.md`](../sapper_feedback/2026-09-19-the-roster-gate-eats-underscores.md).
   `tools/murderboard_roster.sh` is vendored, so this repo renamed its archives to hyphens rather
   than editing it. **Name new review archives with hyphens** until upstream fixes it.
 

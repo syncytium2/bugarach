@@ -834,7 +834,7 @@ def main(argv=None) -> int:
     ap.add_argument("--bench", choices=sorted(BENCHES), default="fast",
                     help="which stream's bench to search: bugarach.bench (fast, the default) "
                          "or bugarach.bench_slow. Every stage and every worker reads the one "
-                         "chosen here (HANDOFF-slow-bench.md)")
+                         "chosen here (docs/handoffs/2026-09-21-slow-bench.md)")
     ap.add_argument("--out", type=Path, default=None,
                     help="destination (default: <darkroom>/<date>-full-search, with -slow "
                          "appended for --bench slow, so a fast and a slow search on the same "

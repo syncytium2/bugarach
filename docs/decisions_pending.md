@@ -107,7 +107,7 @@ matter. Until it is ruled, every operating point chosen this month stays provisi
 
 **Blocking:** the last step of the slow-stream job. 064 correctly stopped rather than guessing.
 
-**Evidence:** `HANDOFF-slow-bench.md`, step C, and
+**Evidence:** `docs/handoffs/2026-09-21-slow-bench.md`, step C, and
 `docs/learned/runs/2026-09-21-slow-pilot/README.md`. Two untuned nets at three seeds against
 the slow reference land everything within **0.827–0.859 mean F1**, the nets 0.016 to 0.032
 below CoactDetect, against 0.29 of spread on fast. Fits take 5 to 16 s on the GPU, so a full
@@ -288,7 +288,7 @@ decision, that decision joins the numbered list above.
 
 **The slow stream and slow comodulation are different things wearing one word**, and the
 confusion has now cost a conversation. The **slow stream** is the export's slow event channel —
-the detector axis's second stream, what `bench_slow.py` and the whole of `HANDOFF-slow-bench.md`
+the detector axis's second stream, what `bench_slow.py` and the whole of `docs/handoffs/2026-09-21-slow-bench.md`
 are about. **Slow comodulation** is minute-scale shared modulation, measured on *both* streams,
 where "slow" names the timescale of the modulation rather than a channel. [`GLOSSARY.md`](GLOSSARY.md)
 should say so in two lines.

@@ -1,6 +1,6 @@
 # Step A of the slow bench: is slow participation real, and does the jitter choice matter?
 
-Written 2026-09-21 on WSMIP064 for `HANDOFF-slow-bench.md`. Working material, not murderboarded.
+Written 2026-09-21 on WSMIP064 for `docs/handoffs/2026-09-21-slow-bench.md`. Working material, not murderboarded.
 Both checks read the default dataset (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`),
 baseline analysis windows only.
 

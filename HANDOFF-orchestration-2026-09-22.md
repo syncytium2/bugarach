@@ -10,7 +10,10 @@ mount**: everything below is a read of the tree, the darkroom over the Dropbox c
 GitHub. Nothing was measured on this machine.
 
 > **Not murderboarded** — working material for a session in this tree, on the same footing as
-> `HANDOFF-slow-bench.md`. Nothing here is for an outside reader.
+> the slow-bench handoff. Nothing here is for an outside reader.
+>
+> **Corrected 2026-09-22, evening, by a later cloud session** after Tony reviewed it and closed the
+> sessions it named. Every correction is marked *(corrected)* in place; the rest is as written.
 
 ---
 
@@ -20,8 +23,10 @@ GitHub. Nothing was measured on this machine.
    what each blocks and what to do absent a ruling. It is the page the briefing's one
    `waiting-on-tony` entry points at.
 2. [`docs/goals/README.md`](docs/goals/README.md) — four goals now; goal 4 was added today.
-3. `HANDOFF-slow-bench.md`, the *Current state* section at the top — WSMIP064's own account of
-   the slow thread, written at the end of its run.
+3. [`docs/handoffs/2026-09-21-slow-bench.md`](docs/handoffs/2026-09-21-slow-bench.md), the
+   *Current state* section at the top — WSMIP064's own account of the slow thread, written at the
+   end of its run. *(corrected: retired from the root on 2026-09-22, nothing in it being in
+   flight; its header says where each open item went.)*
 
 ## The one thing on the critical path
 
@@ -51,6 +56,8 @@ That audit is done — [`docs/todo/2026-09-22-what-else-came-from-the-clustering
 configuration"*, blocked since this morning with the choice in its own status line: adopt
 0.106/0.135, keep 0.36/0.30, or ask the producer about same-frame artefacts first. Its checkout
 was at `964e3ab`, well behind; **it must pull before it commits.**
+*(corrected: that session has since been archived. Whoever acts on the ruling starts fresh from
+`main`.)*
 
 ## The meeting has happened, which unblocks two filed items
 
@@ -62,6 +69,15 @@ Several documents say "after the 2026-09-22 meeting". **That meeting was the mor
 - **The one stream-aware bench** — [`docs/todo/2026-09-21-one-stream-aware-bench.md`](docs/todo/2026-09-21-one-stream-aware-bench.md),
   which deletes `bench_slow.py` and the stopgap measurement tool. Goal 4 would otherwise add a
   **third** copy of the scoring path, so this wants doing before that starts.
+
+*(corrected)* **Two things this section did not say.** First, **what the meeting decided is not
+recorded anywhere in the tree.** The 0.19 todo was held *so the meeting could discuss it*, and a
+meeting having happened is not the same as its approving the change, so confirm with Tony before
+moving the constant. Second, **the two items touch the same files**: the constant changes edit
+`bench.py` and `bench_slow.py`, and the one-bench rewrite replaces both. Do the constant changes
+first, in the files as they stand, and let the rewrite carry the new values across; the other order
+makes the rewrite's tests pin values about to change. Tying 0.19 to the jitter's overnight pass
+also holds a change that needs no ruling behind one that does, so it need not wait for item 2.
 
 A relative date in a document goes stale silently. If you find more of them, fix them where you
 find them.
@@ -135,16 +151,21 @@ session's `post_turn_summary`, which is where the blocked ones announce themselv
 record which machine a session is on** — that has to come from a run record or the board, and
 assuming it is how this session put the jitter session on the wrong workstation for an hour.
 
-**Idle on questions that already have answers**, as of 2026-09-22 17:00 UTC: the jitter session
-(above); a cloud session blocked on *"is `steps_and_pins_excluded` still the default dataset?"*
-(yes, confirmed 2026-09-21); an armory session blocked on a statusline change gated on #692, which
-merged yesterday. Two more are review-ready and unharvested, including *"sweep complete; 4 rows
-need top-up pass; findings doc unwritten"* — the crowded-allowance sweep.
+*(corrected)* **As of 2026-09-22 evening, Tony has closed the sessions this paragraph listed.** The
+jitter session and the cloud session blocked on the dataset default are archived. The paragraph
+answered that session's question for it (*"yes, confirmed 2026-09-21"*), which the dataset rule
+forbids: the default is confirmed **by Tony, in each session**, and never relayed from another one.
+**One result is still not in the repo:** the crowded-allowance sweep on WSMIP064 (*"sweep complete;
+4 rows need top-up pass; findings doc unwritten"*, session titled *"Handoff from machine 064"*).
+Until that session pushes its output and a findings note, the sweep exists only on that machine;
+the tooling it needs is [#682](https://github.com/syncytium2/bugarach/pull/682).
 
 ## Housekeeping a new session inherits
 
 - **The machine-local board** is over budget: this container's raw dump reached 12.5 KB against
-  8,000 B. Archiving finished blocks under `## Archive` makes the file navigable but **does not
+  8,000 B. *(corrected: that board was in the writing session's own cloud container, which is gone.
+  The machine-local board is per machine, so this item describes nothing a new session will find.
+  The point about archiving still holds for any board that does grow.)* Archiving finished blocks under `## Archive` makes the file navigable but **does not
   shrink the pre-trim dump** — the dump is measured on the file, and nothing is deleted. If size
   is the goal, the archive has to be a separate file.
 - **`docs/SESSIONS.md` is 207 KB across 121 blocks, 92 of them DONE or RELEASED.** Same caveat.
@@ -156,7 +177,7 @@ need top-up pass; findings doc unwritten"* — the crowded-allowance sweep.
   is **not vendored here**. It stalls because it has no answer for the Mac or a cloud container,
   which is 91 of those 119 blocks. That naming decision is Tony's and unmade.
 - **Branch `claude/sleepy-noether-xyvx59`** is this session's, one commit, already merged as #706.
-  Safe to delete.
+  Safe to delete. *(corrected: already gone from the remote.)*
 
 ## What this session did not do
 
