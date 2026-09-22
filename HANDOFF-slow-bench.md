@@ -14,6 +14,94 @@ file says which file.
 
 ---
 
+## ⏵ Current state, 2026-09-22 — read this first
+
+**Written by the WSMIP064 session that ran steps 1–3, A and B, at its end.** Everything below this
+section is the original plan and a dated status log; where they disagree, this section wins.
+**About 100 sessions are active across three machines and the cloud: pull before you act, and
+check the boards before you touch any path named here.**
+
+**Nothing of this thread is running or held.** No GPU, no CPU pool, no scheduled task, no open
+darkroom claim. Everything is merged except [#727](https://github.com/syncytium2/bugarach/pull/727)
+(the jitter explainer figure, docs only, merging on green when this was written).
+
+### Done and on `main`
+
+| what | where |
+|---|---|
+| Slow stream measured on the default dataset's baselines | `tools/measure_slow_bench.py` → `docs/learned/bench_measured_slow.json` (#708) |
+| The slow bench, a stopgap module | `src/bugarach/bench_slow.py` + `tests/test_bench_slow.py` (#710); `simulate_coordination(width_quantiles=)` so slow recordings carry slow widths |
+| Slow false-alarm budgets, re-measured (Tony: keep them as measured) | `tools/measure_slow_budgets.py` → `docs/learned/bench_slow_budgets.json` (#710) |
+| `--bench fast\|slow` in the every-knob search | `tools/search_all_settings.py` (#711) |
+| The slow every-knob search | `docs/learned/runs/2026-09-21-full-search-slow/` (#712) |
+| Slow reference adopted by Tony: **LoCo, CoactDetect, SPIKE-synch** | `bench_slow.OPERATING_POINTS`, each with its `source` string (#713, #714). SCE, locust, rate+context stay at the fast settings |
+| Step A: participation confirmed; the slow jitter's analogy disproved | `docs/learned/runs/2026-09-21-slow-step-a/` (#715) |
+| Step B: nets pilot on both benches | `docs/learned/runs/2026-09-21-slow-pilot/` (#715): on slow everything lands in 0.827–0.859 F1 |
+| **Jitter measured without bins, both streams** | `tools/measure_jitter_correlogram.py` → `docs/learned/runs/2026-09-22-jitter-correlogram/` (#718): **fast 0.106 s [0.091, 0.120], slow 0.135 s [0.126, 0.149]** against benches of 0.36 and 0.30 |
+
+### Waiting on Tony — the thread is blocked here
+
+All are in [`docs/decisions_pending.md`](docs/decisions_pending.md), which is the queue; this
+file does not duplicate them.
+
+1. **Item 2, the jitter constant.** Adopt the measured values on both benches, keep the old
+   ones, or ask the producer about same-frame artefacts first. This session recommended
+   adopting them, **in one overnight pass with the participation 0.18 → 0.19 change**
+   (`docs/todo/2026-09-21-bench-participation-to-0-19-after-the-meeting.md`): re-measure
+   both benches, rerun the every-knob search on each (about 11 min per stream), and re-check the
+   three adopted slow settings. **Until then, every operating point chosen this month is
+   provisional**, on both streams.
+2. **Item 3, step C (the nets on slow).** Held. Re-pilot on the re-measured bench before any
+   full comparison; the pilot suggests a likely tie within about 0.02 F1.
+3. **Item 8, #642.** Step C needs the tuning tool's `--bench` seam, and the tool lives only on
+   `tune-bench-comparison`, whose fate is unruled. Not edited by this session.
+
+### How the wrong jitter happened, so it is not repeated
+
+Tony asked; the answer, in short. Both benches took `jitter_sec` from a **within-cluster onset
+spread** (the MATLAB summary's `jit_obs`, reproduced by `assess_coactivity`). A cluster is made
+of coincidence bins, so onsets anywhere in the bin count, and background onsets that land in a
+busy bin are spread evenly across it — the SD comes out near bin/√12 whatever the cells do
+(Figure 1 of `docs/learned/runs/2026-09-21-slow-step-a/` and the jitter-vs-bin figure in the
+darkroom, `bugarach/2026-09-21-slow-bench-jitter-vs-bin.png`). The 2026-09-17 re-measure used
+the same instrument at the same bin and "confirmed" it; the test it created guards the constant
+against the instrument, not the instrument against the truth. This session then set slow's
+0.30 s from that instrument and misdescribed it as "what fast did". **Open work that needs no
+ruling:** make the bench re-measure run at two bins and refuse a value that moves with the bin
+— in `tools/remeasure_bench.py` once WSMIP065's claim on it is released, or filed as a todo.
+
+**How 0.1 s is measurable on 0.1 s frames** (Tony asked): onsets are frame-rounded, which adds
+only 0.1/√12 = 0.029 s of spread; σ = 0.11 s still spreads over 3–5 frames; and the width is
+read from every cross-cell onset pair across the peak's shape, calibrated on the simulator down
+to 0.05 s. Figure 2 in `docs/learned/runs/2026-09-22-jitter-correlogram/` (#727). **Baseline
+analysis windows only**, all 84 recordings; treatment windows are held by Tony's ruling.
+
+### Open work a session can do without a ruling
+
+- **Goal 4's cheap measurement** (queue item 10): per ROI, the gap from each slow onset to the
+  nearest fast onset, against the frame interval. A mass at zero says the streams share events.
+- **Two search-tool defects the slow search exposed, shared with fast**: `extend` halves integer
+  floors (`min_rois` to 1.5, 0.75, 0.375), and the edge rule cannot tell a flat plateau from a
+  climb — SPIKE-synch's `C_min` looked unbracketed when every value 0–0.03 was identical.
+- **The simulators' long-lag level is far above the real one** (excess ≈ 0.75 at 5–10 s on the
+  fast bench against about 0.1 in real data, Figure 1 of the jitter record) — the elevated-rate
+  stretch and burst shapes. Not yet looked at.
+- **The one-stream-aware bench** (`docs/todo/2026-09-21-one-stream-aware-bench.md`) deletes
+  `bench_slow.py`; do it before a third copy of the scoring path appears (goal 4).
+
+### Traps this session hit on WSMIP064
+
+- **`tools/merge_when_green.sh` removes the merged worktree, and on Windows the removal
+  half-fails**: the folder stays, empty and locked, with its `.git` link gone. Use a new
+  worktree name after each merge, and `git worktree prune`. Empty leftovers: `slow-bench`,
+  `slow-search`, and possibly more — safe to delete.
+- **The board guard reads the identifier after the LAST slash in a block heading**, so a
+  heading whose description contains a slash (`optimization/training`) is not recognised.
+- **`tools/archive_run.py` refuses a search run** (it wants `results.json`); the slow search
+  was copied to the darkroom and `docs/learned/runs/` by hand.
+- **Do not write outputs in the primary checkout**: a figure written there has to be moved to
+  a branch before it can be committed.
+
 ## The job, in one paragraph
 
 Everything the detectors were tuned and trained on this weekend is a synthetic recording
