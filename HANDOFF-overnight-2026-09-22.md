@@ -61,6 +61,30 @@ Start from `main`, pull first, claim both boards. Tony confirms the dataset defa
    `OPERATING_POINTS`.
 6. When done, write one line at the bottom of this section: what merged, where the runs are.
 
+- **2026-09-22 ~20:40 (WSMIP065): steps 1–3 are written and pushed; steps 3 (the re-measure),
+  4 and 5 are BLOCKED on one thing, and it is Tony's.** Branch `opt/bench-measured-jitter`,
+  **[#738](https://github.com/syncytium2/bugarach/pull/738), left a DRAFT on purpose and not
+  set to auto-merge** — it cannot be green as it stands. Both benches carry the measured
+  jitter (fast 0.106 s, slow 0.135 s) and participation 0.19; `MEASURED_OUTSIDE_INTERVAL` and
+  `ROLE_LITERAL_ALLOWED` are both empty; `MEASURED_ROLE` is `"default"`; and both re-measure
+  tools now read `jitter_sec` from the correlogram record rather than deriving it, refusing a
+  record measured on a different folder. **What blocks it:**
+  `test_bench_is_measured_on_the_declared_folder` fails by design — *"a constant changed
+  without re-measuring"* — and the re-measure needs `dataset.default()`, which refuses until
+  Tony runs `python -m bugarach.dataset confirm` in a session on this machine. A session does
+  not run that on his behalf. **After the confirm this is two commands** —
+  `python tools/remeasure_bench.py --jobs 12` and `python tools/measure_slow_bench.py --jobs 12`
+  — then step 4's doc changes and step 5's searches, which had no chance to start.
+  **Two things whoever picks this up needs.** First, **a worktree on this machine imports the
+  primary checkout's `src/bugarach`**, because the editable install points there: 87 tests
+  "passed" against unmodified code before this was noticed. Export
+  `PYTHONPATH=<worktree>/src` before `pytest`, or the suite is not testing your branch.
+  Second, **`main` is red on Windows** for reasons that predate tonight — `read_text()` with no
+  encoding, walking repo source that carries em-dashes — fixed for two files in #738 and filed
+  more widely, with sapper's own crash, in
+  [`docs/todo/2026-09-22-sapper-crashes-instead-of-reporting-on-windows.md`](docs/todo/2026-09-22-sapper-crashes-instead-of-reporting-on-windows.md).
+  No darkroom folder was written; the git-board claim for step 5 is live and unwritten.
+
 ## WSMIP064 — the sweep's findings, then the new measurements
 
 Start from `main`, pull first, claim both boards. Tony confirms the dataset default in your session.
