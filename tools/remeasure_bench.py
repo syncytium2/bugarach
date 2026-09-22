@@ -163,6 +163,17 @@ def _values(recs) -> dict[str, float]:
     return vals
 
 
+def _repo_relative(path: Path) -> str:
+    """``path`` as a repo-relative posix string, so the record never carries a
+    machine-local absolute path into a tracked file (sapper SAP004)."""
+    p = Path(path).resolve()
+    try:
+        return p.relative_to(REPO).as_posix()
+    except ValueError:
+        # Outside the repo: name it without the part that identifies the machine.
+        return p.name
+
+
 def _jitter_from_record(path: Path, stream: str, folder_name: str) -> dict:
     """The correlogram's calibrated jitter for ``stream``, checked against the folder.
 
@@ -195,7 +206,7 @@ def _jitter_from_record(path: Path, stream: str, folder_name: str) -> dict:
     if row.get("jitter_interval") is None:
         raise SystemExit(f"{path}: the {stream} bootstrap produced no interval.")
     return {"point": float(row["jitter_sec"]), "interval": [float(x) for x in row["jitter_interval"]],
-            "stat": stat, "record": str(path).replace("\\", "/"),
+            "stat": stat, "record": _repo_relative(path),
             "recordings": int(s.get("recordings", 0))}
 
 

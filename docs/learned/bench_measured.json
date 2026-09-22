@@ -1,14 +1,20 @@
 {
- "all_inside": false,
+ "all_inside": true,
  "bootstrap_draws": 200,
- "commit": "6054bc6",
- "folder": "2026-09-03_revised_2v_long_STEPS_EXCLUDED",
+ "commit": "8137da7",
+ "folder": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
+ "jitter_source": {
+  "record": "docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json",
+  "recordings": 84,
+  "statistic": "hwhm",
+  "tool": "tools/measure_jitter_correlogram.py"
+ },
  "k": 4,
- "measured_on": "2026-09-17",
+ "measured_on": "2026-09-22",
  "min_baseline_sec": 900.0,
  "recordings_in_shape_fits": 80,
  "recordings_measured": 84,
- "role": "steps_excluded",
+ "role": "default",
  "seed": 20260917,
  "skipped": {},
  "stream": "fast",
@@ -17,24 +23,33 @@
  "values": {
   "burst_shape_300s": {
    "bench": 1.547,
-   "hi": 2.2617960052443684,
+   "hi": 2.2639963199771844,
    "inside": true,
-   "lo": 1.4090722894974441,
-   "measured": 1.7993285914642148
+   "lo": 1.4096553596430823,
+   "measured": 1.8000544260580096
   },
   "burst_shape_60s": {
    "bench": 1.388,
-   "hi": 2.105077291750049,
+   "hi": 2.1065435152526044,
    "inside": true,
-   "lo": 1.1523243531451752,
-   "measured": 1.5157493445300805
+   "lo": 1.1530833584174718,
+   "measured": 1.5164095875666692
   },
   "jitter_sec": {
-   "bench": 0.36,
-   "hi": 0.3885563711179086,
+   "bench": 0.106,
+   "hi": 0.11967402750580318,
    "inside": true,
+   "lo": 0.09065330382531983,
+   "measured": 0.10569006810805887,
+   "source": "docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json",
+   "statistic": "hwhm"
+  },
+  "jitter_sec_clustering": {
+   "checked": false,
+   "hi": 0.3797690718259905,
    "lo": 0.24910312089650954,
-   "measured": 0.3193096515095778
+   "measured": 0.3193096515095778,
+   "note": "assess_coactivity's within-cluster onset spread at K = 4, the instrument that tracks the coincidence bin / sqrt(12). Recorded as provenance; jitter_sec is the correlogram's."
   },
   "n_roi": {
    "bench": 33.0,
@@ -44,24 +59,24 @@
    "measured": 31.5
   },
   "participation": {
-   "bench": 0.18,
+   "bench": 0.19,
    "hi": 0.23217261904761907,
-   "inside": false,
+   "inside": true,
    "lo": 0.18181818181818182,
    "measured": 0.19047619047619047
   },
   "rate_shape": {
    "bench": 0.275,
-   "hi": 0.3396108485511683,
+   "hi": 0.33878262676416476,
    "inside": true,
-   "lo": 0.21773728533467776,
-   "measured": 0.26877880070616755
+   "lo": 0.2149172242473601,
+   "measured": 0.266693134759182
   },
   "regime_busy_hz": {
    "bench": 0.019,
    "hi": 0.023338017608359136,
    "inside": true,
-   "lo": 0.016214954704469507,
+   "lo": 0.016132597117794488,
    "measured": 0.019035087719298245
   },
   "regime_quiet_hz": {

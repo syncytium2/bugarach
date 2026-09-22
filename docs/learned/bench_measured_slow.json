@@ -7,15 +7,21 @@
   5.0
  ],
  "bootstrap_draws": 200,
- "commit": "a9a0b51",
+ "commit": "8137da7",
  "dataset": {
   "name": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
   "recordings": 84,
   "role": "steps_and_pins_excluded",
   "use": "input"
  },
+ "jitter_source": {
+  "record": "docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json",
+  "recordings": 84,
+  "statistic": "hwhm",
+  "tool": "tools/measure_jitter_correlogram.py"
+ },
  "k": 4,
- "measured_on": "2026-09-21",
+ "measured_on": "2026-09-22",
  "min_baseline_sec": 900.0,
  "recordings_in_shape_fits": 75,
  "recordings_measured": 84,
@@ -36,9 +42,11 @@
    "measured": 19.980906796270684
   },
   "jitter_sec": {
-   "hi": 0.32682808634359106,
-   "lo": 0.28098660592171554,
-   "measured": 0.2979461861218538
+   "hi": 0.14916567617011403,
+   "lo": 0.12625428905256744,
+   "measured": 0.13534083652193196,
+   "source": "docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json",
+   "statistic": "hwhm"
   },
   "jitter_sec@0.5s": {
    "hi": 0.2244624751000207,
@@ -64,6 +72,11 @@
    "hi": 1.7314104641284003,
    "lo": 0.9579761562543229,
    "measured": 1.388018662860322
+  },
+  "jitter_sec_clustering": {
+   "hi": 0.32682808634359106,
+   "lo": 0.28098660592171554,
+   "measured": 0.2979461861218538
   },
   "n_roi": {
    "hi": 33.5125,
