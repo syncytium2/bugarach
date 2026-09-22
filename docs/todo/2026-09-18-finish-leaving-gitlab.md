@@ -94,6 +94,11 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
    Steps: interface2's `greatlakes/ACCESS.md` § "Cloning comes from GITHUB": generate a key on the
    cluster, register it as a read-only deploy key on `syncytium2/interface2`, `set-url`, fetch.
    Until then a fetch there reads a frozen GitLab copy and reports success.
+   **Owned in interface2 since 2026-09-22** (Tony: *"make sure the next greatlakes session fires a
+   big flare"*): `docs/todo/2026-09-22-compute_infra-great-lakes-clones-still-fetch-from-gitlab-re-po.md`
+   there, on its pipeline map, with a `🔴 GREAT LAKES` notice its session briefing prints first, a
+   red line on its `CLAUDE.md` banner and a box atop `greatlakes/ACCESS.md` (`700df29d`). Close this
+   item when that one resolves.
 8. **Confirm 064.** interface2's ROADMAP planned the cutover "with 064 + Mac"; the Mac is confirmed,
    064 never was. On 064: `git remote -v | grep -i gitlab` in each checkout.
 9. **Revoke GitLab credentials while access lasts** (Tony, GitLab web UI): personal/project access
