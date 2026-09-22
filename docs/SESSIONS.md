@@ -10,20 +10,24 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 064/crowded-allowance — DARKROOM claim ACTIVE 2026-09-22: `bugarach/2026-09-21-crowded-allowance-sweep/` (NEW)
-- **Status:** ACTIVE (WSMIP064), claimed before writing. The overnight brief's WSMIP064 step 1
-  (`HANDOFF-overnight-2026-09-22.md`): the crowded-allowance sweep finished 2026-09-21 at 22 of 22
-  rows and was never pushed — its only copy was a session scratchpad. The run record and Figure 1
-  go to the repo; the 22 per-row grid files (7.8 MB) are bulk and go here, per CLAUDE.md's
-  Dropbox-and-repo rule.
-- **Writes:** `grid/` (22 JSON files), `crowded_allowance.png` and `.html`, and a copy of the run
-  record's `README.md`. A NEW folder, so nothing existing is touched. Nothing else under
-  `<darkroom>/bugarach/` is written, and `constellation/` is not touched.
-- **Claims:** that folder exclusively.
+### 064/crowded-allowance — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-21-crowded-allowance-sweep/` (NEW)
+- **Status:** **RELEASED 2026-09-22**, on [#682](https://github.com/syncytium2/bugarach/pull/682)
+  merging (`0baac4d`). Written and verified: **23** grid files (the 22 the sweep produced plus the
+  strict `run_0p000.json` the top-up closed), `crowded_allowance.png` and `.html`,
+  `sweep_summary.json` and the run record's `README.md`. Was: ACTIVE (WSMIP064), claimed before
+  writing. The overnight brief's WSMIP064 step 1 (`HANDOFF-overnight-2026-09-22.md`): the sweep
+  finished 2026-09-21 at 22 of 22 rows and was never pushed — its only copy was a session
+  scratchpad. The record and Figure 1 went to the repo; the per-row grid is bulk and stayed here,
+  per CLAUDE.md's Dropbox-and-repo rule.
+- **Writes:** that folder only. A NEW folder, so nothing existing was touched. Nothing else under
+  `<darkroom>/bugarach/` was written, and `constellation/` was not touched.
 - **Simulation only** — cached decodings from the 2026-09-18 fair comparison; no dataset read, no
   retraining, no GPU.
+- **Still owed, and NOT a darkroom hold:** three strict rows on the replicate draw (allowances
+  0.000, 0.005, 0.010). They top up a machine-local cache under `%USERPROFILE%\runs\`, not this
+  folder; the run record says why the loop is long. Anything they produce will re-claim this
+  folder in its own block rather than leave this one open.
 - **Goal:** learned-model-family (goal 2).
-- **Released when:** the run record is on `main` (#682).
 
 ### 065/methods — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-methods/` (NEW)
 - **Status:** **RELEASED 2026-09-22.** Written: the methods `.docx`, `.pdf` (Word export) and `.html`,
