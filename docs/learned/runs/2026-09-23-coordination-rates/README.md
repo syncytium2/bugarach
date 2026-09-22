@@ -129,6 +129,25 @@ because the merge is dominated by the stream with the larger moments. Combined i
 **uncalibrated** — there is no combined bench — and its merge rule (a slow onset within one
 frame of a fast onset counts once) is a stated assumption, not goal 4's answer.
 
+## Slow is the stream where least is settled, and three runs now say so
+
+Worth reading beside this one, because two of the three landed the same night and none
+pointed at the others:
+
+- **This run.** Slow's ungated calibration terms are the weakest — its moment rate reads
+  −22.8% — and its probe carries a −35.9% coordination correction, the largest anywhere in
+  the table.
+- **[The correlogram by group](../2026-09-22-jitter-by-group/README.md)** (#744). Fast shows
+  no group difference in onset jitter (p = 0.71); **slow is borderline at p = 0.054**, with
+  one of six pairwise intervals excluding zero and nothing correcting for the six.
+- **[The slow pilot](../2026-09-21-slow-pilot/README.md)** and ruling-queue item 3, which
+  calls slow's participation of 0.38 the value that whole bench turns on — against the
+  0.58–0.82 measured here for a related but different quantity.
+
+None of these is fatal on its own and none adjudicates anything. Together they say the slow
+stream's constants are the ones to be slowest about, which is a reason to sequence rather
+than a reason to stop.
+
 ## Why the adoption PR is not here
 
 The brief's step 2 says to open it **rebased on WSMIP065's constants PR**. That PR is

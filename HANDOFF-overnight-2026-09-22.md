@@ -113,13 +113,38 @@ same defect and runs first in the hook. CI is UTF-8, so only this workstation ev
 `test_tracked_tree_is_clear` included, which asserts `--all` exits 0 and could not pass here. Both
 forced to UTF-8, two regression tests that force cp1252 (#682).
 
-**Step 2 NOT STARTED, blocked on the dataset confirm and not on code.**
-`tools/measure_coordination_rates.py` is on `main` (#737, verified) and has been read.
-`dataset.default()` refuses with `UnconfirmedDefault`, and its own message says to ask the person
-and *"do not confirm on their behalf"* — so the ask went to Tony and this session did not run it.
-The orchestrator's 21:36 note agrees the confirm is his to give. On a yes: run the tool over the
-default dataset's baseline windows for fast, slow and combined with its calibration, record into
-`docs/learned/runs/2026-09-23-coordination-rates/`, and only then consider the adoption PR.
+**Step 2 MEASURED 2026-09-22 — #743 merged (`f9bde16`). The adoption PR is deliberately NOT
+opened.** Tony confirmed the default dataset in his own words and told this session to run
+`dataset.default()`'s confirm; it was run on that instruction, not on the relayed one. Record and
+Figure 1: `docs/learned/runs/2026-09-23-coordination-rates/`, darkroom claim released.
+
+*What it found.* **A defect in the tool, first**: quiet and busy were measured over all 84
+recordings while `remeasure_bench.py` — which *set* `bench.REGIMES` — uses only recordings
+clearing `fit_background_shape`'s floors. Two recording sets, reported as a measurement; the tell
+was quiet off 30% while busy agreed to 2%, because the floors cut the quiet tail. **On the bench's
+own set the raw rates reproduce `bench.REGIMES` to within 3%** (80 of 84 recordings on fast, 75 on
+slow). Found by the orchestrator, verified here against both tools before acting, fixed with two
+tests, and the all-recordings pair kept beside it as `*_all_recordings`.
+
+*So the real proposal is smaller than the first run claimed:* **the whole quiet/busy change is the
+coordination subtraction, 13% to 22% on both streams.** The probes split — fast's correction at
+the probe is −0.6%, so its **+112%** is purely a change of definition (99th percentile of 300 s
+stretches vs a chosen multiple of the median); slow's is −35.9%, and its small net −9% is two
+large opposite moves cancelling. ⚠ Calibration is **not uniform**: slow clears every window, fast
+clears **only 1 s** (+0.46 at 2 s, +1.00 at 4 s), and the `passed` flag never inspects the two
+terms where slow is worst (moment rate −22.8%).
+
+*Baseline only, confirmed with the count as Tony asked:* a recording with no declared baseline
+region returns `window=None` and is **dropped, not measured over its whole span**. All 84
+contributed; no treatment window enters any number.
+
+**What is left for the adoption, and it is sequencing, not measurement.**
+[#738](https://github.com/syncytium2/bugarach/pull/738) is still a draft and owns the bench
+constants; opening an adoption PR now would conflict in `bench.py` or reorder two changes meant to
+land in sequence. When it lands, quiet and busy are the straightforward rows. **The fast probe's
++112% wants a sentence from Tony** — it is a different definition of "busy" for a probe, not a
+correction. And slow is the stream to be slowest about: this run, the per-group correlogram (#744,
+slow borderline at p = 0.054) and ruling item 3 all point the same way.
 
 ## Orchestrator (cloud)
 
