@@ -256,17 +256,20 @@ true, filed here so they are visible beside the rulings rather than in a todo no
 item leaves this section when it is confirmed or dismissed — and if confirming it produces a
 decision, that decision joins the numbered list above.
 
-- **CoactDetect's event times are bin edges, so they cannot line up with chorus or with the
-  data** (Tony, 2026-09-22, by eye). A mechanism that produces exactly that is in the code:
-  `coact.py:278` takes a call's onset from the **left edge of its bin**, quantised to the shipped
-  `int_win_sec` of 2.0 s, while the nets decode at frame resolution and the data are event
-  onsets. `emit.py` writes that bin-edge onset into `detections.csv`, which is what the rasters,
-  the figures and fireflies read. ⚠ **It does not automatically invalidate goal 2** — scoring
-  matches within a tolerance, and a tolerance wider than a bin absorbs the offset, which would
-  explain why F1 never showed it. Check that first. Full write-up, what to measure, and the fix
-  that is already half-built by #698:
-  [`todo/2026-09-22-coactdetect-onsets-are-bin-edges.md`](todo/2026-09-22-coactdetect-onsets-are-bin-edges.md).
-  **Needs a real recording**, so it belongs on 064 or 065.
+- **RESOLVED 2026-09-22 — the detections on the full-cohort rasters are drawn where the file says,
+  and no number moves.** Tony saw, by eye, that the marks did not line up with the events or with
+  each other. Measured against the run's own files: CoactDetect ran **sliding** there, and its
+  onsets sit on member events (median offset 0.00 s). Two detectors *do* float and neither was in
+  that figure — **binned SCE** by a median 3.5 s, which is its 10 s bin edge, and **locust** by
+  +0.5 s fast and +1.1 s slow, which is peak versus half-rise. What looked like inconsistency
+  between the two lanes is **chorus firing where coact does not** (19 calls against 12 on one
+  panel); where both fire they agree to a few tenths of a second, sub-pixel at that zoom. The page
+  reads correctly once its x-axis is taken as **minutes from senktide onset**, which it does not
+  say. Findings, and the three misreadings this cost on the way:
+  [`todo/2026-09-22-what-the-full-cohort-rasters-show.md`](todo/2026-09-22-what-the-full-cohort-rasters-show.md).
+  Left open there: label the axis origin, distinguish paired from unpaired marks, and decide
+  whether the emitted onset should come from the call measure the way width and amplitude already
+  do (#698) — which is also what the fireflies contract asks for.
 
 ## Already in the queue, listed so this page is the whole of it
 
