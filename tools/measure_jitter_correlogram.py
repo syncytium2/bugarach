@@ -272,6 +272,10 @@ def _group_block(real, converters, a, stream):
         for g, recs in sorted(groups.items()):
             w = stat(*pooled(recs))
             wb = group_boot(recs, stat, a.boot, rs)
+            # One width per recording, in the order of this group's `slice_ids`. Not what the
+            # group's number is — that is read off the pooled counts — but what it is drawn over,
+            # and the count of recordings with no measurable peak is why the two differ.
+            per = [stat(r[-2], r[-1]) for r in sorted(recs, key=lambda r: r[0]["slice_id"])]
             boots[g] = wb
             jb = np.array([to_jitter(x) for x in wb])
             rows[g][name] = {
@@ -281,7 +285,11 @@ def _group_block(real, converters, a, stream):
                 "jitter_interval": (np.nanpercentile(jb, [2.5, 97.5]).tolist()
                                     if np.isfinite(jb).any() else None),
                 "boot_outside_calibration": int(np.isnan(jb).sum()),
-                "boot_unmeasurable": int(np.isnan(wb).sum())}
+                "boot_unmeasurable": int(np.isnan(wb).sum()),
+                "per_recording_sec": [None if not np.isfinite(x) else float(x) for x in per],
+                "mean_of_recordings_sec": float(np.nanmean(per)),
+                "median_of_recordings_sec": float(np.nanmedian(per)),
+                "recordings_with_no_peak": int(np.isnan(per).sum())}
         names = sorted(groups)
         obs_widths = [rows[g][name]["real_sec"] for g in names]
         obs_spread = spread(obs_widths)
