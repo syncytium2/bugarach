@@ -9,7 +9,9 @@ Drawn for Tony's 2026-09-14 ask for *"a very brief intro to the current state of
 coordination analysis"*, with three figures. This tool draws two of them; the third is
 already a tool:
 
-* **Figure 1 — the problem.** Real recordings from the `senktide` export role, one per
+* **Figure 1 — the problem.** Real senktide recordings from the default dataset (those whose
+  first period after baseline is senktide — the rule the producer's own `senktide` split
+  used, which is now an archive role), one per
   experimental group, each the median-sized field of its group, fast stream, aligned
   at the end of baseline, with the recorded periods and scored windows in a lane above
   each raster. The shape is the viewer's overview page, drawn through
@@ -112,12 +114,16 @@ def _save(pn, items, dest: Path, name: str) -> list[Path]:
 def figure1(hv, pn, dest: Path) -> list[Path]:
     from bugarach import dataset
     from bugarach.io import load_folder
-    from make_group_raster_summary import _anchor_of, build_page
+    from make_group_raster_summary import _anchor_of, build_page, treatment_one
 
-    folder = dataset.current("senktide")
+    # The senktide cohort of the default dataset, selected the way the producer's split
+    # was: by first non-baseline period. The split folder itself (`senktide`) is a subset
+    # of `steps_excluded` and carries its contamination, so it is an archive now.
+    folder = dataset.default()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        slices = load_folder(folder)
+        slices = [s for s in load_folder(folder)
+                  if (treatment_one(s) or "").strip().lower() == "senktide"]
     members = []
     for g in GROUPS:
         grp = sorted((s for s in slices

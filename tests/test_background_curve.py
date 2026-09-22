@@ -40,6 +40,24 @@ seven grid points and a largest rank change of two; flat field, same seeds, thre
 winners and a largest rank change of three. Mean own-range 0.132 against 0.170,
 so the axis shrank by about a quarter and did not go dead.
 
+**Re-measured 2026-09-16**, when locust's shipped setting stopped holding every cell
+for a fixed second and started reading each event's width. Same twelve seeds:
+fitted field, one winner (CoactDetect) and a largest rank change of two, mean
+own-range 0.133; flat field, three winners (CoactDetect, LoCo, rate+context) and a
+largest rank change of **two**, own-range 0.187. The winner contrast is unchanged;
+the rank-change contrast is gone — both fields now move a detector two places — so
+the paired test asserts the first strictly and the second only as "no worse".
+
+**And again the same day, after the gated retune** (LoCo 99.5, rate+context 4.5 Hz,
+binned SCE 98). Fitted field: CoactDetect and LoCo sit 0.003–0.008 F1 apart over most
+of the axis, and a raw "first place" flipped to LoCo at 19 mHz on a 0.003 difference;
+CoactDetect's largest deficit to the top anywhere is **0.003**. Flat field: no detector
+stays within 0.03 of the top everywhere (LoCo 0.033, CoactDetect 0.069). So the claim
+is restated with a tie margin (``TIE_F1``, 0.01): the fitted field has a steady leader
+and the flat field does not. Largest rank change: fitted **three** (rate+context,
+third to last at 40 mHz inside a 0.49–0.53 cluster), flat two — no longer asserted as
+a contrast.
+
 The regime argument does not change the curve. `baseline_quiet` and
 `baseline_busy` differ only in `bg_rate_hz`, which is the parameter the sweep
 replaces, so `evaluate_background_curve` returns the same numbers for either.
@@ -154,43 +172,61 @@ def _mean_own_range(curves):
     return sum(background_spread(curves[n]) for n in DETECTORS) / len(DETECTORS)
 
 
+#: F1 inside which two detectors are tied for the purposes of "who leads". Since the
+#: 2026-09-16 retune, CoactDetect and LoCo sit 0.003–0.008 apart over most of the axis,
+#: and a strict "first place" flipped between them on a 0.003 difference at one grid
+#: point. Twelve recordings do not resolve that, so a raw rank was measuring noise.
+TIE_F1 = 0.01
+
+
+def _steady_leaders(curves, rates=BACKGROUND_GRID):
+    """Detectors never more than TIE_F1 below the top at any of ``rates``."""
+    return {n for n in DETECTORS
+            if all(max(curves[m][r].f1 for m in DETECTORS) - curves[n][r].f1 <= TIE_F1
+                   for r in rates)}
+
+
 def test_one_winner_holds_across_the_axis(curves):
     """The first version of this test asserted the opposite — more than one
     detector best somewhere on the grid — and that was true of the flat field.
-    On the fitted one the top of the table does not move. Pinned as *one winner*
+    On the fitted one the top of the table does not move: some detector is within
+    ``TIE_F1`` of the best at every rate on the grid. Pinned as *a steady leader*
     rather than as its name, so the test says something true if the detectors
-    change and a different one comes to lead."""
-    winners = _winners(curves)
-    assert len(winners) == 1, (
-        f"the winner changes along the axis ({sorted(winners)}); at twelve seeds on "
-        "the fitted field it did not, and the reordering that used to be here was "
-        "measured to be the flat field's — see the module docstring before "
-        "re-baselining this")
+    change and a different one comes to lead.
+
+    Was *exactly one raw winner* until 2026-09-16; see ``TIE_F1`` for why that
+    stopped measuring anything once LoCo was retuned to within 0.003 of CoactDetect."""
+    leaders = _steady_leaders(curves)
+    assert leaders, (
+        f"no detector stays within {TIE_F1} F1 of the top across the axis; at twelve "
+        "seeds on the fitted field CoactDetect did (largest deficit 0.003), and the "
+        "reordering that used to be here was measured to be the flat field's — see "
+        "the module docstring before re-baselining this")
 
 
 def test_the_winner_holds_between_the_two_named_endpoints(curves):
     """`baseline_quiet` to `baseline_busy` is the interquartile spread of
     untreated slices — both regimes this project fits and reports at. The old
-    assertion was that the winner changed between them. It does not, and the
-    gap to the runner-up at the busy end is small enough that this is the
-    assertion seeds could most plausibly move; twelve is the count it holds at."""
-    quiet_best = _order(curves, QUIET_HZ)[0]
-    busy_best = _order(curves, BUSY_HZ)[0]
-    assert quiet_best == busy_best, (
-        f"{quiet_best} wins at the quiet endpoint and {busy_best} at the busy one "
-        "— a reordering between the two named regimes is exactly what the fitted "
-        "field was measured not to do")
+    assertion was that the winner changed between them. It does not: one detector
+    is within ``TIE_F1`` of the best at both, and twelve is the seed count this was
+    measured at."""
+    assert _steady_leaders(curves, (QUIET_HZ, BUSY_HZ)), (
+        "no detector is within the tie margin of the best at both named regimes "
+        "— a reordering between them is exactly what the fitted field was measured "
+        "not to do")
 
 
 def test_no_detector_falls_most_of_the_way_down_the_table(curves):
     """CoactDetect went from first to fifth across the grid on the flat field.
-    On the fitted field the largest rank change is two places — a detector can
-    swap with a neighbour, and nothing crosses most of the table."""
+    On the fitted field the largest rank change was two places until 2026-09-16 and
+    is **three** since: rate+context at its retuned 4.5 Hz falls from third to
+    last at 40 mHz — beyond the busy endpoint, inside a cluster whose F1 spans 0.49
+    to 0.53 — and nothing crosses the whole table."""
     worst = _worst_rank_change(curves)
-    assert worst <= 2, (
+    assert worst <= 3, (
         f"the largest rank change across the axis is {worst} places; the fitted "
-        "field was measured at two, and a table that unstable is the flat field's "
-        "signature, not this one's")
+        "field was measured at three, and a detector crossing the whole table is "
+        "the flat field's signature, not this one's")
 
 
 def test_the_reordering_was_the_flat_fields(curves, flat_curves):
@@ -206,11 +242,15 @@ def test_the_reordering_was_the_flat_fields(curves, flat_curves):
         "the flat field used to have three winners along the axis; if it now has "
         "one, the comparison this test rests on has changed and the docstring "
         "is wrong")
-    assert _worst_rank_change(flat_curves) >= 3, (
-        "the flat field used to move a detector most of the way down the table")
-    assert _worst_rank_change(curves) < _worst_rank_change(flat_curves), (
-        "the fitted field must be the more stable of the two, or the explanation "
-        "in the module docstring is false")
+    assert _steady_leaders(curves) and not _steady_leaders(flat_curves), (
+        "the fitted field must be the more stable of the two — a steady leader there "
+        "and none on the flat field — or the explanation in the module docstring is "
+        "false")
+    # Rank change no longer separates the fields. It was `>= 3` flat and strictly
+    # less fitted; after locust went per-event both measured two, and after the
+    # retune of the same day fitted measures three and flat two — the move being
+    # rate+context inside a 0.04-wide cluster. The steady-leader contrast above is
+    # the one that survives: see the module docstring's 2026-09-16 notes.
 
     fitted, flat = _mean_own_range(curves), _mean_own_range(flat_curves)
     assert fitted > 0.5 * flat, (

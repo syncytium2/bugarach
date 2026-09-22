@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from bugarach.detect_folder import (
@@ -39,25 +40,44 @@ from bugarach.emit import read_detections
 PAIR = ("coact", "loco")
 
 
-def _recording(rois: int = 10, windows=((500.0, 1500.0), (2400.0, 3400.0))) -> str:
+def _recording(rois: int = 10, windows=((500.0, 1500.0), (2400.0, 3400.0)),
+               *, peak_after: float | None = 0.3, width: float | None = 0.8) -> str:
     """A recording with real coactivity in every window, as a folder CSV.
 
     Each window gets a coordinated burst every two minutes in which every ROI
     fires inside a second, over a per-ROI background that is deliberately out of
     step with it. Enough for every detector to find something without any of
     them finding it everywhere.
+
+    Every event carries a ``peak_sec`` ``peak_after`` seconds after its half-rise
+    and a ``width_sec`` of ``width``, because locust reads both and declines a
+    folder without them. Pass ``None`` to leave the column out.
     """
-    lines = ["roi,time_sec,stream"]
+    cols = ["roi", "time_sec", "stream"]
+    if width is not None:
+        cols += ["width_sec", "width_def"]
+    if peak_after is not None:
+        cols += ["peak_sec"]
+    lines = [",".join(cols)]
+
+    def row(r, t):
+        out = f"{r + 1},{t:.3f},fast"
+        if width is not None:
+            out += f",{width:.3f},test_width"
+        if peak_after is not None:
+            out += f",{t + peak_after:.3f}"
+        return out
+
     for lo, hi in windows:
         t = lo + 60.0
         while t < hi - 30.0:
             for r in range(rois):
-                lines.append(f"{r + 1},{t + 0.1 * r:.3f},fast")
+                lines.append(row(r, t + 0.1 * r))
             t += 120.0
         for r in range(rois):
             u = lo + 13.0 + 3.1 * r
             while u < hi:
-                lines.append(f"{r + 1},{u:.3f},fast")
+                lines.append(row(r, u))
                 u += 37.0 + r
     return "\n".join(lines) + "\n"
 
@@ -250,7 +270,48 @@ def test_detector_settings_are_keyed_by_detector_and_stream(tmp_path: Path):
     assert keyed[("cicada", "fast")]["imaging_rate_hz"] == "10.0"
     # the six do not anchor on the same per-event time, and cicada is the odd one
     assert keyed[("cicada", "fast")]["onset_field"] == "locs"
+    assert keyed[("cicada", "fast")]["active_duration_mode"] == "per_event"
     assert keyed[("loco", "fast")]["onset_field"] == "t50rise"
+
+
+# --- locust reads the folder's peak and width, or declines by name
+
+
+def _locust_onsets(tmp_path: Path, name: str, **recording) -> list[float]:
+    d = _folder(tmp_path, recording=_recording(**recording), name=name)
+    run = detect_folder(d, out_dir=tmp_path / f"out_{name}", detectors=("cicada",))
+    return sorted(r["onset_sec"] for r in read_detections(run.paths["detections"]))
+
+
+def test_locust_holds_each_cell_for_the_width_the_folder_sent(tmp_path: Path):
+    """Same events, different widths, different answer: the column is read.
+
+    At a fixed second — what shipped until 2026-09-16 — these two folders
+    produced identical calls.
+    """
+    short = _locust_onsets(tmp_path, "short", width=0.2)
+    long_ = _locust_onsets(tmp_path, "long", width=6.0)
+    assert short != long_
+
+
+def test_a_folder_without_widths_declines_locust_only(tmp_path: Path):
+    """locust declines by name; the other five still run on the recording.
+
+    Raising instead would have cost the whole recording — the per-recording
+    ``except`` skips every detector — so a folder that sends no width (the contract
+    asks for one and does not require it) would lose all six to one detector's
+    precondition.
+    """
+    d = _folder(tmp_path, recording=_recording(width=None))
+    run = detect_folder(d, out_dir=tmp_path / "out", detectors=DETECTORS)
+    rec, = run.records
+    assert not rec.skipped
+    assert set(rec.declined) == {"cicada"}
+    assert "width_sec" in rec.declined["cicada"]
+    detectors_that_ran = {r["detector"] for r in read_detections(run.paths["detections"])}
+    assert "cicada" not in detectors_that_ran and "coact" in detectors_that_ran
+    summary = json.loads(run.paths["run"].read_text())
+    assert summary["declined"] == {"s1": rec.declined}
 
 
 def test_a_second_run_of_the_same_folder_is_the_same_file(tmp_path: Path):

@@ -72,6 +72,28 @@ class SceStream:
     t50fall: np.ndarray         # NaN in threshold mode
     width_kind: str             # "tightness" | "half_prominence"
     signal: SceSignal | None = None
+    extent_sec: np.ndarray | None = None
+    """How far past ``onset_sec`` each call reaches: the stretch it was made on.
+
+    **Not** ``width_sec``, and the difference is what this field is for. In
+    threshold mode ``onset_sec`` is the start of the call's first bin and
+    ``width_sec`` is ``tlast - tfirst``, the spread of the events inside — the
+    ``generate_sce`` contract, which the parity fixtures lock and which
+    ``detections.csv`` carries under ``width_def = "tightness"``. Read as a span,
+    those two describe a stretch that starts at the bin edge and is only as long
+    as the event spread, so it can end seconds before the events the call was
+    made on: a planted event late in its bin scored as a miss plus a false alarm.
+
+    So this is the full run of bins, from the first bin's start to the last bin's
+    end (clipped to the analysis window, where a partial last bin ends), and it is
+    what :func:`bugarach.score.score_stream` scores. Merged episodes cover every
+    bin from the first to the last. In peak mode the reported width already is
+    the call's stretch (half-prominence crossings), so the two are equal.
+
+    Tony ruled it this way on 2026-09-16: give the scorer the bin's own extent and
+    leave the detector's outputs alone —
+    ``docs/todo/2026-09-15-binned-sce-calls-are-scored-over-the-wrong-stretch.md``.
+    """
 
     @property
     def n_events(self) -> int:
@@ -225,7 +247,7 @@ def _window_detect(rel, t_lo, L, w_lo, w_hi, rng, opts):
     empty = np.empty(0)
     if w_hi <= w_lo:
         return dict(onset=empty, mag=empty, mag_t=empty, thr=np.nan,
-                    width=empty, obs=empty, bctr=empty, peak=empty)
+                    width=empty, extent=empty, obs=empty, bctr=empty, peak=empty)
 
     bw = opts["bin_width_sec"]
     n_sur = opts["n_surrogates"]
@@ -276,13 +298,15 @@ def _window_detect(rel, t_lo, L, w_lo, w_hi, rng, opts):
             lb = min(n_bins - 1, int(np.ceil(pk.right_x[i])))
             mag_t[i], _, _ = _run_stats(ts, bs, rois, fb, lb)
         width = np.where(np.isfinite(width), width, np.nan)
+        # half-prominence crossings already are the call's stretch
         return dict(onset=onset, mag=pk.val.copy(), mag_t=mag_t, thr=thr,
-                    width=width, obs=obs, bctr=bctr, peak=peak_sec)
+                    width=width, extent=width.copy(), obs=obs, bctr=bctr,
+                    peak=peak_sec)
 
     bins = np.flatnonzero((obs > thr) & (obs >= opts["min_rois"]))
     if bins.size == 0:
         return dict(onset=empty, mag=empty, mag_t=empty, thr=thr, width=empty,
-                    obs=obs, bctr=bctr, peak=empty)
+                    extent=empty, obs=obs, bctr=bctr, peak=empty)
 
     # per-bin first/last observed event time feeds the EVENT-TIME gap merge
     bin_first = np.full(n_bins, np.nan)
@@ -310,14 +334,18 @@ def _window_detect(rel, t_lo, L, w_lo, w_hi, rng, opts):
     mag = np.zeros(n)
     mag_t = np.zeros(n)
     width = np.zeros(n)
+    extent = np.zeros(n)
     for i, (fb, lb) in enumerate(runs):
         onset[i] = w_lo + fb * bw            # episode start (first bin start)
         mag[i] = obs[fb:lb + 1].max()
         mag_t[i], tfirst, tlast = _run_stats(ts, bs, rois, fb, lb)
         width[i] = tlast - tfirst
+        # the stretch the call was made on: first bin's start to last bin's end,
+        # where a partial last bin ends at the window (see SceStream.extent_sec)
+        extent[i] = min(w_lo + (lb + 1) * bw, w_hi) - onset[i]
     width = np.where(np.isfinite(width), width, np.nan)
     return dict(onset=onset, mag=mag, mag_t=mag_t, thr=thr, width=width,
-                obs=obs, bctr=bctr, peak=np.full(n, np.nan))
+                extent=extent, obs=obs, bctr=bctr, peak=np.full(n, np.nan))
 
 
 def _tag_region(onset, rw):
@@ -329,6 +357,7 @@ def _tag_region(onset, rw):
 
 def _detect_modality(rel, t_lo, L, rw, rng, opts) -> SceStream:
     onset_l, mag_l, mag_t_l, thr_l, width_l, peak_l = [], [], [], [], [], []
+    extent_l = []
     region, in_win, meets = [], [], []
     segments = []
 
@@ -337,6 +366,7 @@ def _detect_modality(rel, t_lo, L, rw, rng, opts) -> SceStream:
         n = b["onset"].size
         onset_l, mag_l, mag_t_l, width_l, peak_l = \
             [b["onset"]], [b["mag"]], [b["mag_t"]], [b["width"]], [b["peak"]]
+        extent_l = [b["extent"]]
         thr_l = [np.full(n, b["thr"])]
         for o in b["onset"]:
             lab, mf, iw = _tag_region(o, rw)
@@ -361,6 +391,7 @@ def _detect_modality(rel, t_lo, L, rw, rng, opts) -> SceStream:
             mag_t_l.append(b["mag_t"])
             thr_l.append(np.full(n, b["thr"]))
             width_l.append(b["width"])
+            extent_l.append(b["extent"])
             peak_l.append(b["peak"])
             region.extend([w.label] * n)
             in_win.extend([True] * n)          # within trimmed window by construction
@@ -399,4 +430,5 @@ def _detect_modality(rel, t_lo, L, rw, rng, opts) -> SceStream:
         t50fall=onset + width if is_peak else np.full(n, np.nan),
         width_kind="half_prominence" if is_peak else "tightness",
         signal=signal,
+        extent_sec=cat(extent_l),
     )

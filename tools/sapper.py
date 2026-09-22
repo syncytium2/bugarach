@@ -407,6 +407,50 @@ RULES = [
         fixture_bad="the fit reaches 847 mHz where the data reaches 486",
         fixture_good="the fit reaches 847 mHz where the data reach 486, and data is None",
     ),
+    Rule(
+        id="SAP016", level="BLOCK",
+        # Tony, 2026-09-17: "you are bugarach why are you posting to the root of
+        # dropbox?" `tools/show.py` names its destination folder from
+        # `git rev-parse --show-toplevel`, which inside a WORKTREE is the
+        # worktree directory, not the repo. So `tools/show.py fig.png` run from
+        # any worktree creates `<darkroom>/<worktree-name>/` — a sibling of
+        # `bugarach/` and of the producer team's `constellation/`, at the
+        # darkroom root. Five such folders were sitting there when this fired
+        # first, three of them empty, and CLAUDE.md's own darkroom paragraph
+        # taught the bare form. `--project bugarach` pins the folder. show.py is
+        # vendored and read-only (its header says to raise findings here), so
+        # the fix is at the call site: docs/todo/2026-09-17-show-py-writes-to-the-darkroom-root.md
+        # Fires on a show.py call whose line never names --project. The first
+        # lookahead lets the argument-free forms through (--where, --selftest,
+        # --help), which write nothing a reader is meant to find.
+        # An invocation, not a mention: something has to be running it, and the
+        # line must never name --project. The first lookahead lets the
+        # argument-free forms through (--where, --selftest, --help), which write
+        # nothing a reader is meant to find.
+        pattern=r"(?:python3?|\$PY|bin/python)\s+tools/show\.py\s+"
+                r"(?!--where\b|--selftest\b|--help\b|-h\b)"
+                r"[^\s`|;&\\](?![^\n]*--project)",
+        include=["*.md", "*.py", "*.sh", "*.txt", "*.html"],
+        # This file; vendored files, re-copied rather than edited; and show.py's
+        # own usage block, which documents every form including the bare one.
+        exclude=["tools/sapper.py", "tools/show.py", ".claude/agents/murderboard/*",
+                 ".claude/skills/murderboard/*", "docs/session_protocol.md",
+                 ".claude/hooks/session-start.sh", "tools/murderboard_freshness.sh",
+                 "docs/exports/*",
+                 # Where the wrong form is shown AS wrong: the todo that reported
+                 # this defect reproduces the bare call and its output.
+                 "docs/todo/2026-09-03-show-derives-the-project-from-the-worktree.md"],
+        message="show.py NEEDS --project bugarach. It names its folder from the "
+                "git toplevel, which in a worktree is the WORKTREE, so the bare "
+                "form writes `<darkroom>/<worktree-name>/` at the darkroom root, "
+                "beside bugarach's own folder and the producer team's. bugarach "
+                "owns `<darkroom>/bugarach/` and nothing above it (CLAUDE.md, "
+                "FOUNDATIONS §5). Write `python3 tools/show.py <file> --project "
+                "bugarach`, and for work under a board claim prefer the figure "
+                "tool's own `--out <claimed folder>`.",
+        fixture_bad="run `python3 tools/show.py docs/site/fig.png` and give the path it prints",
+        fixture_good="run `python3 tools/show.py docs/site/fig.png --project bugarach`",
+    ),
 ]
 
 

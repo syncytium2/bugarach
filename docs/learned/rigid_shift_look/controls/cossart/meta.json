@@ -1,0 +1,39 @@
+{
+  "tag": "look-2026-09-15-controls",
+  "role": "cossart",
+  "started": "2026-09-15T13:27:31-0400",
+  "limit": null,
+  "quick": false,
+  "n_boot": 1000,
+  "fold_seeds": 10,
+  "n_twins": 10,
+  "n_draws": 10,
+  "n_assess_surrogates": 200,
+  "J_sec": {
+    "events": [
+      1.6,
+      5.0,
+      10.0,
+      20.0,
+      40.0
+    ]
+  },
+  "window_sec": 60.0,
+  "cossart_participation": 0.081,
+  "cossart_K": [
+    6,
+    9,
+    12,
+    18,
+    24
+  ],
+  "visibility_floor": 1.0,
+  "exploratory": true,
+  "events_recordings": 59,
+  "events_skipped": [],
+  "events_window_sources": [
+    "whole recording (no regions declared); frame 0 to one frame past the last onset, so the end edge band always holds that onset"
+  ],
+  "finished": "2026-09-15T14:47:35-0400",
+  "seconds": 4801.297445774078
+}

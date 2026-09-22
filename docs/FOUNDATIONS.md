@@ -276,6 +276,18 @@ prevent and the reason a wrong answer here would have been hard to see.
 and is equally forbidden: the rule is not *derive it correctly*, it is **do not
 derive it**.
 
+**And the shipped setting did not read it either, until 2026-09-16.** Nothing
+derived a duration, and nothing used the imported one: `bench.OPERATING_POINTS`
+ran locust at a fixed `active_duration_sec=1.0`, so `bugarach detect`, the bench
+and every locust number published from them held each cell for one second whatever
+the folder said. Two sessions then read the gap as an open choice of *which*
+duration to use — a question this section says is not ours — and asked Tony, who had
+settled it. The operating point now reads `width_sec` per event, its percentile was
+re-derived on bench recordings carrying widths drawn from the producer's own
+distribution, and `test_the_shipped_locust_reads_each_events_width` fails if a
+fixed duration comes back. **If you find yourself asking which duration locust
+should use, the answer is the column.**
+
 ## 8. Team & operations
 
 **One human (Tony); everyone else on the team is an AI session**, possibly

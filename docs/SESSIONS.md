@@ -10,6 +10,402 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/methods — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-methods/` (NEW)
+- **Status:** **RELEASED 2026-09-22.** Written: the methods `.docx`, `.pdf` (Word export) and `.html`,
+  Figure 1 (`fig1_benchmark_recording.png/.html`), and the cover memo (`.md` and `.docx`). Was: ACTIVE
+  (WSMIP065), claimed before writing. Tony, 2026-09-21: a methods section for the coordination pipeline,
+  murderboarded in full, overnight.
+- **Touches:** this block; `docs/methods/`, `docs/reviews/coordination_pipeline_methods_2026-09-22*`,
+  `tools/make_methods_bench_figure.py`, `docs/conditioned_run.md` (records the 12-minute floor).
+
+### 065/slow-cohort-rasters — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-full-cohort-slow/`
+- **Status:** **RELEASED 2026-09-22** — `slow_settings.csv`, `detect/` (6,611 calls on 84 recordings,
+  22.8 s) and `rasters/` (16 pages, HTML + PNG) written. Was: ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-22: the slow-stream twin of
+  `2026-09-21-full-cohort-default/rasters/`, on the default dataset (confirmed this session), at the
+  adopted slow settings (`bench_slow.OPERATING_POINTS`: CoactDetect, LoCo, SPIKE-synch). The other
+  three detectors are still at fast settings on slow and are not drawn.
+- **Writes:** `slow_settings.csv`, `detect/`, `rasters/`. A new folder, so nothing existing is touched.
+- **Touches:** this block.
+
+### 065/full-cohort-default — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-21-full-cohort-default/` (NEW)
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-21: the full-cohort results
+  on the default dataset (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, confirmed this
+  session) with the weekend's settings — the every-knob sliding values for CoactDetect and LoCo
+  (`fair_comparison_2026_09_18/meta.json`, `coded_base`), the shipped points for the other four.
+- **Writes:** `detect/` (detections.csv, detector_settings.csv, run.json, calls_measured.csv),
+  `rasters/` (one page per group × treatment × stream), `before_after/` (per treatment). A new
+  folder, so nothing existing is touched.
+- **Touches:** this block; `src/bugarach/detect_folder.py` (`load_settings` takes a detector's own
+  signature as its parameter list) on branch `detect-settings-by-signature`.
+
+### 065/census-rerun — DARKROOM claim RELEASED 2026-09-21: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** **RELEASED 2026-09-21.** All four items done. The folder's `index.html` and
+  `census.json` were replaced and each verified to match its repo copy byte for byte; the review
+  record and the round-4 craft report were refreshed beside them. Nothing else in the folder touched.
+  The re-run **reproduced every pre-existing census field bit-identically across all 974 fits**, so
+  the two new fields are pure addition. Was: ACTIVE (WSMIP065), claimed before writing — Tony's
+  ruling on #674's list: items 1-3, and the census re-run that decides whether the page's headline
+  mechanism survives.
+- **Writes:** inside that folder only — a re-run `census.json` and a rebuilt `index.html`. The two
+  runs' `results/` folders are read, never written.
+- **Claims:** that folder exclusively. Reads `<darkroom>/bugarach/2026-09-18-*/results/` for the fit
+  archives, read-only.
+- **NO GPU, despite the authorisation.** `census` runs each fit on the CPU (`fit.model.cpu()`); CUDA
+  is reached only by `replay()`, which this task does not call. **No contention with WSMIP064's
+  allowance sweep, and none was ever possible.**
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the re-run census and the repaired page are on `main`.
+### 065/lit-optimization — DARKROOM claim RELEASED 2026-09-20: `bugarach/lit/optimization/` (NEW)
+- **Status:** **RELEASED 2026-09-20.** The shelf exists and holds exactly three files:
+  `kosson_2024_warmup_update_size.pdf` (22 pp), `lu_2020_dying_relu_initialization.pdf` (34 pp) and a
+  `README.md` carrying both entries in the shelf's author / year / provenance / which-decision form.
+  Each PDF was verified by extracting its first page after the copy, not just by size. One row was
+  added to `lit/README.md`'s subfolder table and nothing else there was touched. Was:
+  ACTIVE (WSMIP065), claimed before writing. Tony asked for a new shelf. #679 withdrew the
+  chorus-collapse page's novelty claim on the strength of two papers that were read, acted on, cited
+  publicly — and filed nowhere. `lit/README.md`'s own rule is that a PDF with no entry is
+  indistinguishable from one someone downloaded and forgot; these two decided something now live on
+  `main`, and neither `DL/` (learned detectors, set-structured inputs) nor `ml/` (the unlabelled
+  detector's claims) covers training failure, so the shelf is new rather than stretched.
+- **Writes:** `<darkroom>/bugarach/lit/optimization/` — NEW subdirectory: two PDFs and its own
+  `README.md`, each with the author / year / where-it-came-from / which-decision row the shelf
+  requires. One line touched outside it: the subfolder table in `<darkroom>/bugarach/lit/README.md`.
+- **Claims:** `lit/optimization/` exclusively. Being new, it cannot collide with the ACTIVE
+  `lit/radar/` claim (`WSMIP065/shelve-hansen-1973`) or with `lit/coordination/`, `lit/DL/`,
+  `lit/ml/`, `lit/surrogates/`, `lit/recombination/`, `lit/synchrony/`. Nothing else under
+  `<darkroom>/bugarach/` is touched.
+- **Fetched by hand**, as `lit/README.md` requires — murderboard's `fetch_paper.py` is deliberately
+  not vendored here (SAP004, personal paths in a public repo).
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** both PDFs and both README entries are in place.
+
+### 065/kosson-prior-art — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** **RELEASED 2026-09-20** with this PR. The write was made and verified: the folder's
+  `index.html` moved from `0dfdc1e5…` to `9083d574…`, matching the repo copy byte for byte. Was:
+  ACTIVE (WSMIP065), claimed before writing. The one literature question left open by the
+  blind round: is Kosson et al. 2024 the failure this page claims as its own? Ruled **adjacent, not
+  the same**; the novelty sentence is withdrawn and both Kosson and Lu et al. 2020 are now cited with
+  the difference stated. The page is therefore **rebuilt**, so the darkroom copy has to move with it.
+- **Writes:** `index.html` in the folder below, replacing the copy the page's own §8 points at.
+  Nothing else in the darkroom, and no JSON changes — the data are untouched, only the prose.
+- **Touches:** this block, `tools/diagnose_chorus_collapse.py` (Related work + two references only),
+  the rebuilt `docs/learned/chorus_collapse/index.html`, and one residual in
+  `docs/reviews/chorus-collapse-verify_2026-09-20.md`. **Nothing else on that page** — the ranked
+  list from #674 is Tony's to rule on and the census re-run needs his GPU decision.
+- **Holds:** the folder below, until this lands.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the rebuilt page and its verdict are on `main`.
+
+### 065/chorus-verify — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** **RELEASED 2026-09-20.** The blind verify round ran, 11 of 11 roles, and escalated
+  without repairing (blocking 3 → 4 → 6), so **the page and its JSON were never rewritten** — the
+  only write was the run record and the 11 role reports into the folder, beside the page they judge.
+  Verdict: [`docs/reviews/chorus-collapse-verify_2026-09-20.md`](reviews/chorus-collapse-verify_2026-09-20.md).
+  Was: ACTIVE (WSMIP065), claimed before writing — the blind verify round on the chorus-collapse
+  page's round-2 repairs, the open flag #667 landed with at Tony's call to land with flags. The
+  folder was released when #667 landed; this re-claimed it because a repair to the page would have
+  had to reach the darkroom copy as well as the repo one.
+- **Writes:** only inside the folder that already holds this page — a rebuilt `index.html` and, if a
+  repair changes them, the small JSON tables beside it. The two runs' `results/` folders are read,
+  never written. Nothing else in the darkroom is touched.
+- **Touches:** this block, `docs/learned/chorus_collapse/`, and the review record plus its role
+  archive under `docs/reviews/`. Not `docs/goals/` (#664 owns it).
+- **Holds:** the folder above.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the verify round's verdict has landed on `main`.
+
+### 065/chorus-collapse — DARKROOM claim DONE 2026-09-19: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** DONE (WSMIP065), released. The diagnosis landed with its murderboard flags (Tony's call:
+  "land with flags"); the folder holds the page and its data, and nothing more will be written.
+- **Was:** Tony's next step for goal 2: diagnose why a third of `chorus_norm`'s inner fits make one
+  call per recording (the replicate report's Table 2).
+- **Writes:** one new folder only: the diagnosis page, its figures, and the small JSON tables behind
+  them (the collapse table, the dead-layer census, the replays). Nothing existing is touched; the
+  two runs' `results/` folders are read, never written.
+- **Touches:** this block. The tool and the repo copy of the page land on branch `chorus-collapse`.
+  Not `docs/goals/` (#664 owns it).
+- **Holds:** the folder above.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the diagnosis has landed, or the work is abandoned.
+
+### Mac/draw-the-comparison-four — DARKROOM claim RELEASED 2026-09-19: `bugarach/2026-09-19-comparison-architectures/`
+- **Status:** **RELEASED 2026-09-19** — the page, the composite and the four one-to-one panels are in the folder, and the path went to the orchestrator and to WSMIP064 and WSMIP065. Rebuild with `tools/make_comparison_figure.py` (PR #660). Was: ACTIVE (draughtsman-slate-ledger, on the Mac), claimed before writing. The four
+  architectures of goal 2's fair comparison (`chorus_norm`, `tube`, `chorus_gain_norm`,
+  `line_length`) drawn through draughtsman at one common slot, so that WSMIP064's and WSMIP065's
+  reports compare them as shapes. Asked by the orchestration session on Tony's instruction; both
+  workstations have been told to stand off this figure and leave it to this claim.
+- **Writes:** one new folder only: the four SVGs, their PNGs and the combined comparison page.
+  Nothing existing in the darkroom is touched.
+- **Touches:** this block. The specs and `DRAWABLE` entries land separately, on branch
+  `draw-the-comparison-four` into `tune-bench-comparison`, because the two chorus nets exist only
+  there. Not `docs/goals/`.
+- **Holds:** the folder above.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the figure is in the folder and its path is handed to the orchestrator.
+
+### 065/weekend-run-status — DARKROOM claim RELEASED 2026-09-19: `bugarach/2026-09-18-replicate-run-status/`
+- **Released 2026-09-19:** the report landed (`report/report.html`, with the round-by-round review
+  reports beside it), both scheduled tasks are deleted, and `results/` also holds `merge_gap.json`
+  and `crowded_check.json`, WSMIP064's two checks run unchanged on this draw. Nothing more is written.
+- **Status:** was ACTIVE (WSMIP065), claimed before writing. The status mirror for WSMIP065's weekend
+  run, the replicate of goal 2's fair comparison (Tony's choice, 2026-09-18: the same comparison at a
+  fresh seed draw), launched as `bench-replicate1` into `%USERPROFILE%\runs\bench-replicate1\` —
+  local disk, which is why it needs a mirror (armory finding 21).
+- **Writes:** one new folder only: `progress.json` (copied verbatim), `mirror.json` and `STATUS.txt`
+  (when it was copied, how old the source was, from which host), by `tools/mirror_run_status.py`
+  one-shot every 5 minutes from Task Scheduler task `bugarach-mirror-bench-replicate1`. Nothing
+  existing in the darkroom is touched.
+  **Widened 2026-09-19, before writing** (Tony: *"unless the data are large they should go to
+  Dropbox upon completion"*): the run finished at 07:48 (1,968 jobs, 0 errors) and its folder is
+  1.3 GB on disk, almost all of it small JSON files that compress well, so two subfolders are
+  added. `results/`: the declaration and summaries (`meta.json`, `results.json`, `ran.json`,
+  `progress.json`), `configs/`, the per-fold `selections/` and the refit models in `chosen/`, about
+  13 MB, plus the inner fits and the per-threshold score files as two archives (`fits.zip`, 3,886
+  files in 53 MB; `scores.zip`, 3,720 files in 34 MB), about 100 MB in all. So nothing stays only on
+  WSMIP065. `report/`: the report written for a new reader, and its figures.
+- **Touches:** this block; a note for WSMIP064 with the commands that worked here.
+- **Holds:** the folder above and that scheduled task on WSMIP065.
+- **Simulation only**, so nothing here is derived from a real recording.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the replicate's report has landed and both scheduled tasks are deleted, or the
+  work is abandoned.
+
+### WSMIP064/merge-gap-demote-verdict — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-18-fair-comparison-run/report/merge-gap.html`
+- **Status:** ACTIVE (WSMIP064), claimed before writing. **Re-opens one file inside a released
+  folder**, which is why it is its own block rather than an edit to the one below: Tony took option A
+  on 2026-09-21 — the merge-gap addendum states its result as a measurement rather than a verdict.
+- **Writes:** `report/merge-gap.html` only, rebuilt by `tools/build_net_merge_gap_page.py`. Nothing
+  else in that folder is touched: not `results/`, not `external/`, not `report/index.html`, and none
+  of the murderboard role archives beside it.
+- **Touches:** this block; `tools/build_net_merge_gap_page.py` and the repo copy of the page land on
+  branch `nets/merge-gap-demote-verdict`. Not `docs/reviews/` — the review record stands as written.
+  Not `docs/goals/` (#664).
+- **What changes, so a reader of the old page knows:** the title drops "tuned" (every chosen gap is a
+  boundary the crowded check imposed, which the page's own §2 and §7 already said); §3's heading
+  stops saying "the answer holds", which its own body retracted four sentences later; and the lede
+  states the asymmetry between the two sides as the result. **No number changes**, and CoactDetect is
+  still ahead of every net on average in both draws and in 29 of 32 net-folds.
+- **Holds:** that one file.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the rebuilt page is in the folder and its PR has landed, or the rewrite is
+  abandoned.
+
+### WSMIP064/fair-comparison-run — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-18-fair-comparison-run/`
+- **Released 2026-09-20**, its condition met: the run ended and both readouts landed — the report
+  (#665) and the merge-gap addendum (#671). The folder is finished and nothing more will be written
+  to it. It holds `progress.json` and `external/` from the run itself; `results/` (the
+  declaration and summaries, `configs/`, the per-fold `selections/`, the refit models in `chosen/`,
+  the run log, and the inner fits and per-threshold score tables as `fits.tar.gz` and
+  `scores.tar.gz`); and `report/` — `index.html`, the comparison's report for a new reader, and
+  `merge-gap.html`, the addendum that tunes the nets' merge gap by the same rules, each with its
+  murderboard role archives beside it. Rebuild either with `tools/build_fair_comparison_report.py`
+  or `tools/build_net_merge_gap_page.py` from the repo copies in
+  `docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/`.
+- **Status:** was ACTIVE (WSMIP064), claimed before writing. Goal 2, the fair comparison: the weekend
+  tuning run of the nets against the six coded detectors on the bench, from branch
+  `tune-bench-comparison` (Tony, 2026-09-18: fold defect fixed first, coded side searched sliding,
+  12 seeds per fold, `--gpu-jobs 1`).
+- **Writes:** one new folder only. While the run goes: `progress.json`, mirrored from the run's
+  folder under `%USERPROFILE%\runs\` about once a minute, so the run's state stays readable from any
+  machine after the session that launched it has ended. Also `external/` (`progress.json`,
+  `mirror.json`, `STATUS.txt`), written every 5 minutes by the scheduled task
+  `bugarach-mirror-fair-comparison` running `tools/mirror_run_status.py` from the primary checkout:
+  a separate process, so the status says `STALE` if the run's driver dies (armory finding 21;
+  `docs/windows_workstation_setup.md` §8). After the run: the per-fit files (`fits/`, `scores/`)
+  that are too large for git. Nothing existing in the darkroom is touched.
+- **Run ended 2026-09-19 05:58** (1,963 jobs, 0 errors); both scheduled tasks deleted. **Now
+  writes** (Tony, 2026-09-19: results to Dropbox on completion, and a full report for a new reader):
+  `results/` (the run folder's summaries, selections, configurations, chosen settings and fitted
+  models, and the 1.1 GB of score tables as one archive) and `report/` (the built report and its
+  figures).
+- **Simulation only**, so nothing here is derived from a real recording.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the run has ended and its readout has landed, or the run is abandoned. (Met.)
+
+### 065/interface2-mirror — DONE 2026-09-18, RELEASED: interface2 is on GitHub and GitHub is its only remote
+- **Status:** **DONE — released, nothing held.** Implemented `HANDOFF-interface2-mirror.md` (PR
+  #636, now `docs/handoffs/2026-09-18-interface2-mirror.md`): a `push --mirror` of interface2 from
+  GitLab into an empty **private** `syncytium2/interface2`, verified by branch, tag and commit counts
+  and by the 35 stranded tools armory lists. Tony, 2026-09-18: whole mirror now, curation later —
+  this supersedes the selective push in interface2's own runbook.
+- **Cut over the same day.** With no machine working in the GitLab repository (Tony: *"let's kill
+  it"*), parity was re-checked ref for ref (203 refs) and WSMIP065's checkout re-pointed to GitHub.
+  No refresh push is owed. What remains — the Mac, archiving GitLab, the branch triage — is in
+  `docs/todo/2026-09-18-finish-leaving-gitlab.md`.
+- **Private, and stays private.** Making it public is a separate ruling (the handoff's gate).
+- **Mirrored and verified 2026-09-18** (first push, before the refresh):
+  - **3,208 commits; 197 refs** — 173 branches, 16 tags, 8 `refs/merge-requests/*` from GitLab's
+    4 merge requests. `ls-remote` of GitHub against the mirror clone: **identical, ref for ref, name
+    and SHA.** 220 MB, no LFS objects.
+  - **35 of 35 stranded tools** (armory `MANIFEST.json`, `repo == interface2`) present in the mirror
+    as the exact blob armory has committed. Six of their `source_ref` branches no longer exist on
+    GitLab — interface2's triage ledgers record each as merged or contained in a kept branch — so
+    the check is by content, not by branch and path.
+  - **One commit that existed only on this machine** — `55deeaf0`, in a stale July checkout — was
+    pushed to GitLab as tag `rescue/foundations-reference-audit` before the clone, so the mirror
+    carries it.
+- **Still owed, per the handoff:** GitLab's merge-request discussion, any wiki, release notes and
+  CI meaning are not in git and not in the mirror (there is no `.gitlab-ci.yml`); check the web UI
+  before access ends. ~~Which remote is authoritative is Tony's call.~~ **Decided — GitHub.** Tony,
+  2026-09-18: *"i want to remove all dependencies on gitlab."*
+- **Also done on this box:** the 16 worktrees of the MATLAB interface2 checkout were removed and the
+  stale second checkout deleted. Restore ledger on interface2's `main`,
+  `docs/worktree_prune_ledger_2026-09-18_WSMIP065.md`.
+- **Every other GitLab repository on this box is off GitLab** (2026-09-18, same session):
+  - **New private repos, each mirrored and verified ref for ref, checkout re-pointed:**
+    `coding-project` (1,617 commits, 125 branches, 3 tags; its never-pushed branch
+    `MLspikePlotting` pushed after), `interfaceDFoF0`, `ICCetcStatistics`, `ggplot-tuner`.
+    **ggplot-tuner was mirrored from the local checkout** — GitLab answers "project not found".
+  - **R** — GitLab answers "project not found" for it too. Its history continues in `fireflies`,
+    which already held all but 21 commits; those 21 (branches `infoTables` ×2, `AMANDAv2`, one
+    checkout's `main`, and two 2026-07-19 WIP stashes) are now **tags `archive/R-*` in fireflies**,
+    verified from a fresh clone of GitHub. The dead GitLab remote was removed from all three R
+    checkouts. **The checkouts were NOT deleted:** `Documents\lme2\R` holds gitignored analysis CSVs
+    and notebooks, and `Documents\ICCandBeyond\R` is the code folder of an R project whose PDFs and
+    `.RData` are not in git.
+  - **Left on GitLab: interface2 only**, waiting on the Mac session. Then: refresh push, re-point
+    this box and the Mac, and archive the GitLab projects (Tony, web UI). The Mac's own checkouts
+    and any GitLab project never cloned here were not inventoried from this box.
+
+---
+
+### Mac/unsup-pins-excluded-run — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-slow-comodulation-pins-excluded/`
+- **Status:** ACTIVE (bugarach-quiet-raven), **written and idle**. The re-measurement of slow shared
+  modulation on the producer's new export, `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`,
+  which removes the moco floor-pinned windows that stopped this work. Tony: *"the new data are
+  available now. set up the run for overnight."*
+- **Holds nothing running.** The run finished in 686 s at 12 workers, 32 draws, 4,000 resamples.
+- **Writes:** one new folder only — `results.json`, `summary.json`, the six figures and
+  `one_recording.png`, all present. The 2026-09-17 slow-comodulation folder is read-only from here
+  and keeps the superseded run; nothing existing in the darkroom is touched.
+- **Touches:** `current_export.toml` (adds the `steps_and_pins_excluded` role — it does **not**
+  move `default` or `steps_excluded`), `tools/measure_slow_comodulation.py`,
+  `tools/make_slow_comodulation_figure.py`, and at landing the page, its summary and a goal pointer.
+- ⚠ **Derived from real recordings**, so the run stays in the darkroom (FOUNDATIONS §5); the repo
+  gets the pooled `summary.json`, which carries no recording ids.
+- ⚠ **The page has not been rewritten on these numbers**, and the repo's figures are deliberately
+  still the superseded run's so page and figures agree. Handoff at the repo root:
+  `HANDOFF-slow-comodulation-on-the-de-pinned-export.md`.
+- **Released when:** the page is rewritten on this run and lands, or the run is abandoned.
+
+### Mac/read-the-de-pinned-export — DARKROOM claim ACTIVE 2026-09-18: `bugarach/2026-09-18-rigid-shift-de-pinned/`
+- **Status:** ACTIVE (bugarach-smoked-ratchet), claimed before writing. Tony, 2026-09-17 evening:
+  *"the new data are available now. set up for overnight."* The whole rigid-shift chain reran on the
+  producer's de-pinned export (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`), which removes
+  the 83 events inside moco pinned windows, so this run's outputs supersede the ones claimed on
+  2026-09-17 under `bugarach/2026-09-17-rigid-shift-report/`.
+- **Writes:** one new folder only — `real_compare/events.json` (per-recording event times keyed by
+  recording id) and `real_compare/checkpoints/` (120 models trained on real recordings), which
+  FOUNDATIONS §5 keeps machine-local; the report's six figures; and a reader's copy of the report.
+  The repo keeps `real_compare/summary.json`, which is what the page quotes.
+- ⚠ **The 2026-09-17 folder stays as it is.** It holds the superseded run, and the page that cites it
+  carries its own stop notice until this run's numbers replace it. This claim does not write there.
+- **Touches:** `docs/learned/tube_self_supervised/` (branch `read-the-de-pinned-export`),
+  `docs/SESSIONS.md`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the folder holds the files and the branch that regenerates the page has landed.
+
+### 065/opt-every-knob — DARKROOM claim ACTIVE 2026-09-17: `bugarach/2026-09-17-full-search/`
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Goal 1 step 3: the search over every
+  parameter of all six detectors, not only the four declared ones.
+- **Writes:** one new folder only — `search.json`, `search.log` and the figures, from
+  `tools/search_all_settings.py` on branch `opt-every-knob`. **Measure only**: the run changes no
+  operating point. Nothing existing is touched, and the 2026-09-16 folder stays as the record of
+  the declared-settings search.
+- **Released when:** the search finishes and its result is reported.
+
+### 065/opt-sliding-vs-binned — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-sliding-vs-binned/`
+- **Status:** RELEASED 2026-09-17 — the run, its figures and its note are written, and the result
+  is reported in [`HANDOFF-coded-detectors.md`](../HANDOFF-coded-detectors.md) and on the goal page
+  (PR #619). Nothing further writes there. Was: ACTIVE, claimed before writing. Goal 1 step 2 of
+  [`HANDOFF-coded-detectors.md`](../HANDOFF-coded-detectors.md): sliding LoCo and CoactDetect
+  against their binned ports on real baseline windows, which nothing has compared yet.
+- **Writes:** one new folder only — `sliding_vs_binned.json` (per-recording call counts and how many
+  calls coincide, both detectors, both modes) and its figures, from
+  `tools/compare_sliding_vs_binned.py` on branch `opt-sliding-vs-binned`. Nothing existing in the
+  darkroom is touched.
+- ⚠ **Derived from real recordings** (`steps_excluded`, fast stream, baseline analysis windows), so
+  the run stays in the darkroom (FOUNDATIONS §5); the repo gets the tool and a summary carrying no
+  recording ids.
+- **Released when:** the comparison is reported and its PR lands.
+
+### Mac/unsup-rigid-shift-report-residuals — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-rigid-shift-report/`
+- **Status:** **RELEASED — the folder holds everything and PR #603 landed (`59262d5`), so both
+  release conditions are met and nobody holds it.** Was ACTIVE (bugarach-smoked-ratchet), claimed
+  before writing. Tony ruled on 2026-09-17,
+  after the report's fourth blind murderboard, that the real-derived outputs of the rigid-shift run
+  leave the repo for the darkroom (FOUNDATIONS §5: anything derived from real recordings stays
+  machine-local, with no slice ids).
+- **Writes:** one new folder only —
+  - `real_compare/events.json` (per-recording event times, keyed by recording id) and
+    `real_compare/checkpoints/` (models trained on real recordings), for this run and the one they
+    replace;
+  - the report's six figures and a copy of the report, the reader's copy per CLAUDE.md.
+
+  Nothing existing in the darkroom is touched.
+- **Holds:** written 2026-09-17, about 10 MB — `real_compare/` (the rerun's `events.json` and all
+  120 checkpoints), `superseded_run/real_compare/` (the copies removed from the repo tree),
+  `figures/` (six PNGs), `report-README.md` and `summary.json`. The repo tree now keeps
+  `real_compare/summary.json` alone.
+- ⚠ **One PNG went to the darkroom ROOT and has been cleaned up.** `tools/show.py` names its folder
+  from the git toplevel, which in a worktree is the worktree, so it wrote
+  `<darkroom>/unsup-rigid-shift-report-residuals/` — outside this claim and outside bugarach's own
+  folder. Tony caught it. The duplicate was deleted, and two older strays of the same kind
+  (`unsup-rule-as-code`, `turbo-takes-the-width`, holding bugarach figures including a real-recording
+  lanes figure) were moved to `bugarach/strays-from-the-darkroom-root/` with their names kept. Other
+  repositories' empty folders were left alone. Reported upstream as syncytium2/armory issue #15 and
+  blocked locally by sapper SAP016
+  ([todo](todo/2026-09-03-show-derives-the-project-from-the-worktree.md)).
+- ⚠ **The files being moved are also in git history on `main`** since PR #588. Moving them out of the
+  tree is not a retraction, and this claim does not say it is.
+- **Touches:** `docs/learned/tube_self_supervised/` (branch `unsup/rigid-shift-report-residuals`,
+  PR #603), `docs/SESSIONS.md`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the folder holds the files and the branch that removes them from the tree has
+  landed.
+
+### Mac/unsup-slow-comodulation — DARKROOM claim RELEASED 2026-09-17: `bugarach/2026-09-17-slow-comodulation/`
+- **Status:** RELEASED. The folder is written and nobody holds it: the explainer, its six figures,
+  `results.json` and `summary.json`, `one_recording.png` (a single real recording, so darkroom only),
+  and `round3-roles-held/` — one murderboard role report that `check_quotes` refuses in the public
+  tree over published words, waiting on Tony's ruling. The page landed as PR #614.
+  Was ACTIVE (bugarach-quiet-raven). Tony: *"i think i need a figure or a doc to explain
+  this slow co-modulation. i've been trying to ignore it so far, but now i feel i cannot."*
+- **Writes:** one new folder only — the explainer page, its figures and the measurement's
+  `results.json`. Nothing existing in the darkroom is touched; the 2026-09-15 and 2026-09-16
+  rigid-shift folders are read-only from here.
+- **Touches:** new `docs/learned/slow_comodulation/`, `tools/measure_slow_comodulation.py`,
+  `tools/make_slow_comodulation_figure.py`, a test, and at landing a goal-page pointer and a
+  `docs/INDEX.md` row. ⚠ Near PR #603 (`unsup/rigid-shift-report-residuals`), which will link to
+  this page rather than carry the explanation; no shared files.
+- **Goal:** unsupervised-learning.
+- **Released when:** the reviewed page and figures are in the folder and on a PR.
+
+### Mac/tube-ssl-report — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-tube-self-supervised/`
+- **Status:** **RELEASED — the two rebuilt figures and the real-recording lanes figure (two views,
+  HTML and PNG) are in the folder; repo copies of the two synthetic-derived figures are on the PR.**
+  Was ACTIVE, claimed before writing. Tony asked for the full test through to real data and a report
+  for the morning, murderboard authorized. The blind second round returned fifty-one findings and the
+  report was rewritten around them.
+- **Holds:** also wrote three PNGs to `darkroom/unsup-rule-as-code/` via `tools/show.py`, to put them
+  in front of Tony where a `SendUserFile` call cannot be trusted to have delivered.
+- **Writes:** one new folder only — the two rebuilt figures and one real-recording lanes figure.
+  Nothing existing in the darkroom is touched, and the 2026-09-15 rigid-shift-look folder is
+  read-only from here.
+- ⚠ **The lanes figure holds a real baseline raster, so it stays in the darkroom** (FOUNDATIONS §5,
+  whose released-by-name exception is *"a list of one, not a category"*): no repo copy of that
+  figure, and the report links it by name rather than embedding it. The two bake-off/training
+  figures are synthetic-derived and do have repo copies.
+- **Touches:** `docs/learned/tube_self_supervised/`, `docs/reviews/tube-self-supervised-2026-09-16*`,
+  `tools/make_line_sensors_figure.py`, `tools/make_tube_ssl_figure.py`, `tools/make_tube_real_lanes.py`.
+- **Goal:** unsupervised-learning.
+- **Released when:** the figures are in the folder and the rewritten report is on the PR.
+
 ### vm/net-design — DARKROOM claim RELEASED 2026-09-16: `bugarach/2026-09-16-net-design/`
 - **Status:** **RELEASED — the folder holds two notes and no page.** The connector this session
   reached Dropbox through takes inline text only, and re-typing a 90 KB generated file through it
@@ -2381,3 +2777,36 @@ session's work is not a sweep.
 - **Re-claimed** the same day, before rewriting all 16: pages are now decided by treatment 1 alone, so a
   recording given senktide after TTX leaves the senktide page. Released again at write: 16 pages rewritten,
   TTX 38 recordings and senktide 29, the same counts as the producer's `_TTX` and `_SENKTIDE` folders. Holds nothing.
+
+### darkroom/bugarach/field-size-candidates/ — the field-size candidates' bake-off figure (bugarach-broad-harbor)
+- **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `field_size_candidates.png` and `field_size_candidates.json` from
+  `tools/compare_field_size_candidates.py` (branch `eval-field-size-candidates`), one pair per training
+  seed, plus copies placed with `tools/show.py`.
+- **Released:** 2026-09-16, at session end; holds nothing. Written: `seed0/`, `seed1/` and
+  `chorus-repairs-seed0/` (each `field_size_candidates.png` and `.json`), and `learned_vs_coact.md`
+  and `.json` at the folder's top. The workstation's tuning run was told to claim its own folder
+  (`HANDOFF-workstation-tuning.md` on `eval-field-size-candidates`), not this one.
+
+### darkroom/bugarach/2026-09-16-best-parameters/ — the gated retune of all six operating points (065/best-parameters)
+- **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `retune.json` (the sweep, 48 bench recordings per point, both backgrounds, bootstrap
+  intervals) and `best_parameters.html` / `best_parameters.png` (Figure 1), from
+  `tools/retune_operating_points.py` on branch `best-parameters`.
+- **Released:** 2026-09-16, at write. Holds nothing.
+
+### darkroom/bugarach/2026-09-16-full-search/ — every declared setting of all six detectors, searched overnight (065/full-search)
+- **Claimed:** 2026-09-16, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `search.log`, `search.json` (written after each stage, so a stop mid-run keeps what
+  finished) and `full_search.html` / `full_search.png` (the figure), from
+  `tools/search_all_settings.py` on branch `full-search`. Measure-only: no operating point changes.
+- **Released:** 2026-09-17. The run finished 2026-09-16 17:02; holds nothing.
+
+### darkroom/bugarach/2026-09-21-full-search-slow/ — the every-knob search on the SLOW bench (WSMIP064/slow-result)
+- **Claimed:** 2026-09-21, ⚠ **after** the write, not before: the five files were copied in
+  first and this block written straight after. A new folder, so nothing existing was overwritten.
+- **Writes:** `search.log`, `search.json`, `search.err` (empty), `full_search.html` /
+  `full_search.png`, copied from `%USERPROFILE%\runs\2026-09-21-full-search-slow\` on WSMIP064
+  (`tools/search_all_settings.py --bench slow --sliding`). The same five files are in the repo
+  at `docs/learned/runs/2026-09-21-full-search-slow/`. Measure-only: nothing ships from it.
+- **Released:** 2026-09-21. Nothing further is written there.

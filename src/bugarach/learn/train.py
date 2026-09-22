@@ -54,6 +54,16 @@ repository alone.
 
 BENCH_SEEDS = (1, 2, 3)
 
+THRESHOLD_GRID = np.unique(np.concatenate([np.geomspace(1e-4, 0.05, 12),
+                                           np.arange(0.05, 0.95, 0.05),
+                                           1.0 - np.geomspace(0.05, 1e-4, 12)]))
+"""The thresholds :func:`pick_threshold` searches, open towards both ends (its comments say why).
+
+Module-level so a caller that re-decodes a model's probabilities at every candidate
+threshold (``tools/tune_learned_vs_coact.py``'s gated selection) searches exactly
+the grid the model's own threshold was picked from, instead of a copy that can drift.
+"""
+
 
 def pin_threads(n: int = THREADS) -> int:
     """Pin torch's intra-op threads. Idempotent; returns what is now set."""
@@ -62,6 +72,46 @@ def pin_threads(n: int = THREADS) -> int:
     if torch.get_num_threads() != n:
         torch.set_num_threads(n)
     return torch.get_num_threads()
+
+
+def deterministic_cuda() -> None:
+    """Make CUDA training repeatable: the same seed gives the same weights.
+
+    By default cuDNN and cuBLAS pick kernels whose reduction order varies from run to run, so a
+    fit repeated after a crash would not be the fit it replaces — the same defect `THREADS`
+    closes on the CPU. ``CUBLAS_WORKSPACE_CONFIG`` must be set before the process's first CUBLAS
+    call, which is why this runs before the model reaches the device. Process-wide and
+    idempotent; only :func:`train` on a CUDA device calls it, so the CPU path is untouched.
+    """
+    import os
+
+    import torch
+
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.use_deterministic_algorithms(True)
+
+
+def model_device(model):
+    """The device a model's parameters live on, so inference sends its input there."""
+    return next(model.parameters()).device
+
+
+def probabilities(model, raster, *, logits: bool = False):
+    """Per-frame probabilities for one encoded raster, on whatever device the model is on.
+
+    The one place inference crosses to the device and back: :func:`pick_threshold`,
+    :meth:`Trained.predict` and the tuning tool all call it, so a model trained on the GPU is
+    scored exactly as a CPU one is. ``logits=True`` returns the raw output instead of its
+    sigmoid, for :func:`pick_threshold`'s logit mode.
+    """
+    import torch
+
+    with torch.no_grad():
+        x = torch.from_numpy(raster).unsqueeze(0).to(model_device(model))
+        z = model(x)
+        return (z if logits else torch.sigmoid(z)).squeeze(0).cpu().numpy()
 
 
 def fold_maker(rec, seeds, *, n_val: int = 2):
@@ -113,6 +163,15 @@ class Trained:
     history: list = field(default_factory=list)
     threads: int = 0
     """Intra-op threads this was fitted at — a condition of the number, not trivia."""
+    cfg: dict | None = None
+    """The architecture config the model was BUILT with: the registry's defaults with every
+    override applied. ``None`` when whatever made this object did not record it. Until
+    2026-09-16 nothing did, so a checkpoint wrote the registry's defaults in its place and a
+    tuned model (``n_scales=6``, ``max_ratio=80``) could not be reloaded as itself."""
+    training: dict | None = None
+    """How the weights were fitted — optimiser settings, crop, batch, training recordings,
+    seed, torch version. Separate from ``cfg`` on purpose: ``cfg`` says what to build, this
+    says how it was fitted, and a tuning run varies both."""
 
     def predict(self, slice_, *, stream=None, extent=None):
         """Detections in the six ports' contract, ready for ``score_stream``.
@@ -125,12 +184,8 @@ class Trained:
         no other detector on the page was given, and the difference would land
         in the comparison without appearing in it.
         """
-        import torch
-
         enc = encode(slice_, dt=self.dt, stream=stream, extent=extent)
-        with torch.no_grad():
-            x = torch.from_numpy(enc.raster).unsqueeze(0)
-            p = torch.sigmoid(self.model(x)).squeeze(0).numpy()
+        p = probabilities(self.model, enc.raster)
         det = decode(p, threshold=self.threshold,
                      merge_gap_frames=self.merge_gap_frames)
         return det.to_seconds(enc), enc
@@ -144,22 +199,32 @@ def _recording(make, seed, dt, stream=None):
 
 def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
           steps: int = 300, crop: int = 4096, batch: int = 4,
-          lr: float = 3e-3, seed: int = 0, stream=None, **arch_over) -> Trained:
+          lr: float = 3e-3, seed: int = 0, stream=None, device: str | None = None,
+          **arch_over) -> Trained:
     """Fit one architecture. Returns it with a threshold already chosen.
 
     make_recording: ``seed -> (slice, ground_truth)``. Called with seeds from the
       training block only.
     crop: training window in **frames**. Long enough to contain the local
       background a model must judge against, short enough to batch.
+    device: ``None`` (the default) trains on the CPU exactly as before this option existed.
+      ``"cuda"`` trains on the GPU with :func:`deterministic_cuda`, and the returned model stays
+      there, so its scoring runs there too. GPU and CPU arithmetic differ, so a run's fits must
+      all come from one device; ``training["device"]`` records which.
     """
     import time
 
     import torch
 
+    dev = torch.device(device) if device is not None else None
+    if dev is not None and dev.type == "cuda":
+        deterministic_cuda()
     torch.manual_seed(seed)
     threads = pin_threads()
     arch = ARCHITECTURES[name]
     model = arch.make(**arch_over)
+    if dev is not None:
+        model = model.to(dev)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
 
     seeds = [TRAIN_SEED_BLOCK + seed * 1000 + i for i in range(n_train)]
@@ -170,6 +235,8 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
     # answer "no" and scores 99% accuracy while detecting nothing.
     pos = float(np.mean([y.mean() for _, y in data]))
     pos_weight = torch.tensor([(1.0 - pos) / max(pos, 1e-6)], dtype=torch.float32)
+    if dev is not None:
+        pos_weight = pos_weight.to(dev)
     lossf = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
     # Where the events are, per recording. With ~0.5% positive frames a uniformly
@@ -209,6 +276,8 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
         # but the model itself is ROI-count agnostic and that is the point.
         x = torch.stack(xs)
         y = torch.stack(ys)
+        if dev is not None:
+            x, y = x.to(dev), y.to(dev)
         opt.zero_grad()
         loss = lossf(model(x), y)
         loss.backward()
@@ -220,21 +289,48 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
     model.eval()
     thr, gap = pick_threshold(model, make_recording, dt=dt, seed=seed,
                               stream=stream)
+    training = {"optimizer": "Adam", "lr": float(lr), "steps": int(steps),
+                "crop_frames": int(crop), "batch": int(batch), "n_train": int(n_train),
+                "train_seed": int(seed), "dt_sec": float(dt), "stream": stream,
+                "threads": int(threads), "torch_version": torch.__version__,
+                "loss": "BCEWithLogitsLoss, pos_weight from the training recordings",
+                "threshold_rule": "pick_threshold, pooled F1 on the validation block"}
+    if dev is not None:
+        # Only when asked: a CPU fit's record stays byte-identical to one from before this option.
+        training["device"] = str(dev)
+        if dev.type == "cuda":
+            training["gpu"] = torch.cuda.get_device_name(dev)
+            training["cuda_version"] = torch.version.cuda
+            training["deterministic_algorithms"] = torch.are_deterministic_algorithms_enabled()
     return Trained(name=name, model=model, threshold=thr,
                    n_params=n_params(model), dt=dt, merge_gap_frames=gap,
-                   train_seconds=train_seconds, history=hist, threads=threads)
+                   train_seconds=train_seconds, history=hist, threads=threads,
+                   cfg={**arch.cfg, **arch_over}, training=training)
 
 
 def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
-                   stream=None, merge_gap_frames: int = 20):
+                   stream=None, merge_gap_frames: int = 20, grid=None,
+                   logits: bool = False, report: dict | None = None):
     """Choose the one operating point, on held-out **training-distribution** data.
 
     Never on the bench. A threshold tuned against the recordings a model is then
     scored on is the benchmark leaking into the model, which is a subtler version
     of the mistake this project already paid for twice.
-    """
-    import torch
 
+    ``grid`` replaces the default probability grid: an array of candidates, or a
+    callable given the per-recording score arrays that returns one. ``logits=True``
+    thresholds the model's raw output instead of its sigmoid — a model trained by a
+    ranking loss has no fixed scale, and its sigmoid rounds to exactly 1.0. Both exist
+    so a caller that needs another grid calls this function and keeps its edge guard,
+    rather than re-deriving the search without it, which is what
+    ``tools/tube_self_supervised.py`` did until 2026-09-16. In logit mode a search in
+    which no candidate scored returns ``nan``, not 0.5, which is a probability.
+
+    ``report``, when given, is filled with what a result row should carry: the grid's
+    ends, whether the choice sat on one, the F1 there, and how many validation seeds
+    were read. ⚠ ``fold_maker`` serves those seeds modulo its validation block, so
+    asking for more seeds than it holds repeats recordings; pass its ``n_val``.
+    """
     seeds = [VAL_SEED_BLOCK + seed * 1000 + i for i in range(n_val)]
     assert not set(seeds) & set(BENCH_SEEDS)
 
@@ -242,9 +338,7 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     for s in seeds:
         sl, gt = make_recording(s)
         enc = encode(sl, dt=dt, stream=stream)
-        with torch.no_grad():
-            p = torch.sigmoid(model(torch.from_numpy(enc.raster).unsqueeze(0)))
-        scored.append((p.squeeze(0).numpy(), enc, gt))
+        scored.append((probabilities(model, enc.raster, logits=logits), enc, gt))
 
     # The grid must BRACKET the optimum. `tube` first picked 0.95 — the top of a
     # 0.05-0.95 sweep — and this repo already refuses a boundary answer for the
@@ -260,9 +354,12 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     # went straight through the floor and the warning below fired on the first
     # architecture of the first fold. A grid open at one end is only half a
     # search, and which half it is depends on data the search does not control.
-    grid = np.unique(np.concatenate([np.geomspace(1e-4, 0.05, 12),
-                                     np.arange(0.05, 0.95, 0.05),
-                                     1.0 - np.geomspace(0.05, 1e-4, 12)]))
+    if grid is None:
+        grid = THRESHOLD_GRID
+    elif callable(grid):
+        grid = np.unique(np.asarray(grid([p for p, _, _ in scored]), float))
+    else:
+        grid = np.unique(np.asarray(grid, float))
     # Pooled by `bench.pool_scores`, like everything else scored against this
     # benchmark. Selecting the operating point under one rule and reporting it
     # under another is the same defect as scoring two detectors differently, and
@@ -272,7 +369,7 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     # so it chose a stricter point than the reported metric wanted.
     from bugarach.bench import pool_scores
 
-    best, best_f1 = 0.5, -1.0
+    best, best_f1 = (float("nan") if logits else 0.5), -1.0
     for thr in grid:
         scs = []
         for p, enc, gt in scored:
@@ -285,7 +382,13 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
         f1 = pooled.f1
         if np.isfinite(f1) and f1 > best_f1:
             best_f1, best = f1, float(thr)
-    if best >= grid[-1] - 1e-12 or best <= grid[0] + 1e-12:
+    at_edge = bool(best >= grid[-1] - 1e-12 or best <= grid[0] + 1e-12)
+    if report is not None:
+        report.update(grid_min=float(grid[0]), grid_max=float(grid[-1]),
+                      n_grid=int(grid.size), at_edge=at_edge,
+                      f1=(float(best_f1) if best_f1 >= 0 else None),
+                      n_val_seeds=len(seeds))
+    if at_edge:
         import warnings
         warnings.warn(
             f"threshold {best:.4g} sits at the edge of the searched grid "

@@ -145,6 +145,12 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
 - **Push important steps promptly.** A completed, verified step is committed and
   pushed in the same breath — never batched. Nothing below is a reason to sit on
   unpushed work.
+- **A finished run goes to Dropbox and the repo, not only `~/runs`** (Tony, 2026-09-21,
+  after the weekend's trained models turned up on one disk: *"crazy"*). Schedule the status
+  mirror with `--archive-as <dated-name>` and Dropbox happens by itself when `results.json`
+  appears. The repo half is a session's: the briefing names every finished run not yet in
+  the repo, and `tools/archive_run.py <run> --name <name> --to-repo` stages it. Bulk
+  (fits, scores) stays Dropbox-only. `docs/windows_workstation_setup.md` §8.
 - **Branch; land on `main` via a green PR** — full rules, and which of them fire
   by themselves, in [`docs/git_workflow.md`](docs/git_workflow.md). The two that
   are mechanized need no memory: `.githooks/pre-commit` refuses a commit on
@@ -175,6 +181,38 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   producer's own export had it right. Contract revision 6 records it.
   If a folder looks like it contains something it should not, that is a
   **conversation with the producer**, not a filter in the consumer.
+- **One default dataset, confirmed every session** (Tony, 2026-09-21). Analyses call
+  `dataset.default()`; the top-level `default = "<table>"` in `current_export.toml` is the
+  one line that changes it, and no tool names a folder or a role of its own. **Ask Tony to
+  confirm the default at the start of the session** — the briefing prints it, and
+  `dataset.default()` refuses inside a Claude session until
+  `python -m bugarach.dataset confirm` has recorded his yes. Never run that on his behalf.
+  Other folders are `eval` (read by name on purpose) or `archive` (refused unless
+  `BUGARACH_REPRODUCE` says which run). A result records `"dataset": dataset.stamp()`, and
+  `tools/check_scored_dataset.py` flags at startup every result scored on anything else.
+- **A known contamination stops the work. It does not become a caveat.** (Tony,
+  2026-09-17: *"there needs to be a full stop work if there's a known 'contamination'.
+  there's no point in running all of this when you know there's a problem."*) When the
+  export's own note declares something the data do not mark, the analysis does not run
+  and the finding does not ship with a footnote — **the question goes to the producer
+  that day**, and work resumes when the answer does.
+  What this repository did instead is the reason it is mechanized. The producer's note
+  on `steps_excluded` said non-rigid motion correction pinned 12 ROIs to the frame floor
+  in four recordings and was "not flagged in any column". It was filed as a todo on
+  2026-09-10, verified by a review on 2026-09-14, and flagged again by two reviews on
+  2026-09-17 — while analyses kept running over those recordings, including a label-free
+  training set and a whole explainer page that then reported the contamination as a
+  caveat about its own result. Four rediscoveries, no question asked, for a week. **A
+  note everybody cites and nobody acts on is not a safeguard**, and "we disclosed it" is
+  not the same as "we asked".
+  **This one fires by itself**: `dataset.current()` refuses through
+  `dataset.refuse_if_contaminated()`, so every analysis resolving its input through the
+  pointer inherits the stop and none has to remember it. Proceeding needs
+  `BUGARACH_ACK_CONTAMINATION='<why this analysis is unaffected>'`, which prints what
+  was acknowledged. The stop clears when the producer's answer removes the note from
+  `current_export.toml` — withdrawn recordings, or a column a consumer can read — not
+  when a session decides the effect is probably small. Tests:
+  `tests/test_dataset.py`, the contamination stop.
 - **Machine-local inventory** (everything else lives in the repo): the
   `.venv` (rebuild: `python3 -m venv .venv && pip install -e ".[dev]"`),
   the export folders under `<data>/exports/bugarach/`, MATLAB + interface2
@@ -213,8 +251,20 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   not deliver in VS Code and reports success anyway) and handed over scratchpad
   paths. It had held back on purpose, because screenshots were deleted from the
   darkroom on 2026-09-11. That deletion was a cleanup, not a ban. Put the image
-  there with `python3 tools/show.py <file>`, give the path it prints, and note the
-  write in your board block's `Holds:`.
+  there with `python3 tools/show.py <file> --project bugarach`, give the path it
+  prints, and note the write in your board block's `Holds:`.
+  **`--project bugarach` is not optional and this line used to omit it.** `show.py`
+  names its folder from `git rev-parse --show-toplevel`, which in a **worktree** is
+  the worktree, so the bare form writes `<darkroom>/<worktree-name>/` — a new folder
+  at the darkroom **root**, beside `bugarach/` and the producer team's
+  `constellation/`. bugarach owns `<darkroom>/bugarach/` and nothing above it. Filed
+  upstream on 2026-09-03
+  ([todo](docs/todo/2026-09-03-show-derives-the-project-from-the-worktree.md)), still
+  unfixed, and by 2026-09-17 it had left five folders at the root — Tony found them:
+  *"you are bugarach why are you posting to the root of dropbox?"*. **Sapper SAP016
+  now blocks the bare form**, which is why this line carries the flag rather than a
+  warning to remember it. For work under a board claim, prefer the figure tool's own
+  `--out <claimed folder>`, which lands inside the claim.
   Two paths, one directory: `~/Dropbox-<org>` is a **symlink** to
   `~/Library/CloudStorage/Dropbox-<org>`. Seeing a tool print one while looking in
   the other does not mean the file went somewhere else — check with `ls -ld`
@@ -230,6 +280,33 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   - WSL: `/mnt/c/Program Files/MATLAB/R2025b/bin/matlab.exe -batch "..."`
     (launch path only — script bodies use Windows `C:\...` paths, per
     interface2's SAP003 lesson).
+
+## CI runs the suite in parallel — two kinds of test must opt out
+
+`pytest -n auto --dist loadfile` on a 4-core runner, so a CI leg is ~7 minutes
+rather than ~15 and a whole run is ~10 rather than ~18 (merged 2026-09-16,
+`71950dd`). Three consequences when you add or move a test:
+
+- **A test that asserts on wall-clock time needs `@pytest.mark.serial`.** With four
+  workers loading the runner, a budget measures the other three as much as the code:
+  the briefing's 3-second budget read 3.1s and reddened 3.11 only. Marked tests run
+  after the parallel pass, alone and in file order, so the budget stays honest.
+- **A test that reads or writes the built `site/` needs it too.** `test_site_pages_render.py`
+  deletes and rebuilds that directory and `test_site_withholding.py` reads it; split across
+  workers, the reader's figure checks skipped on 3.13 and ran on 3.14 in the same run.
+  A skip that depends on scheduling is coverage nobody can count on.
+- **Tests in one file are NOT independent of each other, and `--dist loadfile` is why
+  they can stay that way.** The webapp suites share a module-scoped page and build on it
+  in order. Splitting per test (xdist's default) turned that into a coin toss: 3.11 went
+  red with `aimed_at: None` while the other legs happened to schedule the tests together.
+
+Two habits follow from the same change. CI prints every skip with its reason (`-rs`) and
+the 25 slowest tests, so read the log rather than a count — that is how the `site/` coin
+toss was found. And **a race the suite always had can start landing**: `backdate()` in
+`tests/test_worktree_sweep.py` walked live git repos and touched files git was deleting
+underneath it, which reddened `main` five times in two days before it was fixed
+(`5f96453`). A new red test in a parallel run is worth reading as a timing window before
+it is read as broken code.
 
 ## Multi-session coordination — assume you are not alone
 

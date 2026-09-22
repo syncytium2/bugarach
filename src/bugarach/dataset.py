@@ -31,12 +31,14 @@ Nothing here reads a dataset; it identifies one and resolves where it lives.
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 __all__ = ["Kind", "kind", "describe", "data_root", "resolve", "require",
-           "current", "current_name", "declared_exports",
-           "DataError", "ENV_VAR", "POINTER"]
+           "current", "current_name", "declared_exports", "default", "default_role",
+           "confirm", "confirmed", "require_confirmed", "stamp",
+           "DataError", "UnconfirmedDefault", "ENV_VAR", "POINTER"]
 
 ENV_VAR = "BUGARACH_DATA_ROOT"
 """Optional. Where the stores live, so a dataset can be named rather than pathed."""
@@ -50,6 +52,28 @@ _NOT_A_RECORDING = {"slices.csv", "regions.csv", "detector_settings.csv",
 
 class DataError(Exception):
     """The dataset is missing, or is not the shape the caller needs."""
+
+
+class ContaminatedExport(DataError):
+    """The export folder carries a contamination its own note says is not flagged.
+
+    Work stops. Tony's ruling, 2026-09-17: *"there needs to be a full stop work if
+    there's a known contamination. there's no point in running all of this when you
+    know there's a problem."*
+
+    The incident behind it is what this repository did instead. The producer's note on
+    `steps_excluded` recorded that non-rigid motion correction pinned 12 ROIs to the
+    frame floor in four recordings and was "not flagged in any column". It was filed as
+    a todo on 2026-09-10, verified by a review on 2026-09-14, flagged again by two
+    reviews on 2026-09-17 — and in between, analyses kept running over those
+    recordings, including a label-free training set and a whole explainer page, each of
+    which then had to report the contamination as a caveat rather than resolve it.
+    Nobody asked the producer for a week. A note that everybody cites and nobody acts
+    on is not a safeguard.
+
+    A caveat in a report is not a substitute for the question. If the analysis cannot
+    wait, the override is deliberate and leaves a trace, but the default is to stop.
+    """
 
 
 @dataclass(frozen=True)
@@ -205,6 +229,7 @@ def require(spec, *, want: str, flag: str = "--dataset") -> Path:
     """
     path = resolve(spec)
     k = kind(path)
+    _gate_declared(path)
 
     if k.name in ("missing", "empty"):
         raise DataError(f"{flag} {path}: {k.detail}")
@@ -254,9 +279,9 @@ def _pointer_path() -> Path:
 def declared_exports() -> dict[str, dict]:
     """Every export folder the repo declares, by role. Reads no recording.
 
-    Roles are the table names in ``current_export.toml`` — ``default`` and ``pensub``
-    today. Each maps to that table, so a caller can report ``recordings`` and ``note``
-    alongside the name it used.
+    Roles are the table names in ``current_export.toml``. Each maps to that table, so a
+    caller can report ``recordings``, ``use`` and ``note`` alongside the name it used.
+    ``default`` is not a table but a top-level key naming one — :func:`default_role`.
     """
     import tomllib
 
@@ -270,9 +295,237 @@ def declared_exports() -> dict[str, dict]:
     roles = {k: v for k, v in doc.items() if isinstance(v, dict) and "name" in v}
     if not roles:
         raise DataError(
-            f"{path} declares no export folder. It needs at least a [default] table "
-            f"with a `name` key naming a folder under <data root>/exports/bugarach/.")
+            f"{path} declares no export folder. It needs at least one table with a "
+            f"`name` key naming a folder under <data root>/exports/bugarach/, and a "
+            f"top-level `default` naming that table.")
     return roles
+
+
+#: What a table in the pointer file may be for. Only an ``input`` may be the default.
+USES = ("input", "eval", "archive")
+
+REPRODUCE_ENV = "BUGARACH_REPRODUCE"
+"""Set to the run being reproduced to open an ``archive`` folder. The value is echoed."""
+
+
+def default_role() -> str:
+    """The table the top-level ``default`` key names — the one place the default changes.
+
+    ``"default"`` passed to any function here means this role. It is a pointer to a
+    named table rather than a table of its own, so a result records *which* folder it
+    was scored on under a name that keeps meaning something after the default moves.
+    """
+    import tomllib
+
+    path = _pointer_path()
+    with path.open("rb") as fh:
+        doc = tomllib.load(fh)
+    target = doc.get("default")
+    roles = declared_exports()
+    if not isinstance(target, str) or target not in roles:
+        raise DataError(
+            f"{path}: the top-level `default` must name one of its tables "
+            f"({', '.join(sorted(roles))}); it is {target!r}.")
+    use = roles[target].get("use")
+    if use != "input":
+        raise DataError(
+            f"{path}: `default` names {target!r}, whose use is {use!r}. Only a table "
+            f"with use = \"input\" can be the default.")
+    return target
+
+
+def _role(role: str) -> str:
+    return default_role() if role == "default" else role
+
+
+def refuse_if_archived(role: str) -> None:
+    """An ``archive`` folder opens only to reproduce a run, and says so in the log."""
+    role = _role(role)
+    if declared_exports().get(role, {}).get("use") != "archive":
+        return
+    why = os.environ.get(REPRODUCE_ENV)
+    if why:
+        print(f"{REPRODUCE_ENV}={why}: reading archive folder {role!r}", file=sys.stderr)
+        return
+    raise DataError(
+        f"{role!r} is an archive folder in {_pointer_path().name}: kept so earlier runs "
+        f"reproduce, not an input. New analysis reads dataset.default() "
+        f"({current_name('default')}). To reproduce a run on it deliberately: "
+        f"{REPRODUCE_ENV}='<which run>'.")
+
+
+# --- the per-session confirmation ---------------------------------------------------
+#
+# Tony, 2026-09-21: "there should be one default data folder that the user confirms at
+# the start of every session." Printed by the briefing and enforced here: inside a
+# Claude Code session (CLAUDE_CODE_SESSION_ID, which the harness exports to every shell
+# it runs), the default opens only once the person has confirmed it for that session.
+# A person at a terminal has no session id and is their own confirmation; the suite is
+# exempt because a test is a check, not an analysis.
+
+SESSION_ENV = "CLAUDE_CODE_SESSION_ID"
+
+
+def _session_id() -> str | None:
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return None
+    return os.environ.get(SESSION_ENV) or None
+
+
+def _confirm_dir() -> Path:
+    return Path(os.environ.get("BUGARACH_STATE_DIR") or Path.home() / ".bugarach") / "confirmed"
+
+
+class UnconfirmedDefault(DataError):
+    """The default folder has not been confirmed by the person in this session."""
+
+
+def confirmed() -> str | None:
+    """The folder name confirmed for this session, or ``None``."""
+    sid = _session_id()
+    if sid is None:
+        return None
+    try:
+        return (_confirm_dir() / sid).read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
+
+
+def confirm() -> str:
+    """Record that the person confirmed the current default for this session."""
+    sid = _session_id()
+    name = current_name("default")
+    if sid is None:
+        return name
+    d = _confirm_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    (d / sid).write_text(name + "\n", encoding="utf-8")
+    return name
+
+
+def require_confirmed() -> None:
+    """Refuse the default until this session's person has confirmed it.
+
+    The confirmation names a folder, not a role, so a default that moves mid-session
+    needs confirming again.
+    """
+    if _session_id() is None:
+        return
+    name = current_name("default")
+    got = confirmed()
+    if got == name:
+        return
+    was = f" (this session confirmed {got!r}, and the default has moved)" if got else ""
+    raise UnconfirmedDefault(
+        f"STOP: the default dataset is {name!r} ({default_role()}), and the person has "
+        f"not confirmed it this session{was}.\n"
+        f"Ask them: \"Default dataset: {name}. Confirm?\" On a yes, run\n"
+        f"    python -m bugarach.dataset confirm\n"
+        f"and carry on. Do not confirm on their behalf.")
+
+
+def _gate_declared(path: Path) -> None:
+    """A declared folder reached by name or path passes the same gates as by role.
+
+    Without this, ``--dataset 2026-09-03_..._STEPS_EXCLUDED`` (or its path) walked past the
+    archive refusal, the contamination stop and the session confirmation that
+    ``current()`` enforces for the same folder by role — the checks would hold only for
+    callers polite enough to use the role.
+    """
+    try:
+        roles = declared_exports()
+    except DataError:
+        return                                  # no pointer: nothing declared to gate
+    for role, table in roles.items():
+        if str(table.get("name")) == Path(path).name:
+            refuse_if_archived(role)
+            refuse_if_contaminated(role)
+            if role == default_role():
+                require_confirmed()
+            return
+
+
+def default() -> Path:
+    """THE input folder on this machine — what every analysis reads unless it names an
+    ``eval`` corpus on purpose. The one call to make."""
+    return current("default")
+
+
+def stamp(role: str = "default") -> dict:
+    """What a result records about the data it was scored on.
+
+    Put it in the result under the key ``"dataset"``. ``tools/check_scored_dataset.py``
+    reads it at session start and flags every result scored on anything but the
+    current default — which is how a benchmark learns the data moved under it.
+    """
+    r = _role(role)
+    t = declared_exports()[r]
+    return {"role": r, "name": str(t["name"]), "recordings": t.get("recordings"),
+            "use": t.get("use")}
+
+
+ACK_ENV = "BUGARACH_ACK_CONTAMINATION"
+"""Set to the reason for proceeding anyway. Any value works; the value is echoed."""
+
+_CONTAMINATION = "known contamination"
+_UNFLAGGED = ("not flagged", "does not address", "does NOT address")
+
+
+def contamination_note(role: str = "default") -> str | None:
+    """The unresolved contamination the export's own note declares, or ``None``.
+
+    Reads the pointer file only — no recording, no data root — so a hook, a test or a
+    machine with nothing mounted gets the same answer. A note counts when it says both
+    that there is a contamination and that the folder does not flag or address it: the
+    producer writing "known contamination this folder does NOT address" is telling
+    every consumer that the columns cannot be trusted to show it.
+    """
+    roles = declared_exports()
+    role = _role(role)
+    # A subset inherits its parent's note. `ttx` and `senktide` hold all four pinned
+    # recordings of `steps_excluded`, and passed this stop until 2026-09-21 because
+    # their own notes did not repeat the parent's.
+    notes, seen = [], set()
+    while role in roles and role not in seen:
+        seen.add(role)
+        notes.append(str(roles[role].get("note", "")))
+        role = roles[role].get("parent")
+    note = "\n".join(notes)
+    flat = " ".join(note.split())
+    if _CONTAMINATION not in flat.lower():
+        return None
+    if not any(m.lower() in flat.lower() for m in _UNFLAGGED):
+        return None
+    start = flat.lower().index(_CONTAMINATION)
+    return flat[start:].strip()
+
+
+def refuse_if_contaminated(role: str = "default") -> None:
+    """Stop the analysis if the export declares a contamination nothing flags.
+
+    Called by :func:`current`, so every analysis that resolves its input through the
+    pointer inherits it and none has to remember. Raises
+    :class:`ContaminatedExport`; ``BUGARACH_ACK_CONTAMINATION=<reason>`` proceeds and
+    prints what was acknowledged, so an override is visible in the run's own log
+    rather than silent.
+    """
+    note = contamination_note(role)
+    if note is None:
+        return
+    why = os.environ.get(ACK_ENV)
+    if why:
+        print(f"{ACK_ENV}={why} — proceeding over: {note}", file=sys.stderr)
+        return
+    raise ContaminatedExport(
+        f"STOP: the {role} export declares a contamination nothing in the data marks.\n"
+        f"  {note}\n"
+        f"Declared in {_pointer_path()}, by the producer.\n"
+        f"An analysis that runs anyway can only report this as a caveat, which is what\n"
+        f"this repository did for a week while four reviews rediscovered it. The way\n"
+        f"out is the producer's answer — withdraw the recordings, or flag the affected\n"
+        f"ROIs in a column a consumer can read — after which this note leaves the\n"
+        f"pointer file and work resumes by itself.\n"
+        f"To proceed deliberately: {ACK_ENV}='<why this analysis is unaffected>'.")
 
 
 def current_name(role: str = "default") -> str:
@@ -283,7 +536,7 @@ def current_name(role: str = "default") -> str:
     """
     roles = declared_exports()
     try:
-        return str(roles[role]["name"])
+        return str(roles[_role(role)]["name"])
     except KeyError:
         raise DataError(
             f"no export role {role!r} in {_pointer_path()}; declared: "
@@ -301,7 +554,15 @@ def current(role: str = "default") -> Path:
 
     Raises ``DataError`` — never returns a store, never guesses a folder — if the
     declared name is not under the data root on this machine.
+
+    The default folder, however it is named, passes :func:`require_confirmed`; an
+    ``archive`` folder opens only with ``BUGARACH_REPRODUCE`` set.
     """
+    role = _role(role)
+    refuse_if_archived(role)
+    refuse_if_contaminated(role)
+    if role == default_role():
+        require_confirmed()
     name = current_name(role)
     try:
         path = resolve(name)
@@ -386,27 +647,50 @@ def main() -> int:
     Every declared role is printed, not just ``default`` — the failure this answers
     is "which folder, and is it here?", and a session running it has usually just
     been told that one of them is missing.
+
+    ``confirm`` records the person's confirmation of the default for this session —
+    run it only on their yes.
     """
+    argv = sys.argv[1:]
+    if argv[:1] == ["confirm"]:
+        try:
+            name = confirm()
+        except DataError as exc:
+            print(exc)
+            return 1
+        sid = _session_id()
+        print(f"confirmed for session {sid}: {name}" if sid else
+              f"no Claude session here ({SESSION_ENV} unset), nothing to confirm: {name}")
+        return 0
+
     try:
         roles = declared_exports()
+        dflt = default_role()
     except DataError as exc:
         print(exc)
         return 1
 
     root = data_root()
     print(f"data root: {root if root else f'not found (${ENV_VAR} unset, no Dropbox)'}")
+    got = confirmed()
+    state = ("no Claude session" if _session_id() is None else
+             "CONFIRMED this session" if got == roles[dflt]["name"] else
+             "NOT confirmed this session")
+    print(f"default: {dflt} = {roles[dflt]['name']}  ({state})")
     print(f"declared in {POINTER}:")
 
     bad = 0
     for role in sorted(roles):
         name = roles[role]["name"]
+        use = roles[role].get("use", "?")
+        tag = f"{role} [{use}{', default' if role == dflt else ''}]"
         try:
-            path = current(role)
+            path = resolve(name)       # locate only; the gates are current()'s job
         except DataError as exc:
             bad = 1
-            print(f"  {role:8} {name}\n           !! {exc}")
+            print(f"  {tag}\n      {name}\n      !! {exc}")
             continue
-        print(f"  {role:8} {name}\n           -> {path}  ({describe(path)})")
+        print(f"  {tag}\n      {name}\n      -> {path}  ({describe(path)})")
     return bad
 
 

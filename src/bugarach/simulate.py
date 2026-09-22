@@ -55,6 +55,68 @@ from bugarach.detectors._shared import matlab_round
 from bugarach.io import slice_from_events
 from bugarach.store import Slice
 
+MEASURED_WIDTH_QUANTILE_LEVELS = tuple(float(q) for q in range(100)) + (
+    99.5, 99.9, 99.99, 100.0)
+MEASURED_WIDTH_QUANTILES = (
+    0.4, 0.4, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+    0.5, 0.5, 0.5, 0.5, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+    0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.7, 0.7,
+    0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.8, 0.8,
+    0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9,
+    0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 1.0,
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1,
+    1.1, 1.1, 1.1, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.3,
+    1.3, 1.3, 1.3, 1.4, 1.4, 1.4, 1.4, 1.5, 1.5, 1.6,
+    1.6, 1.7, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.7, 3.3,
+    4.2, 7.1, 17.93, 27.9)
+"""Seconds: the producer's FAST per-event ``width_sec``, at
+:data:`MEASURED_WIDTH_QUANTILE_LEVELS` percent. Every simulated event draws its
+width from this.
+
+**Measured 2026-09-16** over every FAST event inside a baseline region of the
+``default`` export folder (``current_export.toml``): 47,225 events in 84
+recordings. Median 0.9 s, interquartile 0.6–1.2 s, 99th percentile 3.3 s. The
+levels thin out above the 99th percentile because a 1 % step there would spread
+one draw in a hundred evenly between 3.3 s and 27.9 s.
+
+**Why a simulated recording needs it.** locust is the one detector that reads the
+width: it holds each cell active for that event's own duration. Until 2026-09-16
+its shipped setting ran a fixed 1 s instead and the percentile was tuned against
+that constant, so every locust number described a setting that ignores the column
+FOUNDATIONS §7 says it paints. A recording with no widths cannot run locust as it
+is meant to run, and `bench.OPERATING_POINTS` declines to pretend otherwise.
+
+Widths are drawn **independently of whether an event was planted**, so a
+simulated recording can re-derive a percentile under per-event widths but cannot
+show widths carrying signal. What the number *means* is the producer's business
+and is not written here (FOUNDATIONS §7, sapper SAP013).
+"""
+
+_WIDTH_SEED_OFFSET = 7_919
+"""Widths come off their own RNG, so drawing them moves no event time."""
+
+
+def _draw_widths(per_roi, seed, grid_sec, quantiles=None):
+    """One measured width per event, per ROI, from a separate ``RandomState``.
+
+    ``quantiles`` is a width table at :data:`MEASURED_WIDTH_QUANTILE_LEVELS`;
+    ``None`` is the fast one, :data:`MEASURED_WIDTH_QUANTILES`."""
+    rng = np.random.RandomState(
+        None if seed is None else (int(seed) + _WIDTH_SEED_OFFSET) % 2**32)
+    levels = np.asarray(MEASURED_WIDTH_QUANTILE_LEVELS) / 100.0
+    table = np.asarray(MEASURED_WIDTH_QUANTILES if quantiles is None else quantiles,
+                       dtype=float)
+    if table.shape != levels.shape:
+        raise ValueError(f"width_quantiles needs {levels.size} values, one per level in "
+                         f"MEASURED_WIDTH_QUANTILE_LEVELS; got {table.size}")
+    out = []
+    for cell in per_roi:
+        w = np.interp(rng.random_sample(len(cell)), levels, table)
+        if grid_sec > 0:
+            w = np.maximum(grid_sec, np.round(w / grid_sec) * grid_sec)
+        out.append(w)
+    return out
+
 
 @dataclass(frozen=True)
 class PlantedEvent:
@@ -396,6 +458,7 @@ def simulate_coordination(
     slice_id: str = "synthetic",
     regions=None,
     seed: int | None = None,
+    width_quantiles=None,
 ) -> tuple[Slice, GroundTruth]:
     """Build a synthetic recording with planted coordinated events.
 
@@ -518,6 +581,11 @@ def simulate_coordination(
       protocol that is not in the data. Pass ``regions`` explicitly to simulate
       one on purpose — that is the only way it should ever happen.
     seed: ``None`` is nondeterministic; an int is reproducible everywhere.
+    width_quantiles: the per-event width table, at
+      :data:`MEASURED_WIDTH_QUANTILE_LEVELS`. ``None`` draws from the FAST table,
+      :data:`MEASURED_WIDTH_QUANTILES`; the slow bench passes its own
+      (``bench_slow.MEASURED_WIDTH_QUANTILES``), so locust reads slow widths on a slow
+      recording. Widths come off their own RNG, so the table moves no event time.
 
     Returns ``(slice, ground_truth)``.
     """
@@ -819,9 +887,15 @@ def simulate_coordination(
     # simulation no camera could have produced — and that recording honestly
     # has no sampling interval, which is a state the loader already has a name
     # for rather than a reason to invent 0.1.
+    widths = (_draw_widths(per_roi, seed, grid_sec) if width_quantiles is None
+              else _draw_widths(per_roi, seed, grid_sec, width_quantiles))
+    wdef = ("simulate:MEASURED_WIDTH_QUANTILES" if width_quantiles is None
+            else "simulate:width_quantiles")
     slice_ = slice_from_events({name: per_roi for name in streams},
                                dt=grid_sec if grid_sec > 0 else None,
-                               slice_id=slice_id, regions=regions)
+                               slice_id=slice_id, regions=regions,
+                               durations={name: widths for name in streams},
+                               width_def={name: wdef for name in streams})
     gt = GroundTruth(
         events=events,
         distractors=distractors,
@@ -836,6 +910,8 @@ def simulate_coordination(
             hot_rate_hz=hot_rate_hz, ramp_sec=ramp_sec,
             n_distractors=n_distractors, distractor_frac=distractor_frac,
             streams=tuple(streams), seed=seed,
+            width_quantiles=(None if width_quantiles is None
+                             else tuple(float(w) for w in width_quantiles)),
         ),
     )
     if floor_info is not None:

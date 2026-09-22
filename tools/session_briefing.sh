@@ -344,6 +344,7 @@ render() {
     echo "   git config core.hooksPath .githooks"
   fi
 
+
   # --- 4. the machine-local board is a precondition, not a suggestion -------------
   # The vendored hook prints "(no board yet — create it ...)" and that has proved
   # too quiet: on 2026-08-18 a session read it, worked all day across two worktrees
@@ -429,20 +430,39 @@ render() {
   # briefing's job is to make the search unnecessary; the gate's job is to catch the
   # session that searched anyway. Neither should pay for the other's message.
   echo
-  local ds_name ds_path
-  ds_name=$(sed -n '/^\[default\]/,/^\[[a-z]/p' current_export.toml 2>/dev/null \
+  #
+  # CONFIRMED EVERY SESSION (Tony, 2026-09-21). The top-level `default = "<table>"` names
+  # the one input; `dataset.default()` refuses inside a Claude session until the person
+  # has confirmed it, so this line is where the session learns what to ask. The results
+  # line under it is the other half of the same ruling: a benchmark scored on anything
+  # but the default is flagged here, not discovered later.
+  local ds_role ds_name ds_path
+  ds_role=$(sed -n 's/^default[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' \
+            current_export.toml 2>/dev/null | head -1)
+  [ -n "$ds_role" ] && ds_name=$(sed -n "/^\[${ds_role}\]/,/^\[[a-z]/p" current_export.toml \
             | sed -n 's/^name[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' | head -1)
+  # resolve(), not current(): locating the folder is not reading it, and current() is
+  # what refuses until the confirmation this line asks for.
   ds_path=$(PYTHONPATH=src python3 -c 'from bugarach import dataset
-try: print(dataset.current())
+try: print(dataset.resolve(dataset.current_name()))
 except Exception: pass' 2>/dev/null)
-  if [ -z "$ds_name" ]; then
+  if [ -z "${ds_name:-}" ]; then
     echo "!! data in: current_export.toml declares nothing readable. It is the ONLY"
     echo "   declaration of which export folder is the input — fix it before analysing."
   elif [ -n "$ds_path" ]; then
-    echo "data in: $ds_name — dataset.current() resolves it here"
+    # ONE line, results count folded in: a separate results line took CI's briefing to
+    # 9,182B against its 9,150B budget and degraded it to TERSE (2026-09-21).
+    local scored
+    scored=$(python3 tools/check_scored_dataset.py --brief 2>/dev/null | head -1)
+    echo "!! data in: $ds_name; confirm with Tony: python -m bugarach.dataset confirm${scored:+; $scored}"
   else
     echo "!! data in: $ds_name declared, NOT here — PYTHONPATH=src python3 -m bugarach.dataset"
   fi
+  # Finished runs under ~/runs that are not yet in Dropbox and the repo (Tony, 2026-09-21:
+  # "ensure that future runs go straight to repo and dropbox"). Prints NOTHING when there
+  # are none, so an ordinary briefing pays no bytes for it; tools/archive_run.py says why the
+  # repo half has to be a session's.
+  python3 tools/archive_run.py --pending --brief 2>/dev/null | head -1
 
   # --- 5b. where does figure output actually go on THIS machine? ------------------
   # Printed rather than left to be asked about. On 2026-08-17 a session reported the
@@ -495,7 +515,16 @@ print(p if p else "")' 2>/dev/null)
   # will be. The address is the payload. Shortened 2026-08-31 because the three-line
   # form put the briefing 65B over budget on a fresh clone, and a degraded briefing
   # drops FOUNDATIONS §9's consequences, which is a worse loss than an anecdote.
-  echo "   can't find something, or about to build one?  docs/INDEX.md FIRST — keywords."
+  #
+  # `docs/pipelines.md` rides on this line rather than getting its own (2026-09-16).
+  # It claims to be the first place a session looks for an established route, and
+  # nothing made a session look — armory-63 found the string in no briefing, hook or
+  # protocol file. The first fix was a separate line early in the briefing. On CI it put
+  # the payload 2B over budget, degrading §9 to its claims, and pushed `data in:` past
+  # the 2KB a spill keeps: four tests red. "About to build one?" is already the question
+  # a route answers, and this line sits after both per-machine lines, so it costs
+  # sixteen bytes and moves nothing that must stay near the top.
+  echo "   can't find something, or about to build one?  docs/INDEX.md FIRST; routes: docs/pipelines.md."
   echo "   document deliverable (report, explainer, figure + caption, handoff)?"
   echo "     -> /murderboard <artifact> FIRST. Not a first draft."
   echo "   landing work?  branch + green PR; never commit on main."

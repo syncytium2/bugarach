@@ -166,7 +166,7 @@ darkroom literature shelf.*
 >   bake-off number came from that branch. A `"peak"` mode exists and has never
 >   shipped. Design intent and shipped behaviour, not a contradiction to resolve by
 >   picking one.* Not novel either: Kreuz's own lab has published the same two-knob
->   detector on this profile (personal communication, April 2026; Kreuz et al. 2022, J Neurosci Methods 381:109703).
+>   detector on this profile (personal communication, April 2026; Cecchini et al. 2021, PLoS Comput Biol 17(5):e1008963). Kreuz et al. 2022 (J Neurosci Methods 381:109703), cited here until 2026-09-17, is the lab's latency-correction paper and contains no detection step.
 > - **locust and binned SCE both pass through CICADA, by different routes — and one
 >   of them lands on something older.** locust is the port, *"modified at port to
 >   MATLAB to use our pipeline event detection data rather than feed it raw calcium —
