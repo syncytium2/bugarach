@@ -124,9 +124,27 @@ Related: the slow bench's own 0.30 s already rested on an analogy that step A di
 the MATLAB summary gives 0.46 s for slow and that move alone costs locust −0.098 and
 SPIKE-synch −0.082 mean F1 (`docs/learned/runs/2026-09-21-slow-step-a/README.md`).
 
-**Recommendation:** rule the number, then run fast and slow together in one overnight pass with
-the participation change in item 11, since all three move the same constants. Until it is
-ruled, treat every operating point chosen this month as provisional — that is the honest
+⚠ **Check one thing before ruling this, added 2026-09-22 on Tony's question — what else did the
+simulations absorb, and was it measured carefully?** The jitter is not a lone bad constant.
+`tools/remeasure_bench.py` takes `n_roi`, `jitter_sec` **and `participation`** from a single
+`assess_coactivity` call at K = 4, and inside it the jitter and the participation come out of
+the **same `_clusters(...)` invocation at the same 1.0 s bin**. A wider bin sweeps more distinct
+ROIs into a cluster, so participation is mechanically bin-dependent in the way the jitter turned
+out to be — and it has never been swept. It is also the constant with the most riding on it:
+064's own finding is that **slow participation, 0.38, is the value the whole slow bench turns
+on**, and 0.18 → 0.19 is already queued for fast. Two further asymmetries: the instrument
+computes `jit_null` and `jit_excess` and **the bench absorbed the uncorrected `jit_obs`**; and
+participation has **no null counterpart at all** to check against. The sweep machinery exists —
+`tools/measure_slow_bench.py` already carries `BINS = (0.5, 1.0, 2.0, 3.0, 5.0)`, which is how
+the jitter was caught, while `remeasure_bench.py` is still single-bin. Full audit of every
+constant the bench absorbs, graded by how it was measured:
+[`todo/2026-09-22-what-else-came-from-the-clustering-instrument.md`](todo/2026-09-22-what-else-came-from-the-clustering-instrument.md).
+
+**Recommendation:** sweep participation across those bins first — it is minutes on a machine
+with the data — then rule the jitter and move both constants in the same overnight pass as the
+0.19 change, since all three move the same bench. Adopting a corrected jitter while leaving an
+uncorrected participation fixes half a bench and leaves the half with more riding on it. Until
+it is ruled, treat every operating point chosen this month as provisional — that is the honest
 statement, and it is cheaper to say now than to withdraw later.
 
 ## 3. The nets on the slow bench — run, re-pilot, or drop
