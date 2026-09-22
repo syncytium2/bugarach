@@ -89,7 +89,20 @@ flight*, so each one needs the three-way decision `docs/handoffs/README.md` sets
 spent, move it to `docs/handoffs/` if any of it is still worth reading, never leave it at the root
 claiming work that has landed.
 
-### 5. Ask what the landing is actually for
+### 5. ~~Ask what the landing is actually for~~ — answered 2026-09-21: the nets landed alone
+
+**Tony's ruling: cut the nets-only branch.** Done in
+[#680](https://github.com/syncytium2/bugarach/pull/680) — the seven architectures,
+`train.py`'s GPU `device=`, `registered.py` and the `line`/`tube` edits: **11 files and 580
+lines**, against the branch's 476 files and 56,584. Every session starting from `main` can now
+see and run the whole model family.
+
+It inherited none of what the whole branch carries: not gate 2's reserved ruling, not 51,000
+lines of run output the darkroom already holds at 98.3 MB compressed, and not the two-hour CI
+suite that arrives with the tuning fixture. **So the rest of this scan is now about whether the
+run output and #596 should land at all**, which is a smaller question than it was.
+
+The original reasoning, which still holds for what remains:
 
 **The seven stranded architectures are 7 files of the 475.** `chorus`, `chorus_gain`,
 `chorus_gain_norm`, `chorus_line`, `chorus_norm`, `gauge` and `tube_no_bypass` exist only here, so
@@ -103,7 +116,17 @@ does not need the large one.
 
 ## Closes when
 
-~~Gate 1 is repaired and the base is green~~ (done, `b9752a9`); Tony has ruled on gate 2; gate 3 is
-fixed — **still open, the username is still at line 682**; gate 4 is resolved per file — **still
-open, five handoff files sit at the root**; and gate 5 is answered — either a nets-only branch lands
-and this scan stays open for the rest, or the whole branch lands at once.
+~~Gate 1 is repaired and the base is green~~ (done, `b9752a9`); ~~gate 3 is fixed~~ (done,
+[#672](https://github.com/syncytium2/bugarach/pull/672) — the username is off the branch, though
+the superseded commit stays fetchable and this is not a retraction); ~~gate 5 is answered~~
+(done, [#680](https://github.com/syncytium2/bugarach/pull/680) — the nets landed alone).
+
+**Two gates remain, both Tony's:**
+
+- **Gate 2** — whether landing this branch also lands #596, registering `gauge` and `chorus` in
+  the lab server and the browser's model picker. Deliberately unruled as of 2026-09-21.
+- **Gate 4** — the five handoff files at the root, each needing the three-way decision
+  `docs/handoffs/README.md` sets out.
+
+And the question gate 5 leaves behind: **with the code already on `main`, is there a reason to
+land 51,000 lines of run output the darkroom already holds?**
