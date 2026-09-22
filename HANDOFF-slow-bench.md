@@ -249,3 +249,12 @@ Newest last. A session that finds this file picks up at the first step not marke
   bench C would train on), and whether a comparison expected to come back a tie within about
   0.02 F1 is worth running on this bench at all. Also still owed before C: the tuning tool's
   `--bench` seam, on `tune-bench-comparison`, whose fate is unruled — not edited overnight.
+- 2026-09-22 (WSMIP064): **jitter measured without bins, both streams** (Tony: *"we don't have
+  our own measure of jitter?"*). `tools/measure_jitter_correlogram.py`, record
+  `docs/learned/runs/2026-09-22-jitter-correlogram/README.md`. The half-width of the cross-ROI
+  correlogram peak, calibrated on each bench and checked against theory: **fast 0.106 s
+  [0.091, 0.120], slow 0.135 s [0.126, 0.149]** — against benches of 0.36 and 0.30. Both
+  0.30 and 0.46 are unsupported for slow, and fast's 0.36 too. Slow's peak has a longer tail
+  than one jitter makes. Shared same-frame artefacts would read the same way, and the measure
+  cannot separate them. No bench constant is changed; it is Tony's call, and it would move
+  every number scored on either bench.
