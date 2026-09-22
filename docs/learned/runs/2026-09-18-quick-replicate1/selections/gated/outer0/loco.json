@@ -1,0 +1,128 @@
+{
+ "detector": "loco",
+ "outer_fold": 0,
+ "selection": "gated",
+ "config_key": "5382dd2a3f4253be",
+ "config": "configs/loco/5382dd2a3f4253be.json",
+ "budget": "meta.json budgets[0]",
+ "searched_by": "search_all_settings.choose_settings (goal 1's grids, per fold)",
+ "grids": {
+  "threshold_pctile": [
+   97.0,
+   98.0,
+   99.0,
+   99.5,
+   99.9,
+   99.99
+  ],
+  "bin_width_sec": [
+   0.5,
+   1.0,
+   2.0,
+   3.0,
+   5.0
+  ],
+  "context_win_sec": [
+   30.0,
+   60.0,
+   120.0,
+   240.0,
+   480.0
+  ],
+  "merge_gap_sec": [
+   0.5,
+   1.0,
+   2.0,
+   4.0,
+   8.0
+  ],
+  "min_rois": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   8
+  ],
+  "null_context_mode": [
+   "maxlt",
+   "symmetric"
+  ],
+  "guard_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   4.0
+  ],
+  "detection_mode": [
+   "threshold",
+   "peak"
+  ],
+  "peak_prominence": [
+   0.0,
+   0.25,
+   0.5,
+   1.0,
+   2.0
+  ],
+  "peak_min_distance_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   5.0
+  ]
+ },
+ "min_gain": 0.002,
+ "max_rounds": 2,
+ "inner_f1": 0.703586186540732,
+ "moves": [
+  {
+   "round": 1,
+   "setting": "threshold_pctile",
+   "old": 99.9,
+   "new": 99.99,
+   "old_f1": 0.7085970149253731,
+   "new_f1": 0.703586186540732,
+   "rescued_from_inadmissible": true
+  }
+ ],
+ "edge_flags": {
+  "threshold_pctile": "high",
+  "merge_gap_sec": "high",
+  "guard_sec": "low"
+ },
+ "n_scored": 22,
+ "n_refused": 5,
+ "inner_probe_per_hour": {
+  "quiet": 6.0,
+  "busy": 0.0
+ },
+ "inner_quiet_per_hour": 0.0,
+ "pooled": {
+  "recordings": [
+   "quiet:2002",
+   "busy:2002",
+   "quiet:2003",
+   "busy:2003",
+   "quiet:2004",
+   "busy:2004",
+   "quiet:2005",
+   "busy:2005"
+  ],
+  "recording_seeds": [
+   2002,
+   2003,
+   2004,
+   2005
+  ],
+  "twin_seeds": [
+   102002,
+   102003,
+   102004,
+   102005
+  ]
+ },
+ "seconds": 35.66362389991991
+}

@@ -1,0 +1,54 @@
+{
+ "model": "chorus_norm",
+ "outer_fold": 1,
+ "budget": "meta.json budgets[1]",
+ "pooled": {
+  "training_seeds": [
+   0
+  ],
+  "recordings": [
+   "busy:2000",
+   "busy:2001",
+   "busy:2004",
+   "busy:2005",
+   "quiet:2000",
+   "quiet:2001",
+   "quiet:2004",
+   "quiet:2005"
+  ],
+  "recording_seeds": [
+   2000,
+   2001,
+   2004,
+   2005
+  ],
+  "fitted_on": [
+   "busy:2000",
+   "busy:2001",
+   "busy:2004",
+   "busy:2005",
+   "quiet:2000",
+   "quiet:2001",
+   "quiet:2004",
+   "quiet:2005"
+  ],
+  "twin_seeds": [
+   102000,
+   102001,
+   102004,
+   102005
+  ]
+ },
+ "n_configurations": 2,
+ "missing_configurations": [],
+ "selection": "ungated",
+ "config_key": "b971dc32fbe2accb",
+ "config": "configs/chorus_norm/b971dc32fbe2accb.json",
+ "draw_index": 23,
+ "inner_f1": 0.7071392659627955,
+ "edge_flags": {
+  "lr": false,
+  "steps": false,
+  "top_m": false
+ }
+}

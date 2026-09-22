@@ -24,7 +24,7 @@ __all__ = ["build_line"]
           vote_gain=8.0, orientation=True)
 def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
                max_ratio=40.0, vote_gain=8.0, orientation=True, bound_vote=False,
-               eps=1e-3):
+               eps=1e-3, extra_pools=False, top_m=4):
     """How many distinct ROIs are lit right now, judged against its own background.
 
     Tony, 2026-09-15, on the tube models trained against rigid shift: *"i wonder if
@@ -105,6 +105,12 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
     Set ``orientation=False`` to build the length-only model this file shipped first —
     the ablation, so the second sensor's contribution stays attributable.
 
+    ``extra_pools=True`` adds ``chorus``'s two other pooled statistics beside the mean:
+    the spread of the votes over ROIs and the mean of the loudest ``top_m``, per smear
+    width, straight to the head. That is ``chorus_line`` — ``chorus``'s pooling on
+    ``line``'s per-cell stage, which trains — and it differs from ``line`` by exactly
+    those channels.
+
     **``bound_vote=True``** (Tony, 2026-09-16, choosing to measure the bound rather
     than only describe it) changes two things and nothing else:
 
@@ -143,7 +149,10 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             self.bound_vote = bool(bound_vote)
             # counts (relative length) + the difference-of-Gaussian responses, plus one
             # orientation channel per adjacent pair of smear widths.
-            c_in = 2 * n_scales + (n_scales - 1 if self.orientation else 0)
+            self.extra_pools = bool(extra_pools)
+            self.m = int(top_m)
+            c_in = (2 * n_scales + (n_scales - 1 if self.orientation else 0)
+                    + (2 * n_scales if self.extra_pools else 0))
             self.head = _dilated_stack(nn, c_in, 1, width, depth)
 
         def _smear(self, device):
@@ -221,6 +230,13 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
                 # axis is already gone here, so this is temporal concentration and not
                 # the image's tilt, which no order-free model can see.
                 channels.append(count[:, :-1] / (count[:, 1:] + eps))
+            if self.extra_pools:
+                # chorus's other two symmetric statistics over the ROI axis. Sort and
+                # slice rather than topk(min(m, n)), for the reason chorus gives.
+                votes = vote.reshape(b, n, -1, t)
+                channels.append(votes.std(dim=1, unbiased=False))
+                srt, _ = votes.sort(dim=1, descending=True)
+                channels.append(srt[:, :self.m].mean(dim=1))
             return self.head(torch.cat(channels, dim=1)).squeeze(1)
 
     return Line()

@@ -126,8 +126,34 @@ def groups_of(folder: Path) -> dict[str, str]:
     return out
 
 
-def rates(folder: Path, *detections: Path, baseline: str, treatment: str):
+def first_after(folder: Path, baseline: str) -> dict[str, str]:
+    """slice_id -> the label of the first period after ``baseline``, in time order.
+
+    For ``--first-only``. Tony, 2026-09-21: *"baseline and treat1 only for now"*. Matching a
+    treatment by label alone takes it wherever it falls, and on the 2026-09-17 default
+    folder 6 of the 35 recordings carrying ``senktide`` carry it as a LATER period, after
+    another treatment — so a baseline-to-senktide page would mix first exposures with
+    second ones.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        slices = load_folder(folder)
+    out = {}
+    for s in slices:
+        regs = sorted(s.regions or [], key=lambda r: float(r.start_sec))
+        names = [(r.name or "").strip() for r in regs]
+        if baseline not in names:
+            continue
+        later = [n for n in names[names.index(baseline) + 1:] if n and n != baseline]
+        if later:
+            out[s.slice_id] = later[0]
+    return out
+
+
+def rates(folder: Path, *detections: Path, baseline: str, treatment: str,
+          first_only: bool = False):
     wins = windows(folder)
+    first = first_after(folder, baseline) if first_only else None
     n, ran = counts(*detections)
     grp = groups_of(folder)
     slices = sorted({sid for sid, _ in wins})
@@ -144,6 +170,8 @@ def rates(folder: Path, *detections: Path, baseline: str, treatment: str):
     for sid in slices:
         b = next((k for k, v in wins.items() if k[0] == sid and v[0] == baseline), None)
         t = next((k for k, v in wins.items() if k[0] == sid and v[0] == treatment), None)
+        if first is not None and first.get(sid) != treatment:
+            t = None                     # the treatment is here, but not as the first
         if b is None or t is None:
             missing.append(sid)
             continue
@@ -312,10 +340,15 @@ def main(argv=None) -> int:
                          "pooled panel can hide a sign change and is not "
                          "admissible on its own. Only meaningful with "
                          "--per-detector")
+    ap.add_argument("--first-only", action="store_true",
+                    help="take the treatment only where it is the recording's first "
+                         "period after the baseline; a recording carrying it later, "
+                         "after another treatment, is left out and listed as missing")
     a = ap.parse_args(argv)
 
     rows, detectors, streams, missing = rates(a.folder, *a.detections,
-                                              baseline=a.baseline, treatment=a.treatment)
+                                              baseline=a.baseline, treatment=a.treatment,
+                                              first_only=a.first_only)
     # A RECORDING THE DETECTIONS FILE NEVER MENTIONS IS DRAWN AT ZERO, and at
     # zero it is indistinguishable from a recording that was scored and found
     # nothing. Those are different facts — one is a detector's answer, the other

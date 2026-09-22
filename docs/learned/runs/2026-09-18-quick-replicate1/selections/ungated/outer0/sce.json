@@ -1,0 +1,142 @@
+{
+ "detector": "sce",
+ "outer_fold": 0,
+ "selection": "ungated",
+ "config_key": "a21a77de918939af",
+ "config": "configs/sce/a21a77de918939af.json",
+ "budget": "meta.json budgets[0]",
+ "searched_by": "search_all_settings.choose_settings (goal 1's grids, per fold)",
+ "grids": {
+  "threshold_pctile": [
+   70.0,
+   75.0,
+   80.0,
+   85.0,
+   90.0,
+   95.0,
+   98.0,
+   99.0,
+   99.5
+  ],
+  "bin_width_sec": [
+   2.0,
+   5.0,
+   10.0,
+   15.0,
+   20.0,
+   30.0
+  ],
+  "min_rois": [
+   3,
+   6,
+   8,
+   10,
+   12,
+   16
+  ],
+  "merge_gap_sec": [
+   0.0,
+   5.0,
+   10.0,
+   15.0,
+   20.0,
+   30.0
+  ],
+  "detection_mode": [
+   "threshold",
+   "peak"
+  ],
+  "peak_prominence": [
+   0.0,
+   0.25,
+   0.5,
+   1.0,
+   2.0
+  ],
+  "peak_min_distance_sec": [
+   0.0,
+   1.0,
+   2.0,
+   5.0,
+   10.0
+  ]
+ },
+ "min_gain": 0.002,
+ "max_rounds": 2,
+ "inner_f1": 0.7684060721062619,
+ "moves": [
+  {
+   "round": 1,
+   "setting": "threshold_pctile",
+   "old": 98.0,
+   "new": 75.0,
+   "old_f1": 0.5360889110889111,
+   "new_f1": 0.6299955096542433,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 1,
+   "setting": "merge_gap_sec",
+   "old": NaN,
+   "new": 30.0,
+   "old_f1": 0.6299955096542433,
+   "new_f1": 0.7303990847297934,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 2,
+   "setting": "threshold_pctile",
+   "old": 75.0,
+   "new": 70.0,
+   "old_f1": 0.7303990847297934,
+   "new_f1": 0.7324192835028749,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 2,
+   "setting": "bin_width_sec",
+   "old": 10.0,
+   "new": 5.0,
+   "old_f1": 0.7324192835028749,
+   "new_f1": 0.7684060721062619,
+   "rescued_from_inadmissible": false
+  }
+ ],
+ "edge_flags": {
+  "threshold_pctile": "low",
+  "min_rois": "low",
+  "merge_gap_sec": "high"
+ },
+ "n_scored": 50,
+ "n_refused": 0,
+ "inner_probe_per_hour": {
+  "quiet": 12.0,
+  "busy": 9.0
+ },
+ "inner_quiet_per_hour": 20.666666666666668,
+ "pooled": {
+  "recordings": [
+   "quiet:2002",
+   "busy:2002",
+   "quiet:2003",
+   "busy:2003",
+   "quiet:2004",
+   "busy:2004",
+   "quiet:2005",
+   "busy:2005"
+  ],
+  "recording_seeds": [
+   2002,
+   2003,
+   2004,
+   2005
+  ],
+  "twin_seeds": [
+   102002,
+   102003,
+   102004,
+   102005
+  ]
+ },
+ "seconds": 15.469478799961507
+}

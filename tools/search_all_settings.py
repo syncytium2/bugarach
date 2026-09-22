@@ -61,7 +61,26 @@ import time
 from multiprocessing import Pool
 from pathlib import Path
 
-from bugarach import bench as _bench
+BENCH_ENV = "BUGARACH_BENCH"
+#: Which bench module every stage and every worker reads. ``--bench`` sets it before the pool
+#: starts, and workers spawned on Windows re-import this module and read it again, so no
+#: stage can score one stream's recordings against the other's settings. Always set by
+#: ``main`` — a value left in the shell cannot redirect a run silently.
+BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow"}
+
+
+def _load_bench():
+    """The bench module this run searches: ``bugarach.bench`` unless ``--bench slow``."""
+    import importlib
+    import os
+
+    name = os.environ.get(BENCH_ENV, BENCHES["fast"])
+    if name not in BENCHES.values():
+        raise ValueError(f"{BENCH_ENV}={name!r} is not one of {sorted(BENCHES.values())}")
+    return importlib.import_module(name)
+
+
+_bench = _load_bench()
 
 REGIMES = ("baseline_quiet", "baseline_busy")
 NULL = "null"
@@ -83,10 +102,27 @@ BOOTSTRAP_SEED = 20260917
 #: **Declared in `bugarach.bench.FULL_GRIDS`** since 2026-09-17, so goal 2's nested
 #: cross-validation searches the same axes this search does rather than a second copy of
 #: them. Kept under the old name here because this module's own stages read it.
-SPACE = {d: {k: list(v) for k, v in axes.items()}
-         for d, axes in _bench.FULL_GRIDS.items()}
+def _space(b):
+    return {d: {k: list(v) for k, v in axes.items()} for d, axes in b.FULL_GRIDS.items()}
+
+
+SPACE = _space(_bench)
 #: Pairs searched as full two-setting grids (`bench.FULL_GRID_PAIRS`).
 PAIRS = dict(_bench.FULL_GRID_PAIRS)
+
+
+def use_bench(which: str):
+    """Point this module, and every worker it starts, at the ``fast`` or ``slow`` bench."""
+    import os
+
+    global _bench, SPACE, PAIRS
+    os.environ[BENCH_ENV] = BENCHES[which]
+    _bench = _load_bench()
+    SPACE = _space(_bench)
+    PAIRS = dict(_bench.FULL_GRID_PAIRS)
+    return _bench
+
+
 PERCENTILE = {"threshold_pctile", "sce_percentile"}
 INTEGER = {"n_synchronous_frames", "sce_min_distance_frames"}
 FRACTION = {"C_threshold", "C_min"}
@@ -96,7 +132,7 @@ def shipped_value(det: str, setting: str):
     """The shipped value: declared in OPERATING_POINTS, or the detector's own default."""
     import inspect
 
-    from bugarach import bench
+    bench = _load_bench()
     from bugarach.detectors import (cicada_detect, coact_detect, loco_detect,
                                     rate_detect, sce_detect, sync_detect)
     params = bench.OPERATING_POINTS[det].params
@@ -163,7 +199,7 @@ def _job(args):
     recording rates) when ``keep`` — only the held-out stage needs those.
     """
     det, key_items, param_items, regime, seeds, keep = args
-    from bugarach import bench
+    bench = _load_bench()
     from bugarach.score import score_stream
 
     # `key_items` is what the cache is keyed by (NaN-safe); `param_items` is what the
@@ -269,7 +305,7 @@ def make_admissible(reference_crowded=None):
     is what every search before 2026-09-17 applied and what let the merge-gap artifact
     through.
     """
-    from bugarach import bench
+    bench = _load_bench()
 
     def admissible(det: str, s: dict) -> bool:
         ceiling = bench.MAX_PROBE_PER_MIN[det]
@@ -555,7 +591,7 @@ def pair_grids(dets, start, space, pairs, evaluate, summarize, is_admissible,
 def held_out(pool, candidates, seeds, log=print):
     """Stage 3: every candidate on recordings nothing was chosen on, with a bootstrap."""
     import numpy as np
-    from bugarach import bench
+    bench = _load_bench()
 
     jobs = []
     tail_seeds = list(seeds)[:N_TAIL]
@@ -795,9 +831,16 @@ def main(argv=None) -> int:
                     help="do NOT refuse a candidate that loses on the crowded recordings. The "
                          "2026-09-17 search ran this way by default and proposed four settings "
                          "that lose 0.25 to 0.32 mean F1 there (bench.MAX_CROWDED_DROP)")
+    ap.add_argument("--bench", choices=sorted(BENCHES), default="fast",
+                    help="which stream's bench to search: bugarach.bench (fast, the default) "
+                         "or bugarach.bench_slow. Every stage and every worker reads the one "
+                         "chosen here (docs/handoffs/2026-09-21-slow-bench.md)")
     ap.add_argument("--out", type=Path, default=None,
-                    help="destination (default: <darkroom>/<date>-full-search)")
+                    help="destination (default: <darkroom>/<date>-full-search, with -slow "
+                         "appended for --bench slow, so a fast and a slow search on the same "
+                         "day never write one folder)")
     a = ap.parse_args(argv)
+    use_bench(a.bench)
 
     if a.out:
         dest = a.out.expanduser()
@@ -806,7 +849,8 @@ def main(argv=None) -> int:
         if root is None:
             print(unresolved_message(), file=sys.stderr)
             return 2
-        dest = root / f"{datetime.date.today().isoformat()}-full-search"
+        suffix = "" if a.bench == "fast" else f"-{a.bench}"
+        dest = root / f"{datetime.date.today().isoformat()}-full-search{suffix}"
     dest.mkdir(parents=True, exist_ok=True)
 
     def log(msg):
@@ -859,7 +903,7 @@ def main(argv=None) -> int:
 
     sel, ho = list(range(1, n + 1)), list(range(n + 1, 2 * n + 1))
     rep = dict(started=datetime.datetime.now().isoformat(timespec="seconds"),
-               selection_seeds=sel, held_out_seeds=ho, space=space, shipped=shipped,
+               bench=_bench.__name__, selection_seeds=sel, held_out_seeds=ho, space=space, shipped=shipped,
                stage="started", selection={})
 
     def save():

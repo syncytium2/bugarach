@@ -29,29 +29,47 @@
 # repo and sapper SAP004 would block the commit. That is the correct outcome — the
 # per-machine half of the answer is not a repo fact.
 #
-# WHEN THE PRODUCER SHIPS A NEW EXPORT: change the name here and nowhere else.
-# `tests/test_current_export.py` proves the named folders parse and that this file
-# stays the only declaration.
+# WHEN THE PRODUCER SHIPS A NEW EXPORT: add a table for it, then point `default` at it.
+# That one line is the whole change for every analysis; `tests/test_where_the_data_are.py`
+# proves the named folders parse and that this file stays the only declaration.
+#
+# ONE DEFAULT, CONFIRMED EVERY SESSION (Tony, 2026-09-21: "there should be one default data
+# folder that the user confirms at the start of every session"). Analyses call
+# `dataset.default()`. Inside a Claude session it refuses until the person has confirmed
+# this folder for this session (`python -m bugarach.dataset confirm`), so a change here is
+# seen by a person before any analysis runs on it.
+#
+# EVERY TABLE SAYS WHAT IT IS FOR, in `use`:
+#   input    — may be the default.
+#   eval     — another corpus or a paired control, read on purpose and by name.
+#   archive  — kept so earlier runs reproduce. `current()` refuses it unless
+#              BUGARACH_REPRODUCE='<which run>' is set, so no analysis drifts onto it.
+# A table with `parent` is a subset of that folder and inherits its contamination note —
+# `ttx` and `senktide` carry all four pinned recordings of `steps_excluded` and until
+# 2026-09-21 passed the contamination stop because their own notes did not repeat it.
+#
+# RESULTS CARRY THE NAME OF WHAT THEY WERE SCORED ON (`dataset.stamp()`), and
+# `tools/check_scored_dataset.py` flags, at session start, every result scored on a folder
+# other than the default.
 
-[default]
-# What an analysis reads unless it has a stated reason not to.
+default = "steps_and_pins_excluded"
+
+[periods_2026_08_18]
+# The default until 2026-09-21. Kept so the runs and parity fixtures made on it reproduce.
+use = "archive"
 name = "2026-08-18_revised_2v_periods"
 recordings = 84
 note = """
-The standard export. Two streams, region labels, and the full per-event set the
-contract asks for — `time_sec` (t50rise), `width_sec` + `width_def`, `peak_sec`, `amp`.
-Carries no `analysis_*` columns, deliberately.
-
-⚠ NOT the newest folder the producer has shipped, and `default` is deliberately left
-pointing here rather than moved. `steps_excluded` below is 2026-09-03 and its own README
-says "for any new analysis, use this folder"; moving `default` would silently re-point
-every existing analysis and every parity fixture at a different corpus. Changing it is a
-decision, not a housekeeping edit — see the note on `steps_excluded`.
+The standard export until 2026-09-21. Two streams, region labels, and the full per-event
+set the contract asks for — `time_sec` (t50rise), `width_sec` + `width_def`, `peak_sec`,
+`amp`. Carries no `analysis_*` columns, deliberately. Predates both artifact removals: the
+field steps and the moco floor-pinned windows are both still in it.
 """
 
 [steps_and_pins_excluded]
+use = "input"
 # The producer's 2026-09-17 export: field-step artifacts AND moco floor-pinned windows removed.
-# This is the folder new analysis reads. `steps_excluded` below is kept so runs made before it
+# THE DEFAULT (see `default` above). `steps_excluded` below is kept so runs made before it
 # reproduce, and it still stops an analysis by itself — see its note.
 name = "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED"
 recordings = 84
@@ -84,13 +102,45 @@ removed over the whole recording, listed in `field_steps_excluded.tsv`.
 `n_exceed >= 100`). Two slices sit below the cut and keep their events: `20260702_338`
 (1 ROI, 13 exceeding frames) and `20260630_325` (1 ROI, 10), against 515 to 2,195 for the
 four that were cleaned — two orders of magnitude weaker, measured rather than assumed. A
-third, `20260629_314`, is absent from the census altogether: an open interface2 todo from
-2026-09-02 ranks it beside the known four on a blind whole-frame scan, and the pinning
-detector has not been run over it. So the honest statement is measured-and-tiny for two
-slices, unexamined for one.
+third, `20260629_314`, is absent from the census: a blind whole-frame scan by interface2 on
+2026-09-02 ranks it beside the known four, along with `20250926_237` and `20260630_325`.
+
+**Corrected 2026-09-22, and this paragraph said otherwise for four days.** It used to end
+"the pinning detector has not been run over it … unexamined for one". **That is false, and
+the producer withdrew it the day they wrote it** — see the same-day correction in their
+answer, `<darkroom>/bugarach/2026-09-18-pinned-rois-answer/README.md`. All 85 archive
+slices went through the per-ROI trace-derivative detector, these three included:
+`20260630_325` came back **marginal** and is in the census (ROI 10, 3.6 s), with Tony
+reviewing its trace panel himself; `20250926_237` and `20260629_314` came back with **no
+ROI flagged**. So all three were screened, and two were cleared.
+
+What is open is **sensitivity, not coverage**: the census tests manually selected hROIs
+only, so a flooded patch holding no hROI leaves it silent while the frame is still
+corrupted — which is what the whole-frame scan sees and the census cannot. `20260629_314`
+is the most exposed case at 14 ROIs, the fewest of any DI slice. The producer's own reading
+is that this **cuts in the consumer's favour**: a whole-frame artifact in a region with no
+ROI in it cannot reach this event table at all. The test that would settle it is geometric —
+pinned pixels against ROI masks, interface2's `tools/check_roi_pinning.m` — and **that** has
+not been run on these three. Ask for that, not for the detector.
+
+**ANSWERED 2026-09-22, and this closes it.** The geometric test ran on all three
+(syncytium2/interface2#1; record: interface2 `docs/moco_floor_pinning.md`, *Update
+2026-09-22*, `5d8aa49`). **The frames pin; the ROIs do not.** `20250926_237` shows no
+pinned frames at 4,000 samples; `20260629_314` pins in 44 frames and `20260630_325` in
+one, and in both the flooded patch lies where no ROI or penumbra sits, so it cannot
+reach an extracted trace or this repository's event table. The known-pinned control
+fired as expected. So the three candidates are not carrying pinned events, the
+group-level scenario does not hold, and **nothing in this folder needs to change.**
+
+The producer's own caveat travels with that: the geometric test undercounts — on the
+control it caught 2 of the 4 census ROIs — so a clean result is not proof on its own.
+What carries the conclusion is two tests sharing no code agreeing, the per-ROI trace
+detector and the geometry. Their sampling note: 400 frames is too sparse to clear a
+slice; the result above uses 4,000.
 """
 
 [steps_excluded]
+use = "archive"
 # The producer's 2026-09-03 export with field-step artifacts REMOVED.
 name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED"
 recordings = 84
@@ -121,6 +171,8 @@ FLAGGED_FOR_REVIEW companion cannot be read correctly here yet.
 """
 
 [senktide]
+use = "archive"
+parent = "steps_excluded"
 # First-treatment subset of `steps_excluded`. A view, not a re-export.
 name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED_SENKTIDE"
 recordings = 29
@@ -135,6 +187,8 @@ are present, the parent wins.
 """
 
 [ttx]
+use = "archive"
+parent = "steps_excluded"
 # First-treatment subset of `steps_excluded`. A view, not a re-export.
 name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED_TTX"
 recordings = 38
@@ -150,21 +204,23 @@ to tune away.
 """
 
 [pensub]
+use = "eval"
 # The penumbra-subtracted pair, for the crosstalk control ONLY.
 name = "2026-08-20_pensub_revised_2v"
 recordings = 84
 note = """
-The same 84 recordings as `default`, penumbra-subtracted — verified file-for-file,
+The same 84 recordings as `periods_2026_08_18`, penumbra-subtracted — verified file-for-file,
 the two name sets are identical. That is what makes it usable as a crosstalk control:
 the comparison is PAIRED, so a difference is the subtraction and not the roster.
 
-It pairs with `default` above and NOT with `2026-08-17_revised_2v_v2`, which ships
+It pairs with `periods_2026_08_18` above and NOT with `2026-08-17_revised_2v_v2`, which ships
 different columns. Note that the underlying stores are 85 and 84 recordings and are
 NOT the same set — the equality above is a fact about these two EXPORTS, checked
 here, not inherited from the store counts. Do not carry the store figures across.
 """
 
 [cossart]
+use = "eval"
 # ANOTHER LAB'S DATA. Not ours, and not a control for ours — a second preparation.
 name = "dandi_000219"
 recordings = 59

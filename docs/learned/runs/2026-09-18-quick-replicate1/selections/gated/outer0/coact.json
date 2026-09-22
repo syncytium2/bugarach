@@ -1,0 +1,140 @@
+{
+ "detector": "coact",
+ "outer_fold": 0,
+ "selection": "gated",
+ "config_key": "3f2fb6b897c37bb8",
+ "config": "configs/coact/3f2fb6b897c37bb8.json",
+ "budget": "meta.json budgets[0]",
+ "searched_by": "search_all_settings.choose_settings (goal 1's grids, per fold)",
+ "grids": {
+  "alpha": [
+   0.01,
+   0.003,
+   0.001,
+   0.0003,
+   0.0001,
+   3e-05,
+   1e-05,
+   1e-06
+  ],
+  "int_win_sec": [
+   0.5,
+   1.0,
+   2.0,
+   3.0,
+   5.0
+  ],
+  "context_win_sec": [
+   20.0,
+   30.0,
+   60.0,
+   120.0,
+   240.0
+  ],
+  "min_rois": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   8
+  ],
+  "merge_gap_sec": [
+   0.0,
+   1.0,
+   2.0,
+   3.0,
+   5.0,
+   8.0
+  ],
+  "guard_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   4.0
+  ],
+  "guard_norm": [
+   "compact",
+   "exposure"
+  ],
+  "detection_mode": [
+   "threshold",
+   "peak"
+  ],
+  "peak_prominence": [
+   0.0,
+   0.25,
+   0.5,
+   1.0,
+   2.0
+  ],
+  "peak_min_distance_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   5.0
+  ]
+ },
+ "min_gain": 0.002,
+ "max_rounds": 2,
+ "inner_f1": 0.7519445164635727,
+ "moves": [
+  {
+   "round": 1,
+   "setting": "alpha",
+   "old": 1e-05,
+   "new": 1e-06,
+   "old_f1": 0.7385222381635581,
+   "new_f1": 0.7489235910288543,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 1,
+   "setting": "guard_sec",
+   "old": 1.0,
+   "new": 0.0,
+   "old_f1": 0.7489235910288543,
+   "new_f1": 0.7519445164635727,
+   "rescued_from_inadmissible": false
+  }
+ ],
+ "edge_flags": {
+  "alpha": "low",
+  "merge_gap_sec": "high",
+  "guard_sec": "low"
+ },
+ "n_scored": 53,
+ "n_refused": 13,
+ "inner_probe_per_hour": {
+  "quiet": 6.0,
+  "busy": 3.0
+ },
+ "inner_quiet_per_hour": 1.3333333333333333,
+ "pooled": {
+  "recordings": [
+   "quiet:2002",
+   "busy:2002",
+   "quiet:2003",
+   "busy:2003",
+   "quiet:2004",
+   "busy:2004",
+   "quiet:2005",
+   "busy:2005"
+  ],
+  "recording_seeds": [
+   2002,
+   2003,
+   2004,
+   2005
+  ],
+  "twin_seeds": [
+   102002,
+   102003,
+   102004,
+   102005
+  ]
+ },
+ "seconds": 137.40222849999554
+}

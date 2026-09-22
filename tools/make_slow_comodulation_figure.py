@@ -74,8 +74,12 @@ WORLD = {  # colour, style, label
     "sim_hot_window": ("#1b9e77", "-", "promiscuity probe only"),
     "benchmark": ("#e41a1c", (0, (5, 2)), "benchmark generator, whole spec"),
 }
-LAB = "steps_and_pins_excluded"
-"""The lab role ``measure_slow_comodulation.py`` reads; its result keys are ``<role>/<stream>``."""
+from bugarach import dataset as _dataset  # noqa: E402
+
+LAB = _dataset.default_role()
+"""The lab role ``measure_slow_comodulation.py`` reads — the declared default; its result keys
+are ``<role>/<stream>``. ``main`` refuses a run measured on any other folder rather than
+drawing it without its lab panels."""
 DATASET = {f"{LAB}/fast": "lab, fast stream", f"{LAB}/slow": "lab, slow stream",
            "cossart/events": "Dard et al. 2022"}
 GROUP_INK = {"DI": "#0f9fb5", "MALE": "#b8860b", "ORX": "#6b3e26", "OVX": "#c51b7d"}
@@ -606,6 +610,12 @@ def main(argv=None):
             raise SystemExit(unresolved_message("--out"))
     a.out.mkdir(parents=True, exist_ok=True)
     R = json.loads((a.run / "results.json").read_text())
+    measured = sorted({k.split("/")[0] for k in R.get("folders", {})} - {"cossart"})
+    if measured and LAB not in measured:
+        raise SystemExit(
+            f"{a.run} was measured on {', '.join(measured)}; the default dataset is now {LAB}. "
+            f"Re-run measure_slow_comodulation.py on the default, or draw this run from the "
+            f"commit that made it.")
     for old in list(a.out.glob("fig*.png")) + [a.out / n for n in DARKROOM_ONLY]:
         if old.exists():
             old.unlink()

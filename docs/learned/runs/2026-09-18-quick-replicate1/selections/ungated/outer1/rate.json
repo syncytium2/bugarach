@@ -1,0 +1,147 @@
+{
+ "detector": "rate",
+ "outer_fold": 1,
+ "selection": "ungated",
+ "config_key": "1a4cc86b06b6c09f",
+ "config": "configs/rate/1a4cc86b06b6c09f.json",
+ "budget": "meta.json budgets[1]",
+ "searched_by": "search_all_settings.choose_settings (goal 1's grids, per fold)",
+ "grids": {
+  "excess_threshold_hz": [
+   3.0,
+   3.5,
+   4.0,
+   4.5,
+   5.0,
+   6.0,
+   8.0
+  ],
+  "context_win": [
+   20.0,
+   30.0,
+   60.0,
+   120.0,
+   240.0
+  ],
+  "rate_win": [
+   0.5,
+   1.0,
+   2.0,
+   3.0,
+   5.0
+  ],
+  "merge_gap_s": [
+   0.1,
+   0.5,
+   1.0,
+   2.0,
+   3.0,
+   5.0,
+   8.0
+  ],
+  "guard_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   4.0
+  ],
+  "threshold_mode": [
+   "additive",
+   "multiplicative"
+  ],
+  "threshold_alpha": [
+   1.5,
+   2.0,
+   3.0,
+   4.0
+  ],
+  "detection_mode": [
+   "threshold",
+   "peak"
+  ],
+  "peak_prominence": [
+   0.0,
+   0.25,
+   0.5,
+   1.0,
+   2.0
+  ],
+  "peak_min_distance_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   5.0
+  ]
+ },
+ "min_gain": 0.002,
+ "max_rounds": 2,
+ "inner_f1": 0.6611344537815127,
+ "moves": [
+  {
+   "round": 1,
+   "setting": "context_win",
+   "old": 60.0,
+   "new": 20.0,
+   "old_f1": 0.639344262295082,
+   "new_f1": 0.6493278784336646,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 1,
+   "setting": "merge_gap_s",
+   "old": 3.0,
+   "new": 8.0,
+   "old_f1": 0.6493278784336646,
+   "new_f1": 0.6547725245316682,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 1,
+   "setting": "guard_sec",
+   "old": 0.0,
+   "new": 4.0,
+   "old_f1": 0.6547725245316682,
+   "new_f1": 0.6611344537815127,
+   "rescued_from_inadmissible": false
+  }
+ ],
+ "edge_flags": {
+  "context_win": "low",
+  "merge_gap_s": "high",
+  "guard_sec": "high"
+ },
+ "n_scored": 45,
+ "n_refused": 0,
+ "inner_probe_per_hour": {
+  "quiet": 87.0,
+  "busy": 90.0
+ },
+ "inner_quiet_per_hour": 0.0,
+ "pooled": {
+  "recordings": [
+   "quiet:2000",
+   "busy:2000",
+   "quiet:2001",
+   "busy:2001",
+   "quiet:2004",
+   "busy:2004",
+   "quiet:2005",
+   "busy:2005"
+  ],
+  "recording_seeds": [
+   2000,
+   2001,
+   2004,
+   2005
+  ],
+  "twin_seeds": [
+   102000,
+   102001,
+   102004,
+   102005
+  ]
+ },
+ "seconds": 8.92556619993411
+}

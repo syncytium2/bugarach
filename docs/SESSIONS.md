@@ -25,6 +25,76 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Goal:** learned-model-family (goal 2).
 - **Released when:** the run record is on `main` (#682).
 
+### 065/methods — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-methods/` (NEW)
+- **Status:** **RELEASED 2026-09-22.** Written: the methods `.docx`, `.pdf` (Word export) and `.html`,
+  Figure 1 (`fig1_benchmark_recording.png/.html`), and the cover memo (`.md` and `.docx`). Was: ACTIVE
+  (WSMIP065), claimed before writing. Tony, 2026-09-21: a methods section for the coordination pipeline,
+  murderboarded in full, overnight.
+- **Touches:** this block; `docs/methods/`, `docs/reviews/coordination_pipeline_methods_2026-09-22*`,
+  `tools/make_methods_bench_figure.py`, `docs/conditioned_run.md` (records the 12-minute floor).
+
+### 065/slow-cohort-rasters — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-22-full-cohort-slow/`
+- **Status:** **RELEASED 2026-09-22** — `slow_settings.csv`, `detect/` (6,611 calls on 84 recordings,
+  22.8 s) and `rasters/` (16 pages, HTML + PNG) written. Was: ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-22: the slow-stream twin of
+  `2026-09-21-full-cohort-default/rasters/`, on the default dataset (confirmed this session), at the
+  adopted slow settings (`bench_slow.OPERATING_POINTS`: CoactDetect, LoCo, SPIKE-synch). The other
+  three detectors are still at fast settings on slow and are not drawn.
+- **Writes:** `slow_settings.csv`, `detect/`, `rasters/`. A new folder, so nothing existing is touched.
+- **Touches:** this block.
+
+### 065/full-cohort-default — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-21-full-cohort-default/` (NEW)
+- **Status:** ACTIVE (WSMIP065), claimed before writing. Tony, 2026-09-21: the full-cohort results
+  on the default dataset (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, confirmed this
+  session) with the weekend's settings — the every-knob sliding values for CoactDetect and LoCo
+  (`fair_comparison_2026_09_18/meta.json`, `coded_base`), the shipped points for the other four.
+- **Writes:** `detect/` (detections.csv, detector_settings.csv, run.json, calls_measured.csv),
+  `rasters/` (one page per group × treatment × stream), `before_after/` (per treatment). A new
+  folder, so nothing existing is touched.
+- **Touches:** this block; `src/bugarach/detect_folder.py` (`load_settings` takes a detector's own
+  signature as its parameter list) on branch `detect-settings-by-signature`.
+
+### 065/census-rerun — DARKROOM claim RELEASED 2026-09-21: `bugarach/2026-09-19-chorus-collapse/`
+- **Status:** **RELEASED 2026-09-21.** All four items done. The folder's `index.html` and
+  `census.json` were replaced and each verified to match its repo copy byte for byte; the review
+  record and the round-4 craft report were refreshed beside them. Nothing else in the folder touched.
+  The re-run **reproduced every pre-existing census field bit-identically across all 974 fits**, so
+  the two new fields are pure addition. Was: ACTIVE (WSMIP065), claimed before writing — Tony's
+  ruling on #674's list: items 1-3, and the census re-run that decides whether the page's headline
+  mechanism survives.
+- **Writes:** inside that folder only — a re-run `census.json` and a rebuilt `index.html`. The two
+  runs' `results/` folders are read, never written.
+- **Claims:** that folder exclusively. Reads `<darkroom>/bugarach/2026-09-18-*/results/` for the fit
+  archives, read-only.
+- **NO GPU, despite the authorisation.** `census` runs each fit on the CPU (`fit.model.cpu()`); CUDA
+  is reached only by `replay()`, which this task does not call. **No contention with WSMIP064's
+  allowance sweep, and none was ever possible.**
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the re-run census and the repaired page are on `main`.
+### 065/lit-optimization — DARKROOM claim RELEASED 2026-09-20: `bugarach/lit/optimization/` (NEW)
+- **Status:** **RELEASED 2026-09-20.** The shelf exists and holds exactly three files:
+  `kosson_2024_warmup_update_size.pdf` (22 pp), `lu_2020_dying_relu_initialization.pdf` (34 pp) and a
+  `README.md` carrying both entries in the shelf's author / year / provenance / which-decision form.
+  Each PDF was verified by extracting its first page after the copy, not just by size. One row was
+  added to `lit/README.md`'s subfolder table and nothing else there was touched. Was:
+  ACTIVE (WSMIP065), claimed before writing. Tony asked for a new shelf. #679 withdrew the
+  chorus-collapse page's novelty claim on the strength of two papers that were read, acted on, cited
+  publicly — and filed nowhere. `lit/README.md`'s own rule is that a PDF with no entry is
+  indistinguishable from one someone downloaded and forgot; these two decided something now live on
+  `main`, and neither `DL/` (learned detectors, set-structured inputs) nor `ml/` (the unlabelled
+  detector's claims) covers training failure, so the shelf is new rather than stretched.
+- **Writes:** `<darkroom>/bugarach/lit/optimization/` — NEW subdirectory: two PDFs and its own
+  `README.md`, each with the author / year / where-it-came-from / which-decision row the shelf
+  requires. One line touched outside it: the subfolder table in `<darkroom>/bugarach/lit/README.md`.
+- **Claims:** `lit/optimization/` exclusively. Being new, it cannot collide with the ACTIVE
+  `lit/radar/` claim (`WSMIP065/shelve-hansen-1973`) or with `lit/coordination/`, `lit/DL/`,
+  `lit/ml/`, `lit/surrogates/`, `lit/recombination/`, `lit/synchrony/`. Nothing else under
+  `<darkroom>/bugarach/` is touched.
+- **Fetched by hand**, as `lit/README.md` requires — murderboard's `fetch_paper.py` is deliberately
+  not vendored here (SAP004, personal paths in a public repo).
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** both PDFs and both README entries are in place.
+
 ### 065/kosson-prior-art — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-19-chorus-collapse/`
 - **Status:** **RELEASED 2026-09-20** with this PR. The write was made and verified: the folder's
   `index.html` moved from `0dfdc1e5…` to `9083d574…`, matching the repo copy byte for byte. Was:
@@ -118,6 +188,27 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Goal:** learned-model-family (goal 2).
 - **Released when:** the replicate's report has landed and both scheduled tasks are deleted, or the
   work is abandoned.
+
+### WSMIP064/merge-gap-demote-verdict — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-18-fair-comparison-run/report/merge-gap.html`
+- **Status:** ACTIVE (WSMIP064), claimed before writing. **Re-opens one file inside a released
+  folder**, which is why it is its own block rather than an edit to the one below: Tony took option A
+  on 2026-09-21 — the merge-gap addendum states its result as a measurement rather than a verdict.
+- **Writes:** `report/merge-gap.html` only, rebuilt by `tools/build_net_merge_gap_page.py`. Nothing
+  else in that folder is touched: not `results/`, not `external/`, not `report/index.html`, and none
+  of the murderboard role archives beside it.
+- **Touches:** this block; `tools/build_net_merge_gap_page.py` and the repo copy of the page land on
+  branch `nets/merge-gap-demote-verdict`. Not `docs/reviews/` — the review record stands as written.
+  Not `docs/goals/` (#664).
+- **What changes, so a reader of the old page knows:** the title drops "tuned" (every chosen gap is a
+  boundary the crowded check imposed, which the page's own §2 and §7 already said); §3's heading
+  stops saying "the answer holds", which its own body retracted four sentences later; and the lede
+  states the asymmetry between the two sides as the result. **No number changes**, and CoactDetect is
+  still ahead of every net on average in both draws and in 29 of 32 net-folds.
+- **Holds:** that one file.
+- **Simulation only.**
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the rebuilt page is in the folder and its PR has landed, or the rewrite is
+  abandoned.
 
 ### WSMIP064/fair-comparison-run — DARKROOM claim RELEASED 2026-09-20: `bugarach/2026-09-18-fair-comparison-run/`
 - **Released 2026-09-20**, its condition met: the run ended and both readouts landed — the report
@@ -2725,3 +2816,12 @@ session's work is not a sweep.
   finished) and `full_search.html` / `full_search.png` (the figure), from
   `tools/search_all_settings.py` on branch `full-search`. Measure-only: no operating point changes.
 - **Released:** 2026-09-17. The run finished 2026-09-16 17:02; holds nothing.
+
+### darkroom/bugarach/2026-09-21-full-search-slow/ — the every-knob search on the SLOW bench (WSMIP064/slow-result)
+- **Claimed:** 2026-09-21, ⚠ **after** the write, not before: the five files were copied in
+  first and this block written straight after. A new folder, so nothing existing was overwritten.
+- **Writes:** `search.log`, `search.json`, `search.err` (empty), `full_search.html` /
+  `full_search.png`, copied from `%USERPROFILE%\runs\2026-09-21-full-search-slow\` on WSMIP064
+  (`tools/search_all_settings.py --bench slow --sliding`). The same five files are in the repo
+  at `docs/learned/runs/2026-09-21-full-search-slow/`. Measure-only: nothing ships from it.
+- **Released:** 2026-09-21. Nothing further is written there.

@@ -262,6 +262,23 @@ def _selftest() -> int:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def _archive_if_finished(run_dir: Path, name: str, ar=None) -> None:
+    """Hand a finished run to ``tools/archive_run.py``, loaded by path (standard library
+    only, like this tool). Once: ``ARCHIVED.json`` records it, and a recorded Dropbox
+    archive is not redone every five minutes. ``ar`` replaces the module (tests)."""
+    if ar is None:
+        import importlib.util
+
+        src = Path(__file__).resolve().parent / "archive_run.py"
+        spec = importlib.util.spec_from_file_location("_archive_run", src)
+        ar = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ar)
+    if not (run_dir / ar.FINISHED).is_file() or "darkroom" in ar.read_marker(run_dir):
+        return
+    entry = ar.to_darkroom(run_dir, name)
+    print(f"archived to Dropbox: {entry['path']}")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("run_dir", nargs="?", type=Path, help="the run's output directory")
@@ -270,6 +287,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="further files in run_dir to copy, e.g. run.log")
     ap.add_argument("--watch", type=int, metavar="SECONDS",
                     help="loop instead of copying once; prefer a scheduled task")
+    ap.add_argument("--archive-as", metavar="NAME",
+                    help="once the run writes results.json, archive the whole run to "
+                         "<darkroom>/bugarach/runs/NAME/ (tools/archive_run.py), once. "
+                         "Tony, 2026-09-21: finished runs go straight to Dropbox")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args(argv)
 
@@ -289,6 +310,8 @@ def main(argv: list[str] | None = None) -> int:
             age = rec["source_age_sec"]
             print(f"mirrored to {dest_root}  source age: "
                   f"{'absent' if age is None else str(age) + ' s'}")
+            if args.archive_as:
+                _archive_if_finished(args.run_dir, args.archive_as)
         except OSError as exc:
             # The mount can go away while Dropbox restarts. A watcher that dies
             # then is worse than one that says so and tries again.

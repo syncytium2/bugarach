@@ -10,6 +10,12 @@ architectures, their draughtsman figures and the page. **Nothing on that branch 
 here**, which is the point — PR #589 was split down to the probe and this note, and the nets stay
 out of the lab server's capabilities and the browser's model picker until something runs them.
 
+> ⚠ **Superseded on that one point, 2026-09-22.** `gauge` and `chorus` (with four chorus
+> repairs) **are** registered on `main` now — they landed with #680 on 2026-09-21, and because the
+> folder is the registry they reached `/api/capabilities` and the model picker with them. Tony ruled
+> on 2026-09-22 to **leave them there**, each carrying its warning note. `quorum` is still
+> unregistered. Items 1–5 below are untouched by this; item 6 is answered.
+
 Tony asked, 2026-09-16: *some recordings have 13 cells and some have 50, 500+ in another lab's;
 tube and line were two nets designed by my word description of an approach; propose three new
 classes.* A review on the PR caught three things before any of it landed.
