@@ -128,24 +128,27 @@ SPIKE-synch −0.082 mean F1 (`docs/learned/runs/2026-09-21-slow-step-a/README.m
 simulations absorb, and was it measured carefully?** The jitter is not a lone bad constant.
 `tools/remeasure_bench.py` takes `n_roi`, `jitter_sec` **and `participation`** from a single
 `assess_coactivity` call at K = 4, and inside it the jitter and the participation come out of
-the **same `_clusters(...)` invocation at the same 1.0 s bin**. A wider bin sweeps more distinct
-ROIs into a cluster, so participation is mechanically bin-dependent in the way the jitter turned
-out to be — and it has never been swept. It is also the constant with the most riding on it:
-064's own finding is that **slow participation, 0.38, is the value the whole slow bench turns
-on**, and 0.18 → 0.19 is already queued for fast. Two further asymmetries: the instrument
-computes `jit_null` and `jit_excess` and **the bench absorbed the uncorrected `jit_obs`**; and
-participation has **no null counterpart at all** to check against. The sweep machinery exists —
-`tools/measure_slow_bench.py` already carries `BINS = (0.5, 1.0, 2.0, 3.0, 5.0)`, which is how
-the jitter was caught, while `remeasure_bench.py` is still single-bin. Full audit of every
-constant the bench absorbs, graded by how it was measured:
+the **same `_clusters(...)` invocation at the same 1.0 s bin**, so both are coupled to that bin
+by construction. **Participation was swept and held** — `tools/measure_slow_bench.py`'s `BINS`
+docstring records the 2026-09-21 result: the jitter tracks bin ÷ √12 from 0.5 s to 5 s on both
+streams while participation stays at fast 0.19 at every bin and slow 0.37–0.38 from 0.5 s to
+3 s. So the bench's recruitment constant survives the test its timing constant failed.
+
+Three residuals, none of them a reason to delay the ruling: the quoted flat range **stops at
+3 s** where the bins run to 5 s, and at `wm_factor` 1.5 a 5 s bin gathers participants within
+±7.5 s of a cluster centre; participation has **no null counterpart** (`jit_obs` at least has
+`jit_null` and `jit_excess` — which **the bench does not use**, it absorbed the uncorrected
+observation); and the flatness is empirical rather than structural, unlike `rate_shape`, which
+predicts the 35% silent-ROI figure it was never fitted to. Full audit, graded by how each
+constant was measured:
 [`todo/2026-09-22-what-else-came-from-the-clustering-instrument.md`](todo/2026-09-22-what-else-came-from-the-clustering-instrument.md).
 
-**Recommendation:** sweep participation across those bins first — it is minutes on a machine
-with the data — then rule the jitter and move both constants in the same overnight pass as the
-0.19 change, since all three move the same bench. Adopting a corrected jitter while leaving an
-uncorrected participation fixes half a bench and leaves the half with more riding on it. Until
-it is ruled, treat every operating point chosen this month as provisional — that is the honest
-statement, and it is cheaper to say now than to withdraw later.
+**Recommendation:** rule the jitter. The audit that was meant to precede it is done and it came
+back clean for participation, so there is nothing left to wait for. Move the constant in one
+overnight pass with the 0.19 change, and take the two residuals as follow-ups rather than
+blockers: extend the participation sweep to the top of the bin range, and decide whether the
+bench should absorb `jit_excess` rather than `jit_obs` now that the distinction is known to
+matter. Until it is ruled, every operating point chosen this month stays provisional.
 
 ## 3. The nets on the slow bench — run, re-pilot, or drop
 

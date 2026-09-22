@@ -40,7 +40,30 @@ minutes are shorter in simulation than in tissue.
 | constant | value | exposure |
 |---|---|---|
 | `jitter_sec` | 0.36 fast, 0.30 slow | **already shown wrong** — tracks bin ÷ √12; measured without bins it is 0.106 and 0.135 s |
-| `participation` | 0.18 fast (moving to 0.19), **0.38 slow** | `part_n_obs`, the median distinct-ROI count per cluster, from the same `_clusters` call at the same 1.0 s bin. **A wider bin sweeps more distinct ROIs into a cluster**, so the quantity is mechanically bin-dependent in the same way the jitter was, and nobody has run the sweep |
+| `participation` | 0.18 fast (moving to 0.19), **0.38 slow** | `part_n_obs`, the median distinct-ROI count per cluster, from the same `_clusters` call at the same 1.0 s bin. **It was swept and it held** — see the correction below |
+
+### Correction, same day: participation WAS swept, and it held
+
+**The first version of this file said nobody had run the sweep. That was wrong**, and the
+answer was in the tool's own docstring. `tools/measure_slow_bench.py`'s `BINS` carries the
+result of the 2026-09-21 measurement that caught the jitter: over 0.5 s to 5 s the jitter
+tracks bin ÷ √12 on both streams (fast 0.17 → 2.03 s, slow 0.21 → 1.39 s), while
+**participation does not move — fast 0.19 at every bin, slow 0.37–0.38 from 0.5 s to 3 s.**
+Figure: `<darkroom>/bugarach/2026-09-21-slow-bench-jitter-vs-bin.png`.
+
+So the recommendation below is already satisfied for the sweep itself, and the shape of the
+worry changes rather than disappearing. What remains:
+
+- **The quoted stability stops at 3 s.** The bins run to 5 s and the flat range is reported as
+  0.5–3 s. At `wm_factor` 1.5 a 5 s bin gathers participants within ±7.5 s of a cluster centre,
+  and at a background of 0.0052–0.019 Hz per ROI over 33 ROIs that window admits several
+  background ROIs by chance. Whether participation holds at the top of the range is not stated.
+- **Participation still has no null.** Flat against the bin is not the same as corrected for
+  chance gathering, and there is no `part_n_null` to subtract.
+- **The flatness is empirical, not structural.** Participants are gathered within ±1.5 × bin of
+  the cluster centre, so the quantity *is* coupled to the bin by construction; it happens not to
+  move over the range tested. That is worth knowing but it is a different kind of assurance from
+  the rate shape's, which predicts a number it was not fitted to.
 
 Two things sharpen this.
 
