@@ -77,8 +77,7 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
    - **foundations** #7, **fireflies** #8, **downLow** #2, **no_peak** #3 — the GLOSSARY stamp and
      README, notes on ADRs 0001/0004; fireflies' one-remote rule (the `archive/R-*` tags named),
      `NEXT_SESSION.md`, two workflow comments; the `coding-project` source line gains its GitHub
-     home. **Reviewed, open, not merged** — merging was refused to this session as "merge without
-     review", so each waits on Tony.
+     home. Merged 2026-09-22 — item 10.
    - **bugarach** — this todo, `bct-modularity-fast`'s pointer (now `archive/bct-modularity-fast`),
      and `docs/reaper_handoff.md`'s "interface2 is on GitLab".
    - **Left, deliberately:** ledgers, board blocks, reviews, changelogs, archived notes, the
@@ -99,8 +98,10 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
    there, on its pipeline map, with a `🔴 GREAT LAKES` notice its session briefing prints first, a
    red line on its `CLAUDE.md` banner and a box atop `greatlakes/ACCESS.md` (`700df29d`). Close this
    item when that one resolves.
-8. **Confirm 064.** interface2's ROADMAP planned the cutover "with 064 + Mac"; the Mac is confirmed,
-   064 never was. On 064: `git remote -v | grep -i gitlab` in each checkout.
+8. **Confirm 064.** interface2's ROADMAP planned the cutover "with 064 + Mac"; the Mac is confirmed.
+   **064: in progress, 2026-09-22** (Tony). Done when every checkout there passes the sweep above
+   (`git remote -v | grep -i gitlab` finds nothing) — and that includes a `git pull` of its interface2
+   checkout, or item 11's flare never reaches sessions on 064.
 9. **Revoke GitLab credentials while access lasts** (Tony, GitLab web UI): personal/project access
    tokens and deploy tokens (Settings → Access tokens), deploy keys on the archived projects, and the
    Git Credential Manager OAuth grant (User settings → Applications → Authorized applications). The
@@ -108,3 +109,14 @@ find ~ -maxdepth 4 -name .git -type d -not -path '*/AppData/*' | while read g; d
 10. ~~**Merge foundations #7, fireflies #8, downLow #2, no_peak #3.**~~ **Done 2026-09-22** (Tony:
     *"merge the four prs"*), each squash-merged pinned to the head commit that was reviewed:
     foundations `0733068e`, fireflies `7328dd71`, downLow `9833eeb3`, no_peak `c103d2be`.
+11. **Pull interface2 on the Mac (and 064), or the Great Lakes flare does not reach them.** The
+    session briefing reads the board from the checkout **on disk**, never from GitHub, and does not
+    pull. A checkout behind `700df29d` shows no `🔴 GREAT LAKES` notice and no red `CLAUDE.md` line.
+    On each machine: `git -C <interface2 checkout> pull --ff-only`. **WSMIP065's is done**: its
+    primary checkout (`Documents\MATLAB\interface2`, the one MATLAB runs from) was fast-forwarded
+    `7242a2fc` → `700df29d` on 2026-09-22 with no MATLAB running — undo with
+    `git reset --hard 7242a2fc` if that code change is unwanted.
+12. **Small, any time:** WSMIP065's MATLAB checkout still has 25 local branches whose remotes are gone
+    (item 4) — every commit on them is on GitHub, so `git branch -D` on each is safe; and interface2's
+    `tools/check_doc_links.py` comments still name `origin/db4-sqlite-pipeline`, deleted 2026-09-11,
+    whose commits are in `db4-pilot-verify`.
