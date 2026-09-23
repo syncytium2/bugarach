@@ -39,11 +39,16 @@ A calls table has a row only where a detector called. **Region 2 produced zero c
 recordings**, so it contributed no rows and vanished from a census taken off that table. The
 tell is the gap in `region_idx`: `20250808_186` shows 1, 3, 4 and `20241216_137` shows 1, 3.
 
-⚠ **This is systematic, not bad luck.** TTX is the condition meant to abolish activity, so it is
-exactly the window a calls table will be empty in; an antagonist pre-treatment like SB222200 is
-the next most likely. **A first-treatment census built from detection output under-counts
-precisely the treatments that worked** — the failure is correlated with the thing being counted,
-which is the kind that survives a sanity check.
+⚠ **This is systematic, not bad luck.** Any treatment that lowers calls in some recordings makes
+its window the one a calls table can be empty in, and a first-treatment census built from
+detection output then under-counts that treatment in particular: the failure is correlated with
+the thing being counted, which is the kind that survives a sanity check.
+
+**Corrected 2026-09-23, by the orchestrating session.** This paragraph first said *"TTX is the
+condition meant to abolish activity"*. That is the textbook prior FOUNDATIONS §9 forbids in terms:
+in this preparation coordination persists under TTX, with the slow stream at or above its own
+baseline in 44% of slices. What is true of these two recordings is narrower, and it is all this
+note needs: region 2 had no calls from any detector. It says nothing about what TTX or SB222200 do.
 
 **Read `regions.csv` for what a recording contains. Read the calls for what was called in it.**
 
@@ -71,8 +76,5 @@ senktide window later.
   need to ride the `_346` re-export.
 - **Nothing was relabelled or filtered** at any point, which is the export-folder contract
   working as intended: the suspicion went to the producer instead of becoming a consumer-side fix.
-- ⚠ **The finding has not reached `interface2#3`.** Posting it needs an external write this
-  session was not permitted to make; the drafted comment is scratchpad-only and will be lost.
-  **Someone has to put it on that issue**, or the producer is still holding a question that is
-  already answered — which is the shape of the failure `CLAUDE.md` records under "a note
-  everybody cites and nobody acts on".
+- **The finding reached `interface2#3`** on 2026-09-23, posted by the orchestrating session, and
+  the issue was closed with nothing for the producer to do.

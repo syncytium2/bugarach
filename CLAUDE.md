@@ -234,6 +234,14 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   `optimize_detectors.m`, `calibrate6.m`. Running/validating the ports still
   needs neither MATLAB nor the checkout. See
   [`docs/todo/2026-08-12-port-coordination-benchmark.md`](docs/todo/2026-08-12-port-coordination-benchmark.md).
+- **MATLAB work goes to an interface2 session, never a bugarach one** (Tony, 2026-09-23:
+  *"in the future, use an interface2 session for matlab. i suspect there are issues"*).
+  Running interface2's code — the trace waterfall viewer, the casebooks, anything that
+  reads the archive or needs a MATLAB display — is that repository's work, done by a
+  session started in it, under its own CLAUDE.md, board and conventions. A bugarach session
+  (the orchestrator, WSMIP064/065) asks for the output and says where it should land; it
+  does not launch MATLAB itself. The reference-regeneration launch lines below are the one
+  standing exception, and they predate this rule.
 - **Figure/report output goes to the Dropbox darkroom**, not the repo and not
   local disk. bugarach owns `<darkroom>/bugarach/` — resolve it with
   `bugarach.paths.darkroom()` — it takes `$BUGARACH_DARKROOM` when set and
