@@ -35,9 +35,10 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
+from bugarach.groups import GROUP_ORDER  # noqa: E402  (DI, OVX, MALE, ORX — Tony, 2026-09-23)
+
 FOLDER = "correlogram"                   # the darkroom folder Tony asked the figures to gather in
 GROUP_INK = {"DI": "#0f9fb5", "MALE": "#b8860b", "ORX": "#6b3e26", "OVX": "#c51b7d"}
-GROUP_ORDER = ("DI", "MALE", "ORX", "OVX")
 INK, MUTED = "#0b0b0b", "#52514e"
 PEAK_LAG_SEC = 3.0
 
