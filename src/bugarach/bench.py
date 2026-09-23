@@ -1603,18 +1603,68 @@ class EdgeOfRange(ValueError):
 
 
 MAX_PROBE_PER_MIN = {
-    "coact": 1.0,      # measured: 0.0
-    "loco": 1.0,       # measured: 0.1
-    "sync": 1.0,       # measured: 0.2
-    "rate": 2.0,       # measured: 0.6
-    "sce": 9.0,        # measured: 5.6
-    "cicada": 25.0,    # measured: 17.3 — still the most rate-fooled of the six
+    "coact": 1.0,      # measured: 0.08 — unmoved by the harder probe
+    "loco": 1.0,       # measured: 0.21 — unmoved
+    "sync": 9.0,       # measured: 5.54, was 0.2 at the old probe
+    # HAND-SET from the separation window, not from the 1.6x rule, which would give 7.0
+    # and disable the gate at the doubled probe: rate's F1-optimum fires 4.98/min and the
+    # gate exists to refuse it. 4.5 is the midpoint of 3.83 (shipped, seeds 1-48) and 4.98
+    # (that optimum), and it separates them on the test's own seed too (3.00 / 4.80).
+    "rate": 4.5,       # measured: 3.83 shipped, 4.98 at the setting the gate refuses
+    "sce": 9.0,        # measured: 5.92, was 5.6 — barely moved
+    "cicada": 48.0,    # measured: 29.66, was 17.3 — still the most rate-fooled of the six
 }
 """Firings per minute each detector may make inside a block containing nothing.
 
 **Measured baselines, not aspirations** — the convention the regime-shift budgets
 use. A detector that improves past its ceiling should have the ceiling tightened
 in the commit that improves it.
+
+⚠ **Three ceilings rose on 2026-09-22 because the PROBE rose, not because any
+detector got worse.** ``hot_rate_hz`` went 0.06 → 0.1271 Hz when the probe became
+the measured 99th percentile of baseline stretches, so the dense-but-random block
+is twice as dense and a detector that keys on rate fires more inside it. Measured
+at ``OPERATING_POINTS`` on seeds 1–48 by ``tools/measure_slow_budgets.py`` — the
+same code path the search's admissibility test reads — and moved by that tool's own
+``ceiling_rate``, ``max(1, ceil(1.6 x measured))``, **only where the old ceiling no
+longer held**. ``coact``, ``loco`` and ``sce`` kept theirs.
+
+**What the harder probe exposed, and the gentle one could not.** At 0.06 Hz five of
+six looked quiet. At a realistic elevated stretch they separate:
+
+=========  ==========  ==========  ========
+detector   old probe   new probe   factor
+=========  ==========  ==========  ========
+coact         0.0         0.08     flat
+loco          0.1         0.21     flat
+sce           5.6         5.92     1.1x
+rate          1.1         4.14     3.8x
+cicada       17.3        29.66     1.7x
+sync          0.2         5.54     **28x**
+=========  ==========  ==========  ========
+
+**CoactDetect and LoCo do not key on rate at all.** SPIKE-synch does, and was
+passing a 1.0 ceiling only because the probe was too gentle to ask.
+
+⚠ **``rate`` is hand-set because the rule collided with the gate, and that collision
+is itself the finding.** ``ceiling_rate`` gives 1.6x headroom over the shipped rate;
+at the doubled probe that is 7.0, and rate's own F1-optimum fires **4.98/min** — so
+the rule would have put the ceiling *above* the setting
+:func:`pick_operating_point` exists to refuse, and a re-calibration would have
+selected it and called it an operating point (``test_rates_own_f1_optimum_is_over
+_its_probe_budget`` is that case). **At this probe rate+context's shipped setting
+sits within about 10% of the setting its gate refuses** — 3.83 against 4.98 — so
+there is no longer room for 1.6x headroom. 4.5 is the midpoint, checked to separate
+on seeds 1–48 *and* on the test's own seed. A budget's job is to sit between an
+acceptable setting and a promiscuous one; where a headroom rule cannot, the window
+wins.
+
+⚠ It sits beside the other thing measured that day: SPIKE-synch is also the
+detector that stays flat across the background axis and takes the top at its busy
+end (``tests/test_background_curve.py``). Flatness that reads as robustness on one
+axis and as rate-keying on the other is **one observation, not two**, and which it
+is has not been decided here. Raising this ceiling records a measurement; it does
+not bless the setting.
 
 **These lived in `tests/test_bench.py` until 2026-08-22, and that was the defect.**
 The test caught a regression at the *shipped* operating point, but

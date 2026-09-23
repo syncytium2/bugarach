@@ -305,29 +305,35 @@ seeds 1–48 of this bench, and the same on the fast bench for comparison."""
 # gives locust 13 probe calls/min where bench.py declares 25, and binned SCE a 0.10 swing
 # where bench.py declares 0.50 — fast ceilings set at older settings and never tightened.
 # tests/test_bench_slow.py holds these equal to the record's ceilings.
+# ⚠ RE-MEASURED 2026-09-22, because this bench's own constants moved: `REGIMES` became
+# background rates and `hot_rate_hz` went 0.032 -> 0.0291. These are the ceilings
+# `tools/measure_slow_budgets.py` derives from that re-measurement, and
+# `tests/test_bench_slow.py` asserts they EQUAL the record rather than merely contain it,
+# so they are not chosen here — they are copied, and the comment is the measurement.
+# Most TIGHTENED: the slow bench got a little easier to be quiet on.
 MAX_PROBE_PER_MIN: dict[str, float] = {
-    "loco": 1.0,      # measured: 0.14
-    "cicada": 5.0,    # measured: 2.59
-    "sce": 8.0,       # measured: 4.67
-    "coact": 1.0,     # measured: 0.07
-    "rate": 1.0,      # measured: 0.36
-    "sync": 1.0,      # measured: 0.05
+    "loco": 1.0,      # measured: 0.01, was 1.0 at 0.14
+    "cicada": 4.0,    # measured: 1.93, was 5.0 at 2.59 — tightened
+    "sce": 7.0,       # measured: 4.30, was 8.0 at 4.67 — tightened
+    "coact": 1.0,     # measured: 0.22, was 1.0 at 0.07
+    "rate": 1.0,      # measured: 0.27, was 1.0 at 0.36
+    "sync": 1.0,      # measured: 0.38, was 1.0 at 0.05
 }
 MAX_FALSE_POSITIVES_PER_HOUR: dict[str, float] = {
-    "loco": 1.0,      # measured: 0.56
+    "loco": 1.0,      # measured: 0.08, was 1.0 at 0.56
     "cicada": 1.0,    # measured: 0.61
     "sce": 5.0,       # measured: 3.08
-    "coact": 2.0,     # measured: 1.25
+    "coact": 1.0,     # measured: 0.00, was 2.0 at 1.25 — tightened
     "rate": 1.0,      # measured: 0.00
     "sync": 1.0,      # measured: 0.00
 }
 MAX_PRECISION_DROP: dict[str, float] = {
-    "loco": 0.10,     # measured: 0.034
-    "cicada": 0.10,   # measured: 0.011
-    "sce": 0.10,      # measured: 0.029
-    "coact": 0.15,    # measured: 0.070
-    "rate": 0.10,     # measured: 0.011
-    "sync": 0.10,     # measured: 0.002
+    "loco": 0.10,     # measured: 0.001, was 0.10 at 0.034
+    "cicada": 0.15,   # measured: 0.067, was 0.10 at 0.011 — the one that loosened
+    "sce": 0.10,      # measured: 0.025
+    "coact": 0.10,    # measured: 0.003, was 0.15 at 0.070 — tightened
+    "rate": 0.10,     # measured: 0.003
+    "sync": 0.10,     # measured: 0.001
 }
 
 
