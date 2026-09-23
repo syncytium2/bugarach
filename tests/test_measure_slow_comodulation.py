@@ -211,3 +211,53 @@ def test_the_worlds_have_the_shapes_the_page_teaches():
     assert abs(background[short].mean()) < 0.2 and abs(background[mid].mean()) < 0.15
     assert hot[mid].mean() > 0.5
     assert shared[mid].mean() > 0.2
+
+
+def _row(rid, mouse, group, real_var, null_var):
+    """A result row whose pooled 1-minute ratio is set by hand: only the last variance (the 60 s
+    bin) of each arm matters to ``group_influence``."""
+    def vec(v):
+        var = np.array([1.0, 1.0, v])
+        return list(np.concatenate([np.zeros(NB), np.ones(NB), var, var]))
+    arms = {"real": vec(real_var), "circular": vec(null_var),
+            "minus_coact_block_120": vec(real_var), "circular_mask": vec(null_var)}
+    return dict(recording_id=rid, mouse=mouse, group=group, arms=arms)
+
+
+def test_group_influence_names_the_recording_that_carries_a_group():
+    """One heavy ORX recording at ratio 6 against three at ratio 1: pooled (3 + 60) / 13 ≈ 4.85,
+    and without it 1 — the shape of `20250806_174` on slow ORX, 2026-09-23. MALE sits at 2 with
+    no recording that moves it, so MALE − ORX is a gap about one recording and must not outlive
+    leave-one-out, while DI (3) against MALE (2), both tight, must."""
+    rows = ([_row(f"orx{i}", f"mo{i}", "ORX", 1.0, 1.0) for i in range(3)]
+            + [_row("orx_heavy", "mo9", "ORX", 60.0, 10.0)]
+            + [_row(f"male{i}", f"mm{i}", "MALE", 2.0, 1.0) for i in range(4)]
+            + [_row(f"di{i}", f"md{i // 2}", "DI", 3.0, 1.0) for i in range(4)])
+    G = msc.group_influence(rows)
+    assert G["groups"] == ["DI", "MALE", "ORX"]
+    assert G["mice"] == {"DI": 2, "MALE": 4, "ORX": 4}
+    for arm in msc.INFLUENCE_ARMS:
+        A = G["arms"][arm]
+        orx = A["leave_one_out"]["ORX"]
+        assert orx["value"] == pytest.approx(63 / 13)
+        assert orx["most_influential"] == "orx_heavy"
+        assert orx["without"] == pytest.approx(1.0)
+        assert A["leave_one_out"]["MALE"]["value"] == pytest.approx(2.0)
+        assert A["pairwise"]["DI - MALE"]["outlives"]
+        assert not A["pairwise"]["MALE - ORX"]["outlives"]
+        w = A["without_most_influential"]
+        assert w["dropped"] == "orx_heavy"
+        assert w["values"]["ORX"] == pytest.approx(1.0)
+        assert w["values"]["DI"] == pytest.approx(3.0)
+
+
+def test_group_influence_goes_into_the_summary_the_repo_keeps():
+    rows = [_row(f"r{i}", f"m{i}", g, 2.0, 1.0) for i, g in enumerate(["DI", "DI", "ORX", "ORX"])]
+    for r in rows:
+        r.update(analysed_sec=600.0, n_roi=10, lead_in_sec=0.0)
+    R = dict(folders={"x/fast": dict(rows=rows, skipped=[], summary={}, by_group={},
+                                     group_influence=msc.group_influence(rows))},
+             synthetic={})
+    kept = msc.summary_only(R)["folders"]["x/fast"]
+    assert kept["group_influence"]["groups"] == ["DI", "ORX"]
+    assert "rows" not in kept
