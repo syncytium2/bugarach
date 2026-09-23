@@ -69,6 +69,13 @@ deduplicated (Tony, 2026-09-22), calibrated on ``bench_combined`` at that bench'
 so the first run's combined rows are not comparable with later ones. A fast and a slow onset in
 the same frame still count as one active frame for that cell, as any two onsets would.
 
+**By group** (``--by-group``, 2026-09-23): the same numbers per ``group_id`` and stream — rate,
+background, participation, participants and moments per minute (:data:`GROUP_STATS`) — each with a
+mouse-clustered bootstrap, leave-one-out over recordings, for each group pair whether the gap is
+wider than both groups' leave-one-out ranges, and where the group sits against its bench's regimes,
+background grid and participation levels (:func:`group_block`). FOUNDATIONS §9: a pooled number
+hides group differences, so it is not admissible on its own.
+
 **What it reads.** The default dataset (``dataset.default()``), each recording's baseline analysis
 window (``assess_folder.generation_window``, ``bench.MIN_BASELINE_SEC`` floor), ``t50rise`` onsets.
 Baseline only (FOUNDATIONS §9).
@@ -372,7 +379,12 @@ def _real(args):
             st = stream_of(s, stream)
             trains[stream] = [np.minimum(_frames(v, lo, hi), L - 1) for v in (st.t50rise or st.locs)]
     rng = np.random.RandomState(seed + i)
+    meta = getattr(s, "meta", {}) or {}
+    # Mouse and group read as bugarach.surrogate_stats reads them, so a recording clusters with
+    # the same mouse in every tool; a recording with no subject id is its own cluster.
     return {"slice_id": s.slice_id,
+            "mouse": str(meta.get("subject_id") or s.slice_id),
+            "group": (str(meta.get("group_id")).strip() or None) if meta.get("group_id") else None,
             **{k: measure(v, L, rng) for k, v in trains.items()}}
 
 
@@ -422,6 +434,173 @@ def calibrate(results, w: float = PRIMARY_W, model: str = "fixed") -> dict:
                 passed=bool(np.isfinite(med) and abs(med) <= CAL_TOL))
 
 
+# ---------------------------------------------------------------- by group
+
+GROUP_STATS = ("rate_median_hz", "background_median_hz", "background_q25_hz",
+               "background_q75_hz", "participants_per_moment", "participation",
+               "participation_binomial", "shared_moments_per_min", "coordinated_share_of_rate")
+"""What a group is described by, at the primary window. Rates are per ROI per second;
+``background`` is the raw rate minus the coordinated share under :data:`ADOPTED_MODEL`, which is
+what the bench's difficulty axis is made of; ``participation`` is participants per moment over
+the recording's ROI count (fixed model, median over recordings) and ``participation_binomial``
+the pooled *p* of the multiple-interaction model. Moments are per minute, the share a fraction."""
+
+
+def group_stats(recs, w: float = PRIMARY_W) -> dict:
+    """:data:`GROUP_STATS` over one set of per-recording measurements. The f3/f2 ratio is pooled
+    **within this set**, so a group's participants per moment are its own and not the folder's."""
+    nan = float("nan")
+    if not recs:
+        return {k: nan for k in GROUP_STATS}
+    raw = np.array([r["rate"] for r in recs], float)
+    pr = per_recording(recs, w, ADOPTED_MODEL)
+    share = np.array([x["share"] for x in pr], float)
+    bg = raw - np.nan_to_num(share)
+    k = np.array([x["k"] for x in pr], float)
+    N = np.array([r["N"] for r in recs], float)
+
+    def med(v):
+        v = v[np.isfinite(v)]
+        return float(np.median(v)) if v.size else nan
+
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return dict(
+            rate_median_hz=med(raw),
+            background_median_hz=med(bg),
+            background_q25_hz=float(np.percentile(bg, 25)),
+            background_q75_hz=float(np.percentile(bg, 75)),
+            participants_per_moment=med(k),
+            participation=med(k / N),
+            participation_binomial=pooled_ratio(recs, w, "binomial"),
+            shared_moments_per_min=med(np.array([x["lam"] for x in pr], float) * 60),
+            coordinated_share_of_rate=med(share / raw))
+
+
+def bench_axis(stream: str) -> dict:
+    """The rate and participation the stream's bench already covers: its two background
+    regimes (the interquartile of untreated recordings, coordinated share subtracted), the
+    background grid its rate sweep scores across where it has one, and its three planted
+    participation levels. Read from the bench module, never retyped."""
+    import importlib
+
+    b = importlib.import_module(BENCHES[stream])
+    out = dict(bench=BENCHES[stream],
+               quiet_hz=float(b.REGIMES["baseline_quiet"]["bg_rate_hz"]),
+               busy_hz=float(b.REGIMES["baseline_busy"]["bg_rate_hz"]),
+               participation_levels=[float(x) for x in b.BENCH_RECORDING["participation"]],
+               n_roi=int(b.BENCH_RECORDING["n_roi"]))
+    grid = getattr(b, "BACKGROUND_GRID", None)
+    out["background_grid_hz"] = [float(x) for x in grid] if grid else None
+    return out
+
+
+def placement(stats: dict, axis: dict) -> dict:
+    """Where one group sits against its stream's bench: is its background interquartile inside
+    the two regimes, inside the swept grid, and is its participation inside the planted levels."""
+    q25, q75 = stats["background_q25_hz"], stats["background_q75_hz"]
+    lo, hi = axis["quiet_hz"], axis["busy_hz"]
+    grid = axis["background_grid_hz"]
+    lv = axis["participation_levels"]
+    p = stats["participation"]
+    return dict(
+        median_between_regimes=bool(lo <= stats["background_median_hz"] <= hi),
+        interquartile_inside_regimes=bool(lo <= q25 and q75 <= hi),
+        interquartile_inside_grid=(bool(min(grid) <= q25 and q75 <= max(grid)) if grid else None),
+        participation_inside_levels=bool(np.isfinite(p) and min(lv) <= p <= max(lv)))
+
+
+def group_block(real, stream: str, n_boot: int, seed: int) -> dict | None:
+    """Per group on one stream: :data:`GROUP_STATS` with a mouse-clustered bootstrap interval,
+    leave-one-out over recordings, for each pair whether the gap is wider than both groups'
+    leave-one-out ranges (with the bootstrap interval of the difference beside it), every group
+    with the single most influential recording dropped, and placement against the bench.
+
+    Baseline windows only, as everything this tool reads. Mice are the resampling unit: 66
+    recordings come from fewer mice, and a drawn mouse brings all of its recordings. Nothing is
+    filtered — every recording the folder holds for the group is in its number.
+    """
+    from bugarach import influence
+    from bugarach.groups import in_group_order
+
+    items = [dict(slice_id=r["slice_id"], mouse=r["mouse"], group=r["group"], m=r[stream])
+             for r in real if stream in r and r.get("group")]
+    if not items:
+        return None
+    groups = in_group_order(it["group"] for it in items)
+    by = {g: [it for it in items if it["group"] == g] for g in groups}
+    cache: dict = {}
+
+    def stats_of(its):
+        key = tuple(sorted(it["slice_id"] for it in its))
+        if key not in cache:
+            cache[key] = group_stats([it["m"] for it in its])
+        return cache[key]
+
+    def ident(it):
+        return it["slice_id"]
+
+    boots, out_stats = {}, {}
+    for g in groups:
+        # One seed per group, from its name: the order groups are shown in moves no number.
+        rs = np.random.RandomState((seed + sum(map(ord, g)) * 7919) % (2 ** 31))
+        boots[g] = influence.mouse_bootstrap(by[g], lambda its: group_stats([i["m"] for i in its]),
+                                             lambda it: it["mouse"], n_boot, rs)
+    for name in GROUP_STATS:
+        def stat(its, name=name):
+            return stats_of(its)[name]
+
+        loo = {g: influence.leave_one_out(by[g], stat, ident) for g in groups}
+        per_group = {}
+        for g in groups:
+            b = np.array([x[name] for x in boots[g]], float)
+            per_group[g] = dict(
+                value=stat(by[g]),
+                interval=(np.nanpercentile(b, [2.5, 97.5]).tolist()
+                          if np.isfinite(b).any() else None),
+                leave_one_out=loo[g])
+        pairs = influence.pairwise(loo, groups)
+        for pair, p in pairs.items():
+            g, h = pair.split(" - ")
+            d = (np.array([x[name] for x in boots[g]], float)
+                 - np.array([x[name] for x in boots[h]], float))
+            p["bootstrap_interval"] = (np.nanpercentile(d, [2.5, 97.5]).tolist()
+                                       if np.isfinite(d).any() else None)
+        out_stats[name] = dict(
+            groups=per_group, pairwise=pairs,
+            without_most_influential=influence.without_most_influential(by, stat, ident, loo))
+    axis = bench_axis(stream)
+    return dict(groups=groups, window_sec=PRIMARY_W, model=ADOPTED_MODEL,
+                recordings={g: len(by[g]) for g in groups},
+                mice={g: len({it["mouse"] for it in by[g]}) for g in groups},
+                ungrouped=[r["slice_id"] for r in real if stream in r and not r.get("group")],
+                stats=out_stats, bench=axis,
+                placement={g: placement(stats_of(by[g]), axis) for g in groups})
+
+
+def print_group_block(stream: str, B: dict) -> None:
+    print(f"  [{stream}] by group, {B['window_sec']:g} s window, {B['model']} model "
+          f"(value [mouse bootstrap 95%] | leave-one-out range):", flush=True)
+    for name in ("rate_median_hz", "background_median_hz", "participation",
+                 "participants_per_moment", "shared_moments_per_min"):
+        S = B["stats"][name]
+        print(f"    {name}:", flush=True)
+        for g in B["groups"]:
+            v = S["groups"][g]
+            ci, loo = v["interval"], v["leave_one_out"]
+            print(f"      {g:5s} {B['recordings'][g]:2d} recordings / {B['mice'][g]:2d} mice: "
+                  f"{v['value']:.4g}" + (f" [{ci[0]:.4g}, {ci[1]:.4g}]" if ci else "")
+                  + (f" | [{loo['lo']:.4g}, {loo['hi']:.4g}], {loo['most_influential']}"
+                     if loo else ""), flush=True)
+        for pair, p in S["pairwise"].items():
+            if p["outlives"]:
+                print(f"      {pair}: gap {p['gap']:+.4g} OUTLIVES leave-one-out", flush=True)
+    ax = B["bench"]
+    print(f"    bench {ax['bench']}: regimes {ax['quiet_hz']}-{ax['busy_hz']} Hz, "
+          f"participation {ax['participation_levels']}", flush=True)
+    for g in B["groups"]:
+        print(f"      {g:5s} {B['placement'][g]}", flush=True)
+
+
 # ---------------------------------------------------------------- main
 
 def main(argv=None) -> int:
@@ -430,6 +609,10 @@ def main(argv=None) -> int:
     ap.add_argument("--jobs", type=int, default=12)
     ap.add_argument("--seed", type=int, default=20260922)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--by-group", action="store_true",
+                    help="also split every stream by group_id: mouse-clustered bootstrap, "
+                         "leave-one-out, and placement against the bench (group_block)")
+    ap.add_argument("--boot", type=int, default=1000, help="mouse bootstrap resamples per group")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
 
@@ -474,6 +657,11 @@ def main(argv=None) -> int:
             }
             print(f"{stream}: {json.dumps(rec['streams'][stream]['by_window'][str(PRIMARY_W)])}",
                   flush=True)
+            if a.by_group:
+                B = group_block(real, stream, a.boot, a.seed)
+                if B:
+                    rec.setdefault("by_group", {})[stream] = B
+                    print_group_block(stream, B)
         for stream, bench_name in BENCHES.items():
             jobs = [(bench_name, g, s) for g in ("baseline_quiet", "baseline_busy") for s in SIM_SEEDS]
             res = list(ex.map(_sim, jobs))
