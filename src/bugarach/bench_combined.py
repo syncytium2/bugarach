@@ -71,50 +71,65 @@ MEASURED_RECORD = "docs/learned/bench_measured_combined.json"
 PROVISIONAL = False
 """Cleared 2026-09-23: every constant below is measured on the combined stream of the default
 folder, by the route in the module docstring. Records:
-``docs/learned/runs/2026-09-23-jitter-correlogram-combined/`` (jitter),
+``docs/learned/runs/2026-09-23-jitter-correlogram-combined-senktide-ttx/`` (jitter),
 :data:`MEASURED_RECORD` (shapes, ROI count, participation, widths), and
-``docs/learned/runs/2026-09-23-coordination-rates-combined/`` (backgrounds and the probe)."""
+``docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/`` (backgrounds and the probe),
+all on the 66-recording default since the re-measure of 2026-09-23. The 84-recording records
+were ``...-jitter-correlogram-combined/`` and ``...-coordination-rates-combined/``."""
 
-MEASURED_RATE_SHAPE = 0.3266
-"""Gamma shape of the per-ROI combined background rate, ML fit over 81 baseline windows.
+MEASURED_RATE_SHAPE = 0.3579
+"""Gamma shape of the per-ROI combined background rate, ML fit over 64 baseline windows.
 
-Between its parents (fast 0.275, slow 0.4152), which is what pooling two streams of one cell
+Re-measured 2026-09-23 on the default folder's 66 recordings: 0.3579 [0.2858, 0.4812], from
+0.3266 over 81 windows of the 84-recording folder. Every measured constant in this module moved
+in that pass (``docs/learned/bench_measured_combined.json``).
+
+Between its parents (fast 0.291, slow 0.469), which is what pooling two streams of one cell
 should do: the union is less heterogeneous than either alone because a cell quiet in one stream
 can be busy in the other."""
 
-MEASURED_BURST_SHAPE = 2.0987
+MEASURED_BURST_SHAPE = 2.1216
 MEASURED_BURST_BINS = 300.0
-"""One scale, as on slow. The 60 s fit is 2.0660 and sits inside the 300 s interval
-[1.6215, 3.0440], so the combined stream gives no evidence of clumping at a minute that the
-300 s term does not already carry; simulating both would multiply one signal by itself."""
+"""One scale, as on slow. 2.1216 [1.6043, 2.9525] on the 66 recordings, from 2.0987. The 60 s
+fit is 2.0696 and sits inside the 300 s interval, so the combined stream gives no evidence of
+clumping at a minute that the 300 s term does not already carry; simulating both would multiply
+one signal by itself."""
 
 MEASURED_WIDTH_QUANTILES = (
     0.1, 0.1, 0.4, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
     0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.7, 0.7,
     0.7, 0.7, 0.7, 0.7, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
     0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 1.0, 1.0,
-    1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1, 1.2, 1.2,
-    1.2, 1.2, 1.2, 1.3, 1.3, 1.3, 1.4, 1.4, 1.4, 1.5,
-    1.5, 1.5, 1.6, 1.6, 1.6, 1.6, 1.7, 1.7, 1.7, 1.8,
-    1.8, 1.8, 1.8, 1.9, 1.9, 1.9, 2.0, 2.0, 2.0, 2.0,
-    2.1, 2.1, 2.1, 2.2, 2.2, 2.3, 2.3, 2.3, 2.4, 2.5,
-    2.5, 2.6, 2.7, 2.8, 2.9, 3.1, 3.3, 3.6, 4.1, 4.7,
-    5.1, 5.65, 12.06, 27.9,
+    1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1, 1.1, 1.2, 1.2,
+    1.2, 1.2, 1.3, 1.3, 1.3, 1.4, 1.4, 1.4, 1.4, 1.5,
+    1.5, 1.5, 1.6, 1.6, 1.6, 1.7, 1.7, 1.7, 1.8, 1.8,
+    1.8, 1.8, 1.9, 1.9, 1.9, 1.9, 2.0, 2.0, 2.0, 2.1,
+    2.1, 2.1, 2.1, 2.2, 2.2, 2.3, 2.3, 2.3, 2.4, 2.4,
+    2.5, 2.6, 2.7, 2.8, 2.9, 3.1, 3.3, 3.6, 4.0, 4.6,
+    5.1, 5.5, 10.49, 17.6,
 )
-"""Each event's own stream's width, over 70,543 events; median 1.2 s, interquartile 0.8–1.9 s.
+"""Each event's own stream's width, over 60,225 events in the default folder's 66 recordings;
+median 1.2 s, interquartile 0.8–1.9 s. Re-measured 2026-09-23: on the 84-recording folder
+(70,543 events) the body sat within 0.1 s of this and the tail was longer, 12.06 s at the
+99.99th percentile and 27.9 s at the maximum, against 10.49 s and 17.6 s here.
 
-⚠ **The one place combined is not between its parents.** Its maximum is 27.9 s against slow's
-5.5 s and its 99th percentile 4.7 s, so the top of this table is a thin tail rather than a
+⚠ **The one place combined is not between its parents.** Its maximum is 17.6 s against slow's
+5.5 s and its 99th percentile 4.6 s, so the top of this table is a thin tail rather than a
 typical width. The widths are inherited from each contributing stream rather than produced by
 combining, so the tail is a property of the fast/slow width columns that pooling exposes. It has
 not been chased; locust is the only detector that reads it."""
 
 REGIMES: dict[str, dict] = {
-    "baseline_quiet": dict(bg_rate_hz=0.0072),
-    "baseline_busy": dict(bg_rate_hz=0.0268),
+    "baseline_quiet": dict(bg_rate_hz=0.0071),
+    "baseline_busy": dict(bg_rate_hz=0.0292),
 }
 """Per-ROI **background** rates: the 25th and 75th percentiles of per-recording mean combined
 rate, minus the coordinated share.
+
+**Re-measured 2026-09-23 on the default folder's 66 recordings**, 64 of which clear the shape
+floors: quiet 0.0071 Hz (0.007080) and busy 0.0292 Hz (0.029164), from 0.0072 and 0.0268 Hz;
+`docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/`. The paragraph below
+describes the 84-recording measurement.
 
 Background and not raw, per Tony's ruling of 2026-09-22 (#748: *background, end to end*), on the
 ``shape_usable`` set with the fixed model at the 1 s window — the same basis as fast and slow.
@@ -129,9 +144,9 @@ NULL_RECORDING = dict(bg_rate_hz=REGIMES["baseline_quiet"]["bg_rate_hz"], n_per_
 BENCH_RECORDING = dict(
     _slow.BENCH_RECORDING,
     n_roi=32,
-    participation=(0.40, 0.24, 0.13),
-    jitter_sec=0.148,
-    hot_rate_hz=0.1464,
+    participation=(0.40, 0.25, 0.13),
+    jitter_sec=0.150,
+    hot_rate_hz=0.1529,
     distractor_frac=0.24,
     bg_rate_shape=MEASURED_RATE_SHAPE,
     bg_burst_shape=MEASURED_BURST_SHAPE,
@@ -139,6 +154,14 @@ BENCH_RECORDING = dict(
 )
 """The recording the combined bench scores on. Measured 2026-09-23; hot window, spacing and
 length remain the fast bench's, as on slow.
+
+**Re-measured the same day on the default folder's 66 recordings:** ``n_roi`` 32 ROIs
+(27–34.5), unchanged; the middle ``participation`` 0.25 (0.209–0.367), from 0.24;
+``jitter_sec`` 0.150 s (0.136–0.164 s), from 0.148 s
+(`docs/learned/runs/2026-09-23-jitter-correlogram-combined-senktide-ttx/`); ``hot_rate_hz``
+0.1529 Hz, from 0.1464 Hz (`docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/`).
+The outer participation levels and ``distractor_frac`` are chosen and did not move. The list
+below gives the 84-recording values.
 
 - ``n_roi`` **32**, the median over the folder (31.5, interval 27.0–33.5) — the same cells, so
   the same count as slow.
@@ -387,6 +410,28 @@ def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SE
         scores.append(score_stream(gt, det, tol_sec=tol_sec))
     return pool_scores(scores, detector=name, regime=regime, seeds=seeds,
                        knob_value=overrides.get(OPERATING_POINTS[name].knob))
+
+
+BACKGROUND_GRID = (0.0028, 0.0045, 0.0071, 0.0114, 0.0182, 0.0292, 0.0440, 0.0660)
+"""Per-ROI combined background rates to report a score across, built as ``bench.BACKGROUND_GRID``.
+
+Quiet (0.0071 Hz) and busy (0.0292 Hz) are on it, two interior points step about 1.6x
+between them, two points above busy step 1.5x, and below quiet it reaches **0.0028 Hz**.
+Added 2026-09-23, when the group run on the 66 recordings showed the two regimes are the
+spread *between* groups: ORX's combined background runs 0.0029–0.0116 Hz and DI's
+0.0237–0.0380 Hz (interquartile; `docs/learned/runs/2026-09-23-groups-rates-comod-66/`).
+The grid covers every group's interquartile range, which ``tests/test_background_curve.py``
+checks against that record. A reporting axis only: operating points are still tuned at quiet
+and busy."""
+
+
+def evaluate_background_curve(name: str, regime: str, seeds=(1, 2, 3), *,
+                              rates=BACKGROUND_GRID, tol_sec: float = TOL_SEC,
+                              gen: dict | None = None, **overrides) -> dict[float, BenchResult]:
+    """One :class:`BenchResult` per combined background rate; see ``bench.evaluate_background_curve``."""
+    return _fast.background_curve(make_recording, run_detector, OPERATING_POINTS, name,
+                                  regime, seeds, rates=rates, tol_sec=tol_sec, gen=gen,
+                                  **overrides)
 
 
 def sweep(name: str, regime: str, seeds=(1, 2, 3), values=None, *,

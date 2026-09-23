@@ -52,7 +52,31 @@
 # `tools/check_scored_dataset.py` flags, at session start, every result scored on a folder
 # other than the default.
 
-default = "steps_and_pins_excluded"
+default = "senktide_ttx"
+
+[senktide_ttx]
+use = "input"
+# The producer's 2026-09-23 export. THE DEFAULT (see `default` above) since 2026-09-23.
+name = "2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED"
+recordings = 66
+note = """
+The folder Tony shared on 2026-09-23 as the input, and the work continues on the recordings
+in it. Which recordings belong in it is the producer's call, already applied (Tony,
+2026-09-23: "i don't want bugarach making decisions about what to include. it is the users
+responsibility to share the appropriate data"). So nothing here adds to, removes from or
+second-guesses the set. The folder's own `README.md` and `PROVENANCE.md` describe it.
+As shipped: 66 recordings, 2,109 ROIs, 228,804 events, 194 regions, 45 (roi, stream)
+pairs with no events. Field-step artifacts and moco floor-pinned windows are both removed,
+by the same rules as the 2026-09-17 folder (`field_steps_excluded.tsv`, 318 events;
+`moco_pinned_excluded.tsv`, 83 events). Carries `analysis_start_sec` / `analysis_end_sec`
+under `long_window_20`, and `width_def` per event: fast is the half-prominence width, slow
+is the rise interval.
+Checked on arrival, 2026-09-23: `bugarach check` at cfad840d reports all 66 CONFORMING.
+All 66 recording files are byte-identical (sha256) to the same recordings in
+`steps_and_pins_excluded`, and `slices.csv`, `regions.csv` and both manifests are
+row-identical on those 66 recordings. A result that differs between the two folders
+therefore differs because of the recording set, not the event derivation.
+"""
 
 [periods_2026_08_18]
 # The default until 2026-09-21. Kept so the runs and parity fixtures made on it reproduce.
@@ -67,10 +91,11 @@ field steps and the moco floor-pinned windows are both still in it.
 """
 
 [steps_and_pins_excluded]
-use = "input"
+# The default from 2026-09-21 until 2026-09-23. Kept so the runs made on it reproduce.
+use = "archive"
 # The producer's 2026-09-17 export: field-step artifacts AND moco floor-pinned windows removed.
-# THE DEFAULT (see `default` above). `steps_excluded` below is kept so runs made before it
-# reproduce, and it still stops an analysis by itself — see its note.
+# `steps_excluded` below is kept so runs made before it reproduce, and it still stops an
+# analysis by itself — see its note.
 name = "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED"
 recordings = 84
 note = """

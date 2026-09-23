@@ -123,7 +123,7 @@ def test_this_labs_constant_is_labelled_as_this_labs(fitter):
     src = (TOOLS.parent / "src" / "bugarach" / "bench.py").read_text(encoding="utf-8")
     i = src.index("MEASURED_RATE_SHAPE = ")
     block = src[i:i + 1400]
-    assert "81 baseline windows" in block, (
+    assert "63 baseline windows" in block, (
         "the constant must carry the folder it was fitted on, or the next "
         "reader takes it for a property of calcium imaging")
-    assert fitter._this_labs_reference() == pytest.approx(0.275)
+    assert fitter._this_labs_reference() == pytest.approx(0.291)

@@ -1088,11 +1088,11 @@
           <option value="mean" selected>mean</option>
           <option value="median">median (typical ROI)</option>
         </select>
-        <div class="span note">Baseline slices in this lab run 4.2–16.5 mHz per
+        <div class="span note">Baseline slices in this lab run 4.9–16.9 mHz per
         ROI, interquartile — and those are <b>means</b>, with each cell's
-        coordinated share taken out. On an uneven background the typical ROI fires
-        at about a fifth of the field's mean, so the two readings of this box are a
-        factor of five apart and it has to say which it is.</div>
+        coordinated share taken out. On an uneven background the typical ROI's event
+        rate is under a quarter of the field's mean, so the two readings of this box are
+        a factor of four apart and it has to say which it is.</div>
         <label for="sBg">background</label>
         <select id="sBg">
           <option value="fitted" selected>uneven, bursty</option>
@@ -7267,7 +7267,7 @@ function simulateFromMeasurement(rec, a, source, stream) {
    * It is not evidence of anything. Nothing drawn from it is a finding, and the
      page says so on the picture, not only beside the controls.               */
 
-const RATE_SHAPE = 0.275;                  // bench.MEASURED_RATE_SHAPE
+const RATE_SHAPE = 0.291;                  // bench.MEASURED_RATE_SHAPE
 
 /* THE RATE KNOB IS A MEAN, AND A MEASUREMENT MAY BE A MEDIAN.
 
@@ -7280,9 +7280,10 @@ const RATE_SHAPE = 0.275;                  // bench.MEASURED_RATE_SHAPE
 
        median = (rate / k) * median(Gamma(k, 1))   =>   median / mean = m(k) / k
 
-   For k = 0.275 that is 0.209838 — the typical ROI fires at about a FIFTH of the
-   field's mean rate, which is what a field with a few busy cells and a third
-   silent looks like. Checked against scipy in
+   For k = 0.291 that is 0.231721 — the typical ROI's event rate is under a
+   QUARTER of the field's mean rate, which is what a field with a few busy cells and a third
+   silent looks like (k was 0.275 and the ratio 0.209838, about a fifth, on the
+   84-recording folder). Checked against scipy in
    `tests/test_rate_statistic.py`, which recomputes it from `RATE_SHAPE` so the
    two cannot drift.
 
@@ -7290,7 +7291,7 @@ const RATE_SHAPE = 0.275;                  // bench.MEASURED_RATE_SHAPE
    conversion happens — which is why this went unnoticed while the generator was
    flat, and why `adapt.py` can still hand a median to Python today without
    visible harm. */
-const RATE_MEDIAN_OVER_MEAN = 0.209838;
+const RATE_MEDIAN_OVER_MEAN = 0.231721;
 
 /* A rate, and which statistic of the field it is, converted to the mean the
    generator wants. `stat` is "mean" or "median"; anything else is a caller that
