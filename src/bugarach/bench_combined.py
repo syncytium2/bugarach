@@ -182,9 +182,9 @@ OPERATING_POINTS["rate"] = _pick(
 OPERATING_POINTS["cicada"] = _pick(
     "cicada", n_synchronous_frames=5, sce_min_distance_frames=128, threshold_scope="global")
 
-#: SPIKE-synch's search pick, recorded and NOT installed. See the note below.
-SYNC_SEARCH_PICK = {"C_threshold": 0.08, "C_min": 0.0025, "tau_max": 0.25, "max_gap": 8.0,
-                    "min_n": 0.25, "tau_mode": "isi_adaptive", "dt": 0.00625}
+OPERATING_POINTS["sync"] = _pick(
+    "sync", C_threshold=0.08, C_min=0.02, tau_max=0.25, max_gap=8.0, min_n=2,
+    tau_mode="isi_adaptive", dt=0.05, detection_mode="threshold")
 
 """**Nothing here is adopted.** Tony asked for a third parameter set and has not reviewed one;
 these are search picks carrying that in their ``source``. A combined setting reaches a real
@@ -196,32 +196,51 @@ on (``2026-09-23-full-search-combined-coact`` and ``-rest``):
 ==============  ========  ======  ====================
 detector        shipped   pick    gain [95%]
 ==============  ========  ======  ====================
+SPIKE-synch     0.666     0.797   **+0.131** [+0.119, +0.141]
 LoCo            0.732     0.807   **+0.074** [+0.067, +0.083]
-SPIKE-synch     0.666     0.797   **+0.131** [+0.120, +0.142] — **not installed**
 CoactDetect     0.718     0.781   **+0.063** [+0.054, +0.073]
-rate+context    0.673     0.690   +0.017 [+0.012, +0.022]
 locust          0.602     0.653   +0.051 [+0.040, +0.061]
+rate+context    0.673     0.690   +0.017 [+0.012, +0.022]
 binned SCE      0.571     —       nothing beat the start
 ==============  ========  ======  ====================
 
-⚠ **SPIKE-synch has the largest gain of the six and is the one setting left at fast**, because
-two of its picked values are not usable as they stand:
+**SPIKE-synch's is installed as of 2026-09-23, and the route to it is worth reading**, because
+the first search returned it in a form that could not be used and the second showed why that did
+not matter.
 
-- ``min_n`` **0.25**. It is an integer floor, and the search's ``extend`` does not know that — it
-  reaches sub-integer values by halving. This is the defect already filed from the slow search,
-  which hit it on ``sce.min_rois``, ``loco.min_rois`` and this same ``sync.min_n``
-  (``docs/handoffs/2026-09-21-slow-bench.md``, item 4). No value below 1 was ever chosen by a
-  person, and a floor of a quarter of an event is not a floor.
-- ``dt`` **0.00625 s**. This one is legitimate to search — ``dt`` here is a detection resolution,
-  not the acquisition interval, and ``sync.py`` says so in terms. But that module also records
-  that ``C_threshold``, ``C_min``, ``max_gap`` and ``min_n`` were **all measured against a
-  particular bin width**, so moving ``dt`` by a factor of 16 moves the ground the other four
-  stand on. The pick changes ``dt`` *and* three of those four at once.
+The first pick (#754) had ``min_n`` **0.25** — an integer floor the search reached by halving,
+the defect filed from the slow search and fixed in #755 — and ``C_min`` **0.0025** and ``dt``
+**0.00625**, each at exactly **one eighth of its declared grid floor**, which is
+``MAX_EXTENSIONS`` exhausted. None of the three was bracketed. It was withheld.
 
-So the largest gain on this bench is also the least interpretable one, and installing it would put
-a quarter-event floor into a settings file that runs on real recordings. The pick is kept above as
-:data:`SYNC_SEARCH_PICK` so the number is not lost, and the shipped fast setting stays in force
-until the integer-floor defect is fixed and the search rerun.
+The rerun on the fixed search returned ``min_n`` **2**, a clean count, **with the gain unchanged**
+— so the sub-integer floor had never been load-bearing. ``C_min`` and ``dt`` still ran to their
+extension caps, and ``C_min`` came back at 0.0025 again: **the same value the slow search
+produced**, which that thread diagnosed as a *plateau* rather than a climb, every value from 0 to
+0.03 giving identical calls because the profile steps by about 1/31.
+
+That diagnosis was then tested here rather than assumed, on the search's own held-out seeds:
+
+===================================  ========  ==========
+variant                              mean F1   vs shipped
+===================================  ========  ==========
+shipped                              0.666     —
+pick as searched                     0.797     +0.131
+pick, ``dt`` → 0.05 (grid floor)     0.797     +0.131
+pick, ``C_min`` → 0.02 (grid floor)  0.797     +0.131
+**pick, both → grid floors**         **0.797** **+0.131**
+pick, both → shipped values          0.720     +0.054
+shipped + ``max_gap`` 8 only         0.671     +0.005
+===================================  ========  ==========
+
+**Pinning both extended values back to their declared grid floors costs nothing at all.** The
+extensions were cosmetic — the search walked a plateau and the edge rule could not tell. So the
+installed point uses ``C_min`` 0.02 and ``dt`` 0.05, **every value on its own grid**, and keeps
+the whole +0.131.
+
+The gain is also **not** ``max_gap`` alone: 8 s on the shipped point is worth +0.005. It comes
+from the combination, and mostly from ``dt`` and ``C_min`` sitting at their grid floors rather
+than at the fast values (+0.077 of it).
 
 ⚠ **locust's ``sce_min_distance_frames`` 128** (12.8 s) is the same climb the fast and slow
 searches both saw, which the slow handoff tied to the unsettled anchor question — *"not a setting

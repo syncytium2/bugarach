@@ -39,8 +39,12 @@ rate,combined,merge_gap_s,8.0
 rate,combined,rate_win,1.0
 rate,combined,threshold_alpha,2.0
 rate,combined,threshold_mode,additive
-sync,combined,C_min,0.1
-sync,combined,C_threshold,0.1
+sync,combined,C_min,0.02
+sync,combined,C_threshold,0.08
+sync,combined,detection_mode,threshold
+sync,combined,dt,0.05
 sync,combined,fitted_on,bugarach.bench_combined.OPERATING_POINTS
-sync,combined,max_gap,0.5
+sync,combined,max_gap,8.0
+sync,combined,min_n,2
 sync,combined,tau_max,0.25
+sync,combined,tau_mode,isi_adaptive
