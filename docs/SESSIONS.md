@@ -18,9 +18,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   `bugarach/2026-09-23-full-search-slow/`, via `tools/search_all_settings.py --bench fast|slow
   --archive-as`. New folders, so nothing existing is overwritten. Measure-only: `OPERATING_POINTS`
   is not edited, and adopting any proposed setting stays Tony's.
-- **Blocked:** step 5 follows the re-measure in step 3, which needs `dataset.default()` confirmed by
-  Tony in a session on this machine. If that confirmation does not come tonight, this claim is
-  released unwritten rather than held.
+- **Also writes, and this one IS being written:** a NEW folder
+  `bugarach/2026-09-22-jitter-background-curve/`, from `tools/make_background_curve_figure.py`
+  on the re-measured bench. Claimed before the write. It is the evidence for the finding below.
+- **The searches are HELD, not blocked on the confirmation any more.** Tony confirmed the folder
+  and both re-measures ran. What holds step 5 is a **finding**: on the corrected jitter,
+  SPIKE-synch goes flat across the background axis (F1 0.657, spread 0.026 against a 0.05
+  tolerance), so `tests/test_background_curve.py` fails and the MILESTONES row *"nothing is flat
+  across it"* is no longer true of this bench. Searching operating points on a bench whose
+  difficulty axis has stopped discriminating for one detector would spend hours producing numbers
+  that need redoing. Tony's call — not patched, not worked around.
 - **Touches:** this block.
 ### 064/allowance-strict-rows — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-21-crowded-allowance-sweep/` (RE-CLAIM)
 - **Status:** **RELEASED 2026-09-22**, on [#741](https://github.com/syncytium2/bugarach/pull/741)
