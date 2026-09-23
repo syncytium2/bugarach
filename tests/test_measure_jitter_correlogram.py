@@ -105,6 +105,21 @@ def test_the_permutation_test_does_not_invent_one():
     assert p > 0.05, (obs, p, np.percentile(null, 95))
 
 
+def test_leave_one_out_names_the_recording_that_moves_the_group_most():
+    """One wide recording among tight ones, given enough pairs to carry the pooled width."""
+    r = records({"A": {f"a{i}": [0.15] for i in range(5)}}, seed0=300)
+    trains = trains_with_jitter(1.2, n_roi=20, n_events=900, bg_per_roi=120, seed=999)
+    trains = [t[t < SHORT] for t in trains]
+    o, e = mjc.pairs(trains, SHORT)
+    r.append(({"slice_id": "the_wide_one", "group": "A", "mouse": "a9", "rois": len(trains),
+               "onsets": int(sum(t.size for t in trains)), "window_sec": SHORT * mjc.DT}, o, e))
+    recs = mjc.by_group(r)["A"]
+    base = mjc.hwhm(*mjc.pooled(recs))
+    loo = mjc.leave_one_out(recs, mjc.hwhm, base)
+    assert loo["slice_id"] == "the_wide_one", loo
+    assert loo["without_sec"] < base, (loo, base)
+
+
 def test_the_bootstrap_resamples_mice_and_brackets_the_width():
     r = records({"A": {f"a{i}": [0.4, 0.4] for i in range(6)}})
     recs = mjc.by_group(r)["A"]

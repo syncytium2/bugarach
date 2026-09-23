@@ -219,6 +219,25 @@ def group_boot(records, stat, n_boot, rs):
     return np.array(out, float)
 
 
+def leave_one_out(records, stat, base):
+    """Which single recording moves this group's width most, and to what.
+
+    The group's number is read off POOLED pair counts, so a recording weighs by the pairs it
+    brings, and one dense or unusually coincident recording can carry a whole group. That is not a
+    defect to filter — the export folder is the input — but it is the first thing to ask of a
+    group difference, and on the slow stream it is the answer: dropping one ORX recording moves
+    that group 0.183 s -> 0.229 s and takes the between-group difference with it.
+    """
+    out = []
+    for j, r in enumerate(records):
+        w = stat(*pooled([x for k, x in enumerate(records) if k != j]))
+        out.append((abs(w - base) if np.isfinite(w) else -1.0, w, r[0]["slice_id"]))
+    if not out:
+        return None
+    _, w, sid = max(out, key=lambda t: t[0])
+    return {"slice_id": sid, "without_sec": float(w), "delta_sec": float(w - base)}
+
+
 def spread(widths):
     """Widest group minus narrowest, over the groups whose width is finite."""
     w = np.array([x for x in widths if np.isfinite(x)], float)
@@ -293,6 +312,7 @@ def _group_block(real, converters, a, stream):
                                     if np.isfinite(jb).any() else None),
                 "boot_outside_calibration": int(np.isnan(jb).sum()),
                 "boot_unmeasurable": int(np.isnan(wb).sum()),
+                "leave_one_out": leave_one_out(recs, stat, w),
                 "per_recording_sec": [None if not np.isfinite(x) else float(x) for x in per],
                 "mean_of_recordings_sec": float(np.nanmean(per)),
                 "median_of_recordings_sec": float(np.nanmedian(per)),
@@ -303,6 +323,23 @@ def _group_block(real, converters, a, stream):
         null, dropped = label_permutation(real, stat, a.perm, np.random.RandomState(1_20260922))
         p = (float((null >= obs_spread).sum() + 1) / (null.size + 1)
              if null.size and np.isfinite(obs_spread) else None)
+        # The same test with the single most influential recording gone. A between-group
+        # difference that does not survive this is a difference about one recording.
+        movers = [(abs(rows[g][name]["leave_one_out"]["delta_sec"]),
+                   rows[g][name]["leave_one_out"]["slice_id"], g)
+                  for g in names if rows[g][name]["leave_one_out"]]
+        without = None
+        if movers:
+            _, sid, whose = max(movers)
+            kept = [r for r in real if r[0]["slice_id"] != sid]
+            kg = by_group(kept)
+            w2 = [stat(*pooled(kg[g])) if g in kg else float("nan") for g in names]
+            sp2 = spread(w2)
+            n2, _ = label_permutation(kept, stat, a.perm, np.random.RandomState(2_20260922))
+            without = {"slice_id": sid, "group": whose, "widths_sec": w2, "spread_sec": sp2,
+                       "p_any_difference": (float((n2 >= sp2).sum() + 1) / (n2.size + 1)
+                                            if n2.size and np.isfinite(sp2) else None),
+                       "null_median_sec": float(np.median(n2)) if n2.size else None}
         pairwise = {}
         for i, g in enumerate(names):
             for h in names[i + 1:]:
@@ -318,6 +355,7 @@ def _group_block(real, converters, a, stream):
                                            "null_95th_sec": (float(np.percentile(null, 95))
                                                              if null.size else None),
                                            "p_any_difference": p},
+                           "without_most_influential": without,
                            "pairwise": pairwise}
         print(f"  [{stream}] {name} by group_id "
               f"(mouse-clustered {a.boot} draws, {a.perm} label permutations):", flush=True)
@@ -333,6 +371,16 @@ def _group_block(real, converters, a, stream):
         nul = contrasts[name]["permutation"]
         print(f"    spread {obs_spread:.3f} s; null median {nul['null_median_sec']:.3f} s, "
               f"95th {nul['null_95th_sec']:.3f} s; p(any difference) = {p:.4f}", flush=True)
+        for g in names:
+            loo = rows[g][name]["leave_one_out"]
+            print(f"      {g:5s} without {loo['slice_id']}: {loo['without_sec']:.3f} s "
+                  f"({loo['delta_sec']:+.3f} s)", flush=True)
+        if without:
+            print(f"    dropping {without['slice_id']} ({without['group']}'s biggest mover): "
+                  + "  ".join(f"{g} {x:.3f}s" for g, x in zip(names, without["widths_sec"]))
+                  + f" | spread {without['spread_sec']:.3f} s, null median "
+                    f"{without['null_median_sec']:.3f} s, p = {without['p_any_difference']:.4f}",
+                  flush=True)
     if ungrouped:
         contrasts["ungrouped_recordings"] = [r[0]["slice_id"] for r in ungrouped]
         print(f"  [{stream}] {len(ungrouped)} recordings name no group_id and are in the pooled "
