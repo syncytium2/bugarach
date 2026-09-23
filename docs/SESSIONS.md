@@ -16,6 +16,13 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   "Combined" section of `HANDOFF-overnight-2026-09-22.md` (#753); code #752.
 - **Writes:** one NEW folder — `models/` (chorus_gain_norm checkpoints and `best.json`),
   `combined_settings.csv`, `detect/`, `rasters/`. New folder, so nothing existing is overwritten.
+- ⚠ **Two more NEW folders, and the first was written before it was claimed** —
+  `bugarach/2026-09-22-full-search-combined/` (the CoactDetect search) and
+  `bugarach/2026-09-23-full-search-combined-rest/` (the other five). The first was not in this
+  block when it was written: `tools/search_all_settings.py` defaults `--out` to the darkroom and
+  names its own dated folder, so running it without `--out` wrote outside the claim. Recorded here
+  the moment it was noticed rather than left for whoever next lists the darkroom; the second run
+  was given an explicit `--out` inside the claim. Both are new folders, so nothing was overwritten.
 - **Reads:** the default export, confirmed by Tony this session. **CPU, not the GPU**: this
   machine's `.venv` carries torch 2.14.0+**cpu**, so chorus trains on CPU at roughly 15 fits/hour
   (`docs/windows_workstation_setup.md`) — about 20 minutes for 5 seeds, which is why no CUDA

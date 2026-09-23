@@ -159,10 +159,38 @@ TAIL_RECORDING = dict(CROWDED_RECORDING, n_per_level=(60, 60, 60),
                       min_sep_sec=6.0, interval_cv=1.0)
 CROWDING_GAP_SEC = _slow.CROWDING_GAP_SEC
 
+_SEARCH_2026_09_23 = ("search pick, docs/learned/runs/2026-09-23-full-search-combined-coact; "
+                      "Tony asked for the third set 2026-09-22; AWAITING HIS REVIEW")
+
 OPERATING_POINTS: dict[str, OperatingPoint] = dict(_fast.OPERATING_POINTS)
-"""Where the combined search starts: the fast settings, as the slow search did. **None of these
-ships**; a combined setting reaches a real recording only through a settings file with
-``stream=combined`` rows, as slow's do."""
+OPERATING_POINTS["coact"] = OperatingPoint(
+    **{**vars(_fast.OPERATING_POINTS["coact"]),
+       "params": {**_fast.OPERATING_POINTS["coact"].params,
+                  "alpha": 1e-05, "context_win_sec": 120.0, "min_rois": 4,
+                  "merge_gap_sec": 8.0, "guard_sec": 8.0, "window_mode": "sliding"},
+       "source": _SEARCH_2026_09_23})
+"""Five of the six are still **the fast settings, unsearched** — where the combined search starts,
+as slow's did. Only ``coact`` has been searched, and **nothing here is adopted**: Tony asked for a
+third parameter set and has not reviewed one. A combined setting reaches a real recording only
+through a settings file with ``stream=combined`` rows, as slow's do.
+
+``coact``, 2026-09-23: alpha 1e-4 → **1e-5**, context 60 → **120 s**, ``min_rois`` 3 → **4**,
+merge gap 3 → **8 s**, guard 0 → **8 s**. Held-out mean F1 **0.718 → 0.781**, gain **+0.063
+[+0.054, +0.073]** on recordings nothing was chosen on, and null calls fall 12.9 → 3.5 per hour.
+
+**Three things to weigh before adopting it, none of which the gain shows.**
+
+1. ⚠ ``min_rois`` **4 sits just under the smallest planted level**. Combined participation is
+   (0.40, 0.24, 0.13) of 32 ROIs — about 13, 8 and 4 participants — so a floor of 4 is at the
+   bottom rung. That is the warning ``min_rois`` always carries: it can learn the simulation's
+   planted participation rather than the tissue.
+2. ``context_win_sec`` **120 s is the null rule's cap**, not an interior optimum. It went to the
+   edge and stopped because the rule stops it, exactly as LoCo's did on slow.
+3. It is **0.018 worse on the crowded recordings** (0.861 against the shipped 0.880), inside the
+   0.02 allowance but on the wrong side of it.
+
+The starting point itself **broke a budget** on this bench, which is why the first round moved
+alpha: the fast settings are not a neutral default on combined."""
 DETECTORS = tuple(OPERATING_POINTS)
 
 FULL_GRIDS: dict[str, dict[str, tuple]] = {d: dict(g) for d, g in _slow.FULL_GRIDS.items()}
