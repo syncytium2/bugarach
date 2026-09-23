@@ -52,13 +52,21 @@ sharpens exactly the feature it reads, so it now resolves events at every backgr
 instead of degrading as the field fills up. That is the bench getting easier for one detector
 in particular, not that detector getting better.
 
-## Why it stops the searches
+## What it means for the searches — and a cost claim that was wrong
 
 Step 5 searches every knob of all six detectors on this bench and proposes operating points.
-For SPIKE-synch the axis has stopped discriminating, so a setting chosen on it would be chosen
-against a flat objective — and the slow thread already adopted SPIKE-synch at `max_gap` 4 s on
-evidence from the **old** jitter. Spending the hours before that is settled produces numbers
-that need redoing.
+For SPIKE-synch the axis has stopped discriminating, so **any setting it proposes is chosen
+against a flat objective** and should not be read as a recommendation. The slow thread has the
+same problem from the other end: it adopted SPIKE-synch at `max_gap` 4 s on evidence from the
+**old** jitter.
+
+This file first said the searches should wait because running them would "spend hours producing
+numbers that need redoing". **The hours were wrong** — the searches are about 11 minutes per
+bench, measure-only, and they change no operating point. At that price the right move is to run
+them and read SPIKE-synch's row as evidence *about the flatness* rather than as a proposal: a
+search that cannot find a gradient is itself a measurement of the axis. The five other detectors'
+proposals stand on their own. Adopting any of them remains Tony's, as it was for the slow
+reference.
 
 ## What is actually being asked
 

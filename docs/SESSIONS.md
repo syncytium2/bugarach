@@ -21,13 +21,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Also writes, and this one IS being written:** a NEW folder
   `bugarach/2026-09-22-jitter-background-curve/`, from `tools/make_background_curve_figure.py`
   on the re-measured bench. Claimed before the write. It is the evidence for the finding below.
-- **The searches are HELD, not blocked on the confirmation any more.** Tony confirmed the folder
-  and both re-measures ran. What holds step 5 is a **finding**: on the corrected jitter,
-  SPIKE-synch goes flat across the background axis (F1 0.657, spread 0.026 against a 0.05
-  tolerance), so `tests/test_background_curve.py` fails and the MILESTONES row *"nothing is flat
-  across it"* is no longer true of this bench. Searching operating points on a bench whose
-  difficulty axis has stopped discriminating for one detector would spend hours producing numbers
-  that need redoing. Tony's call — not patched, not worked around.
+- **The searches ARE running**, into `bugarach/2026-09-23-full-search-fast/` and `-slow/`
+  (claimed above). They were held earlier on a cost claim of this session's that was wrong: it
+  said "hours", and they are **about 11 minutes per bench**, measure-only, changing no operating
+  point. At that price SPIKE-synch's row is worth having as evidence rather than skipping.
+- **The finding step 5 must be read against:** on the corrected jitter SPIKE-synch goes flat
+  across the background axis (F1 0.657, spread 0.026 against a 0.05 tolerance), so any setting
+  the search proposes for it is chosen against a flat objective and is **not** a recommendation.
+  The other five still spread 0.081–0.178 and their proposals stand. The MILESTONES row that said
+  *"nothing is flat across it"* now says five of six, status `open`.
+  `docs/todo/2026-09-22-the-corrected-jitter-flattens-spike-synch-across-the-axis.md`.
 - **Touches:** this block.
 ### 064/coordination-rates — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-23-coordination-rates/` (NEW)
 - **Status:** **RELEASED 2026-09-22**, on [#743](https://github.com/syncytium2/bugarach/pull/743)
