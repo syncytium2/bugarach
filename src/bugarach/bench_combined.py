@@ -162,35 +162,88 @@ CROWDING_GAP_SEC = _slow.CROWDING_GAP_SEC
 _SEARCH_2026_09_23 = ("search pick, docs/learned/runs/2026-09-23-full-search-combined-coact; "
                       "Tony asked for the third set 2026-09-22; AWAITING HIS REVIEW")
 
+def _pick(name: str, **params) -> OperatingPoint:
+    base = _fast.OPERATING_POINTS[name]
+    return OperatingPoint(**{**vars(base), "params": {**base.params, **params},
+                             "source": _SEARCH_2026_09_23})
+
+
 OPERATING_POINTS: dict[str, OperatingPoint] = dict(_fast.OPERATING_POINTS)
-OPERATING_POINTS["coact"] = OperatingPoint(
-    **{**vars(_fast.OPERATING_POINTS["coact"]),
-       "params": {**_fast.OPERATING_POINTS["coact"].params,
-                  "alpha": 1e-05, "context_win_sec": 120.0, "min_rois": 4,
-                  "merge_gap_sec": 8.0, "guard_sec": 8.0, "window_mode": "sliding"},
-       "source": _SEARCH_2026_09_23})
-"""Five of the six are still **the fast settings, unsearched** — where the combined search starts,
-as slow's did. Only ``coact`` has been searched, and **nothing here is adopted**: Tony asked for a
-third parameter set and has not reviewed one. A combined setting reaches a real recording only
-through a settings file with ``stream=combined`` rows, as slow's do.
+OPERATING_POINTS["coact"] = _pick(
+    "coact", alpha=1e-05, context_win_sec=120.0, min_rois=4, merge_gap_sec=8.0,
+    guard_sec=8.0, window_mode="sliding")
+OPERATING_POINTS["loco"] = _pick(
+    "loco", threshold_pctile=99.9, bin_width_sec=0.5, context_win_sec=120.0,
+    merge_gap_sec=8.0, min_rois=3, null_context_mode="maxlt", window_mode="sliding")
+OPERATING_POINTS["rate"] = _pick(
+    "rate", merge_gap_s=8.0, guard_sec=4.0, threshold_mode="additive", threshold_alpha=2.0)
+OPERATING_POINTS["cicada"] = _pick(
+    "cicada", n_synchronous_frames=5, sce_min_distance_frames=128, threshold_scope="global")
 
-``coact``, 2026-09-23: alpha 1e-4 → **1e-5**, context 60 → **120 s**, ``min_rois`` 3 → **4**,
-merge gap 3 → **8 s**, guard 0 → **8 s**. Held-out mean F1 **0.718 → 0.781**, gain **+0.063
-[+0.054, +0.073]** on recordings nothing was chosen on, and null calls fall 12.9 → 3.5 per hour.
+#: SPIKE-synch's search pick, recorded and NOT installed. See the note below.
+SYNC_SEARCH_PICK = {"C_threshold": 0.08, "C_min": 0.0025, "tau_max": 0.25, "max_gap": 8.0,
+                    "min_n": 0.25, "tau_mode": "isi_adaptive", "dt": 0.00625}
 
-**Three things to weigh before adopting it, none of which the gain shows.**
+"""**Nothing here is adopted.** Tony asked for a third parameter set and has not reviewed one;
+these are search picks carrying that in their ``source``. A combined setting reaches a real
+recording only through a settings file with ``stream=combined`` rows, as slow's do.
 
-1. ⚠ ``min_rois`` **4 sits just under the smallest planted level**. Combined participation is
-   (0.40, 0.24, 0.13) of 32 ROIs — about 13, 8 and 4 participants — so a floor of 4 is at the
-   bottom rung. That is the warning ``min_rois`` always carries: it can learn the simulation's
-   planted participation rather than the tissue.
-2. ``context_win_sec`` **120 s is the null rule's cap**, not an interior optimum. It went to the
-   edge and stopped because the rule stops it, exactly as LoCo's did on slow.
-3. It is **0.018 worse on the crowded recordings** (0.861 against the shipped 0.880), inside the
-   0.02 allowance but on the wrong side of it.
+Held-out mean F1 against the fast settings each search started from, on seeds nothing was chosen
+on (``2026-09-23-full-search-combined-coact`` and ``-rest``):
 
-The starting point itself **broke a budget** on this bench, which is why the first round moved
-alpha: the fast settings are not a neutral default on combined."""
+==============  ========  ======  ====================
+detector        shipped   pick    gain [95%]
+==============  ========  ======  ====================
+LoCo            0.732     0.807   **+0.074** [+0.067, +0.083]
+SPIKE-synch     0.666     0.797   **+0.131** [+0.120, +0.142] — **not installed**
+CoactDetect     0.718     0.781   **+0.063** [+0.054, +0.073]
+rate+context    0.673     0.690   +0.017 [+0.012, +0.022]
+locust          0.602     0.653   +0.051 [+0.040, +0.061]
+binned SCE      0.571     —       nothing beat the start
+==============  ========  ======  ====================
+
+⚠ **SPIKE-synch has the largest gain of the six and is the one setting left at fast**, because
+two of its picked values are not usable as they stand:
+
+- ``min_n`` **0.25**. It is an integer floor, and the search's ``extend`` does not know that — it
+  reaches sub-integer values by halving. This is the defect already filed from the slow search,
+  which hit it on ``sce.min_rois``, ``loco.min_rois`` and this same ``sync.min_n``
+  (``docs/handoffs/2026-09-21-slow-bench.md``, item 4). No value below 1 was ever chosen by a
+  person, and a floor of a quarter of an event is not a floor.
+- ``dt`` **0.00625 s**. This one is legitimate to search — ``dt`` here is a detection resolution,
+  not the acquisition interval, and ``sync.py`` says so in terms. But that module also records
+  that ``C_threshold``, ``C_min``, ``max_gap`` and ``min_n`` were **all measured against a
+  particular bin width**, so moving ``dt`` by a factor of 16 moves the ground the other four
+  stand on. The pick changes ``dt`` *and* three of those four at once.
+
+So the largest gain on this bench is also the least interpretable one, and installing it would put
+a quarter-event floor into a settings file that runs on real recordings. The pick is kept above as
+:data:`SYNC_SEARCH_PICK` so the number is not lost, and the shipped fast setting stays in force
+until the integer-floor defect is fixed and the search rerun.
+
+⚠ **locust's ``sce_min_distance_frames`` 128** (12.8 s) is the same climb the fast and slow
+searches both saw, which the slow handoff tied to the unsettled anchor question — *"not a setting
+to ship until the anchor is settled."* It is installed here because nothing on this bench ships,
+but it carries that flag with it.
+
+**Three more things the table does not show.**
+
+1. ⚠ **``min_rois`` 4 for CoactDetect sits just under the smallest planted level.** Combined
+   participation is (0.40, 0.24, 0.13) of 32 ROIs — about 13, 8 and 4 participants — so a floor
+   of 4 is on the bottom rung. That is the warning ``min_rois`` always carries: it can learn the
+   simulation's planted participation rather than anything about tissue, and the gain looks the
+   same either way.
+2. **Two context windows went to the null rule's cap and stopped there**, CoactDetect's and
+   LoCo's, both at 120 s. That is the rule stopping them rather than an interior optimum — the
+   same shape LoCo's context showed on the slow bench, where the handoff recorded it as giving no
+   evidence either way about what the stream wants.
+3. **The starting point broke a budget for two of the six.** Round 1 moved CoactDetect's alpha
+   and LoCo's threshold for that reason, logged in both runs. The fast settings, carried over as
+   the search's origin the way slow's search carried them, are **not a neutral default on this
+   bench** — so any comparison treating "the fast settings on combined" as a baseline is
+   measuring against something this bench already refuses.
+
+Only ``sce`` is unchanged: nothing in its grid beat the point it started from."""
 DETECTORS = tuple(OPERATING_POINTS)
 
 FULL_GRIDS: dict[str, dict[str, tuple]] = {d: dict(g) for d, g in _slow.FULL_GRIDS.items()}
