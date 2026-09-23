@@ -1,9 +1,10 @@
 # Overnight 2026-09-22 → 23: adopt the measured jitter, measure the rest, rerun
 
-> **In flight.** Driven by the cloud orchestrator session (title *"bugarach orchestrator"*), with
-> one live session on each workstation. Each workstation session reads **its own section** and
-> nothing else is assigned to it. Delete this file, or move it to `docs/handoffs/`, when every
-> section below is marked done.
+> **Done, 2026-09-23 04:41 EDT. Nothing is in flight.** Every section below landed: #748, #750,
+> #752–#759. Moved here from the root because the decisions it lists are still Tony's. The
+> morning status page carries them, numbered, with the SPIKE-synch question first (robust to the
+> background, or keyed on rate?). Kept as the night's record: rulings 1–7, what was adopted and
+> what was only reported, and each workstation's own notes.
 >
 > **Not murderboarded** — working material. Tony, 2026-09-22: no time.
 

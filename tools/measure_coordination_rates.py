@@ -40,7 +40,7 @@ plants them) and ``binomial`` (each cell joins independently).
 
 * participants per moment, moments per minute and each cell's coordinated share, per model.
   Report only: the bench plants a fixed participant count at three levels with a 120 s spacing
-  floor (Tony's rulings, ``HANDOFF-overnight-2026-09-22.md``).
+  floor (Tony's rulings, ``docs/handoffs/2026-09-22-overnight.md``).
 * **quiet / busy**: the 25th / 75th percentile over recordings of the slice-mean per-cell rate —
   raw (what ``tools/remeasure_bench.py`` measures, so it reproduces ``bench.REGIMES``) and
   **background** (raw minus the coordinated share). **Both are taken over the recordings that

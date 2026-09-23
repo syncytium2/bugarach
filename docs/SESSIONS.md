@@ -28,7 +28,7 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ### 065/combined — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-full-cohort-combined/` (NEW)
 - **Status:** **ACTIVE (WSMIP065)**, claimed before any write. Tony, 2026-09-22 ~22:30: the
   combined stream is a third output beside fast and slow, expected in the morning. Runbook: the
-  "Combined" section of `HANDOFF-overnight-2026-09-22.md` (#753); code #752.
+  "Combined" section of `docs/handoffs/2026-09-22-overnight.md` (#753); code #752.
 - **Writes:** one NEW folder — `models/` (chorus_gain_norm checkpoints and `best.json`),
   `combined_settings.csv`, `detect/`, `rasters/`. New folder, so nothing existing is overwritten.
 - ⚠ **Two more NEW folders, and the first was written before it was claimed** —
@@ -50,7 +50,7 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ### 065/bench-jitter — DARKROOM claim ACTIVE 2026-09-22: the every-knob searches on the re-measured bench
 - **Status:** **ACTIVE (WSMIP065)**, claimed before any write. **Nothing written yet.** Tony,
   2026-09-22 evening: adopt the measured jitter (fast 0.106 s, slow 0.135 s) and participation 0.19,
-  then rerun the search on the new bench — `HANDOFF-overnight-2026-09-22.md`, WSMIP065 steps 1–5.
+  then rerun the search on the new bench — `docs/handoffs/2026-09-22-overnight.md`, WSMIP065 steps 1–5.
 - **Writes (step 5, not started):** two NEW folders, `bugarach/2026-09-23-full-search-fast/` and
   `bugarach/2026-09-23-full-search-slow/`, via `tools/search_all_settings.py --bench fast|slow
   --archive-as`. New folders, so nothing existing is overwritten. Measure-only: `OPERATING_POINTS`
@@ -133,7 +133,7 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   merging (`0baac4d`). Written and verified: **23** grid files (the 22 the sweep produced plus the
   strict `run_0p000.json` the top-up closed), `crowded_allowance.png` and `.html`,
   `sweep_summary.json` and the run record's `README.md`. Was: ACTIVE (WSMIP064), claimed before
-  writing. The overnight brief's WSMIP064 step 1 (`HANDOFF-overnight-2026-09-22.md`): the sweep
+  writing. The overnight brief's WSMIP064 step 1 (`docs/handoffs/2026-09-22-overnight.md`): the sweep
   finished 2026-09-21 at 22 of 22 rows and was never pushed — its only copy was a session
   scratchpad. The record and Figure 1 went to the repo; the per-row grid is bulk and stayed here,
   per CLAUDE.md's Dropbox-and-repo rule.
