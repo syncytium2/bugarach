@@ -1544,7 +1544,7 @@ def per_group(R: dict, by_stream: dict) -> str:
         if not g["groups"]:
             continue
         # The project's display order for these groups (bugarach.groups: DI, OVX, MALE, ORX;
-        # Tony, 2026-09-23), not the alphabetical one the data arrives in.
+        # Tony, 2026-09-23), not the alphabetical order the data arrive in.
         canon = [k for k in GROUP_ORDER if k in g["groups"]]
         canon += [k for k in g["groups"] if k not in canon]
         head = ["scope", "share of checks flagged (paired, raw)", "checks"]
