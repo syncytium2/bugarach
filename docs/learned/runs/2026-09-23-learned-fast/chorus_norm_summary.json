@@ -27,8 +27,9 @@
     0.6966067864271458
    ],
    "mean": 0.7603404302506099,
-   "null_per_hour": 4.333333333333333,
-   "sec": 16
+   "null_per_hour": 2.2222222222222223,
+   "sec": 16,
+   "null_per_hour_before_761": 4.333333333333333
   },
   {
    "seed": 1,
@@ -39,8 +40,9 @@
     0.7887323943661972
    ],
    "mean": 0.8093720588478114,
-   "null_per_hour": 2.6666666666666665,
-   "sec": 12
+   "null_per_hour": 1.3333333333333333,
+   "sec": 12,
+   "null_per_hour_before_761": 2.6666666666666665
   },
   {
    "seed": 2,
@@ -51,8 +53,9 @@
     0.7630922693266834
    ],
    "mean": 0.7936601489151232,
-   "null_per_hour": 1.0,
-   "sec": 12
+   "null_per_hour": 0.3333333333333333,
+   "sec": 12,
+   "null_per_hour_before_761": 1.0
   },
   {
    "seed": 3,
@@ -63,8 +66,9 @@
     0.7699316628701595
    ],
    "mean": 0.7869928584621068,
-   "null_per_hour": 9.444444444444445,
-   "sec": 12
+   "null_per_hour": 7.555555555555555,
+   "sec": 12,
+   "null_per_hour_before_761": 9.444444444444445
   },
   {
    "seed": 4,
@@ -75,9 +79,16 @@
     0.7088082901554404
    ],
    "mean": 0.761261287934863,
-   "null_per_hour": 4.777777777777778,
-   "sec": 12
+   "null_per_hour": 2.888888888888889,
+   "sec": 12,
+   "null_per_hour_before_761": 4.777777777777778
   }
  ],
- "caveat": "best is chosen on the held-out seeds; its F1 is a selection score"
+ "caveat": "best is chosen on the held-out seeds; its F1 is a selection score",
+ "rescored_on_corrected_null": {
+  "why": "#761 made bench.NULL_RECORDING follow REGIMES quiet; the fits are untouched",
+  "null_bg_rate_hz": 0.0042,
+  "best_before": "chorus_norm_fast_seed1.json",
+  "best_changed": false
+ }
 }
