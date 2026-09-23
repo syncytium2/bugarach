@@ -33,6 +33,27 @@ record says whether it grew.
 **What it reads.** The default dataset (``dataset.default()``), each recording's baseline
 analysis window (``assess_folder.generation_window``, 15-minute floor), ``t50rise`` onsets.
 Baseline only (FOUNDATIONS §9).
+
+**By group** (``--by-group``, added 2026-09-22 on Tony's question *"are the widths different
+between the groups?"*). FOUNDATIONS §9: effects run in opposite directions by group, so a pooled
+width is not admissible on its own. The split pools each group's recordings into its own
+correlogram and reads a width off the **same** simulator calibration, which is group-independent —
+the benches know nothing about group, so the curve is computed once per stream and shared.
+
+Three things the split needs that the pooled measure does not:
+
+* **The resampling unit is the mouse, not the recording.** 84 recordings come from 44 mice, so
+  recordings within a mouse are not independent draws; each group's interval comes from resampling
+  its own mice with replacement (``group_boot``). The pooled block above keeps its recording-level
+  bootstrap unchanged, so the 2026-09-22 numbers still reproduce.
+* **The answer is a test, not four intervals.** Whether the widths differ at all is a permutation
+  test: mouse→group labels are shuffled with the group sizes held fixed, and the spread
+  (widest group minus narrowest) is recomputed. Group sizes differ — 25, 22, 20 and 17 recordings —
+  and a smaller group's width is the noisier estimate, which permuting labels at fixed sizes
+  accounts for and four separate intervals do not.
+* **A width is not yet a jitter, per group.** The calibration converts width to σ at the *bench's*
+  participation and rate. Groups differ in both, so the primary per-group comparison is the measured
+  half-width; the converted σ is recorded beside it and carries that caveat.
 """
 from __future__ import annotations
 
@@ -132,7 +153,13 @@ def _real(args):
         v = np.asarray(v, float)
         v = v[np.isfinite(v) & (v >= lo) & (v < hi)]
         trains.append(np.round((v - lo) / DT).astype(int))
-    return pairs(trains, L)
+    info = {"slice_id": s.slice_id,
+            "group": (str(s.meta.get("group_id") or "").strip() or None),
+            "mouse": (str(s.meta.get("mouse_id") or s.meta.get("subject_id") or "").strip() or None),
+            "rois": len(trains), "onsets": int(sum(t.size for t in trains)),
+            "window_sec": round(hi - lo, 1)}
+    o, e = pairs(trains, L)
+    return info, o, e
 
 
 def _sim(args):
@@ -147,9 +174,163 @@ def _sim(args):
 
 
 def pooled(results):
-    o = sum(r[0] for r in results)
-    e = sum(r[1] for r in results)
+    """Sum observed and expected pair counts. Takes ``(obs, exp)`` or ``(info, obs, exp)``."""
+    o = sum(r[-2] for r in results)
+    e = sum(r[-1] for r in results)
     return o, e
+
+
+def by_group(real):
+    """``{group: [record, ...]}`` for the recordings that name a group, in first-seen order."""
+    out = {}
+    for r in real:
+        g = r[0]["group"]
+        if g:
+            out.setdefault(g, []).append(r)
+    return out
+
+
+def mice_of(records):
+    """``{mouse: [record, ...]}``. A recording with no mouse id is its own cluster."""
+    out = {}
+    for r in records:
+        out.setdefault(r[0]["mouse"] or f"?{r[0]['slice_id']}", []).append(r)
+    return out
+
+
+def group_boot(records, stat, n_boot, rs):
+    """``stat`` over ``n_boot`` draws that resample this group's MICE with replacement.
+
+    Recordings within a mouse are not independent draws — 84 recordings come from 44 mice — so the
+    cluster is the mouse and a drawn mouse brings all of its recordings.
+    """
+    mice = list(mice_of(records).values())
+    out = []
+    for _ in range(n_boot):
+        pick = rs.randint(0, len(mice), len(mice))
+        out.append(stat(*pooled([r for j in pick for r in mice[j]])))
+    return np.array(out, float)
+
+
+def spread(widths):
+    """Widest group minus narrowest, over the groups whose width is finite."""
+    w = np.array([x for x in widths if np.isfinite(x)], float)
+    return float(w.max() - w.min()) if w.size >= 2 else float("nan")
+
+
+def label_permutation(real, stat, n_perm, rs):
+    """Null distribution of :func:`spread` when group labels carry nothing.
+
+    Mouse→group labels are shuffled with each group's number of MICE held fixed, so a group keeps
+    its size and therefore its share of the measurement noise: a group of 17 recordings gives a
+    noisier width than one of 25, and that is what makes the observed spread hard to read without
+    this test. Returns (null spreads, how many draws had no measurable width).
+    """
+    groups = by_group(real)
+    names = list(groups)
+    mice = {g: list(mice_of(rs_g).values()) for g, rs_g in groups.items()}
+    all_mice = [m for g in names for m in mice[g]]
+    sizes = [len(mice[g]) for g in names]
+    null, dropped = [], 0
+    for _ in range(n_perm):
+        order = rs.permutation(len(all_mice))
+        at, widths = 0, []
+        for n in sizes:
+            take = [r for j in order[at:at + n] for r in all_mice[j]]
+            widths.append(stat(*pooled(take)))
+            at += n
+        s = spread(widths)
+        if np.isfinite(s):
+            null.append(s)
+        else:
+            dropped += 1
+    return np.array(null, float), dropped
+
+
+def _group_block(real, converters, a, stream):
+    """Per-group widths with mouse-clustered intervals, plus the test that the widths differ.
+
+    ``converters`` maps a statistic's name to the calibration curve's width→σ interpolation, which
+    is the same curve the pooled numbers use: the simulator knows nothing about group.
+    """
+    groups = by_group(real)
+    ungrouped = [r for r in real if not r[0]["group"]]
+    rows = {}
+    for g, recs in sorted(groups.items()):
+        mice = mice_of(recs)
+        o, e = pooled(recs)
+        rows[g] = {"recordings": len(recs), "mice": len(mice),
+                   "rois": sum(r[0]["rois"] for r in recs),
+                   "onsets": sum(r[0]["onsets"] for r in recs),
+                   "slice_ids": sorted(r[0]["slice_id"] for r in recs),
+                   "real_excess": excess(o, e).tolist()}
+    contrasts = {}
+    for name, stat in (("hwhm", hwhm), ("width", width)):
+        to_jitter = converters[name]
+        rs = np.random.RandomState(20260922)
+        boots = {}
+        for g, recs in sorted(groups.items()):
+            w = stat(*pooled(recs))
+            wb = group_boot(recs, stat, a.boot, rs)
+            # One width per recording, in the order of this group's `slice_ids`. Not what the
+            # group's number is — that is read off the pooled counts — but what it is drawn over,
+            # and the count of recordings with no measurable peak is why the two differ.
+            per = [stat(r[-2], r[-1]) for r in sorted(recs, key=lambda r: r[0]["slice_id"])]
+            boots[g] = wb
+            jb = np.array([to_jitter(x) for x in wb])
+            rows[g][name] = {
+                "real_sec": w,
+                "real_interval": np.nanpercentile(wb, [2.5, 97.5]).tolist(),
+                "jitter_sec": to_jitter(w),
+                "jitter_interval": (np.nanpercentile(jb, [2.5, 97.5]).tolist()
+                                    if np.isfinite(jb).any() else None),
+                "boot_outside_calibration": int(np.isnan(jb).sum()),
+                "boot_unmeasurable": int(np.isnan(wb).sum()),
+                "per_recording_sec": [None if not np.isfinite(x) else float(x) for x in per],
+                "mean_of_recordings_sec": float(np.nanmean(per)),
+                "median_of_recordings_sec": float(np.nanmedian(per)),
+                "recordings_with_no_peak": int(np.isnan(per).sum())}
+        names = sorted(groups)
+        obs_widths = [rows[g][name]["real_sec"] for g in names]
+        obs_spread = spread(obs_widths)
+        null, dropped = label_permutation(real, stat, a.perm, np.random.RandomState(1_20260922))
+        p = (float((null >= obs_spread).sum() + 1) / (null.size + 1)
+             if null.size and np.isfinite(obs_spread) else None)
+        pairwise = {}
+        for i, g in enumerate(names):
+            for h in names[i + 1:]:
+                d = boots[g] - boots[h]
+                pairwise[f"{g} - {h}"] = {
+                    "diff_sec": rows[g][name]["real_sec"] - rows[h][name]["real_sec"],
+                    "interval": np.nanpercentile(d, [2.5, 97.5]).tolist()}
+        contrasts[name] = {"groups": names, "widths_sec": obs_widths,
+                           "spread_sec": obs_spread,
+                           "permutation": {"draws": int(null.size), "unmeasurable": dropped,
+                                           "null_median_sec": (float(np.median(null))
+                                                               if null.size else None),
+                                           "null_95th_sec": (float(np.percentile(null, 95))
+                                                             if null.size else None),
+                                           "p_any_difference": p},
+                           "pairwise": pairwise}
+        print(f"  [{stream}] {name} by group_id "
+              f"(mouse-clustered {a.boot} draws, {a.perm} label permutations):", flush=True)
+        for g in names:
+            r = rows[g][name]
+            ci = r["real_interval"]
+            ji = r["jitter_interval"]
+            print(f"    {g:5s} {rows[g]['recordings']:2d} recordings / {rows[g]['mice']:2d} mice / "
+                  f"{rows[g]['rois']:4d} ROIs / {rows[g]['onsets']:6d} onsets: "
+                  f"{r['real_sec']:.3f} s [{ci[0]:.3f}, {ci[1]:.3f}]"
+                  + (f", sigma {r['jitter_sec']:.3f} s [{ji[0]:.3f}, {ji[1]:.3f}]" if ji else ""),
+                  flush=True)
+        nul = contrasts[name]["permutation"]
+        print(f"    spread {obs_spread:.3f} s; null median {nul['null_median_sec']:.3f} s, "
+              f"95th {nul['null_95th_sec']:.3f} s; p(any difference) = {p:.4f}", flush=True)
+    if ungrouped:
+        contrasts["ungrouped_recordings"] = [r[0]["slice_id"] for r in ungrouped]
+        print(f"  [{stream}] {len(ungrouped)} recordings name no group_id and are in the pooled "
+              f"numbers only", flush=True)
+    return rows, contrasts
 
 
 def main(argv=None) -> int:
@@ -157,6 +338,10 @@ def main(argv=None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--jobs", type=int, default=12)
     ap.add_argument("--boot", type=int, default=200)
+    ap.add_argument("--by-group", action="store_true",
+                    help="also split by group_id: per-group widths, mouse-clustered intervals, "
+                         "and a label-permutation test of whether the widths differ at all")
+    ap.add_argument("--perm", type=int, default=2000, help="label permutations for --by-group")
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
@@ -168,7 +353,9 @@ def main(argv=None) -> int:
     n = len(load_folder(folder))
     rec = {"dataset": dataset.stamp(), "dt": DT, "peak_sec": [PEAK[0] * DT, PEAK[1] * DT],
            "shoulder_sec": [SHOULDER[0] * DT, SHOULDER[1] * DT], "jitters": list(JITTERS),
-           "sim_seeds": [SIM_SEEDS[0], SIM_SEEDS[-1]], "streams": {}}
+           "sim_seeds": [SIM_SEEDS[0], SIM_SEEDS[-1]], "boot_draws": a.boot,
+           "permutations": (a.perm if a.by_group else None),
+           "by_group": bool(a.by_group), "streams": {}}
     with ProcessPoolExecutor(a.jobs) as ex:
         for stream, bench_name in BENCHES.items():
             real = [r for r in ex.map(_real, [(str(folder), i, stream) for i in range(n)]) if r]
@@ -184,6 +371,7 @@ def main(argv=None) -> int:
                 sims[j] = pooled(list(ex.map(_sim, jobs)))
                 curves[j] = excess(*sims[j]).tolist()
 
+            converters = {}
             out = dict(recordings=len(real), real_excess=excess(o, e).tolist(),
                        sim_excess={str(j): c for j, c in curves.items()},
                        bench_jitter_sec=__import__(bench_name, fromlist=["x"]).BENCH_RECORDING["jitter_sec"])
@@ -197,6 +385,7 @@ def main(argv=None) -> int:
                     return (float(np.interp(w, ws, JITTERS, left=np.nan, right=np.nan))
                             if monotone else float("nan"))
 
+                converters[stat.__name__] = to_jitter
                 w_real = stat(o, e)
                 wb = np.array([stat(*d) for d in draws])
                 jb = np.array([to_jitter(w) for w in wb])
@@ -217,6 +406,8 @@ def main(argv=None) -> int:
                       + f" ({row['boot_outside_calibration']} of {a.boot} draws off the curve)",
                       flush=True)
             out["primary"] = "hwhm"
+            if a.by_group:
+                out["groups"], out["contrasts"] = _group_block(real, converters, a, stream)
             rec["streams"][stream] = out
     (a.out / "jitter_correlogram.json").write_text(json.dumps(rec, indent=1) + "\n", encoding="utf-8")
     print(f"wrote {a.out / 'jitter_correlogram.json'}")
