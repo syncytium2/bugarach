@@ -62,6 +62,7 @@ from pathlib import Path
 import numpy as np
 
 from bugarach import provenance, time_axis
+from bugarach.groups import GROUP_ORDER, in_group_order
 from bugarach.surrogate_stats import smallest_n
 
 OUT_DIRNAME = "2026-09-11-surrogate-screen"
@@ -561,7 +562,7 @@ def group_flags(R: dict, stream: str) -> dict:
         if s["stream"] != stream:
             continue
         by[(s["cell_id"], s["stat"])][s["scope"]] = _f(s["paired_p"]) < ALPHA
-    groups = sorted({sc for v in by.values() for sc in v if sc != "all"})
+    groups = in_group_order(sc for v in by.values() for sc in v if sc != "all")
     only_group = only_all = 0
     per = {g: [0, 0] for g in groups + ["all"]}
     for v in by.values():
@@ -1542,9 +1543,9 @@ def per_group(R: dict, by_stream: dict) -> str:
         g = group_flags(R, st)
         if not g["groups"]:
             continue
-        # The project's own order for these groups, not the alphabetical one the data
-        # arrives in: the prose introduces them as ORX, OVX, DI, MALE.
-        canon = [k for k in ("ORX", "OVX", "DI", "MALE") if k in g["groups"]]
+        # The project's display order for these groups (bugarach.groups: DI, OVX, MALE, ORX;
+        # Tony, 2026-09-23), not the alphabetical one the data arrives in.
+        canon = [k for k in GROUP_ORDER if k in g["groups"]]
         canon += [k for k in g["groups"] if k not in canon]
         head = ["scope", "share of checks flagged (paired, raw)", "checks"]
         rows = [[esc(k if k != "all" else "all (pooled)"), pct(g["share"].get(k)),
