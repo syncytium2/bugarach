@@ -105,12 +105,39 @@ not *itself*, and *these data* not *this data*. "Metadata" and "dataset" are
 different words with their own grammar ("the dataset is"). Inside a quotation,
 the speaker's grammar stands.
 
-**Mechanized, as a warning:** sapper SAP015 fires on a new line where a determiner
+**Mechanized, as a warning:** sapper SAP015 triggers on a new line where a determiner
 and *data* are followed by a singular verb ("the data is", "their data has").
 It warns and does not block. The tree held 73 such lines when the rule was
 written, and some of them are other people's quoted words that must not be
 reworded, so a blocking rule would have needed a sweep and a set of exemptions
 first. It needs a determiner so it stays off code: `data is None` has none.
+
+## Calcium events do not "fire"
+
+**House rule** (Tony, 2026-09-23): *"we need to find a way to kill the word firing. i
+fear it predisposes you to a way of thinking that could be detrimental. these are
+calcium events. we don't know what they 'mean' to the cell."*
+
+The word is not only imprecise. It carries a model: an event is a spike, a cell's
+output, and a rate of them is a code. With it come the spike-train literature's priors
+(refractoriness, rate coding, what counts as chance coincidence) as if they were facts
+about this preparation. They are not; they have to be argued for calcium events one at
+a time.
+
+> ✗ "In the elevated-rate stretch every ROI fires faster, and the detector fires on it."
+>
+> ✓ "In the elevated-rate stretch every ROI has events more often, and the detector
+> calls it."
+
+For a cell: *event*, *onset*, *active*, *has an event*, *event rate*. For a detector or
+model: *call*, *flags*. For a gate or check: *triggers*. The same goes for *fire*,
+*fires* and *fired*, in every sense, so no sentence has to be read twice to learn which
+one it means.
+
+**Mechanized, as a warning:** sapper SAP017 triggers on the word in a new line. It
+warns and does not block, for the same reason as SAP015: about 1,400 uses were in the
+tree when it was written, many in dated records that stay as written. Identifiers
+(`fire_trigger`, `firing_rate`) do not trigger it.
 
 ## American English
 

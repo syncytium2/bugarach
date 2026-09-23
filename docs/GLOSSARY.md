@@ -56,8 +56,8 @@ message naming the two candidates.
 
 - **ISI-adaptive** — the coincidence window in SPIKE-synch. τ for a spike pair is
   the minimum of the four surrounding half-ISIs, capped at `tau_max`, so a dense
-  stretch **tightens its own window** and the measure does not reward firing
-  faster. This is core SPIKE-synchronization (Kreuz 2015), not an option on it,
+  stretch **tightens its own window** and the measure does not reward a
+  higher event rate. This is core SPIKE-synchronization (Kreuz 2015), not an option on it,
   and it is what `adaptive_profile` computes by default. Its opposite here is
   `tau_mode="fixed"` — the cap for every spike, ordinary fixed-window coincidence
   detection, which makes the measure rate-dependent again.
@@ -193,7 +193,7 @@ recordings is a **simulated data set**; the real recordings the lab approved are
   number produced without anybody having looked at the recording is not a weaker
   result of the same kind — it is not a result.
   In code: `bugarach.annotate.MAHICE`.
-- **K** — the coactivity floor: how many ROIs firing together make one coordinated
+- **K** — the coactivity floor: how many ROIs active together make one coordinated
   event. **Set by the person during MAHICE, and expressed as a PERCENTAGE of that
   recording's ROI population** (Tony, 2026-09-03). One percentage per review, never
   a different one per slice — the absolute count then follows each field size on
@@ -308,7 +308,7 @@ describes.
 - **clean-room primary / adversary** — the two independent implementers in
   `docs/clean_room/WORKFLOW.md`; they never see each other's code.
 - **sapper** — the mechanized rule gate (`tools/sapper.py`); a rule must
-  prove it can fire (self-test fixtures) to exist.
+  prove it can trigger (self-test fixtures) to exist.
 
 ## Tuning the learned nets
 
@@ -388,7 +388,7 @@ load-bearing terms with no glossary entry.
   exists. Merging chains, so a detector that calls almost continuously can lose events
   to it even here (the fair comparison's `line_length` and `tube`, 2026-09-19). Three
   rules share the name: a net merges runs of frames above threshold; sliding
-  CoactDetect and LoCo merge window positions; binned SCE merges by firing times.
+  CoactDetect and LoCo merge window positions; binned SCE merges by onset times.
 - **call** — a detector's claim that a coordinated event happened, over a span of time.
   Scored one to one against planted events (`score.score_detections`).
 - **width of a coordinated event** — the earliest to the last onset among the calcium events
@@ -401,9 +401,18 @@ load-bearing terms with no glossary entry.
   2026-09-21). The width is floored at the frame interval; one cell has no amplitude. It
   measures packing, not size — the cell count is its own column. **Not** the calcium events'
   own `amp`, which travels separately as `member_amp_median`.
-- **firing** — one entry in a cell's list of event times (an *onset*); the page-level
-  word for a per-ROI event, kept apart from a coordinated event.
-- **background** — the steady random firing rate a bench recording is simulated at:
+- **firing / fire / fires / fired** — **RETIRED** (Tony, 2026-09-23: *"these are calcium
+  events. we don't know what they 'mean' to the cell"*). The word imports spikes and a
+  neuron's output, and with them a way of reasoning — rate codes, refractoriness, the
+  spike-train literature's priors — that the data do not license. A calcium event is an
+  observed transient; what it is to the cell is open. Say instead: for a cell, **event**,
+  **onset**, **active**, **has an event**, **event rate**; for a detector or model,
+  **call** ("calls in the elevated-rate stretch"), **flags**; for a gate or check,
+  **triggers**. Code identifiers keep their names (`fire_trigger`, `hot_rate_hz`) —
+  sapper SAP017 reads prose words, not identifiers. A method borrowed from the
+  spike-train literature keeps its own terms inside its description (SPIKE-synch's
+  "spike pair"), and its assumptions have to be argued for calcium events, not inherited.
+- **background** — the steady random event rate a bench recording is simulated at:
   *quiet* (0.0052 per second per ROI) or *busy* (0.019), the 25th and 75th percentiles
   of real baseline rates. The code's word is *regime*. Not the elevated-rate test.
   Every test below runs at one background or both; the tests are never named *quiet*
@@ -506,11 +515,11 @@ Added 2026-09-10, when that plan's review found them used undefined.
   the ROIs stay aligned, so a classifier that separates real from a shared offset is
   reading a per-ROI or edge artifact rather than removed coordination.
 - **label-free threshold** — an operating point set from a recording's own surrogate:
-  scanning thresholds downward from the top, the last one before the model fires more
+  scanning thresholds downward from the top, the last one before the model calls more
   than a stated number of events per 10 minutes on any of three rigid shifts of that
   recording. Reads no labels. Scanned downward because the event count is not monotone:
   low enough, the whole recording merges into one detection. ⚠ It caps the rate on the
-  shifts, not on the recording, so a model can fire well above the stated rate on the
+  shifts, not on the recording, so a model can call well above the stated rate on the
   recording itself; and where no threshold ever exceeds the rate the scan falls to the
   grid's lowest value, which the tool records. The idea is closer to a surrogate
   threshold than to CFAR's (see **adaptive-threshold vocabulary**): Dard et al. 2022 set
@@ -532,7 +541,7 @@ Added 2026-09-10, when that plan's review found them used undefined.
   background or a producer question is an open decision.
 - **excess coincidence** — onset pairs between distinct ROIs at a given lag *ℓ* (not τ,
   which is the dead time above), pooled over
-  ROI pairs and recordings, divided by the count expected if each pair fired
+  ROI pairs and recordings, divided by the count expected if each pair's onsets fell
   independently at its observed totals, minus one. 0 means no more than chance at the
   window's average rates; summed over every lag to the window's length it is zero by
   construction. The **population cross-correlogram** is excess coincidence against lag

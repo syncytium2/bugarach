@@ -454,6 +454,14 @@ plural everywhere you write: *the data **are***, *the data **show***, *the data
 their own grammar, and quoted words keep the speaker's. Sapper SAP015 warns on a
 new line that breaks it.
 
+**Calcium events do not "fire" — house rule** (Tony, 2026-09-23: *"these are calcium
+events. we don't know what they 'mean' to the cell"*). The word imports spikes and
+the spike-train literature's priors as if they were facts about this preparation.
+For a cell say *event*, *onset*, *active*, *event rate*; for a detector, *call*; for
+a check, *triggers*. A method borrowed from spike trains has its assumptions argued
+for calcium events, not inherited. Sapper SAP017 warns on a new line that uses it;
+[`docs/writing_conventions.md`](docs/writing_conventions.md) has the rest.
+
 ## Portfolio posture
 
 The repo is a resume artifact as much as a tool (FOUNDATIONS §8): commit
