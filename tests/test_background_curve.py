@@ -14,14 +14,36 @@ six* until 2026-09-22: adopting the measured jitter (0.36 → 0.106 s) put
 SPIKE-synch flat at F1 0.657, spread 0.026. See `BACKGROUND_FLAT` below for the
 mechanism and for what is still open about it.
 
+⚠ **Re-measured 2026-09-22, when `REGIMES` became BACKGROUND rates** (Tony: *background,
+end to end*) and the axis moved from 5.2–19 mHz to 4.2–16.5 mHz, the grid with it. Two
+claims below reversed, and they are restated as measured rather than re-baselined — no
+tolerance was loosened and no test skipped:
+
+* **No detector is a steady leader across the whole axis any more.** Three now win
+  somewhere on the grid: CoactDetect at the quiet end, LoCo through the middle,
+  SPIKE-synch at the busy end. The leader *does* still hold between the two named
+  `REGIMES` endpoints, which is where the project reports.
+* **The fitted/flat contrast this file is named for is gone.** Both fields now show the
+  same flat set, the same three winners and the same largest rank change (four places,
+  SPIKE-synch, *rising*). What still separates them is magnitude: mean own-range 0.126
+  fitted against 0.171 flat, so the fitted axis is about a quarter shorter and has not
+  gone dead.
+
+Both follow from one thing already ruled a result rather than a defect (#738): SPIKE-synch
+went flat when the measured jitter was adopted, and **a flat detector on a declining axis
+eventually overtakes the ones that decline**. Nothing collapses down the table; the mover
+is the detector that does not move.
+
 What these tests pin
 --------------------
 1. Every detector outside `BACKGROUND_FLAT` refuses a bare F1 (`describe_background`),
    and the flat set is exactly what was last measured — it fails in both directions.
-2. The axis still discriminates on the fitted field — every detector moves across
-   it, and they stay apart at any given rate — and **one winner holds across it**,
-   at both named `REGIMES` endpoints and everywhere between.
-3. **The reordering the first version of this file pinned was the flat field's.**
+2. The axis still discriminates on the fitted field — every detector moves across it, and
+   they stay apart at any given rate — and the leader holds **between the two named
+   `REGIMES` endpoints**, though no longer across the whole grid.
+3. **The reordering the first version of this file pinned was the flat field's** — and as
+   of 2026-09-22 the fitted field reorders the same way, so only the magnitude contrast
+   is asserted.
    That version asserted three winners along the axis and one detector moving four
    places, and it was measured before `BENCH_RECORDING` carried the fitted
    background. The paired measurement below runs the same seeds on the same grid
@@ -209,6 +231,17 @@ def _winners(curves):
     return {_order(curves, r)[0] for r in BACKGROUND_GRID}
 
 
+def _worst_rank_change_with_name(curves):
+    """The largest rank change and who made it — the name matters since 2026-09-22,
+    when the mover became the detector that RISES rather than one that falls."""
+    worst, who = 0, None
+    for n in DETECTORS:
+        ranks = [_order(curves, r).index(n) for r in BACKGROUND_GRID]
+        if max(ranks) - min(ranks) > worst:
+            worst, who = max(ranks) - min(ranks), n
+    return worst, who
+
+
 def _worst_rank_change(curves):
     worst = 0
     for n in DETECTORS:
@@ -235,22 +268,38 @@ def _steady_leaders(curves, rates=BACKGROUND_GRID):
                    for r in rates)}
 
 
-def test_one_winner_holds_across_the_axis(curves):
-    """The first version of this test asserted the opposite — more than one
-    detector best somewhere on the grid — and that was true of the flat field.
-    On the fitted one the top of the table does not move: some detector is within
-    ``TIE_F1`` of the best at every rate on the grid. Pinned as *a steady leader*
-    rather than as its name, so the test says something true if the detectors
-    change and a different one comes to lead.
+def test_no_winner_holds_across_the_whole_axis_since_the_regimes_became_background(curves):
+    """**Reversed 2026-09-22, re-measured rather than re-baselined.**
 
-    Was *exactly one raw winner* until 2026-09-16; see ``TIE_F1`` for why that
-    stopped measuring anything once LoCo was retuned to within 0.003 of CoactDetect."""
-    leaders = _steady_leaders(curves)
-    assert leaders, (
-        f"no detector stays within {TIE_F1} F1 of the top across the axis; at twelve "
-        "seeds on the fitted field CoactDetect did (largest deficit 0.003), and the "
-        "reordering that used to be here was measured to be the flat field's — see "
-        "the module docstring before re-baselining this")
+    This test asserted the opposite — that some detector stays within ``TIE_F1`` of the
+    best at every rate — and that held while the axis ran 5.2 to 19 mHz. Adopting the
+    **background** regimes moved it to 4.2 to 16.5 mHz, and the grid with it, and at
+    twelve seeds on the fitted field **no detector is a steady leader any more**.
+
+    The mechanism is one #738 already ruled on. SPIKE-synch went flat when the measured
+    jitter was adopted, and a flat detector on a declining axis eventually overtakes:
+    every other detector falls with rate and sync does not, so sync is **top at 25 mHz**
+    (0.665 against LoCo 0.657 and CoactDetect 0.633) having been fourth at 2.1 mHz.
+    Three detectors now win somewhere on the grid — CoactDetect at the quiet end, LoCo
+    through the middle, SPIKE-synch at the busy end.
+
+    **The leader still holds where the project reports**, between the two named
+    ``REGIMES`` endpoints: that is the test below, and it still passes, LoCo being
+    within the tie margin at both. What ended is the stronger claim across the whole
+    grid, including the two points beyond the busy endpoint.
+
+    Asserted as the mechanism and not merely as an absence, so it cannot pass for an
+    unrelated reason. ``TIE_F1`` is untouched."""
+    assert not _steady_leaders(curves), (
+        "a steady leader is back across the whole axis; that is a real change from the "
+        "2026-09-22 measurement and the docstring above is now wrong")
+    assert _winners(curves) == {"coact", "loco", "sync"}, _winners(curves)
+    assert _order(curves, BACKGROUND_GRID[-2])[0] == "sync", (
+        "SPIKE-synch no longer takes the top at 25 mHz, so the overtaking this test "
+        "explains has changed shape")
+    assert background_spread(curves["sync"]) <= BACKGROUND_TOLERABLE_SPREAD, (
+        "SPIKE-synch is no longer flat, so the overtaking has a different cause and "
+        "the explanation must be re-measured")
 
 
 def test_the_winner_holds_between_the_two_named_endpoints(curves):
@@ -265,17 +314,33 @@ def test_the_winner_holds_between_the_two_named_endpoints(curves):
         "not to do")
 
 
-def test_no_detector_falls_most_of_the_way_down_the_table(curves):
-    """CoactDetect went from first to fifth across the grid on the flat field.
-    On the fitted field the largest rank change was two places until 2026-09-16 and
-    is **three** since: rate+context at its retuned 4.5 Hz falls from third to
-    last at 40 mHz — beyond the busy endpoint, inside a cluster whose F1 spans 0.49
-    to 0.53 — and nothing crosses the whole table."""
-    worst = _worst_rank_change(curves)
-    assert worst <= 3, (
-        f"the largest rank change across the axis is {worst} places; the fitted "
-        "field was measured at three, and a detector crossing the whole table is "
-        "the flat field's signature, not this one's")
+def test_the_largest_rank_change_is_spike_synch_rising(curves):
+    """**Restated 2026-09-22**, and the direction is the point.
+
+    This asserted no detector moved more than three places, the fitted field having
+    measured two and then three (rate+context falling into a 0.49–0.53 cluster). On the
+    background axis the largest change is **four places, and it is a rise, not a fall**:
+    SPIKE-synch goes from fourth at 2.1 mHz to first at 25 mHz.
+
+    That is the same flatness as the test above, counted a second way, and it is worth
+    counting separately because the old claim's *worry* was a detector collapsing down
+    the table — the flat field's signature. Nothing collapses here: the mover is the one
+    detector that does not decline, overtaking four that do. The rank change is
+    therefore not evidence that the fitted field has started behaving like the flat one,
+    and the paired test below is where that comparison is actually made.
+
+    Pinned at exactly four, with the mover and its direction named, so that a detector
+    genuinely crossing the table downwards still fails this."""
+    worst, who = _worst_rank_change_with_name(curves)
+    assert (worst, who) == (4, "sync"), (
+        f"the largest rank change is {worst} places by {who}; 2026-09-22 measured four "
+        "by SPIKE-synch, rising. A different mover, or a larger change, is a new "
+        "finding and needs measuring rather than re-baselining")
+    quiet_rank = _order(curves, BACKGROUND_GRID[0]).index("sync")
+    best_rank = min(_order(curves, r).index("sync") for r in BACKGROUND_GRID)
+    assert best_rank < quiet_rank, (
+        "SPIKE-synch's largest rank change is downward, which would be the flat "
+        "field's signature rather than the flatness this test describes")
 
 
 def test_the_reordering_was_the_flat_fields(curves, flat_curves):
@@ -291,10 +356,22 @@ def test_the_reordering_was_the_flat_fields(curves, flat_curves):
         "the flat field used to have three winners along the axis; if it now has "
         "one, the comparison this test rests on has changed and the docstring "
         "is wrong")
-    assert _steady_leaders(curves) and not _steady_leaders(flat_curves), (
-        "the fitted field must be the more stable of the two — a steady leader there "
-        "and none on the flat field — or the explanation in the module docstring is "
-        "false")
+    # ⚠ REVERSED 2026-09-22 — for Tony. This asserted the contrast the whole file is
+    # named for: a steady leader on the fitted field and none on the flat one. On the
+    # background axis **neither field has one**, and the two now agree on every
+    # structural measure — same flat set {sync}, same three winners
+    # {coact, loco, sync}, same largest rank change of four, both by SPIKE-synch.
+    # The ordering contrast is gone, so it is not asserted; what survives is the
+    # magnitude contrast below, and it is the reading the 2026-08-28 handoff called
+    # (a). Kept as a measured equality rather than deleted, so that the fields
+    # SEPARATING again is itself a failure worth seeing.
+    assert not _steady_leaders(curves) and not _steady_leaders(flat_curves), (
+        "the two fields no longer agree about steady leaders; on 2026-09-22 neither "
+        "had one, and a difference reopening here is a finding, not a regression")
+    assert _winners(curves) == _winners(flat_curves), (
+        _winners(curves), _winners(flat_curves))
+    assert _worst_rank_change(curves) == _worst_rank_change(flat_curves), (
+        "the rank change separated the fields again; it did not on 2026-09-22")
     # Rank change no longer separates the fields. It was `>= 3` flat and strictly
     # less fitted; after locust went per-event both measured two, and after the
     # retune of the same day fitted measures three and flat two — the move being

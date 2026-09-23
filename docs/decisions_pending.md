@@ -53,29 +53,27 @@ in [`MILESTONES.md`](MILESTONES.md) — which is why this item is a stub rather 
 **Still ours and untouched by this:** group and imaging day are perfectly aliased in this
 corpus, which they say plainly they have not checked and which is not theirs to check.
 
-## 1b. The probe basis — RULED 2026-09-22, background end to end
+## 1b. The probe basis — RULED and ADOPTED 2026-09-22, background end to end
 
-**Tony, ~21:45 EDT: background, end to end.** Quiet, busy and both `hot_rate_hz` probes, on both
-streams, are **background** rates — raw minus the coordinated share, on the `shape_usable` set,
-fixed model, 1 s window. So fast's probe is **0.1271 Hz** and slow's **0.0291 Hz**, and quiet and
-busy take their background values.
+**Tony, ~21:45 EDT: background, end to end.** Quiet, busy and both `hot_rate_hz` probes, on
+both streams, are raw minus the coordinated share.
+
+The substance now lives where the work reads it — the two `REGIMES` docstrings and the two
+`hot_rate_hz` provenances, which carry the numbers, the recording set and the calibration
+caveat — which is why this item is a stub rather than a section.
+
+⚠ **Two findings reversed on the new axis and are listed for Tony** in the run record: no
+detector is a steady leader across the whole grid any more, and the fitted-versus-flat
+contrast is gone. Both follow from SPIKE-synch's flatness, already ruled a result (#738).
 
 **Why it was asked, and it was worth asking.** The 21:00 ruling
-([#747](https://github.com/syncytium2/bugarach/pull/747)) said the probe moves to the measured
-99th percentile — *"fast 0.06 → 0.128 Hz, slow to its measured value (about −9%)"* — and those two
-examples name **different quantities**. `0.128` is fast's **raw** value; `−9%` is slow's
-**background** one. On fast the two differ by 0.6%; **on slow they straddle the current 0.032**,
-so its probe either rose 42% or fell 9%. The orchestrator has since confirmed the `0.128` was its
-own relay of the raw figure.
+([#747](https://github.com/syncytium2/bugarach/pull/747)) quoted fast's **raw** probe and
+slow's **background** one in the same sentence — *"fast 0.06 → 0.128 Hz, slow to its measured
+value (about −9%)"*. On fast those differ by 0.6%; on slow they straddle the old 0.032, so its
+probe would have risen 42% or fallen 9% depending on which was meant. The orchestrator
+confirmed the raw figure was its own relay.
 
-The deciding argument was consistency: quiet and busy were already going to background values, and
-a raw probe beside them would make the background axis two different quantities at different
-points along it.
-
-**This item stays only until the adoption lands**, per this page's own rule that a ruling leaves
-in the same commit as the place the work reads it — the bench constants and their provenance.
-Evidence: [`learned/runs/2026-09-23-coordination-rates/`](learned/runs/2026-09-23-coordination-rates/README.md)
-(#743), Figure 1 panel B.
+Evidence: [`learned/runs/2026-09-23-coordination-rates/`](learned/runs/2026-09-23-coordination-rates/README.md).
 
 ## 2. The jitter constant — RULED 2026-09-22, the benches carry the measurement
 

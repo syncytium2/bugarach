@@ -386,11 +386,18 @@ def test_rates_own_f1_optimum_is_over_its_probe_budget():
     """Recorded as a measurement, because it is the case that proves the gate was
     needed rather than hypothetical.
 
-    On `baseline_quiet`, `rate`'s best-F1 setting is `excess_threshold_hz=3`
-    (F1 0.79), which fires ~3.6 times/min into a block containing no planted
-    events, against its budget of 2.0. The SHIPPED value is 5.0 and is within
-    budget — so nothing was broken in what ships, and a re-calibration would have
-    chosen the promiscuous point and called it an operating point.
+    **Re-measured 2026-09-22**, when the probe became the measured 99th percentile
+    and `hot_rate_hz` doubled. On `baseline_quiet`, seeds 1–48, `rate`'s best-F1
+    setting is now `excess_threshold_hz=2.0` (F1 0.768), firing **4.98** times/min
+    into a block containing no planted events. The SHIPPED value is 4.5 and fires
+    **3.83** — within budget, so nothing is broken in what ships, and a
+    re-calibration would still have chosen the promiscuous point and called it an
+    operating point. Was: optimum 3.0 at F1 0.79 and ~3.6/min, shipped 5.0.
+
+    ⚠ **The margin is now about 10%**, which is why `MAX_PROBE_PER_MIN["rate"]` is
+    hand-set to 4.5 rather than taken from the 1.6x headroom rule — that rule gives
+    7.0 and would let this very setting through, disabling the gate this test is the
+    proof case for. See that constant's docstring.
 
     **Expected to change when rate+context's threshold rule is fixed** (see
     `docs/forks.md` §3): a multiplicative bar drops its probe firings to zero. Update

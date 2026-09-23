@@ -1,32 +1,32 @@
 {
- "measured_on": "2026-09-21",
+ "measured_on": "2026-09-23",
  "rows": {
   "bugarach.bench": {
    "cicada": {
     "ceiling_null": 2.0,
-    "ceiling_probe": 13.0,
+    "ceiling_probe": 48.0,
     "ceiling_swing": 0.15,
     "declared_null": 6.0,
     "declared_probe": 25.0,
     "declared_swing": 0.2,
-    "f1_busy": 0.5207193119624707,
-    "f1_quiet": 0.5609436435124509,
+    "f1_busy": 0.5636363636363636,
+    "f1_quiet": 0.643908969210174,
     "null_per_hour": 1.0555555555555556,
-    "precision_swing": 0.06468924923538577,
-    "probe_per_min": 7.829166666666667
+    "precision_swing": 0.07447133892316615,
+    "probe_per_min": 29.6625
    },
    "coact": {
     "ceiling_null": 5.0,
     "ceiling_probe": 1.0,
-    "ceiling_swing": 0.1,
+    "ceiling_swing": 0.15,
     "declared_null": 7.0,
     "declared_probe": 1.0,
     "declared_swing": 0.1,
-    "f1_busy": 0.6476190476190476,
-    "f1_quiet": 0.7532149418248623,
+    "f1_busy": 0.6754883427851293,
+    "f1_quiet": 0.7983343248066628,
     "null_per_hour": 2.9166666666666665,
-    "precision_swing": 0.03893683826213945,
-    "probe_per_min": 0.0875
+    "precision_swing": 0.08000724927297231,
+    "probe_per_min": 0.07916666666666666
    },
    "loco": {
     "ceiling_null": 3.0,
@@ -35,24 +35,24 @@
     "declared_null": 3.0,
     "declared_probe": 1.0,
     "declared_swing": 0.1,
-    "f1_busy": 0.6330935251798562,
-    "f1_quiet": 0.73875,
+    "f1_busy": 0.6901669758812617,
+    "f1_quiet": 0.807185628742515,
     "null_per_hour": 1.6666666666666667,
-    "precision_swing": 0.07332144061130463,
-    "probe_per_min": 0.1625
+    "precision_swing": 0.08740010561520861,
+    "probe_per_min": 0.2125
    },
    "rate": {
     "ceiling_null": 1.0,
-    "ceiling_probe": 3.0,
+    "ceiling_probe": 7.0,
     "ceiling_swing": 0.15,
     "declared_null": 1.0,
     "declared_probe": 2.0,
     "declared_swing": 0.1,
-    "f1_busy": 0.6009144350097976,
-    "f1_quiet": 0.6597510373443983,
+    "f1_busy": 0.6364217252396166,
+    "f1_quiet": 0.6653061224489796,
     "null_per_hour": 0.08333333333333333,
-    "precision_swing": 0.0898238069519316,
-    "probe_per_min": 1.675
+    "precision_swing": 0.06265088757396453,
+    "probe_per_min": 4.141666666666667
    },
    "sce": {
     "ceiling_null": 6.0,
@@ -61,86 +61,86 @@
     "declared_null": 6.0,
     "declared_probe": 9.0,
     "declared_swing": 0.5,
-    "f1_busy": 0.4922779922779923,
-    "f1_quiet": 0.5572868927589367,
+    "f1_busy": 0.4608967674661106,
+    "f1_quiet": 0.5295887662988966,
     "null_per_hour": 3.388888888888889,
-    "precision_swing": 0.012444982769797663,
-    "probe_per_min": 5.779166666666667
+    "precision_swing": 0.02838239958914246,
+    "probe_per_min": 5.916666666666667
    },
    "sync": {
     "ceiling_null": 1.0,
-    "ceiling_probe": 1.0,
+    "ceiling_probe": 9.0,
     "ceiling_swing": 0.1,
     "declared_null": 1.0,
     "declared_probe": 1.0,
     "declared_swing": 0.1,
-    "f1_busy": 0.4657258064516129,
-    "f1_quiet": 0.4332281808622502,
+    "f1_busy": 0.6509695290858725,
+    "f1_quiet": 0.6393328700486449,
     "null_per_hour": 0.0,
-    "precision_swing": 0.042510185892538854,
-    "probe_per_min": 0.5916666666666667
+    "precision_swing": 0.009393802011695151,
+    "probe_per_min": 5.5375
    }
   },
   "bugarach.bench_slow": {
    "cicada": {
     "ceiling_null": 1.0,
-    "ceiling_probe": 5.0,
-    "ceiling_swing": 0.1,
-    "f1_busy": 0.5960088691796009,
-    "f1_quiet": 0.6186988367083154,
+    "ceiling_probe": 4.0,
+    "ceiling_swing": 0.15,
+    "f1_busy": 0.7178423236514523,
+    "f1_quiet": 0.7791644058600108,
     "null_per_hour": 0.6111111111111112,
-    "precision_swing": 0.010684690146834097,
-    "probe_per_min": 2.5875
+    "precision_swing": 0.06651117807669849,
+    "probe_per_min": 1.9291666666666667
    },
    "coact": {
-    "ceiling_null": 2.0,
+    "ceiling_null": 1.0,
     "ceiling_probe": 1.0,
-    "ceiling_swing": 0.15,
-    "f1_busy": 0.7910614525139665,
-    "f1_quiet": 0.8433451118963486,
-    "null_per_hour": 1.25,
-    "precision_swing": 0.07042409647764836,
-    "probe_per_min": 0.075
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8602150537634409,
+    "f1_quiet": 0.8622754491017963,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.0031777557100297615,
+    "probe_per_min": 0.21666666666666667
    },
    "loco": {
     "ceiling_null": 1.0,
     "ceiling_probe": 1.0,
     "ceiling_swing": 0.1,
-    "f1_busy": 0.8194285714285715,
-    "f1_quiet": 0.8432178508514386,
-    "null_per_hour": 0.5555555555555556,
-    "precision_swing": 0.03430058568479688,
-    "probe_per_min": 0.1375
+    "f1_busy": 0.8475573866980576,
+    "f1_quiet": 0.846380223660977,
+    "null_per_hour": 0.08333333333333333,
+    "precision_swing": 0.0010214504596526286,
+    "probe_per_min": 0.008333333333333333
    },
    "rate": {
     "ceiling_null": 1.0,
     "ceiling_probe": 1.0,
     "ceiling_swing": 0.1,
-    "f1_busy": 0.8440797186400937,
-    "f1_quiet": 0.8515671200473093,
+    "f1_busy": 0.8435852372583479,
+    "f1_quiet": 0.8455666470933646,
     "null_per_hour": 0.0,
-    "precision_swing": 0.011280480799159442,
-    "probe_per_min": 0.3625
+    "precision_swing": 0.002968395860324602,
+    "probe_per_min": 0.26666666666666666
    },
    "sce": {
     "ceiling_null": 5.0,
-    "ceiling_probe": 8.0,
+    "ceiling_probe": 7.0,
     "ceiling_swing": 0.1,
-    "f1_busy": 0.751754945756222,
-    "f1_quiet": 0.818840579710145,
+    "f1_busy": 0.7741530740276035,
+    "f1_quiet": 0.8399291199054932,
     "null_per_hour": 3.0833333333333335,
-    "precision_swing": 0.02896346078164258,
-    "probe_per_min": 4.675
+    "precision_swing": 0.02478004520215149,
+    "probe_per_min": 4.3
    },
    "sync": {
     "ceiling_null": 1.0,
     "ceiling_probe": 1.0,
     "ceiling_swing": 0.1,
-    "f1_busy": 0.7354596622889307,
-    "f1_quiet": 0.7337948395217118,
+    "f1_busy": 0.8458823529411764,
+    "f1_quiet": 0.8453850676072898,
     "null_per_hour": 0.0,
-    "precision_swing": 0.001944096427182851,
-    "probe_per_min": 0.05
+    "precision_swing": 0.0007478832511598199,
+    "probe_per_min": 0.38333333333333336
    }
   }
  },

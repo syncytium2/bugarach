@@ -146,18 +146,32 @@ def test_bakeoff_conversions_come_from_the_files_own_spec():
 
 
 @pytest.mark.skipif(not BAKEOFF.exists(), reason="bake-off not in the tree")
-def test_the_shipped_bakeoff_fails_one_gate_and_declares_none_for_the_learned():
-    """Two facts about the shipped file, both reported rather than acted on.
+def test_the_shipped_bakeoff_now_fails_no_gate_and_still_declares_none_for_the_learned():
+    """⚠ **The first of these two facts reversed on 2026-09-22 — the ceiling moved,
+    the setting did not.**
 
-    rate+context ships a setting firing over its own ceiling because the bake-off
-    picks knobs by raw argmax with no probe gate. And the learned models have no
-    ceilings at all, so the table cannot say anything about them on that axis.
+    It read: *rate+context ships a setting firing over its own ceiling because the
+    bake-off picks knobs by raw argmax with no probe gate.* That was measured against
+    a ceiling of 2.0. When the probe became the measured 99th percentile,
+    `MAX_PROBE_PER_MIN["rate"]` was re-measured to 4.5 — and the bake-off's setting
+    fires **3.47/min**, so it now passes. **Nothing about the shipped file changed.**
+    The bake-off still picks by raw argmax with no probe gate; that choice simply is
+    not over the line any more.
+
+    The second fact stands: the learned models carry no ceilings, so the table cannot
+    say anything about them on this axis. And the point that gave it force survives in
+    a sharper form — **tube fires 2.05/min ungated, twice the ceiling CoactDetect and
+    LoCo are held to** (1.0), while those two fire 0.12 and 0.25.
     """
     t = performance_table(fold_scores_from_bakeoff(BAKEOFF))
-    assert t.row("rate").gate == "FAIL"
+    assert t.row("rate").gate == "pass"
+    assert t.row("rate").probe_per_min < t.row("rate").probe_ceiling
     assert t.row("tube").gate == "none"
-    assert t.row("tube").probe_per_min > t.row("rate").probe_ceiling, (
-        "tube fires above the ceiling rate+context failed on, and is ungated")
+    assert t.row("tube").probe_per_min > t.row("coact").probe_ceiling, (
+        "tube fires above the ceiling CoactDetect is held to, and is ungated")
+    assert all(r.gate != "FAIL" for r in t.rows), (
+        "a gate fails again; at the re-measured ceilings of 2026-09-22 none did, and "
+        "that is the claim this test now carries")
 
 
 @pytest.mark.skipif(not BAKEOFF.exists(), reason="bake-off not in the tree")

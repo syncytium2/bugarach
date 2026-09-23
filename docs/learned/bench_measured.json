@@ -1,7 +1,7 @@
 {
  "all_inside": true,
  "bootstrap_draws": 200,
- "commit": "00a0e7a",
+ "commit": "9838716",
  "folder": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
  "jitter_source": {
   "record": "docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json",
@@ -74,18 +74,18 @@
    "measured": 0.266693134759182
   },
   "regime_busy_hz": {
-   "bench": 0.019,
-   "hi": 0.023338017608359136,
+   "bench": 0.0165,
+   "hi": 0.02229433519701592,
    "inside": true,
-   "lo": 0.016132597117794488,
-   "measured": 0.019035087719298245
+   "lo": 0.014143941392762892,
+   "measured": 0.016454847714661682
   },
   "regime_quiet_hz": {
-   "bench": 0.0052,
-   "hi": 0.006624922530511061,
+   "bench": 0.0042,
+   "hi": 0.00592826418763389,
    "inside": true,
-   "lo": 0.002843676480473214,
-   "measured": 0.005045489568515886
+   "lo": 0.002614497891166634,
+   "measured": 0.004215002978609654
   }
  },
  "window": "longest baseline region; the folder's analysis window inside it (assess_folder.generation_window)"
