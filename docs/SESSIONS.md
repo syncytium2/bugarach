@@ -25,6 +25,39 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Reads:** the default export, confirmed by Tony this session. **Not touched:** any bench's
   `OPERATING_POINTS`.
 - **Touches:** this block.
+### 064/learned-combined — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-learned-combined/` (NEW)
+- **Status:** ACTIVE (WSMIP064), claimed **before any write**. Tony, 2026-09-23: *"learned runs
+  on combined too please"*. Combined already has `chorus_gain_norm` on its current bench (#754);
+  what it lacks for parity with fast and slow is **`chorus_norm`**. Five seeds, same protocol,
+  **on the GPU** — the existing combined rows were fitted on CPU, so the arithmetic differs
+  slightly and the record says so rather than presenting them as one series.
+- **Writes:** `models/chorus_norm/` only. A NEW folder; `2026-09-23-full-cohort-combined/`, which
+  holds the existing `chorus_gain_norm` combined models, is **read-only here and not touched**.
+- **Claims:** that folder exclusively. Checkpoints stay here; only `summary.json` goes to the repo.
+- **Holds:** the **GPU**, one fit at a time, continuing the hold from the fast claim below.
+- **Started after #761** (the no-coordination recording now follows `REGIMES` quiet), so this run
+  is scored on the corrected null from the start and needs no rescore.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the run record is on `main`.
+
+### 064/learned-fast — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-learned-fast/` (NEW)
+- **Status:** ACTIVE (WSMIP064), claimed **before any write**. Tony, 2026-09-23: *"set up the
+  learned runs immediately"* — no learned model has been trained on the **current** fast bench;
+  the only fast/slow learned numbers are the 2026-09-21 pilot, on the pre-jitter benches. This is
+  **FAST on the GPU**; WSMIP065 takes slow in parallel, and its `065/fullsearch` claim below is a
+  different folder.
+- **Writes:** `models/chorus_gain_norm/` and `models/chorus_norm/` (checkpoints, `best.json`,
+  `summary.json`) and `detect/` (real-data detection, fast stream). A NEW folder, so nothing
+  existing is touched. `<darkroom>/bugarach/` otherwise untouched; `constellation/` not touched.
+- **Claims:** that folder exclusively. Checkpoints stay here — only each `summary.json` goes to
+  the repo, under `docs/learned/runs/2026-09-23-learned-fast/`.
+- **Holds:** the **GPU** (one fit process at a time; A4000 16 GB, free at 525 MiB when claimed).
+  Another session wanting CUDA on this machine should wait or say so here.
+- **Reads** the default export folder, fast stream — confirmed by Tony in this session.
+- **Protocol:** the one combined used (#754) — fit seeds 1000–1023 on both backgrounds, score
+  seeds 4000–4023 — so the new rows are comparable with that run rather than with a new recipe.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the run record is on `main`.
 
 ### 065/fullsearch — DARKROOM claim ACTIVE 2026-09-23: the every-knob searches on the adopted benches
 - **Status:** **ACTIVE (WSMIP065)**, claimed **before any write** — which is the point of this

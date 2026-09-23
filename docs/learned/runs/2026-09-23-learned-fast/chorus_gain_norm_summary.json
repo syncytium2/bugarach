@@ -1,0 +1,98 @@
+{
+ "bench": "bugarach.bench",
+ "model": "chorus_gain_norm",
+ "config": {
+  "roi_width": 4,
+  "roi_depth": 4,
+  "head_width": 8,
+  "head_depth": 8,
+  "top_m": 4,
+  "norm": true,
+  "vote_gain": 8
+ },
+ "fit_seeds": [
+  1000,
+  1023
+ ],
+ "test_seeds": [
+  4000,
+  4023
+ ],
+ "null_budget_per_hour": 7.0,
+ "best_within_budget": true,
+ "best": "chorus_gain_norm_fast_seed1.json",
+ "rows": [
+  {
+   "seed": 0,
+   "path": "chorus_gain_norm_fast_seed0.json",
+   "threshold": 0.9947817321616484,
+   "f1": [
+    0.7543859649122807,
+    0.723404255319149
+   ],
+   "mean": 0.7388951101157148,
+   "null_per_hour": 0.1111111111111111,
+   "sec": 16,
+   "null_per_hour_before_761": 0.5555555555555556
+  },
+  {
+   "seed": 1,
+   "path": "chorus_gain_norm_fast_seed1.json",
+   "threshold": 0.9000000000000001,
+   "f1": [
+    0.82172373081464,
+    0.7808857808857809
+   ],
+   "mean": 0.8013047558502104,
+   "null_per_hour": 0.5555555555555556,
+   "sec": 12,
+   "null_per_hour_before_761": 2.3333333333333335
+  },
+  {
+   "seed": 2,
+   "path": "chorus_gain_norm_fast_seed2.json",
+   "threshold": 0.9715809801839131,
+   "f1": [
+    0.8308051341890316,
+    0.7539503386004515
+   ],
+   "mean": 0.7923777363947415,
+   "null_per_hour": 0.6666666666666666,
+   "sec": 12,
+   "null_per_hour_before_761": 2.4444444444444446
+  },
+  {
+   "seed": 3,
+   "path": "chorus_gain_norm_fast_seed3.json",
+   "threshold": 0.9838471862538573,
+   "f1": [
+    0.8235294117647058,
+    0.736842105263158
+   ],
+   "mean": 0.7801857585139319,
+   "null_per_hour": 0.6666666666666666,
+   "sec": 12,
+   "null_per_hour_before_761": 1.7777777777777777
+  },
+  {
+   "seed": 4,
+   "path": "chorus_gain_norm_fast_seed4.json",
+   "threshold": 0.9908190573212562,
+   "f1": [
+    0.8019441069258809,
+    0.686819830713422
+   ],
+   "mean": 0.7443819688196515,
+   "null_per_hour": 0.8888888888888888,
+   "sec": 12,
+   "null_per_hour_before_761": 1.6666666666666667
+  }
+ ],
+ "caveat": "best is chosen on the held-out seeds; its F1 is a selection score",
+ "rescored_on_corrected_null": {
+  "why": "#761 made bench.NULL_RECORDING follow REGIMES quiet; the fits are untouched",
+  "null_bg_rate_hz": 0.0042,
+  "best_before": "chorus_gain_norm_fast_seed1.json",
+  "best_changed": false
+ }
+}
