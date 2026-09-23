@@ -1,6 +1,7 @@
 ---
 status: waiting-on-tony
 filed: 2026-09-22
+waiting: Re-derive the bench's difficulty axis around the corrected jitter, or let the axis stand and record that it no longer separates SPIKE-synch. The measurement is settled either way; this decides what gets edited, and the every-knob re-searches wait on it.
 ---
 
 # The corrected jitter flattens SPIKE-synch across the background axis
