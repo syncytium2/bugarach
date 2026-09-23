@@ -61,6 +61,9 @@ import remeasure_bench as rb  # noqa: E402  (the fast tool; its measurement is r
 STREAM = "slow"
 RECORD = "docs/learned/bench_measured_slow.json"
 """Never ``bench.MEASURED_RECORD``: a slow write there would replace the fast record."""
+RECORDS = {"slow": RECORD, "combined": "docs/learned/bench_measured_combined.json"}
+"""``--stream combined`` (Tony, 2026-09-22) measures every fast and slow onset as one stream
+(``bugarach.combined``) into its own record, read by ``bugarach.bench_combined``."""
 
 BINS = (0.5, 1.0, 2.0, 3.0, 5.0)
 """Coincidence bins (s) jitter and participation are measured at. 1.0 is the fast
@@ -76,16 +79,19 @@ own onset jitter. Participation does not move with the bin (fast 0.19 at every b
 
 def _measure_recording(args):
     """One recording: ``remeasure_bench``'s record, plus the extra bins and the widths."""
-    folder, index, n_surrogates, bins = args
-    rec = rb._measure_recording((folder, index, STREAM, n_surrogates))
+    folder, index, n_surrogates, bins, stream = args
+    rec = rb._measure_recording((folder, index, stream, n_surrogates))
     if rec["skipped"]:
         return rec
     from bugarach.assess import assess_coactivity
+    from bugarach.combined import COMBINED, only_combined
     from bugarach.io import load_folder
 
     s = load_folder(Path(folder))[index]
+    if stream == COMBINED:
+        s = only_combined(s)
     lo, hi = rec["window"]
-    st = s.streams[STREAM]
+    st = s.streams[stream]
     widths = []
     for on, w in zip(st.t50rise or st.locs, st.width):
         on, w = np.asarray(on, float), np.asarray(w, float)
@@ -95,7 +101,7 @@ def _measure_recording(args):
 
     rec["by_bin"] = {}
     for b in bins:
-        a = next(r for r in assess_coactivity(s, stream=STREAM, window=(lo, hi),
+        a = next(r for r in assess_coactivity(s, stream=stream, window=(lo, hi),
                                               n_surrogates=n_surrogates, min_rois=(rb.K,),
                                               bin_width_sec=b)
                  if r.min_rois == rb.K)
@@ -149,8 +155,11 @@ def main(argv=None) -> int:
                    help=f"the coordination record each recording's coordinated share is "
                         f"read from, to make the regimes background rates "
                         f"(default {rb.RATES_RECORD})")
+    p.add_argument("--stream", choices=sorted(RECORDS), default=STREAM,
+                   help="slow (default) or combined; each writes its own record")
     a = p.parse_args(argv)
     bins = tuple(float(b) for b in a.bins.split(","))
+    stream, record_path = a.stream, RECORDS[a.stream]
 
     from bugarach import dataset
     from bugarach.bench import MIN_BASELINE_SEC
@@ -159,10 +168,10 @@ def main(argv=None) -> int:
     folder = dataset.default()
     stamp = dataset.stamp()
     n = len(load_folder(folder))
-    print(f"{stamp['name']} ({n} recordings), stream {STREAM!r}, baseline analysis "
+    print(f"{stamp['name']} ({n} recordings), stream {stream!r}, baseline analysis "
           f"windows, K = {rb.K}, bins {bins}")
 
-    tasks = [(str(folder), i, a.surrogates, bins) for i in range(n)]
+    tasks = [(str(folder), i, a.surrogates, bins, stream) for i in range(n)]
     if a.jobs > 1:
         with ProcessPoolExecutor(max_workers=a.jobs) as ex:
             recs = list(ex.map(_measure_recording, tasks))
@@ -178,7 +187,7 @@ def main(argv=None) -> int:
     # coordinated share off its total rate before the regime percentiles, so the slow
     # regimes are background rates too. Attached before the bootstrap, so a resampled draw
     # carries its own shares. See remeasure_bench.RATES_RECORD.
-    shares = rb._shares_from_record(a.rates_record, stamp["name"], STREAM)
+    shares = rb._shares_from_record(a.rates_record, stamp["name"], stream)
     for r in recs:
         r["share_hz"] = shares.get(r["slice_id"])
     have = sum(r["share_hz"] is not None for r in recs)
@@ -193,7 +202,7 @@ def main(argv=None) -> int:
         for k, v in _all_values(pick, bins).items():
             draws[k].append(v)
 
-    jitter = rb._jitter_from_record(a.jitter_record, STREAM, stamp["name"])
+    jitter = rb._jitter_from_record(a.jitter_record, stream, stamp["name"])
     print(f"jitter_sec from {jitter['record']} ({jitter['stat']}, "
           f"{jitter['recordings']} recordings): {jitter['point']:.4f} s")
 
@@ -219,7 +228,7 @@ def main(argv=None) -> int:
 
     record = {
         "dataset": stamp,
-        "stream": STREAM,
+        "stream": stream,
         "window": rb.WINDOW_RULE,
         "min_baseline_sec": MIN_BASELINE_SEC,
         "k": rb.K,
@@ -245,9 +254,9 @@ def main(argv=None) -> int:
         "width_quantiles": wq,
     }
     if not a.no_write:
-        (REPO / RECORD).write_text(json.dumps(record, indent=1, sort_keys=True) + "\n",
+        (REPO / record_path).write_text(json.dumps(record, indent=1, sort_keys=True) + "\n",
                                    encoding="utf-8")
-        print(f"\nwrote {RECORD}")
+        print(f"\nwrote {record_path}")
     return 0
 
 

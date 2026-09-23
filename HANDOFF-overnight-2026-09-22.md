@@ -17,17 +17,27 @@
    check in later tonight. The orchestrator has flagged one reason, below.
 4. **Run fast, slow and combined.**
 5. **(later, 2026-09-22 ~21:00 EDT) The probe moves to the measured 99th percentile** of 5-minute
-   baseline stretches — fast 0.06 → **0.128 Hz**, slow to its measured value (about −9%) — so the
-   methods statement's "99th percentile of the baseline frequency" is true of the bench. Adopted
-   **before** the searches run, so one rerun covers every change tonight.
+   baseline stretches, so the methods statement's "99th percentile of the baseline frequency" is
+   true of the bench. Adopted **before** the searches run, so one rerun covers every change tonight.
+   *As first relayed, this named fast's raw value (0.128) and slow's background one (−9%) — two
+   quantities; see 5a.*
+5a. **(~21:45 EDT) The basis is background, end to end** —
+   [#748](https://github.com/syncytium2/bugarach/pull/748). Quiet, busy and both probes are all
+   raw minus the coordinated share, on the bench's `shape_usable` set, fixed model, 1 s window:
+   probe fast 0.060 → **≈0.127 Hz**, slow 0.032 → **≈0.029 Hz**; quiet/busy 13–22% below today's.
 6. **(same time) SPIKE-synch flat across the background axis is a result, not a reason to change
    the axis.** Tony: *why change something because SPIKE-synch fails to improve? It's middle of the
    pack.* The axis is measured from baseline recordings and stays; the MILESTONES row that says no
    detector is flat is corrected; the searches run.
+7. **(~22:00 EDT) Combined is a third stream, the same pipeline as fast and slow.** Tony: the
+   pipeline fed both streams' onsets as one stream, labels kept for plotting, the same correlogram
+   and characterisation, a third parameter set from the detector search, two-colour rasters with
+   detection, and the fireflies export prepared, *"just like fast and slow"*. The code is
+   [#752](https://github.com/syncytium2/bugarach/pull/752); the run is the **Combined** section below.
 
-**Order from here:** #738 (constants) green and merged → WSMIP064's adoption PR (quiet/busy
-background values, both probes) on top of it, merged → WSMIP065 runs the fast and slow searches on
-the finished bench.
+**Order from here:** ~~#738 (constants)~~ merged → WSMIP064 marks #748 ruled and merges it, then
+its adoption PR (background values throughout: quiet, busy, both probes), merged → WSMIP065 runs the
+fast and slow searches on the finished bench. The 21:04 fast search was stopped and deleted (#749).
 
 ### What is adopted tonight, and what is only reported
 
@@ -38,7 +48,7 @@ the finished bench.
 | quiet / busy background rate | **adopt** if the tool's calibration passes | replaces like with like: total rate minus the coordinated share |
 | probe (elevated-rate stretch) level | **adopt** if calibration passes | replaces a chosen multiple of the median with a measured high percentile of untreated 5-minute stretches |
 | event frequency, participation from cumulants | **report only** | the bench plants a fixed participant count at three levels with ≥120 s spacing (a design floor that keeps each detector's null clean). The cumulant measure is a per-cell join probability over all shared moments, including ones joined by one or two cells. Adopting it means restructuring how events are planted, which is a decision, not a substitution |
-| anything **combined** | **report only** | no combined-stream bench exists; whether a slow onset and a fast onset are one event is goal 4's open question |
+| anything **combined** | ~~report only~~ **a third stream, run end to end** (ruling 7) | #752 builds the combined bench and gives every stage a `combined` value; the membership question stays open because nothing is deduplicated |
 
 **Operating points are not changed overnight.** The reruns produce searches and proposed settings;
 adopting a detector's shipped settings stays Tony's, as it was for the slow reference.
@@ -179,6 +189,50 @@ land in sequence. When it lands, quiet and busy are the straightforward rows. **
 +112% wants a sentence from Tony** — it is a different definition of "busy" for a probe, not a
 correction. And slow is the stream to be slowest about: this run, the per-group correlogram (#744,
 slow borderline at p = 0.054) and ruling item 3 all point the same way.
+
+## Combined — the third stream, end to end (WSMIP064, after its adoption PR)
+
+Needs [#752](https://github.com/syncytium2/bugarach/pull/752) on `main`. Every step is the fast/slow
+step with `combined` passed, in the order `src/bugarach/bench_combined.py`'s docstring gives.
+`PYTHONPATH=<worktree>/src` throughout; claim `<darkroom>/bugarach/2026-09-23-full-cohort-combined/`
+on `docs/SESSIONS.md` before step 7.
+
+1. **Jitter:** `python tools/measure_jitter_correlogram.py --jobs 12 --streams combined --out
+   docs/learned/runs/2026-09-23-jitter-correlogram-combined`.
+2. **Bench values:** `python tools/measure_slow_bench.py --stream combined --jobs 12 --jitter-record
+   docs/learned/runs/2026-09-23-jitter-correlogram-combined/jitter_correlogram.json` →
+   `docs/learned/bench_measured_combined.json`. Also report `bugarach.combined.near_coincident` at
+   one frame (0.1 s): how many slow onsets sit within a frame of a fast one on the same ROI. That
+   is the count goal 4's membership question turns on, and the union keeps both.
+3. **Background and probe:** `python tools/measure_coordination_rates.py --jobs 12 --out
+   docs/learned/runs/2026-09-23-coordination-rates-combined`. It reads the combined bench, so it
+   takes the calibration change you are making to `_sim` for fast.
+4. **Transcribe** into `bench_combined.py`, like slow's: jitter; `n_roi`; participation middle =
+   measured, outer levels at slow's ratio around it; rate and 300 s burst shapes; width table;
+   `REGIMES` = background quiet/busy; `hot_rate_hz` = background 99th percentile (ruling 5a);
+   `distractor_frac` = the middle participation. Clear `PROVISIONAL`. Then
+   `python tools/measure_slow_budgets.py --bench combined --jobs 12` and put its ceilings into
+   the three `MAX_*` tables. One PR, *"The combined bench is measured"*, with auto-merge.
+5. **Search:** `python tools/search_all_settings.py --bench combined --sliding --jobs 12`,
+   archived like fast's and slow's; the run record goes under
+   `docs/learned/runs/2026-09-23-full-search-combined/`.
+6. **The third parameter set:** write the search's held-out picks into
+   `bench_combined.OPERATING_POINTS`, each with a `source` saying it is the search's pick and
+   Tony asked for it on 2026-09-22 (awaiting his review, as slow's were). This is the combined
+   stream's own set. It is **not** `bench.OPERATING_POINTS`, and fast and slow are untouched.
+7. **Detect, rasters, export:** in the claimed folder,
+   - `python tools/settings_from_bench.py --bench combined --out <claimed>/combined_settings.csv`
+   - `bugarach detect <default folder> --stream combined --settings <claimed>/combined_settings.csv --out <claimed>/detect`
+   - `python tools/measure_calls.py --detections <claimed>/detect/detections.csv` (slow's aperture)
+   - `python tools/make_group_raster_summary.py --steps-excluded --streams combined --detections
+     <claimed>/detect/detections.csv --out <claimed>/rasters`. Fast onsets are black and slow ones
+     vermillion. Use the same flags as the slow set in `2026-09-22-full-cohort-slow/`.
+
+   `detections.csv` and `detector_settings.csv` carry `stream=combined` rows: that is the
+   fireflies export, **prepared, not sent**. A third stream value is a contract change for their
+   adapter (`docs/decisions_pending.md` item 4), so it goes with that conversation.
+8. Write one line here: what merged, where the runs and rasters are. **Show one raster page**
+   (`tools/show.py <png> --project bugarach`).
 
 ## Orchestrator (cloud)
 

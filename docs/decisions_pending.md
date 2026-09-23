@@ -53,6 +53,28 @@ in [`MILESTONES.md`](MILESTONES.md) — which is why this item is a stub rather 
 **Still ours and untouched by this:** group and imaging day are perfectly aliased in this
 corpus, which they say plainly they have not checked and which is not theirs to check.
 
+## 1b. The probe basis — RULED and ADOPTED 2026-09-22, background end to end
+
+**Tony, ~21:45 EDT: background, end to end.** Quiet, busy and both `hot_rate_hz` probes, on
+both streams, are raw minus the coordinated share.
+
+The substance now lives where the work reads it — the two `REGIMES` docstrings and the two
+`hot_rate_hz` provenances, which carry the numbers, the recording set and the calibration
+caveat — which is why this item is a stub rather than a section.
+
+⚠ **Two findings reversed on the new axis and are listed for Tony** in the run record: no
+detector is a steady leader across the whole grid any more, and the fitted-versus-flat
+contrast is gone. Both follow from SPIKE-synch's flatness, already ruled a result (#738).
+
+**Why it was asked, and it was worth asking.** The 21:00 ruling
+([#747](https://github.com/syncytium2/bugarach/pull/747)) quoted fast's **raw** probe and
+slow's **background** one in the same sentence — *"fast 0.06 → 0.128 Hz, slow to its measured
+value (about −9%)"*. On fast those differ by 0.6%; on slow they straddle the old 0.032, so its
+probe would have risen 42% or fallen 9% depending on which was meant. The orchestrator
+confirmed the raw figure was its own relay.
+
+Evidence: [`learned/runs/2026-09-23-coordination-rates/`](learned/runs/2026-09-23-coordination-rates/README.md).
+
 ## 2. The jitter constant — RULED 2026-09-22, the benches carry the measurement
 
 **Tony, 2026-09-22 evening: adopt the measured values**, with participation 0.18 → 0.19 in the

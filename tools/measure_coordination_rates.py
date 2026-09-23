@@ -63,9 +63,11 @@ cannot subtract it, so including the probe would measure that rather than event 
 numbers behind that, and the over-subtraction it admits on real busy stretches, are in
 :data:`CAL_NO_PROBE`.
 
-**Combined** merges each cell's fast and slow onsets, counting a slow onset within one frame of a
-fast onset once (``merge_streams``). That merge rule is an assumption, stated, not goal 4's answer;
-there is no combined bench, so combined is not calibrated.
+**Combined** is ``bugarach.combined``: every fast and slow onset of a cell as one stream, nothing
+deduplicated (Tony, 2026-09-22), calibrated on ``bench_combined`` at that bench's own jitter. Until
+2026-09-23 this tool dropped a slow onset within a frame of a fast one; that assumption is gone,
+so the first run's combined rows are not comparable with later ones. A fast and a slow onset in
+the same frame still count as one active frame for that cell, as any two onsets would.
 
 **What it reads.** The default dataset (``dataset.default()``), each recording's baseline analysis
 window (``assess_folder.generation_window``, ``bench.MIN_BASELINE_SEC`` floor), ``t50rise`` onsets.
@@ -95,11 +97,13 @@ STRETCH_STEP = 30.0
 PROBE_PCT = 99.0
 CAL_TOL = 0.25
 SIM_SEEDS = tuple(range(1, 25))
-BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow"}
+BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
+           "combined": "bugarach.bench_combined"}
 CAL_JITTER = {"bugarach.bench": 0.106, "bugarach.bench_slow": 0.135}
 """The jitter the calibration plants: the correlogram's measured values, adopted by Tony on
 2026-09-22. Fixed here rather than read from the bench, so the calibration means the same thing
-whether it runs before or after the bench's constants move."""
+whether it runs before or after the bench's constants move. The combined bench has no entry and
+plants its own ``jitter_sec``, which the correlogram sets before this runs (bench_combined's route)."""
 
 
 # ---------------------------------------------------------------- the estimator (pure)
@@ -195,20 +199,6 @@ def stretch_rates(trains, L: int, stretch: int, step: int) -> np.ndarray:
     c = np.concatenate([[0], np.cumsum(counts)])
     starts = np.arange(0, L - stretch + 1, step)
     return (c[starts + stretch] - c[starts]) / (N * stretch * DT)
-
-
-def merge_streams(fast, slow, tol: int = 1) -> list[np.ndarray]:
-    """Per cell, fast onsets plus the slow onsets more than ``tol`` frames from any fast onset."""
-    out = []
-    for a, b in zip(fast, slow):
-        a = np.sort(np.asarray(a, int))
-        b = np.sort(np.asarray(b, int))
-        if a.size and b.size:
-            i = np.clip(np.searchsorted(a, b), 1, a.size)
-            near = np.minimum(np.abs(b - a[i - 1]), np.abs(b - a[np.minimum(i, a.size - 1)]))
-            b = b[near > tol]
-        out.append(np.sort(np.concatenate([a, b])))
-    return out
 
 
 def shape_usable(n_roi: int, n_events: float, duration_sec: float) -> bool:
@@ -374,13 +364,13 @@ def _real(args):
     assert abs(dt - DT) < 1e-9, f"{s.slice_id}: frame interval {dt}, this tool assumes {DT}"
     lo, hi = w
     L = int(round((hi - lo) / DT))
+    from bugarach.combined import COMBINED, has_sources, stream_of
+
     trains = {}
-    for stream in ("fast", "slow"):
-        if stream in s.streams:
-            st = s.streams[stream]
+    for stream in ("fast", "slow", COMBINED):
+        if stream in s.streams or (stream == COMBINED and has_sources(s)):
+            st = stream_of(s, stream)
             trains[stream] = [np.minimum(_frames(v, lo, hi), L - 1) for v in (st.t50rise or st.locs)]
-    if "fast" in trains and "slow" in trains and len(trains["fast"]) == len(trains["slow"]):
-        trains["combined"] = merge_streams(trains["fast"], trains["slow"])
     rng = np.random.RandomState(seed + i)
     return {"slice_id": s.slice_id,
             **{k: measure(v, L, rng) for k, v in trains.items()}}
@@ -405,7 +395,9 @@ def _sim(args):
     # coordinated events recovered at the background rates — and the probe stretch
     # answers a different one, whether a detector keys on rate. Leaving it in does not
     # make the test stricter, it makes it measure something else: see CAL_NO_PROBE.
-    s, gt = b.make_recording(regime, seed, jitter_sec=CAL_JITTER[bench_name],
+    s, gt = b.make_recording(regime, seed,
+                             jitter_sec=CAL_JITTER.get(
+                                 bench_name, b.BENCH_RECORDING["jitter_sec"]),
                              hot_window=None, hot_rate_hz=0.0)
     T = float(gt.params["duration_sec"])
     L = int(round(T / DT))

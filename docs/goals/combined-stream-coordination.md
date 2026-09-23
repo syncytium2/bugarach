@@ -4,8 +4,23 @@
 detection, and — the part that makes it worth doing — identify the individual events from
 each stream inside a coordinated event.
 
-**Status: not started.** No machine, no branch, no result. This page exists so the goal is
-findable and so the question under it is asked before any of it is built.
+**Status: built as a third stream, 2026-09-23; measured and searched overnight on a
+workstation.** Tony, 2026-09-22 ~22:00 EDT, asked for fast and slow onsets fed through the
+pipeline as one stream with their labels kept, characterised and simulated as one stream,
+a third parameter set, two-colour rasters and the fireflies export — *"just like fast and
+slow"*. That answers open questions 2 and 3 below: now, and **beside** the two passes.
+
+| settled | where |
+|---|---|
+| the stream: every fast and slow onset of a ROI, time-ordered, **nothing deduplicated**, each onset labelled with its source | `src/bugarach/combined.py` (`combine`, `only_combined`, `stream_of`) |
+| each event keeps its own stream's width; `width_def` names both rules | `combine` |
+| detectors run on the combined stream **alone**, never beside fast and slow, so the three shared-RNG ports do not move a fast or slow draw | `detect_folder.detect_slice`, `only_combined` |
+| a third bench, laid out like the slow bench, **provisional** until measured | `src/bugarach/bench_combined.py` — its docstring is the route |
+| every stage takes `combined`: correlogram (`--streams combined`), bench measure (`measure_slow_bench.py --stream combined`), coordination rates, budgets (`measure_slow_budgets.py --bench combined`), search (`--bench combined`), settings file (`tools/settings_from_bench.py`), detect (`--stream combined --settings`), rasters (`--streams combined`: fast in the raster ink, slow in the second), call measures (slow's aperture) | `tests/test_combined.py`, `tests/test_group_raster_summary.py` |
+
+**Not deduplicating is a choice, and it keeps question 1 open rather than answering it.**
+Dropping a slow onset near a fast one would decide by construction that they are one event.
+`combined.near_coincident` counts how often the question arises, for the gap figure below.
 
 ---
 
@@ -78,10 +93,9 @@ the lane above, where this project's own claims live (sapper SAP009).
 So: fast and slow onsets on one set of ROI rows, the slow ones in the second ink, the
 coordination calls in the lane above, pointing down. What does not exist yet:
 
-- **Nothing in the tree combines two streams.** There is no `combine_streams`; the union per
-  ROI has to be built. `Stream` carries `locs`, `amp`, `width` and `t50rise` as per-ROI
-  arrays, so the union is mechanical — but the **width** of a combined stream is not, since
-  the two arrive under different `width_def` rules and locust reads that column.
+- ~~Nothing in the tree combines two streams.~~ `bugarach.combined.combine` does, since
+  2026-09-23. The **width** keeps each event's own rule, and `width_def` names both; locust
+  reads that column, so what a mixed width does to it is something the combined search measures.
 - **ROI identity across streams is safe to assume.** FOUNDATIONS §9: an ROI verdict is
   computed once on the combined signal, precisely so that an ROI alive in the slow stream is
   not rejected on the fast one. The ROI is already one object to the exporter.
@@ -106,8 +120,10 @@ coordination calls in the lane above, pointing down. What does not exist yet:
 
 ## Where the work lives
 
-Nowhere yet. The first artifact will be the gap figure; it belongs in the darkroom under a
-claimed folder, with the repo copy beside it.
+The code landed 2026-09-23 (`combined.py`, `bench_combined.py`, and a `combined` value on
+every stage). The real-data run follows `bench_combined`'s docstring and is the combined
+section of the overnight handoff; its run records land under `docs/learned/runs/2026-09-23-*`
+with `combined` in the name.
 
 ## Keeping this page true
 

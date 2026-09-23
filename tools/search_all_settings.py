@@ -66,7 +66,8 @@ BENCH_ENV = "BUGARACH_BENCH"
 #: starts, and workers spawned on Windows re-import this module and read it again, so no
 #: stage can score one stream's recordings against the other's settings. Always set by
 #: ``main`` — a value left in the shell cannot redirect a run silently.
-BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow"}
+BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
+           "combined": "bugarach.bench_combined"}
 
 
 def _load_bench():

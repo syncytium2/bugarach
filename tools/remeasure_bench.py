@@ -111,7 +111,11 @@ def _measure_recording(args):
     from bugarach.assess_folder import NoBaselineRegion, generation_window
     from bugarach.io import load_folder
 
+    from bugarach.combined import COMBINED, has_sources, only_combined
+
     s = load_folder(Path(folder))[index]
+    if stream == COMBINED and has_sources(s):
+        s = only_combined(s)
     out = {"slice_id": s.slice_id, "skipped": None}
     if stream not in s.streams:
         out["skipped"] = f"no {stream!r} stream"
