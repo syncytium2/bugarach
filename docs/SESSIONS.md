@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/fullsearch — DARKROOM claim ACTIVE 2026-09-23: the every-knob searches on the adopted benches
+- **Status:** **ACTIVE (WSMIP065)**, claimed **before any write** — which is the point of this
+  block. On 2026-09-22 the combined CoactDetect search ran without `--out`, and
+  `tools/search_all_settings.py` defaults that to the darkroom under a dated name of its own, so
+  it wrote outside the claim. Both runs below pass an explicit `--out` inside the folders named
+  here.
+- **Writes:** two NEW folders — `bugarach/2026-09-23-full-search-fast/` and
+  `bugarach/2026-09-23-full-search-slow/`. New folders, so nothing existing is overwritten.
+- **Measure-only.** `bench.OPERATING_POINTS` and `bench_slow.OPERATING_POINTS` are **not edited**;
+  the run records compare proposed points against current ones, and adopting any of them stays
+  Tony's, as it was for the slow reference.
+- **Waits on** [#756](https://github.com/syncytium2/bugarach/pull/756), the adoption, reaching
+  `origin/main` — these searches measure against its constants. Stop-waiting deadline 03:45 EDT.
+- **Touches:** this block.
+
 ### 065/combined — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-full-cohort-combined/` (NEW)
 - **Status:** **ACTIVE (WSMIP065)**, claimed before any write. Tony, 2026-09-22 ~22:30: the
   combined stream is a third output beside fast and slow, expected in the morning. Runbook: the
