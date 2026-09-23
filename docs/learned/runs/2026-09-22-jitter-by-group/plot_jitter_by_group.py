@@ -191,7 +191,7 @@ def draw(rec, out: Path) -> Path:
         f"Baseline windows only (FOUNDATIONS §9), {stamp['name']}.",
     ])
     fig.text(0.005, 0.004, caption, fontsize=7, color=MUTED, va="bottom")
-    fig.tight_layout(rect=(0, 0.135, 1, 0.985))
+    fig.tight_layout(rect=(0, 0.155, 1, 0.985))   # the caption runs to six lines; leave it room
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=170)
     plt.close(fig)
