@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/learned-combined — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-learned-combined/` (NEW)
+- **Status:** ACTIVE (WSMIP064), claimed **before any write**. Tony, 2026-09-23: *"learned runs
+  on combined too please"*. Combined already has `chorus_gain_norm` on its current bench (#754);
+  what it lacks for parity with fast and slow is **`chorus_norm`**. Five seeds, same protocol,
+  **on the GPU** — the existing combined rows were fitted on CPU, so the arithmetic differs
+  slightly and the record says so rather than presenting them as one series.
+- **Writes:** `models/chorus_norm/` only. A NEW folder; `2026-09-23-full-cohort-combined/`, which
+  holds the existing `chorus_gain_norm` combined models, is **read-only here and not touched**.
+- **Claims:** that folder exclusively. Checkpoints stay here; only `summary.json` goes to the repo.
+- **Holds:** the **GPU**, one fit at a time, continuing the hold from the fast claim below.
+- **Started after #761** (the no-coordination recording now follows `REGIMES` quiet), so this run
+  is scored on the corrected null from the start and needs no rescore.
+- **Goal:** learned-model-family (goal 2).
+- **Released when:** the run record is on `main`.
+
 ### 064/learned-fast — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-learned-fast/` (NEW)
 - **Status:** ACTIVE (WSMIP064), claimed **before any write**. Tony, 2026-09-23: *"set up the
   learned runs immediately"* — no learned model has been trained on the **current** fast bench;
