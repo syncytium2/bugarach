@@ -119,7 +119,7 @@ Dataset: `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, confirmed by Tony
 two agree closely on *where* there is anything to call — 79 recordings against 78. Nothing here
 says which is right: there are no labels on this cohort, which is the whole reason the bench
 exists. The bench says `chorus_gain_norm` scores above CoactDetect at a false-alarm rate inside
-the same budget; whether that holds on real data is exactly what cannot be read off this table.
+the same budget; whether that holds on real recordings is exactly what this table cannot say.
 
 ⚠ **Both columns are at settings chosen elsewhere.** CoactDetect is at its shipped point, which
 [today's search](../2026-09-23-full-search-fast/README.md) proposes improving (+0.035 held-out),
