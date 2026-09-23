@@ -29,13 +29,20 @@ the slow bench keeps the same window, and the test pins that.
 300 s burst shapes, ROI count, participation and the width table. **Chosen**, every one
 provisional and listed so it can be argued with:
 
-- ``jitter_sec`` **0.30 s, fixed** (Tony, 2026-09-21: fixed, not a range). ⚠ **The value
-  rests on an analogy that turned out wrong.** It is bugarach's ``assess_coactivity`` at a 1 s
-  bin, offered as "what the fast bench did" — but the fast bench's 0.36 is the MATLAB
-  summary's value (``bench.MEASURED_PROVENANCE``), and that summary gives **0.46 s** for slow
-  at the same K. The choice moves locust and SPIKE-synch by about 0.09 F1 and waits on Tony
-  (``docs/learned/runs/2026-09-21-slow-step-a/``). On both streams bugarach's instrument
-  tracks bin/√12, so neither number identifies a stream's own jitter.
+- ``jitter_sec`` **0.135 s — measured, no longer chosen** (Tony, 2026-09-22: adopt it).
+  ``tools/measure_jitter_correlogram.py`` gives 0.135 s [0.126, 0.149] for this stream on the
+  default folder, from the width of the cross-ROI correlogram's peak calibrated against
+  simulations of this bench. It replaces **0.30 s**, which rested on an analogy that did not
+  hold: that number was bugarach's ``assess_coactivity`` at a 1 s bin, offered as "what the
+  fast bench did", but the fast bench's 0.36 came from the MATLAB summary
+  (``bench.MEASURED_PROVENANCE``), and that summary gives 0.46 s for slow at the same K. The
+  analogy was moot in the end — on both streams that instrument tracks bin ÷ √12, so neither
+  number identified a stream's own jitter, and the question of which of the two to copy had no
+  right answer. The correlogram answers it directly instead. Slow is about a third looser than
+  fast (0.135 against 0.106), where the old pair had slow *tighter* than fast (0.30 against
+  0.36) — an ordering nothing ever justified. Record:
+  ``docs/learned/runs/2026-09-22-jitter-correlogram/``; the superseded analogy and the 0.09 F1
+  it was worth to locust and SPIKE-synch, ``docs/learned/runs/2026-09-21-slow-step-a/``.
 - **No 60 s burst term** (Tony, 2026-09-21: *"disable the burst for slow"*). The slow
   stream's 60 s burst shape is unbounded above — no clumping at a minute that the fit can
   tell from chance — so only the 300 s scale is simulated.
@@ -134,7 +141,7 @@ BENCH_RECORDING = dict(
     n_roi=32,
     participation=(0.63, 0.38, 0.21),
     n_per_level=(5, 5, 5),
-    jitter_sec=0.30,
+    jitter_sec=0.135,
     min_sep_sec=120.0,
     bg_rate_shape=MEASURED_RATE_SHAPE,
     bg_burst_shape=MEASURED_BURST_SHAPE,

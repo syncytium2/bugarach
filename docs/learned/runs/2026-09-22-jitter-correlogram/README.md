@@ -73,3 +73,30 @@ A jitter change moves the bench, so every number scored on it — goal 1's tuned
 comparison, and the slow work — would be re-checked. Tighter events make coordination easier to
 detect, so scores would likely rise and the field compress further. This is Tony's call; no
 bench constant is changed here.
+
+## What it did change — adopted 2026-09-22 evening, and one consequence was not expected
+
+Tony ruled it in that evening: `bench` takes **0.106 s** and `bench_slow` **0.135 s**, with
+participation 0.18 → 0.19 in the same pass. Both benches were re-measured on the default folder
+and every constant landed inside its interval
+([#738](https://github.com/syncytium2/bugarach/pull/738)).
+
+The paragraph above got the direction right — scores rose, the field compressed — and missed how
+far the compression goes for one detector. **SPIKE-synch is now flat across the background
+difficulty axis**: F1 0.657 with a spread of **0.026** over 2.6–40 mHz/ROI, under the 0.05
+tolerance, at 12 seeds per grid point. The other five still spread 0.081 to 0.178. That is not a
+detector improving; it is the bench getting easier for the one detector keying on coincidence
+**timing** rather than on counts or rate, so sharpening planted jitter by about 3.4× sharpened
+exactly what it reads.
+
+It is **not** an artefact of planting 0.106 s on a 0.1 s grid. This record's own calibration is
+monotone and near-linear through the region, resolving planted 0.05 s → 0.096, 0.10 s → 0.175 and
+0.15 s → 0.246 measured half-width.
+
+Two things follow and neither is this record's to settle. The MILESTONES claim *"nothing is flat
+across it"* is no longer true of this bench; it now reads *five of six*, with status `open` —
+the measurement is settled, the response is not. And the 2026-09-18 fair comparison can no longer
+be re-rendered: it declared `jitter_sec` 0.36, so its builder refuses by name rather than carry
+today's constants over that bench's results. Both are written up in
+[`the todo`](../../../todo/2026-09-22-the-corrected-jitter-flattens-spike-synch-across-the-axis.md),
+with Figure 1 at `<darkroom>/bugarach/2026-09-22-jitter-background-curve/`.

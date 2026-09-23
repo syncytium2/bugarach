@@ -53,58 +53,25 @@ in [`MILESTONES.md`](MILESTONES.md) — which is why this item is a stub rather 
 **Still ours and untouched by this:** group and imaging day are perfectly aliased in this
 corpus, which they say plainly they have not checked and which is not theirs to check.
 
-## 2. The jitter constant is about three times too loose on both benches
+## 2. The jitter constant — RULED 2026-09-22, the benches carry the measurement
 
-> **RULED 2026-09-22 evening (Tony): adopt the measured values**, fast 0.106 s and slow 0.135 s,
-> in both benches, with participation 0.18 → 0.19 in the same pass, and rerun. Being implemented
-> overnight — [`HANDOFF-overnight-2026-09-22.md`](../HANDOFF-overnight-2026-09-22.md). This item
-> leaves the page in the PR that changes the constants.
+**Tony, 2026-09-22 evening: adopt the measured values**, with participation 0.18 → 0.19 in the
+same pass. `bench.BENCH_RECORDING["jitter_sec"]` is **0.106 s** and `bench_slow`'s is
+**0.135 s**, against 0.36 s and 0.30 s before; both benches were planting events about three
+times looser than the recordings they are fitted to. Both re-measures ran on the default folder
+and every constant landed inside its interval.
 
-**Decide:** whether the measured onset jitter replaces the bench constants, and when the
-re-measure and re-search run.
+The substance now lives where the work reads it — the two `BENCH_RECORDING` docstrings,
+`docs/learned/bench_measured.json` and `bench_measured_slow.json` — which is why this item is a
+stub rather than a section. The measurement itself is
+`docs/learned/runs/2026-09-22-jitter-correlogram/` ([#718](https://github.com/syncytium2/bugarach/pull/718)).
 
-**Blocking:** every tuned number on **both** streams, the slow adoption that has already
-happened, and the constants the methods section describes. It also decides whether step C
-below has a stable bench to train on.
-
-**Evidence:** [#718](https://github.com/syncytium2/bugarach/pull/718), merged 2026-09-22
-(`05769ce`); its run record is `docs/learned/runs/2026-09-22-jitter-correlogram/`.
-Read off the half-width of the cross-ROI
-onset correlogram at 0.1 s lags rather than from a within-cluster spread: **fast 0.106 s
-[0.091, 0.120] and slow 0.135 s [0.126, 0.149], against benches of 0.36 s and 0.30 s**, with
-theory giving 0.110 s and 0.138 s. Both old values tracked bin ÷ √12 — bugarach's and the
-MATLAB summary's alike. Slow's peak carries a tail one jitter does not make, and a shared
-same-frame artefact would read the same way. **The measurement landed; no bench constant moved
-with it**, which is what makes this a ruling rather than a change already made.
-Related: the slow bench's own 0.30 s already rested on an analogy that step A disproved, where
-the MATLAB summary gives 0.46 s for slow and that move alone costs locust −0.098 and
-SPIKE-synch −0.082 mean F1 (`docs/learned/runs/2026-09-21-slow-step-a/README.md`).
-
-⚠ **Check one thing before ruling this, added 2026-09-22 on Tony's question — what else did the
-simulations absorb, and was it measured carefully?** The jitter is not a lone bad constant.
-`tools/remeasure_bench.py` takes `n_roi`, `jitter_sec` **and `participation`** from a single
-`assess_coactivity` call at K = 4, and inside it the jitter and the participation come out of
-the **same `_clusters(...)` invocation at the same 1.0 s bin**, so both are coupled to that bin
-by construction. **Participation was swept and held** — `tools/measure_slow_bench.py`'s `BINS`
-docstring records the 2026-09-21 result: the jitter tracks bin ÷ √12 from 0.5 s to 5 s on both
-streams while participation stays at fast 0.19 at every bin and slow 0.37–0.38 from 0.5 s to
-3 s. So the bench's recruitment constant survives the test its timing constant failed.
-
-Three residuals, none of them a reason to delay the ruling: the quoted flat range **stops at
-3 s** where the bins run to 5 s, and at `wm_factor` 1.5 a 5 s bin gathers participants within
-±7.5 s of a cluster centre; participation has **no null counterpart** (`jit_obs` at least has
-`jit_null` and `jit_excess` — which **the bench does not use**, it absorbed the uncorrected
-observation); and the flatness is empirical rather than structural, unlike `rate_shape`, which
-predicts the 35% silent-ROI figure it was never fitted to. Full audit, graded by how each
-constant was measured:
+**Two follow-ups were taken rather than dropped**, neither a blocker: the participation sweep
+stops at a 3 s bin where the bins run to 5 s, and the bench absorbs `jit_obs` rather than
+`jit_excess` though the distinction is now known to matter —
 [`todo/2026-09-22-what-else-came-from-the-clustering-instrument.md`](todo/2026-09-22-what-else-came-from-the-clustering-instrument.md).
-
-**Recommendation:** rule the jitter. The audit that was meant to precede it is done and it came
-back clean for participation, so there is nothing left to wait for. Move the constant in one
-overnight pass with the 0.19 change, and take the two residuals as follow-ups rather than
-blockers: extend the participation sweep to the top of the bin range, and decide whether the
-bench should absorb `jit_excess` rather than `jit_obs` now that the distinction is known to
-matter. Until it is ruled, every operating point chosen this month stays provisional.
+**What the ruling does not settle:** the operating points. The re-searches propose settings on
+the new bench; adopting any of them is still Tony's, as it was for the slow reference.
 
 ## 3. The nets on the slow bench — run, re-pilot, or drop
 

@@ -130,14 +130,11 @@ def test_no_session_means_no_gate(monkeypatch):
 
 
 #: Code that may still name a non-eval role, each with the reason. Keep it short.
-ROLE_LITERAL_ALLOWED = {
-    # The bench is measured on `steps_excluded` and its test pins that; moving it is the
-    # re-bench, which Tony paused on 2026-09-21. check_scored_dataset flags it meanwhile.
-    ("src/bugarach/bench.py", "steps_excluded"),
-    # Its docstring's history of the same folder; the tool reads bench.MEASURED_ROLE, and
-    # it is the re-bench's tool (claimed by another session on 2026-09-21).
-    ("tools/remeasure_bench.py", "steps_excluded"),
-}
+#:
+#: Empty since 2026-09-22. Both entries were the bench and its re-measure tool naming
+#: `steps_excluded`, held open while Tony had the re-bench paused; `bench.MEASURED_ROLE`
+#: is now `"default"`, so nothing in code picks an input folder by name.
+ROLE_LITERAL_ALLOWED: set[tuple[str, str]] = set()
 
 
 def test_no_tool_picks_an_input_folder_by_role_name():
@@ -234,7 +231,7 @@ def test_an_unknown_role_names_the_ones_that_exist():
 def test_it_carries_no_absolute_path():
     """Names only. A path here would carry a person's name into a public repo, and
     would be wrong on every other machine — `resolve()` is what knows this one."""
-    text = POINTER.read_text()
+    text = POINTER.read_text(encoding="utf-8")
     for line in text.splitlines():
         if line.lstrip().startswith("name"):
             assert "/" not in line and "\\" not in line, line
@@ -257,7 +254,10 @@ def test_the_pointer_is_the_only_declaration_in_code():
     offenders = []
     for base in ("src", "tools"):
         for p in sorted((REPO / base).rglob("*.py")):
-            for n, line in enumerate(p.read_text().splitlines(), 1):
+            # encoding="utf-8" is load-bearing on Windows: this walks the repo's own
+            # source, which carries em-dashes and names like Grün, and the locale
+            # codepage cannot decode them (the same fix check_quotes.py made in #535).
+            for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
                 if folder_name.search(line) and not line.lstrip().startswith(("#", "``", '"', "*")):
                     offenders.append(f"{p.relative_to(REPO)}:{n}: {line.strip()}")
     # In tests the rule is narrower, and precisely so: a test may `resolve()` a
@@ -269,7 +269,7 @@ def test_the_pointer_is_the_only_declaration_in_code():
     for p in sorted((REPO / "tests").rglob("*.py")):
         if p.name == Path(__file__).name:
             continue
-        for n, line in enumerate(p.read_text().splitlines(), 1):
+        for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
             if "resolve(" in line and any(d in line for d in declared):
                 offenders.append(f"{p.relative_to(REPO)}:{n}: {line.strip()}")
     assert not offenders, (
@@ -412,7 +412,7 @@ def test_the_search_gate_outranks_the_read_only_verb_exemption():
     store branch and is exactly what hid this one for a day. If a future edit moves
     the search check below it, every test above still passes and the gate goes quiet.
     """
-    body = GATE.read_text()
+    body = GATE.read_text(encoding="utf-8")
     search = body.index("is this command SEARCHING FOR THE DATA")
     exemption = body.index("(git|grep|rg|ag|find|ls|wc|diff|gh)")
     assert search < exemption, (
@@ -427,8 +427,8 @@ def test_the_named_folder_tracks_the_pointer(tmp_path, monkeypatch):
     Otherwise the next export makes the gate itself the stale fifth declaration —
     which is the bug, wearing the uniform of the fix.
     """
-    assert "current_export.toml" in GATE.read_text()
-    body = GATE.read_text()
+    assert "current_export.toml" in GATE.read_text(encoding="utf-8")
+    body = GATE.read_text(encoding="utf-8")
     assert dataset.current_name() not in body, (
         "the gate hardcodes the folder name; it must read current_export.toml")
 
@@ -448,7 +448,7 @@ def test_it_does_not_fail_open_without_python():
 def test_the_gate_is_wired_into_settings():
     """Working and installed are different properties, and only one of them was ever
     checked here before `test_hooks_installed.py` made the point."""
-    hooks = json.loads(SETTINGS.read_text())["hooks"]["PreToolUse"]
+    hooks = json.loads(SETTINGS.read_text(encoding="utf-8"))["hooks"]["PreToolUse"]
     wired = [h["command"] for m in hooks if m.get("matcher") == "Bash"
              for h in m["hooks"]]
     assert any(GATE.name in c for c in wired), (

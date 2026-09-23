@@ -71,9 +71,17 @@ def test_the_bench_agrees_with_its_last_measurement_and_the_pointer():
     assert not found, "\n".join(found)
 
 
-def test_the_program_reads_steps_excluded_fast():
-    """The current program's decisions 1 and 4 (docs/goals/README.md)."""
-    assert bench.MEASURED_ROLE == "steps_excluded"
+def test_the_program_reads_the_default_folder_fast():
+    """The current program's decisions 1 and 4 (docs/goals/README.md).
+
+    This pinned the literal `steps_excluded` until 2026-09-22. That role had since become
+    an **archive** declaring a contamination, so the assertion outlived the folder: it was
+    holding the bench to something `dataset.current()` refuses, and the suite was green
+    about it. The bench names the default now, and what is worth pinning is that it stays
+    on an `input` the pointer declares rather than on any particular name.
+    """
+    assert bench.MEASURED_ROLE == "default"
+    assert dataset.declared_exports()[dataset.default_role()]["use"] == "input"
     assert bench.MEASURED_STREAM == "fast"
 
 

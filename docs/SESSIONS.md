@@ -10,6 +10,28 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/bench-jitter — DARKROOM claim ACTIVE 2026-09-22: the every-knob searches on the re-measured bench
+- **Status:** **ACTIVE (WSMIP065)**, claimed before any write. **Nothing written yet.** Tony,
+  2026-09-22 evening: adopt the measured jitter (fast 0.106 s, slow 0.135 s) and participation 0.19,
+  then rerun the search on the new bench — `HANDOFF-overnight-2026-09-22.md`, WSMIP065 steps 1–5.
+- **Writes (step 5, not started):** two NEW folders, `bugarach/2026-09-23-full-search-fast/` and
+  `bugarach/2026-09-23-full-search-slow/`, via `tools/search_all_settings.py --bench fast|slow
+  --archive-as`. New folders, so nothing existing is overwritten. Measure-only: `OPERATING_POINTS`
+  is not edited, and adopting any proposed setting stays Tony's.
+- **Also writes, and this one IS being written:** a NEW folder
+  `bugarach/2026-09-22-jitter-background-curve/`, from `tools/make_background_curve_figure.py`
+  on the re-measured bench. Claimed before the write. It is the evidence for the finding below.
+- **The searches ARE running**, into `bugarach/2026-09-23-full-search-fast/` and `-slow/`
+  (claimed above). They were held earlier on a cost claim of this session's that was wrong: it
+  said "hours", and they are **about 11 minutes per bench**, measure-only, changing no operating
+  point. At that price SPIKE-synch's row is worth having as evidence rather than skipping.
+- **The finding step 5 must be read against:** on the corrected jitter SPIKE-synch goes flat
+  across the background axis (F1 0.657, spread 0.026 against a 0.05 tolerance), so any setting
+  the search proposes for it is chosen against a flat objective and is **not** a recommendation.
+  The other five still spread 0.081–0.178 and their proposals stand. The MILESTONES row that said
+  *"nothing is flat across it"* now says five of six, status `open`.
+  `docs/todo/2026-09-22-the-corrected-jitter-flattens-spike-synch-across-the-axis.md`.
+- **Touches:** this block.
 ### 064/coordination-rates — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-23-coordination-rates/` (NEW)
 - **Status:** **RELEASED 2026-09-22**, on [#743](https://github.com/syncytium2/bugarach/pull/743)
   merging (`f9bde16`). Written and verified byte-for-byte against the repo copies:
