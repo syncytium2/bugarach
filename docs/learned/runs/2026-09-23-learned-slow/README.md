@@ -1,5 +1,12 @@
 # A learned detector on the CURRENT slow bench
 
+
+> ⚠ **Measured on `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, and the data have
+> since changed** (Tony, 2026-09-23: *"data changed. we'll come back to this."*). Nothing
+> here is retracted — every number is correct about that folder — but it is not the current
+> input. What inherits it, and in what order it would be redone:
+> [`docs/todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md`](../../../todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md).
+
 **Run 2026-09-23 on WSMIP065**, on `main` at `a59ad4c`. Tony, 2026-09-23: set up the learned runs
 immediately — **no learned model had been trained on the current slow bench, and slow had none at
 all**, so its rasters carry no learned lane. 065 took slow; WSMIP064 took fast on its GPU.

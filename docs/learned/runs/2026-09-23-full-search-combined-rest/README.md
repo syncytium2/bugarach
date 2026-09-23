@@ -1,5 +1,12 @@
 # The every-knob search on the COMBINED bench: the other five detectors
 
+
+> ⚠ **Measured on `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, and the data have
+> since changed** (Tony, 2026-09-23: *"data changed. we'll come back to this."*). Nothing
+> here is retracted — every number is correct about that folder — but it is not the current
+> input. What inherits it, and in what order it would be redone:
+> [`docs/todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md`](../../../todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md).
+
 **Run 2026-09-22 evening on WSMIP065**, 29.8 minutes, 10 workers.
 `tools/search_all_settings.py --bench combined --sliding --only loco sce rate sync cicada`.
 CoactDetect ran first and separately, at Tony's priority: `2026-09-23-full-search-combined-coact`.

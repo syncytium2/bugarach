@@ -1,5 +1,12 @@
 # The every-knob search on the ADOPTED slow bench
 
+
+> ⚠ **Measured on `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, and the data have
+> since changed** (Tony, 2026-09-23: *"data changed. we'll come back to this."*). Nothing
+> here is retracted — every number is correct about that folder — but it is not the current
+> input. What inherits it, and in what order it would be redone:
+> [`docs/todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md`](../../../todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md).
+
 **Run 2026-09-23, 03:18–03:29 on WSMIP065**, 10.9 minutes, 12 workers.
 `tools/search_all_settings.py --bench slow --sliding`, on `main` at `534f24c`, which **contains
 `2c19003`** — the adoption (#756). Slow probe **0.0291 Hz**, quiet background **0.0024 Hz**, read

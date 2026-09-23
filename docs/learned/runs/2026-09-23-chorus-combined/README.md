@@ -1,5 +1,12 @@
 # chorus_gain_norm trained on the COMBINED bench
 
+
+> ⚠ **Measured on `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, and the data have
+> since changed** (Tony, 2026-09-23: *"data changed. we'll come back to this."*). Nothing
+> here is retracted — every number is correct about that folder — but it is not the current
+> input. What inherits it, and in what order it would be redone:
+> [`docs/todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md`](../../../todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md).
+
 **Run 2026-09-22 evening on WSMIP065**, five seeds, about 6 minutes a fit.
 `tools/train_learned_on_bench.py --bench combined --model chorus_gain_norm --seeds 0 1 2 3 4`.
 Checkpoints and `best.json` are in `<darkroom>/bugarach/2026-09-23-full-cohort-combined/models/`;

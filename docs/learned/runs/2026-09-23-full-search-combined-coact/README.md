@@ -1,5 +1,12 @@
 # The every-knob search on the COMBINED bench: CoactDetect
 
+
+> ⚠ **Measured on `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, and the data have
+> since changed** (Tony, 2026-09-23: *"data changed. we'll come back to this."*). Nothing
+> here is retracted — every number is correct about that folder — but it is not the current
+> input. What inherits it, and in what order it would be redone:
+> [`docs/todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md`](../../../todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md).
+
 **Run 2026-09-22 evening on WSMIP065**, 10.6 minutes, 10 workers.
 `tools/search_all_settings.py --bench combined --sliding --only coact`, on the combined bench as
 measured that night (`src/bugarach/bench_combined.py`, PROVISIONAL cleared the same evening).
