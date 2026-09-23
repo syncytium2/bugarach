@@ -72,6 +72,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from bugarach import paths  # noqa: E402
+from bugarach.groups import group_key  # noqa: E402
 from bugarach.io import load_folder  # noqa: E402
 
 MANIFEST = "field_steps_flagged.tsv"
@@ -741,7 +742,8 @@ def main(argv=None) -> int:
     not_run = tuple(a.not_run) if a.not_run is not None else ()
 
     written, total_red = [], 0
-    for (group, treatment, stream), spec in sorted(pages.items()):
+    for (group, treatment, stream), spec in sorted(pages.items(),
+                                                   key=lambda kv: (group_key(kv[0][0]), kv[0][1:])):
         if a.streams and stream not in a.streams:
             continue
         blocks, red = build_page(spec["members"], ext=spec["ext"],
