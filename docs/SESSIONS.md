@@ -10,6 +10,25 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/186-waterfall — DARKROOM claim RELEASED 2026-09-23: `bugarach/2026-09-23-186-waterfall/`
+- **Status:** **RELEASED 2026-09-23, and the job moves to an interface2 session.** Tony: *"in the
+  future, use an interface2 session for matlab. i suspect there are issues."* Nothing of this
+  thread is held: **no MATLAB process is running** (the batch run finished and exited before the
+  ruling arrived), no CPU pool, no lock on the folder.
+- **Two files were written and are LEFT IN PLACE** for the interface2 session, not deleted:
+  `20250808_186_waterfall.png` (1,004,584 bytes) and `20250808_186_waterfall.pdf` (45,723,614
+  bytes).
+- ⚠ **Do not trust them as a finished page.** `exportgraphics` warned twice: *"UI components will
+  not be included in the output. To include UI components, use the `exportapp` function."*
+  `traceWaterfallViewer` is a **uifigure**, so what came out is the axes without the app chrome,
+  and nothing has checked whether the three axes themselves are complete and aligned. That is
+  precisely the class of issue Tony suspected; the interface2 session should re-export, probably
+  via `exportapp`, rather than build on these.
+- **No repo code was changed.** The viewer was used as it stands — opened, then driven to the
+  slice by calling its own `SelectionChangedFcn`, since it takes no slice argument. The throwaway
+  driver is `render_186.m`, left untracked in this worktree as a record of that route.
+- **Touches:** this block.
+
 ### 064/comod-three-streams — DARKROOM claim RELEASED 2026-09-23: `bugarach/2026-09-23-comodulation-three-streams/`
 - **Status:** DONE 2026-09-23 14:47 UTC — **[#768](https://github.com/syncytium2/bugarach/pull/768)
   merged on green** through `tools/merge_when_green.sh`; the run record is on `main` at

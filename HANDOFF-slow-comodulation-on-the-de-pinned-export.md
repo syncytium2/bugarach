@@ -6,6 +6,45 @@ true. Everything needed to finish is below; nothing needs re-running.
 
 Filed 2026-09-17, late. Branch `unsup/pins-excluded-run` (this file lands with it).
 
+> ## ⚠ Read this first — 2026-09-23 partially supersedes what follows
+>
+> **This file is still live: the page rewrite below has not happened.** But a newer run has
+> landed since it was written, and two things in it are now out of date. Do not write the page
+> from this file alone.
+>
+> **A third lab stream exists.** [#767](https://github.com/syncytium2/bugarach/pull/767) added
+> **combined**, and [#768](https://github.com/syncytium2/bugarach/pull/768) measured all three —
+> record at `docs/learned/runs/2026-09-23-comodulation-three-streams/`. The tables below are fast
+> and slow only. The new run's headline is that **the three streams converge once CoactDetect's
+> episodes are removed** (2.17–2.51× at 1-minute bins, against 3.20–12.00× as recorded), which is
+> a fact about the streams that the two-stream framing cannot state.
+>
+> **Which numbers to use.** The 23 Sept run reads the declared default through `dataset.default()`
+> and took 8 surrogate draws; the run below took 32 and named its folder directly. They agree
+> where they overlap (fast as recorded 3.14 against 3.20, slow removed + block 2.11 against 2.17)
+> — inside the 1 % draw-noise floor this file measured, plus the draw-count difference. Either is
+> defensible; **say which one the page is built from**, and do not mix rows from both into one
+> table.
+>
+> ⚠ **The by-group recommendation below is contradicted and should not be acted on as written.**
+> This file argues that *"DI's height survives the real removal"* is a stronger statement than the
+> page's *"trust the by-group reading least"* and **should replace it**. A leave-one-recording-out
+> on the 23 Sept run says the opposite: dropping one recording of 25 takes slow ORX from 5.82 to
+> 2.35, and one of 20 halves OVX on two streams. In six of twelve group-by-stream cells the
+> leave-one-out range is wider than the gap between the groups being compared. **A group ordering
+> that survives de-pinning can still be one recording deep** — those are different questions, and
+> this file tested the first and read it as an answer to the second. The day confound below is
+> untouched by any of it and still applies.
+>
+> **`20250806_174` is worth a direct look** before any group claim: it carries slow ORX there, and
+> [#765](https://github.com/syncytium2/bugarach/pull/765) independently named the same recording
+> for slow jitter. Two measures, one recording.
+>
+> ⚠ **The STOP banner on `docs/learned/slow_comodulation/README.md` is still there, and item 1
+> below does NOT authorise removing it.** Tony's instruction on 2026-09-23 was that he reads the
+> new numbers first; whether the banner comes off is his call, not a session's. The 23 Sept run
+> deliberately did not touch that page.
+
 ---
 
 ## What changed today, in one paragraph

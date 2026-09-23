@@ -56,7 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 W = 1060
 CAP = "font:13px/1.45 system-ui,sans-serif;color:#222;max-width:1040px;margin:4px 0 10px 0"
 SUB = "font:12px system-ui,sans-serif;color:#111;margin:10px 0 0 78px"
-GROUPS = ("DI", "MALE", "ORX", "OVX")
+from bugarach.groups import GROUP_ORDER as GROUPS  # noqa: E402  DI OVX MALE ORX (Tony, 2026-09-23)
 SWEPT = ("loco", "coact", "sync", "sce")
 SWEEP_REGIME = "baseline_quiet"
 KNOB_UNITS = {
