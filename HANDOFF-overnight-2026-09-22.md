@@ -16,6 +16,18 @@
 3. **New measurements go into the bench tonight unless there is a reason to hold** — Tony will
    check in later tonight. The orchestrator has flagged one reason, below.
 4. **Run fast, slow and combined.**
+5. **(later, 2026-09-22 ~21:00 EDT) The probe moves to the measured 99th percentile** of 5-minute
+   baseline stretches — fast 0.06 → **0.128 Hz**, slow to its measured value (about −9%) — so the
+   methods statement's "99th percentile of the baseline frequency" is true of the bench. Adopted
+   **before** the searches run, so one rerun covers every change tonight.
+6. **(same time) SPIKE-synch flat across the background axis is a result, not a reason to change
+   the axis.** Tony: *why change something because SPIKE-synch fails to improve? It's middle of the
+   pack.* The axis is measured from baseline recordings and stays; the MILESTONES row that says no
+   detector is flat is corrected; the searches run.
+
+**Order from here:** #738 (constants) green and merged → WSMIP064's adoption PR (quiet/busy
+background values, both probes) on top of it, merged → WSMIP065 runs the fast and slow searches on
+the finished bench.
 
 ### What is adopted tonight, and what is only reported
 
