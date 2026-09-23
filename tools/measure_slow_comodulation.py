@@ -129,10 +129,14 @@ marked, and ``dataset.current`` refuses it outright.
 The branches below test against this constant because the lab folder is the one with two streams,
 baseline windows and a CoactDetect removal arm; the Dard et al. folder has none of those.
 """
-FOLDERS = ((LAB_ROLE, "fast"), (LAB_ROLE, "slow"), ("cossart", "events"))
+LAB_STREAMS = ("fast", "slow", "combined")
+"""The lab folder's streams. ``combined`` is every fast and slow onset of a ROI as one train
+(:mod:`bugarach.combined`), built here from the two the folder carries (Tony, 2026-09-23)."""
+FOLDERS = tuple((LAB_ROLE, s) for s in LAB_STREAMS) + (("cossart", "events"),)
 
-COACT_NOTE = ("CoactDetect runs at detect_folder.detector_params('coact', ...) on both streams: "
-              "the project's calibrated point, as bugarach detect runs it.")
+COACT_NOTE = ("CoactDetect runs at detect_folder.detector_params('coact', ...) on every lab "
+              "stream: the project's calibrated point, as bugarach detect runs it, and the same "
+              "settings on all three so the removal arm is comparable across them.")
 
 SPEC_PATH = ROOT / "docs" / "learned" / "generator_spec.json"
 N_SYN = 24
@@ -340,7 +344,7 @@ def arms_for(trains_full, L_full: int, dt: float, key, draws: int, stream: str |
                                                 rng(*key, "rigid", J, d)), L_full, trim)[0],
             "rigid")
     extra = {}
-    if stream in ("fast", "slow"):
+    if stream in LAB_STREAMS:
         removed, episodes, extra = coact_removed(trains_full, L_full, dt, stream)
         rt = trimmed(removed, L_full, trim)[0]
 
@@ -380,6 +384,12 @@ def load(role: str, stream: str, limit: int | None):
     slices = load_folder(dataset.current(role))
     if limit:
         slices = slices[:limit]
+    if stream == "combined":
+        from dataclasses import replace
+
+        from bugarach.combined import has_sources, stream_of
+        slices = [replace(s, streams={**s.streams, "combined": stream_of(s, "combined")})
+                  if has_sources(s) else s for s in slices]
     recs, skipped = ss.recordings_from_slices(slices, stream)
     declares_regions = any(getattr(s, "regions", None) for s in slices)
     if declares_regions:

@@ -94,6 +94,20 @@ def test_removal_arms_read_one_when_what_survives_is_independent(arm):
     assert mismatched[0] > vr[0], (mismatched, vr)
 
 
+@pytest.mark.parametrize("stream", ["fast", "slow", "combined"])
+def test_every_lab_stream_gets_the_removal_arms(stream):
+    """Combined joined the lab streams on 2026-09-23. A stream missing from the gate would run
+    without its CoactDetect removal arms and report only the as-recorded numbers, silently."""
+    trains, L, dt = _heavy_removal(600)
+    arms, extra, _ = msc.arms_for(trains, L, dt, ("gate", stream), 1, stream)
+    assert {"minus_coact", "circular_mask", "minus_coact_block_120"} <= set(arms)
+    assert extra["share_removed"] > 0
+
+
+def test_the_lab_folder_is_measured_on_three_streams():
+    assert [s for r, s in msc.FOLDERS if r == msc.LAB_ROLE] == ["fast", "slow", "combined"]
+
+
 def test_same_roi_pairs_are_not_counted():
     L = 2000
     got, _ = msc.pair_counts([np.arange(0, L, 7), np.array([], np.int64)], L, DT)

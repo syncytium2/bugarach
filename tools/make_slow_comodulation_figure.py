@@ -80,7 +80,12 @@ LAB = _dataset.default_role()
 """The lab role ``measure_slow_comodulation.py`` reads — the declared default; its result keys
 are ``<role>/<stream>``. ``main`` refuses a run measured on any other folder rather than
 drawing it without its lab panels."""
+LAB_STREAMS = ("fast", "slow", "combined")
+"""The lab streams, in panel order; a run that lacks one (every run before 2026-09-23 lacks
+combined) draws the ones it has."""
+LETTERS = "ABCDEFGHIJKL"
 DATASET = {f"{LAB}/fast": "lab, fast stream", f"{LAB}/slow": "lab, slow stream",
+           f"{LAB}/combined": "lab, combined stream",
            "cossart/events": "Dard et al. 2022"}
 GROUP_INK = {"DI": "#0f9fb5", "MALE": "#b8860b", "ORX": "#6b3e26", "OVX": "#c51b7d"}
 """Four hues that differ in lightness as well as hue, so the thin dashed lines separate."""
@@ -442,7 +447,7 @@ def fig4(R, out):
         ax.set_xlim(-0.6, len(widths) - 0.4)
         ax.set_xlabel(f"bin width\n{DATASET[name]}\n{S['n_recordings']} recordings, "
                       f"{S['n_mice']} mice")
-        tag(ax, "ABC"[i])
+        tag(ax, LETTERS[i])
     axes[0].set_ylabel("population count variance ÷ that of\nindependent ROIs (log scale)")
     h = [Line2D([], [], color=ARM[a][0], marker=ARM[a][3], ls="none", ms=8,
                 label=ARM[a][4] + (" (lab only)" if a.startswith("minus_coact") else ""))
@@ -459,7 +464,7 @@ def fig4(R, out):
 
 # -- Figure 5: the recordings' correlograms ----------------------------------------------------
 
-ZOOM = {f"{LAB}/fast": (-0.15, 0.35), f"{LAB}/slow": (-0.8, 0.8),
+ZOOM = {f"{LAB}/fast": (-0.15, 0.35), f"{LAB}/slow": (-0.8, 0.8), f"{LAB}/combined": (-0.8, 0.8),
         "cossart/events": (-0.12, 0.12)}
 
 
@@ -477,7 +482,7 @@ def fig5(R, out):
             for arm in arms:
                 curve(ax, R, S, arm, band=arm in ("real", "minus_coact"))
             lag_axis(ax, R, xlabel=(r == 1))
-            tag(ax, "ABCDEF"[r * len(names) + c])
+            tag(ax, LETTERS[r * len(names) + c])
             if r == 0:
                 ax.set_ylabel(f"excess coincidence, full range\n{DATASET[name]}", fontsize=12)
             else:
@@ -504,7 +509,7 @@ def fig5(R, out):
 # -- Figure 6: by group ------------------------------------------------------------------------
 
 def fig6(R, out):
-    names = [n for n in (f"{LAB}/fast", f"{LAB}/slow") if n in R["folders"]]
+    names = [n for n in (f"{LAB}/{s}" for s in LAB_STREAMS) if n in R["folders"]]
     if not names:
         return
     fig = plt.figure(figsize=(12.5, 11.5))
@@ -529,7 +534,7 @@ def fig6(R, out):
             lo = -0.8 if r == 0 else -0.1
             ax.set_ylim(lo, hi)
             marked[0] |= off_scale(ax, R, curves, hi, lo)
-            tag(ax, "ABCD"[r * 2 + c])
+            tag(ax, LETTERS[r * len(names) + c])
             ax.set_ylabel(f"excess coincidence\n{DATASET[name]}, "
                           f"{'as recorded' if arm == 'real' else 'episodes removed + block control'}",
                           fontsize=12)
@@ -542,7 +547,7 @@ def fig6(R, out):
             S = R["folders"][name]["by_group"].get(g)
             if S:
                 parts.append(f"{100 * S['top_mouse_share_of_pairs']:.0f} % "
-                             f"{'fast' if name.endswith('fast') else 'slow'}")
+                             f"{name.rsplit('/', 1)[1]}")
         S0 = R["folders"][names[0]]["by_group"][g]
         h.append(Line2D([], [], color=GROUP_INK[g], lw=2.4,
                         label=f"{g} · {S0['n_recordings']} recordings, {S0['n_mice']} mice; "
