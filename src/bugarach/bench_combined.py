@@ -51,6 +51,8 @@ from bugarach.bench import (  # noqa: F401  (shared: none reads a stream constan
     setting_applies,
     settings_are_valid,
 )
+# `cicada` is locust's key: the detector is called locust wherever a person sees it, and the
+# key stays `cicada` because it is the detections.csv contract value (detectors/cicada.py).
 from bugarach.detectors.cicada import cicada_detect
 from bugarach.detectors.coact import coact_detect
 from bugarach.detectors.loco import loco_detect

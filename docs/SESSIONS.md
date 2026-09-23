@@ -50,12 +50,18 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   was on a bench without the new probe and was void before it finished. Its partial `search.json`
   was deleted from `2026-09-23-full-search-fast/`, which is claimed and empty again. **The holds
   stand**: both search folders are still mine and still unwritten.
-- **What the searches now wait on**, and it is not #738 — that merged green (`8f9f771`). It is
-  the **probe-basis question**: [#748](https://github.com/syncytium2/bugarach/pull/748) shows the
-  ruling names fast's *raw* 99th percentile and slow's *background* one, which on slow differ by
-  56% and straddle the current value, so slow's probe either rises 42% or falls 9%. WSMIP064 is
-  rightly holding its adoption rather than picking. A wrong branch there lands in a constant these
-  searches run on minutes later — which this session nearly demonstrated, above.
+- **What the searches wait on, as of 2026-09-23 ~01:50: WSMIP064's adoption PR reaching
+  `origin/main`.** Nothing else. #738 merged green (`8f9f771`), and the probe-basis question is
+  **ruled**: [#750](https://github.com/syncytium2/bugarach/pull/750) records Tony's answer to
+  [#748](https://github.com/syncytium2/bugarach/pull/748) — **background, end to end**. Quiet,
+  busy and both probes are background rates (raw minus the coordinated share, `shape_usable` set,
+  fixed model, 1 s window), putting the probes at about **0.127 Hz fast** and **0.029 Hz slow**.
+  That settles the 56% ambiguity on slow, which had the probe either rising 42% or falling 9%
+  depending on which quantity was meant.
+  The adoption PR will be titled about adopting quiet/busy and the probes. **The searches run
+  only once it is on `origin/main`** — not on a local branch and not on a promise — because its
+  constants are what they measure against, and this session has already aborted one search for
+  running a bench ahead of a ruling.
 - **The finding step 5 must be read against:** on the corrected jitter SPIKE-synch goes flat
   across the background axis (F1 0.657, spread 0.026 against a 0.05 tolerance), so any setting
   the search proposes for it is chosen against a flat objective and is **not** a recommendation.
