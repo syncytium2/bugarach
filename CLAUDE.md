@@ -249,6 +249,14 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   (the orchestrator, WSMIP064/065) asks for the output and says where it should land; it
   does not launch MATLAB itself. The reference-regeneration launch lines below are the one
   standing exception, and they predate this rule.
+- **A bugarach session never acts in interface2, and a request to it states the outcome, not the
+  tool** ([ADR-0007](docs/adr/0007-bugarach-sessions-do-not-act-in-interface2.md), 2026-09-23).
+  No commits, comments, issue edits or scripts in that repository from the orchestrator or
+  WSMIP064/065; reading its code is fine. What bugarach needs goes as an issue saying what should
+  exist afterwards and what must not change ("folder X minus recording Y, every other file
+  byte-identical"), never "re-export" or a function name. A finding for interface2 is drafted
+  here and posted by Tony. On 2026-09-23 a request that said "re-export" sent a fresh session into
+  a 125 GB on-demand download, and a bugarach session sent into interface2 had to be stopped.
 - **Figure/report output goes to the Dropbox darkroom**, not the repo and not
   local disk. bugarach owns `<darkroom>/bugarach/` — resolve it with
   `bugarach.paths.darkroom()` — it takes `$BUGARACH_DARKROOM` when set and
