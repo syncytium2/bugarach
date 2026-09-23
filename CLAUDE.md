@@ -16,6 +16,13 @@ board claim, and update the page in the same PR as the result. A long-lived goal
 was considered and rejected on 2026-09-14: sessions start from `main`, and a branch holds
 commits, not a summary.
 
+**For "was this already decided, and why?": [`docs/adr/`](docs/adr/README.md)** — one
+immutable record per decision: context, decision, consequences. A ruling that settles how
+work is done lands there in the same PR as the first place the work reads it; changing it
+takes a new ADR that supersedes it. The habit lapsed for 25 days after ADR-0005 and was
+restarted by Tony on 2026-09-23; rulings from the gap are backfilled when a session leans
+on one ([candidates](docs/todo/2026-09-23-adr-backfill-candidates.md)).
+
 **Before you build anything, or when a lookup fails: [`docs/INDEX.md`](docs/INDEX.md).**
 Keywords — the words you would type into `grep`, not the ones in the filename —
 pointing at the file that owns the answer. It exists because on 2026-08-30 a session
@@ -234,6 +241,22 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   `optimize_detectors.m`, `calibrate6.m`. Running/validating the ports still
   needs neither MATLAB nor the checkout. See
   [`docs/todo/2026-08-12-port-coordination-benchmark.md`](docs/todo/2026-08-12-port-coordination-benchmark.md).
+- **MATLAB work goes to an interface2 session, never a bugarach one** (Tony, 2026-09-23:
+  *"in the future, use an interface2 session for matlab. i suspect there are issues"*).
+  Running interface2's code — the trace waterfall viewer, the casebooks, anything that
+  reads the archive or needs a MATLAB display — is that repository's work, done by a
+  session started in it, under its own CLAUDE.md, board and conventions. A bugarach session
+  (the orchestrator, WSMIP064/065) asks for the output and says where it should land; it
+  does not launch MATLAB itself. The reference-regeneration launch lines below are the one
+  standing exception, and they predate this rule.
+- **A bugarach session never acts in interface2, and a request to it states the outcome, not the
+  tool** ([ADR-0007](docs/adr/0007-bugarach-sessions-do-not-act-in-interface2.md), 2026-09-23).
+  No commits, comments, issue edits or scripts in that repository from the orchestrator or
+  WSMIP064/065; reading its code is fine. What bugarach needs goes as an issue saying what should
+  exist afterwards and what must not change ("folder X minus recording Y, every other file
+  byte-identical"), never "re-export" or a function name. A finding for interface2 is drafted
+  here and posted by Tony. On 2026-09-23 a request that said "re-export" sent a fresh session into
+  a 125 GB on-demand download, and a bugarach session sent into interface2 had to be stopped.
 - **Figure/report output goes to the Dropbox darkroom**, not the repo and not
   local disk. bugarach owns `<darkroom>/bugarach/` — resolve it with
   `bugarach.paths.darkroom()` — it takes `$BUGARACH_DARKROOM` when set and
