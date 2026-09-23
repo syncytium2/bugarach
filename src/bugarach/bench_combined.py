@@ -174,10 +174,34 @@ MAX_CROWDED_DROP = _fast.MAX_CROWDED_DROP
 BUDGETS_RECORD = "docs/learned/bench_combined_budgets.json"
 """Written by ``tools/measure_slow_budgets.py --bench combined``."""
 
-MAX_PROBE_PER_MIN: dict[str, float] = dict(_slow.MAX_PROBE_PER_MIN)
-MAX_FALSE_POSITIVES_PER_HOUR: dict[str, float] = dict(_slow.MAX_FALSE_POSITIVES_PER_HOUR)
-MAX_PRECISION_DROP: dict[str, float] = dict(_slow.MAX_PRECISION_DROP)
-"""Provisional: slow's budgets, replaced by :data:`BUDGETS_RECORD`'s ceilings (step 4)."""
+MAX_PROBE_PER_MIN: dict[str, float] = {
+    "loco": 1.0, "cicada": 68.0, "sce": 10.0, "coact": 1.0, "rate": 8.0, "sync": 16.0,
+}
+MAX_FALSE_POSITIVES_PER_HOUR: dict[str, float] = {
+    "loco": 5.0, "cicada": 2.0, "sce": 7.0, "coact": 10.0, "rate": 1.0, "sync": 1.0,
+}
+MAX_PRECISION_DROP: dict[str, float] = {
+    "loco": 0.1, "cicada": 0.1, "sce": 0.15, "coact": 0.1, "rate": 0.15, "sync": 0.1,
+}
+"""Measured ceilings from :data:`BUDGETS_RECORD`, seeds 1–48, at the settings this module
+started from. **Budgets record what each detector does today so a change is visible** — they are
+not targets, and the fast bench's docstring makes the same point.
+
+⚠ **Two of them say the combined probe is a much harder test than fast's, and that is the thing
+to look at before any of these is trusted.** The probe is a stretch at the background 99th
+percentile, which on combined is 0.1464 Hz — 5.5× the busy background, and denser in absolute
+terms than either parent's probe because every onset of both streams is in it.
+
+- **locust fires 42 times a minute into it** (ceiling 68), against 7.8 on fast where its declared
+  budget is 25. It is the detector that keys on a percentile of its own histogram, so a denser
+  block moves its threshold with it rather than past it.
+- **SPIKE-synch fires 9.4** (ceiling 16) against 0.6 on fast. Combining streams puts two onsets
+  of the same cell close together far more often, which is what it counts.
+
+Neither is evidence that those detectors are broken on combined; it is evidence that a probe
+built this way asks them a different question than fast's does. Whether the combined probe should
+be the background 99th percentile at all, given that, is worth Tony's eye — it follows the ruling
+for fast and slow, and the ruling was not made with this stream's density in view."""
 
 
 def measured_constants() -> dict[str, float]:
