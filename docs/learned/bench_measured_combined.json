@@ -1,0 +1,242 @@
+{
+ "bins_sec": [
+  0.5,
+  1.0,
+  2.0,
+  3.0,
+  5.0
+ ],
+ "bootstrap_draws": 200,
+ "commit": "6926d51",
+ "dataset": {
+  "name": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
+  "recordings": 84,
+  "role": "steps_and_pins_excluded",
+  "use": "input"
+ },
+ "jitter_source": {
+  "record": "docs/learned/runs/2026-09-23-jitter-correlogram-combined/jitter_correlogram.json",
+  "recordings": 84,
+  "statistic": "hwhm",
+  "tool": "tools/measure_jitter_correlogram.py"
+ },
+ "k": 4,
+ "measured_on": "2026-09-22",
+ "min_baseline_sec": 900.0,
+ "provenance": {
+  "jitter_sec_clustering": {
+   "hi": 0.40653921571024176,
+   "lo": 0.3293596224409248,
+   "measured": 0.3833409102317687
+  }
+ },
+ "recordings_in_shape_fits": 81,
+ "recordings_measured": 84,
+ "seed": 20260921,
+ "skipped": {},
+ "stream": "combined",
+ "surrogates": 1000,
+ "tool": "tools/measure_slow_bench.py",
+ "values": {
+  "burst_shape_300s": {
+   "hi": 3.04403314624293,
+   "lo": 1.6214764394222845,
+   "measured": 2.0987452985532453
+  },
+  "burst_shape_60s": {
+   "hi": 3.015429667749655,
+   "lo": 1.5277310160523645,
+   "measured": 2.06604153764913
+  },
+  "jitter_sec": {
+   "hi": 0.1601955281172082,
+   "lo": 0.13358279826567968,
+   "measured": 0.14806463920720012,
+   "source": "docs/learned/runs/2026-09-23-jitter-correlogram-combined/jitter_correlogram.json",
+   "statistic": "hwhm"
+  },
+  "jitter_sec@0.5s": {
+   "hi": 0.24401294221202163,
+   "lo": 0.1995180525852762,
+   "measured": 0.2232880423523724
+  },
+  "jitter_sec@1s": {
+   "hi": 0.40653921571024176,
+   "lo": 0.3293596224409248,
+   "measured": 0.3833409102317687
+  },
+  "jitter_sec@2s": {
+   "hi": 0.8246211251235336,
+   "lo": 0.5779861915400302,
+   "measured": 0.6367194668129761
+  },
+  "jitter_sec@3s": {
+   "hi": 1.151892353295712,
+   "lo": 0.7973636697159816,
+   "measured": 0.9034655205521644
+  },
+  "jitter_sec@5s": {
+   "hi": 2.1352285102687745,
+   "lo": 1.678388932628381,
+   "measured": 1.899110916718377
+  },
+  "n_roi": {
+   "hi": 33.5125,
+   "lo": 27.0,
+   "measured": 31.5
+  },
+  "participation": {
+   "hi": 0.30328600702576114,
+   "lo": 0.20588235294117646,
+   "measured": 0.23809523809523808
+  },
+  "participation@0.5s": {
+   "hi": 0.3449959590517242,
+   "lo": 0.21212121212121213,
+   "measured": 0.23809523809523808
+  },
+  "participation@1s": {
+   "hi": 0.30328600702576114,
+   "lo": 0.20588235294117646,
+   "measured": 0.23809523809523808
+  },
+  "participation@2s": {
+   "hi": 0.285978835978836,
+   "lo": 0.1934715821812596,
+   "measured": 0.2222222222222222
+  },
+  "participation@3s": {
+   "hi": 0.2962962962962963,
+   "lo": 0.1875,
+   "measured": 0.2222222222222222
+  },
+  "participation@5s": {
+   "hi": 0.28703703703703703,
+   "lo": 0.18742788461538462,
+   "measured": 0.2222222222222222
+  },
+  "rate_shape": {
+   "hi": 0.4242100920418682,
+   "lo": 0.26028911801512694,
+   "measured": 0.32655294068713453
+  },
+  "regime_busy_hz": {
+   "hi": 0.038866279987373735,
+   "lo": 0.0249562179038282,
+   "measured": 0.03428921568627451
+  },
+  "regime_quiet_hz": {
+   "hi": 0.012041351540616247,
+   "lo": 0.005103327546296296,
+   "measured": 0.0075154101469890955
+  }
+ },
+ "width_events": 70543,
+ "width_quantiles": [
+  0.1,
+  0.1,
+  0.4,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.5,
+  0.6,
+  0.6,
+  0.6,
+  0.6,
+  0.6,
+  0.6,
+  0.6,
+  0.6,
+  0.7,
+  0.7,
+  0.7,
+  0.7,
+  0.7,
+  0.7,
+  0.7,
+  0.8,
+  0.8,
+  0.8,
+  0.8,
+  0.8,
+  0.8,
+  0.8,
+  0.9,
+  0.9,
+  0.9,
+  0.9,
+  0.9,
+  0.9,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.1,
+  1.1,
+  1.1,
+  1.1,
+  1.2,
+  1.2,
+  1.2,
+  1.2,
+  1.2,
+  1.3,
+  1.3,
+  1.3,
+  1.4,
+  1.4,
+  1.4,
+  1.5,
+  1.5,
+  1.5,
+  1.6,
+  1.6,
+  1.6,
+  1.6,
+  1.7,
+  1.7,
+  1.7,
+  1.8,
+  1.8,
+  1.8,
+  1.8,
+  1.9,
+  1.9,
+  1.9,
+  2.0,
+  2.0,
+  2.0,
+  2.0,
+  2.1,
+  2.1,
+  2.1,
+  2.2,
+  2.2,
+  2.3,
+  2.3,
+  2.3,
+  2.4,
+  2.5,
+  2.5,
+  2.6,
+  2.7,
+  2.8,
+  2.9,
+  3.1,
+  3.3,
+  3.6,
+  4.1,
+  4.7,
+  5.1,
+  5.65,
+  12.06,
+  27.9
+ ],
+ "window": "longest baseline region; the folder's analysis window inside it (assess_folder.generation_window)"
+}
