@@ -44,6 +44,12 @@ LABELS = {"coact": "CoactDetect", "loco": "LoCo", "rate": "rate+context",
           "cicada": "locust", "sync": "SPIKE-synch", "sce": "binned SCE"}
 
 SEEDS = (1, 2, 3)
+"""Default seeds per grid point. **Three is enough to draw the shape and not enough to
+name the flattest detector**: on the re-measured bench (2026-09-22) three seeds put
+locust lowest at 0.043 spread while `tests/test_background_curve.py`, at twelve, puts
+SPIKE-synch lowest at 0.026. Pass ``--seeds 12`` to match the test when the figure is
+being used as evidence about a particular detector rather than about the axis."""
+
 REGIME = "baseline_quiet"
 
 #: The gap between the top two rows of the published bake-off. Every spread below
@@ -52,12 +58,12 @@ REGIME = "baseline_quiet"
 BAKEOFF_TOP_GAP = 0.017
 
 
-def measure() -> dict:
+def measure(seeds: tuple[int, ...] = SEEDS) -> dict:
     from bugarach.bench import (BACKGROUND_GRID, DETECTORS, REGIMES,
                                 background_spread, describe_background,
                                 evaluate_background_curve)
 
-    curves = {n: evaluate_background_curve(n, REGIME, SEEDS) for n in DETECTORS}
+    curves = {n: evaluate_background_curve(n, REGIME, seeds) for n in DETECTORS}
     rates = list(BACKGROUND_GRID)
     order_at = {r: sorted(DETECTORS, key=lambda n: -curves[n][r].f1)
                 for r in rates}
@@ -65,6 +71,7 @@ def measure() -> dict:
         "rates": rates,
         "f1": {n: [curves[n][r].f1 for r in rates] for n in DETECTORS},
         "rank": {n: [order_at[r].index(n) + 1 for r in rates] for n in DETECTORS},
+        "n_seeds": len(seeds),
         "spread": {n: background_spread(curves[n]) for n in DETECTORS},
         "said": {n: describe_background(curves[n]) for n in DETECTORS},
         "quiet": REGIMES["baseline_quiet"]["bg_rate_hz"],
@@ -140,6 +147,16 @@ def header_html(m: dict) -> str:
         for n in order)
     quiet_best = LABELS[m["order_at"][m["quiet"]][0]]
     busy_best = LABELS[m["order_at"][m["busy"]][0]]
+    # Derived, not asserted. This sentence used to state flatly that the ranking does not
+    # survive the axis, and to say "one detector moves four places" — both were true of the
+    # bench of the day and neither is guaranteed. On the 2026-09-22 re-measured bench the
+    # same detector leads at both endpoints, and the templated claim read as a contradiction
+    # of the numbers printed beside it.
+    max_rank_move = max(max(r) - min(r) for r in m["rank"].values())
+    rank_claim = ("The ranking does not survive it either" if max_rank_move >= 2
+                  else "The ranking is steadier than the scores")
+    max_rank_move = (f"{max_rank_move} place" if max_rank_move == 1
+                     else f"{max_rank_move} places")
     return f"""
 <div style="font:13px/1.5 -apple-system,Segoe UI,sans-serif;color:{INK};
             max-width:62rem;margin:0 auto 0.5rem">
@@ -159,10 +176,10 @@ interquartile spread of <i>untreated</i> slices rather than a treatment effect.<
 {rows}
 </table>
 
-<p><b>The ranking does not survive it either</b> (panel B). The best detector at
+<p><b>{rank_claim}</b> (panel B). The best detector at
 the quiet endpoint is <b>{quiet_best}</b>; at the busy endpoint it is
 <b>{busy_best}</b> — and those two points are both regimes this project fits and
-reports at. One detector moves four places across the grid.</p>
+reports at. The largest rank change across the grid is {max_rank_move}.</p>
 
 <p><b>Compare with the tolerance curve, which asked the same question and got the
 opposite answer.</b> Five of six detectors were flat across
@@ -172,7 +189,7 @@ used and no comparison rested on it. Here the <i>smallest</i> spread is
 published bake-off asks readers to believe between its top two rows, so
 <code>describe_background</code> refuses a bare F1 for every one of the six.</p>
 
-<p style="color:#5c6773">{len(SEEDS)} seeds per point, base recording
+<p style="color:#5c6773">{m['n_seeds']} seeds per point, base recording
 <code>{REGIME}</code>, matching tolerance 1.5&nbsp;s.
 <b>This measures and changes nothing:</b> <code>REGIMES</code> is untouched, no
 operating point moves, and <code>evaluate</code> is unchanged.
@@ -211,10 +228,15 @@ def main() -> int:
     p.add_argument("--also", type=Path, default=None,
                    help="second destination, e.g. docs/learned")
     p.add_argument("--no-png", dest="png", action="store_false", default=True)
+    p.add_argument("--seeds", type=int, default=len(SEEDS),
+                   help=f"seeds per grid point (default {len(SEEDS)}). Use 12 to match "
+                        f"tests/test_background_curve.py when the figure is evidence "
+                        f"about a particular detector.")
     a = p.parse_args()
 
-    print("scoring every detector across the background grid…")
-    m = measure()
+    seeds = tuple(range(1, a.seeds + 1))
+    print(f"scoring every detector across the background grid… ({len(seeds)} seeds/point)")
+    m = measure(seeds)
     for n in sorted(m["spread"], key=lambda k: -m["spread"][k]):
         print(f"  {LABELS[n]:<14} spread {m['spread'][n]:.3f}  {m['said'][n]}")
     print(f"  best at quiet: {LABELS[m['order_at'][m['quiet']][0]]} · "

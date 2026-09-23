@@ -8,12 +8,16 @@ the interquartile spread of *untreated* slices.
 This is the same move `TOLERANCE_GRID` made for the matching tolerance, and it
 lands in the opposite place. **Five of six detectors were flat across the
 tolerance grid**, so that inherited constant was granting slack nobody used and
-no comparison rested on it — reassuring, and cheap. **Nothing is flat across the
-background grid.**
+no comparison rested on it — reassuring, and cheap. **Five of six are *not* flat
+across the background grid**, which is the claim that matters, and it was *six of
+six* until 2026-09-22: adopting the measured jitter (0.36 → 0.106 s) put
+SPIKE-synch flat at F1 0.657, spread 0.026. See `BACKGROUND_FLAT` below for the
+mechanism and for what is still open about it.
 
 What these tests pin
 --------------------
-1. Every one of the six refuses a bare F1 (`describe_background`).
+1. Every detector outside `BACKGROUND_FLAT` refuses a bare F1 (`describe_background`),
+   and the flat set is exactly what was last measured — it fails in both directions.
 2. The axis still discriminates on the fitted field — every detector moves across
    it, and they stay apart at any given rate — and **one winner holds across it**,
    at both named `REGIMES` endpoints and everywhere between.
@@ -124,27 +128,72 @@ def test_the_curve_agrees_with_the_point_estimate_at_the_regime(curves):
         assert curves[n][QUIET_HZ].n_hit == point.n_hit, n
 
 
-# ------------------------------------------------- nothing is flat
+# ------------------------------------------------- five of six are not flat
 
-def test_every_detector_refuses_a_bare_f1(curves):
+#: The detectors measured flat across the background axis on the CURRENT bench.
+#:
+#: Empty until 2026-09-22, and the section above this line used to be called "nothing is
+#: flat". Adopting the measured jitter (0.36 -> 0.106 s, Tony's ruling that evening) put
+#: SPIKE-synch at F1 0.657 with a spread of 0.026 across the whole grid, under
+#: `BACKGROUND_TOLERABLE_SPREAD`. The other five still spread 0.081 to 0.178.
+#:
+#: The mechanism is not mysterious: `sync` is the one detector keying on coincidence
+#: TIMING rather than on counts or rate, so sharpening planted jitter by about 3.4x
+#: sharpened exactly what it reads, and it stopped degrading as the field fills up. The
+#: bench got easier for one detector in particular. It is NOT a quantisation artefact of
+#: planting 0.106 s on a 0.1 s grid -- the correlogram's calibration resolves 0.05 from
+#: 0.10 from 0.15 s cleanly.
+#:
+#: ⚠ This records a MEASUREMENT, not a decision. Whether the difficulty axis should be
+#: re-derived around the corrected jitter, or the MILESTONES row that says "nothing is
+#: flat across it" corrected to match, is Tony's and is open:
+#: `docs/todo/2026-09-22-the-corrected-jitter-flattens-spike-synch-across-the-axis.md`.
+#: The tolerance was NOT loosened to absorb this, and the test below fails if the set
+#: changes in either direction.
+BACKGROUND_FLAT = {"sync"}
+
+
+def test_the_flat_set_is_exactly_what_was_measured(curves):
+    """The guard that keeps `BACKGROUND_FLAT` honest.
+
+    It fails if another detector goes flat — the axis losing its power to
+    discriminate is the thing worth knowing early — and equally if `sync` stops being
+    flat, because then the exception above is stale and should come out rather than sit
+    there excusing a detector that no longer needs it.
+    """
+    spreads = {n: background_spread(curves[n]) for n in DETECTORS}
+    flat = {n for n, s in spreads.items() if s <= BACKGROUND_TOLERABLE_SPREAD}
+    assert flat == BACKGROUND_FLAT, (
+        f"the set of background-flat detectors moved: measured {sorted(flat)}, "
+        f"BACKGROUND_FLAT holds {sorted(BACKGROUND_FLAT)}. Spreads: "
+        + ", ".join(f"{n} {s:.3f}" for n, s in sorted(spreads.items(), key=lambda kv: kv[1]))
+        + f" against a tolerance of {BACKGROUND_TOLERABLE_SPREAD}.")
+
+
+def test_every_detector_but_the_known_flat_one_refuses_a_bare_f1(curves):
     """The headline, and the contrast with the tolerance curve.
 
-    `describe_curve` settles for five of six. `describe_background` settles for
-    none of them: every detector's score moves more across the background axis
-    than the threshold allows, so a single F1 for any of them is a number that
-    hides where it was measured.
+    `describe_curve` settles for five of six on the tolerance axis. On the background
+    axis `describe_background` settled for none of them until 2026-09-22 and now settles
+    for one: five detectors' scores still move more across the axis than the threshold
+    allows, so a single F1 for any of those five hides where it was measured.
     """
     said = {n: describe_background(curves[n]) for n in DETECTORS}
     for n, s in said.items():
+        if n in BACKGROUND_FLAT:
+            assert "flat across" in s, f"{n} is in BACKGROUND_FLAT but reported: {s}"
+            continue
         assert "NOT one number" in s, f"{n} reported a bare F1: {s}"
         assert "depends on the background rate" in s, (n, s)
 
 
 def test_the_spreads_dwarf_the_differences_the_bakeoff_asks_about(curves):
-    """0.017 separates the top two rows of the published table. Every detector
-    here moves several times that with the background alone, which is what makes
-    a bare F1 uncomparable rather than merely imprecise."""
-    spreads = {n: background_spread(curves[n]) for n in DETECTORS}
+    """0.017 separates the top two rows of the published table. Every detector outside
+    `BACKGROUND_FLAT` moves several times that with the background alone, which is what
+    makes a bare F1 uncomparable rather than merely imprecise."""
+    spreads = {n: background_spread(curves[n]) for n in DETECTORS
+               if n not in BACKGROUND_FLAT}
+    assert spreads, "every detector went flat — the axis has stopped discriminating"
     assert min(spreads.values()) > BACKGROUND_TOLERABLE_SPREAD, spreads
     # the published gap between the tube and CoactDetect
     assert min(spreads.values()) > 3 * 0.017, spreads

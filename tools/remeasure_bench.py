@@ -6,8 +6,8 @@
     python tools/remeasure_bench.py --jobs 12       # assess recordings in parallel
 
 **Why this exists.** On 2026-09-17 Tony ruled that the current program reads one
-folder, ``dataset.current("steps_excluded")``, and the same day it turned out the
-bench did not: its background shapes had been fitted by
+folder — then the steps-excluded export, now whatever ``dataset.default()`` names —
+and the same day it turned out the bench did not: its background shapes had been fitted by
 ``tools/fit_background_shape.py`` on a closed ``.mat`` archive, and its structural
 values (ROI count, onset jitter, participation) came from a MATLAB summary. Nothing
 had flagged it, because every one of those origins was written down as prose. Tony:
@@ -24,9 +24,16 @@ reads. Baseline only (FOUNDATIONS §9).
   ``tools/fit_background_shape.py``, with its own usability floors.
 - ``regime_quiet_hz`` / ``regime_busy_hz``: the 25th and 75th percentiles of
   per-recording mean ROI rate, over the same windows.
-- ``n_roi``, ``jitter_sec``, ``participation``: from ``assess_coactivity`` at K = 4,
-  the MATLAB summary's own headline K. ``participation`` is median participants
-  over median ROI count, as ``BENCH_RECORDING``'s docstring derives it.
+- ``n_roi``, ``participation``: from ``assess_coactivity`` at K = 4, the MATLAB
+  summary's own headline K. ``participation`` is median participants over median
+  ROI count, as ``BENCH_RECORDING``'s docstring derives it.
+- ``jitter_sec``: **not** from ``assess_coactivity``. Its within-cluster onset spread
+  (``jit_obs``) tracks the coincidence bin ÷ √12 on both streams rather than the
+  recordings' own timing, so it measured the instrument. The checked value is the
+  cross-ROI correlogram's calibrated half-width from
+  ``tools/measure_jitter_correlogram.py``, read from :data:`JITTER_RECORD` with that
+  tool's own bootstrap interval. ``jit_obs``'s median is still recorded, as
+  ``jitter_sec_clustering``, as provenance rather than as a checked value.
 
 **The verdict is an interval, not a tolerance.** Recordings are resampled with
 replacement and every value refitted per draw. A constant inside its 95% interval
@@ -62,6 +69,21 @@ K = 4
 
 WINDOW_RULE = ("longest baseline region; the folder's analysis window inside it "
                "(assess_folder.generation_window)")
+
+JITTER_RECORD = Path("docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json")
+"""Where ``jitter_sec`` and its interval are read from, repo-relative.
+
+``tools/measure_jitter_correlogram.py`` measures both streams in one run — it pools
+cross-ROI correlograms over the folder and reads the real peak's half-width off a
+calibration curve built by simulating each bench at a grid of planted jitters — so it
+is not a per-recording quantity this tool can resample. Its record carries the
+calibrated point and its own bootstrap interval, and the folder it was measured on;
+:func:`_jitter_from_record` refuses a record measured on a different folder."""
+
+JITTER_STAT = "hwhm"
+"""Half-width at half height: the correlogram tool's own primary statistic (its
+``primary`` field). The RMS lag it also records weights the 0-3 s tail by lag squared,
+so noise there moves it."""
 
 
 def _measure_recording(args):
@@ -134,9 +156,58 @@ def _values(recs) -> dict[str, float]:
     part = np.array([r["part_n_obs"] for r in recs], float)
     jit = np.array([r["jit_obs"] for r in recs], float)
     vals["n_roi"] = float(np.median(n_roi))
-    vals["jitter_sec"] = float(np.median(jit[np.isfinite(jit)]))
     vals["participation"] = float(np.median(part[np.isfinite(part)]) / np.median(n_roi))
+    # Provenance, not a checked value: this is the bin-bound instrument. jitter_sec
+    # comes from the correlogram record instead (JITTER_RECORD).
+    vals["jitter_sec_clustering"] = float(np.median(jit[np.isfinite(jit)]))
     return vals
+
+
+def _repo_relative(path: Path) -> str:
+    """``path`` as a repo-relative posix string, so the record never carries a
+    machine-local absolute path into a tracked file (sapper SAP004)."""
+    p = Path(path).resolve()
+    try:
+        return p.relative_to(REPO).as_posix()
+    except ValueError:
+        # Outside the repo: name it without the part that identifies the machine.
+        return p.name
+
+
+def _jitter_from_record(path: Path, stream: str, folder_name: str) -> dict:
+    """The correlogram's calibrated jitter for ``stream``, checked against the folder.
+
+    Refuses a record measured on a different folder: a jitter from one export and
+    every other constant from another is exactly the split provenance this tool
+    exists to catch.
+    """
+    if not path.exists():
+        raise SystemExit(
+            f"no jitter record at {path}. Produce one with\n"
+            f"  python tools/measure_jitter_correlogram.py --jobs 12 --out {path.parent}\n"
+            "and commit it, or pass --jitter-record.")
+    rec = json.loads(path.read_text(encoding="utf-8"))
+    measured_on = (rec.get("dataset") or {}).get("name")
+    if measured_on != folder_name:
+        raise SystemExit(
+            f"{path} was measured on {measured_on!r}, but this run reads {folder_name!r}. "
+            "Re-run tools/measure_jitter_correlogram.py on this folder; a jitter from one "
+            "export with every other constant from another is not a measurement of either.")
+    if stream not in rec.get("streams", {}):
+        raise SystemExit(f"{path} carries no {stream!r} stream (has "
+                         f"{sorted(rec.get('streams', {}))}).")
+    s = rec["streams"][stream]
+    stat = s.get("primary", JITTER_STAT)
+    row = s[stat]
+    if not row.get("calibration_monotone", False):
+        raise SystemExit(
+            f"{path}: the {stream} calibration is not monotone, so a real width cannot be "
+            "read off it. The record refuses the method rather than reporting a number.")
+    if row.get("jitter_interval") is None:
+        raise SystemExit(f"{path}: the {stream} bootstrap produced no interval.")
+    return {"point": float(row["jitter_sec"]), "interval": [float(x) for x in row["jitter_interval"]],
+            "stat": stat, "record": _repo_relative(path),
+            "recordings": int(s.get("recordings", 0))}
 
 
 def _commit() -> str:
@@ -157,6 +228,9 @@ def main(argv=None) -> int:
     p.add_argument("--jobs", type=int, default=1)
     p.add_argument("--no-write", action="store_true",
                    help="print the table; do not write the record")
+    p.add_argument("--jitter-record", type=Path, default=REPO / JITTER_RECORD,
+                   help=f"the correlogram record jitter_sec is read from "
+                        f"(default {JITTER_RECORD})")
     a = p.parse_args(argv)
 
     from bugarach import bench, dataset
@@ -189,17 +263,42 @@ def main(argv=None) -> int:
         for k, v in _values(pick).items():
             draws[k].append(v)
 
+    jitter = _jitter_from_record(a.jitter_record, bench.MEASURED_STREAM, name)
+    print(f"jitter_sec from {jitter['record']} ({jitter['stat']}, "
+          f"{jitter['recordings']} recordings): {jitter['point']:.4f} s")
+
     tree = bench.measured_constants()
     rows, all_inside = {}, True
     print(f"\n{'value':18s} {'in bench':>10s} {'measured':>10s} {'95% interval':>21s}  verdict")
     for k in tree:
-        lo, hi = (float(x) for x in np.nanpercentile(draws[k], [2.5, 97.5]))
+        if k == "jitter_sec":
+            measured, (lo, hi) = jitter["point"], jitter["interval"]
+        else:
+            measured = float(point[k])
+            lo, hi = (float(x) for x in np.nanpercentile(draws[k], [2.5, 97.5]))
         inside = bool(lo <= tree[k] <= hi)
         all_inside &= inside
-        rows[k] = {"bench": float(tree[k]), "measured": float(point[k]),
+        rows[k] = {"bench": float(tree[k]), "measured": measured,
                    "lo": lo, "hi": hi, "inside": inside}
-        print(f"{k:18s} {tree[k]:10.4f} {point[k]:10.4f} {lo:10.4f} - {hi:<8.4f}  "
+        if k == "jitter_sec":
+            rows[k]["source"] = jitter["record"]
+            rows[k]["statistic"] = jitter["stat"]
+        print(f"{k:18s} {tree[k]:10.4f} {measured:10.4f} {lo:10.4f} - {hi:<8.4f}  "
               f"{'inside' if inside else 'OUTSIDE'}")
+
+    # Kept OUT of `values`, which means "the constants that were checked" and is compared
+    # key-for-key against bench.measured_constants(). This is provenance: the instrument
+    # jitter_sec used to come from, recorded so the correction stays legible.
+    jc = np.nanpercentile(draws["jitter_sec_clustering"], [2.5, 97.5])
+    provenance = {"jitter_sec_clustering": {
+        "measured": float(point["jitter_sec_clustering"]),
+        "lo": float(jc[0]), "hi": float(jc[1]),
+        "note": ("assess_coactivity's within-cluster onset spread at K = 4, the instrument "
+                 "that tracks the coincidence bin / sqrt(12). Superseded as the source of "
+                 "jitter_sec on 2026-09-22; kept so the size of the correction is visible."),
+    }}
+    print(f"{'jitter_sec_clustering':18s} {'-':>10s} "
+          f"{point['jitter_sec_clustering']:10.4f} {jc[0]:10.4f} - {jc[1]:<8.4f}  provenance")
 
     record = {
         "role": role,
@@ -217,7 +316,14 @@ def main(argv=None) -> int:
         "measured_on": _dt.date.today().isoformat(),
         "commit": _commit(),
         "tool": "tools/remeasure_bench.py",
+        "jitter_source": {
+            "record": jitter["record"],
+            "statistic": jitter["stat"],
+            "recordings": jitter["recordings"],
+            "tool": "tools/measure_jitter_correlogram.py",
+        },
         "values": rows,
+        "provenance": provenance,
         "all_inside": all_inside,
     }
     if not a.no_write:

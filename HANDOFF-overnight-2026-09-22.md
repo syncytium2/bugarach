@@ -16,6 +16,18 @@
 3. **New measurements go into the bench tonight unless there is a reason to hold** — Tony will
    check in later tonight. The orchestrator has flagged one reason, below.
 4. **Run fast, slow and combined.**
+5. **(later, 2026-09-22 ~21:00 EDT) The probe moves to the measured 99th percentile** of 5-minute
+   baseline stretches — fast 0.06 → **0.128 Hz**, slow to its measured value (about −9%) — so the
+   methods statement's "99th percentile of the baseline frequency" is true of the bench. Adopted
+   **before** the searches run, so one rerun covers every change tonight.
+6. **(same time) SPIKE-synch flat across the background axis is a result, not a reason to change
+   the axis.** Tony: *why change something because SPIKE-synch fails to improve? It's middle of the
+   pack.* The axis is measured from baseline recordings and stays; the MILESTONES row that says no
+   detector is flat is corrected; the searches run.
+
+**Order from here:** #738 (constants) green and merged → WSMIP064's adoption PR (quiet/busy
+background values, both probes) on top of it, merged → WSMIP065 runs the fast and slow searches on
+the finished bench.
 
 ### What is adopted tonight, and what is only reported
 
@@ -84,6 +96,28 @@ Start from `main`, pull first, claim both boards. Tony confirms the dataset defa
   more widely, with sapper's own crash, in
   [`docs/todo/2026-09-22-sapper-crashes-instead-of-reporting-on-windows.md`](docs/todo/2026-09-22-sapper-crashes-instead-of-reporting-on-windows.md).
   No darkroom folder was written; the git-board claim for step 5 is live and unwritten.
+- **2026-09-22 ~20:30 (WSMIP065): Tony confirmed the folder, steps 3 and 4 are DONE, and step 5
+  is HELD on a finding — not on a blocker.** Both benches re-measured on
+  `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED` (84 recordings, 0 skipped) and **every
+  constant landed inside its interval**; `MEASURED_OUTSIDE_INTERVAL` is empty. Ruling-queue item 2
+  is a stub and the 0.19 todo is closed. [#738](https://github.com/syncytium2/bugarach/pull/738)
+  carries all of it and is **still a draft, still not on auto-merge**, because the suite is not
+  green and should not be made green by editing a test.
+  **The finding, and it is the reason to stop:** on the corrected jitter **SPIKE-synch goes flat
+  across the background difficulty axis** — F1 0.657, spread 0.026 against a 0.05 tolerance, at
+  12 seeds per grid point. The MILESTONES row *"nothing is flat across it"* (`measured`,
+  `current`, `c7786f2`) is no longer true of this bench. Figure 1 is
+  `<darkroom>/bugarach/2026-09-22-jitter-background-curve/background_curve.png`; the full write-up,
+  with what is and is not Tony's, is
+  [`docs/todo/2026-09-22-the-corrected-jitter-flattens-spike-synch-across-the-axis.md`](docs/todo/2026-09-22-the-corrected-jitter-flattens-spike-synch-across-the-axis.md).
+  One of the three readings is closed rather than left open: the flattening is **not** a
+  quantisation artefact of planting 0.106 s on a 0.1 s grid — the correlogram's own calibration
+  resolves 0.05 s from 0.10 s from 0.15 s cleanly.
+  **WSMIP064 should know two things.** `tools/build_fair_comparison_report.py` now refuses to
+  rebuild the 2026-09-18 fair comparison, correctly — that run declared `jitter_sec` 0.36, so the
+  weekend result, the merge-gap addendum and the leaderboard all belong to the old bench. And any
+  slow-stream work inherits this: SPIKE-synch was adopted on slow at `max_gap` 4 s on old-jitter
+  evidence.
 
 ## WSMIP064 — the sweep's findings, then the new measurements
 

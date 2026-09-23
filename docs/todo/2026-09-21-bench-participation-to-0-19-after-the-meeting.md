@@ -1,14 +1,26 @@
 ---
-status: open
+status: done
 filed: 2026-09-21
-priority: immediate — first thing after the 2026-09-22 meeting
+closed: 2026-09-22
 ---
 
 # Move the bench's participation from 0.18 to 0.19, the day after the meeting
 
-> **Approved 2026-09-22 evening (Tony: the meeting approved it; move it with the jitter).**
-> Being implemented overnight with the jitter change —
-> [`HANDOFF-overnight-2026-09-22.md`](../../HANDOFF-overnight-2026-09-22.md).
+> **DONE 2026-09-22 evening**, with the jitter, as Tony ruled.
+> `bench.BENCH_RECORDING["participation"]` is `(0.30, 0.19, 0.10)`; the `participation` entry
+> is out of `MEASURED_OUTSIDE_INTERVAL`, which is now empty; and the re-measure on the default
+> folder puts 0.19 inside its interval (measured 0.1905, interval 0.1818–0.2322).
+> Record: `docs/learned/bench_measured.json`.
+>
+> **Step 3 mattered more than this file expected.** `bench.MEASURED_ROLE` was the literal
+> `"steps_excluded"` — a role that had since become an **archive** declaring a contamination,
+> so the bench was pinned to a folder no analysis may read, and `tools/check_scored_dataset.py`
+> flagged it at every session start. It is now `"default"`, and `ROLE_LITERAL_ALLOWED` in
+> `tests/test_where_the_data_are.py` is empty: nothing in code picks an input folder by name.
+>
+> **Steps 4–6 below are not done and are not this todo's** — rerunning the search, the training
+> and the replicate, stamping results, rebuilding the leaderboard. They follow the new bench and
+> are the overnight handoff's step 5 and after.
 
 ## The ruling
 

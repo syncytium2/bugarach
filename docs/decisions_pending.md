@@ -53,109 +53,49 @@ in [`MILESTONES.md`](MILESTONES.md) — which is why this item is a stub rather 
 **Still ours and untouched by this:** group and imaging day are perfectly aliased in this
 corpus, which they say plainly they have not checked and which is not theirs to check.
 
-## 1b. The probe basis — is the background axis a raw rate or a coordination-subtracted one?
+## 1b. The probe basis — RULED 2026-09-22, background end to end
 
-**ASKED 2026-09-22 23:30 EDT, blocking the adoption PR. WSMIP064 is holding and will not pick.**
+**Tony, ~21:45 EDT: background, end to end.** Quiet, busy and both `hot_rate_hz` probes, on both
+streams, are **background** rates — raw minus the coordinated share, on the `shape_usable` set,
+fixed model, 1 s window. So fast's probe is **0.1271 Hz** and slow's **0.0291 Hz**, and quiet and
+busy take their background values.
 
-**Decide:** whether `REGIMES` quiet/busy and `hot_rate_hz` are all **raw** rates, all
-**background** rates (raw minus the coordinated share), or a mixture.
+**Why it was asked, and it was worth asking.** The 21:00 ruling
+([#747](https://github.com/syncytium2/bugarach/pull/747)) said the probe moves to the measured
+99th percentile — *"fast 0.06 → 0.128 Hz, slow to its measured value (about −9%)"* — and those two
+examples name **different quantities**. `0.128` is fast's **raw** value; `−9%` is slow's
+**background** one. On fast the two differ by 0.6%; **on slow they straddle the current 0.032**,
+so its probe either rose 42% or fell 9%. The orchestrator has since confirmed the `0.128` was its
+own relay of the raw figure.
 
-**Why it is open.** The 21:00 ruling recorded in
-[#747](https://github.com/syncytium2/bugarach/pull/747) says *"The probe moves to the measured
-99th percentile of 5-minute baseline stretches — fast 0.06 → **0.128 Hz**, slow to its measured
-value (**about −9%**)"*. Those two examples name **different quantities**, and on slow they point
-in opposite directions:
+The deciding argument was consistency: quiet and busy were already going to background values, and
+a raw probe beside them would make the background axis two different quantities at different
+points along it.
 
-| stream | bench now | raw 99th | background 99th |
-|---|---|---|---|
-| fast | 0.060 | **0.12781** (+113%) | 0.12708 (+112%) |
-| slow | 0.032 | **0.04531** (+42%) | **0.02906** (−9%) |
-
-`0.128` is fast's **raw** value (background 0.127 — a 0.6% difference, immaterial). `−9%` is
-slow's **background** value; raw is **+42%**. So slow's probe either rises 42% or falls 9%, and
-the two straddle the current 0.032. The `−9%` may have come from WSMIP064's own #743 summary,
-which framed slow's probe as background.
-
-**What pulls each way.** The ruling's stated reason — so the methods statement's *"99th
-percentile of the baseline frequency"* is true of the bench — argues for **raw**, that statement
-being about baseline frequency. But quiet and busy are explicitly going to **background** values,
-and a probe that is raw while quiet and busy are background makes the axis **two different
-quantities at different points along it**.
-
-**And the size of the whole adoption turns on it.** On the bench's own `shape_usable` set the
-**raw** quiet/busy already reproduce `bench.REGIMES` to within 3% (fast −3.0% and +0.2%, slow
-+0.6% and +0.3%). The 13–22% quiet/busy change exists **only** on the background reading; go raw
-throughout and the adoption is essentially probe-only.
-
-**Evidence:** [`learned/runs/2026-09-23-coordination-rates/`](learned/runs/2026-09-23-coordination-rates/README.md)
+**This item stays only until the adoption lands**, per this page's own rule that a ruling leaves
+in the same commit as the place the work reads it — the bench constants and their provenance.
+Evidence: [`learned/runs/2026-09-23-coordination-rates/`](learned/runs/2026-09-23-coordination-rates/README.md)
 (#743), Figure 1 panel B.
 
-**Two flags for whoever writes it up.** Slow's ungated calibration terms are the weakest in that
-run (moment rate −22.8%), and slow's probe is the one carrying a 35.9% coordination correction —
-so a raw probe sidesteps that weakness rather than resting on it. And #744 puts slow's per-group
-correlogram width borderline at p = 0.054 against fast's flat p = 0.71: three runs now say slow
-is the stream to be slowest about.
+## 2. The jitter constant — RULED 2026-09-22, the benches carry the measurement
 
-**Recommendation:** pick one quantity and use it end to end. Absent a reason to mix, **background
-throughout** is self-consistent and matches the `−9%` actually quoted; if the methods sentence is
-the point, say so and take **raw throughout**, accepting that quiet/busy then barely move.
+**Tony, 2026-09-22 evening: adopt the measured values**, with participation 0.18 → 0.19 in the
+same pass. `bench.BENCH_RECORDING["jitter_sec"]` is **0.106 s** and `bench_slow`'s is
+**0.135 s**, against 0.36 s and 0.30 s before; both benches were planting events about three
+times looser than the recordings they are fitted to. Both re-measures ran on the default folder
+and every constant landed inside its interval.
 
-**Sequencing, so nobody waits on the wrong thing:** the adoption is blocked on
-[#738](https://github.com/syncytium2/bugarach/pull/738) regardless — it is still a draft — so
-there is no time pressure from WSMIP064's side.
+The substance now lives where the work reads it — the two `BENCH_RECORDING` docstrings,
+`docs/learned/bench_measured.json` and `bench_measured_slow.json` — which is why this item is a
+stub rather than a section. The measurement itself is
+`docs/learned/runs/2026-09-22-jitter-correlogram/` ([#718](https://github.com/syncytium2/bugarach/pull/718)).
 
-## 2. The jitter constant is about three times too loose on both benches
-
-> **RULED 2026-09-22 evening (Tony): adopt the measured values**, fast 0.106 s and slow 0.135 s,
-> in both benches, with participation 0.18 → 0.19 in the same pass, and rerun. Being implemented
-> overnight — [`HANDOFF-overnight-2026-09-22.md`](../HANDOFF-overnight-2026-09-22.md). This item
-> leaves the page in the PR that changes the constants.
-
-**Decide:** whether the measured onset jitter replaces the bench constants, and when the
-re-measure and re-search run.
-
-**Blocking:** every tuned number on **both** streams, the slow adoption that has already
-happened, and the constants the methods section describes. It also decides whether step C
-below has a stable bench to train on.
-
-**Evidence:** [#718](https://github.com/syncytium2/bugarach/pull/718), merged 2026-09-22
-(`05769ce`); its run record is `docs/learned/runs/2026-09-22-jitter-correlogram/`.
-Read off the half-width of the cross-ROI
-onset correlogram at 0.1 s lags rather than from a within-cluster spread: **fast 0.106 s
-[0.091, 0.120] and slow 0.135 s [0.126, 0.149], against benches of 0.36 s and 0.30 s**, with
-theory giving 0.110 s and 0.138 s. Both old values tracked bin ÷ √12 — bugarach's and the
-MATLAB summary's alike. Slow's peak carries a tail one jitter does not make, and a shared
-same-frame artefact would read the same way. **The measurement landed; no bench constant moved
-with it**, which is what makes this a ruling rather than a change already made.
-Related: the slow bench's own 0.30 s already rested on an analogy that step A disproved, where
-the MATLAB summary gives 0.46 s for slow and that move alone costs locust −0.098 and
-SPIKE-synch −0.082 mean F1 (`docs/learned/runs/2026-09-21-slow-step-a/README.md`).
-
-⚠ **Check one thing before ruling this, added 2026-09-22 on Tony's question — what else did the
-simulations absorb, and was it measured carefully?** The jitter is not a lone bad constant.
-`tools/remeasure_bench.py` takes `n_roi`, `jitter_sec` **and `participation`** from a single
-`assess_coactivity` call at K = 4, and inside it the jitter and the participation come out of
-the **same `_clusters(...)` invocation at the same 1.0 s bin**, so both are coupled to that bin
-by construction. **Participation was swept and held** — `tools/measure_slow_bench.py`'s `BINS`
-docstring records the 2026-09-21 result: the jitter tracks bin ÷ √12 from 0.5 s to 5 s on both
-streams while participation stays at fast 0.19 at every bin and slow 0.37–0.38 from 0.5 s to
-3 s. So the bench's recruitment constant survives the test its timing constant failed.
-
-Three residuals, none of them a reason to delay the ruling: the quoted flat range **stops at
-3 s** where the bins run to 5 s, and at `wm_factor` 1.5 a 5 s bin gathers participants within
-±7.5 s of a cluster centre; participation has **no null counterpart** (`jit_obs` at least has
-`jit_null` and `jit_excess` — which **the bench does not use**, it absorbed the uncorrected
-observation); and the flatness is empirical rather than structural, unlike `rate_shape`, which
-predicts the 35% silent-ROI figure it was never fitted to. Full audit, graded by how each
-constant was measured:
+**Two follow-ups were taken rather than dropped**, neither a blocker: the participation sweep
+stops at a 3 s bin where the bins run to 5 s, and the bench absorbs `jit_obs` rather than
+`jit_excess` though the distinction is now known to matter —
 [`todo/2026-09-22-what-else-came-from-the-clustering-instrument.md`](todo/2026-09-22-what-else-came-from-the-clustering-instrument.md).
-
-**Recommendation:** rule the jitter. The audit that was meant to precede it is done and it came
-back clean for participation, so there is nothing left to wait for. Move the constant in one
-overnight pass with the 0.19 change, and take the two residuals as follow-ups rather than
-blockers: extend the participation sweep to the top of the bin range, and decide whether the
-bench should absorb `jit_excess` rather than `jit_obs` now that the distinction is known to
-matter. Until it is ruled, every operating point chosen this month stays provisional.
+**What the ruling does not settle:** the operating points. The re-searches propose settings on
+the new bench; adopting any of them is still Tony's, as it was for the slow reference.
 
 ## 3. The nets on the slow bench — run, re-pilot, or drop
 

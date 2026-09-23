@@ -17,13 +17,44 @@ TOOL = REPO / "tools" / "build_fair_comparison_report.py"
 RUN = REPO / "docs" / "learned" / "tuned_vs_coact" / "fair_comparison_2026_09_18"
 
 
+SUPERSEDED_BENCH = "SUPERSEDED BENCH"
+"""Kept as a literal, deliberately. Importing it from the tool would make this file agree
+with whatever the tool happens to say today; the point is to pin the contract from outside."""
+
+
 @pytest.fixture(scope="module")
 def html(tmp_path_factory) -> str:
     out = tmp_path_factory.mktemp("report")
     res = subprocess.run([sys.executable, str(TOOL), "--out", str(out)], capture_output=True,
                          text=True, cwd=REPO, timeout=600)
+    if res.returncode != 0 and SUPERSEDED_BENCH in res.stdout + res.stderr:
+        pytest.skip(
+            "the 2026-09-18 run was scored on a bench that no longer exists: it declared "
+            "jitter_sec 0.36 s, and the bench adopted the measured 0.106 s on 2026-09-22. "
+            "The run's numbers stand; its report cannot be re-rendered against today's "
+            "constants. Re-run, freeze, or render with a superseded-bench banner is Tony's "
+            "call -- docs/todo/2026-09-22-the-corrected-jitter-flattens-spike-synch-across-"
+            "the-axis.md. These house-rule checks resume when run and bench agree again.")
     assert res.returncode == 0, res.stdout + res.stderr
     return (out / "index.html").read_text(encoding="utf-8")
+
+
+def test_the_builder_refuses_a_run_from_a_different_bench():
+    """The guard itself, pinned from outside the tool.
+
+    Without this the skip above would be self-fulfilling: a builder that quietly stopped
+    checking would simply stop skipping, and every house-rule test below would pass on a
+    page carrying today's constants over another bench's results. This asserts the builder
+    still compares the run's declared `bench_recording` against the live bench and refuses
+    **by that name**, so the skip can be trusted to mean what it says.
+    """
+    src = TOOL.read_text(encoding="utf-8")
+    assert SUPERSEDED_BENCH in src, (
+        "the builder no longer names its superseded-bench refusal, so the skip in this "
+        "module would hide a real failure instead of reporting a known one")
+    assert '"jitter_sec"' in src and "bench_recording" in src, (
+        "the builder no longer compares the run's declared bench_recording against the live "
+        "bench -- a report could be rebuilt across a bench change without saying so")
 
 
 def test_figures_are_numbered_without_gaps_and_each_is_referred_to(html):
