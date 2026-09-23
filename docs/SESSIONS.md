@@ -10,6 +10,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/186-waterfall — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-186-waterfall/` (NEW)
+- **Status:** **ACTIVE (WSMIP065)**, claimed before any write. Tony, 2026-09-23: one page for
+  `20250808_186` (ORX) — the raster on top, every ROI's calcium signal as a waterfall below it.
+- **Writes:** one NEW folder — the PDF and PNG of interface2's `RateViewer/traceWaterfallViewer.m`
+  on that recording. New folder, so nothing existing is overwritten.
+- **Code is interface2's, used as it stands.** Not forked, not reimplemented — the viewer already
+  does exactly this (compressed FAST/SLOW rasters over the full-population dF/F0 waterfall) and
+  reads the ONSET `_alive` store the bugarach export was built from.
+- **Holds:** a MATLAB R2025b process while the figure renders. No repo code changes.
+- **Touches:** this block.
+
 ### 064/comod-three-streams — DARKROOM claim RELEASED 2026-09-23: `bugarach/2026-09-23-comodulation-three-streams/`
 - **Status:** DONE 2026-09-23 14:47 UTC — **[#768](https://github.com/syncytium2/bugarach/pull/768)
   merged on green** through `tools/merge_when_green.sh`; the run record is on `main` at
