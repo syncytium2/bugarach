@@ -10,6 +10,27 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/comod-three-streams — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-comodulation-three-streams/` (NEW)
+- **Status:** ACTIVE (WSMIP064), claimed **before any write**. Tony, 2026-09-23 09:40 EDT:
+  *"re-run the shared co-modulation on the step and pin excluded data set. redo this on fast, slow
+  and combined."* The 2026-09-17 page's real-recording numbers sit under a STOP banner because the
+  export it read carried the pinned-ROI contamination; the tool now reads the declared default,
+  and [#767](https://github.com/syncytium2/bugarach/pull/767) adds **combined** as a third lab
+  stream.
+- **Writes:** `smoke/`, `run/` and `figures/` in that folder — **all written, run complete** (587 s;
+  seven figures, re-rendered after a layout fix the third stream's column exposed). A NEW folder,
+  so nothing existing is touched. Nothing else under `<darkroom>/bugarach/` is written;
+  `constellation/` is not touched.
+- **Claims:** that folder exclusively. Bulk (`results.json`, 6.0 MB) stays there; `summary.json`,
+  the six numbered figures and a README go to the repo, under
+  `docs/learned/runs/2026-09-23-comodulation-three-streams/`.
+- **Holds:** nothing now — the CPU pool is released, the run is finished.
+- **Reads** the default export folder, all three streams — confirmed by Tony in this session.
+- ⚠ **Does NOT touch** `docs/learned/slow_comodulation/README.md` and does not lift its STOP
+  banner: Tony reads the new numbers first (his instruction).
+- **Goal:** learned-model-family / combined-stream-coordination.
+- **Released when:** the run record is on `main`.
+
 ### 065/learned-slow — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-learned-slow/` (NEW)
 - **Status:** **ACTIVE (WSMIP065)**, claimed before any write. Tony, 2026-09-23: set up the
   learned runs immediately — no learned model has been trained on the **current** slow bench, and
