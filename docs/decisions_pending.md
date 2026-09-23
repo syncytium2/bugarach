@@ -53,6 +53,57 @@ in [`MILESTONES.md`](MILESTONES.md) — which is why this item is a stub rather 
 **Still ours and untouched by this:** group and imaging day are perfectly aliased in this
 corpus, which they say plainly they have not checked and which is not theirs to check.
 
+## 1b. The probe basis — is the background axis a raw rate or a coordination-subtracted one?
+
+**ASKED 2026-09-22 23:30 EDT, blocking the adoption PR. WSMIP064 is holding and will not pick.**
+
+**Decide:** whether `REGIMES` quiet/busy and `hot_rate_hz` are all **raw** rates, all
+**background** rates (raw minus the coordinated share), or a mixture.
+
+**Why it is open.** The 21:00 ruling recorded in
+[#747](https://github.com/syncytium2/bugarach/pull/747) says *"The probe moves to the measured
+99th percentile of 5-minute baseline stretches — fast 0.06 → **0.128 Hz**, slow to its measured
+value (**about −9%**)"*. Those two examples name **different quantities**, and on slow they point
+in opposite directions:
+
+| stream | bench now | raw 99th | background 99th |
+|---|---|---|---|
+| fast | 0.060 | **0.12781** (+113%) | 0.12708 (+112%) |
+| slow | 0.032 | **0.04531** (+42%) | **0.02906** (−9%) |
+
+`0.128` is fast's **raw** value (background 0.127 — a 0.6% difference, immaterial). `−9%` is
+slow's **background** value; raw is **+42%**. So slow's probe either rises 42% or falls 9%, and
+the two straddle the current 0.032. The `−9%` may have come from WSMIP064's own #743 summary,
+which framed slow's probe as background.
+
+**What pulls each way.** The ruling's stated reason — so the methods statement's *"99th
+percentile of the baseline frequency"* is true of the bench — argues for **raw**, that statement
+being about baseline frequency. But quiet and busy are explicitly going to **background** values,
+and a probe that is raw while quiet and busy are background makes the axis **two different
+quantities at different points along it**.
+
+**And the size of the whole adoption turns on it.** On the bench's own `shape_usable` set the
+**raw** quiet/busy already reproduce `bench.REGIMES` to within 3% (fast −3.0% and +0.2%, slow
++0.6% and +0.3%). The 13–22% quiet/busy change exists **only** on the background reading; go raw
+throughout and the adoption is essentially probe-only.
+
+**Evidence:** [`learned/runs/2026-09-23-coordination-rates/`](learned/runs/2026-09-23-coordination-rates/README.md)
+(#743), Figure 1 panel B.
+
+**Two flags for whoever writes it up.** Slow's ungated calibration terms are the weakest in that
+run (moment rate −22.8%), and slow's probe is the one carrying a 35.9% coordination correction —
+so a raw probe sidesteps that weakness rather than resting on it. And #744 puts slow's per-group
+correlogram width borderline at p = 0.054 against fast's flat p = 0.71: three runs now say slow
+is the stream to be slowest about.
+
+**Recommendation:** pick one quantity and use it end to end. Absent a reason to mix, **background
+throughout** is self-consistent and matches the `−9%` actually quoted; if the methods sentence is
+the point, say so and take **raw throughout**, accepting that quiet/busy then barely move.
+
+**Sequencing, so nobody waits on the wrong thing:** the adoption is blocked on
+[#738](https://github.com/syncytium2/bugarach/pull/738) regardless — it is still a draft — so
+there is no time pressure from WSMIP064's side.
+
 ## 2. The jitter constant is about three times too loose on both benches
 
 > **RULED 2026-09-22 evening (Tony): adopt the measured values**, fast 0.106 s and slow 0.135 s,
