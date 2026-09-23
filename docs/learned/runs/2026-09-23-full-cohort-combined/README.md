@@ -1,5 +1,12 @@
 # The COMBINED stream over the full cohort
 
+
+> ⚠ **Measured on `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, and the data have
+> since changed** (Tony, 2026-09-23: *"data changed. we'll come back to this."*). Nothing
+> here is retracted — every number is correct about that folder — but it is not the current
+> input. What inherits it, and in what order it would be redone:
+> [`docs/todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md`](../../../todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md).
+
 **Run 2026-09-22 evening on WSMIP065**, on the default folder Tony confirmed for the session
 (`2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`, 84 recordings). Outputs are in
 `<darkroom>/bugarach/2026-09-23-full-cohort-combined/` — `combined_settings.csv`, `detect/`,
