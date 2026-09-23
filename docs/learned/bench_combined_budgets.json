@@ -1,0 +1,155 @@
+{
+ "measured_on": "2026-09-22",
+ "rows": {
+  "bugarach.bench": {
+   "cicada": {
+    "ceiling_null": 2.0,
+    "ceiling_probe": 13.0,
+    "ceiling_swing": 0.1,
+    "declared_null": 6.0,
+    "declared_probe": 25.0,
+    "declared_swing": 0.2,
+    "f1_busy": 0.6158152554233731,
+    "f1_quiet": 0.6486129458388377,
+    "null_per_hour": 1.0555555555555556,
+    "precision_swing": 0.002204474319028815,
+    "probe_per_min": 7.829166666666667
+   },
+   "coact": {
+    "ceiling_null": 5.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "declared_null": 7.0,
+    "declared_probe": 1.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6574803149606299,
+    "f1_quiet": 0.7723240685984626,
+    "null_per_hour": 2.9166666666666665,
+    "precision_swing": 0.049368246307084585,
+    "probe_per_min": 0.06666666666666667
+   },
+   "loco": {
+    "ceiling_null": 3.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.15,
+    "declared_null": 3.0,
+    "declared_probe": 1.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6740331491712708,
+    "f1_quiet": 0.7957371225577264,
+    "null_per_hour": 1.6666666666666667,
+    "precision_swing": 0.08953805597277997,
+    "probe_per_min": 0.1625
+   },
+   "rate": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 3.0,
+    "ceiling_swing": 0.15,
+    "declared_null": 1.0,
+    "declared_probe": 2.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6288532675709001,
+    "f1_quiet": 0.668918918918919,
+    "null_per_hour": 0.08333333333333333,
+    "precision_swing": 0.08590558991714314,
+    "probe_per_min": 1.675
+   },
+   "sce": {
+    "ceiling_null": 6.0,
+    "ceiling_probe": 10.0,
+    "ceiling_swing": 0.1,
+    "declared_null": 6.0,
+    "declared_probe": 9.0,
+    "declared_swing": 0.5,
+    "f1_busy": 0.5056818181818182,
+    "f1_quiet": 0.5727190605239386,
+    "null_per_hour": 3.388888888888889,
+    "precision_swing": 0.024478589885566726,
+    "probe_per_min": 5.779166666666667
+   },
+   "sync": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "declared_null": 1.0,
+    "declared_probe": 1.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6417704011065006,
+    "f1_quiet": 0.642009769713887,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.006042833022305127,
+    "probe_per_min": 0.5916666666666667
+   }
+  },
+  "bugarach.bench_combined": {
+   "cicada": {
+    "ceiling_null": 2.0,
+    "ceiling_probe": 68.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.5841874084919473,
+    "f1_quiet": 0.6276315789473683,
+    "null_per_hour": 0.75,
+    "precision_swing": 0.02139705882352949,
+    "probe_per_min": 42.225
+   },
+   "coact": {
+    "ceiling_null": 10.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.7036797934151064,
+    "f1_quiet": 0.7639680729760547,
+    "null_per_hour": 5.777777777777778,
+    "precision_swing": 0.009449524373939866,
+    "probe_per_min": 0.08333333333333333
+   },
+   "loco": {
+    "ceiling_null": 5.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.728023598820059,
+    "f1_quiet": 0.7921478060046189,
+    "null_per_hour": 3.0555555555555554,
+    "precision_swing": 0.045045099827708546,
+    "probe_per_min": 0.16666666666666666
+   },
+   "rate": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 8.0,
+    "ceiling_swing": 0.15,
+    "f1_busy": 0.670181605155243,
+    "f1_quiet": 0.7139141742522757,
+    "null_per_hour": 0.08333333333333333,
+    "precision_swing": 0.0916152030182098,
+    "probe_per_min": 4.7125
+   },
+   "sce": {
+    "ceiling_null": 7.0,
+    "ceiling_probe": 10.0,
+    "ceiling_swing": 0.15,
+    "f1_busy": 0.5425023877745941,
+    "f1_quiet": 0.5979202772963605,
+    "null_per_hour": 4.055555555555555,
+    "precision_swing": 0.07357065347595082,
+    "probe_per_min": 5.891666666666667
+   },
+   "sync": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 16.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.6768414067684141,
+    "f1_quiet": 0.6527309507754552,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.013692356627436952,
+    "probe_per_min": 9.441666666666666
+   }
+  }
+ },
+ "rule_rate": "max(1, ceil(1.6 x measured))",
+ "rule_swing": "max(0.10, ceil((measured + 0.05) / 0.05) x 0.05)",
+ "seeds": [
+  1,
+  48
+ ],
+ "slow_measured_on": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
+ "tool": "tools/measure_slow_budgets.py"
+}
