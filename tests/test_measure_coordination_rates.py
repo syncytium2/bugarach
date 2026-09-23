@@ -131,3 +131,59 @@ def test_stretch_rate_is_onsets_per_cell_per_second():
     trains = [np.arange(0, L, int(10 / DT)), np.arange(0, L, int(20 / DT))]   # 0.1 and 0.05 Hz
     r = m.stretch_rates(trains, L, int(300 / DT), int(30 / DT))
     assert r == pytest.approx(0.075, abs=0.004)
+
+
+def _grouped(slice_id, mouse, group, seed, **toy):
+    trains, L, _ = _toy(seed, **toy)
+    return {"slice_id": slice_id, "mouse": mouse, "group": group,
+            "fast": m.measure(trains, L, np.random.RandomState(seed), windows=(m.PRIMARY_W,),
+                              n_surr=4)}
+
+
+@pytest.fixture(scope="module")
+def two_groups():
+    """ORX: background only at 0.005 Hz. DI: 0.02 Hz background plus shared moments of 6 of 30
+    cells at 0.02 Hz. Two recordings per mouse, three mice each, and one recording with no group."""
+    real = [_grouped(f"di{i}", f"md{i // 2}", "DI", 10 + i, bg=0.02) for i in range(6)]
+    real += [_grouped(f"orx{i}", f"mo{i // 2}", "ORX", 30 + i, bg=0.005, rate=0.0)
+             for i in range(6)]
+    real += [_grouped("nogroup", "mx", None, 50)]
+    return real
+
+
+def test_group_block_separates_a_busy_coordinated_group_from_a_sparse_one(two_groups):
+    B = m.group_block(two_groups, "fast", n_boot=60, seed=1)
+    assert B["groups"] == ["DI", "ORX"]
+    assert B["recordings"] == {"DI": 6, "ORX": 6} and B["mice"] == {"DI": 3, "ORX": 3}
+    assert B["ungrouped"] == ["nogroup"]
+    S = B["stats"]
+    di = S["participants_per_moment"]["groups"]["DI"]
+    assert di["value"] == pytest.approx(6, rel=0.2)
+    assert S["participation"]["groups"]["DI"]["value"] == pytest.approx(6 / 30, rel=0.2)
+    # Background is the raw rate less the coordinated share: DI's planted 0.02 Hz, not its total.
+    assert S["background_median_hz"]["groups"]["DI"]["value"] == pytest.approx(0.02, rel=0.15)
+    assert S["rate_median_hz"]["groups"]["ORX"]["value"] == pytest.approx(0.005, rel=0.15)
+    rate = S["rate_median_hz"]
+    lo, hi = rate["groups"]["DI"]["interval"]
+    assert lo <= rate["groups"]["DI"]["value"] <= hi
+    p = rate["pairwise"]["DI - ORX"]
+    assert p["outlives"] and p["bootstrap_interval"][0] > 0
+    for name in m.GROUP_STATS:
+        loo = S[name]["groups"]["DI"]["leave_one_out"]
+        assert loo["most_influential"] in {f"di{i}" for i in range(6)}
+
+
+def test_group_block_places_each_group_against_its_bench(two_groups):
+    import bugarach.bench as bench
+
+    B = m.group_block(two_groups, "fast", n_boot=20, seed=1)
+    ax = B["bench"]
+    assert ax["quiet_hz"] == bench.REGIMES["baseline_quiet"]["bg_rate_hz"]
+    assert ax["busy_hz"] == bench.REGIMES["baseline_busy"]["bg_rate_hz"]
+    assert ax["background_grid_hz"] == list(bench.BACKGROUND_GRID)
+    assert ax["participation_levels"] == list(bench.BENCH_RECORDING["participation"])
+    # DI's background (0.02 Hz) is past the busy regime but inside the swept grid.
+    di = B["placement"]["DI"]
+    assert not di["interquartile_inside_regimes"]
+    assert di["interquartile_inside_grid"]
+    assert di["participation_inside_levels"]
