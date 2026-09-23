@@ -24,22 +24,34 @@ and precision.
 
 ## Calls per detector, whole cohort
 
+**Updated 2026-09-23** after SPIKE-synch's pick was installed
+(`2026-09-23-full-search-combined-sync-rerun`). The merged detections are
+`detect/detections_tuned.csv`, which the rasters are drawn from; `detect/detections.csv` is the
+first pass and is kept.
+
 | detector | calls | setting |
 |---|---|---|
-| **SPIKE-synch** | **6,300** | fast (its search pick was withheld) |
 | LoCo | 3,196 | combined search pick |
 | locust | 2,900 | combined search pick, anchor-flagged |
 | rate+context | 2,897 | combined search pick |
 | binned SCE | 2,673 | fast (nothing beat it) |
+| **SPIKE-synch** | **2,597** | combined search pick, installed 2026-09-23 |
 | chorus_gain_norm | 2,361 | trained on this bench, seed 2 |
 | **CoactDetect** | **2,242** | combined search pick |
 
-**SPIKE-synch makes 2.8× the calls CoactDetect does**, and it is one of the two detectors still at
-its fast setting. That is not a finding about SPIKE-synch: it is the unsearched setting meeting a
-stream with roughly twice the onsets. Its search pick — the largest measured gain of the six,
-+0.131 F1 — was withheld because `min_n` came back at 0.25, a sub-integer value the search reaches
-by halving an integer floor (`2026-09-23-full-search-combined-rest`). Until that defect is fixed,
-this row is the cost of leaving it alone.
+**SPIKE-synch fell from 6,300 calls to 2,597** when its pick was installed. In the first pass it
+was making **2.8× what CoactDetect did**, and that was never a fact about SPIKE-synch: it was the
+one detector left at a setting chosen for a different bench, meeting a stream with roughly twice
+the onsets. Tuned, it sits between binned SCE and CoactDetect, where the bench scores say it
+belongs.
+
+The route from withheld to installed is worth reading, because the first pick was refused for a
+reason that turned out not to be the operative one — the sub-integer `min_n` was cosmetic, and
+the gain came from `dt` and `C_min` at their grid floors. The rerun README has it.
+
+**CoactDetect makes the fewest calls of the six coded detectors.** Its pick moved `min_rois` 3 → 4
+and added an 8 s guard, both of which suppress calls, and its bench null rate fell 12.9 → 3.5 per
+hour.
 
 **CoactDetect makes the fewest calls of the six coded detectors.** Its pick moved `min_rois` 3 → 4
 and added an 8 s guard, both of which suppress calls, and its bench null rate fell 12.9 → 3.5 per
