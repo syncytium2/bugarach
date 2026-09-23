@@ -10,8 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 064/comod-three-streams — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-comodulation-three-streams/` (NEW)
-- **Status:** ACTIVE (WSMIP064), claimed **before any write**. Tony, 2026-09-23 09:40 EDT:
+### 064/comod-three-streams — DARKROOM claim RELEASED 2026-09-23: `bugarach/2026-09-23-comodulation-three-streams/`
+- **Status:** DONE 2026-09-23 14:47 UTC — **[#768](https://github.com/syncytium2/bugarach/pull/768)
+  merged on green** through `tools/merge_when_green.sh`; the run record is on `main` at
+  `docs/learned/runs/2026-09-23-comodulation-three-streams/`, so this claim is released. The
+  darkroom folder stays where it is — it holds the 6.0 MB `results.json` the repo does not carry —
+  but nothing holds it now and another session may write there.
+  **The finding: de-pinning the export barely moved anything.** Every lab change sits far inside
+  its own mouse bootstrap and Dard et al. reproduces to the digit, which is the control saying the
+  pipeline itself did not move. Combined is measured for the first time, and the three streams
+  converge once CoactDetect's episodes are removed. ⚠ **No group difference in that run is safe to
+  read** — leave-one-out halves a group in three cells, and `20250806_174` is the same recording
+  [#765](https://github.com/syncytium2/bugarach/pull/765) named for slow jitter.
+  ⚠ **`docs/learned/slow_comodulation/README.md` is untouched and its STOP banner is NOT lifted.**
+  Tony reads the new numbers first; whether the banner comes off is his call, not a session's.
+- Was: ACTIVE (WSMIP064), claimed **before any write**. Tony, 2026-09-23 09:40 EDT:
   *"re-run the shared co-modulation on the step and pin excluded data set. redo this on fast, slow
   and combined."* The 2026-09-17 page's real-recording numbers sit under a STOP banner because the
   export it read carried the pinned-ROI contamination; the tool now reads the declared default,
@@ -29,7 +42,7 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - ⚠ **Does NOT touch** `docs/learned/slow_comodulation/README.md` and does not lift its STOP
   banner: Tony reads the new numbers first (his instruction).
 - **Goal:** learned-model-family / combined-stream-coordination.
-- **Released when:** the run record is on `main`.
+- **Released:** 2026-09-23, on the run record reaching `main`.
 
 ### 065/learned-slow — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-learned-slow/` (NEW)
 - **Status:** **ACTIVE (WSMIP065)**, claimed before any write. Tony, 2026-09-23: set up the
