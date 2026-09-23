@@ -100,36 +100,48 @@ MEASURED_ROLE = "default"
 MEASURED_RECORD = "docs/learned/bench_measured_slow.json"
 """Written by ``tools/measure_slow_bench.py``. Never the fast record."""
 
-MEASURED_RATE_SHAPE = 0.415
-"""How unevenly rates spread across ROIs (gamma shape; lower is more uneven). Fast 0.275."""
-MEASURED_BURST_SHAPE = 3.47
-"""How unevenly one ROI's events spread over 300 s bins. Fast (1.547, 1.388) at 300 and 60 s;
-the slow 60 s term is off, see the module docstring."""
+MEASURED_RATE_SHAPE = 0.469
+"""How unevenly rates spread across ROIs (gamma shape; lower is more uneven). Fast 0.291.
+
+Re-measured 2026-09-23 on the default folder's 66 recordings: 0.469 [0.344, 0.689], from
+0.415 on the 84-recording folder. Every measured constant in this module moved in that pass
+(``docs/learned/bench_measured_slow.json``)."""
+MEASURED_BURST_SHAPE = 3.70
+"""How unevenly one ROI's events spread over 300 s bins. Fast (1.770, 1.439) at 300 and 60 s;
+the slow 60 s term is off, see the module docstring. 3.70 [2.00, 6.84] on the 66 recordings,
+from 3.47."""
 MEASURED_BURST_BINS = 300.0
 
 MEASURED_WIDTH_QUANTILES = (
-    0.1, 0.1, 0.1, 0.1, 0.9, 1.1, 1.1, 1.2, 1.3, 1.3,
-    1.3, 1.4, 1.4, 1.5, 1.5, 1.5, 1.5, 1.6, 1.6, 1.6,
-    1.6, 1.6, 1.6, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7,
+    0.1, 0.1, 0.1, 0.1, 1.0, 1.1, 1.2, 1.2, 1.3, 1.3,
+    1.4, 1.4, 1.4, 1.5, 1.5, 1.5, 1.5, 1.6, 1.6, 1.6,
+    1.6, 1.6, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.8,
     1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.8, 1.9, 1.9, 1.9,
     1.9, 1.9, 1.9, 1.9, 1.9, 2.0, 2.0, 2.0, 2.0, 2.0,
     2.0, 2.0, 2.0, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1,
-    2.2, 2.2, 2.2, 2.2, 2.2, 2.2, 2.3, 2.3, 2.3, 2.3,
-    2.3, 2.4, 2.4, 2.4, 2.4, 2.5, 2.5, 2.5, 2.5, 2.6,
-    2.6, 2.6, 2.7, 2.7, 2.8, 2.8, 2.9, 3.0, 3.0, 3.1,
-    3.2, 3.3, 3.4, 3.6, 3.7, 3.9, 4.2, 4.4, 4.7, 5.1,
+    2.2, 2.2, 2.2, 2.2, 2.2, 2.2, 2.2, 2.3, 2.3, 2.3,
+    2.3, 2.3, 2.4, 2.4, 2.4, 2.4, 2.5, 2.5, 2.5, 2.5,
+    2.6, 2.6, 2.7, 2.7, 2.75, 2.8, 2.9, 2.9, 3.0, 3.1,
+    3.2, 3.3, 3.4, 3.5, 3.7, 3.9, 4.1, 4.4, 4.7, 5.0,
     5.3, 5.5, 5.5, 5.5)
 """Seconds: the producer's SLOW ``width`` column at ``simulate.MEASURED_WIDTH_QUANTILE_LEVELS``,
-over 26,152 baseline events in 84 recordings (``width_def`` =
+over 22,679 baseline events in the default folder's 66 recordings (``width_def`` =
 ``rise_interval_peak_minus_t50rise``). Median 2.0 s, max 5.5 s. The bottom 4% sit at one
-frame, 0.1 s. Taken as it comes: what the column means is the producer's (FOUNDATIONS §7)."""
+frame, 0.1 s. Taken as it comes: what the column means is the producer's (FOUNDATIONS §7).
+Re-measured 2026-09-23; on the 84-recording folder (26,152 events) about a fifth of the
+levels sat 0.05–0.1 s lower, with the same median and maximum."""
 
 REGIMES: dict[str, dict] = {
     "baseline_quiet": dict(bg_rate_hz=0.0024),
-    "baseline_busy": dict(bg_rate_hz=0.0089),
+    "baseline_busy": dict(bg_rate_hz=0.0093),
 }
 """25th and 75th percentiles of per-recording mean per-ROI **background** rate over the
-slow stream's baseline windows. Fast 0.0042 and 0.0165.
+slow stream's baseline windows. Fast 0.0049 and 0.0169.
+
+**Re-measured 2026-09-23 on the default folder's 66 recordings**, 59 of which clear the
+shape floors: quiet 0.0024 Hz (0.002389) and busy 0.0093 Hz (0.009320), from 0.0024 and
+0.0089 Hz; `docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/`. The rest of
+this docstring describes the 84-recording measurement.
 
 **Background, not total, since 2026-09-22** (Tony, ~21:45 EDT: *background, end to end*)
 — the coordinated share subtracted, so the background generator is not asked to produce
@@ -158,22 +170,31 @@ It was a literal 0.0030 Hz until 2026-09-23 and stayed there when #756 moved qui
 BENCH_RECORDING = dict(
     duration_sec=2700.0,
     n_roi=32,
-    participation=(0.63, 0.38, 0.21),
+    participation=(0.63, 0.375, 0.21),
     n_per_level=(5, 5, 5),
-    jitter_sec=0.135,
+    jitter_sec=0.131,
     min_sep_sec=120.0,
     bg_rate_shape=MEASURED_RATE_SHAPE,
     bg_burst_shape=MEASURED_BURST_SHAPE,
     bg_burst_bin_sec=MEASURED_BURST_BINS,
     hot_window=(1200.0, 1500.0),
-    hot_rate_hz=0.0291,
+    hot_rate_hz=0.0321,
     ramp_sec=30.0,
     n_distractors=6,
     distractor_frac=0.38,
     distractor_window=(120.0, 1100.0),
 )
-"""The recording the slow bench scores on. ``n_roi`` 32 is the measured median 31.5 rounded;
+"""The recording the slow bench scores on. ``n_roi`` 32 is the measured median;
 the rest is in the module docstring.
+
+**Re-measured 2026-09-23 on the default folder's 66 recordings:** ``n_roi`` 32 ROIs
+(27–34.5), unchanged; the middle ``participation`` 0.375 (0.308–0.445), from 0.38;
+``jitter_sec`` 0.131 s (0.120–0.146 s), from 0.135 s
+(`docs/learned/runs/2026-09-23-jitter-correlogram-senktide-ttx/`); ``hot_rate_hz``
+0.0321 Hz, from 0.0291 Hz, the background 99th percentile on the same route as below
+(`docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/`). The outer participation
+levels and ``distractor_frac`` are chosen, not measured, and did not move. The paragraphs
+below describe the 84-recording values.
 
 ``hot_rate_hz`` is **0.0291 Hz since 2026-09-22**, was 0.032 — the 99th percentile of the
 per-cell background rate over every 300-second stretch of every baseline window, on the same
@@ -418,6 +439,28 @@ def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SE
         scores.append(score_stream(gt, det, tol_sec=tol_sec))
     return pool_scores(scores, detector=name, regime=regime, seeds=seeds,
                        knob_value=overrides.get(OPERATING_POINTS[name].knob))
+
+
+BACKGROUND_GRID = (0.0008, 0.0014, 0.0024, 0.0038, 0.0059, 0.0093, 0.0140, 0.0210)
+"""Per-ROI slow background rates to report a score across, built as ``bench.BACKGROUND_GRID``.
+
+Quiet (0.0024 Hz) and busy (0.0093 Hz) are on it, two interior points step about 1.57x
+between them, two points above busy step 1.5x, and below quiet it reaches **0.0008 Hz**.
+Added 2026-09-23, when the group run on the 66 recordings showed the two regimes are the
+spread *between* groups: ORX's slow background runs 0.0008–0.0037 Hz and DI's
+0.0054–0.0162 Hz (interquartile; `docs/learned/runs/2026-09-23-groups-rates-comod-66/`),
+and the slow bench planted nothing below 0.0024 Hz. The grid covers every group's
+interquartile range, which ``tests/test_background_curve.py`` checks against that record.
+A reporting axis only: operating points are still tuned at quiet and busy."""
+
+
+def evaluate_background_curve(name: str, regime: str, seeds=(1, 2, 3), *,
+                              rates=BACKGROUND_GRID, tol_sec: float = TOL_SEC,
+                              gen: dict | None = None, **overrides) -> dict[float, BenchResult]:
+    """One :class:`BenchResult` per slow background rate; see ``bench.evaluate_background_curve``."""
+    return _fast.background_curve(make_recording, run_detector, OPERATING_POINTS, name,
+                                  regime, seeds, rates=rates, tol_sec=tol_sec, gen=gen,
+                                  **overrides)
 
 
 def sweep(name: str, regime: str, seeds=(1, 2, 3), values=None, *,

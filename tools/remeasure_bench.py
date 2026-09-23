@@ -70,7 +70,7 @@ K = 4
 WINDOW_RULE = ("longest baseline region; the folder's analysis window inside it "
                "(assess_folder.generation_window)")
 
-JITTER_RECORD = Path("docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json")
+JITTER_RECORD = Path("docs/learned/runs/2026-09-23-jitter-correlogram-senktide-ttx/jitter_correlogram.json")
 """Where ``jitter_sec`` and its interval are read from, repo-relative.
 
 ``tools/measure_jitter_correlogram.py`` measures both streams in one run — it pools
@@ -85,7 +85,7 @@ JITTER_STAT = "hwhm"
 ``primary`` field). The RMS lag it also records weights the 0-3 s tail by lag squared,
 so noise there moves it."""
 
-RATES_RECORD = Path("docs/learned/runs/2026-09-23-coordination-rates/coordination_rates.json")
+RATES_RECORD = Path("docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/coordination_rates.json")
 """Where each recording's coordinated share is read from, repo-relative.
 
 ``REGIMES`` became **background** rates on 2026-09-22 (Tony: *background, end to end*) —

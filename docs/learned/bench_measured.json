@@ -1,27 +1,27 @@
 {
  "all_inside": true,
  "bootstrap_draws": 200,
- "commit": "9838716",
- "folder": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
+ "commit": "7dc77269",
+ "folder": "2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED",
  "jitter_source": {
-  "record": "docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json",
-  "recordings": 84,
+  "record": "docs/learned/runs/2026-09-23-jitter-correlogram-senktide-ttx/jitter_correlogram.json",
+  "recordings": 66,
   "statistic": "hwhm",
   "tool": "tools/measure_jitter_correlogram.py"
  },
  "k": 4,
- "measured_on": "2026-09-22",
+ "measured_on": "2026-09-23",
  "min_baseline_sec": 900.0,
  "provenance": {
   "jitter_sec_clustering": {
-   "hi": 0.3797690718259905,
+   "hi": 0.3777124126457413,
    "lo": 0.24910312089650954,
-   "measured": 0.3193096515095778,
+   "measured": 0.34551335748655854,
    "note": "assess_coactivity's within-cluster onset spread at K = 4, the instrument that tracks the coincidence bin / sqrt(12). Superseded as the source of jitter_sec on 2026-09-22; kept so the size of the correction is visible."
   }
  },
- "recordings_in_shape_fits": 80,
- "recordings_measured": 84,
+ "recordings_in_shape_fits": 63,
+ "recordings_measured": 66,
  "role": "default",
  "seed": 20260917,
  "skipped": {},
@@ -30,62 +30,62 @@
  "tool": "tools/remeasure_bench.py",
  "values": {
   "burst_shape_300s": {
-   "bench": 1.547,
-   "hi": 2.2639963199771844,
+   "bench": 1.77,
+   "hi": 2.2817124889717673,
    "inside": true,
-   "lo": 1.4096553596430823,
-   "measured": 1.8000544260580096
+   "lo": 1.3202811042576583,
+   "measured": 1.769691525368513
   },
   "burst_shape_60s": {
-   "bench": 1.388,
-   "hi": 2.1065435152526044,
+   "bench": 1.439,
+   "hi": 1.9573805153685664,
    "inside": true,
-   "lo": 1.1530833584174718,
-   "measured": 1.5164095875666692
+   "lo": 1.0615758204179422,
+   "measured": 1.4388532036121249
   },
   "jitter_sec": {
-   "bench": 0.106,
-   "hi": 0.11967402750580318,
+   "bench": 0.105,
+   "hi": 0.1241975104100406,
    "inside": true,
-   "lo": 0.09065330382531983,
-   "measured": 0.10569006810805887,
-   "source": "docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json",
+   "lo": 0.09010576348144081,
+   "measured": 0.10476345443137683,
+   "source": "docs/learned/runs/2026-09-23-jitter-correlogram-senktide-ttx/jitter_correlogram.json",
    "statistic": "hwhm"
   },
   "n_roi": {
-   "bench": 33.0,
-   "hi": 33.0,
+   "bench": 32.0,
+   "hi": 34.0,
    "inside": true,
-   "lo": 27.0,
-   "measured": 31.5
+   "lo": 27.4875,
+   "measured": 32.0
   },
   "participation": {
-   "bench": 0.19,
-   "hi": 0.23217261904761907,
+   "bench": 0.203,
+   "hi": 0.23333333333333334,
    "inside": true,
-   "lo": 0.18181818181818182,
-   "measured": 0.19047619047619047
+   "lo": 0.18175033921302577,
+   "measured": 0.203125
   },
   "rate_shape": {
-   "bench": 0.275,
-   "hi": 0.33878262676416476,
+   "bench": 0.291,
+   "hi": 0.40352020262011384,
    "inside": true,
-   "lo": 0.2149172242473601,
-   "measured": 0.266693134759182
+   "lo": 0.22638431292320302,
+   "measured": 0.2909979962056244
   },
   "regime_busy_hz": {
-   "bench": 0.0165,
-   "hi": 0.02229433519701592,
+   "bench": 0.0169,
+   "hi": 0.028149030036423172,
    "inside": true,
-   "lo": 0.014143941392762892,
-   "measured": 0.016454847714661682
+   "lo": 0.014539479102987184,
+   "measured": 0.016894573004534202
   },
   "regime_quiet_hz": {
-   "bench": 0.0042,
-   "hi": 0.00592826418763389,
+   "bench": 0.0049,
+   "hi": 0.005782202757370998,
    "inside": true,
-   "lo": 0.002614497891166634,
-   "measured": 0.004215002978609654
+   "lo": 0.003055461090605166,
+   "measured": 0.004948135344814575
   }
  },
  "window": "longest baseline region; the folder's analysis window inside it (assess_folder.generation_window)"

@@ -114,7 +114,10 @@ def main(argv=None) -> int:
         # what pushed it over on its first draft. The full list is one command away.
         # A fragment the briefing appends to its data line, not a line of its own.
         # Every byte here is paid for in the briefing's budget; docs/INDEX.md names the tool.
-        print(f"{len(by['current'])}/{n} results on it")    # eval corpora are not "on it"
+        # "of", not "/": the briefing's data line is checked for "/" so a path cannot ride
+        # on it (tests/test_session_briefing.py), and "3/23" tripped that the first time
+        # any result was on the default.
+        print(f"{len(by['current'])} of {n} results on it")  # eval corpora are not "on it"
         return 1 if (a.strict and bad) else 0
 
     print(f"default dataset: {default_name}")

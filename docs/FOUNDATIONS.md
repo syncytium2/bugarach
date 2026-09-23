@@ -336,7 +336,10 @@ a wrong conclusion in this repo. The authority is the global
   the properties of coordination."* Treatments are what the instruments are
   pointed at; taking coordination properties from them assumes the answer. Where a
   difficulty range is wanted, use the spread among untreated slices — baseline's
-  own interquartile per-ROI rate is **0.0052–0.0190 Hz**. `bugarach.bench` follows
+  own interquartile per-ROI **background** rate (the coordinated share subtracted) on
+  the 66-recording default is **0.0049–0.0169 Hz fast, 0.0024–0.0093 Hz slow and
+  0.0071–0.0292 Hz combined**
+  (`docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/`). `bugarach.bench` follows
   this; two earlier versions of it did not, in opposite directions.
   **Re-derived 2026-08-20 from the export folder**, which is what the lab approved.
   The previous figures — 0.0038–0.0175 — came from the `.mat` store, which carries

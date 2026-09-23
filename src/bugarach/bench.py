@@ -146,8 +146,15 @@ Empty since 2026-09-22. It held ``participation`` from 2026-09-17, where the ben
 moved measurement, but moving it moves every number the bench produces, so it waited for
 Tony. The meeting approved 0.19 and it was adopted with the jitter in the same pass."""
 
-MEASURED_RATE_SHAPE = 0.275
+MEASURED_RATE_SHAPE = 0.291
 """Gamma shape of the per-ROI background rate in real baseline windows.
+
+**Re-measured 2026-09-23 on the default folder's 66 recordings**, over the
+63 baseline windows that clear the shape fit's floors: 0.291 [0.226, 0.404], from
+0.275 on the 84-recording folder. Every measured constant in this module moved in the
+same pass, on Tony's instruction to retune the bench on the data set it scores
+(`docs/learned/bench_measured.json`). The counts quoted below describe the
+84-recording fit.
 
 Fitted, not chosen: within a window the ROI rate is modelled as
 ``Gamma(shape, mean/shape)`` and the observed count as Poisson over that rate —
@@ -177,8 +184,12 @@ the bench is changed."* Numbers published before that date were measured on a
 flat field and are not comparable to numbers after it.
 """
 
-MEASURED_BURST_SHAPE = (1.547, 1.388)
+MEASURED_BURST_SHAPE = (1.770, 1.439)
 """Gamma shapes of the per-bin rate multiplier, for `MEASURED_BURST_BINS`.
+
+**Re-measured 2026-09-23 on the 66 recordings**: 1.770 [1.320, 2.282] at 300 s and
+1.439 [1.062, 1.957] at 60 s, from (1.547, 1.388). The fit description below is the
+original one.
 
 The temporal partner of `MEASURED_RATE_SHAPE`, and the same estimator turned
 ninety degrees. There, ROIs differed from one another. Here **one ROI is followed
@@ -638,10 +649,16 @@ DETECTORS = tuple(OPERATING_POINTS)
 
 
 REGIMES: dict[str, dict] = {
-    "baseline_quiet": dict(bg_rate_hz=0.0042),
-    "baseline_busy": dict(bg_rate_hz=0.0165),
+    "baseline_quiet": dict(bg_rate_hz=0.0049),
+    "baseline_busy": dict(bg_rate_hz=0.0169),
 }
 """The difficulty axis, and **every value on it comes from untreated recordings.**
+
+**Re-measured 2026-09-23 on the default folder's 66 recordings**: quiet 0.0049 Hz
+(0.004948) and busy 0.0169 Hz (0.016895), background rates by the same route as below,
+over the 63 recordings that clear the shape floors;
+`docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/`. They were 0.0042 and
+0.0165 Hz on the 84-recording folder, which the rest of this docstring describes.
 
 Both endpoints are the interquartile spread of slice-mean per-ROI rate across
 baseline windows, fast stream, **with the coordinated share subtracted**: 0.0042 Hz
@@ -766,10 +783,10 @@ quiet. Report it with its rate attached, and do not read it as a ranking.
 # Measured off baseline slices only — see MEASURED_PROVENANCE.
 BENCH_RECORDING = dict(
     duration_sec=2700.0,
-    n_roi=33,
-    participation=(0.30, 0.19, 0.10),
+    n_roi=32,
+    participation=(0.30, 0.203, 0.10),
     n_per_level=(5, 5, 5),
-    jitter_sec=0.106,
+    jitter_sec=0.105,
     min_sep_sec=120.0,
     # THE BACKGROUND IS NOT FLAT, and as of 2026-08-28 this bench stops pretending
     # it is. Both shapes are fitted, not chosen — see `MEASURED_RATE_SHAPE` (81
@@ -787,13 +804,31 @@ BENCH_RECORDING = dict(
     bg_burst_shape=MEASURED_BURST_SHAPE,
     bg_burst_bin_sec=MEASURED_BURST_BINS,
     hot_window=(1200.0, 1500.0),
-    hot_rate_hz=0.1271,
+    hot_rate_hz=0.1334,
     ramp_sec=30.0,
     n_distractors=6,
     distractor_frac=0.18,
     distractor_window=(120.0, 1100.0),
 )
 """The recording every bench run is scored on.
+
+**Re-measured 2026-09-23 on the default folder's 66 recordings**, on Tony's instruction
+to retune the bench on the data set it scores:
+
+===================  ================  =========================================
+knob                 84 recordings     66 recordings (95% interval)
+===================  ================  =========================================
+``n_roi``            33 ROIs           32 ROIs (27.5–34 ROIs)
+``participation``    0.19              0.203 (0.182–0.233), the middle level
+``jitter_sec``       0.106 s           0.105 s (0.090–0.124 s)
+``hot_rate_hz``      0.1271 Hz         0.1334 Hz, background 99th percentile
+===================  ================  =========================================
+
+The outer participation levels (0.30, 0.10) and ``distractor_frac`` are chosen, not
+measured, and did not move. Records: `docs/learned/bench_measured.json`,
+`docs/learned/runs/2026-09-23-jitter-correlogram-senktide-ttx/` (jitter) and
+`docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/` (the probe). The
+history below is the 84-recording measurement's.
 
 Its structural values are **measured off real recordings**, not invented. Until
 2026-08-13 they were guesses, and every one of them made coordination easier
@@ -1474,8 +1509,19 @@ def describe_curve(curve: dict[float, BenchResult]) -> str:
     return f"F1 {best:.3f}, flat from {flat:g}s"
 
 
-BACKGROUND_GRID = (0.0021, 0.0042, 0.0065, 0.0100, 0.0165, 0.0250, 0.0360)
+BACKGROUND_GRID = (0.0018, 0.0032, 0.0049, 0.0074, 0.0112, 0.0169, 0.0250, 0.0370)
 """Per-ROI background rates to score across — the SECOND hidden constant.
+
+**Re-anchored 2026-09-23 on the 66 recordings, and widened to the groups.** Quiet
+(0.0049 Hz) and busy (0.0169 Hz) are on it, two interior points step about 1.51x
+between them, and two points above busy step about 1.48x. Below quiet it now reaches
+**0.0018 Hz**, one point further than the old half-of-quiet, because the bench's two
+regimes turned out to be the spread *between* groups rather than within one: ORX's
+lower interquartile background is 0.00185 Hz and DI's upper is 0.0277 Hz
+(`docs/learned/runs/2026-09-23-groups-rates-comod-66/`). The grid covers every group's
+interquartile range, and ``tests/test_background_curve.py`` checks that against the
+record. It was ``(0.0021, 0.0042, 0.0065, 0.0100, 0.0165, 0.0250, 0.0360)``. This is a
+reporting axis only: operating points are still tuned at quiet and busy.
 
 :data:`TOLERANCE_GRID` above dissolved the first one: how much timing slack a
 score was granted became a visible axis instead of an inherited number. **The
@@ -1530,18 +1576,32 @@ def evaluate_background_curve(name: str, regime: str, seeds=(1, 2, 3), *,
     and sweep its level. ``bg_rate_hz`` from either is overridden per point, which
     is the whole operation.
     """
+    return background_curve(make_recording, run_detector, OPERATING_POINTS, name,
+                            regime, seeds, rates=rates, tol_sec=tol_sec, gen=gen,
+                            **overrides)
+
+
+def background_curve(make, run, operating_points, name: str, regime: str,
+                     seeds=(1, 2, 3), *, rates, tol_sec: float = TOL_SEC,
+                     gen: dict | None = None, **overrides) -> dict[float, BenchResult]:
+    """The loop behind every bench's ``evaluate_background_curve``.
+
+    ``make`` and ``run`` are that bench's ``make_recording`` and ``run_detector``, so
+    the slow and combined benches score across their own grids with this code rather
+    than a copy of it.
+    """
     out: dict[float, BenchResult] = {}
     for rate in rates:
         g = dict(gen or {})
         g["bg_rate_hz"] = float(rate)
         scores = []
         for seed in seeds:
-            s, gt = make_recording(regime, seed, **g)
-            det = run_detector(name, s, **overrides)
+            s, gt = make(regime, seed, **g)
+            det = run(name, s, **overrides)
             scores.append(score_stream(gt, det, tol_sec=float(tol_sec)))
         out[float(rate)] = pool_scores(
             scores, detector=name, regime=regime, seeds=seeds,
-            knob_value=overrides.get(OPERATING_POINTS[name].knob))
+            knob_value=overrides.get(operating_points[name].knob))
     return out
 
 
