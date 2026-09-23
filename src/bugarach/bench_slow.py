@@ -125,11 +125,29 @@ over 26,152 baseline events in 84 recordings (``width_def`` =
 frame, 0.1 s. Taken as it comes: what the column means is the producer's (FOUNDATIONS §7)."""
 
 REGIMES: dict[str, dict] = {
-    "baseline_quiet": dict(bg_rate_hz=0.0030),
-    "baseline_busy": dict(bg_rate_hz=0.0113),
+    "baseline_quiet": dict(bg_rate_hz=0.0024),
+    "baseline_busy": dict(bg_rate_hz=0.0089),
 }
-"""25th and 75th percentiles of per-recording mean per-ROI rate over the slow stream's
-baseline windows. Fast 0.0052 and 0.0190."""
+"""25th and 75th percentiles of per-recording mean per-ROI **background** rate over the
+slow stream's baseline windows. Fast 0.0042 and 0.0165.
+
+**Background, not total, since 2026-09-22** (Tony, ~21:45 EDT: *background, end to end*)
+— the coordinated share subtracted, so the background generator is not asked to produce
+firing the planted events already account for. Measured by
+`tools/measure_coordination_rates.py` on the 75 of 84 baseline windows that clear
+`fit_background_shape`'s floors, fixed model, 1 s counting window;
+`docs/learned/runs/2026-09-23-coordination-rates/`.
+
+**The raw rates were right; the subtraction is the change.** Raw p25/p75 read 0.00302 and
+0.01133 against the 0.0030 and 0.0113 that stood here — within 0.6% — so what moved is the
+correction: quiet −19.0%, busy −21.8%. It is proportionally larger here than on fast
+(−16.5% and −13.6%) because more of this stream's firing is shared.
+
+⚠ **Slow's estimator clears its calibration at every counting window**, unlike fast's, which
+clears only 1 s. But the two terms the `passed` flag does not inspect are weakest here — the
+moment rate reads −27.4% and participants +14.2%, errors in opposite directions whose product
+is the gated quantity. That bears on anything read off participants or moment rate; it bears
+much less on these two values, where the correction is about a fifth of the rate."""
 
 NULL_RECORDING = dict(bg_rate_hz=0.0030, n_per_level=(0, 0, 0),
                       hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0,
@@ -147,14 +165,29 @@ BENCH_RECORDING = dict(
     bg_burst_shape=MEASURED_BURST_SHAPE,
     bg_burst_bin_sec=MEASURED_BURST_BINS,
     hot_window=(1200.0, 1500.0),
-    hot_rate_hz=0.032,
+    hot_rate_hz=0.0291,
     ramp_sec=30.0,
     n_distractors=6,
     distractor_frac=0.38,
     distractor_window=(120.0, 1100.0),
 )
 """The recording the slow bench scores on. ``n_roi`` 32 is the measured median 31.5 rounded;
-the rest is in the module docstring."""
+the rest is in the module docstring.
+
+``hot_rate_hz`` is **0.0291 Hz since 2026-09-22**, was 0.032 — the 99th percentile of the
+per-cell background rate over every 300-second stretch of every baseline window, on the same
+set and the same subtraction as ``REGIMES``. Background end to end (Tony, ~21:45 EDT), so the
+probe is the same quantity as the two endpoints rather than a different one at the top of the
+axis.
+
+**Its small net move hides two large ones, and that is worth knowing before anyone re-derives
+it.** The raw 99th percentile is 0.0453 Hz — well *above* the old 0.032 — and the coordinated
+share at the probe is **35.9%** of it, which pulls the adopted value back under. Unlike fast,
+whose probe correction is 0.6%, this stream's busiest stretches **are** its coordinated ones.
+So "the probe barely moved" is true of the number and false of the reasoning: −9% is +42% and
+−36% cancelling. ⚠ That 36% is the largest correction anywhere in the measurement, on the
+stream whose ungated calibration terms are weakest, and it is the first thing to re-check if
+the slow bench behaves oddly. `docs/learned/runs/2026-09-23-coordination-rates/`."""
 
 CROWDED_RECORDING = dict(BENCH_RECORDING, min_sep_sec=14.0, duration_sec=10800.0,
                          n_per_level=(40, 40, 40), hot_window=None,
@@ -272,29 +305,35 @@ seeds 1–48 of this bench, and the same on the fast bench for comparison."""
 # gives locust 13 probe calls/min where bench.py declares 25, and binned SCE a 0.10 swing
 # where bench.py declares 0.50 — fast ceilings set at older settings and never tightened.
 # tests/test_bench_slow.py holds these equal to the record's ceilings.
+# ⚠ RE-MEASURED 2026-09-22, because this bench's own constants moved: `REGIMES` became
+# background rates and `hot_rate_hz` went 0.032 -> 0.0291. These are the ceilings
+# `tools/measure_slow_budgets.py` derives from that re-measurement, and
+# `tests/test_bench_slow.py` asserts they EQUAL the record rather than merely contain it,
+# so they are not chosen here — they are copied, and the comment is the measurement.
+# Most TIGHTENED: the slow bench got a little easier to be quiet on.
 MAX_PROBE_PER_MIN: dict[str, float] = {
-    "loco": 1.0,      # measured: 0.14
-    "cicada": 5.0,    # measured: 2.59
-    "sce": 8.0,       # measured: 4.67
-    "coact": 1.0,     # measured: 0.07
-    "rate": 1.0,      # measured: 0.36
-    "sync": 1.0,      # measured: 0.05
+    "loco": 1.0,      # measured: 0.01, was 1.0 at 0.14
+    "cicada": 4.0,    # measured: 1.93, was 5.0 at 2.59 — tightened
+    "sce": 7.0,       # measured: 4.30, was 8.0 at 4.67 — tightened
+    "coact": 1.0,     # measured: 0.22, was 1.0 at 0.07
+    "rate": 1.0,      # measured: 0.27, was 1.0 at 0.36
+    "sync": 1.0,      # measured: 0.38, was 1.0 at 0.05
 }
 MAX_FALSE_POSITIVES_PER_HOUR: dict[str, float] = {
-    "loco": 1.0,      # measured: 0.56
+    "loco": 1.0,      # measured: 0.08, was 1.0 at 0.56
     "cicada": 1.0,    # measured: 0.61
     "sce": 5.0,       # measured: 3.08
-    "coact": 2.0,     # measured: 1.25
+    "coact": 1.0,     # measured: 0.00, was 2.0 at 1.25 — tightened
     "rate": 1.0,      # measured: 0.00
     "sync": 1.0,      # measured: 0.00
 }
 MAX_PRECISION_DROP: dict[str, float] = {
-    "loco": 0.10,     # measured: 0.034
-    "cicada": 0.10,   # measured: 0.011
-    "sce": 0.10,      # measured: 0.029
-    "coact": 0.15,    # measured: 0.070
-    "rate": 0.10,     # measured: 0.011
-    "sync": 0.10,     # measured: 0.002
+    "loco": 0.10,     # measured: 0.001, was 0.10 at 0.034
+    "cicada": 0.15,   # measured: 0.067, was 0.10 at 0.011 — the one that loosened
+    "sce": 0.10,      # measured: 0.025
+    "coact": 0.10,    # measured: 0.003, was 0.15 at 0.070 — tightened
+    "rate": 0.10,     # measured: 0.003
+    "sync": 0.10,     # measured: 0.001
 }
 
 

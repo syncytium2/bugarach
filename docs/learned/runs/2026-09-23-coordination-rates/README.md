@@ -11,8 +11,10 @@ with the recording-set correction below.
 **Record:** `coordination_rates.json` — every stream, every window, per recording.
 20 surrogate draws per recording, 2,582 five-minute stretches.
 
-**This adopts nothing.** No bench constant moves here. The adoption PR the brief asks for
-is deliberately **not opened yet** — see *Why the adoption PR is not here*.
+**Adopted 2026-09-22**, in the same change that lands this record: Tony ruled **background,
+end to end** (~21:45 EDT), so `bench.REGIMES` quiet/busy, `bench_slow.REGIMES`, and both
+`hot_rate_hz` probes take the background values below. Each constant's docstring carries its
+own provenance and points back here.
 
 ## Baseline only, and the count that shows it
 
@@ -82,25 +84,54 @@ Worth having before ruling: the bench's **current** `hot_rate_hz` sits at the **
 percentile on fast and the **96.1st** on slow — consistent, and not a wild value. Going to
 the 99th is a deliberate step up the same distribution.
 
-## The calibration is not uniform, and that bounds the rest (Figure 1, Panel A)
+## The calibration passes everywhere — once the probe stretch is out of it (Figure 1, Panel A)
 
-`passed` is decided on the coordinated-share error alone, against ±0.25.
+`passed` is decided on the coordinated-share error alone, against ±0.25. **All twelve cells
+clear it**, both streams, both models, all three windows:
 
 | stream | model | 1 s | 2 s | 4 s |
 |---|---|---|---|---|
-| fast | fixed | **+0.060** | +0.457 ✗ | +0.998 ✗ |
-| fast | binomial | **+0.248** | +0.731 ✗ | +1.231 ✗ |
-| slow | fixed | **−0.137** | −0.063 | +0.107 |
-| slow | binomial | **−0.097** | −0.019 | +0.165 |
+| fast | fixed | **−0.166** | −0.140 | −0.115 |
+| fast | binomial | **−0.047** | −0.022 | +0.005 |
+| slow | fixed | **−0.171** | −0.132 | −0.114 |
+| slow | binomial | **−0.134** | −0.095 | −0.078 |
 
-**Slow clears every window. Fast clears only the 1 s window**, missing by +0.46 at 2 s and
-+1.00 at 4 s; its binomial case at 1 s clears by 0.002. The fast numbers hold at exactly the
-window they were measured at, with no margin either side. The direction is mechanical — a
-wider window dilutes brief fast coincidences with independent firing, while slow events are
-long enough that a wider window catches more of them.
+**An earlier version of this record said fast cleared only the 1 s window, missing by +0.46
+at 2 s and +1.00 at 4 s. That was the probe stretch, not the estimator**, and it is worth
+setting out because the finding underneath is about what this statistic can and cannot see.
+
+When the probe moved to the measured 99th percentile, the fast calibration went from passing
+to failing by 1.7× the tolerance. Isolating it on the fast bench, fixed model, 1 s window:
+
+| configuration | share error | |
+|---|---|---|
+| old backgrounds + old 0.06 Hz probe | +0.060 | pass |
+| new backgrounds + old 0.06 Hz probe | +0.025 | pass |
+| new backgrounds + new 0.1271 Hz probe | **+0.433** | **fail** (moment rate +0.386) |
+| new backgrounds + no probe stretch | −0.166 | pass |
+
+**The backgrounds were never implicated; the probe alone moves it.** The mechanism is a limit
+of the measuring tool. In the probe window every cell lifts to 0.1271 Hz across the same
+300 s, and a joint rise in rate is indistinguishable from many shared moments to a statistic
+built on factorial cumulants of the population count. The surrogates cannot remove it either:
+per-cell circular shifts move each train independently, so they break the joint rise up
+rather than preserving it as the null.
+
+So the probe stretch made the calibration measure the estimator's response to a correlated
+rate change, which is not the question it exists to ask. It is now excluded
+(`measure_coordination_rates.CAL_NO_PROBE`), and the backgrounds it validates were measured
+and calibrated before the probe ever moved.
+
+⚠ **What that admits, and it belongs beside the adopted numbers.** The same effect runs on
+real recordings: a baseline window containing a stretch where the whole field is busier will
+have part of that rise counted as coordination and subtracted, so the background rates may be
+**slightly over-subtracted**. The measured probe bounds it — the coordinated share at the
+fast probe is 0.6% of the rate, so on fast the effect is small. **On slow the share at the
+probe is 35.9%**, which is not obviously small, and is the first thing to re-check if the
+slow bench behaves oddly.
 
 ⚠ **Two error terms `passed` does not look at.** On `slow fixed@1.0` the participants read
-+11.8% and the moment rate −22.8%, while the share they multiply to reads −13.7%. Errors in
++14.2% and the moment rate −27.4%, while the share they multiply to reads −17.1%. Errors in
 opposite directions flatter their product, and the product is the gated quantity. Anything
 read off *participants* or *moments per minute* separately carries the larger error.
 
@@ -135,7 +166,7 @@ Worth reading beside this one, because two of the three landed the same night an
 pointed at the others:
 
 - **This run.** Slow's ungated calibration terms are the weakest — its moment rate reads
-  −22.8% — and its probe carries a −35.9% coordination correction, the largest anywhere in
+  −27.4% — and its probe carries a −35.9% coordination correction, the largest anywhere in
   the table.
 - **[The correlogram by group](../2026-09-22-jitter-by-group/README.md)** (#744). Fast shows
   no group difference in onset jitter (p = 0.71); **slow is borderline at p = 0.054**, with
@@ -148,16 +179,72 @@ None of these is fatal on its own and none adjudicates anything. Together they s
 stream's constants are the ones to be slowest about, which is a reason to sequence rather
 than a reason to stop.
 
-## Why the adoption PR is not here
+## What was adopted, and what the guard now checks
 
-The brief's step 2 says to open it **rebased on WSMIP065's constants PR**. That PR is
-[#738](https://github.com/syncytium2/bugarach/pull/738) and it is **still a draft** — `main`
-still carries `jitter_sec` 0.36 s fast and 0.30 s slow and `participation` 0.18. Opening an
-adoption PR now would either conflict with it in `bench.py` or silently reorder two changes
-meant to land in sequence, and this session's board block says the constants are WSMIP065's
-tonight.
+Landed with this record, on top of [#738](https://github.com/syncytium2/bugarach/pull/738):
 
-When #738 lands, quiet and busy are the straightforward rows — a 13% to 22% subtraction, on
-rates that otherwise reproduce the bench. **The fast probe is the one that deserves a
-sentence from Tony**, because +112% is not a correction, it is a different definition of
-what "busy" means for a probe.
+| constant | was | now |
+|---|---|---|
+| `bench.REGIMES` quiet / busy | 0.0052 / 0.0190 | **0.0042 / 0.0165** |
+| `bench.BENCH_RECORDING["hot_rate_hz"]` | 0.06 | **0.1271** |
+| `bench_slow.REGIMES` quiet / busy | 0.0030 / 0.0113 | **0.0024 / 0.0089** |
+| `bench_slow.BENCH_RECORDING["hot_rate_hz"]` | 0.032 | **0.0291** |
+
+**The measured-record guard had to learn the new quantity, or it would have been
+permanently wrong.** `tests/test_bench_is_measured_on_the_declared_folder.py` compares the
+bench against `tools/remeasure_bench.py`'s measurement, and that tool measures the *total*
+rate — so a bench holding background rates would have failed the check for as long as it
+stood. `remeasure_bench` now reads **each recording's** coordinated share from this run's
+record and subtracts it before taking the regime percentiles, exactly as it already reads
+`jitter_sec` from the correlogram record, and refuses a record measured on another folder
+for the same reason. `tools/measure_slow_bench.py` reuses that code and inherits it.
+
+Per recording rather than pooled, deliberately: a pooled share would shift every bootstrap
+draw by the same constant, and an interval that cannot move with the resampling is an
+interval that cannot fail. On the re-measure both regimes land inside their intervals —
+fast quiet 0.0042 in [0.0026, 0.0059], fast busy 0.0165 in [0.0141, 0.0223].
+
+**What is still not adopted:** the operating points. The re-searches propose settings on the
+new bench; adopting any of them stays Tony's, as it was for the slow reference. Event
+frequency and participation remain report-only for the reason the brief gives.
+
+## ⚠ Two published findings reversed, and they are for Tony
+
+Moving `REGIMES` down re-anchors the **difficulty axis**, and `BACKGROUND_GRID` moved with
+it (the two endpoints must be on the grid, and a test enforces that). Re-measuring the
+background curve at twelve seeds on the new axis reverses two claims
+`tests/test_background_curve.py` had pinned. They are **restated as measured, not
+re-baselined**: no tolerance was loosened, nothing was skipped, and each restated test now
+asserts the mechanism so it cannot pass for an unrelated reason.
+
+**1. No detector is a steady leader across the whole axis any more.** Three now win
+somewhere on the grid — CoactDetect at the quiet end, LoCo through the middle, SPIKE-synch
+at the busy end. The leader *does* still hold between the two named `REGIMES` endpoints,
+which is where this project reports, so the claim that survives is the narrower one.
+
+**2. The fitted-versus-flat contrast is gone.** That file is named for it: the fitted field
+was the stable one and the flat field the one that reordered. On the background axis both
+show the **same** flat set (`{sync}`), the **same** three winners and the **same** largest
+rank change. What still separates them is magnitude — mean own-range **0.126** fitted
+against **0.171** flat — so the fitted axis is about a quarter shorter and has not gone
+dead. That is the 2026-08-28 handoff's reading (a), and only it is still asserted.
+
+**Both follow from one fact already ruled a result rather than a defect** (#738,
+ruling 6): SPIKE-synch went flat when the measured jitter was adopted, and **a flat
+detector on a declining axis eventually overtakes the ones that decline**. Nothing
+collapses down the table — the mover is the detector that does not move. It goes fourth at
+2.1 mHz to **first at 25 mHz**, 0.665 against LoCo's 0.657 and CoactDetect's 0.633.
+
+| | fitted | flat |
+|---|---|---|
+| flat set | `{sync}` | `{sync}` |
+| winners along the axis | coact, loco, sync | coact, loco, sync |
+| largest rank change | 4 (sync, rising) | 4 (sync, rising) |
+| steady leaders | none | none |
+| mean own-range | **0.126** | **0.171** |
+
+**What this does not settle.** Whether a bench whose busy end is won by a detector that
+cannot see the axis is the bench the searches should run on. It is a coherent result and it
+may be the right one — a flat detector *should* win where the others have degraded — but it
+changes what "best detector" means at the busy end, and WSMIP065's fast and slow searches
+run on exactly this axis.

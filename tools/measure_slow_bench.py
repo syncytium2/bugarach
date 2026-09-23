@@ -151,6 +151,10 @@ def main(argv=None) -> int:
     p.add_argument("--jitter-record", type=Path, default=REPO / rb.JITTER_RECORD,
                    help=f"the correlogram record jitter_sec is read from "
                         f"(default {rb.JITTER_RECORD})")
+    p.add_argument("--rates-record", type=Path, default=REPO / rb.RATES_RECORD,
+                   help=f"the coordination record each recording's coordinated share is "
+                        f"read from, to make the regimes background rates "
+                        f"(default {rb.RATES_RECORD})")
     p.add_argument("--stream", choices=sorted(RECORDS), default=STREAM,
                    help="slow (default) or combined; each writes its own record")
     a = p.parse_args(argv)
@@ -178,6 +182,17 @@ def main(argv=None) -> int:
     n_shape = sum(r["shape_usable"] for r in recs)
     print(f"{len(recs)} recordings measured ({n_shape} in the shape fits), "
           f"{len(skipped)} skipped")
+
+    # Same background subtraction as the fast bench: `rb._values` takes each recording's
+    # coordinated share off its total rate before the regime percentiles, so the slow
+    # regimes are background rates too. Attached before the bootstrap, so a resampled draw
+    # carries its own shares. See remeasure_bench.RATES_RECORD.
+    shares = rb._shares_from_record(a.rates_record, stamp["name"], stream)
+    for r in recs:
+        r["share_hz"] = shares.get(r["slice_id"])
+    have = sum(r["share_hz"] is not None for r in recs)
+    print(f"coordinated share from {rb._repo_relative(a.rates_record)}: {have} of "
+          f"{len(recs)} recordings; the regimes are background rates")
 
     point = _all_values(recs, bins)
     rng = np.random.RandomState(a.seed)

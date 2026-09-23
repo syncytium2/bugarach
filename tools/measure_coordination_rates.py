@@ -57,7 +57,11 @@ plants them) and ``binomial`` (each cell joins independently).
 **Calibration is the test.** The same estimator runs on each bench's simulated recordings, where
 every planted event's participants are known. It passes when the coordinated share per cell is
 recovered within ``CAL_TOL`` (median relative error over recordings). The record says whether it
-passed; nothing here edits the bench.
+passed; nothing here edits the bench. **The calibration recordings carry no elevated-rate
+stretch** — a joint rise in rate reads as coordination to this statistic and the surrogates
+cannot subtract it, so including the probe would measure that rather than event recovery. The
+numbers behind that, and the over-subtraction it admits on real busy stretches, are in
+:data:`CAL_NO_PROBE`.
 
 **Combined** is ``bugarach.combined``: every fast and slow onset of a cell as one stream, nothing
 deduplicated (Tony, 2026-09-22), calibrated on ``bench_combined`` at that bench's own jitter. Until
@@ -231,6 +235,41 @@ def measure(trains, L: int, rng, windows=WINDOWS, n_surr=N_SURR) -> dict:
 
 MODELS = ("fixed", "binomial")
 
+CAL_NO_PROBE = """Why the calibration plants no elevated-rate stretch, and what that admits.
+
+Found 2026-09-22, when the probe moved to the measured 99th percentile and the fast
+calibration went from passing to failing by 1.7x the tolerance. It was the probe, not the
+backgrounds. Fast bench, fixed model, 1 s window:
+
+    old backgrounds + old 0.06 Hz probe      share +6%   pass
+    new backgrounds + old 0.06 Hz probe      share +2%   pass
+    new backgrounds + new 0.127 Hz probe     share +43%  FAIL  (moment rate +39%)
+    new backgrounds + no probe stretch       share -16%  pass
+
+**The mechanism is a limit of the estimator, not a defect in the constants.** Every cell
+lifts to 0.127 Hz across the same 300 s, and a joint rise in rate is indistinguishable from
+many shared moments to a statistic built on factorial cumulants of the population count.
+The surrogates cannot subtract it either: per-cell circular shifts move each train
+independently, so they break the joint rise up rather than preserving it.
+
+So the probe stretch was making the calibration measure the estimator's response to a
+correlated rate change, which is not what it exists to check. It is removed here, and the
+backgrounds it validates were measured and calibrated before the probe ever moved.
+
+⚠ **What this admits, and it belongs with the adopted numbers:** on real recordings the same
+effect runs. A baseline window containing a stretch where the whole field is busier will
+have some of that rise counted as coordination and subtracted, so the background rates may
+be **slightly over-subtracted**. The measured probe percentile bounds how much — the
+coordinated share at the fast probe is 0.6% of the rate, so on that stream the effect is
+small; on slow, where the share at the probe is 35.9%, it is not obviously small and is the
+first thing to re-check if the slow bench behaves oddly."""
+
+#: The model whose coordinated share the bench adopts, named once so the record and
+#: `tools/remeasure_bench.py` cannot disagree about which of the two brackets was used.
+#: ``fixed`` because that is how the bench plants events — a fixed participant count at
+#: each level — so it is the bracket that matches the thing being subtracted from.
+ADOPTED_MODEL = "fixed"
+
 
 def pooled_ratio(recs, w: float, model: str) -> float:
     """f3/f2 pooled over recordings, each weighted by its number of windows.
@@ -352,8 +391,14 @@ def _sim(args):
     import importlib
 
     b = importlib.import_module(bench_name)
-    s, gt = b.make_recording(regime, seed, jitter_sec=CAL_JITTER.get(
-        bench_name, b.BENCH_RECORDING["jitter_sec"]))
+    # No elevated-rate stretch. The calibration asks one question — are planted
+    # coordinated events recovered at the background rates — and the probe stretch
+    # answers a different one, whether a detector keys on rate. Leaving it in does not
+    # make the test stricter, it makes it measure something else: see CAL_NO_PROBE.
+    s, gt = b.make_recording(regime, seed,
+                             jitter_sec=CAL_JITTER.get(
+                                 bench_name, b.BENCH_RECORDING["jitter_sec"]),
+                             hot_window=None, hot_rate_hz=0.0)
     T = float(gt.params["duration_sec"])
     L = int(round(T / DT))
     trains = [np.minimum(_frames(t, 0.0, T), L - 1) for t in s.streams[b.STREAM].t50rise]
@@ -406,10 +451,26 @@ def main(argv=None) -> int:
             probe_now = None
             if stream in BENCHES:
                 probe_now = importlib.import_module(BENCHES[stream]).BENCH_RECORDING["hot_rate_hz"]
+            # The per-recording coordinated share, at the primary window and the model
+            # the bench adopts, so `tools/remeasure_bench.py` can subtract it per
+            # recording and bootstrap the regimes honestly rather than being handed a
+            # pooled number it cannot resample. Keyed by slice_id, which both tools
+            # carry. `shape_usable` travels with it for the same reason: the regimes are
+            # measured on fit_background_shape's set, and a consumer should not have to
+            # re-derive which recordings those are.
+            shares = per_recording(recs, PRIMARY_W, ADOPTED_MODEL)
+            by_slice = {r["slice_id"]: s for r, s in zip(
+                [x for x in real if stream in x], shares)}
             rec["streams"][stream] = {
                 "by_window": {str(w): summarize(recs, w, probe_now) for w in WINDOWS},
+                "adopted": {"window_sec": PRIMARY_W, "model": ADOPTED_MODEL},
                 "per_recording": [{"slice_id": r["slice_id"], "N": r[stream]["N"],
-                                   "rate_hz": r[stream]["rate"]} for r in real if stream in r],
+                                   "rate_hz": r[stream]["rate"],
+                                   "shape_usable": bool(r[stream].get("shape_usable", True)),
+                                   "share_hz": (None if not np.isfinite(
+                                       by_slice[r["slice_id"]]["share"])
+                                       else float(by_slice[r["slice_id"]]["share"]))}
+                                  for r in real if stream in r],
             }
             print(f"{stream}: {json.dumps(rec['streams'][stream]['by_window'][str(PRIMARY_W)])}",
                   flush=True)

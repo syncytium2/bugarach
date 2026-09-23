@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-16">
+<meta name="bugarach:version-date" content="2026-09-23">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -1088,11 +1088,11 @@
           <option value="mean" selected>mean</option>
           <option value="median">median (typical ROI)</option>
         </select>
-        <div class="span note">Baseline slices in this lab run 5.2–19.0 mHz per
-        ROI, interquartile — and those are <b>means</b>. On an uneven background
-        the typical ROI fires at about a fifth of the field's mean, so the two
-        readings of this box are a factor of five apart and it has to say which
-        it is.</div>
+        <div class="span note">Baseline slices in this lab run 4.2–16.5 mHz per
+        ROI, interquartile — and those are <b>means</b>, with each cell's
+        coordinated share taken out. On an uneven background the typical ROI fires
+        at about a fifth of the field's mean, so the two readings of this box are a
+        factor of five apart and it has to say which it is.</div>
         <label for="sBg">background</label>
         <select id="sBg">
           <option value="fitted" selected>uneven, bursty</option>
@@ -1916,10 +1916,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-16"
+   data-bugarach-version-date="2026-09-23"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-16 · identified by its own
+  First published 2026-08-13 · this version 2026-09-23 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -6203,7 +6203,7 @@ function scoreDetections(times, fracs, onsets, widths, tolSec, hotWindow = null)
    with no budget written for it should not become un-calibratable. Same
    forgiveness as `_gate_on_probe`. */
 const MAX_PROBE_PER_MIN = {
-  coact: 1.0, loco: 1.0, sync: 1.0, rate: 2.0, sce: 9.0, cicada: 25.0,
+  coact: 1.0, loco: 1.0, sync: 9.0, rate: 4.5, sce: 9.0, cicada: 48.0,
 };
 
 /* The third refusal, and it does NOT re-rank. A promiscuous winner is refused,
