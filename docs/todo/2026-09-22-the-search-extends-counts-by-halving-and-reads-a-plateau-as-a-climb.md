@@ -13,6 +13,12 @@ ruling.
 
 ## 1. A count that is not declared `INTEGER` is extended as a real number
 
+> **FIXED 2026-09-23.** `min_rois` and `min_n` are in `INTEGER`, any all-integer grid is treated
+> as a count, counts step by one below 4 and double above it, and `COUNT_FLOOR` stops the
+> participant floors at two cells. Tested in `tests/test_search_all_settings.py`. It had cost
+> something by then: the combined search (#754) returned SPIKE-synch at `min_n` 0.25 with the
+> largest gain of the six (+0.131), which could not be installed. **Part 2 below is still open.**
+
 `extend()` handles counts only through the `INTEGER` set, which holds
 `n_synchronous_frames` and `sce_min_distance_frames`. `sce.min_rois` is not in it, so it falls
 through to the generic branch and is halved. The slow search's own log,
