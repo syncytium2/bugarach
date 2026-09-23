@@ -27,6 +27,37 @@ Best is **seed 3, mean F1 0.842**, at 0.00 calls/hour against a budget of 1.0. E
 inside budget. Spread across seeds is **0.009** — the tightest of the three benches so far
 (combined was 0.019). Roughly one fit in six collapses; **none did here**.
 
+## `chorus_norm`, five seeds, none collapsed — the pilot's variant
+
+Run second so today's row is comparable in *architecture* with the 21 September pilot, which used
+`chorus_norm`.
+
+| seed | threshold | F1 quiet | F1 busy | mean F1 | calls/h |
+|---|---|---|---|---|---|
+| 0 | **0.0092** ⚠ | 0.846 | 0.831 | 0.839 | 0.33 |
+| **1** | 0.984 | 0.846 | 0.842 | **0.844** | **0.00** |
+| 2 | 0.900 | 0.843 | 0.844 | 0.844 | 0.00 |
+| 3 | 0.650 | 0.842 | 0.837 | 0.840 | 0.11 |
+| 4 | 0.972 | 0.842 | 0.842 | 0.842 | 0.00 |
+
+Best is **seed 1, mean F1 0.844**, at 0.00 calls/hour. Spread **0.005**, tighter still than
+`chorus_gain_norm`'s 0.009. Seeds 1 and 2 tie at 0.844 to three figures; seed 1 wins on ordering,
+not on a margin.
+
+⚠ **Seed 0's threshold is 0.0092**, where every other seed found 0.65–0.98. That is the same shape
+as combined's seed 0 (0.800 against 0.97–0.997) and it is **not** a collapse: its mean F1 is 0.839,
+mid-field, and its null rate 0.33/hour is inside budget. A threshold is relative to that fit's own
+output scale, so a near-zero one means the scale differs, not that the model fires on everything.
+Flagged rather than dropped, because a seed spread quoted in any comparison should be the spread
+actually measured.
+
+## The two variants
+
+`chorus_norm` 0.844 against `chorus_gain_norm` 0.842 — **a 0.002 difference on seed spreads of
+0.005 and 0.009.** These are not separable, and nothing should be read into which is higher. Both
+are trained on identical data with identical protocol, so the comparison is fair in a way the
+rows below are not; it simply does not resolve anything.
+
 ## ⚠ Rescored, not retrained
 
 These fits ran **before** [#761](https://github.com/syncytium2/bugarach/pull/761) merged, which
@@ -41,17 +72,21 @@ rule: the same null seeds 4000–4011 at the same `+50_000` offset, the same bud
 tie-break. That is equivalent to retraining — the checkpoints are byte-identical to what a retrain
 would produce — and far cheaper.
 
-**Four of the five values moved, and not by a constant:**
+**Both runs were rescored. `chorus_gain_norm` moved four of five values, and not by a constant:**
 
 | seed | 0 | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|---|
 | before | 0.22 | 0.33 | 0.11 | 0.11 | 0.33 |
-| after | 0.11 | 0.56 | 0.11 | 0.00 | 0.56 |
+| after | **0.11** | **0.56** | 0.11 | **0.00** | **0.56** |
 
-Two went down, two went up. The corrected recording is a *different* draw, not a rescaled one, so
-a seed's response to it moves either way. **The pick did not change** — seed 3 was and remains
-best — and each row keeps its prior value as `null_per_hour_before_rescore`, with
-`best_before_rescore` beside it, so the correction is auditable rather than silent.
+Two went down, two went up. `chorus_norm` moved only one (seed 3, 0.22 → 0.11) and the four seeds
+already at 0.00 or 0.33 stayed put.
+
+The corrected recording is a *different* draw, not a rescaled one, so a seed's response to it
+moves either way — and a model already calling nothing on the old one goes on calling nothing.
+**Neither pick changed**: seed 3 and seed 1 were and remain best. Each row keeps its prior value
+as `null_per_hour_before_rescore`, with `best_before_rescore` beside it, so the correction is
+auditable rather than silent.
 
 ## Beside the other slow numbers
 
@@ -59,6 +94,7 @@ best — and each row keeps its prior value as `null_per_hour_before_rescore`, w
 
 | | mean F1 (slow) | measured on |
 |---|---|---|
+| `chorus_norm` seed 1 — **today** | **0.844** | the current bench |
 | `chorus_gain_norm` seed 3 — **today** | **0.842** | the current bench |
 | `chorus_norm` seeds 0/1/2 — 21 Sept pilot | 0.842 / 0.827 / 0.835 | **the pre-jitter bench** |
 | `tube` seeds 0/1/2 — 21 Sept pilot | 0.843 / 0.842 / 0.836 | **the pre-jitter bench** |
@@ -79,8 +115,25 @@ certainly coincidence, and not evidence that the bench change left the slow stre
 
 ## Real data: detection only
 
-`bugarach detect --stream slow --detectors coact --model <best.json>` on the default folder, at
-the slow settings from `2026-09-22-full-cohort-slow`.
+`bugarach detect --stream slow --detectors coact --model models/chorus_gain_norm/best.json` on the
+default folder, at the slow settings from `2026-09-22-full-cohort-slow`. **4,573 calls** over the
+84-recording cohort:
+
+| | calls |
+|---|---|
+| `chorus_gain_norm` | **2,662** |
+| CoactDetect | 1,911 |
+
+**The learned model calls 39% more often than CoactDetect** on the same recordings. On the bench
+the two are close — CoactDetect 0.859 against the model's 0.842 — so the gap is not a difference
+in bench score showing through. What it is cannot be settled from here: the bench has ground truth
+and these recordings do not, so a call is neither right nor wrong, only counted.
+
+Two readings stay open, and the tables cannot separate them. Either the model finds slow events
+CoactDetect's `min_rois` 6 floor excludes — which is what a learned detector is *for* — or it is
+looser on real data than on simulation, which is the transfer question this project has asked of
+every learned model and answered for none. **A raster would start to tell them apart**, which is
+exactly why one was not drawn: it is Tony's to look at first.
 
 **No rasters were drawn.** Tony reviews the tables first, and the slow raster with a learned lane
 waits on him.

@@ -1,0 +1,15 @@
+detector,stream,parameter,value
+coact,slow,alpha,0.0001
+coact,slow,context_win_sec,60.0
+coact,slow,detection_mode,threshold
+coact,slow,guard_norm,compact
+coact,slow,guard_sec,0.0
+coact,slow,int_win_sec,2.0
+coact,slow,merge_gap_sec,8.0
+coact,slow,min_rois,6
+coact,slow,n_surrogates,100
+coact,slow,onset_field,t50rise
+coact,slow,peak_min_distance_sec,0.0
+coact,slow,peak_prominence,0.0
+coact,slow,rng_seed,20260706
+coact,slow,window_mode,sliding
