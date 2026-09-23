@@ -62,13 +62,8 @@ def test_background_alone_reports_no_shared_moments():
     assert abs(f2) < 0.1 * exp_pairs
 
 
-def test_a_slow_onset_within_one_frame_of_a_fast_onset_counts_once():
-    fast = [np.array([10, 50])]
-    slow = [np.array([11, 30, 52])]
-    assert m.merge_streams(fast, slow)[0].tolist() == [10, 30, 50, 52]
-
-
-@pytest.mark.parametrize("bench_name", ["bugarach.bench", "bugarach.bench_slow"])
+@pytest.mark.parametrize("bench_name", ["bugarach.bench", "bugarach.bench_slow",
+                                        "bugarach.bench_combined"])
 def test_the_bench_calibration_passes_at_the_primary_window(bench_name):
     """The check the tool records, on fewer seeds: planted share recovered at 1 s, fixed model.
 

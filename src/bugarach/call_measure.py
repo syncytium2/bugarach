@@ -59,7 +59,9 @@ from dataclasses import asdict, dataclass
 import numpy as np
 
 #: Per-stream (gap_sec, half_aperture_sec). A judgement — see the module docstring.
-DEFAULTS = {"fast": (0.5, 1.0), "slow": (2.5, 5.0)}
+DEFAULTS = {"fast": (0.5, 1.0), "slow": (2.5, 5.0), "combined": (2.5, 5.0)}
+#: ``combined`` (every fast and slow onset, ``bugarach.combined``) takes slow's: its calls can
+#: hold slow members, and fast's aperture would cut them off. Without an entry it fell to fast's.
 
 
 @dataclass(frozen=True)

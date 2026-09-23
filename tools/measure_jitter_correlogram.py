@@ -76,7 +76,10 @@ PEAK = (0, 30)           # frames: 0-3 s
 SHOULDER = (50, 100)     # frames: 5-10 s
 JITTERS = (0.05, 0.1, 0.15, 0.2, 0.3, 0.36, 0.46, 0.6, 0.8, 1.0)
 SIM_SEEDS = tuple(range(1, 25))
-BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow"}
+BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
+           "combined": "bugarach.bench_combined"}
+"""``combined`` is every fast and slow onset as one stream (``bugarach.combined``), calibrated on
+its own bench; ``--streams combined`` runs it alone."""
 
 
 def pairs(trains, L: int, max_lag: int = MAX_LAG):
@@ -134,7 +137,11 @@ def _real(args):
     from bugarach.assess_folder import NoBaselineRegion, generation_window
     from bugarach.io import load_folder
 
+    from bugarach.combined import COMBINED, has_sources, only_combined
+
     s = load_folder(Path(folder))[i]
+    if stream == COMBINED and has_sources(s):
+        s = only_combined(s)
     if stream not in s.streams:
         return None
     try:
@@ -343,6 +350,8 @@ def main(argv=None) -> int:
                          "and a label-permutation test of whether the widths differ at all")
     ap.add_argument("--perm", type=int, default=2000, help="label permutations for --by-group")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--streams", nargs="+", choices=list(BENCHES), default=["fast", "slow"],
+                    help="streams to measure (default: fast slow)")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
 
@@ -357,7 +366,8 @@ def main(argv=None) -> int:
            "permutations": (a.perm if a.by_group else None),
            "by_group": bool(a.by_group), "streams": {}}
     with ProcessPoolExecutor(a.jobs) as ex:
-        for stream, bench_name in BENCHES.items():
+        for stream in a.streams:
+            bench_name = BENCHES[stream]
             real = [r for r in ex.map(_real, [(str(folder), i, stream) for i in range(n)]) if r]
             o, e = pooled(real)
             rng = np.random.RandomState(20260922)

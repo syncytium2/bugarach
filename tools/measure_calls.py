@@ -40,11 +40,15 @@ def measure_rows(rows: list[dict], slices: dict, *, lengths: dict | None = None)
     silently missing from some rows is the failure a per-row table cannot show.
     """
     from bugarach import call_measure as cm
+    from bugarach.combined import COMBINED, has_sources, stream_of
 
     out = []
     for row in rows:
         sid, stream_name = str(row["slice_id"]), str(row["stream"])
         sl = slices.get(sid)
+        if (sl is not None and stream_name == COMBINED and COMBINED not in sl.streams
+                and has_sources(sl)):
+            sl.streams[COMBINED] = stream_of(sl, COMBINED)   # measured here, never detected
         if sl is None or stream_name not in sl.streams:
             raise SystemExit(f"detections name {sid!r} / {stream_name!r}, which the export "
                              f"folder does not carry — wrong --dataset?")

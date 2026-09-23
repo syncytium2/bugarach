@@ -284,12 +284,32 @@ def _shift_stream(stream, shift: float):
     return dataclasses.replace(stream, **moved)
 
 
+#: The slow ink on the combined page. Vermillion, not the field-step red, and the reason is
+#: measured rather than taste (from the stashed prototype on `wip/combined-stream-raster`,
+#: 2026-09-22): against RASTER_INK at 2 px, OKLab ΔE ×100 under the worse of protan/deutan
+#: is 28.1 for #d55e00 against 15.0 for MARKED_INK's #c1272d, because red against near-black
+#: is exactly the pair a protan reader loses. It also keeps the second ink meaning one thing
+#: per page: red is a field step, vermillion is a slow onset.
+SLOW_INK = "#d55e00"
+
+
 def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False,
-            steps_excluded: bool = False, groups: tuple[str, ...] | None = None):
-    """Which recordings go on which page, and what each page's extent must be."""
+            steps_excluded: bool = False, groups: tuple[str, ...] | None = None,
+            combined: bool = False):
+    """Which recordings go on which page, and what each page's extent must be.
+
+    ``combined`` adds the combined stream (``bugarach.combined``) to every recording carrying
+    fast and slow, so it gets pages of its own. Safe here and nowhere near a detector: this
+    tool draws, and draws nothing from an RNG."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         slices = load_folder(folder)
+    if combined:
+        from bugarach.combined import COMBINED, has_sources, stream_of
+
+        for sl in slices:
+            if has_sources(sl):
+                sl.streams[COMBINED] = stream_of(sl, COMBINED)
     manifest = {} if (unscanned or steps_excluded) else read_manifest(folder)
     if groups:
         slices = [sl for sl in slices if (sl.meta.get("group_id") or "UNGROUPED") in groups]
@@ -476,7 +496,15 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
                               .opts(height=row * n_rows + LANE_PAD_PX,
                                     backend_opts=TIGHT))
             marked, n_red = [], 0
-            for i in range(st.n_rois):
+            if st.label is not None:
+                # THE COMBINED STREAM'S TWO INKS: fast in the raster's own ink, slow in
+                # the second. `label` is the producer's partition — which stream the
+                # export put each onset in — which is what the second ink is reserved for
+                # (Tony, 2026-09-22: "rasters with detection (two color)"). A combined
+                # page has no field-step manifest entries to compete with it.
+                marked = [np.asarray(t, float)[np.asarray(lab) == "slow"] - anchor
+                          for t, lab in zip(st.t50rise, st.label)]
+            for i in range(st.n_rois if st.label is None else 0):
                 rid = (str(sl.roi_ids[i]) if sl.roi_ids is not None
                        and i < len(sl.roi_ids) else str(i + 1))
                 hits = manifest.get((sl.slice_id, sname, rid), ())
@@ -489,6 +517,8 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
             panels.append(raster_panel(
                 _shift_stream(st, anchor), ext=ext, width=width,
                 height=raster_px(st.n_rois, roi_px), name=sname, marked=marked,
+                marked_px=(2.0 if st.label is not None else None),
+                marked_ink=(SLOW_INK if st.label is not None else None),
                 ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"
             ).opts(ylabel="", backend_opts=TIGHT))
         blocks.append((sl, panels))
@@ -547,7 +577,13 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
     # accepted it and CI's 3.11 leg did not — this project supports >=3.11.
     red_key = chip(MARKED_INK, "event on a confirmed whole-field brightness step "
                                "(field-step artifact)")
-    if unscanned:
+    event_key = chip(RASTER_INK, "event")
+    if stream == "combined":
+        # The second ink means the slow label here, and nothing else on this page.
+        event_key = chip(RASTER_INK, "fast onset")
+        red_key = chip(SLOW_INK, "slow onset — every onset of both streams, one stream, "
+                                   "nothing merged away")
+    elif unscanned:
         # No red on this page, and the reader has to be told WHY there is none:
         # nobody looked, which is not the same as nothing being there.
         red_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
@@ -599,7 +635,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         f"{len(members)} recording(s), each row one recording, "
         f"<b>t = 0 is the end of that recording's baseline</b>"
         f"<div style='margin:5px 0 0;color:#444'>"
-        f"{chip(RASTER_INK, 'event')} &nbsp; "
+        f"{event_key} &nbsp; "
         f"{red_key}"
         f"</div>"
         f"{note_html}"
@@ -690,7 +726,8 @@ def main(argv=None) -> int:
     pages, manifest, skipped = measure(folder, tuple(a.treatments),
                                        unscanned=a.unscanned,
                                        steps_excluded=a.steps_excluded,
-                                       groups=tuple(a.groups) if a.groups else None)
+                                       groups=tuple(a.groups) if a.groups else None,
+                                       combined=bool(a.streams and "combined" in a.streams))
     if not pages:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
