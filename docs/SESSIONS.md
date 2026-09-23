@@ -413,8 +413,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Released when:** the replicate's report has landed and both scheduled tasks are deleted, or the
   work is abandoned.
 
-### WSMIP064/merge-gap-demote-verdict — DARKROOM claim ACTIVE 2026-09-21: `bugarach/2026-09-18-fair-comparison-run/report/merge-gap.html`
-- **Status:** ACTIVE (WSMIP064), claimed before writing. **Re-opens one file inside a released
+### WSMIP064/merge-gap-demote-verdict — DARKROOM claim RELEASED 2026-09-23: `bugarach/2026-09-18-fair-comparison-run/report/merge-gap.html`
+- **Released 2026-09-23**, its condition met two days earlier and the release overlooked at the time:
+  **#684 landed on 2026-09-21** and the rebuilt page has been in the folder since. Nothing more will
+  be written to it by this thread, and the folder around it stays released.
+- **Status:** was ACTIVE (WSMIP064), claimed before writing. **Re-opened one file inside a released
   folder**, which is why it is its own block rather than an edit to the one below: Tony took option A
   on 2026-09-21 — the merge-gap addendum states its result as a measurement rather than a verdict.
 - **Writes:** `report/merge-gap.html` only, rebuilt by `tools/build_net_merge_gap_page.py`. Nothing
