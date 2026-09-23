@@ -66,21 +66,59 @@ MEASURED_ROLE = "default"
 MEASURED_RECORD = "docs/learned/bench_measured_combined.json"
 """Written by ``tools/measure_slow_bench.py --stream combined``. Never the fast or slow record."""
 
-PROVISIONAL = True
-"""True until the measured values replace the placeholders below (module docstring, step 4)."""
+PROVISIONAL = False
+"""Cleared 2026-09-23: every constant below is measured on the combined stream of the default
+folder, by the route in the module docstring. Records:
+``docs/learned/runs/2026-09-23-jitter-correlogram-combined/`` (jitter),
+:data:`MEASURED_RECORD` (shapes, ROI count, participation, widths), and
+``docs/learned/runs/2026-09-23-coordination-rates-combined/`` (backgrounds and the probe)."""
 
-MEASURED_RATE_SHAPE = _slow.MEASURED_RATE_SHAPE
-MEASURED_BURST_SHAPE = _slow.MEASURED_BURST_SHAPE
-MEASURED_BURST_BINS = _slow.MEASURED_BURST_BINS
-MEASURED_WIDTH_QUANTILES = tuple(_slow.MEASURED_WIDTH_QUANTILES)
+MEASURED_RATE_SHAPE = 0.3266
+"""Gamma shape of the per-ROI combined background rate, ML fit over 81 baseline windows.
+
+Between its parents (fast 0.275, slow 0.4152), which is what pooling two streams of one cell
+should do: the union is less heterogeneous than either alone because a cell quiet in one stream
+can be busy in the other."""
+
+MEASURED_BURST_SHAPE = 2.0987
+MEASURED_BURST_BINS = 300.0
+"""One scale, as on slow. The 60 s fit is 2.0660 and sits inside the 300 s interval
+[1.6215, 3.0440], so the combined stream gives no evidence of clumping at a minute that the
+300 s term does not already carry; simulating both would multiply one signal by itself."""
+
+MEASURED_WIDTH_QUANTILES = (
+    0.1, 0.1, 0.4, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+    0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.7, 0.7,
+    0.7, 0.7, 0.7, 0.7, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8,
+    0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 1.0, 1.0,
+    1.0, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1, 1.2, 1.2,
+    1.2, 1.2, 1.2, 1.3, 1.3, 1.3, 1.4, 1.4, 1.4, 1.5,
+    1.5, 1.5, 1.6, 1.6, 1.6, 1.6, 1.7, 1.7, 1.7, 1.8,
+    1.8, 1.8, 1.8, 1.9, 1.9, 1.9, 2.0, 2.0, 2.0, 2.0,
+    2.1, 2.1, 2.1, 2.2, 2.2, 2.3, 2.3, 2.3, 2.4, 2.5,
+    2.5, 2.6, 2.7, 2.8, 2.9, 3.1, 3.3, 3.6, 4.1, 4.7,
+    5.1, 5.65, 12.06, 27.9,
+)
+"""Each event's own stream's width, over 70,543 events; median 1.2 s, interquartile 0.8–1.9 s.
+
+⚠ **The one place combined is not between its parents.** Its maximum is 27.9 s against slow's
+5.5 s and its 99th percentile 4.7 s, so the top of this table is a thin tail rather than a
+typical width. The widths are inherited from each contributing stream rather than produced by
+combining, so the tail is a property of the fast/slow width columns that pooling exposes. It has
+not been chased; locust is the only detector that reads it."""
 
 REGIMES: dict[str, dict] = {
-    "baseline_quiet": dict(bg_rate_hz=round(_fast.REGIMES["baseline_quiet"]["bg_rate_hz"]
-                                            + _slow.REGIMES["baseline_quiet"]["bg_rate_hz"], 4)),
-    "baseline_busy": dict(bg_rate_hz=round(_fast.REGIMES["baseline_busy"]["bg_rate_hz"]
-                                           + _slow.REGIMES["baseline_busy"]["bg_rate_hz"], 4)),
+    "baseline_quiet": dict(bg_rate_hz=0.0072),
+    "baseline_busy": dict(bg_rate_hz=0.0268),
 }
-"""Per-ROI background rates. Provisional: fast + slow, since every onset of both is kept."""
+"""Per-ROI **background** rates: the 25th and 75th percentiles of per-recording mean combined
+rate, minus the coordinated share.
+
+Background and not raw, per Tony's ruling of 2026-09-22 (#748: *background, end to end*), on the
+``shape_usable`` set with the fixed model at the 1 s window — the same basis as fast and slow.
+Raw would be 0.0075 and 0.0341. The coordinated share is 1.5% of the combined rate, so the two
+bases differ by less here than the ruling's stakes on slow suggested; the ruling matters for
+consistency across the three streams rather than for the size of this particular move."""
 
 NULL_RECORDING = dict(bg_rate_hz=REGIMES["baseline_quiet"]["bg_rate_hz"], n_per_level=(0, 0, 0),
                       hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0, n_distractors=0)
@@ -88,18 +126,31 @@ NULL_RECORDING = dict(bg_rate_hz=REGIMES["baseline_quiet"]["bg_rate_hz"], n_per_
 
 BENCH_RECORDING = dict(
     _slow.BENCH_RECORDING,
-    n_roi=33,
-    participation=_slow.BENCH_RECORDING["participation"],
-    jitter_sec=_slow.BENCH_RECORDING["jitter_sec"],
-    hot_rate_hz=round(_fast.BENCH_RECORDING["hot_rate_hz"]
-                      + _slow.BENCH_RECORDING["hot_rate_hz"], 4),
+    n_roi=32,
+    participation=(0.40, 0.24, 0.13),
+    jitter_sec=0.148,
+    hot_rate_hz=0.1464,
+    distractor_frac=0.24,
     bg_rate_shape=MEASURED_RATE_SHAPE,
     bg_burst_shape=MEASURED_BURST_SHAPE,
     bg_burst_bin_sec=MEASURED_BURST_BINS,
 )
-"""The recording the combined bench scores on. Provisional values from the slow bench, whose
-event widths and 300 s-only burst term it shares until measured; hot window, spacing and length
-are the fast bench's, as on slow."""
+"""The recording the combined bench scores on. Measured 2026-09-23; hot window, spacing and
+length remain the fast bench's, as on slow.
+
+- ``n_roi`` **32**, the median over the folder (31.5, interval 27.0–33.5) — the same cells, so
+  the same count as slow.
+- ``participation`` **(0.40, 0.24, 0.13)**. The middle level is measured, 0.2381, and sits where
+  a union should: between fast's 0.19 and slow's 0.38. The outer levels keep slow's ratios about
+  the middle (×1.66 and ×0.55) rather than being measured, so recall still resolves a participant
+  floor; the 0.13 level is about 4 cells.
+- ``jitter_sec`` **0.148 s** [0.1336, 0.1602], the correlogram's calibrated half-width, monotone
+  calibration with 0 of 200 bootstrap draws off the curve. Looser than either parent
+  (fast 0.106, slow 0.135), which is what merging two differently-timed streams does to a
+  cross-ROI peak.
+- ``hot_rate_hz`` **0.1464**, the background 99th percentile of 5-minute baseline stretches, per
+  the 2026-09-22 ruling. It is 5.5× the busy background, close to fast's ratio of 7.7×.
+- ``distractor_frac`` **0.24**, the middle participation, as fast uses 0.18 and slow 0.38."""
 
 CROWDED_RECORDING = dict(BENCH_RECORDING, min_sep_sec=14.0, duration_sec=10800.0,
                          n_per_level=(40, 40, 40), hot_window=None,
