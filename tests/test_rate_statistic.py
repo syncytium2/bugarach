@@ -13,8 +13,8 @@ to give Python, they are a factor of about five apart:
     rates ~ Gamma(k, mean/k)   =>   mean = the knob, exactly
                                =>   median/mean = median(Gamma(k,1))/k
 
-At the fitted k = 0.291 that ratio is 0.2317. A field whose typical ROI fires at
-15 mHz has a mean of 65. (On the 84-recording folder k was 0.275 and the ratio
+At the fitted k = 0.291 that ratio is 0.2317. A field whose typical ROI has an
+event rate of 15 mHz has a mean of 65. (On the 84-recording folder k was 0.275 and the ratio
 0.2098; the shape was re-measured on the 66-recording default on 2026-09-23.)
 
 So the number now travels with a flag. Tony, 2026-08-21: *"can we flag the input
