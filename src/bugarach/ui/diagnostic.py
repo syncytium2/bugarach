@@ -306,7 +306,8 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
 def raster_panel(stream, *, ext, gt=None, name="events",
                  width: int = 1000, height: int | None = None,
                  mark_px: float = 2.0, marked=None, marked_ink=None,
-                 ydim: str = "roi", ticks: str = "auto", sort: str = "freq"):
+                 ydim: str = "roi", ticks: str = "auto", sort: str = "freq",
+                 marked_px: float | None = None):
     """ROI raster, quietest ROI at the bottom, every onset drawn identically.
 
     Takes no detection spans on purpose. Inking the onsets inside a detected
@@ -425,8 +426,12 @@ def raster_panel(stream, *, ext, gt=None, name="events",
         # pixel, because the moment it stands for is two seconds wide on a page
         # that is an hour across. The mark keeps its own time and its own ROI —
         # only the ink and the stroke change.
+        # ``marked_px`` for a partition that is half the events rather than a rare
+        # flag — the combined stream's slow onsets — where the larger stroke would
+        # make one population outweigh the other.
         items.append(hv.Scatter((mt, my), kdims=["t"], vdims=[ydim]).opts(
-            marker="dash", angle=90, size=max(mark_px * 2.5, 5.0),
+            marker="dash", angle=90,
+            size=max(mark_px * 2.5, 5.0) if marked_px is None else marked_px,
             color=marked_ink or MARKED_INK, alpha=1.0))
 
     if height is None:

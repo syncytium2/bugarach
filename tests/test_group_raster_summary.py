@@ -269,3 +269,30 @@ def test_a_recording_with_no_baseline_is_skipped_not_drawn_at_zero(tmp_path):
     pages, _, skipped = mod.measure(d, ("TTX",))
     assert pages == {} or ("MALE", "TTX") not in pages
     assert any("no baseline region" in s for s in skipped)
+
+
+def test_the_combined_page_draws_fast_in_the_raster_ink_and_slow_in_the_second(tmp_path):
+    """Tony, 2026-09-22: combined rasters "two color". The second ink is the producer's own
+    fast/slow partition there, and every onset of both streams is drawn once."""
+    from bugarach.ui.diagnostic import RASTER_INK
+
+    pages, _, _ = mod.measure(_folder(tmp_path, manifest=None), ("TTX",), steps_excluded=True,
+                              combined=True)
+    assert ("MALE", "TTX", "combined") in pages
+    spec = pages[("MALE", "TTX", "combined")]
+    blocks, red = mod.build_page(spec["members"], ext=spec["ext"], manifest={}, width=600,
+                                 stream="combined")
+    assert red == 0                                   # no field-step marks on this page
+    raster = blocks[0][1][-1]
+    by_ink = {}
+    for el in raster.values():
+        color = el.opts.get("style").kwargs.get("color")
+        if color in (RASTER_INK, mod.SLOW_INK):
+            by_ink[color] = by_ink.get(color, 0) + len(el)
+    # s1's fixture: three fast onsets and two slow ones, each drawn once in its own ink.
+    assert by_ink == {RASTER_INK: 3, mod.SLOW_INK: 2}
+
+
+def test_without_combined_there_is_no_combined_page(tmp_path):
+    pages, _, _ = mod.measure(_folder(tmp_path), ("TTX",))
+    assert not any(k[2] == "combined" for k in pages)

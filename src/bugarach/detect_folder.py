@@ -100,6 +100,7 @@ from bugarach.emit import (
     write_detector_settings,
     write_run,
 )
+from bugarach.combined import COMBINED, has_sources, only_combined
 from bugarach.store import Slice, validated_dt
 
 #: Seed for every detector that draws surrogates, so a run reproduces. Written
@@ -638,7 +639,14 @@ def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
     This used to hand-parse ``meta["frame_interval_sec"]`` and phrase its own
     refusal, which made three sentences in the tree saying the same thing to the
     same producer; the todo behind PR #250 asked for exactly this deletion.
+
+    ``stream="combined"`` on a recording carrying fast and slow runs on
+    :func:`bugarach.combined.only_combined` — the merged stream **alone**, so the
+    three shared-RNG ports draw for it without moving a fast or slow draw, which
+    come from their own run.
     """
+    if stream == COMBINED and COMBINED not in s.streams and has_sources(s):
+        s = only_combined(s)
     s, windows = folder_analysis_windows(s)
 
     names = list(s.streams)
@@ -812,8 +820,12 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         windows_by_slice[s.slice_id] = rec.windows
         all_events.extend(events)
 
+        # The combined stream is built inside detect_slice, so it is not in `s.streams`.
+        ran_on = ([COMBINED] if stream == COMBINED and COMBINED not in s.streams
+                  and has_sources(s)
+                  else [n for n in s.streams if stream is None or n == stream])
         for name in detectors:
-            for sname in (n for n in s.streams if stream is None or n == stream):
+            for sname in ran_on:
                 row = dict(detector_params(name, frame_interval_sec=dt,
                                            overrides=overrides, stream=sname),
                            onset_field=ONSET_FIELD[name])
