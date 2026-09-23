@@ -75,6 +75,12 @@ shift's dropped onsets never enter):
   rate multiplied by one shared log-normal multiplier wandering on a 20 s, 5-minute or 1-minute
   timescale, no events; the last at a depth near the lab fast stream's shoulder.
 
+**By group, with leave-one-out** (``group_influence``, since 2026-09-23): per group and arm, the
+pooled 1-minute ratio with each recording dropped in turn, the most influential recording, and for
+each group pair whether the gap is wider than both groups' leave-one-out ranges. The ratio is read
+off pooled variances, so one recording can carry a group; the first run on the de-pinned export
+found exactly that, by hand.
+
 Baseline windows only: the lab folder is refused anything but its declared baseline region. The
 Cossart folder declares no regions and is read whole, from the first onset of any ROI (many of its
 recordings open with tens of seconds in which no ROI has an onset). Every random key carries
@@ -746,7 +752,7 @@ def flagged_sensitivity(rows, ids) -> dict:
         return sum(unpack(r["arms"][arm])["var"][-1] - unpack(r["arms"][null_of(arm)])["var"][-1]
                    for r in rs)
 
-    groups = sorted({r["group"] for r in flagged if r.get("group")})
+    groups = groups_of(flagged)
 
     def ratios(rs):
         return {arm: _var_ratio(rs, arm).tolist() for arm in arms}
@@ -762,11 +768,18 @@ def flagged_sensitivity(rows, ids) -> dict:
                   for g in groups})
 
 
+def groups_of(rows) -> list[str]:
+    """The groups these rows name, in display order (``bugarach.groups``). Every random key
+    carries the group's name rather than its position, so the order moves no number."""
+    from bugarach.groups import in_group_order
+    return in_group_order(r["group"] for r in rows if r.get("group"))
+
+
 def group_checks(rows, n_boot: int, key) -> dict:
     """Per group: the per-recording count-variance medians and the pooled ratios, so no pooled
     headline stands without its breakdown (FOUNDATIONS §9)."""
     out = {}
-    for g in sorted({r["group"] for r in rows if r.get("group")}):
+    for g in groups_of(rows):
         rs = [r for r in rows if r["group"] == g]
         c = checks(rs, max(50, n_boot // 5), (*key, g))
         out[g] = dict(per_recording=c["per_recording"],
@@ -774,6 +787,62 @@ def group_checks(rows, n_boot: int, key) -> dict:
                                         for arm in ("real", "minus_coact_block_120")
                                         if arm in rs[0]["arms"]})
     return out
+
+
+INFLUENCE_ARMS = ("real", "minus_coact_block_120")
+"""The two arms a group comparison is read on: as recorded, and with CoactDetect's episodes
+removed and the 120 s block control applied."""
+
+
+def group_influence(rows) -> dict:
+    """Per group and arm, the pooled 1-minute count-variance ratio with each recording dropped in
+    turn (:func:`bugarach.influence.leave_one_out`), whether each pair's gap is wider than both
+    groups' leave-one-out ranges, and every group with the single most influential recording gone.
+
+    Before 2026-09-23 this was done by hand in a run record: the ratio is read off variances
+    **pooled** over a group's recordings, so one recording can carry the group, and on the de-pinned
+    export dropping one recording halved a group in three stream-by-group cells. A group
+    difference this check does not survive is a difference about one recording. Identifiers kept:
+    the most influential recording is what the check is for.
+    """
+    from bugarach import influence
+    groups = groups_of(rows)
+    by = {g: [r for r in rows if r.get("group") == g] for g in groups}
+    out = dict(bin_sec=VAR_BIN_SEC[-1], groups=groups,
+               recordings={g: len(by[g]) for g in groups},
+               mice={g: len({r["mouse"] for r in by[g]}) for g in groups}, arms={})
+
+    def ident(r):
+        return r["recording_id"]
+
+    for arm in INFLUENCE_ARMS:
+        if not rows or arm not in rows[0]["arms"]:
+            continue
+
+        def stat(rs, arm=arm):
+            return float(_var_ratio(rs, arm)[-1]) if rs else float("nan")
+
+        loo = {g: influence.leave_one_out(by[g], stat, ident) for g in groups}
+        out["arms"][arm] = dict(
+            leave_one_out=loo, pairwise=influence.pairwise(loo, groups),
+            without_most_influential=influence.without_most_influential(by, stat, ident, loo))
+    return out
+
+
+def print_group_influence(name: str, G: dict) -> None:
+    for arm, A in G["arms"].items():
+        print(f"  [{name}] {arm}, pooled {G['bin_sec']:g} s count-variance ratio by group "
+              f"(leave-one-out range; most influential recording):", flush=True)
+        for g in G["groups"]:
+            loo = A["leave_one_out"][g]
+            if loo:
+                print(f"    {g:5s} {G['recordings'][g]:2d} recordings / {G['mice'][g]:2d} mice: "
+                      f"{loo['value']:.2f} [{loo['lo']:.2f}, {loo['hi']:.2f}]; "
+                      f"{loo['most_influential']} -> {loo['without']:.2f}", flush=True)
+        for pair, p in A["pairwise"].items():
+            print(f"      {pair}: gap {p['gap']:+.2f}, "
+                  f"{'OUTLIVES' if p['outlives'] else 'does not outlive'} leave-one-out",
+                  flush=True)
 
 
 def summary_only(R) -> dict:
@@ -785,6 +854,7 @@ def summary_only(R) -> dict:
         rows = F["rows"]
         entry = dict(summary=F["summary"], by_group=F["by_group"], checks=F.get("checks"),
                      checks_by_group=F.get("checks_by_group"),
+                     group_influence=F.get("group_influence"),
                      flagged_contaminant=F.get("flagged_contaminant"),
                      analysed_hours=sum(r["analysed_sec"] for r in rows) / 3600.0,
                      window_min_range=[min(r["analysed_sec"] + 2 * TRIM_SEC for r in rows) / 60,
@@ -834,9 +904,11 @@ def main(argv=None):
             F["summary"] = summarise(rows, a.boot, (role, stream))
             F["by_group"] = {g: summarise([r for r in rows if r["group"] == g], a.boot,
                                           (role, stream, g))
-                             for g in sorted({r["group"] for r in rows if r["group"]})}
+                             for g in groups_of(rows)}
             F["checks"] = checks(rows, a.boot, (role, stream))
             F["checks_by_group"] = group_checks(rows, a.boot, (role, stream))
+            F["group_influence"] = group_influence(rows)
+            print_group_influence(name, F["group_influence"])
             F["flagged_contaminant"] = flagged_sensitivity(rows, flagged_contaminant_ids())
         (a.out / "results.json").write_text(json.dumps(R))
         (a.out / "summary.json").write_text(json.dumps(summary_only(R), indent=1))
@@ -858,9 +930,11 @@ def main(argv=None):
                     rows=rows, skipped=skipped, summary=summarise(rows, a.boot, (role, stream)),
                     by_group={g: summarise([r for r in rows if r["group"] == g], a.boot,
                                            (role, stream, g))
-                              for g in sorted({r["group"] for r in rows if r["group"]})})
+                              for g in groups_of(rows)})
                 R["folders"][name]["checks"] = checks(rows, a.boot, (role, stream))
                 R["folders"][name]["checks_by_group"] = group_checks(rows, a.boot, (role, stream))
+                R["folders"][name]["group_influence"] = group_influence(rows)
+                print_group_influence(name, R["folders"][name]["group_influence"])
                 R["folders"][name]["flagged_contaminant"] = flagged_sensitivity(
                     rows, flagged_contaminant_ids())
                 print(f"{name}: {len(rows)} recordings, {time.time() - t0:.0f} s", flush=True)
