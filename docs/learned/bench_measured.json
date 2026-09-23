@@ -1,7 +1,7 @@
 {
  "all_inside": true,
  "bootstrap_draws": 200,
- "commit": "8137da7",
+ "commit": "00a0e7a",
  "folder": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
  "jitter_source": {
   "record": "docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json",
@@ -12,6 +12,14 @@
  "k": 4,
  "measured_on": "2026-09-22",
  "min_baseline_sec": 900.0,
+ "provenance": {
+  "jitter_sec_clustering": {
+   "hi": 0.3797690718259905,
+   "lo": 0.24910312089650954,
+   "measured": 0.3193096515095778,
+   "note": "assess_coactivity's within-cluster onset spread at K = 4, the instrument that tracks the coincidence bin / sqrt(12). Superseded as the source of jitter_sec on 2026-09-22; kept so the size of the correction is visible."
+  }
+ },
  "recordings_in_shape_fits": 80,
  "recordings_measured": 84,
  "role": "default",
@@ -43,13 +51,6 @@
    "measured": 0.10569006810805887,
    "source": "docs/learned/runs/2026-09-22-jitter-correlogram/jitter_correlogram.json",
    "statistic": "hwhm"
-  },
-  "jitter_sec_clustering": {
-   "checked": false,
-   "hi": 0.3797690718259905,
-   "lo": 0.24910312089650954,
-   "measured": 0.3193096515095778,
-   "note": "assess_coactivity's within-cluster onset spread at K = 4, the instrument that tracks the coincidence bin / sqrt(12). Recorded as provenance; jitter_sec is the correlogram's."
   },
   "n_roi": {
    "bench": 33.0,

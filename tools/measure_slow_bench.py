@@ -182,12 +182,15 @@ def main(argv=None) -> int:
     print(f"jitter_sec from {jitter['record']} ({jitter['stat']}, "
           f"{jitter['recordings']} recordings): {jitter['point']:.4f} s")
 
-    rows = {}
+    rows, provenance = {}, {}
     print(f"\n{'value':20s} {'measured':>10s} {'95% interval':>21s}")
     for k in point:
         lo, hi = (float(x) for x in np.nanpercentile(draws[k], [2.5, 97.5]))
-        rows[k] = {"measured": float(point[k]), "lo": lo, "hi": hi}
-        print(f"{k:20s} {point[k]:10.4f} {lo:10.4f} - {hi:<8.4f}")
+        row = {"measured": float(point[k]), "lo": lo, "hi": hi}
+        # As in the fast tool: the superseded instrument is provenance, not a value.
+        (provenance if k == "jitter_sec_clustering" else rows)[k] = row
+        print(f"{k:20s} {point[k]:10.4f} {lo:10.4f} - {hi:<8.4f}"
+              + ("  provenance" if k == "jitter_sec_clustering" else ""))
     rows["jitter_sec"] = {"measured": jitter["point"], "lo": jitter["interval"][0],
                           "hi": jitter["interval"][1], "source": jitter["record"],
                           "statistic": jitter["stat"]}
@@ -222,6 +225,7 @@ def main(argv=None) -> int:
             "tool": "tools/measure_jitter_correlogram.py",
         },
         "values": rows,
+        "provenance": provenance,
         "width_events": n_w,
         "width_quantiles": wq,
     }

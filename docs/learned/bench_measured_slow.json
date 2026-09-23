@@ -7,7 +7,7 @@
   5.0
  ],
  "bootstrap_draws": 200,
- "commit": "8137da7",
+ "commit": "00a0e7a",
  "dataset": {
   "name": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
   "recordings": 84,
@@ -23,6 +23,13 @@
  "k": 4,
  "measured_on": "2026-09-22",
  "min_baseline_sec": 900.0,
+ "provenance": {
+  "jitter_sec_clustering": {
+   "hi": 0.32682808634359106,
+   "lo": 0.28098660592171554,
+   "measured": 0.2979461861218538
+  }
+ },
  "recordings_in_shape_fits": 75,
  "recordings_measured": 84,
  "seed": 20260921,
@@ -72,11 +79,6 @@
    "hi": 1.7314104641284003,
    "lo": 0.9579761562543229,
    "measured": 1.388018662860322
-  },
-  "jitter_sec_clustering": {
-   "hi": 0.32682808634359106,
-   "lo": 0.28098660592171554,
-   "measured": 0.2979461861218538
   },
   "n_roi": {
    "hi": 33.5125,

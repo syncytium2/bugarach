@@ -286,17 +286,19 @@ def main(argv=None) -> int:
         print(f"{k:18s} {tree[k]:10.4f} {measured:10.4f} {lo:10.4f} - {hi:<8.4f}  "
               f"{'inside' if inside else 'OUTSIDE'}")
 
-    # Provenance only: the bin-bound instrument jitter_sec used to come from.
+    # Kept OUT of `values`, which means "the constants that were checked" and is compared
+    # key-for-key against bench.measured_constants(). This is provenance: the instrument
+    # jitter_sec used to come from, recorded so the correction stays legible.
     jc = np.nanpercentile(draws["jitter_sec_clustering"], [2.5, 97.5])
-    rows["jitter_sec_clustering"] = {
+    provenance = {"jitter_sec_clustering": {
         "measured": float(point["jitter_sec_clustering"]),
-        "lo": float(jc[0]), "hi": float(jc[1]), "checked": False,
+        "lo": float(jc[0]), "hi": float(jc[1]),
         "note": ("assess_coactivity's within-cluster onset spread at K = 4, the instrument "
-                 "that tracks the coincidence bin / sqrt(12). Recorded as provenance; "
-                 "jitter_sec is the correlogram's."),
-    }
+                 "that tracks the coincidence bin / sqrt(12). Superseded as the source of "
+                 "jitter_sec on 2026-09-22; kept so the size of the correction is visible."),
+    }}
     print(f"{'jitter_sec_clustering':18s} {'-':>10s} "
-          f"{point['jitter_sec_clustering']:10.4f} {jc[0]:10.4f} - {jc[1]:<8.4f}  not checked")
+          f"{point['jitter_sec_clustering']:10.4f} {jc[0]:10.4f} - {jc[1]:<8.4f}  provenance")
 
     record = {
         "role": role,
@@ -321,6 +323,7 @@ def main(argv=None) -> int:
             "tool": "tools/measure_jitter_correlogram.py",
         },
         "values": rows,
+        "provenance": provenance,
         "all_inside": all_inside,
     }
     if not a.no_write:
