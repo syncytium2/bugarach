@@ -20,6 +20,10 @@ not yet on `main`). It holds 66 recordings from 36 mice with 14–61 regions of 
 each, and only baseline windows are read (FOUNDATIONS §9).
 - Groups: DI 17 recordings (10 mice), OVX 17 (9), MALE 13 (8), ORX 19 (9).
 - **Confirmed by Tony in this session.** Nothing was filtered.
+- **ROI counts come from the folder:** the number of ROIs in each recording's event file, as
+  loaded. Checked against `n_roi_recorded` in the folder's `slices.csv`, the two agree on all 66
+  recordings and all three streams: 14–61 ROIs, median 32, 2,109 in total. The 9–62 range in
+  `docs/learned/field_size.json` is the older 84/85-recording corpus and is not used here.
 
 **Tool:** `tools/measure_chance_floor.py` (new), built beside `tools/probe_field_size.py` and
 importing its closed form rather than copying it. Figures come from
