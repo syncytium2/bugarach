@@ -10,6 +10,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/groups-rates-comod-66 — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-groups-rates-comod-66/` (NEW)
+- **Status:** ACTIVE 2026-09-23 20:50 UTC — the group question on the 66-recording senktide/TTX
+  export, for the orchestrator at Tony's request: co-modulation by group (fast, slow, combined)
+  with leave-one-out moved into the tool, and rate and participation by group with a
+  mouse-clustered bootstrap.
+- **Touches:** this block; `tools/measure_slow_comodulation.py`, `tools/measure_coordination_rates.py`
+  and their tests; NEW `docs/learned/runs/2026-09-23-groups-rates-comod-66/`; `docs/INDEX.md`.
+  **Not** `docs/learned/runs/2026-09-23-jitter-by-group-66/`, which another session is writing.
+- **Reads** the default export folder (`senktide_ttx`, #786) once Tony confirms it in this session.
+- **Released:** when the run record reaches `main`.
+
 ### 065/roi-table — DARKROOM claim RELEASED 2026-09-23: `bugarach/roi_table/` (NEW)
 - **Status:** **RELEASED 2026-09-23** — `roi_table.md`, `.csv` and `.json` written by
   `tools/make_roi_table.py`, with the same three files as a repo copy under `docs/learned/roi_table/`.
