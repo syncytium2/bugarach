@@ -16,6 +16,13 @@ board claim, and update the page in the same PR as the result. A long-lived goal
 was considered and rejected on 2026-09-14: sessions start from `main`, and a branch holds
 commits, not a summary.
 
+**For "was this already decided, and why?": [`docs/adr/`](docs/adr/README.md)** — one
+immutable record per decision: context, decision, consequences. A ruling that settles how
+work is done lands there in the same PR as the first place the work reads it; changing it
+takes a new ADR that supersedes it. The habit lapsed for 25 days after ADR-0005 and was
+restarted by Tony on 2026-09-23; rulings from the gap are backfilled when a session leans
+on one ([candidates](docs/todo/2026-09-23-adr-backfill-candidates.md)).
+
 **Before you build anything, or when a lookup fails: [`docs/INDEX.md`](docs/INDEX.md).**
 Keywords — the words you would type into `grep`, not the ones in the filename —
 pointing at the file that owns the answer. It exists because on 2026-08-30 a session
