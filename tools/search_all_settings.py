@@ -125,7 +125,15 @@ def use_bench(which: str):
 
 
 PERCENTILE = {"threshold_pctile", "sce_percentile"}
-INTEGER = {"n_synchronous_frames", "sce_min_distance_frames"}
+INTEGER = {"n_synchronous_frames", "sce_min_distance_frames", "min_rois", "min_n"}
+#: A count is extended as a count. Until 2026-09-23 only the first two were listed, so
+#: `min_rois` and `min_n` fell through to halving: the slow search walked `sce.min_rois`
+#: 3 → 1.5 → 0.75 → 0.375, and the combined search returned SPIKE-synch at `min_n` 0.25 with
+#: its largest gain of the six, which could not be installed (PR #754). An all-integer grid
+#: is treated the same way even when its name is missing here.
+COUNT_FLOOR = {"min_rois": 2, "min_n": 2}
+"""The smallest value a count may be extended to. A participant floor below two cells is not
+coordination; everything else stops at one."""
 FRACTION = {"C_threshold", "C_min"}
 
 
@@ -164,8 +172,12 @@ def extend(setting: str, grid: list, low_end: bool):
     if setting in PERCENTILE:
         new = 100 - (100 - edge) * 2 if low_end else 100 - (100 - edge) / 2
         new = max(new, 1.0)
-    elif setting in INTEGER:
-        new = max(1, int(edge) // 2) if low_end else int(edge) * 2
+    elif setting in INTEGER or all(isinstance(g, int) and not isinstance(g, bool) for g in grid):
+        floor = COUNT_FLOOR.get(setting, 1)
+        if low_end:
+            new = max(floor, int(edge) - 1 if edge <= 4 else int(edge) // 2)
+        else:
+            new = int(edge) + 1 if edge < 4 else int(edge) * 2
     elif setting == "alpha":
         new = edge / 3 if low_end else min(0.5, edge * 3)
     elif setting in FRACTION:
