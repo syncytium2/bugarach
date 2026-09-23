@@ -638,15 +638,43 @@ DETECTORS = tuple(OPERATING_POINTS)
 
 
 REGIMES: dict[str, dict] = {
-    "baseline_quiet": dict(bg_rate_hz=0.0052),
-    "baseline_busy": dict(bg_rate_hz=0.0190),
+    "baseline_quiet": dict(bg_rate_hz=0.0042),
+    "baseline_busy": dict(bg_rate_hz=0.0165),
 }
 """The difficulty axis, and **every value on it comes from untreated recordings.**
 
 Both endpoints are the interquartile spread of slice-mean per-ROI rate across
-baseline windows, fast stream: 0.0052 Hz at p25 and 0.0190 Hz at p75, around a
-median of 0.0102. Untreated slices vary 3.7-fold among themselves, and that
-variation is the axis an operating point has to survive.
+baseline windows, fast stream, **with the coordinated share subtracted**: 0.0042 Hz
+at p25 and 0.0165 Hz at p75. Untreated slices vary about 3.9-fold among themselves,
+and that variation is the axis an operating point has to survive.
+
+**These are BACKGROUND rates as of 2026-09-22, not total rates** (Tony, ~21:45 EDT:
+*background, end to end*). A recording's total per-cell rate contains firing that
+belongs to moments shared with other cells; what this axis wants is the rate the
+*background* generator should produce, and planting coordinated events on top of a
+total rate counts the shared part twice. The coordinated share is measured without
+deciding which onsets form an event — factorial cumulants of the population count,
+against per-cell circular-shift surrogates — by
+`tools/measure_coordination_rates.py`, recorded in
+`docs/learned/runs/2026-09-23-coordination-rates/`.
+
+**The raw rates did not move; only the subtraction is new.** On the same recording
+set the raw p25/p75 read 0.00505 and 0.01904, against the 0.0052 and 0.0190 that
+stood here before — agreement within 3%, which is what makes the subtraction the
+whole of the change. Quiet falls 16.5%, busy 13.6%.
+
+**The recording set is `fit_background_shape`'s, not every recording.** 80 of the
+default export's 84 baseline windows clear its floors (≥ 300 s, ≥ 20 events,
+≥ 5 ROIs), and those are the ones `tools/remeasure_bench.py` has always used for
+this axis. Measuring over all 84 instead makes quiet read 30% low while busy agrees
+to 2% — the floors cut short, sparse and few-ROI windows, which are the quiet tail.
+That mistake was made and caught on 2026-09-22, before anything adopted it.
+
+⚠ **The estimator behind the subtraction is calibrated at the 1 s counting window
+and, on the fast stream, at no other**: its error on the recovered coordinated share
+runs +0.06 at 1 s, +0.46 at 2 s and +1.00 at 4 s. These values are the 1 s ones.
+Slow's estimator clears every window; fast's does not, so a re-measure must keep the
+window or re-check the calibration first.
 
 **Re-derived 2026-08-20 from the export folder, which is what the lab
 approved.** The previous endpoints — 0.0038 and 0.0175, a 4.6-fold span — were
@@ -754,7 +782,7 @@ BENCH_RECORDING = dict(
     bg_burst_shape=MEASURED_BURST_SHAPE,
     bg_burst_bin_sec=MEASURED_BURST_BINS,
     hot_window=(1200.0, 1500.0),
-    hot_rate_hz=0.06,
+    hot_rate_hz=0.1271,
     ramp_sec=30.0,
     n_distractors=6,
     distractor_frac=0.18,
@@ -803,9 +831,28 @@ so the recruitment number survived the test the timing number failed.
 
 ``hot_rate_hz`` moved with them. At 0.30 it was 6x the invented background and
 **31x the measured one** — a probe that severe stops asking whether a detector
-keys on rate and starts asking whether it survives an impossible surge. 0.06 is
-6x measured baseline and 1.6x senktide: busier than any real condition in the
-table, which is the point, without leaving the physical world.
+keys on rate and starts asking whether it survives an impossible surge. 0.06
+replaced it: 6x measured baseline and 1.6x senktide, busier than any real
+condition in the table without leaving the physical world.
+
+**Since 2026-09-22 it is 0.1271 Hz, and it is now measured rather than chosen**
+(Tony, ~21:45 EDT). 0.06 was a multiple of the median picked to be plausible; this
+is the **99th percentile of the per-cell background rate over every 300-second
+stretch of every baseline window** — 2,582 stretches — so the methods section's
+"99th percentile of the baseline frequency" is true of the bench rather than
+approximately true of it. Same measurement, same recording set and same
+coordinated-share subtraction as ``REGIMES`` above: background end to end, which is
+what makes the probe comparable with the two endpoints instead of being a different
+quantity at the top of the same axis.
+
+**It roughly doubles, and the doubling is a change of definition, not a
+correction.** The coordinated share at the probe is only 0.6% of the raw rate on
+this stream — fast's busiest stretches are not its coordinated ones — so almost the
+whole move from 0.06 to 0.1271 is the percentile replacing the multiple. For scale:
+0.06 sat at the **96.2nd** percentile of the same distribution, so the old value
+was not wild, and this is a deliberate step up the same curve rather than a
+repudiation of it. ``tools/measure_coordination_rates.py``,
+`docs/learned/runs/2026-09-23-coordination-rates/`.
 
 ``min_sep_sec`` is 120 s and not the generator's 15 s default on purpose. The
 detectors estimate their null over context windows up to 120 s wide, so events
@@ -1422,7 +1469,7 @@ def describe_curve(curve: dict[float, BenchResult]) -> str:
     return f"F1 {best:.3f}, flat from {flat:g}s"
 
 
-BACKGROUND_GRID = (0.0026, 0.0052, 0.0080, 0.0120, 0.0190, 0.0280, 0.0400)
+BACKGROUND_GRID = (0.0021, 0.0042, 0.0065, 0.0100, 0.0165, 0.0250, 0.0360)
 """Per-ROI background rates to score across — the SECOND hidden constant.
 
 :data:`TOLERANCE_GRID` above dissolved the first one: how much timing slack a
@@ -1434,11 +1481,21 @@ endpoint and **0.560** at the busy one — 0.26 of recall across a 3.7-fold rate
 change that is only the interquartile spread of *untreated* slices
 (``docs/RESET.md`` §6).
 
-The grid brackets :data:`REGIMES` rather than reproducing it: p25 (0.0052) and
-p75 (0.0190) are both on it, with a point below the quiet endpoint and two above
+The grid brackets :data:`REGIMES` rather than reproducing it: p25 (0.0042) and
+p75 (0.0165) are both on it, with a point below the quiet endpoint and two above
 the busy one, because a curve that stops at the endpoints cannot show whether it
 was about to fall off one. **``REGIMES`` is not changed by this** — moving the
 axis is a recalibration; this reports across the axis that already exists.
+``tests/test_background_curve.py`` enforces both endpoints being on the grid, so
+the two cannot drift apart silently.
+
+**It moved with ``REGIMES`` on 2026-09-22**, from
+``(0.0026, 0.0052, 0.0080, 0.0120, 0.0190, 0.0280, 0.0400)``, when the endpoints
+became background rates. The spacing is the old grid's, carried over: the point
+below quiet is half of it, the two above busy step by about 1.5x, and the
+interior keeps ratios near 1.55. Only the anchors moved; the shape of the axis
+is unchanged, so curves either side of the change are comparable in form even
+though they are measured at different rates.
 
 **Why this matters more than the tolerance did.** Five of six detectors turned
 out flat across the tolerance grid (six, once binned SCE was scored over its own

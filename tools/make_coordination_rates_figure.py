@@ -147,14 +147,22 @@ The <b>coordinated share</b> is the part of a cell's own firing rate that belong
 moments shared with other cells; the <b>background rate</b> is its total rate minus
 that share. <b>Fixed</b> and <b>binomial</b> are the two models that bracket how many
 cells join a shared moment — pairs and triples fix the spread, not the mean.</p>
-<p><b>Panel A — the calibration, and it is not uniform.</b> Median relative error in the
-recovered coordinated share on simulated recordings where the planted participants are
+<p><b>Panel A — the calibration, which now clears everywhere.</b> Median relative error in
+the recovered coordinated share on simulated recordings where the planted participants are
 known; the band is the tool's own ±{m['tol']:.2f} tolerance, and its <code>passed</code>
 flag is decided on this quantity alone. Filled dots cleared it, hollow ones did not.
-<b>Slow clears every window; fast clears only {m['primary']:g} s</b>, missing by +0.46 at
-2 s and +1.00 at 4 s. Fast's binomial case at {m['primary']:g} s clears by 0.002. So the
-fast numbers hold at exactly the window they were measured at, with no margin either
-side, and the slow ones travel.</p>
+<b>All twelve cells clear it</b> — both streams, both models, all three windows.</p>
+<p><b>They did not, until the probe stretch came out of the calibration.</b> When the probe
+moved to the measured 99th percentile, fast went from +0.06 to <b>+0.43</b> and failed by
+1.7× the tolerance; with the new backgrounds and the <i>old</i> probe it reads +0.02, and
+with no probe stretch at all, −0.17. <b>The backgrounds were never implicated.</b> In the
+probe window every cell lifts to the same rate across the same 300 s, and a joint rise in
+rate is indistinguishable from many shared moments to a statistic built on cumulants of the
+population count — while per-cell circular shifts break that rise up rather than preserving
+it, so the surrogates cannot subtract it either. ⚠ The same effect runs on real recordings,
+so a baseline window with a busy stretch may be <b>slightly over-subtracted</b>: bounded
+small on fast, where the share at the probe is 0.6% of the rate, and not obviously small on
+slow, where it is 35.9%.</p>
 <p><b>Panel B — what adoption would move</b>, log scale. Three marks per column: the bench's
 current value (hollow), this run's <b>raw</b> rate (small grey square) and the
 <b>background</b> rate it proposes (filled). Quiet and busy are measured on the bench's own
@@ -173,7 +181,7 @@ coordinated ones and its <b>+112%</b> is purely a change of <i>definition</i> �
 {m['probe_pct']:g}th percentile of {m['stretch']:g}-second stretches in place of a chosen
 multiple of the median. Slow's costs <b>−35.9%</b>: its busiest stretches <i>are</i> its
 coordinated ones, and its small net −9% is two large opposite moves cancelling. Slow is
-also the stream whose ungated calibration terms are weakest (moment rate −22.8%), so that
+also the stream whose ungated calibration terms are weakest (moment rate −27.4%), so that
 36% is the number to check before anything rests on it.</p>
 </div>"""
 

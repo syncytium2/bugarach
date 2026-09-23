@@ -85,6 +85,23 @@ JITTER_STAT = "hwhm"
 ``primary`` field). The RMS lag it also records weights the 0-3 s tail by lag squared,
 so noise there moves it."""
 
+RATES_RECORD = Path("docs/learned/runs/2026-09-23-coordination-rates/coordination_rates.json")
+"""Where each recording's coordinated share is read from, repo-relative.
+
+``REGIMES`` became **background** rates on 2026-09-22 (Tony: *background, end to end*) —
+the per-cell rate minus the part belonging to moments shared with other cells. This tool
+measures the total rate and cannot derive that share: it comes from factorial cumulants of
+the population count against circular-shift surrogates, which
+``tools/measure_coordination_rates.py`` computes.
+
+**The share is read per recording, not pooled**, so the bootstrap below still resamples
+recordings and recomputes. A pooled share would shift every draw by the same constant, and
+an interval that cannot move with the resampling is an interval that cannot fail.
+
+:func:`_shares_from_record` refuses a record measured on a different folder, exactly as the
+jitter record is refused: a share from one export with every other constant from another is
+not a measurement of either."""
+
 
 def _measure_recording(args):
     """One recording's raw material. Top-level, so Windows can spawn it."""
@@ -144,7 +161,11 @@ def _values(recs) -> dict[str, float]:
     usable = [r for r in recs if r["shape_usable"]]
     counts = [np.array([len(t) for t in r["trains"]], float) for r in usable]
     windows_t = [([np.asarray(t, float) for t in r["trains"]], r["dur"]) for r in usable]
-    means = np.array([np.mean(c / r["dur"]) for c, r in zip(counts, usable)])
+    # The regimes are BACKGROUND rates: each recording's total per-cell rate minus its
+    # coordinated share. A recording with no share measured keeps its total, which errs
+    # towards the old, busier value rather than inventing a subtraction.
+    means = np.array([max(np.mean(c / r["dur"]) - (r.get("share_hz") or 0.0), 0.0)
+                      for c, r in zip(counts, usable)])
 
     vals = {"rate_shape": fb.fit(counts)}
     for b in MEASURED_BURST_BINS:
@@ -210,6 +231,33 @@ def _jitter_from_record(path: Path, stream: str, folder_name: str) -> dict:
             "recordings": int(s.get("recordings", 0))}
 
 
+def _shares_from_record(path: Path, folder_name: str, stream: str) -> dict[str, float]:
+    """Each recording's coordinated share, keyed by ``slice_id``. See :data:`RATES_RECORD`."""
+    if not path.exists():
+        raise SystemExit(
+            f"no coordination-rates record at {path}. Produce one with\n"
+            f"  python tools/measure_coordination_rates.py --jobs 12 --out {path.parent}\n"
+            "and commit it, or pass --rates-record.")
+    rec = json.loads(path.read_text(encoding="utf-8"))
+    measured_on = (rec.get("dataset") or {}).get("name")
+    if measured_on != folder_name:
+        raise SystemExit(
+            f"{path} was measured on {measured_on!r}, but this run reads {folder_name!r}. "
+            "Re-run tools/measure_coordination_rates.py on this folder; a coordinated share "
+            "from one export with every other constant from another is not a measurement "
+            "of either.")
+    s = (rec.get("streams") or {}).get(stream)
+    if s is None:
+        raise SystemExit(f"{path} carries no {stream!r} stream (has "
+                         f"{sorted(rec.get('streams', {}))}).")
+    rows = s.get("per_recording") or []
+    if not rows or "share_hz" not in rows[0]:
+        raise SystemExit(
+            f"{path} carries no per-recording share for {stream!r}. It predates the "
+            "2026-09-22 background ruling; re-run tools/measure_coordination_rates.py.")
+    return {r["slice_id"]: r["share_hz"] for r in rows if r.get("share_hz") is not None}
+
+
 def _commit() -> str:
     r = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=REPO,
                        capture_output=True, text=True)
@@ -231,6 +279,10 @@ def main(argv=None) -> int:
     p.add_argument("--jitter-record", type=Path, default=REPO / JITTER_RECORD,
                    help=f"the correlogram record jitter_sec is read from "
                         f"(default {JITTER_RECORD})")
+    p.add_argument("--rates-record", type=Path, default=REPO / RATES_RECORD,
+                   help=f"the coordination record each recording's coordinated share is "
+                        f"read from, to make the regimes background rates "
+                        f"(default {RATES_RECORD})")
     a = p.parse_args(argv)
 
     from bugarach import bench, dataset
@@ -254,6 +306,18 @@ def main(argv=None) -> int:
     n_shape = sum(r["shape_usable"] for r in recs)
     print(f"{len(recs)} recordings measured ({n_shape} with enough baseline events for the "
           f"shape fits), {len(skipped)} skipped")
+
+    # Attach each recording's coordinated share BEFORE the bootstrap, so a resampled
+    # draw carries its own shares and the interval moves with the resampling.
+    shares = _shares_from_record(a.rates_record, name, bench.MEASURED_STREAM)
+    for r in recs:
+        r["share_hz"] = shares.get(r["slice_id"])
+    have = sum(r["share_hz"] is not None for r in recs)
+    print(f"coordinated share from {_repo_relative(a.rates_record)}: {have} of {len(recs)} "
+          f"recordings; the regimes are background rates (raw minus that share)")
+    if have < n_shape:
+        print(f"  note: {n_shape - have} shape-usable recording(s) have no share and keep "
+              f"their total rate, which errs busy rather than inventing a subtraction")
 
     point = _values(recs)
     rng = np.random.RandomState(a.seed)
