@@ -1,0 +1,435 @@
+{
+  "dataset": {
+    "role": "steps_and_pins_excluded",
+    "name": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
+    "recordings": 84,
+    "use": "input"
+  },
+  "treatments": [
+    "senktide",
+    "TTX"
+  ],
+  "rows": [
+    {
+      "group": "DI",
+      "treatment": "senktide",
+      "slice_id": "20250925_231",
+      "n_roi_recorded": 20
+    },
+    {
+      "group": "DI",
+      "treatment": "senktide",
+      "slice_id": "20250925_233",
+      "n_roi_recorded": 27
+    },
+    {
+      "group": "DI",
+      "treatment": "senktide",
+      "slice_id": "20250926_235",
+      "n_roi_recorded": 23
+    },
+    {
+      "group": "DI",
+      "treatment": "senktide",
+      "slice_id": "20250926_237",
+      "n_roi_recorded": 39
+    },
+    {
+      "group": "DI",
+      "treatment": "senktide",
+      "slice_id": "20260130_270",
+      "n_roi_recorded": 48
+    },
+    {
+      "group": "DI",
+      "treatment": "senktide",
+      "slice_id": "20260130_272",
+      "n_roi_recorded": 28
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20240930_65",
+      "n_roi_recorded": 53
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20240930_69",
+      "n_roi_recorded": 19
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20250731_151",
+      "n_roi_recorded": 38
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20260303_290",
+      "n_roi_recorded": 33
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20260303_296",
+      "n_roi_recorded": 51
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20260303_301",
+      "n_roi_recorded": 24
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20260629_309",
+      "n_roi_recorded": 21
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20260629_312",
+      "n_roi_recorded": 21
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20260629_314",
+      "n_roi_recorded": 14
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20260630_316",
+      "n_roi_recorded": 34
+    },
+    {
+      "group": "DI",
+      "treatment": "TTX",
+      "slice_id": "20260630_325",
+      "n_roi_recorded": 19
+    },
+    {
+      "group": "OVX",
+      "treatment": "senktide",
+      "slice_id": "20240813b42",
+      "n_roi_recorded": 37
+    },
+    {
+      "group": "OVX",
+      "treatment": "senktide",
+      "slice_id": "20240814a47",
+      "n_roi_recorded": 17
+    },
+    {
+      "group": "OVX",
+      "treatment": "senktide",
+      "slice_id": "20240814b49",
+      "n_roi_recorded": 43
+    },
+    {
+      "group": "OVX",
+      "treatment": "senktide",
+      "slice_id": "20250829_207",
+      "n_roi_recorded": 53
+    },
+    {
+      "group": "OVX",
+      "treatment": "senktide",
+      "slice_id": "20250904_209",
+      "n_roi_recorded": 23
+    },
+    {
+      "group": "OVX",
+      "treatment": "senktide",
+      "slice_id": "20260122_256",
+      "n_roi_recorded": 36
+    },
+    {
+      "group": "OVX",
+      "treatment": "senktide",
+      "slice_id": "20260122_259",
+      "n_roi_recorded": 37
+    },
+    {
+      "group": "OVX",
+      "treatment": "senktide",
+      "slice_id": "20260226_285",
+      "n_roi_recorded": 27
+    },
+    {
+      "group": "OVX",
+      "treatment": "TTX",
+      "slice_id": "20241002_72",
+      "n_roi_recorded": 19
+    },
+    {
+      "group": "OVX",
+      "treatment": "TTX",
+      "slice_id": "20250829_204",
+      "n_roi_recorded": 32
+    },
+    {
+      "group": "OVX",
+      "treatment": "TTX",
+      "slice_id": "20250904_211",
+      "n_roi_recorded": 45
+    },
+    {
+      "group": "OVX",
+      "treatment": "TTX",
+      "slice_id": "20260226_282",
+      "n_roi_recorded": 16
+    },
+    {
+      "group": "OVX",
+      "treatment": "TTX",
+      "slice_id": "20260226_287",
+      "n_roi_recorded": 15
+    },
+    {
+      "group": "OVX",
+      "treatment": "TTX",
+      "slice_id": "20260701_328",
+      "n_roi_recorded": 25
+    },
+    {
+      "group": "OVX",
+      "treatment": "TTX",
+      "slice_id": "20260701_331",
+      "n_roi_recorded": 26
+    },
+    {
+      "group": "OVX",
+      "treatment": "TTX",
+      "slice_id": "20260702_334",
+      "n_roi_recorded": 36
+    },
+    {
+      "group": "OVX",
+      "treatment": "TTX",
+      "slice_id": "20260702_338",
+      "n_roi_recorded": 46
+    },
+    {
+      "group": "MALE",
+      "treatment": "senktide",
+      "slice_id": "20240827a55",
+      "n_roi_recorded": 29
+    },
+    {
+      "group": "MALE",
+      "treatment": "senktide",
+      "slice_id": "20240827b57",
+      "n_roi_recorded": 36
+    },
+    {
+      "group": "MALE",
+      "treatment": "senktide",
+      "slice_id": "20250826_192",
+      "n_roi_recorded": 30
+    },
+    {
+      "group": "MALE",
+      "treatment": "senktide",
+      "slice_id": "20250827_196",
+      "n_roi_recorded": 27
+    },
+    {
+      "group": "MALE",
+      "treatment": "senktide",
+      "slice_id": "20260120_248",
+      "n_roi_recorded": 31
+    },
+    {
+      "group": "MALE",
+      "treatment": "TTX",
+      "slice_id": "20241211_127",
+      "n_roi_recorded": 45
+    },
+    {
+      "group": "MALE",
+      "treatment": "TTX",
+      "slice_id": "20250807_178",
+      "n_roi_recorded": 46
+    },
+    {
+      "group": "MALE",
+      "treatment": "TTX",
+      "slice_id": "20250807_181",
+      "n_roi_recorded": 32
+    },
+    {
+      "group": "MALE",
+      "treatment": "TTX",
+      "slice_id": "20250826_190",
+      "n_roi_recorded": 15
+    },
+    {
+      "group": "MALE",
+      "treatment": "TTX",
+      "slice_id": "20250827_199",
+      "n_roi_recorded": 48
+    },
+    {
+      "group": "MALE",
+      "treatment": "TTX",
+      "slice_id": "20260706_341",
+      "n_roi_recorded": 33
+    },
+    {
+      "group": "MALE",
+      "treatment": "TTX",
+      "slice_id": "20260706_343",
+      "n_roi_recorded": 44
+    },
+    {
+      "group": "MALE",
+      "treatment": "TTX",
+      "slice_id": "20260707_346",
+      "n_roi_recorded": 10
+    },
+    {
+      "group": "MALE",
+      "treatment": "TTX",
+      "slice_id": "20260707_348",
+      "n_roi_recorded": 30
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20250911_214",
+      "n_roi_recorded": 20
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20250911_217",
+      "n_roi_recorded": 32
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20250911_222",
+      "n_roi_recorded": 34
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20250912_225",
+      "n_roi_recorded": 45
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20250912_227",
+      "n_roi_recorded": 17
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20250912_229",
+      "n_roi_recorded": 55
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20260115_240",
+      "n_roi_recorded": 32
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20260115_243",
+      "n_roi_recorded": 43
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20260121_250",
+      "n_roi_recorded": 34
+    },
+    {
+      "group": "ORX",
+      "treatment": "senktide",
+      "slice_id": "20260121_252",
+      "n_roi_recorded": 27
+    },
+    {
+      "group": "ORX",
+      "treatment": "TTX",
+      "slice_id": "20241122b_110",
+      "n_roi_recorded": 25
+    },
+    {
+      "group": "ORX",
+      "treatment": "TTX",
+      "slice_id": "20241212_131",
+      "n_roi_recorded": 33
+    },
+    {
+      "group": "ORX",
+      "treatment": "TTX",
+      "slice_id": "20250806_174",
+      "n_roi_recorded": 36
+    },
+    {
+      "group": "ORX",
+      "treatment": "TTX",
+      "slice_id": "20250806_176",
+      "n_roi_recorded": 19
+    },
+    {
+      "group": "ORX",
+      "treatment": "TTX",
+      "slice_id": "20250808_183",
+      "n_roi_recorded": 61
+    },
+    {
+      "group": "ORX",
+      "treatment": "TTX",
+      "slice_id": "20250808_186",
+      "n_roi_recorded": 35
+    },
+    {
+      "group": "ORX",
+      "treatment": "TTX",
+      "slice_id": "20260225_275",
+      "n_roi_recorded": 29
+    },
+    {
+      "group": "ORX",
+      "treatment": "TTX",
+      "slice_id": "20260225_277",
+      "n_roi_recorded": 26
+    },
+    {
+      "group": "ORX",
+      "treatment": "TTX",
+      "slice_id": "20260225_280",
+      "n_roi_recorded": 15
+    }
+  ],
+  "not_listed": [
+    "20240708_13 (treatment 1: SB222200)",
+    "20240708_17 (treatment 1: SB222200)",
+    "20240723_22 (treatment 1: SB222200)",
+    "20240726_34 (treatment 1: SB222200)",
+    "20240726_36 (treatment 1: SB222200)",
+    "20240813_39 (treatment 1: none)",
+    "20240815a51 (treatment 1: none)",
+    "20240815b53 (treatment 1: SB222200)",
+    "20241004_80 (treatment 1: none)",
+    "20241120_94 (treatment 1: SB222200)",
+    "20241120_96 (treatment 1: SB222200)",
+    "20241121a_98 (treatment 1: SB222200)",
+    "20241121b_103 (treatment 1: SB222200)",
+    "20241122a_105 (treatment 1: none)",
+    "20241211_124 (treatment 1: none)",
+    "20241216_135 (treatment 1: SB222200)",
+    "20241216_137 (treatment 1: SB222200)"
+  ]
+}

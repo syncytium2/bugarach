@@ -10,6 +10,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/roi-table — DARKROOM claim RELEASED 2026-09-23: `bugarach/roi_table/` (NEW)
+- **Status:** **RELEASED 2026-09-23** — `roi_table.md`, `.csv` and `.json` written by
+  `tools/make_roi_table.py`, with the same three files as a repo copy under `docs/learned/roi_table/`.
+  ⚠ **Claimed after the write, not before** — the tool's default destination took it to the darkroom
+  on its first run. The folder is new and nothing else writes there, so it is recorded here rather
+  than left unnamed. Undated folder name on purpose: it is rebuilt in place when the export moves.
+- **Touches:** this block; NEW `tools/make_roi_table.py`, NEW `tests/test_roi_table.py`,
+  `docs/INDEX.md` (one row), NEW `docs/learned/roi_table/`.
+
 ### 065/186-waterfall — DARKROOM claim RELEASED 2026-09-23: `bugarach/2026-09-23-186-waterfall/`
 - **Status:** **RELEASED 2026-09-23, and the job moves to an interface2 session.** Tony: *"in the
   future, use an interface2 session for matlab. i suspect there are issues."* Nothing of this
