@@ -1,10 +1,27 @@
 ---
-status: waiting-on-tony
+status: done
 filed: 2026-09-22
-waiting: Re-derive the bench's difficulty axis around the corrected jitter, or let the axis stand and record that it no longer separates SPIKE-synch. The measurement is settled either way; this decides what gets edited, and the every-knob re-searches wait on it.
+closed: 2026-09-22
 ---
 
 # The corrected jitter flattens SPIKE-synch across the background axis
+
+> **RULED the same evening (Tony, ~21:00): the flatness is a result, and the axis stays.**
+> *"why change something because SPIKE-synch fails to improve? It's middle of the pack."*
+> The background axis is measured from baseline recordings, so a detector that stops responding
+> to it is a fact about that detector, not a fault in the axis. **Reading 1 is declined and
+> reading 2 is taken:** the MILESTONES row was corrected to *five of six* and its status is
+> `current` again — the claim was wrong, not its subject. `BACKGROUND_FLAT = {"sync"}` in
+> `tests/test_background_curve.py` records which detector, checked in both directions, and
+> `BACKGROUND_TOLERABLE_SPREAD` was never loosened.
+>
+> **And the searches run.** This file first held them on the grounds that they cost "hours";
+> they cost about 11 minutes per bench. The correction is kept below rather than deleted,
+> because the wrong number is what made the wrong call look reasonable.
+>
+> One thing the ruling does **not** settle, and nobody should read it as settling: SPIKE-synch
+> was adopted on the slow bench at `max_gap` 4 s on **old-jitter** evidence. That adoption is
+> still owed a look on the corrected bench — it is a question about a setting, not about the axis.
 
 **Found** by the WSMIP065 overnight session on 2026-09-22, immediately after adopting the
 measured jitter. **It stops the every-knob re-searches** (overnight handoff, WSMIP065 step 5),
