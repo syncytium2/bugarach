@@ -121,9 +121,18 @@ coordination calls in the lane above, pointing down. What does not exist yet:
 ## Where the work lives
 
 The code landed 2026-09-23 (`combined.py`, `bench_combined.py`, and a `combined` value on
-every stage). The real-data run follows `bench_combined`'s docstring and is the combined
-section of the overnight handoff; its run records land under `docs/learned/runs/2026-09-23-*`
-with `combined` in the name.
+every stage). **The real-data run is done:**
+- #754 has the bench measured (jitter 0.148 s), all six detectors searched, and chorus trained
+  (best of 5 seeds, mean F1 0.802).
+- #757 installed SPIKE-synch (+0.131) after the integer fix in #755.
+- The cohort run gave 18,866 calls on 84 recordings and 10 raster pages, in
+  `<darkroom>/bugarach/2026-09-23-full-cohort-combined/`.
+- The fireflies export is prepared but not sent.
+
+Run records are under `docs/learned/runs/2026-09-23-*` with `combined` in the name. The night's
+record is [`handoffs/2026-09-22-overnight.md`](../handoffs/2026-09-22-overnight.md). **Still
+Tony's:** review of the combined parameter set, which is installed as search picks, and sending
+it to fireflies. **Still the producer's:** question 1, on membership.
 
 ## Keeping this page true
 
