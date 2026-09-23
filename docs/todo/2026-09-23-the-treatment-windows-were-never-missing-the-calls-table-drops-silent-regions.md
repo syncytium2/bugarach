@@ -52,6 +52,24 @@ note needs: region 2 had no calls from any detector. It says nothing about what 
 
 **Read `regions.csv` for what a recording contains. Read the calls for what was called in it.**
 
+## Ask this file instead
+
+[`docs/learned/runs/2026-09-23-first-treatment-by-recording.csv`](../learned/runs/2026-09-23-first-treatment-by-recording.csv)
+— every recording in the default folder with its group, mouse, first treatment, full region
+order and ROI count, built from `regions.csv` and `slices.csv`.
+**"Which slices are in *X*?" is answered from there, not from a calls table.** Regenerate with
+the `.py` beside it; it takes the export folder and rewrites the CSV, so the file never has to
+be trusted on its word.
+
+That question had already gone wrong in practice: a MALE TTX list assembled from the calls
+tables held 8 of the 9 recordings, missing `20250826_190`, whose TTX window produced no calls.
+
+⚠ **`20260707_346` (MALE, TTX) is in this snapshot and is leaving.** It is being excluded in
+the lab's own record and departs the default folder by producer re-export
+([`docs/todo/2026-09-23-346-leaves-the-default-by-re-export.md`](2026-09-23-346-leaves-the-default-by-re-export.md),
+`interface2#2`) — not by a filter here. **MALE TTX is 9 in the folder as it stands and becomes
+8 when that re-export lands**, at which point this CSV is regenerated rather than edited.
+
 ## The cohort, from the region tables
 
 First treatment per group, default folder, 84 recordings, nothing filtered or relabelled:
