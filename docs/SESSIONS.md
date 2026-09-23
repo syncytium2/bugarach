@@ -21,16 +21,25 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Also writes, and this one IS being written:** a NEW folder
   `bugarach/2026-09-22-jitter-background-curve/`, from `tools/make_background_curve_figure.py`
   on the re-measured bench. Claimed before the write. It is the evidence for the finding below.
-- **The searches ARE running**, into `bugarach/2026-09-23-full-search-fast/` and `-slow/`
-  (claimed above). They were held earlier on a cost claim of this session's that was wrong: it
-  said "hours", and they are **about 11 minutes per bench**, measure-only, changing no operating
-  point. At that price SPIKE-synch's row is worth having as evidence rather than skipping.
+- **The searches are NOT running, and the line here that said they were is corrected.** It was
+  true for about fifteen minutes. A fast search was launched at ~21:04 and **aborted**: the
+  21:00 probe ruling ([#747](https://github.com/syncytium2/bugarach/pull/747)) moves the probe
+  to the measured 99th percentile and puts WSMIP064's adoption *before* the searches, so that run
+  was on a bench without the new probe and was void before it finished. Its partial `search.json`
+  was deleted from `2026-09-23-full-search-fast/`, which is claimed and empty again. **The holds
+  stand**: both search folders are still mine and still unwritten.
+- **What the searches now wait on**, and it is not #738 — that merged green (`8f9f771`). It is
+  the **probe-basis question**: [#748](https://github.com/syncytium2/bugarach/pull/748) shows the
+  ruling names fast's *raw* 99th percentile and slow's *background* one, which on slow differ by
+  56% and straddle the current value, so slow's probe either rises 42% or falls 9%. WSMIP064 is
+  rightly holding its adoption rather than picking. A wrong branch there lands in a constant these
+  searches run on minutes later — which this session nearly demonstrated, above.
 - **The finding step 5 must be read against:** on the corrected jitter SPIKE-synch goes flat
   across the background axis (F1 0.657, spread 0.026 against a 0.05 tolerance), so any setting
   the search proposes for it is chosen against a flat objective and is **not** a recommendation.
-  The other five still spread 0.081–0.178 and their proposals stand. The MILESTONES row that said
-  *"nothing is flat across it"* now says five of six, status `open`.
-  `docs/todo/2026-09-22-the-corrected-jitter-flattens-spike-synch-across-the-axis.md`.
+  The other five still spread 0.081–0.178 and their proposals stand. **Ruled 2026-09-22**: Tony
+  called the flatness a result, not a reason to change the axis, so the MILESTONES row is
+  corrected to *five of six* and back to `current`, and the todo is closed.
 - **Touches:** this block.
 ### 064/coordination-rates — DARKROOM claim RELEASED 2026-09-22: `bugarach/2026-09-23-coordination-rates/` (NEW)
 - **Status:** **RELEASED 2026-09-22**, on [#743](https://github.com/syncytium2/bugarach/pull/743)
