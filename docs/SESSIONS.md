@@ -10,6 +10,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/chance-floor-66 — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-chance-floor-66/` (NEW)
+- **Status:** ACTIVE 2026-09-23 23:40 UTC — the chance floor per recording, stream and group on
+  the 66-recording senktide/TTX export, empirical under the rigid-shift null (ADR-0006) beside
+  the closed forms of `tools/probe_field_size.py`. Evidence for link 1; decides nothing.
+- **Touches:** this block; NEW `tools/measure_chance_floor.py` and its test; NEW
+  `docs/learned/runs/2026-09-23-chance-floor-66/`; `docs/INDEX.md`. **Not** `src/bugarach/bench*.py`
+  or `docs/FOUNDATIONS.md`, which the Mac session is changing on #786.
+- **Reads** the default export folder (`senktide_ttx`), confirmed by Tony in this session.
+- **Released:** when the run record reaches `main`.
+
 ### candid-sorrel/recordings-that-carry-a-group — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-recordings-that-carry-a-group/` (NEW)
 - **Status:** ACTIVE, claimed before writing. The orchestrator's brief at Tony's request: render the
   baseline windows of the three recordings that two independent measures put in front of a group —
