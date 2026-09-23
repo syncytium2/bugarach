@@ -10,11 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 064/groups-rates-comod-66 — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-groups-rates-comod-66/` (NEW)
-- **Status:** ACTIVE 2026-09-23 20:50 UTC — the group question on the 66-recording senktide/TTX
-  export, for the orchestrator at Tony's request: co-modulation by group (fast, slow, combined)
-  with leave-one-out moved into the tool, and rate and participation by group with a
-  mouse-clustered bootstrap.
+### 064/groups-rates-comod-66 — DARKROOM claim RELEASED 2026-09-23: `bugarach/2026-09-23-groups-rates-comod-66/` (NEW)
+- **Status:** **RELEASED 2026-09-23** — [#788](https://github.com/syncytium2/bugarach/pull/788)
+  merged on green through `tools/merge_when_green.sh` (`384ee76`); the run record is on `main` at
+  `docs/learned/runs/2026-09-23-groups-rates-comod-66/`. The darkroom folder stays: it holds the
+  co-modulation `results.json` (5.6 MB, per recording), both run logs and the three figures.
+  Nothing holds it now. Read with Tony's confirmation of the 9-23 senktide/TTX default, given in
+  the session. **Finding:** rate and the coordinated share of the rate differ by group under both
+  leave-one-out and the mouse bootstrap; co-modulation and participation do not.
 - **Touches:** this block; `tools/measure_slow_comodulation.py`, `tools/measure_coordination_rates.py`
   and their tests; NEW `docs/learned/runs/2026-09-23-groups-rates-comod-66/`; `docs/INDEX.md`.
   **Not** `docs/learned/runs/2026-09-23-jitter-by-group-66/`, which another session is writing.
