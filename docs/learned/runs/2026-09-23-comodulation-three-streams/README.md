@@ -33,10 +33,13 @@ because recordings from one mouse are not independent draws.
 Three abbreviations used throughout. **ROI** is a region of interest — one traced cell.
 **CoactDetect** is the project's calibrated coincident-event detector, run here at
 `detect_folder.detector_params('coact', …)`, the same settings on all three streams so the
-removal arm is comparable across them. ***J*** is the width of the rigid-shift surrogate: every
-ROI in a recording is shifted in time by **one** common offset drawn from ±*J*, which destroys
-the alignment between the recording and the clock but keeps every ROI's relation to every other
-ROI intact.
+removal arm is comparable across them. ***J*** is the width of the **rigid shift**, this
+project's surrogate: every cell's whole train of events slid by **its own** random offset, at
+most *J* seconds. Each cell keeps its own internal timing, and the alignment between cells is
+destroyed below roughly *J* — which is why the arm removes coincident events and leaves
+minute-scale shared change in place. `tools/tube_self_supervised.py`'s `rigid_frames` draws
+`size=1 if shared else len(trains)` offsets; `measure_slow_comodulation` leaves `shared` at its
+default `False`, so it is one offset **per ROI**, not one for the recording.
 
 ## The three streams, side by side
 
