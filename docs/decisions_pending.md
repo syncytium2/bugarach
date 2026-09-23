@@ -216,6 +216,12 @@ no longer true**.
 **Recommendation:** finish it on any machine with the data; it is done work that never shipped,
 and a stale stop notice teaches sessions to ignore stop notices.
 
+**Deferred, 2026-09-23 (Tony):** *"keep the co-modulation story in our backpocket for now. flag
+for followup as important but off target for today's goals."* The three-stream re-run is #768. For
+the scoring design, minute-scale shared change is treated as **background**, a working choice and
+not a finding:
+[`todo/2026-09-23-minute-scale-shared-change-is-background-for-now.md`](todo/2026-09-23-minute-scale-shared-change-is-background-for-now.md).
+
 ---
 
 ## 10. The combined-stream goal: when it starts, and what shape it takes
