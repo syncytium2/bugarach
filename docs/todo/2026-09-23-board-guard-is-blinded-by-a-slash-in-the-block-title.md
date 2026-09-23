@@ -37,7 +37,7 @@ than one that only does the first.
 Then take the identifier up to the first space, as now. A host name cannot contain a slash or a
 space, so one substitution is all the prefix ever needs, and the title is left alone.
 
-**Selftest to add**, since `--selftest` claims to prove every branch can fire: a block whose title
+**Selftest to add**, since `--selftest` claims to prove every branch triggers: a block whose title
 contains a slash must still be found, and a block for a different worktree whose title happens to
 contain this worktree's name must still be refused.
 
