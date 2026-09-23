@@ -43,6 +43,13 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(REPO / "src"), str(REPO / "tools")]
 
 from build_surrogate_report import Svg, esc, figure, num, page, table  # noqa: E402
+
+SUPERSEDED_BENCH = "SUPERSEDED BENCH"
+"""Marker opening the refusal when a run's declared bench no longer matches the live one.
+
+A caller keys on this string to tell that case apart from a broken builder — a distinction
+a bare ``assert`` could not make, and which `tests/test_build_fair_comparison_report.py`
+needs in order to skip with a reason rather than error."""
 from fair_comparison_evidence import LOW_F1, _refit_health  # noqa: E402
 
 from bugarach import bench, provenance, score  # noqa: E402
@@ -96,9 +103,23 @@ class Run:
         self.folds = list(range(self.decl["folds"]))
         self.nb = _nb_factor(self.decl["folds"], 1.0 / (self.decl["folds"] - 1))
         bench_decl = self.decl["bench_recording"]
-        for k in ("duration_sec", "n_roi", "jitter_sec", "min_sep_sec", "hot_rate_hz"):
-            assert bench_decl[k] == bench.BENCH_RECORDING[k], \
-                f"the live bench's {k} differs from what the run declared; rebuild from the run"
+        moved = {k: (bench_decl[k], bench.BENCH_RECORDING[k])
+                 for k in ("duration_sec", "n_roi", "jitter_sec", "min_sep_sec", "hot_rate_hz")
+                 if bench_decl[k] != bench.BENCH_RECORDING[k]}
+        if moved:
+            # A NAMED refusal, not a bare assert: a caller has to be able to tell "the bench
+            # moved under this run" from "the builder is broken". First fired 2026-09-22, when
+            # the bench adopted the measured jitter and this run's declared 0.36 s stopped
+            # matching. The run's numbers are not wrong; they belong to the older bench.
+            raise SystemExit(
+                f"{SUPERSEDED_BENCH}: this run was scored on a bench that no longer exists.\n"
+                + "\n".join(f"  {k}: run declared {d}, live bench has {v}"
+                            for k, (d, v) in moved.items())
+                + "\n\nThe run's own numbers stand. What cannot happen is rebuilding its report "
+                  "against today's bench, because the page would carry this bench's constants "
+                  "over that bench's results. Re-running the comparison, freezing this report "
+                  "against its own declaration, or rendering it with a superseded-bench banner "
+                  "are three different answers and the choice is not this tool's.")
 
     def net_f1(self, m, w):
         return [row[w]["f1_mean"] for row in self.results["learned"][m]]
