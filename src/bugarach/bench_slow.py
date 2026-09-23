@@ -149,10 +149,11 @@ moment rate reads −27.4% and participants +14.2%, errors in opposite direction
 is the gated quantity. That bears on anything read off participants or moment rate; it bears
 much less on these two values, where the correction is about a fifth of the rate."""
 
-NULL_RECORDING = dict(bg_rate_hz=0.0030, n_per_level=(0, 0, 0),
-                      hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0,
-                      n_distractors=0)
-"""The no-coordination test's recording, at the slow quiet background."""
+NULL_RECORDING = dict(bg_rate_hz=REGIMES["baseline_quiet"]["bg_rate_hz"],
+                      n_per_level=(0, 0, 0), hot_window=None, hot_rate_hz=0.0,
+                      ramp_sec=0.0, n_distractors=0)
+"""The no-coordination test's recording, at the slow quiet background, read from :data:`REGIMES`.
+It was a literal 0.0030 Hz until 2026-09-23 and stayed there when #756 moved quiet to 0.0024 Hz."""
 
 BENCH_RECORDING = dict(
     duration_sec=2700.0,

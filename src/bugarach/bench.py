@@ -733,11 +733,16 @@ of a coordination property. If a senktide evaluation is wanted it is a separate,
 explicit decision, not a default of this module.
 """
 
-NULL_RECORDING = dict(bg_rate_hz=0.0052, n_per_level=(0, 0, 0),
-                      hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0,
-                      n_distractors=0)
+NULL_RECORDING = dict(bg_rate_hz=REGIMES["baseline_quiet"]["bg_rate_hz"],
+                      n_per_level=(0, 0, 0), hot_window=None, hot_rate_hz=0.0,
+                      ramp_sec=0.0, n_distractors=0)
 """A **synthetic** recording with no planted coordination — Poisson background at
 the quiet end of baseline, and nothing else.
+
+**The rate is read from** :data:`REGIMES` **rather than written here.** Until 2026-09-23 it was a
+literal 0.0052 Hz, so when #756 moved the quiet background to 0.0042 Hz this recording stayed
+behind, 24% busier than the quiet end it stands for, and the calls-per-hour budgets were measured
+on it (Tony, 2026-09-23: *"fix the no coordination problem"*).
 
 Its only claim is about construction: this generator planted no events, so a
 detector reporting one is reporting structure that was not put there. That is a
