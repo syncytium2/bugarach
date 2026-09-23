@@ -182,13 +182,46 @@ terms where slow is worst (moment rate −22.8%).
 region returns `window=None` and is **dropped, not measured over its whole span**. All 84
 contributed; no treatment window enters any number.
 
-**What is left for the adoption, and it is sequencing, not measurement.**
-[#738](https://github.com/syncytium2/bugarach/pull/738) is still a draft and owns the bench
-constants; opening an adoption PR now would conflict in `bench.py` or reorder two changes meant to
-land in sequence. When it lands, quiet and busy are the straightforward rows. **The fast probe's
-+112% wants a sentence from Tony** — it is a different definition of "busy" for a probe, not a
-correction. And slow is the stream to be slowest about: this run, the per-group correlogram (#744,
-slow borderline at p = 0.054) and ruling item 3 all point the same way.
+**ADOPTION DONE 2026-09-22 — [#756](https://github.com/syncytium2/bugarach/pull/756) merged
+(`2c19003`), green on all three legs. 065's fast and slow searches are unblocked.** Tony ruled
+**background, end to end** (#748): `bench.REGIMES` 0.0042/0.0165, `bench_slow.REGIMES`
+0.0024/0.0089, probes 0.1271 and 0.0291, each with its provenance in its own docstring.
+
+⚠ **FOR TONY — adopting the constants reversed four things this tree had pinned as findings.**
+Every one was **re-measured and restated**, never re-baselined: no tolerance loosened, no test
+skipped, and each restated test asserts the *mechanism* so it cannot pass for an unrelated reason.
+
+1. **No detector is a steady leader across the whole background axis any more.** Three win
+   somewhere — CoactDetect quiet, LoCo middle, SPIKE-synch busy. The leader still holds between
+   the two named `REGIMES` endpoints, which is where we report.
+2. **The fitted-versus-flat contrast `tests/test_background_curve.py` is named for is gone.** Both
+   fields now show the same flat set, the same three winners, the same rank change of four. Only
+   magnitude separates them: mean own-range 0.126 fitted against 0.171 flat.
+3. **Three probe ceilings rose because the PROBE rose, not because a detector got worse** — and
+   the harder probe exposed what the gentle one could not. Calls per minute into a block with
+   nothing in it: **CoactDetect 0.08 and LoCo 0.21 — they do not key on rate at all** — against
+   rate 4.14 (3.8x), cicada 29.66 (1.7x) and **SPIKE-synch 5.54, a 28x jump** from 0.2. Sync was
+   passing a 1.0 ceiling only because the probe was too gentle to ask.
+4. **The shipped bake-off stopped failing its gate.** rate+context fires 3.47/min: it failed a
+   ceiling of 2.0 and passes one of 4.5. *Nothing about the shipped file changed* — it still picks
+   knobs by raw argmax with no probe gate; that choice is simply not over the line now.
+
+**1, 2 and 3 are one detector.** SPIKE-synch's flatness reads as **robustness** on the background
+axis and as **rate-keying** on the probe. That is one observation, not two, and **which it is is
+deliberately decided nowhere in this change** — it is a judgement about the detector, not about
+the constants. It is the thing to look at first.
+
+**One number worth its own line:** at this probe, rate+context's shipped setting sits within about
+**10%** of the setting its own gate exists to refuse (3.83 against 4.98/min). There is no longer
+room for the 1.6x headroom rule, so that one ceiling is hand-set at 4.5 from the separation window,
+checked to separate on seeds 1–48 *and* on the test's own seed. Every other ceiling came from the
+unchanged rule.
+
+Unchanged by the adoption: **slow is the stream to be slowest about** — this run, the per-group
+correlogram (#744, slow borderline at p = 0.054) and ruling item 3 all point the same way. And the
+calibration now excludes the probe stretch, which admits that a real baseline window containing a
+busy stretch may be **slightly over-subtracted**: bounded small on fast (0.6% of the rate at the
+probe), not obviously small on slow (35.9%).
 
 ## Combined — the third stream, end to end (WSMIP064, after its adoption PR)
 
