@@ -1,0 +1,94 @@
+{
+ "bench": "bugarach.bench_slow",
+ "model": "chorus_gain_norm",
+ "config": {
+  "roi_width": 4,
+  "roi_depth": 4,
+  "head_width": 8,
+  "head_depth": 8,
+  "top_m": 4,
+  "norm": true,
+  "vote_gain": 8
+ },
+ "fit_seeds": [
+  1000,
+  1023
+ ],
+ "test_seeds": [
+  4000,
+  4023
+ ],
+ "null_budget_per_hour": 1.0,
+ "best_within_budget": true,
+ "best": "chorus_gain_norm_slow_seed3.json",
+ "rows": [
+  {
+   "seed": 0,
+   "path": "chorus_gain_norm_slow_seed0.json",
+   "threshold": 0.95,
+   "f1": [
+    0.8409893992932863,
+    0.8315911730545877
+   ],
+   "mean": 0.836290286173937,
+   "null_per_hour": 0.1111111111111111,
+   "sec": 326,
+   "null_per_hour_before_rescore": 0.2222222222222222
+  },
+  {
+   "seed": 1,
+   "path": "chorus_gain_norm_slow_seed1.json",
+   "threshold": 0.95,
+   "f1": [
+    0.8427230046948356,
+    0.8306264501160093
+   ],
+   "mean": 0.8366747274054225,
+   "null_per_hour": 0.5555555555555556,
+   "sec": 348,
+   "null_per_hour_before_rescore": 0.3333333333333333
+  },
+  {
+   "seed": 2,
+   "path": "chorus_gain_norm_slow_seed2.json",
+   "threshold": 0.9000000000000001,
+   "f1": [
+    0.8443396226415094,
+    0.8352668213457076
+   ],
+   "mean": 0.8398032219936085,
+   "null_per_hour": 0.1111111111111111,
+   "sec": 348,
+   "null_per_hour_before_rescore": 0.1111111111111111
+  },
+  {
+   "seed": 3,
+   "path": "chorus_gain_norm_slow_seed3.json",
+   "threshold": 0.95,
+   "f1": [
+    0.8480565371024735,
+    0.8354725787631273
+   ],
+   "mean": 0.8417645579328004,
+   "null_per_hour": 0.0,
+   "sec": 366,
+   "null_per_hour_before_rescore": 0.1111111111111111
+  },
+  {
+   "seed": 4,
+   "path": "chorus_gain_norm_slow_seed4.json",
+   "threshold": 0.9000000000000001,
+   "f1": [
+    0.8432304038004751,
+    0.8231213872832369
+   ],
+   "mean": 0.833175895541856,
+   "null_per_hour": 0.5555555555555556,
+   "sec": 354,
+   "null_per_hour_before_rescore": 0.3333333333333333
+  }
+ ],
+ "caveat": "best is chosen on the held-out seeds; its F1 is a selection score",
+ "best_before_rescore": "chorus_gain_norm_slow_seed3.json",
+ "rescored": "calls/hour recomputed on the corrected no-coordination recording (#761: bench_slow's NULL_RECORDING had a stale 0.0030 Hz literal where REGIMES quiet is 0.0024). The fits are untouched -- training never reads that recording -- so this is equivalent to a retrain, and best.json was re-picked by the training tool's own rule."
+}

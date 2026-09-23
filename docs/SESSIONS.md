@@ -10,6 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/learned-slow — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-learned-slow/` (NEW)
+- **Status:** **ACTIVE (WSMIP065)**, claimed before any write. Tony, 2026-09-23: set up the
+  learned runs immediately — no learned model has been trained on the **current** slow bench, and
+  slow has none at all, so its rasters carry no learned lane. **065 takes slow; WSMIP064 takes
+  fast in parallel on its GPU.**
+- **Writes:** one NEW folder — `models/chorus_gain_norm/` and `models/chorus_norm/` (checkpoints
+  and `best.json` each), and `detect/`. New folder, so nothing existing is overwritten.
+- **CPU, not the GPU.** This machine's `.venv` is torch 2.14.0+**cpu** (`cuda.is_available()` is
+  False) though the driver is current; about 6 minutes a fit, so ten fits is about an hour. No
+  CUDA wheel installed for it — WSMIP064 has the GPU and is doing fast.
+- **Rasters are NOT drawn.** Detection only. Tony reviews the tables first, and the slow raster
+  with a learned lane waits on him.
+- **Reads:** the default export, confirmed by Tony this session. **Not touched:** any bench's
+  `OPERATING_POINTS`.
+- **Touches:** this block.
 ### 064/learned-combined — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-learned-combined/` (NEW)
 - **Status:** ACTIVE (WSMIP064), claimed **before any write**. Tony, 2026-09-23: *"learned runs
   on combined too please"*. Combined already has `chorus_gain_norm` on its current bench (#754);
