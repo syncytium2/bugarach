@@ -36,8 +36,19 @@ STREAMS = ("fast", "slow", "combined")
 TYPES = ("baseline", "TTX", "senktide", "high K+", "wash")
 SHORT = {"baseline": "B", "TTX": "TTX", "senktide": "SK", "high K+": "K+", "wash": "W",
          "other": "?"}
-TINT = {"baseline": "#DDDDDD", "TTX": "#9ECAE1", "senktide": "#FDAE6B", "high K+": "#C7E9C0",
-        "wash": "#F2F2F2", "other": "#FFFFFF"}
+TINT = {"baseline": "#E3E3E3", "TTX": "#EDEDED", "senktide": "#B5B5B5", "high K+": "#8C8C8C",
+        "wash": "#F7F7F7", "other": "#FFFFFF"}
+"""Windows in the lane are NEUTRAL: grey values, a hatch for TTX, and their text labels. Blue,
+vermillion and black belong to the streams and their stretch bars alone (the orchestrator,
+2026-09-24: an orange slow-stream bar inside an orange senktide window could not be seen)."""
+HATCH = {"TTX": "////"}
+LABEL_INK = {"high K+": "white"}
+
+
+def window_span(ax, a, b, kind):
+    """One window in a lane: grey value, hatched where the type calls for it."""
+    ax.axvspan(a, b, facecolor=TINT.get(kind, "#FFFFFF"), edgecolor="#9A9A9A",
+               hatch=HATCH.get(kind), lw=0)
 TREAT_ORDER = {"senktide": 0, "TTX": 1, None: 2}
 
 
@@ -79,9 +90,10 @@ def fig1(R, stream, out: Path) -> Path:
                   transform=lane.transAxes, ha="right", va="top", fontsize=6.5)
         for w in ws:
             a, b = w["win_start"] - z, w["win_end"] - z
-            lane.axvspan(a, b, color=TINT.get(w["window_type"]), lw=0)
+            window_span(lane, a, b, w["window_type"])
             lane.text((a + b) / 2, 0.5, SHORT.get(w["window_type"], "?"),
-                      ha="center", va="center", fontsize=5.5, color="0.3")
+                      ha="center", va="center", fontsize=5.5,
+                      color=LABEL_INK.get(w["window_type"], "0.2"))
             c = w["measures"]["60.0"].get("curve")
             if c:
                 ax.plot(np.asarray(c["starts"]) + 30.0 - z, c["rate_hz"], color="#1f3b73",
@@ -289,9 +301,9 @@ def fig3(R, out: Path) -> tuple[Path, dict]:
             block_top.setdefault(head["first_treatment"], ax)
             for w in by[sid]["fast"]:
                 a, b = w["win_start"] - z, w["win_end"] - z
-                ax.axvspan(a, b, color=TINT.get(w["window_type"]), lw=0)
+                window_span(ax, a, b, w["window_type"])
                 ax.text((a + b) / 2, 0.85, SHORT.get(w["window_type"], "?"), ha="center",
-                        va="center", fontsize=5, color="0.35")
+                        va="center", fontsize=5, color=LABEL_INK.get(w["window_type"], "0.2"))
             for s in STREAMS:
                 for w in by[sid].get(s, []):
                     for st in w["measures"]["60.0"].get("stretches", {}).get("3.0", []):
