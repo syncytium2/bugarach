@@ -39,6 +39,18 @@ recordings and re-scored on a set the search never saw.
 
 ## Where it stands
 
+**2026-09-24, evening: the rulings for final parameters are made, and the night is planned.**
+[ADR-0009](../adr/0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md)
+answers #793's two questions and three more (R1–R5):
+- the elevated-rate test gets a recording of its own;
+- planted events under the floor are "don't care";
+- ADR-0008 sets SPIKE-synch's `min_n`;
+- the budgets stand;
+- no context longer than 120 s is searched.
+
+The runbook for the night is [`HANDOFF-overnight-final-parameters.md`](../../HANDOFF-overnight-final-parameters.md).
+Every tuned number below is pre-ADR-0008 and is re-searched, not adopted.
+
 **2026-09-24, the 3 × 3** ([run record](../learned/runs/2026-09-24-cross-stream-3x3/README.md)):
 every stream's version of every detector, scored on all three benches with bootstrap intervals.
 The diagonal reproduces last night's numbers exactly.

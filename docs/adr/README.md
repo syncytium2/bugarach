@@ -37,6 +37,7 @@ two never disagree, and cross-reference them.
 | [0006](0006-a-false-alarm-is-coincidence-the-event-rates-explain.md) | A false alarm is a call on coincidence the event rates explain | Accepted |
 | [0007](0007-bugarach-sessions-do-not-act-in-interface2.md) | bugarach sessions do not act in interface2; a request states the outcome, not the tool | Accepted |
 | [0008](0008-the-event-floor-is-set-per-window-from-its-own-null.md) | The event floor is set per window from its own null, and never below 3 ROIs | Accepted |
+| [0009](0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md) | The bench keeps its elevated-rate test in a recording of its own, and ADR-0008's floor applies unchanged | Accepted |
 
 **The habit lapsed for 25 days and restarted on 2026-09-23.** After ADR-0005 on 2026-08-29
 no ADR was written, and nothing decided to stop. Rulings went instead into bench-constant
