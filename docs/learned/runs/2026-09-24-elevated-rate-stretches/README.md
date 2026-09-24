@@ -226,6 +226,49 @@ The repo copy is `docs/learned/runs/2026-09-24-elevated-rate-stretches/fig3_thre
 The darkroom copy is in `bugarach/2026-09-24-elevated-rate-stretches/`. Tony asked for this figure
 on 2026-09-24, and it is drawn from the same `results.json` as Figures 1 and 2.
 
+## Figure 3b, the same waterfall at 1.5 times the gain
+
+![Figure 3b](fig3b_three_streams_gain3.png)
+
+**Figure 3b.** Figure 3 at 1.5 times Figure 3's gain, three times a fitted scale (Tony,
+2026-09-24: *"keep this one but lets try 3x"*). Everything else is Figure 3, drawn by the same code
+through its gain parameter:
+- two columns, with recordings that have a TTX window on the right;
+- a hidden-line white fill, drawn from the top down, with the traces over the lanes;
+- continuous curves;
+- window names on each block's top row, with the grey key;
+- group and block gaps;
+- one axis under each block;
+- alignment at baseline end, and 400 s per inch.
+
+- **Scale:** one row height is **0.23 × 2/3 = 0.1533 onsets per ROI per second**, the same in every
+  row and both columns, with nothing clipped and no row rescaled. The single reference bar, 0 to one
+  row height, is at the top left, with its value and unit.
+- **Rows that overrun one row height: 19.**
+  - **These 12 reach 2 rows or more:**
+
+    | recording | peak, onsets per ROI per second | rows |
+    |---|---|---|
+    | 20260122_259 | 0.452 | 2.95 |
+    | 20250829_207 | 0.450 | 2.93 |
+    | 20240814a47 | 0.439 | 2.86 |
+    | 20260226_285 | 0.419 | 2.73 |
+    | 20260121_252 | 0.409 | 2.67 |
+    | 20241002_72 | 0.397 | 2.59 |
+    | 20250911_222 | 0.387 | 2.53 |
+    | 20250911_217 | 0.384 | 2.50 |
+    | 20240813b42 | 0.335 | 2.18 |
+    | 20260115_240 | 0.326 | 2.12 |
+    | 20260121_250 | 0.323 | 2.10 |
+    | 20250912_229 | 0.317 | 2.07 |
+
+  - **These 7 reach between 1 and 2 rows:** 20250904_209 (1.95), 20260115_243 (1.57),
+    20250911_214 (1.37), 20240814b49 (1.33), 20240827b57 (1.20), 20260226_287 (1.18),
+    20260122_256 (1.17).
+  - The largest, 20260122_259 at 0.452, reaches 2.95 rows.
+  - All but 20241002_72 and 20260226_287 are in the senktide column.
+  - The gain was not changed.
+
 ## Tables
 
 The first section is baseline only, **the only admissible source for anything that shapes the
