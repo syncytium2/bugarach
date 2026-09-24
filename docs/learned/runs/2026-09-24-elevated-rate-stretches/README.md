@@ -115,22 +115,26 @@ Recordings with a stretch at *k* = 3, fast stream, by window width:
 ([fig1_combined_population_rate.png](fig1_combined_population_rate.png)).
 
 In all three:
-- **Rows:** one per recording, grouped by first treatment (senktide, then TTX), then by group (DI,
-  OVX, MALE, ORX).
+- **Rows:** one per recording, grouped by first treatment (senktide, then TTX, each block labelled
+  at its left), then by group (DI, OVX, MALE, ORX). There is a gap between groups and a larger one
+  between the blocks.
 - **Time axis:** **time relative to the end of that recording's baseline window, in minutes.**
   - 0 is baseline end, so the first treatment starts at the same horizontal place in every row.
   - Negative time is baseline.
-  - The axis is shared by every row, labelled once at the bottom with the repository's 60-base
-    ticks.
+  - The axis is shared by every row but drawn only under the last row of each first-treatment
+    block, with the repository's 60-base ticks.
 - **Trace:** the population rate, onsets per ROI per second, 60 s window, each row on its own scale.
-- **Lane above each trace:**
-  - the analysis windows (B baseline, SK senktide, TTX, K+ high K⁺, W wash);
+- **Lane above each trace**, a thin strip:
+  - the analysis windows in neutral greys (baseline light, senktide mid, high K⁺ dark, TTX hatched,
+    wash near-white);
   - t = 0, as a black tick;
-  - every *k* = 3 stretch, as a red bar with a ▼ pointing down at it.
+  - every *k* = 3 stretch, as a bar with a ▼ pointing down, in the stream's colour.
+- **Window names** (B, SK, TTX, K+, W) are written on the first row of each block, and on any row
+  whose sequence of windows differs from the row above, so no window goes unnamed.
 - Nothing is drawn on the trace.
 
-Aligned at baseline end on Tony's request (2026-09-24). The measurement did not change; only the
-figure's time axis did.
+Aligned at baseline end on Tony's request, and laid out as he asked on 2026-09-24 (thin lane,
+names only where the treatment changes, one axis per block). The measurement did not change.
 
 ## Figure 2, how large and how broad
 
@@ -162,16 +166,18 @@ recording, all on one y-scale.
   - The median recording peaks at about 0.11, so sparse recordings, many of them ORX, sit low.
     That is the comparison the shared scale is for.
 - **Time axis:** time relative to the end of each recording's baseline window, in minutes; 0 is
-  baseline end, and negative time is baseline.
+  baseline end, and negative time is baseline. It is drawn only under the last row of each
+  first-treatment block.
 - **Rows:** grouped by first treatment (senktide, then TTX, each block labelled at its left), then
   by group (DI, OVX, MALE, ORX), with a gap between groups and a larger one between the blocks.
 - **Windows in the lane are neutral**, so the three colours belong to the streams alone:
   - baseline light grey, senktide mid grey, high K⁺ dark grey, TTX hatched light grey, wash
     near-white;
-  - each carries its text label.
+  - their names are written on the first row of each block and on any row whose window sequence
+    differs from the row above.
 
   Figures 1a–c use the same lane.
-- **Lane above each trace:** the analysis windows, t = 0 (black tick), and every stretch as a bar
+- **Lane above each trace**, a thin strip: the analysis windows, t = 0 (black tick), and every stretch as a bar
   with a ▼ pointing down, in its stream's colour on its own track (fast lowest, then slow, then
   combined). A stretch is at least 2 minutes at *k* = 3 or more times the window's median
   population rate, 60 s window. Nothing is drawn on the traces.
