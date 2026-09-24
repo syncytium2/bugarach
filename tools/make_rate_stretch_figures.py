@@ -57,38 +57,58 @@ def fig1(R, stream, out: Path) -> Path:
     fig = plt.figure(figsize=(14, 0.72 * n + 1.5))
     # lane, trace, gap: the gap keeps one recording's trace from reading as the next one's.
     gs = fig.add_gridspec(3 * n, 1, height_ratios=[0.28, 1.0, 0.3] * n, hspace=0.0)
-    tmax = max(w["win_end"] for _, ws in recs for w in ws)
-    axes = []
+
+    def baseline_end(ws):
+        """Where this recording's time axis puts 0: the end of its baseline window (Tony,
+        2026-09-24: "align by baseline end"). A recording with no baseline window keeps its own
+        clock and says so in its label."""
+        b = next((w for w in ws if w["window_type"] == "baseline"), None)
+        return (b["win_end"], True) if b else (0.0, False)
+
+    shifts = {sid: baseline_end(ws) for sid, ws in recs}
+    tmin = min(w["win_start"] - shifts[sid][0] for sid, ws in recs for w in ws)
+    tmax = max(w["win_end"] - shifts[sid][0] for sid, ws in recs for w in ws)
+    axes, first = [], None
     for i, (sid, ws) in enumerate(recs):
-        lane = fig.add_subplot(gs[3 * i])
-        ax = fig.add_subplot(gs[3 * i + 1], sharex=lane)
-        lane.text(-0.005, 0.0, f"{sid}  {ws[0]['group']} · first: {ws[0]['first_treatment'] or '-'}",
+        z, aligned = shifts[sid]
+        lane = fig.add_subplot(gs[3 * i], sharex=first)
+        first = first or lane
+        ax = fig.add_subplot(gs[3 * i + 1], sharex=first)
+        lane.text(-0.005, 0.0, f"{sid}  {ws[0]['group']} · first: {ws[0]['first_treatment'] or '-'}"
+                  + ("" if aligned else " · NO BASELINE, unaligned"),
                   transform=lane.transAxes, ha="right", va="top", fontsize=6.5)
         for w in ws:
-            lane.axvspan(w["win_start"], w["win_end"], color=TINT.get(w["window_type"]), lw=0)
-            lane.text((w["win_start"] + w["win_end"]) / 2, 0.5, SHORT.get(w["window_type"], "?"),
+            a, b = w["win_start"] - z, w["win_end"] - z
+            lane.axvspan(a, b, color=TINT.get(w["window_type"]), lw=0)
+            lane.text((a + b) / 2, 0.5, SHORT.get(w["window_type"], "?"),
                       ha="center", va="center", fontsize=5.5, color="0.3")
             c = w["measures"]["60.0"].get("curve")
             if c:
-                ax.plot(np.asarray(c["starts"]) + 30.0, c["rate_hz"], color="#1f3b73", lw=0.6)
+                ax.plot(np.asarray(c["starts"]) + 30.0 - z, c["rate_hz"], color="#1f3b73",
+                        lw=0.6)
             for st in w["measures"]["60.0"].get("stretches", {}).get("3.0", []):
-                lane.plot([st["start"], st["end"]], [0.15, 0.15], color="#C0392B", lw=2)
-                lane.plot((st["start"] + st["end"]) / 2, 0.55, "v", color="#C0392B", ms=4)
+                lane.plot([st["start"] - z, st["end"] - z], [0.15, 0.15], color="#C0392B", lw=2)
+                lane.plot((st["start"] + st["end"]) / 2 - z, 0.55, "v", color="#C0392B", ms=4)
+        # t = 0 is marked in the lane, never on the trace.
+        lane.plot([0, 0], [0.0, 1.0], color="black", lw=1.0)
         lane.set_ylim(0, 1)
         lane.axis("off")
         ax.set_yticks([])
         for sp in ("top", "right"):
             ax.spines[sp].set_visible(False)
-        plt.setp(ax.get_xticklabels(), visible=False)
+        ax.tick_params(axis="x", labelbottom=False, length=2)
         axes.append(ax)
-    axes[-1].set_xlim(0, tmax)
-    tk = tticks(0, tmax)
-    axes[-1].set_xticks(tk)
-    axes[-1].set_xticklabels([tlabel(t) for t in tk], fontsize=7)
-    plt.setp(axes[-1].get_xticklabels(), visible=True)
-    axes[-1].set_xlabel(f"{stream} stream: recording time. Each row's trace is its population "
-                        "rate (onsets per ROI per second, 60 s window, own scale); the lane above "
-                        "shows the windows and every k = 3 stretch (red bar, ▼)", fontsize=8)
+    tk = tticks(tmin, tmax)
+    last = axes[-1]
+    last.set_xlim(tmin, tmax)
+    last.set_xticks(tk)
+    last.set_xticklabels(["0" if t == 0 else tlabel(t) for t in tk], fontsize=10)
+    last.tick_params(axis="x", labelbottom=True, length=4)
+    last.set_xlabel(f"{stream} stream: time relative to the end of each recording's baseline "
+                    "window, minutes (negative = baseline). Each row's trace is its population "
+                    "rate (onsets per ROI per second, 60 s window, own scale); the lane above shows "
+                    "the windows, t = 0 (black tick) and every k = 3 stretch (red bar, ▼)",
+                    fontsize=8.5)
     p = out / f"fig1_{stream}_population_rate.png"
     fig.savefig(p, dpi=130, bbox_inches="tight")
     plt.close(fig)

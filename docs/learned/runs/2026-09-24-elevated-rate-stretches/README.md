@@ -107,15 +107,30 @@ Recordings with a stretch at *k* = 3, fast stream, by window width:
 
 ![Figure 1a, fast](fig1_fast_population_rate.png)
 
-**Figure 1a** (fast stream). Also **Figure 1b**
-([slow](fig1_slow_population_rate.png)) and **Figure 1c** ([combined](fig1_combined_population_rate.png)).
+**Figure 1a.** Population rate in every recording, fast stream, aligned at baseline end.
 
-Every recording has one row, grouped by first treatment (senktide, then TTX), then by group (DI,
-OVX, MALE, ORX).
+**Figure 1b.** The same, slow stream ([fig1_slow_population_rate.png](fig1_slow_population_rate.png)).
+
+**Figure 1c.** The same, combined stream
+([fig1_combined_population_rate.png](fig1_combined_population_rate.png)).
+
+In all three:
+- **Rows:** one per recording, grouped by first treatment (senktide, then TTX), then by group (DI,
+  OVX, MALE, ORX).
+- **Time axis:** **time relative to the end of that recording's baseline window, in minutes.**
+  - 0 is baseline end, so the first treatment starts at the same horizontal place in every row.
+  - Negative time is baseline.
+  - The axis is shared by every row, labelled once at the bottom with the repository's 60-base
+    ticks.
 - **Trace:** the population rate, onsets per ROI per second, 60 s window, each row on its own scale.
-- **Lane above each trace:** the analysis windows (B baseline, SK senktide, TTX, K+ high K⁺, W wash),
-  and every *k* = 3 stretch as a red bar with a ▼ pointing down at it. Nothing is drawn on the trace.
-- **Time axis:** recording time, minutes-friendly.
+- **Lane above each trace:**
+  - the analysis windows (B baseline, SK senktide, TTX, K+ high K⁺, W wash);
+  - t = 0, as a black tick;
+  - every *k* = 3 stretch, as a red bar with a ▼ pointing down at it.
+- Nothing is drawn on the trace.
+
+Aligned at baseline end on Tony's request (2026-09-24). The measurement did not change; only the
+figure's time axis did.
 
 ## Figure 2, how large and how broad
 
