@@ -46,6 +46,15 @@ cross-validation.
 
 ## Where it stands
 
+**2026-09-24, how little chorus needs to see** ([run record](../learned/runs/2026-09-24-chorus-span-sweep/README.md)):
+the same 409.6 s-trained checkpoints run over pieces of 409.6, 300, 200, 100, 60 and 30 s.
+- On each model's own bench, F1 is unchanged down to 200 s, within about 0.02.
+- At 100 s the worst own-bench loss is 0.026 F1.
+- At 60 s the fast and combined models lose up to 0.11 F1; the slow ones hold. At 30 s all of them
+  fail.
+- On chorus_norm, short pieces add calls in the elevated-rate stretch.
+- Not a causal test: every piece still gives the model 27 s of look-ahead.
+
 **2026-09-24, the context span** ([run record](../learned/runs/2026-09-24-chorus-context-span/README.md)):
 the chorus models were trained on 409.6 s crops but run on whole recordings, so the same weights
 were run both ways: over the whole recording, and over consecutive 409.6 s pieces.
