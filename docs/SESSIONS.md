@@ -10,6 +10,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/overnight-floor-coact-chorus — DARKROOM claim ACTIVE 2026-09-24: `bugarach/2026-09-24-overnight-floor-coact-chorus/` (NEW)
+- **Status:** ACTIVE 2026-09-24 02:10 UTC — the overnight run Tony asked for (orchestrator brief):
+  ADR-0008's per-window event floor implemented, then CoactDetect tuned and chorus trained on the
+  fast, slow and combined benches, then detection on the 66-recording senktide/TTX export. One
+  folder for the night; each phase writes its own subfolder.
+- **Touches:** this block; phase PRs to `main` (floor, tuning/training, detection), each with its
+  run record under `docs/learned/runs/`; the two goal pages. **No bench constant changes**, and
+  not the two budgets in `docs/todo/2026-09-23-two-gates-the-66-recording-bench-fails.md`.
+- **Reads** the default export folder (`senktide_ttx`), confirmed by Tony in this session.
+- **Released:** when the last phase's run record reaches `main`.
+
 ### 064/groups-rates-comod-66 — DARKROOM claim RELEASED 2026-09-23: `bugarach/2026-09-23-groups-rates-comod-66/` (NEW)
 - **Status:** **RELEASED 2026-09-23** — [#788](https://github.com/syncytium2/bugarach/pull/788)
   merged on green through `tools/merge_when_green.sh` (`384ee76`); the run record is on `main` at
