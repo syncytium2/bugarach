@@ -28,8 +28,13 @@ SPIKE-synch's `dt` and `C_min` stopped at the search's cap.
 
 ## Who does what
 
-- **Tony** sets up a new session on each of WSMIP064 and WSMIP065. In each, he confirms the default
-  dataset himself (`python -m bugarach.dataset confirm`). `dataset.default()` refuses until he does,
+- **The two worker sessions** were set up by Tony on 2026-09-24:
+  - **"064 bugarach 20260924"**, `session_01NENp8VJEjvwUedxat7dMyr`;
+  - **"065 bugarach 20260924"**, `session_01LK3oU5dJDy5TGu2byMkuir`.
+
+  Both were idle and waiting for their first message from the orchestrator. The older sessions,
+  "064 fresh bugarach" and the rest, are not part of tonight.
+- **Tony** confirms the default dataset himself in each worker session (`python -m bugarach.dataset confirm`). `dataset.default()` refuses until he does,
   and no session runs that on his behalf.
 - **The orchestrator (you)** briefs both sessions, checks every output against this page, merges only
   what is green, and writes to Tony. You do not run the searches or edit their tools yourself.
