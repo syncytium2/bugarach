@@ -24,6 +24,19 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Reads** the default export folder (`senktide_ttx`, #786) once Tony confirms it in this session.
 - **Released:** when the run record reaches `main`.
 
+### 064/chance-floor-66 — DARKROOM claim RELEASED on merge: `bugarach/2026-09-23-chance-floor-66/` (NEW)
+- **Status:** claimed 2026-09-23 23:40 UTC on the branch the run was made from (`chance-floor-66`,
+  off #786's). **Released by the merge that brings this block to `main`**: that merge is the run
+  record reaching `main`, so the claim and its release land together and no second PR is needed.
+  The folder stays and holds `results.json`, `run.log` and the four figures; nothing holds it
+  after. The chance floor per recording, stream and group on the 66-recording senktide/TTX export,
+  empirical under the rigid-shift null (ADR-0006) beside the closed forms of
+  `tools/probe_field_size.py`. Evidence for link 1; decides nothing.
+- **Touches:** this block; NEW `tools/measure_chance_floor.py` and its test; NEW
+  `docs/learned/runs/2026-09-23-chance-floor-66/`; `docs/INDEX.md`. **Not** `src/bugarach/bench*.py`
+  or `docs/FOUNDATIONS.md`, which the Mac session is changing on #786.
+- **Reads** the default export folder (`senktide_ttx`), confirmed by Tony in this session.
+
 ### 065/roi-table — DARKROOM claim RELEASED 2026-09-23: `bugarach/roi_table/` (NEW)
 - **Status:** **RELEASED 2026-09-23** — `roi_table.md`, `.csv` and `.json` written by
   `tools/make_roi_table.py`, with the same three files as a repo copy under `docs/learned/roi_table/`.
