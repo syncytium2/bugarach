@@ -10,6 +10,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/stretch-gain3 — DARKROOM claim, released on merge: `bugarach/2026-09-24-elevated-rate-stretches/` (RE-CLAIMED 2026-09-24 15:05 UTC)
+- **Status:** re-claimed before writing, to add Figure 3b (the waterfall at gain ×3; Tony, via the
+  orchestrator). **Released by the merge that brings this block to `main`.** Figure 3 and every
+  other file in the folder stay as they are.
+
 ### 064/stretch-fig3 — DARKROOM claim, released on merge: `bugarach/2026-09-24-elevated-rate-stretches/` (RE-CLAIMED 2026-09-24 13:55 UTC)
 - **Status:** re-claimed before writing, to add Figure 3 (three streams superimposed, one y-scale;
   Tony, via the orchestrator). **Released by the merge that brings this block to `main`.** No

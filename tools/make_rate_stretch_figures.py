@@ -279,7 +279,14 @@ ROW_HZ = 0.23
 plots overrun their axes ... a mag of ~2x"). The largest peak, 0.452, reaches about two rows."""
 
 
-def fig3(R, out: Path, curves: dict) -> tuple[Path, dict]:
+ROW_HZ_3B = 0.23 * 2 / 3
+"""Figure 3b's gain, 1.5 × Figure 3's: one row height is 0.23 × 2/3 = 0.15333… onsets per ROI per
+second (Tony, 2026-09-24: "keep this one but lets try 3x"). The largest peak reaches ~2.95 rows."""
+
+
+def fig3(R, out: Path, curves: dict, row_hz: float = ROW_HZ,
+         name: str = "fig3_three_streams_one_scale.png",
+         ref: str = "right") -> tuple[Path, dict]:
     """The three streams superimposed on ONE scale, drawn as a hidden-line waterfall.
 
     One axes, one row per recording at its own vertical offset; a row height is :data:`ROW_HZ`.
@@ -353,20 +360,35 @@ def fig3(R, out: Path, curves: dict) -> tuple[Path, dict]:
         c["t_all"] = t_all
     for ax, c in zip(axes, lay):
         overrun += _waterfall_column(ax, c, by, curves, zs, treat, lead, level,
-                                     (H, LH, AXROOM))
-    # The one reference scale for the whole figure: a bar one row high, right of the last
-    # column's first row.
-    ax, c = axes[-1], lay[-1]
-    b0 = c["base"][c["sids"][0]]
-    span = c["tmax"] - c["tmin"]
-    xr = c["tmax"] + span * 0.015
-    ax.plot([xr, xr], [b0, b0 + H], color="black", lw=1.2, clip_on=False)
-    for yy, lab in ((b0, "0"), (b0 + H, f"{ROW_HZ:g}")):
-        ax.plot([xr, xr + span * 0.005], [yy, yy], color="black", lw=1.2, clip_on=False)
-        ax.text(xr + span * 0.009, yy, lab, ha="left", va="center", fontsize=7.5, clip_on=False)
-    ax.text(xr + span * 0.04, b0 + H / 2, "onsets per ROI per second\n(one row height, "
-            "the same in\nevery row and column)", ha="left", va="center", fontsize=7,
-            clip_on=False)
+                                     (H, LH, AXROOM), row_hz)
+    if ref == "right":
+        # The one reference scale for the whole figure: a bar one row high, right of the last
+        # column's first row.
+        ax, c = axes[-1], lay[-1]
+        b0 = c["base"][c["sids"][0]]
+        span = c["tmax"] - c["tmin"]
+        xr = c["tmax"] + span * 0.015
+        ax.plot([xr, xr], [b0, b0 + H], color="black", lw=1.2, clip_on=False)
+        for yy, lab in ((b0, "0"), (b0 + H, f"{row_hz:g}")):
+            ax.plot([xr, xr + span * 0.005], [yy, yy], color="black", lw=1.2, clip_on=False)
+            ax.text(xr + span * 0.009, yy, lab, ha="left", va="center", fontsize=7.5,
+                    clip_on=False)
+        ax.text(xr + span * 0.04, b0 + H / 2, "onsets per ROI per second\n(one row height, "
+                "the same in\nevery row and column)", ha="left", va="center", fontsize=7,
+                clip_on=False)
+    else:
+        # Top left, in the empty space above the first column's block label (Tony, 2026-09-24).
+        ax, c = axes[0], lay[0]
+        span = c["tmax"] - c["tmin"]
+        xr, y0 = c["tmin"] - span * 0.1, 1.5
+        ax.plot([xr, xr], [y0, y0 + H], color="black", lw=1.4, clip_on=False)
+        for yy, lab in ((y0, "0"), (y0 + H, f"{row_hz:.4f}")):
+            ax.plot([xr, xr + span * 0.006], [yy, yy], color="black", lw=1.4, clip_on=False)
+            ax.text(xr + span * 0.01, yy, lab, ha="left", va="center", fontsize=8,
+                    clip_on=False)
+        ax.text(xr + span * 0.07, y0 + H / 2, "onsets per ROI per second: one row height, the "
+                "same in every row and column", ha="left", va="center", fontsize=8,
+                clip_on=False)
     from matplotlib.patches import Patch
     key = [Patch(facecolor=TINT[k], edgecolor="#9A9A9A", hatch=HATCH.get(k), lw=0.5,
                  label=f"{SHORT[k]} {k}") for k in ("baseline", "senktide", "TTX", "wash",
@@ -375,11 +397,11 @@ def fig3(R, out: Path, curves: dict) -> tuple[Path, dict]:
                           for s in STREAMS), *key],
                loc="upper center", ncol=8, fontsize=9, frameon=False,
                bbox_to_anchor=(0.5, 1.0))
-    p = out / "fig3_three_streams_one_scale.png"
+    p = out / name
     fig.savefig(p, dpi=130)
     plt.close(fig)
     overrun.sort(key=lambda r: -r[1])
-    return p, dict(row_hz=ROW_HZ, size_in=[round(W, 1), round(Hfig, 1)],
+    return p, dict(row_hz=row_hz, size_in=[round(W, 1), round(Hfig, 1)],
                    columns=[dict(recordings=len(c["sids"]),
                                  first_treatments=sorted({str(treat(s)) for s in c["sids"]}),
                                  minutes=round((c["tmax"] - c["tmin"]) / 60, 1)) for c in lay],
@@ -388,7 +410,8 @@ def fig3(R, out: Path, curves: dict) -> tuple[Path, dict]:
                    overrun=[dict(slice_id=a, peak_hz=b, rows=c) for a, b, c in overrun])
 
 
-def _waterfall_column(ax, c, by, curves, zs, treat, lead, level, dims) -> list:
+def _waterfall_column(ax, c, by, curves, zs, treat, lead, level, dims,
+                      row_hz: float = ROW_HZ) -> list:
     """Draw one column of Figure 3's waterfall into ``ax``; returns the rows that overrun one row
     height as ``(slice_id, peak_hz, rows)``."""
     H, LH, AXROOM = dims
@@ -426,14 +449,14 @@ def _waterfall_column(ax, c, by, curves, zs, treat, lead, level, dims) -> list:
             top = np.max([np.asarray(c["rate_hz"]) for c in cs.values()
                           if c and len(c["rate_hz"]) == grid.size], axis=0)
             x = grid + 30.0 - z
-            ax.fill_between(x, b0, b0 + top / ROW_HZ, color="white", lw=0, zorder=zf)
+            ax.fill_between(x, b0, b0 + top / row_hz, color="white", lw=0, zorder=zf)
             peak = float(top.max())
-            if peak > ROW_HZ:
-                overrun.append((sid, peak, peak / ROW_HZ))
+            if peak > row_hz:
+                overrun.append((sid, peak, peak / row_hz))
             for s in STREAMS:
                 c = cs[s]
                 if c:
-                    ax.plot(x, b0 + np.asarray(c["rate_hz"]) / ROW_HZ, color=STREAM_INK[s],
+                    ax.plot(x, b0 + np.asarray(c["rate_hz"]) / row_hz, color=STREAM_INK[s],
                             lw=0.6, zorder=zt)
         ax.plot([tmin, tmax], [b0, b0], color="0.85", lw=0.4, zorder=zf - 0.5)
         ax.text(tmin - (tmax - tmin) * 0.005, b0 + H / 2, f"{sid}  {by[sid][lead][0]['group']}",
@@ -583,7 +606,11 @@ def main(argv=None) -> int:
     curves = full_curves(R, a.run)
     p3, scale = fig3(R, a.run, curves)
     print("figure 3 scale:", scale)
-    made = [*(fig1(R, s, a.run, curves) for s in STREAMS), fig2(R, a.run), p3, tables(R, a.run)]
+    p3b, scale_b = fig3(R, a.run, curves, row_hz=ROW_HZ_3B, name="fig3b_three_streams_gain3.png",
+                        ref="topleft")
+    print("figure 3b scale:", json.dumps(scale_b))
+    made = [*(fig1(R, s, a.run, curves) for s in STREAMS), fig2(R, a.run), p3, p3b,
+            tables(R, a.run)]
     if a.also:
         a.also.mkdir(parents=True, exist_ok=True)
         for p in made:
