@@ -129,8 +129,10 @@ In all three:
     wash near-white);
   - t = 0, as a black tick;
   - every *k* = 3 stretch, as a bar with a ▼ pointing down, in the stream's colour.
-- **Window names** (B, SK, TTX, K+, W) are written on the first row of each block, and on any row
-  whose sequence of windows differs from the row above, so no window goes unnamed.
+- **Window names** (B, SK, TTX, K+, W) are written only on the first row of each block. Below it
+  the grey tones identify the windows, with a key in the legend (TTX hatched).
+- **Each lane sits directly on its own trace**, and a wider gap separates one recording from the
+  next.
 - Nothing is drawn on the trace.
 
 Aligned at baseline end on Tony's request, and laid out as he asked on 2026-09-24 (thin lane,
@@ -173,8 +175,8 @@ recording, all on one y-scale.
 - **Windows in the lane are neutral**, so the three colours belong to the streams alone:
   - baseline light grey, senktide mid grey, high K⁺ dark grey, TTX hatched light grey, wash
     near-white;
-  - their names are written on the first row of each block and on any row whose window sequence
-    differs from the row above.
+  - their names are written only on the first row of each block, and a key in the legend
+    identifies the grey tones below it.
 
   Figures 1a–c use the same lane.
 - **Lane above each trace**, a thin strip: the analysis windows, t = 0 (black tick), and every stretch as a bar

@@ -16,8 +16,9 @@ Both are drawn by :func:`stacked`, so they share one layout:
   minutes-friendly time axis drawn **only under the last row of each block**;
 * a thin window lane above each trace: windows in neutral greys (TTX hatched), t = 0 as a black
   tick, and every *k* = 3 stretch as a bar with a ▼ pointing down, in its stream's colour. Window
-  names are written on the first row of each block and on any row whose window sequence differs
-  from the row above, so no window goes unnamed. Nothing is drawn on the traces.
+  names are written on the first row of each block only; a key in the legend identifies the grey
+  tones below it. Each lane sits flush on its own trace and a wider gap separates rows. Nothing is
+  drawn on the traces.
 
 * ``fig2_elevation_vs_breadth.png`` — every real stretch at *k* = 3, 60 s: peak within-window
   elevation against median breadth, by window type; the bench's elevated-rate test as black stars.
@@ -58,7 +59,9 @@ LABEL_INK = {"high K+": "white"}
 STREAM_INK = {"fast": "#0072B2", "slow": "#D55E00", "combined": "#000000"}
 """Okabe–Ito blue and vermillion, and black: high contrast and colourblind-safe."""
 TREAT_ORDER = {"senktide": 0, "TTX": 1, None: 2}
-LANE, TRACE, ROW_GAP, GROUP_GAP, BLOCK_GAP, AXIS_ROOM = 0.22, 1.25, 0.45, 0.8, 2.2, 1.0
+LANE, TRACE, ROW_GAP, GROUP_GAP, BLOCK_GAP, AXIS_ROOM = 0.22, 1.25, 0.9, 1.6, 2.6, 1.2
+# The lane sits flush on its own trace (no gap inside a row) and rows are separated by a gap
+# several times the lane's height, so each lane reads with the trace beneath it, not above it.
 """Height ratios. The lane is a thin strip and the freed height goes to the trace (Tony,
 2026-09-24: "make more room for the data by vertically shrinking the b/sk/ttx bands")."""
 
@@ -127,7 +130,7 @@ def stacked(R, streams, shared: bool, path: Path) -> tuple[Path, dict]:
     tk = tticks(tmin, tmax)
     level = ({s: 0.25 for s in streams} if len(streams) == 1
              else {"fast": 0.12, "slow": 0.42, "combined": 0.72})
-    first, traces, block_top, prev_seq, prev_treat = None, [], {}, None, None
+    first, traces, block_top, prev_treat = None, [], {}, None
     for i, (kind, v) in enumerate(slots):
         if kind == "gap":
             continue
@@ -139,9 +142,10 @@ def stacked(R, streams, shared: bool, path: Path) -> tuple[Path, dict]:
         if kind == "lane":
             t = treat(sid)
             block_top.setdefault(t, ax)
-            seq = tuple(w["window_type"] for w in ws_lead)
-            named = t != prev_treat or seq != prev_seq
-            prev_seq, prev_treat = seq, t
+            # Window names on the first row of each first-treatment block only (Tony); the lane's
+            # grey tones and the legend's key identify the windows below it.
+            named = t != prev_treat
+            prev_treat = t
             for w in ws_lead:
                 a, b = w["win_start"] - z, w["win_end"] - z
                 window_span(ax, a, b, w["window_type"])
@@ -199,9 +203,13 @@ def stacked(R, streams, shared: bool, path: Path) -> tuple[Path, dict]:
     for t, ax in block_top.items():
         ax.text(-0.13, 3.2, f"first treatment: {t or 'none'}", transform=ax.transAxes,
                 ha="left", va="bottom", fontsize=10, fontweight="bold")
-    fig.legend(handles=[Line2D([], [], color=STREAM_INK[s], lw=1.6, label=f"{s} stream")
-                        for s in streams],
-               loc="lower center", ncol=len(streams), fontsize=10, frameon=False,
+    from matplotlib.patches import Patch
+    key = [Patch(facecolor=TINT[k], edgecolor="#9A9A9A", hatch=HATCH.get(k), lw=0.5,
+                 label=f"{SHORT[k]} {k}") for k in ("baseline", "senktide", "TTX", "wash",
+                                                     "high K+")]
+    fig.legend(handles=[*(Line2D([], [], color=STREAM_INK[s], lw=1.6, label=f"{s} stream")
+                          for s in streams), *key],
+               loc="lower center", ncol=len(streams) + len(key), fontsize=9, frameon=False,
                bbox_to_anchor=(0.5, 0.985))
     fig.savefig(path, dpi=130, bbox_inches="tight")
     plt.close(fig)
