@@ -15,9 +15,11 @@ operating point.** Adopting anything it finds is a separate decision.
 **What is searched.** The settings each detector declares in
 ``bench.OPERATING_POINTS`` (see :data:`SPACE`), excluding surrogate counts, which trade
 precision for compute time, and ``grid_dt``, which is the recording's frame interval.
-Undeclared signature defaults — ``min_rois``, the merge gaps — are **not** searched:
-``min_rois`` is the participation floor, and tuning it to the bench's planted
-participation levels would fit the generator rather than the tissue.
+``min_rois`` **is** searched (it has been in ``FULL_GRIDS`` since 2026-09-17; this line used to
+say otherwise), but never below 3: a pair never counts as a coordinated event (ADR-0008,
+decision 1). That is the overnight stop-gap of 2026-09-24, "pre-ADR-0008 floor". Under ADR-0008
+the floor is set per recording from its own null and ``min_rois`` leaves the grids; that change is
+PR #793 and waits on two decisions.
 
 **How, in three stages, each saved to ``search.json`` as it finishes:**
 
@@ -131,7 +133,10 @@ INTEGER = {"n_synchronous_frames", "sce_min_distance_frames", "min_rois", "min_n
 #: 3 → 1.5 → 0.75 → 0.375, and the combined search returned SPIKE-synch at `min_n` 0.25 with
 #: its largest gain of the six, which could not be installed (PR #754). An all-integer grid
 #: is treated the same way even when its name is missing here.
-COUNT_FLOOR = {"min_rois": 2, "min_n": 2}
+COUNT_FLOOR = {"min_rois": 3, "min_n": 2}
+# min_rois: 3 since 2026-09-24 (ADR-0008, decision 1; the overnight stop-gap). SPIKE-synch's
+# min_n is not an ROI count but a sum of its coincidence measure over an event's bins, so ADR-0008
+# does not obviously set it; whether it does is filed for Tony (PR #793's todo).
 """The smallest value a count may be extended to. A participant floor below two cells is not
 coordination; everything else stops at one."""
 FRACTION = {"C_threshold", "C_min"}

@@ -235,7 +235,10 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
         "bin_width_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
         "context_win_sec": (30.0, 60.0, 120.0, 240.0, 480.0),
         "merge_gap_sec": (0.5, 1.0, 2.0, 4.0, 8.0),
-        "min_rois": (2, 3, 4, 5, 6, 8),
+        # No 2: a pair never counts as a coordinated event (ADR-0008, decision 1). This is the
+        # overnight stop-gap of 2026-09-24, "pre-ADR-0008 floor"; under the ADR the floor is set
+        # per recording and min_rois leaves the grid (PR #793, waiting on two decisions).
+        "min_rois": (3, 4, 5, 6, 8),
         "null_context_mode": ("maxlt", "symmetric"),
         "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
         "detection_mode": ("threshold", "peak"),
@@ -259,7 +262,7 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
         "alpha": (1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6),
         "int_win_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
         "context_win_sec": (20.0, 30.0, 60.0, 120.0, 240.0),
-        "min_rois": (2, 3, 4, 5, 6, 8),
+        "min_rois": (3, 4, 5, 6, 8),        # no 2: the stop-gap above, pre-ADR-0008 floor
         "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
         "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
         "guard_norm": ("compact", "exposure"),
@@ -1224,6 +1227,8 @@ class BenchResult:
     n_fa: int = 0
     hot_fa: int = 0
     distractor_hits: int = 0
+    decoy_calls: int = 0
+    """Calls outside the probe that match no planted event and land on a decoy (ADR-0006)."""
     by_frac: dict = field(default_factory=dict)
     seeds: tuple = ()
     tol_sec: float | None = None
@@ -1272,6 +1277,22 @@ class BenchResult:
     @property
     def f1(self) -> float:
         r, p = self.recall, self.precision
+        if not np.isfinite(r) or not np.isfinite(p) or (r + p) == 0:
+            return float("nan")
+        return 2 * r * p / (r + p)
+
+    @property
+    def precision_without_decoys(self) -> float:
+        """Precision with calls on decoys left out of the denominator (ADR-0006: a decoy is
+        coordination by construction, so a call on one is not a false alarm). Reported beside
+        :attr:`precision` until the objective's ADR decides what becomes of the decoys; nothing
+        selects on it."""
+        n = self.n_scored - self.decoy_calls
+        return self.n_hit / n if n else float("nan")
+
+    @property
+    def f1_without_decoys(self) -> float:
+        r, p = self.recall, self.precision_without_decoys
         if not np.isfinite(r) or not np.isfinite(p) or (r + p) == 0:
             return float("nan")
         return 2 * r * p / (r + p)
@@ -1404,6 +1425,7 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
         out.n_fa += sc.n_fa
         out.hot_fa += sc.hot_fa
         out.distractor_hits += sc.distractor_hits
+        out.decoy_calls += getattr(sc, "decoy_calls", 0)
         for frac, (n, h) in sc.by_frac.items():
             pn, ph = out.by_frac.get(frac, (0, 0))
             out.by_frac[frac] = (pn + n, ph + h)
