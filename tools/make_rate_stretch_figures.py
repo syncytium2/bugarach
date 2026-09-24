@@ -41,6 +41,7 @@ import numpy as np  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from bugarach.groups import group_key  # noqa: E402
 from bugarach.time_axis import label as tlabel  # noqa: E402
 from bugarach.time_axis import ticks as tticks  # noqa: E402
@@ -82,7 +83,46 @@ def recordings(rows, stream):
     return [(sid, sorted(by[sid], key=lambda r: r["win_start"])) for sid in order]
 
 
-def stacked(R, streams, shared: bool, path: Path) -> tuple[Path, dict]:
+def full_curves(R, run: Path) -> dict:
+    """The population rate over each WHOLE recording, per stream (60 s window, 10 s step): the
+    same statistic as the run's per-window curves, computed across the gaps between analysis
+    windows too (Tony, 2026-09-24: *"the measurement is not affected by analysis windows, the
+    values extracted are"*). Figures only: stretches and every tabled number still come from the
+    windows. Cached beside ``results.json`` as ``full_curves.json``, stamped with its dataset,
+    and refused if that dataset is not the one the run measured."""
+    cache = run / "full_curves.json"
+    if cache.exists():
+        C = json.loads(cache.read_text())
+        if C.get("dataset") == R["dataset"]:
+            return C["curves"]
+    import measure_rate_stretches as mrs
+
+    from bugarach import dataset
+    from bugarach.combined import COMBINED, has_sources, stream_of
+    from bugarach.detectors.rate import recording_extent, stream_trains
+    from bugarach.io import load_folder
+    if dataset.stamp() != R["dataset"]:
+        raise SystemExit(f"default dataset {dataset.stamp()} is not the run's {R['dataset']}")
+    want = {r["slice_id"] for r in R["rows"]}
+    curves = {}
+    for s in load_folder(dataset.default()):
+        if s.slice_id not in want:
+            continue
+        if has_sources(s) and COMBINED not in s.streams:
+            s.streams[COMBINED] = stream_of(s, COMBINED)
+        lo, hi = recording_extent(s)
+        for st in STREAMS:
+            if st in s.streams:
+                starts, pop, _ = mrs.rates(stream_trains(s.streams[st], (lo, hi)), lo, hi,
+                                           mrs.PRIMARY)
+                curves.setdefault(s.slice_id, {})[st] = dict(starts=starts.tolist(),
+                                                             rate_hz=pop.tolist())
+    cache.write_text(json.dumps(dict(dataset=R["dataset"], width_sec=mrs.PRIMARY,
+                                     step_sec=mrs.STEP, curves=curves)))
+    return curves
+
+
+def stacked(R, streams, shared: bool, path: Path, curves: dict) -> tuple[Path, dict]:
     """One row per recording, ``streams`` superimposed; see the module docstring for the layout.
     ``shared``: one y-scale for every row with a single reference axis; otherwise each row on its
     own scale with none. Returns the path and the scale used."""
@@ -93,10 +133,22 @@ def stacked(R, streams, shared: bool, path: Path) -> tuple[Path, dict]:
         for s in by[sid]:
             by[sid][s].sort(key=lambda r: r["win_start"])
     order = [sid for sid, _ in recordings(R["rows"], streams[0])]
-    peaks = sorted(((max(c["rate_hz"]), sid, s, w["window_type"])
-                    for sid in order for s in streams for w in by[sid].get(s, [])
-                    for c in [w["measures"]["60.0"].get("curve")] if c and c["rate_hz"]),
-                   reverse=True)
+    def where(sid, t_center):
+        """The analysis window a time falls in, or "between windows"."""
+        for w in by[sid][streams[0]]:
+            if w["win_start"] <= t_center < w["win_end"]:
+                return w["window_type"]
+        return "between windows"
+
+    peaks = []
+    for sid in order:
+        for s in streams:
+            c = curves.get(sid, {}).get(s)
+            if c and c["rate_hz"]:
+                j = int(np.argmax(c["rate_hz"]))
+                t = c["starts"][j] + 30.0
+                peaks.append((c["rate_hz"][j], sid, s, where(sid, t), t))
+    peaks.sort(reverse=True)
     ymax = float(np.ceil(peaks[0][0] * 100) / 100) if peaks else 1.0
     lead = streams[0]
 
@@ -163,12 +215,12 @@ def stacked(R, streams, shared: bool, path: Path) -> tuple[Path, dict]:
             ax.set_ylim(0, 1)
             ax.axis("off")
         else:
+            # One continuous curve over the whole recording, gaps between windows included.
             for s in streams:
-                for w in by[sid].get(s, []):
-                    c = w["measures"]["60.0"].get("curve")
-                    if c:
-                        ax.plot(np.asarray(c["starts"]) + 30.0 - z, c["rate_hz"],
-                                color=STREAM_INK[s], lw=0.6, alpha=0.9)
+                c = curves.get(sid, {}).get(s)
+                if c:
+                    ax.plot(np.asarray(c["starts"]) + 30.0 - z, c["rate_hz"],
+                            color=STREAM_INK[s], lw=0.6, alpha=0.9)
             if shared:
                 ax.set_ylim(0, ymax)
             # The recording's name sits level with its own trace, not with a lane edge that
@@ -217,14 +269,14 @@ def stacked(R, streams, shared: bool, path: Path) -> tuple[Path, dict]:
                       second=peaks[1] if len(peaks) > 1 else None)
 
 
-def fig1(R, stream, out: Path) -> Path:
+def fig1(R, stream, out: Path, curves: dict) -> Path:
     """One stream, each row on its own y-scale."""
-    return stacked(R, (stream,), False, out / f"fig1_{stream}_population_rate.png")[0]
+    return stacked(R, (stream,), False, out / f"fig1_{stream}_population_rate.png", curves)[0]
 
 
-def fig3(R, out: Path) -> tuple[Path, dict]:
+def fig3(R, out: Path, curves: dict) -> tuple[Path, dict]:
     """The three streams superimposed on ONE y-scale with a single reference axis."""
-    return stacked(R, STREAMS, True, out / "fig3_three_streams_one_scale.png")
+    return stacked(R, STREAMS, True, out / "fig3_three_streams_one_scale.png", curves)
 
 
 def fig2(R, out: Path) -> Path:
@@ -347,9 +399,10 @@ def main(argv=None) -> int:
     ap.add_argument("--also", type=Path, default=None)
     a = ap.parse_args(argv)
     R = json.loads((a.run / "results.json").read_text())
-    p3, scale = fig3(R, a.run)
+    curves = full_curves(R, a.run)
+    p3, scale = fig3(R, a.run, curves)
     print("figure 3 scale:", scale)
-    made = [*(fig1(R, s, a.run) for s in STREAMS), fig2(R, a.run), p3, tables(R, a.run)]
+    made = [*(fig1(R, s, a.run, curves) for s in STREAMS), fig2(R, a.run), p3, tables(R, a.run)]
     if a.also:
         a.also.mkdir(parents=True, exist_ok=True)
         for p in made:

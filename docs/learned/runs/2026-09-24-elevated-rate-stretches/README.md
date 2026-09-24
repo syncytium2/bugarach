@@ -123,7 +123,13 @@ In all three:
   - Negative time is baseline.
   - The axis is shared by every row but drawn only under the last row of each first-treatment
     block, with the repository's 60-base ticks.
-- **Trace:** the population rate, onsets per ROI per second, 60 s window, each row on its own scale.
+- **Trace:** the population rate, onsets per ROI per second, 60 s window stepped by 10 s, each row
+  on its own scale.
+  - **The curve is continuous over the whole recording**, including the gaps between analysis
+    windows. The export's events cover the full recording.
+  - The lane shows the analysis windows, from which every tabled value is extracted.
+  - Stretches are still detected per window, against that window's own median, so the stretch bars
+    and every number in this record are unchanged.
 - **Lane above each trace**, a thin strip:
   - the analysis windows in neutral greys (baseline light, senktide mid, high K⁺ dark, TTX hatched,
     wash near-white);
@@ -161,10 +167,17 @@ recording, all on one y-scale.
 - **Streams:** fast in blue (#0072B2), slow in vermillion (#D55E00), combined in black. Combined
   is every fast and slow onset of an ROI as one train.
 - **Unit:** onsets per ROI per second, in a 60 s window stepped by 10 s.
+- **Continuous curves:**
+  - Each curve runs over the whole recording, including the gaps between analysis windows.
+  - The lane shows the analysis windows, from which the tabled values are extracted.
+  - Stretches are detected per window, as in the run.
+  - The curves are cached beside `results.json` in the darkroom folder as `full_curves.json`,
+    stamped with the dataset.
 - **One shared scale:** every row runs from 0 to **0.46 onsets per ROI per second**, with no per-row
   rescaling. The one reference axis is at the top right, on the first row.
-  - The largest value is 0.452 (20260122_259, combined stream, senktide window), and the next is
-    0.450 (20250829_207, combined, senktide), so no single recording sets the scale alone.
+  - On the continuous curves, the largest value is 0.452 (20260122_259, combined stream, inside
+    its senktide window, not in a gap), and the next is 0.450 (20250829_207, combined, senktide).
+    So no single recording sets the scale alone, and no peak between windows exceeds it.
   - The median recording peaks at about 0.11, so sparse recordings, many of them ORX, sit low.
     That is the comparison the shared scale is for.
 - **Time axis:** time relative to the end of each recording's baseline window, in minutes; 0 is
