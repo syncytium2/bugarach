@@ -45,7 +45,12 @@ default**, under the stop-gap floor (`min_rois` never below 3, *pre-ADR-0008*;
 at alpha 1e-5, a 120 s context and an 8 s merge gap: +0.037 held-out mean F1 [+0.026, +0.045],
 +0.021 on fresh seeds (0.726 → 0.747; without decoy calls 0.855 → 0.874). Slow and combined moved
 nothing. **Not adopted**: the proposal waits on Tony, and ADR-0008's per-window floor waits on the
-two bench questions in #793. **Run on the 66 recordings** at those settings
+two bench questions in #793. **The other five were searched the same night**
+([run record](../learned/runs/2026-09-24-overnight-rest-of-suite/README.md)). There are proposals
+for rate+context, SPIKE-synch and locust on fast, and for SCE, rate+context and locust on slow, and
+each holds on fresh seeds inside its detector's budget. Combined moved nothing. ⚠ Fast SPIKE-synch's
+`dt` and `C_min` stopped at the search's extension cap, unbracketed. None is adopted.
+**Run on the 66 recordings** at those settings
 ([detection run](../learned/runs/2026-09-24-detect-66-floors/README.md)), every window scored under
 its own ADR-0008 floor and under its baseline floor. Senktide raises the floor most in OVX and ORX
 (fast median 6 → 24 and 4 → 26 co-active ROIs), and there the two floors give very different call

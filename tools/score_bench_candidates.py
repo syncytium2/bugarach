@@ -51,10 +51,10 @@ MODELS = ("chorus_norm", "chorus_gain_norm")
 _MODEL_CACHE: dict = {}
 
 
-def proposal(search: dict) -> tuple[str, dict, dict]:
-    """``(name, params, held-out row)``: the search's best held-out candidate whose gain interval
-    is above zero, else the shipped point."""
-    ho = search["held_out"]["coact"]
+def proposal(search: dict, det: str = "coact") -> tuple[str, dict, dict]:
+    """``(name, params, held-out row)``: the search's best held-out candidate for ``det`` whose
+    gain interval is above zero, else the shipped point."""
+    ho = search["held_out"][det]
     best = ("shipped", ho["shipped"])
     for name, row in ho.items():
         g = row.get("gain_vs_shipped") or {}
@@ -77,10 +77,13 @@ def picked(rows: list[dict], budget: float) -> dict | None:
     return max(ok, key=lambda r: r["mean"]) if ok else None
 
 
+CODED = ("coact", "loco", "sce", "rate", "sync", "cicada")
+
+
 def _runner(kind: str, spec):
-    if kind == "coact":
+    if kind in CODED:
         def run(b, sl):
-            return b.run_detector("coact", sl, **spec)
+            return b.run_detector(kind, sl, **spec)
         return run
     path = Path(spec)
     if path not in _MODEL_CACHE:
@@ -111,6 +114,10 @@ def main(argv=None) -> int:
     ap.add_argument("--phase2", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--workers", type=int, default=16)
+    ap.add_argument("--detectors", nargs="+", default=["coact"], choices=CODED,
+                    help="coded detectors to score, shipped and proposal (default coact)")
+    ap.add_argument("--search", default="search-coact-{bench}",
+                    help="each bench's search folder under --phase2, {bench} filled in")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
 
@@ -120,15 +127,22 @@ def main(argv=None) -> int:
     for bench, mod in BENCHES.items():
         b = importlib.import_module(mod)
         budget = float(b.MAX_FALSE_POSITIVES_PER_HOUR["coact"])
-        search = json.loads((a.phase2 / f"search-coact-{bench}" / "search.json").read_text())
-        pname, pparams, prow = proposal(search)
-        shipped = dict(b.OPERATING_POINTS["coact"].params)
-        meta[bench] = dict(budget_null_per_hour=budget, coact_shipped=shipped,
-                           coact_proposal=dict(name=pname, params=pparams, search_row=prow),
-                           search_elapsed_min=search.get("elapsed_min"), chorus={})
-        cands.append((bench, "coact", "shipped", shipped))
-        if pname != "shipped":
-            cands.append((bench, "coact", "proposal", pparams))
+        search = json.loads((a.phase2 / a.search.format(bench=bench) / "search.json").read_text())
+        meta[bench] = dict(budget_null_per_hour=budget,
+                           search_elapsed_min=search.get("elapsed_min"), chorus={}, detectors={})
+        for det in a.detectors:
+            pname, pparams, prow = proposal(search, det)
+            shipped = dict(b.OPERATING_POINTS[det].params)
+            meta[bench]["detectors"][det] = dict(
+                shipped=shipped, proposal=dict(name=pname, params=pparams, search_row=prow),
+                budget_null_per_hour=float(b.MAX_FALSE_POSITIVES_PER_HOUR[det]))
+            if det == "coact":      # the keys detect_with_floors.py reads
+                meta[bench]["coact_shipped"] = shipped
+                meta[bench]["coact_proposal"] = dict(name=pname, params=pparams,
+                                                     search_row=prow)
+            cands.append((bench, det, "shipped", shipped))
+            if pname != "shipped":
+                cands.append((bench, det, "proposal", pparams))
         for m in MODELS:
             log = a.phase2 / f"train-{m}-{bench}.log"
             if not log.exists():
