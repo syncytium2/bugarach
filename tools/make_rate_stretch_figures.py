@@ -274,9 +274,145 @@ def fig1(R, stream, out: Path, curves: dict) -> Path:
     return stacked(R, (stream,), False, out / f"fig1_{stream}_population_rate.png", curves)[0]
 
 
+ROW_HZ = 0.23
+"""Figure 3's gain: one row height is 0.23 onsets per ROI per second (Tony, 2026-09-24: "let the
+plots overrun their axes ... a mag of ~2x"). The largest peak, 0.452, reaches about two rows."""
+
+
 def fig3(R, out: Path, curves: dict) -> tuple[Path, dict]:
-    """The three streams superimposed on ONE y-scale with a single reference axis."""
-    return stacked(R, STREAMS, True, out / "fig3_three_streams_one_scale.png", curves)
+    """The three streams superimposed on ONE scale, drawn as a hidden-line waterfall.
+
+    One axes, one row per recording at its own vertical offset; a row height is :data:`ROW_HZ`.
+    A trace that exceeds it runs up into the rows above, unclipped and never rescaled. Rows are
+    drawn from the top down, each at a higher z-order than the row above it, and each row's traces
+    sit on a white fill from their baseline up to the highest of the three curves, so a lower
+    row's peak covers what lies behind it instead of tangling with it. Within a row: fill, then the
+    window lane, then the traces, so a peak that crosses its own lane stays visible. Everything else
+    is Figure 1's layout. Returns the path and a record of the scale and of rows that overrun."""
+    by = {}
+    for r in R["rows"]:
+        by.setdefault(r["slice_id"], {}).setdefault(r["stream"], []).append(r)
+    for sid in by:
+        for s in by[sid]:
+            by[sid][s].sort(key=lambda r: r["win_start"])
+    lead = "fast"
+    order = [sid for sid, _ in recordings(R["rows"], lead)]
+
+    def zero(ws):
+        b = next((w for w in ws if w["window_type"] == "baseline"), None)
+        return b["win_end"] if b else 0.0
+
+    def treat(sid):
+        return by[sid][lead][0]["first_treatment"]
+
+    H, LH, GAP, GGAP, BGAP, AXROOM = 1.0, 0.2, 0.55, 1.1, 2.6, 1.4
+    y, base, prev, block_last = 0.0, {}, None, {}
+    for i, sid in enumerate(order):
+        head = by[sid][lead][0]
+        key = (head["first_treatment"], head["group"])
+        if prev is not None:
+            y -= BGAP + AXROOM if key[0] != prev[0] else (GGAP if key[1] != prev[1] else GAP)
+        y -= LH + H
+        base[sid] = y
+        block_last[key[0]] = sid
+        prev = key
+    zs = {sid: zero(by[sid][lead]) for sid in order}
+    tmin = min(w["win_start"] - zs[sid] for sid in order for w in by[sid][lead])
+    tmax = max(w["win_end"] - zs[sid] for sid in order for w in by[sid][lead])
+    span_y = -y + 3.0
+    fig, ax = plt.subplots(figsize=(14, 0.3 * span_y + 1.0))
+    fig.subplots_adjust(top=0.985, bottom=0.01, left=0.1, right=0.9)
+    ax.set_xlim(tmin, tmax)
+    ax.set_ylim(y - AXROOM, 2.8)
+    ax.axis("off")
+    level = {"fast": 0.15, "slow": 0.45, "combined": 0.75}
+    overrun, prev_treat = [], None
+    for k, sid in enumerate(order):
+        b0, z = base[sid], zs[sid]
+        zf, zl, zt = 10 + 3 * k, 11 + 3 * k, 12 + 3 * k
+        lane_lo = b0 + H
+        t = treat(sid)
+        named = t != prev_treat
+        prev_treat = t
+        # the lane, flush on top of the trace's row
+        for w in by[sid][lead]:
+            a, b = w["win_start"] - z, w["win_end"] - z
+            ax.add_patch(plt.Rectangle((a, lane_lo), b - a, LH, facecolor=TINT.get(
+                w["window_type"], "#FFFFFF"), edgecolor="#9A9A9A", hatch=HATCH.get(
+                w["window_type"]), lw=0, zorder=zl))
+            if named:
+                ax.text((a + b) / 2, lane_lo + LH + 0.12, SHORT.get(w["window_type"], "?"),
+                        ha="center", va="bottom", fontsize=6, color="0.25", zorder=zl)
+        for s in STREAMS:
+            for w in by[sid].get(s, []):
+                for st in w["measures"]["60.0"].get("stretches", {}).get("3.0", []):
+                    yy = lane_lo + LH * level[s]
+                    ax.plot([st["start"] - z, st["end"] - z], [yy, yy], color=STREAM_INK[s],
+                            lw=1.6, solid_capstyle="butt", zorder=zl + 0.5)
+        ax.plot([0, 0], [lane_lo, lane_lo + LH], color="black", lw=1.0, zorder=zl + 0.5)
+        # the traces: white fill up to the highest curve, then the curves
+        cs = {s: curves.get(sid, {}).get(s) for s in STREAMS}
+        grid = next((np.asarray(c["starts"]) for c in cs.values() if c), None)
+        if grid is not None:
+            top = np.max([np.asarray(c["rate_hz"]) for c in cs.values()
+                          if c and len(c["rate_hz"]) == grid.size], axis=0)
+            x = grid + 30.0 - z
+            ax.fill_between(x, b0, b0 + top / ROW_HZ, color="white", lw=0, zorder=zf)
+            peak = float(top.max())
+            if peak > ROW_HZ:
+                overrun.append((sid, peak, peak / ROW_HZ))
+            for s in STREAMS:
+                c = cs[s]
+                if c:
+                    ax.plot(x, b0 + np.asarray(c["rate_hz"]) / ROW_HZ, color=STREAM_INK[s],
+                            lw=0.6, zorder=zt)
+        ax.plot([tmin, tmax], [b0, b0], color="0.85", lw=0.4, zorder=zf - 0.5)
+        ax.text(tmin - (tmax - tmin) * 0.005, b0 + H / 2, f"{sid}  {by[sid][lead][0]['group']}",
+                ha="right", va="center", fontsize=6.5, clip_on=False)
+    # One time axis under the last row of each first-treatment block.
+    tk = tticks(tmin, tmax)
+    for tr, sid in block_last.items():
+        ya = base[sid] - 0.35
+        ax.plot([tmin, tmax], [ya, ya], color="black", lw=0.8, clip_on=False)
+        for x in tk:
+            ax.plot([x, x], [ya, ya - 0.15], color="black", lw=0.8, clip_on=False)
+            ax.text(x, ya - 0.25, "0" if x == 0 else tlabel(x), ha="center", va="top",
+                    fontsize=9, clip_on=False)
+        ax.text((tmin + tmax) / 2, ya - 0.8, "time relative to the end of each recording's "
+                "baseline window, minutes (negative = baseline)", ha="center", va="top",
+                fontsize=8.5, clip_on=False)
+    firsts = {}
+    for sid in order:
+        firsts.setdefault(treat(sid), sid)
+    for tr, sid in firsts.items():
+        ax.text(tmin - (tmax - tmin) * 0.12, base[sid] + H + LH + 0.6,
+                f"first treatment: {tr or 'none'}", ha="left", va="bottom", fontsize=10,
+                fontweight="bold", clip_on=False)
+    # The one reference scale: a bar one row high, at the first row, right of the data.
+    b0 = base[order[0]]
+    xr = tmax + (tmax - tmin) * 0.012
+    ax.plot([xr, xr], [b0, b0 + H], color="black", lw=1.2, clip_on=False)
+    for yy, lab in ((b0, "0"), (b0 + H, f"{ROW_HZ:g}")):
+        ax.plot([xr, xr + (tmax - tmin) * 0.004], [yy, yy], color="black", lw=1.2,
+                clip_on=False)
+        ax.text(xr + (tmax - tmin) * 0.007, yy, lab, ha="left", va="center", fontsize=7.5,
+                clip_on=False)
+    ax.text(xr + (tmax - tmin) * 0.03, b0 + H / 2, "onsets per ROI per second\n(one row height, "
+            "the same in every row)", ha="left", va="center", fontsize=7, clip_on=False)
+    from matplotlib.patches import Patch
+    key = [Patch(facecolor=TINT[k], edgecolor="#9A9A9A", hatch=HATCH.get(k), lw=0.5,
+                 label=f"{SHORT[k]} {k}") for k in ("baseline", "senktide", "TTX", "wash",
+                                                     "high K+")]
+    fig.legend(handles=[*(Line2D([], [], color=STREAM_INK[s], lw=1.6, label=f"{s} stream")
+                          for s in STREAMS), *key],
+               loc="lower center", ncol=8, fontsize=9, frameon=False, bbox_to_anchor=(0.5, 0.99))
+    p = out / "fig3_three_streams_one_scale.png"
+    fig.savefig(p, dpi=130, bbox_inches="tight")
+    plt.close(fig)
+    overrun.sort(key=lambda r: -r[1])
+    return p, dict(row_hz=ROW_HZ, largest=overrun[0] if overrun else None,
+                   rows_over_one_row=len(overrun), rows_over_two_rows=sum(r[2] > 2 for r in overrun),
+                   overrun=[dict(slice_id=a, peak_hz=b, rows=c) for a, b, c in overrun])
 
 
 def fig2(R, out: Path) -> Path:

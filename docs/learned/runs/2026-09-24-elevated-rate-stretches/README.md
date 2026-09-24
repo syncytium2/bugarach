@@ -163,7 +163,7 @@ code on bench seeds 1–8, quiet and busy.
 ![Figure 3](fig3_three_streams_one_scale.png)
 
 **Figure 3.** Population rate of the fast, slow and combined streams, superimposed, in every
-recording, all on one y-scale.
+recording, all on one y-scale, drawn as a hidden-line waterfall at twice the gain of a fitted scale.
 - **Streams:** fast in blue (#0072B2), slow in vermillion (#D55E00), combined in black. Combined
   is every fast and slow onset of an ROI as one train.
 - **Unit:** onsets per ROI per second, in a 60 s window stepped by 10 s.
@@ -173,13 +173,29 @@ recording, all on one y-scale.
   - Stretches are detected per window, as in the run.
   - The curves are cached beside `results.json` in the darkroom folder as `full_curves.json`,
     stamped with the dataset.
-- **One shared scale:** every row runs from 0 to **0.46 onsets per ROI per second**, with no per-row
-  rescaling. The one reference axis is at the top right, on the first row.
-  - On the continuous curves, the largest value is 0.452 (20260122_259, combined stream, inside
-    its senktide window, not in a gap), and the next is 0.450 (20250829_207, combined, senktide).
-    So no single recording sets the scale alone, and no peak between windows exceeds it.
-  - The median recording peaks at about 0.11, so sparse recordings, many of them ORX, sit low.
-    That is the comparison the shared scale is for.
+- **One shared scale, gain ×2, as a waterfall:**
+  - **One row height is 0.23 onsets per ROI per second**, the same in every row, shown by the one
+    reference bar at the top right.
+  - A trace that exceeds it runs up into the rows above. Nothing is clipped and no row is rescaled.
+  - The largest peak, 0.452 (20260122_259, combined stream, inside its senktide window, not in a
+    gap), reaches about two row heights (1.97).
+  - The median recording peaks at about 0.11, half a row.
+- **Hidden-line drawing:**
+  - Rows are drawn from the top down, and each row's traces sit on a white fill from the row's
+    baseline up to the highest of its three curves. So a lower row's peak covers what lies behind
+    it in the rows above, instead of tangling with it.
+  - Within a row the traces are drawn over the window lane, so a peak that crosses its own lane
+    stays visible.
+  - A faint grey line marks each row's zero.
+- **Rows that overrun:**
+  - 14 rows peak above one row height, and none reaches two:
+    20260122_259 (1.97 rows), 20250829_207 (1.96), 20240814a47 (1.91), 20260226_285 (1.82),
+    20260121_252 (1.78), 20241002_72 (1.73), 20250911_222 (1.68), 20250911_217 (1.67),
+    20240813b42 (1.46), 20260115_240 (1.42), 20260121_250 (1.40), 20250912_229 (1.38),
+    20250904_209 (1.30), 20260115_243 (1.05).
+  - All but 20241002_72 peak in the senktide block, most at senktide onset. There the white fill
+    of each row covers the peak-free stretches of the row above for up to about one row. The gain
+    was not changed.
 - **Time axis:** time relative to the end of each recording's baseline window, in minutes; 0 is
   baseline end, and negative time is baseline. It is drawn only under the last row of each
   first-treatment block.
