@@ -10,6 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/elevated-rate-stretches — DARKROOM claim, released on merge: `bugarach/2026-09-24-elevated-rate-stretches/` (NEW)
+- **Status:** claimed 2026-09-24 12:30 UTC, before writing; **released by the merge that brings
+  this block to `main`** (that merge is the run record reaching `main`). The folder stays; nothing
+  holds it after. Whether the 66 recordings hold elevated-rate stretches like the bench's, in which
+  windows and groups, and how much they lift the ADR-0008 floor. Measurement only.
+- **Touches:** this block; NEW `tools/measure_rate_stretches.py`; NEW
+  `docs/learned/runs/2026-09-24-elevated-rate-stretches/`. Nothing in #793, no bench constant.
+
 ### 064/cross-stream-3x3 — DARKROOM claim, released on merge: `bugarach/2026-09-24-cross-stream-3x3/` (NEW)
 - **Status:** claimed 2026-09-24 10:35 UTC, before writing; **released by the merge that brings
   this block to `main`**, since that merge is the run record reaching `main`. The folder stays and
