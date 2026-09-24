@@ -146,6 +146,34 @@ code on bench seeds 1–8, quiet and busy.
 - **Real baseline and TTX stretches mostly do not.** They spread across every breadth, and the
   narrow ones are a few ROIs rising.
 
+## Figure 3, the three streams on one scale
+
+![Figure 3](fig3_three_streams_one_scale.png)
+
+**Figure 3.** Population rate of the fast, slow and combined streams, superimposed, in every
+recording, all on one y-scale.
+- **Streams:** fast in blue (#0072B2), slow in vermillion (#D55E00), combined in black. Combined
+  is every fast and slow onset of an ROI as one train.
+- **Unit:** onsets per ROI per second, in a 60 s window stepped by 10 s.
+- **One shared scale:** every row runs from 0 to **0.46 onsets per ROI per second**, with no per-row
+  rescaling. The one reference axis is at the top right, on the first row.
+  - The largest value is 0.452 (20260122_259, combined stream, senktide window), and the next is
+    0.450 (20250829_207, combined, senktide), so no single recording sets the scale alone.
+  - The median recording peaks at about 0.11, so sparse recordings, many of them ORX, sit low.
+    That is the comparison the shared scale is for.
+- **Time axis:** time relative to the end of each recording's baseline window, in minutes; 0 is
+  baseline end, and negative time is baseline.
+- **Rows:** grouped by first treatment (senktide, then TTX, each block labelled at its left), then
+  by group (DI, OVX, MALE, ORX), with a gap between groups and a larger one between the blocks.
+- **Lane above each trace:** the analysis windows, t = 0 (black tick), and every stretch as a bar
+  with a ▼ pointing down, in its stream's colour on its own track (fast lowest, then slow, then
+  combined). A stretch is at least 2 minutes at *k* = 3 or more times the window's median
+  population rate, 60 s window. Nothing is drawn on the traces.
+
+The repo copy is `docs/learned/runs/2026-09-24-elevated-rate-stretches/fig3_three_streams_one_scale.png`.
+The darkroom copy is in `bugarach/2026-09-24-elevated-rate-stretches/`. Tony asked for this figure
+on 2026-09-24, and it is drawn from the same `results.json` as Figures 1 and 2.
+
 ## Tables
 
 The first section is baseline only, **the only admissible source for anything that shapes the

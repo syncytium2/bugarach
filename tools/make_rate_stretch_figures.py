@@ -229,13 +229,134 @@ def tables(R, out: Path) -> Path:
     return p
 
 
+STREAM_INK = {"fast": "#0072B2", "slow": "#D55E00", "combined": "#000000"}
+"""Okabe–Ito blue and vermillion, and black: high contrast and colourblind-safe."""
+
+
+def fig3(R, out: Path) -> tuple[Path, dict]:
+    """The three streams superimposed per recording on ONE y-scale, grouped with gaps.
+
+    Same layout as Figure 1 (aligned at baseline end, window lane above each trace, nothing drawn
+    on the traces), with stretch bars in the lane coloured by stream. Returns the path and the
+    scale it used, so the caption can quote it."""
+    by = {}
+    for r in R["rows"]:
+        by.setdefault(r["slice_id"], {}).setdefault(r["stream"], []).append(r)
+    order = [sid for sid, _ in recordings(R["rows"], "fast")]
+    peaks = []
+    for sid in order:
+        for s, ws in by[sid].items():
+            for w in ws:
+                c = w["measures"]["60.0"].get("curve")
+                if c and c["rate_hz"]:
+                    peaks.append((max(c["rate_hz"]), sid, s, w["window_type"]))
+    peaks.sort(reverse=True)
+    ymax = float(np.ceil(peaks[0][0] * 100) / 100)
+
+    def zero(ws):
+        b = next((w for w in ws if w["window_type"] == "baseline"), None)
+        return b["win_end"] if b else 0.0
+
+    # Rows grouped: first treatment blocks, groups within, gaps between.
+    slots, prev = [], None
+    for sid in order:
+        head = by[sid]["fast"][0]
+        key = (head["first_treatment"], head["group"])
+        if prev is not None and key[0] != prev[0]:
+            slots.append(("gap", 1.6))
+        elif prev is not None and key[1] != prev[1]:
+            slots.append(("gap", 0.7))
+        slots += [("lane", sid), ("trace", sid), ("gap", 0.25)]
+        prev = key
+    ratios = [0.42 if k == "lane" else 1.0 if k == "trace" else v for k, v in slots]
+    fig = plt.figure(figsize=(14, 0.3 * sum(ratios) + 1.2))
+    gs = fig.add_gridspec(len(slots), 1, height_ratios=ratios, hspace=0.0, top=0.975,
+                          bottom=0.03)
+    zs = {sid: zero(by[sid]["fast"]) for sid in order}
+    tmin = min(w["win_start"] - zs[sid] for sid in order for w in by[sid]["fast"])
+    tmax = max(w["win_end"] - zs[sid] for sid in order for w in by[sid]["fast"])
+    first, traces, lanes, block_top = None, [], {}, {}
+    level = {"fast": 0.12, "slow": 0.32, "combined": 0.52}
+    for i, (kind, v) in enumerate(slots):
+        if kind == "gap":
+            continue
+        sid = v
+        z = zs[sid]
+        ax = fig.add_subplot(gs[i], sharex=first)
+        first = first or ax
+        if kind == "lane":
+            head = by[sid]["fast"][0]
+            block_top.setdefault(head["first_treatment"], ax)
+            for w in by[sid]["fast"]:
+                a, b = w["win_start"] - z, w["win_end"] - z
+                ax.axvspan(a, b, color=TINT.get(w["window_type"]), lw=0)
+                ax.text((a + b) / 2, 0.85, SHORT.get(w["window_type"], "?"), ha="center",
+                        va="center", fontsize=5, color="0.35")
+            for s in STREAMS:
+                for w in by[sid].get(s, []):
+                    for st in w["measures"]["60.0"].get("stretches", {}).get("3.0", []):
+                        ax.plot([st["start"] - z, st["end"] - z], [level[s]] * 2,
+                                color=STREAM_INK[s], lw=1.8)
+                        ax.plot((st["start"] + st["end"]) / 2 - z, level[s] + 0.1, "v",
+                                color=STREAM_INK[s], ms=3)
+            ax.plot([0, 0], [0, 1], color="black", lw=1.0)
+            ax.text(-0.005, 0.0, f"{sid}  {head['group']}", transform=ax.transAxes,
+                    ha="right", va="top", fontsize=6.5)
+            ax.set_ylim(0, 1)
+            ax.axis("off")
+            lanes[sid] = ax
+        else:
+            for s in STREAMS:
+                for w in by[sid].get(s, []):
+                    c = w["measures"]["60.0"].get("curve")
+                    if c:
+                        ax.plot(np.asarray(c["starts"]) + 30.0 - z, c["rate_hz"],
+                                color=STREAM_INK[s], lw=0.55, alpha=0.9)
+            ax.set_ylim(0, ymax)
+            ax.set_yticks([])
+            for sp in ("top", "right"):
+                ax.spines[sp].set_visible(False)
+            ax.tick_params(axis="x", labelbottom=False, length=2)
+            traces.append(ax)
+    # The one reference y-axis: on the first trace only.
+    ref = traces[0]
+    ref.spines["right"].set_visible(True)
+    ref.yaxis.tick_right()
+    ref.yaxis.set_label_position("right")
+    ref.set_yticks([0, ymax])
+    ref.set_yticklabels(["0", f"{ymax:g}"], fontsize=7.5)
+    ref.set_ylabel("onsets per ROI per second\n(the same scale in every row)", fontsize=7,
+                   rotation=0, ha="left", va="center", labelpad=10)
+    for treat, ax in block_top.items():
+        ax.text(-0.13, 1.6, f"first treatment: {treat or 'none'}", transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=10, fontweight="bold")
+    tk = tticks(tmin, tmax)
+    last = traces[-1]
+    last.set_xlim(tmin, tmax)
+    last.set_xticks(tk)
+    last.set_xticklabels(["0" if t == 0 else tlabel(t) for t in tk], fontsize=10)
+    last.tick_params(axis="x", labelbottom=True, length=4)
+    last.set_xlabel("time relative to the end of each recording's baseline window, minutes "
+                    "(negative = baseline)", fontsize=9)
+    fig.legend(handles=[Line2D([], [], color=STREAM_INK[s], lw=1.6, label=f"{s} stream")
+                        for s in STREAMS],
+               loc="lower center", ncol=3, fontsize=10, frameon=False,
+               bbox_to_anchor=(0.5, 0.985))
+    p = out / "fig3_three_streams_one_scale.png"
+    fig.savefig(p, dpi=130, bbox_inches="tight")
+    plt.close(fig)
+    return p, dict(ymax=ymax, largest=peaks[0], second=peaks[1])
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--run", type=Path, required=True)
     ap.add_argument("--also", type=Path, default=None)
     a = ap.parse_args(argv)
     R = json.loads((a.run / "results.json").read_text())
-    made = [*(fig1(R, s, a.run) for s in STREAMS), fig2(R, a.run), tables(R, a.run)]
+    p3, scale = fig3(R, a.run)
+    print("figure 3 scale:", scale)
+    made = [*(fig1(R, s, a.run) for s in STREAMS), fig2(R, a.run), p3, tables(R, a.run)]
     if a.also:
         a.also.mkdir(parents=True, exist_ok=True)
         for p in made:
