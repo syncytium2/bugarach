@@ -107,14 +107,9 @@ def trains_of(raster) -> list:
     return [np.flatnonzero(row) for row in raster]
 
 
-def rigid_frames(trains, L, J_frames, rng, shared=False):
-    u_all = rng.uniform(-J_frames, J_frames, size=1 if shared else len(trains))
-    out = []
-    for r, t in enumerate(trains):
-        u = u_all[0] if shared else u_all[r]
-        k = np.floor(np.asarray(t, float) + 0.5 + u).astype(np.int64)
-        out.append(k[(k >= 0) & (k < L)])
-    return out
+# The rigid shift moved to the package with ADR-0008, so the event floor can use it without
+# reaching into a tool; every caller that imports it from here still gets the same function.
+from bugarach.event_floor import rigid_frames  # noqa: E402,F401
 
 
 # -- data -------------------------------------------------------------------------------------
