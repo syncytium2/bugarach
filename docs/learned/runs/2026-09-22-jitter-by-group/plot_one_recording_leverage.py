@@ -79,16 +79,27 @@ def draw(rec, out: Path) -> Path:
         fontsize=6.5, frameon=False, loc="lower left", handletextpad=0.4, borderpad=0.1)
 
     stamp = rec["dataset"]
+    # The verdict sentences are read off the record, never typed: this figure is drawn for more
+    # than one recording set, and a caption carrying another run's numbers is how a figure lies.
+    said = []
+    for letter, stream in (("a", "fast"), ("b", "slow")):
+        c = rec["streams"][stream]["contrasts"]["hwhm"]
+        w = c["without_most_influential"]
+        moved = rec["streams"][stream]["groups"][w["group"]]["hwhm"]
+        said.append(f"{letter}: {stream} — spread {c['spread_sec']:.3f} s at "
+                    f"p = {c['permutation']['p_any_difference']:.3f} as recorded; dropping "
+                    f"{w['slice_id']} moves {w['group']} {moved['real_sec']:.3f} s → "
+                    f"{moved['leave_one_out']['without_sec']:.3f} s and the four-way test to "
+                    f"p = {w['p_any_difference']:.3f}.")
     caption = "\n".join([
         "Figure 3. One recording's leverage on a group's width. Filled dot: the group's "
-        "half-width at half height as recorded, read off its pooled onset-pair",
-        "counts. Open square: the same after removing the one recording that moves it most, named "
-        "beside it. a: fast, where there was no difference to begin with",
-        "and removing OVX's biggest mover leaves none (p = 0.098). b: slow — where ORX, the "
-        "narrowest group and the whole reason the four-way spread came close",
-        "to its null, moves 0.183 s → 0.229 s when 20250806_174 is dropped and the spread falls "
-        "to the null's own median. So the slow difference is one recording,",
-        f"not a group effect. Baseline windows only (FOUNDATIONS §9), {stamp['name']}.",
+        "half-width at half height as recorded, read off its pooled onset-pair counts,",
+        "so a recording weighs by the pairs it brings. Open square: the same after removing the "
+        "one recording that moves that group most, named beside it.",
+        *said,
+        "A four-way difference that one recording can create or remove is a fact about that "
+        "recording. Which recordings are in the folder is the producer's",
+        f"call, and nothing here filters. Baseline windows only (FOUNDATIONS §9), {stamp['name']}.",
     ])
     fig.text(0.005, 0.004, caption, fontsize=7, color=MUTED, va="bottom")
     fig.tight_layout(rect=(0, 0.30, 1, 0.985))
