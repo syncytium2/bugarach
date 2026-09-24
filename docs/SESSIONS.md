@@ -10,6 +10,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/stretch-aligned — DARKROOM claim, released on merge: `bugarach/2026-09-24-elevated-rate-stretches/` (RE-CLAIMED 2026-09-24 13:25 UTC)
+- **Status:** re-claimed before writing, to replace Figures 1a–c with versions aligned at baseline
+  end (Tony, via the orchestrator). **Released by the merge that brings this block to `main`.** No
+  measurement changes; `results.json` in the folder is not rewritten.
+
 ### 064/elevated-rate-stretches — DARKROOM claim, released on merge: `bugarach/2026-09-24-elevated-rate-stretches/` (NEW)
 - **Status:** claimed 2026-09-24 12:30 UTC, before writing; **released by the merge that brings
   this block to `main`** (that merge is the run record reaching `main`). The folder stays; nothing
