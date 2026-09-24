@@ -10,6 +10,13 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/chorus-span-sweep — DARKROOM claim, released on merge: `bugarach/2026-09-24-chorus-span-sweep/` (NEW)
+- **Status:** claimed 2026-09-24, before writing; **released by the merge that brings this block to
+  `main`**. Tony: *"train it at 400, run it short"*. The picked chorus checkpoints (trained on
+  409.6 s crops) run over pieces from 409.6 s down to under 100 s. Measurement only.
+- **Touches:** this block; `tools/measure_chorus_context_span.py` (piece length as a setting);
+  NEW `docs/learned/runs/2026-09-24-chorus-span-sweep/`; the learned-model goal page.
+
 ### 064/chorus-context-span — DARKROOM claim, released on merge: `bugarach/2026-09-24-chorus-context-span/` (NEW)
 - **Status:** claimed 2026-09-24 16:25 UTC, before writing; **released by the merge that brings this
   block to `main`**. chorus_norm and chorus_gain_norm run over whole recordings and over 409.6 s
