@@ -45,8 +45,11 @@ default**, under the stop-gap floor (`min_rois` never below 3, *pre-ADR-0008*;
 at alpha 1e-5, a 120 s context and an 8 s merge gap: +0.037 held-out mean F1 [+0.026, +0.045],
 +0.021 on fresh seeds (0.726 → 0.747; without decoy calls 0.855 → 0.874). Slow and combined moved
 nothing. **Not adopted**: the proposal waits on Tony, and ADR-0008's per-window floor waits on the
-two bench questions in #793. The paragraphs below are from 2026-09-16/17 and predate the slow and
-combined benches.
+two bench questions in #793. **Run on the 66 recordings** at those settings
+([detection run](../learned/runs/2026-09-24-detect-66-floors/README.md)), every window scored under
+its own ADR-0008 floor and under its baseline floor. Senktide raises the floor most in OVX and ORX
+(fast median 6 → 24 and 4 → 26 co-active ROIs), and there the two floors give very different call
+rates. The paragraphs below are from 2026-09-16/17 and predate the slow and combined benches.
 
 **The swept knobs are done; everything else has never been searched.** All six were retuned together
 on 2026-09-16 ([PR #597](https://github.com/syncytium2/bugarach/pull/597)), and
