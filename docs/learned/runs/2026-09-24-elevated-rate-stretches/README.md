@@ -201,6 +201,15 @@ recording, all on one y-scale, drawn as a hidden-line waterfall at twice the gai
   first-treatment block.
 - **Rows:** grouped by first treatment (senktide, then TTX, each block labelled at its left), then
   by group (DI, OVX, MALE, ORX), with a gap between groups and a larger one between the blocks.
+- **Two columns** (Tony, 2026-09-24: the TTX rows in a second column):
+  - **Left column:** the recordings with no TTX window, the 29 senktide-first recordings.
+  - **Right column:** every recording with a TTX window, the 37 TTX-first recordings. None of the
+    66 has both senktide first and a TTX window.
+  - Both columns use the same scale: one row height is 0.23 onsets per ROI per second, and 400 s
+    of recording is one inch. So equal durations have equal widths, and one reference bar serves
+    both.
+  - Each column has its own time axis under its block, with the same tick interval.
+  - The figure is 26.5 × 21.8 inches.
 - **Windows in the lane are neutral**, so the three colours belong to the streams alone:
   - baseline light grey, senktide mid grey, high K⁺ dark grey, TTX hatched light grey, wash
     near-white;
