@@ -71,7 +71,6 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import probe_field_size as probe  # noqa: E402
-from tube_self_supervised import rigid_frames  # noqa: E402
 
 from bugarach import surrogate_stats as ss  # noqa: E402
 
@@ -93,49 +92,10 @@ def coincidence_window_sec(stream: str) -> float:
                  .params["int_win_sec"])
 
 
-# -- the count and its exceedances ------------------------------------------------------------
-
-def coactive_counts(trains, L: int, wf: int) -> np.ndarray:
-    """ROIs with at least one onset in frames ``[s, s + wf)``, for every start ``s`` in
-    ``0 .. L - wf``. ``trains`` are onset frames in ``[0, L)``."""
-    n_pos = L - wf + 1
-    if n_pos <= 0:
-        return np.zeros(0, np.int64)
-    out = np.zeros(n_pos, np.int64)
-    for t in trains:
-        t = np.asarray(t, np.int64)
-        t = t[(t >= 0) & (t < L)]
-        if not t.size:
-            continue
-        cs = np.concatenate([[0], np.cumsum(np.bincount(t, minlength=L))])
-        out += (cs[wf:wf + n_pos] - cs[:n_pos]) > 0
-    return out
-
-
-def exceedances(counts: np.ndarray, n_max: int) -> tuple[np.ndarray, np.ndarray]:
-    """``(runs, frames)`` for every threshold ``K = 0 .. n_max + 1``.
-
-    ``runs[K]``: maximal runs of positions with ``count >= K`` — one call per run.
-    ``frames[K]``: positions with ``count >= K``. Both arrays have length ``n_max + 2``.
-    """
-    size = n_max + 2
-    c = np.minimum(np.asarray(counts, np.int64), n_max)
-    frames = np.cumsum(np.bincount(c, minlength=size)[::-1])[::-1].astype(float)
-    prev = np.concatenate([[0], c[:-1]])
-    rise = c > prev
-    diff = np.zeros(size + 1)
-    np.add.at(diff, prev[rise] + 1, 1.0)
-    np.add.at(diff, c[rise] + 1, -1.0)
-    runs = np.cumsum(diff)[:size]
-    runs[0] = 1.0 if c.size else 0.0      # K = 0: the whole window is one run
-    return runs, frames
-
-
-def floor_of(per_hour: np.ndarray, budget: float) -> int:
-    """Smallest ``K >= 1`` whose rate per hour is at most ``budget``; ``len - 1`` (one more than any
-    ROI count) when none is."""
-    ok = np.flatnonzero(np.asarray(per_hour)[1:] <= budget)
-    return int(ok[0] + 1) if ok.size else int(len(per_hour) - 1)
+# -- the count, its exceedances and the null ----------------------------------------------------
+# One copy of the method, in the package since ADR-0008 (`bugarach.event_floor`). The names stay
+# importable from here so the tests and the #790 run record that cite them still resolve.
+from bugarach.event_floor import coactive_counts, exceedances, floor_of, null_curve  # noqa: E402,F401
 
 
 # -- closed forms -----------------------------------------------------------------------------
@@ -183,26 +143,12 @@ def recording_task(args) -> dict:
     L_full = b - a
     dt = rec.dt
     trains_full = [np.asarray(t, np.int64) - a for t in rec.trains]
-    trim = int(math.ceil(J_SEC / dt))
-    L = L_full - 2 * trim
-    wf = max(1, int(round(w_sec / dt)))
     N = len(trains_full)
-
-    def trimmed(ts):
-        return [t[(t >= trim) & (t < L_full - trim)] - trim for t in ts]
-
-    real = trimmed(trains_full)
-    hours = (L - wf + 1) * dt / 3600.0
+    runs, frames, hours, real, L, wf = null_curve(
+        trains_full, L_full, dt, key=(TAG, stream, rec.recording_id), draws=draws,
+        window_sec=w_sec, j_sec=J_SEC)
     rates = np.array([t.size for t in real], float) / (L * dt)
     real_runs, real_frames = exceedances(coactive_counts(real, L, wf), N)
-    runs = np.zeros((2, N + 2))
-    frames = np.zeros((2, N + 2))
-    for d in range(draws):
-        rng = ss.rng_of((TAG, stream, rec.recording_id, "rigid", d))
-        shifted = trimmed(rigid_frames(trains_full, L_full, J_SEC / dt, rng, shared=False))
-        r_, f_ = exceedances(coactive_counts(shifted, L, wf), N)
-        runs[d % 2] += r_
-        frames[d % 2] += f_
 
     def per_hour(x, n):
         return x / (n * hours)
