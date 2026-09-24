@@ -92,8 +92,9 @@ def test_pair_grid_skips_invalid_combinations_and_finds_the_best_admissible():
     # Counts step as counts, and a participant floor stops at two cells (PR #754: the
     # combined search returned SPIKE-synch at min_n 0.25 by halving 2 -> 1 -> 0.5 -> 0.25).
     ("min_n", [2, 3, 8], True, None),
-    ("min_rois", [3, 6, 8], True, 2),
-    ("min_rois", [2, 3, 8], False, 16),
+    ("min_rois", [3, 6, 8], True, None),                 # never below 3 (ADR-0008, decision 1)
+    ("min_rois", [4, 6, 8], True, 3),
+    ("min_rois", [3, 4, 8], False, 16),
     ("min_n", [2, 3], False, 4),
     ("n_surrogates", [100, 200], True, 50),              # an all-integer grid is a count too
 ])
