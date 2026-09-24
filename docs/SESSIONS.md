@@ -10,6 +10,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/cross-stream-3x3 — DARKROOM claim, released on merge: `bugarach/2026-09-24-cross-stream-3x3/` (NEW)
+- **Status:** claimed 2026-09-24 10:35 UTC, before writing; **released by the merge that brings
+  this block to `main`**, since that merge is the run record reaching `main`. The folder stays and
+  holds the figures and full results; nothing holds it after.
+  Each stream's version of each detector (last night's tuned or shipped settings and picked chorus
+  checkpoints) scored on all three benches, fresh seeds, pre-ADR-0008 floor — Tony's 3 × 3.
+- **Touches:** this block; NEW `tools/score_cross_stream.py`; NEW
+  `docs/learned/runs/2026-09-24-cross-stream-3x3/`; the two goal pages. No bench constant changes.
+
 ### 064/overnight-floor-coact-chorus — DARKROOM claim RELEASED 2026-09-24: `bugarach/2026-09-24-overnight-floor-coact-chorus/` (NEW)
 - **Status:** **RELEASED 2026-09-24** by the merge that brings Phase 4's record to `main`. The
   folder stays, and nothing holds it after that merge. The overnight run Tony asked for:
