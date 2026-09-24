@@ -46,6 +46,15 @@ cross-validation.
 
 ## Where it stands
 
+**2026-09-24, the 3 × 3** ([run record](../learned/runs/2026-09-24-cross-stream-3x3/README.md)):
+the picked chorus checkpoints were scored on all three benches, and run as saved, since every bench
+recording has the same shape and encoding. The fast-trained chorus_norm transfers best:
+- 0.789 on fast;
+- 0.824 on slow;
+- 0.802 on combined, where it ties the combined-trained one (0.799) and LoCo (0.802) at the top.
+
+The slow-trained checkpoints lose 0.11 on fast.
+
 **2026-09-24, overnight: chorus_norm and chorus_gain_norm trained on all three benches retuned to
 the 66-recording default**, 5 seeds each, lr 0.01, on the GPU in 11–19 s a fit
 ([run record](../learned/runs/2026-09-24-overnight-coact-chorus/README.md)). **None of the 30 fits
