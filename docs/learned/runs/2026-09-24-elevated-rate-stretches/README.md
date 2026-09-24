@@ -165,6 +165,12 @@ recording, all on one y-scale.
   baseline end, and negative time is baseline.
 - **Rows:** grouped by first treatment (senktide, then TTX, each block labelled at its left), then
   by group (DI, OVX, MALE, ORX), with a gap between groups and a larger one between the blocks.
+- **Windows in the lane are neutral**, so the three colours belong to the streams alone:
+  - baseline light grey, senktide mid grey, high K⁺ dark grey, TTX hatched light grey, wash
+    near-white;
+  - each carries its text label.
+
+  Figures 1a–c use the same lane.
 - **Lane above each trace:** the analysis windows, t = 0 (black tick), and every stretch as a bar
   with a ▼ pointing down, in its stream's colour on its own track (fast lowest, then slow, then
   combined). A stretch is at least 2 minutes at *k* = 3 or more times the window's median
