@@ -39,6 +39,15 @@ recordings and re-scored on a set the search never saw.
 
 ## Where it stands
 
+**2026-09-24, overnight: CoactDetect searched on all three benches retuned to the 66-recording
+default**, under the stop-gap floor (`min_rois` never below 3, *pre-ADR-0008*;
+[run record](../learned/runs/2026-09-24-overnight-coact-chorus/README.md)). Fast proposes sliding
+at alpha 1e-5, a 120 s context and an 8 s merge gap: +0.037 held-out mean F1 [+0.026, +0.045],
++0.021 on fresh seeds (0.726 → 0.747; without decoy calls 0.855 → 0.874). Slow and combined moved
+nothing. **Not adopted**: the proposal waits on Tony, and ADR-0008's per-window floor waits on the
+two bench questions in #793. The paragraphs below are from 2026-09-16/17 and predate the slow and
+combined benches.
+
 **The swept knobs are done; everything else has never been searched.** All six were retuned together
 on 2026-09-16 ([PR #597](https://github.com/syncytium2/bugarach/pull/597)), and
 [`bench.py`](../../src/bugarach/bench.py)'s `RETUNE` constant states the rule that chose them. Three

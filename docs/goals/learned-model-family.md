@@ -46,6 +46,15 @@ cross-validation.
 
 ## Where it stands
 
+**2026-09-24, overnight: chorus_norm and chorus_gain_norm trained on all three benches retuned to
+the 66-recording default**, 5 seeds each, lr 0.01, on the GPU in 11–19 s a fit
+([run record](../learned/runs/2026-09-24-overnight-coact-chorus/README.md)). **None of the 30 fits
+collapsed.** On fresh seeds nothing chose on, the picked chorus_norm leads CoactDetect on fast
+(0.789 against 0.747) and combined (0.799 against 0.785) and trails on slow (0.844 against 0.869),
+with fewer calls on the empty recording on all three. Without decoy calls: fast 0.941 against 0.874,
+combined 0.945 against 0.913, slow 0.994 against 0.999. The picked checkpoints are in the run's
+darkroom folder, and Phase 3 runs them on the 66 recordings.
+
 ### The weekend's two runs: CoactDetect holds under the budget, and the rest is inside the noise
 
 **Both runs finished 2026-09-19 with no errors** — WSMIP064 on recording seeds 1000–1047 at 05:58
