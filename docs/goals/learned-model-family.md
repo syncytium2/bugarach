@@ -46,6 +46,16 @@ cross-validation.
 
 ## Where it stands
 
+**2026-09-24, the context span** ([run record](../learned/runs/2026-09-24-chorus-context-span/README.md)):
+the chorus models were trained on 409.6 s crops but run on whole recordings, so the same weights
+were run both ways: over the whole recording, and over consecutive 409.6 s pieces.
+- On its own bench, the span moves F1 beyond seed noise in 1 of 12 cells (−0.015).
+- Off its own stream, chorus_norm loses up to 0.090 F1 over the whole recording, all of it recall.
+- The piece edge adds stretch calls, but only 0.003 F1 (median).
+- On the 66 recordings, 87–98% of calls match between the two modes.
+
+Measurement only; nothing is adopted.
+
 **2026-09-24, the 3 × 3** ([run record](../learned/runs/2026-09-24-cross-stream-3x3/README.md)):
 the picked chorus checkpoints were scored on all three benches, and run as saved, since every bench
 recording has the same shape and encoding. The fast-trained chorus_norm transfers best:

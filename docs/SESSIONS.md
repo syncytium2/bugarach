@@ -10,6 +10,13 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/chorus-context-span — DARKROOM claim, released on merge: `bugarach/2026-09-24-chorus-context-span/` (NEW)
+- **Status:** claimed 2026-09-24 16:25 UTC, before writing; **released by the merge that brings this
+  block to `main`**. chorus_norm and chorus_gain_norm run over whole recordings and over 409.6 s
+  pieces, on the three benches and the 66 recordings. Measurement only.
+- **Touches:** this block; NEW `tools/measure_chorus_context_span.py`; NEW
+  `docs/learned/runs/2026-09-24-chorus-context-span/`; the learned-model goal page.
+
 ### 064/stretch-gain3 — DARKROOM claim, released on merge: `bugarach/2026-09-24-elevated-rate-stretches/` (RE-CLAIMED 2026-09-24 15:05 UTC)
 - **Status:** re-claimed before writing, to add Figure 3b (the waterfall at gain ×3; Tony, via the
   orchestrator). **Released by the merge that brings this block to `main`.** Figure 3 and every
