@@ -39,6 +39,16 @@ recordings and re-scored on a set the search never saw.
 
 ## Where it stands
 
+**2026-09-24, the 3 × 3** ([run record](../learned/runs/2026-09-24-cross-stream-3x3/README.md)):
+every stream's version of every detector, scored on all three benches with bootstrap intervals.
+The diagonal reproduces last night's numbers exactly.
+- The tops of the leaderboards sit inside each other's intervals.
+- LoCo tuned on combined beats fast's own LoCo on the fast bench (0.791 [0.779, 0.803] against
+  0.746 [0.733, 0.760]).
+- SCE's slow proposal beats the shipped SCE on fast and on combined.
+
+Where the search moved nothing, it may have stopped short of the best available setting.
+
 **2026-09-24, overnight: CoactDetect searched on all three benches retuned to the 66-recording
 default**, under the stop-gap floor (`min_rois` never below 3, *pre-ADR-0008*;
 [run record](../learned/runs/2026-09-24-overnight-coact-chorus/README.md)). Fast proposes sliding
