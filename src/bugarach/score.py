@@ -104,6 +104,12 @@ class Score:
     distractor_hits: int = 0
     """Distractors that a detection landed on. Counted, not penalized."""
     tol_sec: float = TOL_SEC
+    decoy_calls: int = 0
+    """False alarms that land on a decoy (``gt.distractors``) and outside the promiscuity probe.
+
+    ADR-0006: a decoy is a planted event with only its label changed, so a call on one is a call on
+    coordination, not a false alarm. Until the objective's ADR settles what becomes of the decoys,
+    every result is reported both ways; this is what the second way leaves out of precision."""
 
     @property
     def n_hit(self) -> int:
@@ -265,15 +271,24 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC) -> Sc
         hot_fa = int(np.sum((fa_ends >= hot[0]) & (fa_times <= hot[1])))
 
     distractor_hits = 0
+    decoy_calls = 0
     if gt.distractors and nD:
         dt = np.array([d.time for d in gt.distractors], dtype=float)
         distractor_hits = int(np.sum(
             [np.any(_gap(t, lo, hi) <= tol_sec) for t in dt]))
+        if fa_times.size:
+            # A false alarm within tolerance of a decoy, counted once whatever the number of decoys
+            # near it, and never one the probe already took out of precision.
+            on_decoy = np.array([np.min(_gap(dt, a, b)) <= tol_sec
+                                 for a, b in zip(fa_times, fa_ends)])
+            in_hot = ((fa_ends >= hot[0]) & (fa_times <= hot[1]) if hot is not None
+                      else np.zeros(fa_times.size, bool))
+            decoy_calls = int(np.sum(on_decoy & ~in_hot))
 
     return Score(n_planted=nP, n_detected=nD, hits=hits, matched=matched,
                  fa_times=fa_times, dup_times=dup_times, by_frac=by_frac,
                  hot_fa=hot_fa, distractor_hits=distractor_hits,
-                 tol_sec=tol_sec)
+                 tol_sec=tol_sec, decoy_calls=decoy_calls)
 
 
 _ONSET_FIELDS = (("onset_sec", "width_sec"), ("locs", "widths"))
