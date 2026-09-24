@@ -10,18 +10,21 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
-### 064/overnight-floor-coact-chorus — DARKROOM claim ACTIVE 2026-09-24: `bugarach/2026-09-24-overnight-floor-coact-chorus/` (NEW)
-- **Status:** ACTIVE 2026-09-24 02:10 UTC — the overnight run Tony asked for (orchestrator brief).
-  Phase 1: ADR-0008's floor (#794 landed the function; #793 is left open on two bench questions for
-  Tony). Phase 2 (#795, merged): CoactDetect searched and chorus trained on the three benches,
-  pre-ADR-0008 floor. Phase 3 (the PR updating this line): detection on the 66-recording export,
-  `phase3/`, archived to `bugarach/runs/2026-09-24-detect-66-floors/`. Phase 4 (running): the
-  other five coded detectors searched, `phase4/`. Each phase writes its own subfolder.
+### 064/overnight-floor-coact-chorus — DARKROOM claim RELEASED 2026-09-24: `bugarach/2026-09-24-overnight-floor-coact-chorus/` (NEW)
+- **Status:** **RELEASED 2026-09-24** by the merge that brings Phase 4's record to `main`. The
+  folder stays, and nothing holds it after that merge. The overnight run Tony asked for:
+  - Phase 1: ADR-0008's floor. #794 landed the function; #793 is left open on two bench questions
+    for Tony.
+  - Phase 2 (#795): CoactDetect searched and chorus trained on the three benches, pre-ADR-0008
+    floor, in `phase2/`.
+  - Phase 3 (#796): detection on the 66-recording export, in `phase3/`, archived to
+    `bugarach/runs/2026-09-24-detect-66-floors/`.
+  - Phase 4 (this line's PR): the other five coded detectors searched, in `phase4/`.
 - **Touches:** this block; the phase PRs' run records under `docs/learned/runs/`; the two goal pages.
   **No bench constant changes**, and not the two budgets in
   `docs/todo/2026-09-23-two-gates-the-66-recording-bench-fails.md`.
 - **Reads** the default export folder (`senktide_ttx`), confirmed by Tony in this session.
-- **Released:** when Phase 3's run record reaches `main`.
+- **Released:** with Phase 4's run record reaching `main`.
 
 ### 064/groups-rates-comod-66 — DARKROOM claim RELEASED 2026-09-23: `bugarach/2026-09-23-groups-rates-comod-66/` (NEW)
 - **Status:** **RELEASED 2026-09-23** — [#788](https://github.com/syncytium2/bugarach/pull/788)
