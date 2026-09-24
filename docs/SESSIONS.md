@@ -10,6 +10,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 064/stretch-fig3 — DARKROOM claim, released on merge: `bugarach/2026-09-24-elevated-rate-stretches/` (RE-CLAIMED 2026-09-24 13:55 UTC)
+- **Status:** re-claimed before writing, to add Figure 3 (three streams superimposed, one y-scale;
+  Tony, via the orchestrator). **Released by the merge that brings this block to `main`.** No
+  measurement changes; `results.json` in the folder is not rewritten.
+
 ### 064/stretch-aligned — DARKROOM claim, released on merge: `bugarach/2026-09-24-elevated-rate-stretches/` (RE-CLAIMED 2026-09-24 13:25 UTC)
 - **Status:** re-claimed before writing, to replace Figures 1a–c with versions aligned at baseline
   end (Tony, via the orchestrator). **Released by the merge that brings this block to `main`.** No

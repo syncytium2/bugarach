@@ -115,22 +115,34 @@ Recordings with a stretch at *k* = 3, fast stream, by window width:
 ([fig1_combined_population_rate.png](fig1_combined_population_rate.png)).
 
 In all three:
-- **Rows:** one per recording, grouped by first treatment (senktide, then TTX), then by group (DI,
-  OVX, MALE, ORX).
+- **Rows:** one per recording, grouped by first treatment (senktide, then TTX, each block labelled
+  at its left), then by group (DI, OVX, MALE, ORX). There is a gap between groups and a larger one
+  between the blocks.
 - **Time axis:** **time relative to the end of that recording's baseline window, in minutes.**
   - 0 is baseline end, so the first treatment starts at the same horizontal place in every row.
   - Negative time is baseline.
-  - The axis is shared by every row, labelled once at the bottom with the repository's 60-base
-    ticks.
-- **Trace:** the population rate, onsets per ROI per second, 60 s window, each row on its own scale.
-- **Lane above each trace:**
-  - the analysis windows (B baseline, SK senktide, TTX, K+ high K⁺, W wash);
+  - The axis is shared by every row but drawn only under the last row of each first-treatment
+    block, with the repository's 60-base ticks.
+- **Trace:** the population rate, onsets per ROI per second, 60 s window stepped by 10 s, each row
+  on its own scale.
+  - **The curve is continuous over the whole recording**, including the gaps between analysis
+    windows. The export's events cover the full recording.
+  - The lane shows the analysis windows, from which every tabled value is extracted.
+  - Stretches are still detected per window, against that window's own median, so the stretch bars
+    and every number in this record are unchanged.
+- **Lane above each trace**, a thin strip:
+  - the analysis windows in neutral greys (baseline light, senktide mid, high K⁺ dark, TTX hatched,
+    wash near-white);
   - t = 0, as a black tick;
-  - every *k* = 3 stretch, as a red bar with a ▼ pointing down at it.
+  - every *k* = 3 stretch, as a bar with a ▼ pointing down, in the stream's colour.
+- **Window names** (B, SK, TTX, K+, W) are written only on the first row of each block. Below it
+  the grey tones identify the windows, with a key in the legend (TTX hatched).
+- **Each lane sits directly on its own trace**, and a wider gap separates one recording from the
+  next.
 - Nothing is drawn on the trace.
 
-Aligned at baseline end on Tony's request (2026-09-24). The measurement did not change; only the
-figure's time axis did.
+Aligned at baseline end on Tony's request, and laid out as he asked on 2026-09-24 (thin lane,
+names only where the treatment changes, one axis per block). The measurement did not change.
 
 ## Figure 2, how large and how broad
 
@@ -145,6 +157,74 @@ code on bench seeds 1–8, quiet and busy.
 - **Real senktide and high K⁺ stretches reach that corner.**
 - **Real baseline and TTX stretches mostly do not.** They spread across every breadth, and the
   narrow ones are a few ROIs rising.
+
+## Figure 3, the three streams on one scale
+
+![Figure 3](fig3_three_streams_one_scale.png)
+
+**Figure 3.** Population rate of the fast, slow and combined streams, superimposed, in every
+recording, all on one y-scale, drawn as a hidden-line waterfall at twice the gain of a fitted scale.
+- **Streams:** fast in blue (#0072B2), slow in vermillion (#D55E00), combined in black. Combined
+  is every fast and slow onset of an ROI as one train.
+- **Unit:** onsets per ROI per second, in a 60 s window stepped by 10 s.
+- **Continuous curves:**
+  - Each curve runs over the whole recording, including the gaps between analysis windows.
+  - The lane shows the analysis windows, from which the tabled values are extracted.
+  - Stretches are detected per window, as in the run.
+  - The curves are cached beside `results.json` in the darkroom folder as `full_curves.json`,
+    stamped with the dataset.
+- **One shared scale, gain ×2, as a waterfall:**
+  - **One row height is 0.23 onsets per ROI per second**, the same in every row, shown by the one
+    reference bar at the top right.
+  - A trace that exceeds it runs up into the rows above. Nothing is clipped and no row is rescaled.
+  - The largest peak, 0.452 (20260122_259, combined stream, inside its senktide window, not in a
+    gap), reaches about two row heights (1.97).
+  - The median recording peaks at about 0.11, half a row.
+- **Hidden-line drawing:**
+  - Rows are drawn from the top down, and each row's traces sit on a white fill from the row's
+    baseline up to the highest of its three curves. So a lower row's peak covers what lies behind
+    it in the rows above, instead of tangling with it.
+  - Within a row the traces are drawn over the window lane, so a peak that crosses its own lane
+    stays visible.
+  - A faint grey line marks each row's zero.
+- **Rows that overrun:**
+  - 14 rows peak above one row height, and none reaches two:
+    20260122_259 (1.97 rows), 20250829_207 (1.96), 20240814a47 (1.91), 20260226_285 (1.82),
+    20260121_252 (1.78), 20241002_72 (1.73), 20250911_222 (1.68), 20250911_217 (1.67),
+    20240813b42 (1.46), 20260115_240 (1.42), 20260121_250 (1.40), 20250912_229 (1.38),
+    20250904_209 (1.30), 20260115_243 (1.05).
+  - All but 20241002_72 peak in the senktide block, most at senktide onset. There the white fill
+    of each row covers the peak-free stretches of the row above for up to about one row. The gain
+    was not changed.
+- **Time axis:** time relative to the end of each recording's baseline window, in minutes; 0 is
+  baseline end, and negative time is baseline. It is drawn only under the last row of each
+  first-treatment block.
+- **Rows:** grouped by first treatment (senktide, then TTX, each block labelled at its left), then
+  by group (DI, OVX, MALE, ORX), with a gap between groups and a larger one between the blocks.
+- **Two columns** (Tony, 2026-09-24: the TTX rows in a second column):
+  - **Left column:** the recordings with no TTX window, the 29 senktide-first recordings.
+  - **Right column:** every recording with a TTX window, the 37 TTX-first recordings. None of the
+    66 has both senktide first and a TTX window.
+  - Both columns use the same scale: one row height is 0.23 onsets per ROI per second, and 400 s
+    of recording is one inch. So equal durations have equal widths, and one reference bar serves
+    both.
+  - Each column has its own time axis under its block, with the same tick interval.
+  - The figure is 26.5 × 21.8 inches.
+- **Windows in the lane are neutral**, so the three colours belong to the streams alone:
+  - baseline light grey, senktide mid grey, high K⁺ dark grey, TTX hatched light grey, wash
+    near-white;
+  - their names are written only on the first row of each block, and a key in the legend
+    identifies the grey tones below it.
+
+  Figures 1a–c use the same lane.
+- **Lane above each trace**, a thin strip: the analysis windows, t = 0 (black tick), and every stretch as a bar
+  with a ▼ pointing down, in its stream's colour on its own track (fast lowest, then slow, then
+  combined). A stretch is at least 2 minutes at *k* = 3 or more times the window's median
+  population rate, 60 s window. Nothing is drawn on the traces.
+
+The repo copy is `docs/learned/runs/2026-09-24-elevated-rate-stretches/fig3_three_streams_one_scale.png`.
+The darkroom copy is in `bugarach/2026-09-24-elevated-rate-stretches/`. Tony asked for this figure
+on 2026-09-24, and it is drawn from the same `results.json` as Figures 1 and 2.
 
 ## Tables
 

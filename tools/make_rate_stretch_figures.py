@@ -3,10 +3,23 @@
 
     python tools/make_rate_stretch_figures.py --run <folder> [--also docs/learned/runs/<name>]
 
-* ``fig1_<stream>_population_rate.png`` — every recording one row, grouped by first treatment then
-  group (``bugarach.groups`` order). Each row is the 60 s population rate across all of the
-  recording's analysis windows; a lane **above** it carries the window spans (named) and every
-  *k* = 3 stretch as a bar with a ▼ pointing down at it. Nothing is drawn on the trace.
+* ``fig1_<stream>_population_rate.png`` — every recording one row, one stream, each row on its own
+  y-scale.
+* ``fig3_three_streams_one_scale.png`` — the same rows with fast, slow and combined superimposed on
+  ONE y-scale, with a single reference axis.
+
+Both are drawn by :func:`stacked`, so they share one layout:
+
+* rows grouped by first treatment (senktide, then TTX), then group (``bugarach.groups`` order), with
+  a gap between groups and a larger one between the two blocks, each block labelled at its left;
+* every row aligned at the end of its recording's baseline window (t = 0), on one shared,
+  minutes-friendly time axis drawn **only under the last row of each block**;
+* a thin window lane above each trace: windows in neutral greys (TTX hatched), t = 0 as a black
+  tick, and every *k* = 3 stretch as a bar with a ▼ pointing down, in its stream's colour. Window
+  names are written on the first row of each block only; a key in the legend identifies the grey
+  tones below it. Each lane sits flush on its own trace and a wider gap separates rows. Nothing is
+  drawn on the traces.
+
 * ``fig2_elevation_vs_breadth.png`` — every real stretch at *k* = 3, 60 s: peak within-window
   elevation against median breadth, by window type; the bench's elevated-rate test as black stars.
 * ``tables.md`` — the summary per stream × window type × group × k, the GDX (OVX and ORX) senktide
@@ -28,6 +41,7 @@ import numpy as np  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from bugarach.groups import group_key  # noqa: E402
 from bugarach.time_axis import label as tlabel  # noqa: E402
 from bugarach.time_axis import ticks as tticks  # noqa: E402
@@ -36,9 +50,27 @@ STREAMS = ("fast", "slow", "combined")
 TYPES = ("baseline", "TTX", "senktide", "high K+", "wash")
 SHORT = {"baseline": "B", "TTX": "TTX", "senktide": "SK", "high K+": "K+", "wash": "W",
          "other": "?"}
-TINT = {"baseline": "#DDDDDD", "TTX": "#9ECAE1", "senktide": "#FDAE6B", "high K+": "#C7E9C0",
-        "wash": "#F2F2F2", "other": "#FFFFFF"}
+TINT = {"baseline": "#E3E3E3", "TTX": "#EDEDED", "senktide": "#B5B5B5", "high K+": "#8C8C8C",
+        "wash": "#F7F7F7", "other": "#FFFFFF"}
+"""Windows in the lane are NEUTRAL: grey values, a hatch for TTX, and their text labels. Blue,
+vermillion and black belong to the streams and their stretch bars alone (the orchestrator,
+2026-09-24: an orange slow-stream bar inside an orange senktide window could not be seen)."""
+HATCH = {"TTX": "////"}
+LABEL_INK = {"high K+": "white"}
+STREAM_INK = {"fast": "#0072B2", "slow": "#D55E00", "combined": "#000000"}
+"""Okabe–Ito blue and vermillion, and black: high contrast and colourblind-safe."""
 TREAT_ORDER = {"senktide": 0, "TTX": 1, None: 2}
+LANE, TRACE, ROW_GAP, GROUP_GAP, BLOCK_GAP, AXIS_ROOM = 0.22, 1.25, 0.9, 1.6, 2.6, 1.2
+# The lane sits flush on its own trace (no gap inside a row) and rows are separated by a gap
+# several times the lane's height, so each lane reads with the trace beneath it, not above it.
+"""Height ratios. The lane is a thin strip and the freed height goes to the trace (Tony,
+2026-09-24: "make more room for the data by vertically shrinking the b/sk/ttx bands")."""
+
+
+def window_span(ax, a, b, kind):
+    """One window in a lane: grey value, hatched where the type calls for it."""
+    ax.axvspan(a, b, facecolor=TINT.get(kind, "#FFFFFF"), edgecolor="#9A9A9A",
+               hatch=HATCH.get(kind), lw=0)
 
 
 def recordings(rows, stream):
@@ -51,68 +83,381 @@ def recordings(rows, stream):
     return [(sid, sorted(by[sid], key=lambda r: r["win_start"])) for sid in order]
 
 
-def fig1(R, stream, out: Path) -> Path:
-    recs = recordings(R["rows"], stream)
-    n = len(recs)
-    fig = plt.figure(figsize=(14, 0.72 * n + 1.5))
-    # lane, trace, gap: the gap keeps one recording's trace from reading as the next one's.
-    gs = fig.add_gridspec(3 * n, 1, height_ratios=[0.28, 1.0, 0.3] * n, hspace=0.0)
+def full_curves(R, run: Path) -> dict:
+    """The population rate over each WHOLE recording, per stream (60 s window, 10 s step): the
+    same statistic as the run's per-window curves, computed across the gaps between analysis
+    windows too (Tony, 2026-09-24: *"the measurement is not affected by analysis windows, the
+    values extracted are"*). Figures only: stretches and every tabled number still come from the
+    windows. Cached beside ``results.json`` as ``full_curves.json``, stamped with its dataset,
+    and refused if that dataset is not the one the run measured."""
+    cache = run / "full_curves.json"
+    if cache.exists():
+        C = json.loads(cache.read_text())
+        if C.get("dataset") == R["dataset"]:
+            return C["curves"]
+    import measure_rate_stretches as mrs
 
-    def baseline_end(ws):
-        """Where this recording's time axis puts 0: the end of its baseline window (Tony,
-        2026-09-24: "align by baseline end"). A recording with no baseline window keeps its own
-        clock and says so in its label."""
+    from bugarach import dataset
+    from bugarach.combined import COMBINED, has_sources, stream_of
+    from bugarach.detectors.rate import recording_extent, stream_trains
+    from bugarach.io import load_folder
+    if dataset.stamp() != R["dataset"]:
+        raise SystemExit(f"default dataset {dataset.stamp()} is not the run's {R['dataset']}")
+    want = {r["slice_id"] for r in R["rows"]}
+    curves = {}
+    for s in load_folder(dataset.default()):
+        if s.slice_id not in want:
+            continue
+        if has_sources(s) and COMBINED not in s.streams:
+            s.streams[COMBINED] = stream_of(s, COMBINED)
+        lo, hi = recording_extent(s)
+        for st in STREAMS:
+            if st in s.streams:
+                starts, pop, _ = mrs.rates(stream_trains(s.streams[st], (lo, hi)), lo, hi,
+                                           mrs.PRIMARY)
+                curves.setdefault(s.slice_id, {})[st] = dict(starts=starts.tolist(),
+                                                             rate_hz=pop.tolist())
+    cache.write_text(json.dumps(dict(dataset=R["dataset"], width_sec=mrs.PRIMARY,
+                                     step_sec=mrs.STEP, curves=curves)))
+    return curves
+
+
+def stacked(R, streams, shared: bool, path: Path, curves: dict) -> tuple[Path, dict]:
+    """One row per recording, ``streams`` superimposed; see the module docstring for the layout.
+    ``shared``: one y-scale for every row with a single reference axis; otherwise each row on its
+    own scale with none. Returns the path and the scale used."""
+    by = {}
+    for r in R["rows"]:
+        by.setdefault(r["slice_id"], {}).setdefault(r["stream"], []).append(r)
+    for sid in by:
+        for s in by[sid]:
+            by[sid][s].sort(key=lambda r: r["win_start"])
+    order = [sid for sid, _ in recordings(R["rows"], streams[0])]
+    def where(sid, t_center):
+        """The analysis window a time falls in, or "between windows"."""
+        for w in by[sid][streams[0]]:
+            if w["win_start"] <= t_center < w["win_end"]:
+                return w["window_type"]
+        return "between windows"
+
+    peaks = []
+    for sid in order:
+        for s in streams:
+            c = curves.get(sid, {}).get(s)
+            if c and c["rate_hz"]:
+                j = int(np.argmax(c["rate_hz"]))
+                t = c["starts"][j] + 30.0
+                peaks.append((c["rate_hz"][j], sid, s, where(sid, t), t))
+    peaks.sort(reverse=True)
+    ymax = float(np.ceil(peaks[0][0] * 100) / 100) if peaks else 1.0
+    lead = streams[0]
+
+    def zero(ws):
         b = next((w for w in ws if w["window_type"] == "baseline"), None)
-        return (b["win_end"], True) if b else (0.0, False)
+        return b["win_end"] if b else 0.0
 
-    shifts = {sid: baseline_end(ws) for sid, ws in recs}
-    tmin = min(w["win_start"] - shifts[sid][0] for sid, ws in recs for w in ws)
-    tmax = max(w["win_end"] - shifts[sid][0] for sid, ws in recs for w in ws)
-    axes, first = [], None
-    for i, (sid, ws) in enumerate(recs):
-        z, aligned = shifts[sid]
-        lane = fig.add_subplot(gs[3 * i], sharex=first)
-        first = first or lane
-        ax = fig.add_subplot(gs[3 * i + 1], sharex=first)
-        lane.text(-0.005, 0.0, f"{sid}  {ws[0]['group']} · first: {ws[0]['first_treatment'] or '-'}"
-                  + ("" if aligned else " · NO BASELINE, unaligned"),
-                  transform=lane.transAxes, ha="right", va="top", fontsize=6.5)
-        for w in ws:
-            a, b = w["win_start"] - z, w["win_end"] - z
-            lane.axvspan(a, b, color=TINT.get(w["window_type"]), lw=0)
-            lane.text((a + b) / 2, 0.5, SHORT.get(w["window_type"], "?"),
-                      ha="center", va="center", fontsize=5.5, color="0.3")
-            c = w["measures"]["60.0"].get("curve")
-            if c:
-                ax.plot(np.asarray(c["starts"]) + 30.0 - z, c["rate_hz"], color="#1f3b73",
-                        lw=0.6)
-            for st in w["measures"]["60.0"].get("stretches", {}).get("3.0", []):
-                lane.plot([st["start"] - z, st["end"] - z], [0.15, 0.15], color="#C0392B", lw=2)
-                lane.plot((st["start"] + st["end"]) / 2 - z, 0.55, "v", color="#C0392B", ms=4)
-        # t = 0 is marked in the lane, never on the trace.
-        lane.plot([0, 0], [0.0, 1.0], color="black", lw=1.0)
-        lane.set_ylim(0, 1)
-        lane.axis("off")
-        ax.set_yticks([])
-        for sp in ("top", "right"):
-            ax.spines[sp].set_visible(False)
-        ax.tick_params(axis="x", labelbottom=False, length=2)
-        axes.append(ax)
+    def treat(sid):
+        return by[sid][lead][0]["first_treatment"]
+
+    # Slots: lane, trace and gaps; the last row of each block gets room for its axis.
+    slots, prev = [], None
+    for i, sid in enumerate(order):
+        head = by[sid][lead][0]
+        key = (head["first_treatment"], head["group"])
+        if prev is not None and key[0] != prev[0]:
+            slots.append(("gap", BLOCK_GAP))
+        elif prev is not None and key[1] != prev[1]:
+            slots.append(("gap", GROUP_GAP))
+        last_in_block = i + 1 == len(order) or treat(order[i + 1]) != key[0]
+        slots += [("lane", sid), ("trace", sid),
+                  ("gap", AXIS_ROOM if last_in_block else ROW_GAP)]
+        prev = key
+    ratios = [LANE if k == "lane" else TRACE if k == "trace" else v for k, v in slots]
+    fig = plt.figure(figsize=(14, 0.3 * sum(ratios) + 1.2))
+    gs = fig.add_gridspec(len(slots), 1, height_ratios=ratios, hspace=0.0, top=0.975,
+                          bottom=0.02)
+    zs = {sid: zero(by[sid][lead]) for sid in order}
+    tmin = min(w["win_start"] - zs[sid] for sid in order for w in by[sid][lead])
+    tmax = max(w["win_end"] - zs[sid] for sid in order for w in by[sid][lead])
     tk = tticks(tmin, tmax)
-    last = axes[-1]
-    last.set_xlim(tmin, tmax)
-    last.set_xticks(tk)
-    last.set_xticklabels(["0" if t == 0 else tlabel(t) for t in tk], fontsize=10)
-    last.tick_params(axis="x", labelbottom=True, length=4)
-    last.set_xlabel(f"{stream} stream: time relative to the end of each recording's baseline "
-                    "window, minutes (negative = baseline). Each row's trace is its population "
-                    "rate (onsets per ROI per second, 60 s window, own scale); the lane above shows "
-                    "the windows, t = 0 (black tick) and every k = 3 stretch (red bar, ▼)",
-                    fontsize=8.5)
-    p = out / f"fig1_{stream}_population_rate.png"
-    fig.savefig(p, dpi=130, bbox_inches="tight")
+    level = ({s: 0.25 for s in streams} if len(streams) == 1
+             else {"fast": 0.12, "slow": 0.42, "combined": 0.72})
+    first, traces, block_top, prev_treat = None, [], {}, None
+    for i, (kind, v) in enumerate(slots):
+        if kind == "gap":
+            continue
+        sid = v
+        z = zs[sid]
+        ax = fig.add_subplot(gs[i], sharex=first)
+        first = first or ax
+        ws_lead = by[sid][lead]
+        if kind == "lane":
+            t = treat(sid)
+            block_top.setdefault(t, ax)
+            # Window names on the first row of each first-treatment block only (Tony); the lane's
+            # grey tones and the legend's key identify the windows below it.
+            named = t != prev_treat
+            prev_treat = t
+            for w in ws_lead:
+                a, b = w["win_start"] - z, w["win_end"] - z
+                window_span(ax, a, b, w["window_type"])
+                if named:
+                    ax.text((a + b) / 2, 1.15, SHORT.get(w["window_type"], "?"), ha="center",
+                            va="bottom", fontsize=6, color="0.25")
+            for s in streams:
+                for w in by[sid].get(s, []):
+                    for st in w["measures"]["60.0"].get("stretches", {}).get("3.0", []):
+                        ax.plot([st["start"] - z, st["end"] - z], [level[s]] * 2,
+                                color=STREAM_INK[s], lw=1.6, solid_capstyle="butt")
+                        ax.plot((st["start"] + st["end"]) / 2 - z, level[s] + 0.22, "v",
+                                color=STREAM_INK[s], ms=3)
+            ax.plot([0, 0], [0, 1], color="black", lw=1.0)
+            ax.set_ylim(0, 1)
+            ax.axis("off")
+        else:
+            # One continuous curve over the whole recording, gaps between windows included.
+            for s in streams:
+                c = curves.get(sid, {}).get(s)
+                if c:
+                    ax.plot(np.asarray(c["starts"]) + 30.0 - z, c["rate_hz"],
+                            color=STREAM_INK[s], lw=0.6, alpha=0.9)
+            if shared:
+                ax.set_ylim(0, ymax)
+            # The recording's name sits level with its own trace, not with a lane edge that
+            # borders the row above.
+            ax.text(-0.005, 0.5, f"{sid}  {ws_lead[0]['group']}", transform=ax.transAxes,
+                    ha="right", va="center", fontsize=6.5)
+            ax.set_yticks([])
+            for sp in ("top", "right", "left"):
+                ax.spines[sp].set_visible(False)
+            nxt = slots[i + 1] if i + 1 < len(slots) else ("gap", AXIS_ROOM)
+            if nxt == ("gap", AXIS_ROOM):
+                # The last row of a first-treatment block carries that block's time axis.
+                ax.set_xticks(tk)
+                ax.set_xticklabels(["0" if x == 0 else tlabel(x) for x in tk], fontsize=9)
+                ax.tick_params(axis="x", labelbottom=True, length=4)
+                ax.set_xlabel("time relative to the end of each recording's baseline window, "
+                              "minutes (negative = baseline)", fontsize=8.5)
+            else:
+                ax.spines["bottom"].set_visible(False)
+                ax.tick_params(axis="x", bottom=False, labelbottom=False)
+            traces.append(ax)
+    first.set_xlim(tmin, tmax)
+    if shared:
+        ref = traces[0]
+        ref.spines["right"].set_visible(True)
+        ref.yaxis.tick_right()
+        ref.yaxis.set_label_position("right")
+        ref.set_yticks([0, ymax])
+        ref.set_yticklabels(["0", f"{ymax:g}"], fontsize=7.5)
+        ref.set_ylabel("onsets per ROI per second\n(the same scale in every row)", fontsize=7,
+                       rotation=0, ha="left", va="center", labelpad=10)
+    for t, ax in block_top.items():
+        ax.text(-0.13, 3.2, f"first treatment: {t or 'none'}", transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=10, fontweight="bold")
+    from matplotlib.patches import Patch
+    key = [Patch(facecolor=TINT[k], edgecolor="#9A9A9A", hatch=HATCH.get(k), lw=0.5,
+                 label=f"{SHORT[k]} {k}") for k in ("baseline", "senktide", "TTX", "wash",
+                                                     "high K+")]
+    fig.legend(handles=[*(Line2D([], [], color=STREAM_INK[s], lw=1.6, label=f"{s} stream")
+                          for s in streams), *key],
+               loc="lower center", ncol=len(streams) + len(key), fontsize=9, frameon=False,
+               bbox_to_anchor=(0.5, 0.985))
+    fig.savefig(path, dpi=130, bbox_inches="tight")
     plt.close(fig)
-    return p
+    return path, dict(ymax=ymax, largest=peaks[0] if peaks else None,
+                      second=peaks[1] if len(peaks) > 1 else None)
+
+
+def fig1(R, stream, out: Path, curves: dict) -> Path:
+    """One stream, each row on its own y-scale."""
+    return stacked(R, (stream,), False, out / f"fig1_{stream}_population_rate.png", curves)[0]
+
+
+ROW_HZ = 0.23
+"""Figure 3's gain: one row height is 0.23 onsets per ROI per second (Tony, 2026-09-24: "let the
+plots overrun their axes ... a mag of ~2x"). The largest peak, 0.452, reaches about two rows."""
+
+
+def fig3(R, out: Path, curves: dict) -> tuple[Path, dict]:
+    """The three streams superimposed on ONE scale, drawn as a hidden-line waterfall.
+
+    One axes, one row per recording at its own vertical offset; a row height is :data:`ROW_HZ`.
+    A trace that exceeds it runs up into the rows above, unclipped and never rescaled. Rows are
+    drawn from the top down, each at a higher z-order than the row above it, and each row's traces
+    sit on a white fill from their baseline up to the highest of the three curves, so a lower
+    row's peak covers what lies behind it instead of tangling with it. Within a row: fill, then the
+    window lane, then the traces, so a peak that crosses its own lane stays visible. Everything else
+    is Figure 1's layout. Returns the path and a record of the scale and of rows that overrun."""
+    by = {}
+    for r in R["rows"]:
+        by.setdefault(r["slice_id"], {}).setdefault(r["stream"], []).append(r)
+    for sid in by:
+        for s in by[sid]:
+            by[sid][s].sort(key=lambda r: r["win_start"])
+    lead = "fast"
+    order = [sid for sid, _ in recordings(R["rows"], lead)]
+
+    def zero(ws):
+        b = next((w for w in ws if w["window_type"] == "baseline"), None)
+        return b["win_end"] if b else 0.0
+
+    def treat(sid):
+        return by[sid][lead][0]["first_treatment"]
+
+    # Two columns (Tony, 2026-09-24: "put the TTX rows in a second column"): every recording with
+    # a TTX window goes right, the rest left; each keeps the Figure-1 order within it.
+    has_ttx = {sid: any(w["window_type"] == "TTX" for w in by[sid][lead]) for sid in order}
+    columns = [[s for s in order if not has_ttx[s]], [s for s in order if has_ttx[s]]]
+    columns = [c for c in columns if c]
+    H, LH, GAP, GGAP, BGAP, AXROOM = 1.0, 0.2, 0.55, 1.1, 2.6, 1.4
+    zs = {sid: zero(by[sid][lead]) for sid in order}
+    lay = []
+    for col in columns:
+        y, base, prev, block_last = 0.0, {}, None, {}
+        for sid in col:
+            head = by[sid][lead][0]
+            key = (head["first_treatment"], head["group"])
+            if prev is not None:
+                y -= BGAP + AXROOM if key[0] != prev[0] else (GGAP if key[1] != prev[1] else GAP)
+            y -= LH + H
+            base[sid] = y
+            block_last[key[0]] = sid
+            prev = key
+        tmin = min(w["win_start"] - zs[sid] for sid in col for w in by[sid][lead])
+        tmax = max(w["win_end"] - zs[sid] for sid in col for w in by[sid][lead])
+        lay.append(dict(sids=col, base=base, block_last=block_last, y_end=y, tmin=tmin,
+                        tmax=tmax))
+    ytop = 2.8
+    ymin = min(c["y_end"] for c in lay) - AXROOM
+    # Same seconds per inch in every column, and the same data units per inch vertically.
+    SEC_PER_IN, UNITS_PER_IN = 400.0, 1 / 0.3
+    L_MARGIN, GUTTER, R_MARGIN, TOP_IN, BOT_IN = 1.5, 1.7, 2.3, 0.6, 0.2
+    widths = [(c["tmax"] - c["tmin"]) / SEC_PER_IN for c in lay]
+    data_h = (ytop - ymin) / UNITS_PER_IN
+    W = L_MARGIN + sum(widths) + GUTTER * (len(lay) - 1) + R_MARGIN
+    Hfig = data_h + TOP_IN + BOT_IN
+    fig = plt.figure(figsize=(W, Hfig))
+    axes, x0 = [], L_MARGIN
+    for c, wi in zip(lay, widths):
+        ax = fig.add_axes([x0 / W, BOT_IN / Hfig, wi / W, data_h / Hfig])
+        ax.set_xlim(c["tmin"], c["tmax"])
+        ax.set_ylim(ymin, ytop)
+        ax.axis("off")
+        axes.append(ax)
+        x0 += wi + GUTTER
+    level = {"fast": 0.15, "slow": 0.45, "combined": 0.75}
+    overrun = []
+    t_all = (min(c["tmin"] for c in lay), max(c["tmax"] for c in lay))
+    for c in lay:
+        c["t_all"] = t_all
+    for ax, c in zip(axes, lay):
+        overrun += _waterfall_column(ax, c, by, curves, zs, treat, lead, level,
+                                     (H, LH, AXROOM))
+    # The one reference scale for the whole figure: a bar one row high, right of the last
+    # column's first row.
+    ax, c = axes[-1], lay[-1]
+    b0 = c["base"][c["sids"][0]]
+    span = c["tmax"] - c["tmin"]
+    xr = c["tmax"] + span * 0.015
+    ax.plot([xr, xr], [b0, b0 + H], color="black", lw=1.2, clip_on=False)
+    for yy, lab in ((b0, "0"), (b0 + H, f"{ROW_HZ:g}")):
+        ax.plot([xr, xr + span * 0.005], [yy, yy], color="black", lw=1.2, clip_on=False)
+        ax.text(xr + span * 0.009, yy, lab, ha="left", va="center", fontsize=7.5, clip_on=False)
+    ax.text(xr + span * 0.04, b0 + H / 2, "onsets per ROI per second\n(one row height, "
+            "the same in\nevery row and column)", ha="left", va="center", fontsize=7,
+            clip_on=False)
+    from matplotlib.patches import Patch
+    key = [Patch(facecolor=TINT[k], edgecolor="#9A9A9A", hatch=HATCH.get(k), lw=0.5,
+                 label=f"{SHORT[k]} {k}") for k in ("baseline", "senktide", "TTX", "wash",
+                                                     "high K+")]
+    fig.legend(handles=[*(Line2D([], [], color=STREAM_INK[s], lw=1.6, label=f"{s} stream")
+                          for s in STREAMS), *key],
+               loc="upper center", ncol=8, fontsize=9, frameon=False,
+               bbox_to_anchor=(0.5, 1.0))
+    p = out / "fig3_three_streams_one_scale.png"
+    fig.savefig(p, dpi=130)
+    plt.close(fig)
+    overrun.sort(key=lambda r: -r[1])
+    return p, dict(row_hz=ROW_HZ, size_in=[round(W, 1), round(Hfig, 1)],
+                   columns=[dict(recordings=len(c["sids"]),
+                                 first_treatments=sorted({str(treat(s)) for s in c["sids"]}),
+                                 minutes=round((c["tmax"] - c["tmin"]) / 60, 1)) for c in lay],
+                   largest=overrun[0] if overrun else None,
+                   rows_over_one_row=len(overrun), rows_over_two_rows=sum(r[2] > 2 for r in overrun),
+                   overrun=[dict(slice_id=a, peak_hz=b, rows=c) for a, b, c in overrun])
+
+
+def _waterfall_column(ax, c, by, curves, zs, treat, lead, level, dims) -> list:
+    """Draw one column of Figure 3's waterfall into ``ax``; returns the rows that overrun one row
+    height as ``(slice_id, peak_hz, rows)``."""
+    H, LH, AXROOM = dims
+    base, block_last, tmin, tmax = c["base"], c["block_last"], c["tmin"], c["tmax"]
+    t_all = c["t_all"]          # read now: `c` is reused for curves in the loop below
+    order = c["sids"]
+    overrun, prev_treat = [], None
+    for k, sid in enumerate(order):
+        b0, z = base[sid], zs[sid]
+        zf, zl, zt = 10 + 3 * k, 11 + 3 * k, 12 + 3 * k
+        lane_lo = b0 + H
+        t = treat(sid)
+        named = t != prev_treat
+        prev_treat = t
+        # the lane, flush on top of the trace's row
+        for w in by[sid][lead]:
+            a, b = w["win_start"] - z, w["win_end"] - z
+            ax.add_patch(plt.Rectangle((a, lane_lo), b - a, LH, facecolor=TINT.get(
+                w["window_type"], "#FFFFFF"), edgecolor="#9A9A9A", hatch=HATCH.get(
+                w["window_type"]), lw=0, zorder=zl))
+            if named:
+                ax.text((a + b) / 2, lane_lo + LH + 0.12, SHORT.get(w["window_type"], "?"),
+                        ha="center", va="bottom", fontsize=6, color="0.25", zorder=zl)
+        for s in STREAMS:
+            for w in by[sid].get(s, []):
+                for st in w["measures"]["60.0"].get("stretches", {}).get("3.0", []):
+                    yy = lane_lo + LH * level[s]
+                    ax.plot([st["start"] - z, st["end"] - z], [yy, yy], color=STREAM_INK[s],
+                            lw=1.6, solid_capstyle="butt", zorder=zl + 0.5)
+        ax.plot([0, 0], [lane_lo, lane_lo + LH], color="black", lw=1.0, zorder=zl + 0.5)
+        # the traces: white fill up to the highest curve, then the curves
+        cs = {s: curves.get(sid, {}).get(s) for s in STREAMS}
+        grid = next((np.asarray(c["starts"]) for c in cs.values() if c), None)
+        if grid is not None:
+            top = np.max([np.asarray(c["rate_hz"]) for c in cs.values()
+                          if c and len(c["rate_hz"]) == grid.size], axis=0)
+            x = grid + 30.0 - z
+            ax.fill_between(x, b0, b0 + top / ROW_HZ, color="white", lw=0, zorder=zf)
+            peak = float(top.max())
+            if peak > ROW_HZ:
+                overrun.append((sid, peak, peak / ROW_HZ))
+            for s in STREAMS:
+                c = cs[s]
+                if c:
+                    ax.plot(x, b0 + np.asarray(c["rate_hz"]) / ROW_HZ, color=STREAM_INK[s],
+                            lw=0.6, zorder=zt)
+        ax.plot([tmin, tmax], [b0, b0], color="0.85", lw=0.4, zorder=zf - 0.5)
+        ax.text(tmin - (tmax - tmin) * 0.005, b0 + H / 2, f"{sid}  {by[sid][lead][0]['group']}",
+                ha="right", va="center", fontsize=6.5, clip_on=False)
+    # One time axis under the last row of each first-treatment block. Every column uses the tick
+    # interval of the widest one, so equal minutes look the same in both.
+    tk = [x for x in tticks(t_all[0], t_all[1]) if tmin <= x <= tmax]
+    for tr, sid in block_last.items():
+        ya = base[sid] - 0.35
+        ax.plot([tmin, tmax], [ya, ya], color="black", lw=0.8, clip_on=False)
+        for x in tk:
+            ax.plot([x, x], [ya, ya - 0.15], color="black", lw=0.8, clip_on=False)
+            ax.text(x, ya - 0.25, "0" if x == 0 else tlabel(x), ha="center", va="top",
+                    fontsize=9, clip_on=False)
+        ax.text((tmin + tmax) / 2, ya - 0.8, "time relative to the end of each recording's "
+                "baseline window, minutes (negative = baseline)", ha="center", va="top",
+                fontsize=8.5, clip_on=False)
+    firsts = {}
+    for sid in order:
+        firsts.setdefault(treat(sid), sid)
+    for tr, sid in firsts.items():
+        ax.text(tmin, base[sid] + H + LH + 0.75, f"first treatment: {tr or 'none'}",
+                ha="left", va="bottom", fontsize=10, fontweight="bold", clip_on=False)
+    return overrun
 
 
 def fig2(R, out: Path) -> Path:
@@ -235,7 +580,10 @@ def main(argv=None) -> int:
     ap.add_argument("--also", type=Path, default=None)
     a = ap.parse_args(argv)
     R = json.loads((a.run / "results.json").read_text())
-    made = [*(fig1(R, s, a.run) for s in STREAMS), fig2(R, a.run), tables(R, a.run)]
+    curves = full_curves(R, a.run)
+    p3, scale = fig3(R, a.run, curves)
+    print("figure 3 scale:", scale)
+    made = [*(fig1(R, s, a.run, curves) for s in STREAMS), fig2(R, a.run), p3, tables(R, a.run)]
     if a.also:
         a.also.mkdir(parents=True, exist_ok=True)
         for p in made:
