@@ -53,7 +53,10 @@ collapsed.** On fresh seeds nothing chose on, the picked chorus_norm leads Coact
 (0.789 against 0.747) and combined (0.799 against 0.785) and trails on slow (0.844 against 0.869),
 with fewer calls on the empty recording on all three. Without decoy calls: fast 0.941 against 0.874,
 combined 0.945 against 0.913, slow 0.994 against 0.999. The picked checkpoints are in the run's
-darkroom folder, and Phase 3 runs them on the 66 recordings.
+darkroom folder. **On the 66 recordings** ([detection run](../learned/runs/2026-09-24-detect-66-floors/README.md))
+they ran in every window, with each call kept or not under ADR-0008's per-window floor and under
+the baseline floor, by the ROIs with an onset inside it. chorus_norm moves the same way as
+CoactDetect between the two floors everywhere.
 
 ### The weekend's two runs: CoactDetect holds under the budget, and the rest is inside the noise
 

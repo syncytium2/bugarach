@@ -12,10 +12,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ### 064/overnight-floor-coact-chorus — DARKROOM claim ACTIVE 2026-09-24: `bugarach/2026-09-24-overnight-floor-coact-chorus/` (NEW)
 - **Status:** ACTIVE 2026-09-24 02:10 UTC — the overnight run Tony asked for (orchestrator brief).
-  Phase 1: ADR-0008's floor (#794 lands the function; #793 is left open on two bench questions for
-  Tony). Phase 2 (this block's PR): CoactDetect searched and chorus trained on the three benches,
-  pre-ADR-0008 floor. Phase 3: detection on the 66-recording export. Each phase writes its own
-  subfolder.
+  Phase 1: ADR-0008's floor (#794 landed the function; #793 is left open on two bench questions for
+  Tony). Phase 2 (#795, merged): CoactDetect searched and chorus trained on the three benches,
+  pre-ADR-0008 floor. Phase 3 (the PR updating this line): detection on the 66-recording export,
+  `phase3/`, archived to `bugarach/runs/2026-09-24-detect-66-floors/`. Phase 4 (running): the
+  other five coded detectors searched, `phase4/`. Each phase writes its own subfolder.
 - **Touches:** this block; the phase PRs' run records under `docs/learned/runs/`; the two goal pages.
   **No bench constant changes**, and not the two budgets in
   `docs/todo/2026-09-23-two-gates-the-66-recording-bench-fails.md`.
