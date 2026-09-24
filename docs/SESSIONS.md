@@ -48,6 +48,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   or `docs/FOUNDATIONS.md`, which the Mac session is changing on #786.
 - **Reads** the default export folder (`senktide_ttx`), confirmed by Tony in this session.
 
+### candid-sorrel/recordings-that-carry-a-group — DARKROOM claim ACTIVE 2026-09-23: `bugarach/2026-09-23-recordings-that-carry-a-group/` (NEW)
+- **Status:** ACTIVE, claimed before writing. The orchestrator's brief at Tony's request: render the
+  baseline windows of the three recordings that two independent measures put in front of a group —
+  `20250806_174` (ORX), `20260702_334` (OVX), `20260115_243` (ORX) — fast and slow, and describe
+  what is visible. Nothing is filtered: which recordings are in the folder is the producer's call.
+- **Writes:** that folder only, a NEW one. The companion claim on `bugarach/correlogram/` below stays
+  mine and takes the rerun's three figures. Nothing else under `<darkroom>/bugarach/` is touched, and
+  `constellation/` is not touched.
+- **Reads:** `senktide_ttx`, the 66-recording export — **held until Tony confirms it this session**.
+- **Goal:** none of the four; it measures a bench constant per group and looks at three recordings.
+
 ### 065/roi-table — DARKROOM claim RELEASED 2026-09-23: `bugarach/roi_table/` (NEW)
 - **Status:** **RELEASED 2026-09-23** — `roi_table.md`, `.csv` and `.json` written by
   `tools/make_roi_table.py`, with the same three files as a repo copy under `docs/learned/roi_table/`.
