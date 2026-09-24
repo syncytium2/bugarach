@@ -35,9 +35,10 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
+from bugarach.groups import GROUP_ORDER  # noqa: E402  (DI, OVX, MALE, ORX — Tony, 2026-09-23)
+
 FOLDER = "correlogram"                   # the darkroom folder Tony asked the figures to gather in
 GROUP_INK = {"DI": "#0f9fb5", "MALE": "#b8860b", "ORX": "#6b3e26", "OVX": "#c51b7d"}
-GROUP_ORDER = ("DI", "MALE", "ORX", "OVX")
 INK, MUTED = "#0b0b0b", "#52514e"
 PEAK_LAG_SEC = 3.0
 
@@ -190,7 +191,7 @@ def draw(rec, out: Path) -> Path:
         f"Baseline windows only (FOUNDATIONS §9), {stamp['name']}.",
     ])
     fig.text(0.005, 0.004, caption, fontsize=7, color=MUTED, va="bottom")
-    fig.tight_layout(rect=(0, 0.135, 1, 0.985))
+    fig.tight_layout(rect=(0, 0.155, 1, 0.985))   # the caption runs to six lines; leave it room
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=170)
     plt.close(fig)
