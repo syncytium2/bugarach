@@ -364,9 +364,13 @@ load-bearing terms with no glossary entry.
   setting that carries where the choice came from, benched or freshly fitted — is
   under **Parameter vocabulary** above, with the three terms it is confused with.
 - **elevated-rate test** (formerly *promiscuity probe*, *probe*; code: `hot_window`,
-  `probe_per_hour`, `MAX_PROBE_PER_MIN`) — a 5-minute stretch of every bench recording
-  (20:00–25:00, easing in over 30 s) where each cell's independent event rate is elevated
-  to 0.06 per second, about 12× the quiet background, with *no* planted events. It asks
+  `probe_per_hour`, `MAX_PROBE_PER_MIN`) — a 5-minute stretch (20:00–25:00, easing in over
+  30 s) where each cell's independent event rate is elevated to the background's 99th
+  percentile, with *no* planted events. **Since ADR-0009 (2026-09-25) it lives in a recording
+  of its own, the elevated-rate recording**, with nothing planted anywhere; before that it
+  sat inside every bench recording (at 0.06 per second on fast, about 12× the quiet
+  background). It is scored for calls inside the stretch and, against the no-coordination
+  budget, outside it. It asks
   whether a detector keys on rate rather than on coordination: a call there means more
   events fooled it. Its calls are reported separately and kept out of headline precision.
   Named on 2026-09-21 (Tony): "probe" said nothing, and "surge" and "firing" were
@@ -450,6 +454,25 @@ load-bearing terms with no glossary entry.
   spacing events wider than the widest context window.
 - **participant floor** — the recruitment level below which a detector stops
   finding events. Reported as recall broken down by participation fraction.
+- **event floor** (ADR-0008; code: `bugarach.event_floor`, `bench.recording_floor`) — a
+  window's minimum participation: the larger of 3 ROIs and the smallest number of co-active
+  ROIs the window's own rigid-shift null (*J* = 20 s, 2 s co-activity window, 1,000 draws)
+  reaches at most once per hour. It sets the detectors' `min_rois` and SPIKE-synch's `min_n`.
+  Pages that mean this one say "event floor" or "the floor (ADR-0008)"; it is neither the
+  **participant floor** above nor the **provisional floor *f*** below.
+- **don't care** (ADR-0009 decision 2) — a planted event with fewer participants than its
+  recording's event floor. It leaves recall, and a call matched to it leaves precision; both
+  are counted and reported with every score.
+- **bracketed** — a tuned setting sits strictly inside the grid the search walked, on every
+  axis it could move. An open axis is **cap** (the search's extension allowance was used up),
+  **edge** (at an end for another reason) or **limit** (the value cannot go further: 0, or one
+  frame). Whether a limit counts as a bracket is open (the 2026-09-25 final-parameters report).
+- **fresh seeds** — bench seeds nothing chose on (6000–6023 per background; 56000–56011 for
+  the no-coordination recording; 66000–66011 for the elevated-rate recording). Distinct from
+  the search's held-out seeds 49–96, on which the proposal is picked among the search's final
+  candidates.
+- **precision swing** (code: `MAX_PRECISION_DROP`) — the absolute difference in precision
+  between the quiet and busy backgrounds; a budget.
 
 ## Surrogate vocabulary
 

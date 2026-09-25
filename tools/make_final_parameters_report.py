@@ -77,14 +77,15 @@ def held_out_budgets(bench, det: str, ho: dict) -> dict:
     probe = max(ho["probe_quiet_per_hour"], ho["probe_busy_per_hour"]) / 60.0
     fp = bench.MAX_FALSE_POSITIVES_PER_HOUR[det]
     elev = ho.get("elevated_out_quiet_per_hour")
-    crowd = ho.get("crowded_gain_vs_shipped", 0.0)
+    # A missing close-events score fails, as `make_admissible` fails it; it never passes by default.
+    crowd = ho.get("crowded_gain_vs_shipped")
     return dict(
         probe=dict(value=probe, limit=bench.MAX_PROBE_PER_MIN[det],
                    ok=probe <= bench.MAX_PROBE_PER_MIN[det]),
         null=dict(value=ho["null_per_hour"], limit=fp, ok=ho["null_per_hour"] <= fp),
         elevated_out_quiet=dict(value=elev, limit=fp, ok=elev is not None and elev <= fp),
         crowded=dict(value=crowd, limit=-bench.MAX_CROWDED_DROP,
-                     ok=crowd >= -bench.MAX_CROWDED_DROP),
+                     ok=crowd is not None and crowd >= -bench.MAX_CROWDED_DROP),
         precision_swing=dict(value=None, limit=bench.MAX_PRECISION_DROP[det], ok=None,
                              note="not recorded in the search's held-out rows"))
 
@@ -113,15 +114,59 @@ def under_floor(row: dict) -> dict:
     return out
 
 
-def all_ok(budgets: dict | None) -> bool | None:
+def all_ok(budgets: dict | None) -> bool:
+    """Every recorded check passed. A budget set that is missing entirely is a failure: nobody
+    checked it, and this report exists because an unchecked candidate once won."""
     if budgets is None:
-        return None
+        return False
     vals = [b["ok"] for b in budgets.values() if b["ok"] is not None]
     return all(vals)
 
 
 def failed(budgets: dict | None) -> list[str]:
     return [] if budgets is None else [k for k, b in budgets.items() if b["ok"] is False]
+
+
+def changed_settings(shipped: dict, searched: dict, proposal: dict) -> dict:
+    """``{setting: [shipped value, proposed value]}`` against the point ``bench*.py`` SHIPS.
+
+    The search starts from ``searched`` — the shipped point with LoCo and CoactDetect forced into
+    their sliding form (``--sliding``) — so comparing against it hides a binned → sliding change
+    on a bench whose operating point is binned. A setting the shipped params leave to the
+    detector's default is filled from ``searched``; a missing ``window_mode`` means binned."""
+    out = {}
+    for k in sorted(proposal):
+        v = proposal[k]
+        base = shipped.get(k, "binned" if k == "window_mode" else searched.get(k))
+        nan = lambda x: isinstance(x, float) and math.isnan(x)  # noqa: E731
+        if nan(v) and nan(base):
+            continue
+        if v != base:
+            out[k] = [base, v]
+    return out
+
+
+def diag_ci(xs: dict, det: str, stream: str, variant: str) -> list | None:
+    """The 95% bootstrap interval over fresh seeds of a version scored on its own bench."""
+    r = next((x for x in xs["rows"] if x["det"] == det and x["tuned"] == stream
+              and x["scored"] == stream and x["variant"] == variant), None)
+    return r.get("mean_f1_ci") if r else None
+
+
+def participants_per_level() -> dict:
+    """``{stream: {participation fraction: participants}}``, read off one planted recording of
+    each bench, so the table can say "10% (3 ROIs)" rather than leave the conversion to the
+    reader."""
+    import importlib
+
+    mods = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
+            "combined": "bugarach.bench_combined"}
+    out = {}
+    for stream, mod in mods.items():
+        b = importlib.import_module(mod)
+        _, gt = b.make_recording("baseline_quiet", 1)
+        out[stream] = {f"{e.frac:g}": int(e.n_part) for e in gt.events}
+    return out
 
 
 def build(night: Path) -> dict:
@@ -135,6 +180,7 @@ def build(night: Path) -> dict:
                   "slow": _load(night / "064" / "phase3-chorus-slow-combined" / "candidates.json")}
     chorus_rec["combined"] = chorus_rec["slow"]
     sel = _load(night / "064" / "phase3-3x3" / "selection_budgets.json")["rows"]
+    xs = _load(night / "064" / "phase3-3x3" / "cross_stream.json")
     rows = []
     for stream in STREAMS:
         bench = importlib.import_module(mods[stream])
@@ -146,7 +192,8 @@ def build(night: Path) -> dict:
             row = dict(stream=stream, detector=det, kind="coded",
                        shipped=dict(params=M["shipped"],
                                     fresh=dict(f1=ship_fresh["mean_f1"],
-                                               f1_without_decoys=ship_fresh["mean_f1_without_decoys"]),
+                                               f1_without_decoys=ship_fresh["mean_f1_without_decoys"],
+                                               ci=diag_ci(xs, det, stream, "shipped")),
                                     budgets=dict(selection=selection_budgets(sel, stream, det, "shipped"),
                                                  held_out=held_out_budgets(
                                                      bench, det, search["held_out"][det]["shipped"]),
@@ -163,15 +210,17 @@ def build(night: Path) -> dict:
                                held_out=held_out_budgets(bench, det, ho),
                                fresh=fresh_budgets(bench, det, fr, det))
                 gain = ho["gain_vs_shipped"]
-                every = all(all_ok(budgets[k]) is not False for k in budgets)
+                every = all(all_ok(budgets[k]) for k in budgets)
                 row["proposal"] = dict(
                     name=p["name"], params=p["params"],
-                    changed={k: [M["shipped"].get(k, search["shipped"][det].get(k)), v]
-                             for k, v in p["params"].items()
-                             if v != search["shipped"][det].get(k)
-                             and not (isinstance(v, float) and math.isnan(v))},
+                    changed=changed_settings(M["shipped"], search["shipped"][det], p["params"]),
+                    held_out_anchor=("sliding at the shipped values"
+                                     if search["shipped"][det].get("window_mode", "binned")
+                                     != M["shipped"].get("window_mode", "binned")
+                                     else "the shipped point"),
                     held_out_gain=gain, fresh=dict(f1=fr["mean_f1"],
-                                                   f1_without_decoys=fr["mean_f1_without_decoys"]),
+                                                   f1_without_decoys=fr["mean_f1_without_decoys"],
+                                                   ci=diag_ci(xs, det, stream, "proposal")),
                     budgets=budgets, every_budget=every,
                     bracketed_strict=strict, bracketed_if_limit_counts=loose,
                     open_axes={k: v["reason"] for k, v in br.get("unbracketed_axes", {}).items()},
@@ -185,13 +234,15 @@ def build(night: Path) -> dict:
         for m in CHORUS:
             pick = R["benches"][stream]["chorus"][m]["picked"]
             fr = R["results"][stream][f"chorus:{pick}"]
+            seed = pick.split("_")[-1].replace(".json", "")
             rows.append(dict(stream=stream, detector=m, kind="chorus", picked=pick,
-                             fresh=dict(f1=fr["mean_f1"], f1_without_decoys=fr["mean_f1_without_decoys"]),
+                             fresh=dict(f1=fr["mean_f1"], f1_without_decoys=fr["mean_f1_without_decoys"],
+                                        ci=diag_ci(xs, m, stream, seed)),
                              budgets=dict(fresh=fresh_budgets(bench, "coact", fr, "coact")),
                              budgets_note="against CoactDetect's budgets, the training rule's anchor",
                              collapsed=fr.get("collapsed"), under_floor=under_floor(fr)))
-    xs = _load(night / "064" / "phase3-3x3" / "cross_stream.json")
     return dict(floor="ADR-0008 per-window floor, bench per ADR-0009", rows=rows,
+                participants=participants_per_level(),
                 cross_stream=dict(chosen=xs["chosen"], rows=xs["rows"],
                                   diagonal_all_reproduce=xs["diagonal_check"]["all_reproduce"]))
 
@@ -206,26 +257,37 @@ def figure1(rep: dict, dest: Path) -> Path:
     fig, axes = plt.subplots(1, 3, figsize=(13, 4.6), sharey=True)
     for ax, stream in zip(axes, STREAMS):
         rs = [r for r in rep["rows"] if r["stream"] == stream]
-        labels, ship, prop, colors = [], [], [], []
+        labels, ship, prop, colors, sci, pci = [], [], [], [], [], []
+        nan2 = [float("nan"), float("nan")]
         for r in rs:
             labels.append(NAME[r["detector"]])
             if r["kind"] == "chorus":
                 ship.append(float("nan"))
+                sci.append(nan2)
                 prop.append(r["fresh"]["f1"])
+                pci.append(r["fresh"].get("ci") or nan2)
                 colors.append("#6b6a64")
             else:
                 ship.append(r["shipped"]["fresh"]["f1"])
+                sci.append(r["shipped"]["fresh"].get("ci") or nan2)
                 p = r.get("proposal")
                 prop.append(p["fresh"]["f1"] if p else float("nan"))
+                pci.append((p["fresh"].get("ci") if p else None) or nan2)
                 colors.append("#1f6fb4" if p and p["adoptable_strict"] else
                               "#c9822a" if p else "#6b6a64")
         y = list(range(len(labels)))[::-1]
-        ax.scatter(ship, y, marker="o", facecolors="none", edgecolors="#1b1b1a", s=46,
-                   label="shipped point", zorder=3)
-        ax.scatter(prop, y, marker="D", c=colors, s=40, zorder=4)
+        # Each point's 95% interval over fresh seeds, the shipped point's a little above its row
+        # and the proposal's a little below, so neither hides the other.
+        for yi, (a0, a1), (b0, b1) in zip(y, sci, pci):
+            ax.plot([a0, a1], [yi + 0.12] * 2, color="#1b1b1a", lw=1, zorder=2)
+            ax.plot([b0, b1], [yi - 0.12] * 2, color="#8a8983", lw=1, zorder=2)
         for yi, a, b in zip(y, ship, prop):
             if math.isfinite(a) and math.isfinite(b):
-                ax.plot([a, b], [yi, yi], color="#b9b8b2", lw=1, zorder=2)
+                ax.plot([a, b], [yi, yi], color="#d8d7d2", lw=1, zorder=1)
+        ax.scatter(prop, [yi - 0.12 for yi in y], marker="D", c=colors, s=40, zorder=4)
+        # The shipped circle is drawn last: where the two sit at the same F1 it stays visible.
+        ax.scatter(ship, [yi + 0.12 for yi in y], marker="o", facecolors="white",
+                   edgecolors="#1b1b1a", s=46, zorder=5)
         ax.set_yticks(y, labels)
         ax.set_xlim(0.6, 0.9)
         ax.set_xlabel(f"{stream} · mean F1, fresh seeds")
@@ -233,11 +295,12 @@ def figure1(rep: dict, dest: Path) -> Path:
         for s_ in ("top", "right"):
             ax.spines[s_].set_visible(False)
     from matplotlib.lines import Line2D
-    handles = [Line2D([], [], marker="o", ls="", mfc="none", mec="#1b1b1a", label="shipped point"),
+    handles = [Line2D([], [], marker="o", ls="", mfc="white", mec="#1b1b1a", label="shipped point"),
+               Line2D([], [], color="#1b1b1a", lw=1, label="95% interval over fresh seeds"),
                Line2D([], [], marker="D", ls="", color="#1f6fb4", label="proposal, adoptable (strict rule)"),
                Line2D([], [], marker="D", ls="", color="#c9822a", label="proposal, not adoptable"),
                Line2D([], [], marker="D", ls="", color="#6b6a64", label="chorus fit the training rule picked")]
-    fig.legend(handles=handles, loc="lower center", ncol=4, frameon=False)
+    fig.legend(handles=handles, loc="lower center", ncol=5, frameon=False)
     fig.tight_layout(rect=(0, 0.08, 1, 1))
     out = dest / "figure1_fresh_f1.png"
     fig.savefig(out, dpi=160)
@@ -253,7 +316,8 @@ def figure2(rep: dict, dest: Path) -> Path:
 
     xs = rep["cross_stream"]
     dets = (*CODED, *CHORUS)
-    fig, axes = plt.subplots(2, 4, figsize=(14, 7.2))
+    fig, axes = plt.subplots(2, 4, figsize=(14, 7.6))
+    im = None
     for ax, det in zip(axes.ravel(), dets):
         m = np.full((3, 3), np.nan)
         for i, tuned in enumerate(STREAMS):
@@ -263,7 +327,7 @@ def figure2(rep: dict, dest: Path) -> Path:
                           and x["scored"] == scored and x["variant"] == variant), None)
                 if r and "mean_f1" in r:
                     m[i, j] = r["mean_f1"]
-        ax.imshow(m, vmin=0.4, vmax=0.9, cmap="Blues")
+        im = ax.imshow(m, vmin=0.4, vmax=0.9, cmap="Blues")
         for i in range(3):
             for j in range(3):
                 if np.isfinite(m[i, j]):
@@ -274,7 +338,9 @@ def figure2(rep: dict, dest: Path) -> Path:
         ax.set_yticks(range(3), STREAMS)
         ax.set_xlabel("scored on (bench)")
         ax.set_ylabel(f"{NAME[det]} · tuned on")
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0, 0.93, 1))
+    cax = fig.add_axes((0.945, 0.15, 0.012, 0.7))
+    fig.colorbar(im, cax=cax, label="mean F1 on fresh seeds (0.4–0.9)")
     out = dest / "figure2_cross_stream.png"
     fig.savefig(out, dpi=160)
     plt.close(fig)
@@ -298,59 +364,108 @@ def _gain(g):
     return f"{g['mid']:+.3f} [{g['lo']:+.3f}, {g['hi']:+.3f}]"
 
 
+BUDGET_NAME = {"probe": "elevated-rate test, inside the stretch",
+               "elevated_out_quiet": "elevated-rate test, outside the stretch",
+               "null": "no-coordination recording",
+               "precision_swing": "precision swing",
+               "crowded": "close-events test"}
+"""The glossary's names for the five budgets (``docs/GLOSSARY.md``: *elevated-rate test* and
+*close-events test* replaced "probe" and "crowded" on 2026-09-21)."""
+
+
 def _bud(b):
     if b is None:
-        return "not measured"
-    ok = all_ok(b)
-    miss = [k for k, v in b.items() if v["ok"] is None]
-    s = "pass" if ok else "**fail: " + ", ".join(failed(b)) + "**"
-    return s + (" (swing not recorded)" if miss else "")
+        return "**not checked**"
+    fails = [BUDGET_NAME.get(k, k) for k, v in b.items() if v["ok"] is False]
+    return "pass" if not fails else "**fail: " + ", ".join(fails) + "**"
 
 
-def _uf(u):
-    q = u["baseline_quiet"]
-    if not q["by_participation"]:
-        return "—"
-    fl = q["floors"]
-    parts = ", ".join(f"{float(k) * 100:.0f}%: {v['under_floor']} under"
-                      for k, v in sorted(q["by_participation"].items(), key=lambda kv: float(kv[0])))
-    return f"floors {fl['min']}–{fl['max']} ROIs; {parts}"
+def _f1(f: dict) -> str:
+    ci = f.get("ci")
+    return f"{f['f1']:.3f}" + (f" [{ci[0]:.3f}, {ci[1]:.3f}]" if ci else "")
+
+
+def _open(p: dict) -> str:
+    return ", ".join(f"`{k}` ({v})" for k, v in p["open_axes"].items())
 
 
 def table(rep: dict) -> str:
-    head = ("| stream | detector | shipped → proposal (settings that change) | held-out gain [95%] | "
-            "fresh F1 as scored / without decoys | budgets: selection · held-out · fresh | "
-            "bracketed (strict) | bracketed if a limit counts | adoptable (strict) | "
-            "planted events under the floor (quiet, fresh seeds) |\n"
-            "|---|---|---|---|---|---|---|---|---|---|\n")
+    """The decision table: one row per detector × stream."""
+    head = ("| stream | detector | settings that change, shipped → proposal | "
+            "held-out gain in F1 [95% interval] | fresh F1, shipped → proposal [95% interval] | "
+            "fresh F1 without decoy calls, shipped → proposal | bracketed (strict) | "
+            "bracketed if a limit counts | adoptable (strict) |\n"
+            "|---|---|---|---|---|---|---|---|---|\n")
     lines = []
     for r in rep["rows"]:
+        name = NAME[r["detector"]]
         if r["kind"] == "chorus":
-            b = r["budgets"]["fresh"]
-            lines.append(
-                f"| {r['stream']} | {NAME[r['detector']]} | picked {r['picked'].split('_')[-1].replace('.json', '')} "
-                f"| — | {r['fresh']['f1']:.3f} / {r['fresh']['f1_without_decoys']:.3f} | "
-                f"— · — · {_bud(b)} (CoactDetect's budgets) | — | — | — | {_uf(r['under_floor'])} |")
+            seed = r["picked"].split("_")[-1].replace(".json", "").replace("seed", "training seed ")
+            lines.append(f"| {r['stream']} | {name} | the fit the training rule picked ({seed}) | — | "
+                         f"{_f1(r['fresh'])} | {r['fresh']['f1_without_decoys']:.3f} | — | — | — |")
             continue
-        p = r.get("proposal")
-        sb = r["shipped"]["budgets"]
+        s, p = r["shipped"], r.get("proposal")
         if not p:
-            lines.append(
-                f"| {r['stream']} | {NAME[r['detector']]} | shipped; no proposal | — | "
-                f"{r['shipped']['fresh']['f1']:.3f} / {r['shipped']['fresh']['f1_without_decoys']:.3f} | "
-                f"{_bud(sb['selection'])} · {_bud(sb['held_out'])} · {_bud(sb['fresh'])} | — | — | — | "
-                f"{_uf(r['under_floor'])} |")
+            lines.append(f"| {r['stream']} | {name} | none (no proposal) | — | {_f1(s['fresh'])} | "
+                         f"{s['fresh']['f1_without_decoys']:.3f} | — | — | — |")
             continue
         ch = "; ".join(f"`{k}` {_v(a)} → {_v(b)}" for k, (a, b) in p["changed"].items())
-        ob = ", ".join(f"{k} ({v})" for k, v in p["open_axes"].items()) or "all interior"
+        anchor = ("" if p["held_out_anchor"] == "the shipped point"
+                  else f" (against {p['held_out_anchor']})")
         lines.append(
-            f"| {r['stream']} | {NAME[r['detector']]} | {p['name']}: {ch} | {_gain(p['held_out_gain'])} | "
-            f"{r['shipped']['fresh']['f1']:.3f} → **{p['fresh']['f1']:.3f}** / "
-            f"{p['fresh']['f1_without_decoys']:.3f} | {_bud(p['budgets']['selection'])} · "
-            f"{_bud(p['budgets']['held_out'])} · {_bud(p['budgets']['fresh'])} | "
-            f"{'yes' if p['bracketed_strict'] else 'no: ' + ob} | "
+            f"| {r['stream']} | {name} | {ch} | {_gain(p['held_out_gain'])}{anchor} | "
+            f"{_f1(s['fresh'])} → {_f1(p['fresh'])} | "
+            f"{s['fresh']['f1_without_decoys']:.3f} → {p['fresh']['f1_without_decoys']:.3f} | "
+            f"{'yes' if p['bracketed_strict'] else 'no: ' + _open(p)} | "
             f"{'yes' if p['bracketed_if_limit_counts'] else 'no'} | "
-            f"{'**yes**' if p['adoptable_strict'] else 'no'} | {_uf(p['under_floor'])} |")
+            f"{'**yes**' if p['adoptable_strict'] else 'no'} |")
+    return head + "\n".join(lines) + "\n"
+
+
+def budget_table(rep: dict) -> str:
+    """Every budget, for the shipped point and the proposal, on each seed set."""
+    head = ("| stream | detector | version | selection seeds 1–48 | held-out seeds 49–96 | "
+            "fresh seeds 6000–6023 |\n|---|---|---|---|---|---|\n")
+    lines = []
+    for r in rep["rows"]:
+        name = NAME[r["detector"]]
+        if r["kind"] == "chorus":
+            lines.append(f"| {r['stream']} | {name} | picked fit | not run | not run | "
+                         f"{_bud(r['budgets']['fresh'])} (CoactDetect's limits) |")
+            continue
+        sliding = (r.get("proposal") or {}).get("held_out_anchor", "the shipped point") \
+            != "the shipped point" or r["stream"] == "fast" and r["detector"] in ("coact", "loco")
+        for label, v in (("shipped", r["shipped"]), ("proposal", r.get("proposal"))):
+            if v is None:
+                continue
+            b = v["budgets"]
+            # Under --sliding, fast CoactDetect and LoCo were searched from the shipped values in
+            # their sliding form, while fast ships them binned: the selection and held-out shipped
+            # rows, and the held-out close-events reference, are that sliding point's.
+            note = (" (the sliding starting point)" if label == "shipped" else
+                    " (close-events against the sliding starting point)") if sliding else ""
+            lines.append(f"| {r['stream']} | {name} | {label} | {_bud(b['selection'])} | "
+                         f"{_bud(b['held_out'])}{note} | {_bud(b['fresh'])} |")
+    return head + "\n".join(lines) + "\n"
+
+
+def floor_table(rep: dict) -> str:
+    """Planted events under the floor on the fresh seeds, per stream and background — a property
+    of the bench, not of a detector, so one row per stream rather than one per detector."""
+    head = ("| stream | background | floors (co-active ROIs) | planted events under the floor, "
+            "by participation level (of 120 per level: 24 recordings × 5 events) |\n"
+            "|---|---|---|---|\n")
+    lines = []
+    for stream in STREAMS:
+        r = next(x for x in rep["rows"] if x["stream"] == stream and x["kind"] == "coded")
+        parts = rep["participants"][stream]
+        for reg, lab in (("baseline_quiet", "quiet"), ("baseline_busy", "busy")):
+            u = r["under_floor"][reg]
+            fl = u["floors"]
+            by = sorted(u["by_participation"].items(), key=lambda kv: float(kv[0]))
+            cells = ", ".join(f"{float(k) * 100:.0f}% ({parts.get(k, '?')} ROIs): "
+                              f"{v['under_floor']}" for k, v in by)
+            lines.append(f"| {stream} | {lab} | {fl['min']}–{fl['max']} | {cells} |")
     return head + "\n".join(lines) + "\n"
 
 
@@ -374,25 +489,28 @@ def main(argv=None) -> int:
     rep = build(a.night)
     (a.out / "adoption.json").write_text(json.dumps(rep, indent=1, default=float) + "\n",
                                          encoding="utf-8")
-    (a.out / "adoption_table.md").write_text(table(rep), encoding="utf-8")
+    tables = {"adoption-table": table(rep), "budget-table": budget_table(rep),
+              "floor-table": floor_table(rep)}
+    (a.out / "adoption_table.md").write_text("\n".join(tables.values()), encoding="utf-8")
     written = [a.out / "adoption.json", a.out / "adoption_table.md", figure1(rep, a.out),
                figure2(rep, a.out)]
     if a.also:
         a.also.mkdir(parents=True, exist_ok=True)
         for p in written:
             shutil.copy2(p, a.also / p.name)
-    # The README carries the table between two markers, written here so the page and
+    # The README carries each table between two markers, written here so the page and
     # adoption_table.md cannot disagree. Then the page itself goes to the darkroom beside the rest.
     for folder in [x for x in (a.also, a.out) if x]:
         readme = folder / "README.md"
         if readme.exists():
             text = readme.read_text(encoding="utf-8")
-            start, end = "<!-- adoption-table:start", "<!-- adoption-table:end -->"
-            i, j = text.find(start), text.find(end)
-            if i >= 0 and j > i:
-                head = text[:text.index("\n", i) + 1]
-                readme.write_text(head + table(rep) + text[j:], encoding="utf-8")
-                print(f"wrote the table into {readme}")
+            for name, body in tables.items():
+                start, end = f"<!-- {name}:start", f"<!-- {name}:end -->"
+                i, j = text.find(start), text.find(end)
+                if i >= 0 and j > i:
+                    text = text[:text.index("\n", i) + 1] + body + text[j:]
+            readme.write_text(text, encoding="utf-8")
+            print(f"wrote the tables into {readme}")
     if a.also and (a.also / "README.md").exists():
         shutil.copy2(a.also / "README.md", a.out / "README.md")
     for p in written:

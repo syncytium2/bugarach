@@ -38,7 +38,9 @@ resampled with replacement, scores pooled, the mean over the two backgrounds tak
 The diagonal (a version scored on its own bench) must reproduce ``candidates.json`` exactly, and
 ``diagonal_check`` in the output says whether it does.
 
-**Floor: pre-ADR-0008**, as the versions were tuned (``min_rois`` never below 3).
+**Floor:** without ``--candidates``, pre-ADR-0008, as last night's versions were tuned (``min_rois``
+never below 3). With it, the records' own ``floor`` label, which since 2026-09-25 is "ADR-0008
+per-window floor, bench per ADR-0009": every version runs at the scored recording's own floor.
 """
 from __future__ import annotations
 

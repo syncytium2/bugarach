@@ -45,14 +45,15 @@ three benches, and chorus was retrained, with each recording's own floor setting
 minimum. **Nothing is adopted.**
 
 - **Adoptable under the runbook's strict rule:** binned SCE on fast; binned SCE, rate+context and
-  SPIKE-synch on combined. Each has a held-out gain interval above zero, passes every budget on
-  selection, held-out and fresh seeds, and is bracketed.
+  SPIKE-synch on combined. Each has a held-out gain interval above zero, passes every budget that was
+  checked on the selection, held-out and fresh seeds, and is bracketed. The held-out seeds also
+  picked among the search's final candidates, so the fresh seeds are the independent check.
 - **Held back on bracketing only:** five proposals, among them locust on all three streams (+0.036
   to +0.102), which sit at a value that cannot go further. Whether that counts as bracketed is
   Tony's.
 - **Four shipped points are out of budget** under the floor: SPIKE-synch and rate+context on fast,
   locust on slow, and rate+context on combined.
-- **Waits on Tony:** the report's six items, listed in the table below.
+- **Waits on Tony:** the adoption itself and the report's seven rulings, listed in the table below.
 
 **2026-09-24, evening: the rulings for final parameters are made, and the night is planned.**
 [ADR-0009](../adr/0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md)
@@ -164,7 +165,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 
 | decision | why it gates the goal | filed |
 |---|---|---|
-| **The final-parameters night's six items** (2026-09-25): whether a value at a hard limit counts as bracketed; four shipped points out of budget under the floor; CoactDetect's `alpha` at the extension cap; fast LoCo's context below the 20 s grid; the guard cap removing 8 s guards; most of the lowest planted level under the floor on fast and combined | They decide which of the night's proposals can be adopted, and whether the budgets and the bench still say what they were set to say | [report, *What waits on Tony*](../learned/runs/2026-09-25-final-parameters/README.md#what-waits-on-tony) |
+| **The final-parameters night's decisions** (2026-09-25): adopt the four strictly adoptable proposals; whether a value at a hard limit counts as bracketed; four shipped points out of budget under the floor, perhaps because of it; CoactDetect's `alpha` at the extension cap; whether a context may be shorter than 20 s; the guard cap; all of the lowest planted level, and on busy recordings part of the middle one, under the floor on fast and combined; per-stream tuning when a combined-tuned setting scores higher | They decide which of the night's proposals can be adopted, and whether the budgets and the bench still say what they were set to say | [report, *What waits on Tony*](../learned/runs/2026-09-25-final-parameters/README.md) |
 | **Binned SCE at 98 or at 75** — 98 gives mean F1 0.525 at 3.4 calls an hour on an empty recording; 75 gives 0.665 at 41.8, against a declared limit of 6. The F1 optimum is excluded by the budget, not by noise | Decides whether the budget or the score is the binding constraint, for every detector and not only this one | [todo](../todo/2026-09-16-binned-sce-trades-false-alarms-for-f1.md) |
 | **How the promiscuity probe enters the score** — two live rules pick opposite winners for the rate detector | [`MILESTONES.md`](../MILESTONES.md) lists it as blocking the re-fit; waiting since 2026-08-25 | [todo](../todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md) |
 | **locust's anchor** — the half-rise in Python, the peak in the browser, and the width now painted forward from it | Two surfaces answer the same question differently, and the retune's locust numbers rest on one of them | [todo](../todo/2026-09-16-locust-anchor-and-the-panel-viewer.md) |
