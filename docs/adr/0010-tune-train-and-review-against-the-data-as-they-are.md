@@ -259,6 +259,16 @@ Unsettled, they would leave the run ending on the same list:
    - No value at an off-limit is adopted as a tuned value under this record.
 6. **CoactDetect's `alpha`**, which ran to the extension cap (1e-9) on fast and combined: take it
    out of the search, fix its value, or raise the cap.
+   **Ruled 2026-09-25 by Tony: raise the cap, and read a pegged value as a finding.** `alpha` is a
+   cutoff in standard deviations of a normal approximation: 1.4e-9 is about 6. With combined's
+   3 s window it demands at least 6 co-active cells on quiet recordings, where the floor (6–7)
+   already decides, and 13 on busy ones. So it works as a second participation floor that rises
+   with the rate.
+   - **Tonight** the cap is raised to about 8 standard deviations (`alpha` about 6e-16).
+   - **In the morning**, if the search settles below the new cap, that value is `alpha`'s tuned
+     value. If it runs to the cap again, the report compares the cells per call `alpha` demands on
+     busy recordings with the floor, and the fix goes to the floor in its own record, not to
+     `alpha`. Ruling 5's rule applies: no value at a cap is adopted as a tuned value.
 7. **Contexts shorter than 20 s**, which fast LoCo's search reached by extension (5 s): allow them,
    or make 20 s the floor of the grid.
 8. **The guard cap** (a guard at most a quarter of its context), which now reaches LoCo too:
