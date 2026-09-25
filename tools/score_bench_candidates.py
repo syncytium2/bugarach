@@ -64,6 +64,13 @@ def proposal(search: dict, det: str = "coact") -> tuple[str, dict, dict]:
     return best[0], dict(best[1]["params"]), best[1]
 
 
+def load_search(phase2: Path, pattern: str, bench: str, det: str) -> dict:
+    """The search record that holds ``det`` on ``bench``: one folder per bench, or, when the
+    pattern names ``{det}``, one folder per detector (a search run with ``--only``)."""
+    return json.loads((phase2 / pattern.format(bench=bench, det=det) / "search.json")
+                      .read_text(encoding="utf-8"))
+
+
 def bracketing_of(search: dict, det: str, name: str) -> dict:
     """The search's bracketing verdict for one candidate. A search that predates the record
     (before 2026-09-25) cannot say, and is reported as unknown, never as bracketed."""
@@ -147,20 +154,24 @@ def main(argv=None) -> int:
     ap.add_argument("--detectors", nargs="+", default=["coact"], choices=CODED,
                     help="coded detectors to score, shipped and proposal (default coact)")
     ap.add_argument("--search", default="search-coact-{bench}",
-                    help="each bench's search folder under --phase2, {bench} filled in")
+                    help="each bench's search folder under --phase2, {bench} filled in; with {det} "
+                         "in it, one search per detector (search_all_settings.py --only)")
+    ap.add_argument("--benches", nargs="+", default=list(BENCHES), choices=list(BENCHES),
+                    help="which benches to score (default all three)")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
 
     from bugarach.bench import pool_scores
 
     cands, meta = [], {}
-    for bench, mod in BENCHES.items():
-        b = importlib.import_module(mod)
+    for bench in a.benches:
+        b = importlib.import_module(BENCHES[bench])
         budget = float(b.MAX_FALSE_POSITIVES_PER_HOUR["coact"])
-        search = json.loads((a.phase2 / a.search.format(bench=bench) / "search.json").read_text())
-        meta[bench] = dict(budget_null_per_hour=budget,
-                           search_elapsed_min=search.get("elapsed_min"), chorus={}, detectors={})
+        meta[bench] = dict(budget_null_per_hour=budget, search_elapsed_min={}, chorus={},
+                           detectors={})
         for det in a.detectors:
+            search = load_search(a.phase2, a.search, bench, det)
+            meta[bench]["search_elapsed_min"][det] = search.get("elapsed_min")
             pname, pparams, prow = proposal(search, det)
             shipped = dict(b.OPERATING_POINTS[det].params)
             br = bracketing_of(search, det, pname)
