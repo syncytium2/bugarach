@@ -107,6 +107,11 @@ from bugarach.bench import (BACKGROUND_GRID, BACKGROUND_TOLERABLE_SPREAD,
                             describe_background, evaluate,
                             evaluate_background_curve)
 
+# Pre-ADR-0008 by construction: these pin measurements taken before the floor, or exercise detector
+# mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
+pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench")
+
+
 SEEDS = tuple(range(1, 13))
 REGIME = "baseline_quiet"
 
