@@ -21,7 +21,7 @@ floor, overall and **by participation level**: under ADR-0009 decision 2 those a
 neither hit nor miss.
 
 **The stop rule is printed, not decided here.** Phase 0 step 7 of
-``HANDOFF-overnight-final-parameters.md``: outside ADR-0009's expected ranges, or the middle planted
+``docs/handoffs/2026-09-25-overnight-final-parameters.md``: outside ADR-0009's expected ranges, or the middle planted
 level mostly under the floor on quiet recordings, goes to Tony before anything else runs.
 
 It measures and decides nothing. Floors are the ones each recording carries
