@@ -2,9 +2,9 @@
 
 ## Status
 
-**Proposed**, 2026-09-25. Drafted by the orchestrator at Tony's request (*"agree, draft one ADR
-covering all of it"*), after the morning review of the final-parameters night. It becomes
-Accepted when Tony rules on the open points at the end of this record.
+**Accepted**, 2026-09-25, once Tony had ruled on all eight open points, one at a time. The rulings
+are recorded at the end of this record. Drafted by the orchestrator at Tony's request (*"agree,
+draft one ADR covering all of it"*), after the morning review of the final-parameters night.
 
 **One record, six parts, on purpose.** This directory's convention is one decision per file. Tony
 asked for one record because the parts are one decision: stop measuring detectors on a bench and
@@ -68,6 +68,18 @@ cost a miss, but only if two events are ever close enough to merge.
 Two of these diagnosis numbers are measured through CoactDetect. Gaps between merged stripes are
 capped by the call's width, 28 s at most. Gaps between calls are counted after merging. A
 detector-free measurement is still needed (part 2).
+
+**Measured since, without a detector** ([run record](../learned/runs/2026-09-25-real-intervals/README.md)):
+gaps between coordinated events in the baseline windows of the 66 recordings, per stream.
+
+| Stream | Median gap | 5th–95th percentile | Gaps under 10 s | Gaps under 120 s | Events per hour |
+|---|---|---|---|---|---|
+| fast | 41.3 s | 3.8–368 s | 16% | 76% | 9.7 |
+| slow | 25.1 s | 7.1–171 s | 13% | 92% | 22.0 |
+| combined | 24.8 s | 6.2–212 s | 15% | 89% | 25.3 |
+
+So at least three in four real gaps are shorter than the bench's shortest, and about one in seven is
+under 10 s. The groups differ mainly in events per hour, and slow ORX also in spacing (ruling 1).
 
 **The same detector merges on one recording and separates on another.** Tony, on the review page
 DI · senktide · combined: on 20250925_231 (20 ROIs) CoactDetect joins two distinct stripes into one
@@ -207,7 +219,7 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
   A full coded search took about 35 minutes per machine on 2026-09-25, running one process per
   detector, and a learned fit takes seconds on the GPU. So the panel fits in one night.
 
-## Open for Tony before acceptance
+## Rulings at acceptance
 
 1. **Pooling groups. Ruled 2026-09-25 by Tony: pool, and check ORX.** Each stream's generator
    draws from the pooled baseline gaps of all four groups. The measurement
@@ -283,6 +295,9 @@ Unsettled, they would leave the run ending on the same list:
      ruling 5. Whether LoCo keeps the setting at all is decided later.
 8. **The guard cap** (a guard at most a quarter of its context), which now reaches LoCo too:
    confirm it.
+   **Ruled 2026-09-25 by Tony: confirmed.** A guard is at most a quarter of its context window, for
+   every detector with a guard, LoCo included. With ruling 7's shortest context of 20 s, the
+   smallest cap is 5 s. A guard that settles at 0 on the realistic bench falls under ruling 5.
 
 ## References
 
