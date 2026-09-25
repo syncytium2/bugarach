@@ -19,6 +19,44 @@ def test_participants_are_rois_with_an_onset_in_the_call_widened_to_two_seconds(
     assert d.participants(trains, 10.0, 3.5, 2.0) == 4
 
 
+def test_the_microscope_comes_from_the_recording_not_the_settings():
+    from bugarach.detect_folder import with_microscope
+
+    bench = {"excess_threshold_hz": 4.5, "grid_dt": 0.1}
+    got = with_microscope("rate", bench, 0.25)
+    assert got["grid_dt"] == 0.25 and bench["grid_dt"] == 0.1      # a new dict
+    assert with_microscope("rate", {"excess_threshold_hz": 4.5}, 0.25)["grid_dt"] == 0.25
+    assert with_microscope("cicada", {"imaging_rate_hz": 10.0}, 0.25)["imaging_rate_hz"] == 4.0
+    assert with_microscope("coact", {"alpha": 1e-4}, 0.25) == {"alpha": 1e-4}
+
+
+def test_every_coded_detector_runs_on_a_recording_whose_settings_carry_no_microscope(monkeypatch):
+    """The 2026-09-25 real-data run failed on all 66 recordings: rate+context's settings came
+    from a search without ``grid_dt``, and this tool had only ever run CoactDetect."""
+    from types import SimpleNamespace
+
+    import bugarach.detect_folder as df
+    import bugarach.io as bio
+    from bugarach import bench_slow
+
+    s, _ = bench_slow.make_recording("baseline_quiet", 1)
+    s.meta = {"group_id": "DI", "subject_id": "m1"}
+    win = SimpleNamespace(win_start=0.0, win_end=900.0, label="baseline", slot=1)
+    monkeypatch.setattr(bio, "load_folder", lambda folder: [s])
+    monkeypatch.setattr(df, "folder_analysis_windows", lambda rec: (rec, [win]))
+    # A simulated recording names its one stream bench.STREAM ("events"); a folder names it.
+    stream = "slow"
+    s.streams[stream] = s.streams.pop(bench_slow.STREAM)
+    settings = {stream: {}}
+    for det, op in bench_slow.OPERATING_POINTS.items():
+        p = {k: v for k, v in op.params.items() if k not in ("grid_dt", "imaging_rate_hz")}
+        settings[stream][det] = p
+    out = d.recording_task((0, "unused", settings, {}, 20))
+    assert out["ok"], out.get("error")
+    ran = {r["detector"] for r in out["rows"] if r["stream"] == stream}
+    assert ran == set(bench_slow.OPERATING_POINTS)
+
+
 def test_baseline_is_read_from_the_label():
     assert d.is_baseline("baseline") and d.is_baseline(" Baseline 2")
     assert not d.is_baseline("senktide") and not d.is_baseline(None)

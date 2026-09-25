@@ -484,6 +484,17 @@ def detector_params(name: str, *, frame_interval_sec: float,
     for key in ("", stream) if stream is not None else ("",):
         params.update((overrides or {}).get((name, key), {}))
     # AFTER the overrides, deliberately — see the docstring.
+    return with_microscope(name, params, frame_interval_sec)
+
+
+def with_microscope(name: str, params: dict, frame_interval_sec: float) -> dict:
+    """``params`` with the values that belong to the recording's microscope, not the calibration:
+    rate+context's ``grid_dt`` and locust's ``imaging_rate_hz`` (see :func:`detector_params`).
+
+    Applied last, over any setting, by every path that runs a detector on real recordings with
+    settings from elsewhere (``detector_params``, ``tools/detect_with_floors.py``), so no bench
+    grid or rig rate reaches a real recording. Returns a new dict."""
+    params = dict(params)
     if name == "rate":
         params["grid_dt"] = float(frame_interval_sec)
     elif name == "cicada":
