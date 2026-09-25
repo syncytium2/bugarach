@@ -58,7 +58,7 @@ def test_the_simulation_parameters(text):
         assert rec["n_distractors"] == 6
     assert "32 ROIs" in text and "lasts 45 min" in text and "six decoys" in text
     counts = [sum(bench.realistic_counts(s, 3, 2700.0)) for s in mods]
-    assert "(fast {}, slow {}, combined {})".format(*counts) in text
+    assert "(fast {} events, slow {}, combined {})".format(*counts) in text
 
 
 def test_the_measured_intervals(text):

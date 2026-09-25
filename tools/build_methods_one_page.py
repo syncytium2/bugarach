@@ -6,9 +6,9 @@
 The source is `docs/methods/one_page/methods_one_page.html`, written by hand; its numbers are
 pinned to the code by `tests/test_methods_one_page_numbers.py`. This tool prints it to PDF with
 headless Chromium and then checks what Tony asked for: the methods text on page 1 and the
-references alone on page 2 (2026-09-25). The page was built with under 2 pt to spare, and a
-single added line silently moved the references to page 3 in the review's spill test, so the
-check is part of the build rather than something to remember.
+references alone on page 2 (2026-09-25). The page runs within a line of full, and during its
+review two edits pushed the methods onto page 2 and the references to page 3 with no error from
+Chromium, so the check is part of the build rather than something to remember.
 
 The destination defaults to the darkroom (sapper SAP006); `--also` writes the repo copy that
 review and git history need. The author field is stamped when PyMuPDF is importable, because
