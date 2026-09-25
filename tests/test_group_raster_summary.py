@@ -296,3 +296,25 @@ def test_the_combined_page_draws_fast_in_the_raster_ink_and_slow_in_the_second(t
 def test_without_combined_there_is_no_combined_page(tmp_path):
     pages, _, _ = mod.measure(_folder(tmp_path), ("TTX",))
     assert not any(k[2] == "combined" for k in pages)
+
+
+def test_a_variant_lane_takes_its_detectors_colour_and_plus_one_is_lighter():
+    base = mod.LANE_COLORS["coact"]
+    assert mod.lane_color("coact · floor") == base
+    plus = mod.lane_color("coact · floor+1")
+    assert plus != base and plus.startswith("#") and len(plus) == 7
+    assert sum(int(plus[i:i + 2], 16) for i in (1, 3, 5)) > sum(
+        int(base[i:i + 2], 16) for i in (1, 3, 5))                  # lighter
+    assert mod.lane_color("chorus_norm · floor") == mod.LANE_COLORS["chorus_norm"]
+    assert mod.lane_color("coact") == base
+
+
+def test_the_floors_come_from_detect_with_floors_results(tmp_path):
+    import json
+
+    p = tmp_path / "results.json"
+    p.write_text(json.dumps({"floors": {"s1": {"1|fast": {"floor": 7}, "2|fast": {"floor": 9},
+                                               "2|slow": None}}}))
+    got = mod.read_floors(p)
+    assert got[("s1", "1", "fast")] == 7 and got[("s1", "2", "fast")] == 9
+    assert got[("s1", "2", "slow")] is None

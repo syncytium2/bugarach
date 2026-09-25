@@ -10,6 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/floor-plus-one-variant — DARKROOM claim: `bugarach/2026-09-25-floor-plus-one-review/` (NEW)
+- **Status:** claimed 2026-09-25 ~11:00 UTC, before writing, by WSMIP065 at the orchestrator's
+  request (Tony weighing the event floor + 1): `run/` (detect_with_floors with `--floor-offset 1`,
+  CoactDetect shipped and both chorus picks, on the default dataset), `pages/<stream>/` and
+  `SUMMARY.md`. Evidence for a decision; nothing adopted. Released by the merge of the PR that
+  carries the summary.
+- **Touches:** that folder only.
+
 ### orchestrator/overnight-final-parameters — DARKROOM claim: `bugarach/2026-09-25-final-parameters/` (NEW)
 - **Status:** claimed 2026-09-25 01:50 UTC, before any session writes, by the orchestrator of the
   night in `docs/handoffs/2026-09-25-overnight-final-parameters.md`. Workers: WSMIP065 builds PR A (the bench,

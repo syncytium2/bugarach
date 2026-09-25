@@ -27,6 +27,11 @@ events: ``max(3, chance floor)`` at 1 call per hour, *J* = 20 s, 1,000 draws. A 
 the shift can take (under 2*J* + 2 s) has no floor, and its floored rows are left empty rather than
 filled with a default. On a baseline window the two floors are the same number.
 
+**``--floor-offset N``** adds a variant ``own_plus_N``: the window's own floor raised by N co-active
+ROIs, run and kept by the same rule as the other two. It is evidence for a decision (Tony,
+2026-09-25, weighing floor + 1 for how confidently people call events near the floor), not
+ADR-0008's rule, and the default output does not change.
+
 **What it writes** (``--out``): ``calls.csv`` (one row per call), ``windows.csv`` (one row per
 recording × window × stream × detector × variant: floors, calls, calls per hour),
 ``results.json`` (the dataset stamp, settings, and the group summaries in ``bugarach.groups``
@@ -90,8 +95,18 @@ def participants(trains_sec, onset: float, width: float, min_span: float) -> int
     return int(sum(np.any((t >= onset) & (t <= hi)) for t in trains_sec))
 
 
+def plus_variant(offset: int) -> str | None:
+    """The variant name for the window's own floor raised by ``offset`` co-active ROIs, or
+    ``None`` when there is no offset. Evidence for a decision, not a rule: ADR-0008's floor is
+    ``own_floor``, and this runs beside it (Tony, 2026-09-25, weighing floor + 1)."""
+    return f"own_plus_{int(offset)}" if offset else None
+
+
 def recording_task(args):
-    i, folder, settings, model_paths, draws = args
+    i, folder, settings, model_paths, draws, *rest = args
+    offset = int(rest[0]) if rest else 0
+    plus = plus_variant(offset)
+    variants = VARIANTS + ((plus,) if plus else ())
     from bugarach import event_floor as ef
     from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detect_folder import _region_index, folder_analysis_windows, with_microscope
@@ -170,6 +185,8 @@ def recording_task(args):
                 fl = dict(own_floor=pair["own"] if pair else (own.floor if own else None),
                           baseline_floor=pair["baseline"] if pair else
                           (base.floor if base else None))
+                if plus:
+                    fl[plus] = None if fl["own_floor"] is None else fl["own_floor"] + offset
                 common = dict(**head, region_idx=idx, label=label,
                               window_kind="baseline" if is_baseline(label) else "treatment",
                               stream=sname, win_start=lo, win_end=hi, hours=hours,
@@ -178,7 +195,7 @@ def recording_task(args):
                               own_floor_stable=own.stable if own else None)
                 for det_name, params in settings[sname].items():
                     params = {k: v for k, v in params.items() if k != FLOORED.get(det_name)}
-                    for variant in VARIANTS:
+                    for variant in variants:
                         k = fl[variant]
                         if k is None:
                             rows.append(dict(common, detector=det_name, variant=variant,
@@ -226,8 +243,7 @@ def recording_task(args):
                         calls.append(dict(common, detector=det_name, variant="unfloored",
                                           onset_sec=float(a_), width_sec=float(b_),
                                           participants=int(p)))
-                    for variant, k in (("unfloored", 0), ("own_floor", fl["own_floor"]),
-                                       ("baseline_floor", fl["baseline_floor"])):
+                    for variant, k in (("unfloored", 0), *((v, fl[v]) for v in variants)):
                         n = None if k is None else int(sum(p >= k for p in parts))
                         rows.append(dict(common, detector=det_name, variant=variant,
                                          min_participants=k, n_calls=n,
@@ -271,8 +287,13 @@ def main(argv=None) -> int:
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--draws", type=int, default=1000)
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--floor-offset", type=int, default=0,
+                    help="also score every window at its own floor raised by this many co-active "
+                         "ROIs, as the variant own_plus_<N> (default 0: no extra variant). "
+                         "Evidence for a decision, not ADR-0008's rule")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
+    plus = plus_variant(a.floor_offset)
 
     from bugarach import dataset
     from bugarach.groups import in_group_order
@@ -302,22 +323,23 @@ def main(argv=None) -> int:
     t0 = time.time()
     with mp.Pool(a.workers) as pool:
         recs = pool.map(recording_task,
-                        [(i, str(folder), settings, model_paths, a.draws) for i in range(n)])
+                        [(i, str(folder), settings, model_paths, a.draws, a.floor_offset)
+                         for i in range(n)])
     rows = [r for rec in recs for r in rec["rows"]]
     calls = [c for rec in recs for c in rec["calls"]]
     failed = [dict(slice_id=r["slice_id"], error=r["error"]) for r in recs if not r["ok"]]
     groups = in_group_order(r["group"] for r in recs if r.get("group"))
     fields = ["slice_id", "group", "mouse", "region_idx", "label", "window_kind", "stream",
               "detector", "variant", "min_participants", "n_calls", "calls_per_hour", "hours",
-              "n_roi", "own_floor", "baseline_floor", "own_chance_floor", "own_floor_stable",
-              "win_start", "win_end"]
+              "n_roi", "own_floor", "baseline_floor", *((plus,) if plus else ()),
+              "own_chance_floor", "own_floor_stable", "win_start", "win_end"]
     with (a.out / "windows.csv").open("w", newline="", encoding="utf-8") as fh:
         wr = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore")
         wr.writeheader()
         wr.writerows(rows)
     cfields = ["slice_id", "group", "region_idx", "label", "window_kind", "stream", "detector",
                "variant", "onset_sec", "width_sec", "participants", "own_floor",
-               "baseline_floor"]
+               "baseline_floor", *((plus,) if plus else ())]
     with (a.out / "calls.csv").open("w", newline="", encoding="utf-8") as fh:
         wr = csv.DictWriter(fh, fieldnames=cfields, extrasaction="ignore")
         wr.writeheader()
@@ -327,6 +349,7 @@ def main(argv=None) -> int:
                floor=FLOOR_LABEL + ": every window under its own floor and its recording's "
                      "baseline floor (event_floor.treatment_floors); chorus also 'unfloored'",
                participants_rule="ROIs with an onset in [onset, onset + max(width, 2 s)]",
+               floor_offset=a.floor_offset, offset_variant=plus,
                summary=summarise(rows, groups),
                floors={rec["slice_id"]: rec["floors"] for rec in recs})
     (a.out / "results.json").write_text(json.dumps(res, indent=1, default=float) + "\n")

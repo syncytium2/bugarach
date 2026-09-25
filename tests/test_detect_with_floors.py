@@ -10,6 +10,76 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import detect_with_floors as d  # noqa: E402
 
 
+def _one_recording(monkeypatch, windows):
+    """A simulated slow recording standing in for the folder, with the given windows."""
+    from types import SimpleNamespace
+
+    import bugarach.detect_folder as df
+    import bugarach.io as bio
+    from bugarach import bench_slow
+
+    s, _ = bench_slow.make_recording("baseline_quiet", 1)
+    s.meta = {"group_id": "DI", "subject_id": "m1"}
+    s.streams["slow"] = s.streams.pop(bench_slow.STREAM)
+    wins = [SimpleNamespace(win_start=a, win_end=b, label=lab, slot=i + 1)
+            for i, (a, b, lab) in enumerate(windows)]
+    monkeypatch.setattr(bio, "load_folder", lambda folder: [s])
+    monkeypatch.setattr(df, "folder_analysis_windows", lambda rec: (rec, wins))
+    return bench_slow
+
+
+def test_the_default_run_has_no_floor_plus_variant(monkeypatch):
+    b = _one_recording(monkeypatch, [(0.0, 900.0, "baseline")])
+    settings = {"slow": {"coact": dict(b.OPERATING_POINTS["coact"].params)}}
+    out = d.recording_task((0, "unused", settings, {}, 20))
+    assert out["ok"], out.get("error")
+    assert {r["variant"] for r in out["rows"]} == {"own_floor", "baseline_floor"}
+    assert d.plus_variant(0) is None
+
+
+def test_floor_plus_one_runs_coact_one_roi_higher_and_never_keeps_more(monkeypatch):
+    """Tony, 2026-09-25, weighing floor + 1: CoactDetect runs at min_rois = own + 1, and a
+    stricter floor can only keep fewer calls in a window."""
+    b = _one_recording(monkeypatch, [(0.0, 1300.0, "baseline"), (1300.0, 2600.0, "TTX")])
+    settings = {"slow": {"coact": dict(b.OPERATING_POINTS["coact"].params)}}
+    out = d.recording_task((0, "unused", settings, {}, 20, 1))
+    assert out["ok"], out.get("error")
+    rows = {(r["region_idx"], r["variant"]): r for r in out["rows"]}
+    for idx in (1, 2):
+        own, plus = rows[(idx, "own_floor")], rows[(idx, "own_plus_1")]
+        assert plus["min_participants"] == own["min_participants"] + 1
+        assert plus["n_calls"] <= own["n_calls"]
+        assert plus["own_plus_1"] == own["own_floor"] + 1
+    assert all(c["participants"] >= c["own_plus_1"] for c in out["calls"]
+               if c["variant"] == "own_plus_1")
+
+
+def test_chorus_is_counted_at_own_plus_one_by_its_calls_participants(monkeypatch):
+    """Chorus has no participation parameter: a floor keeps the calls whose participants reach
+    it, so floor + 1 counts the calls reaching own + 1. A stand-in model calls every onset
+    time of the busiest ROI, so the participants vary from call to call."""
+    from types import SimpleNamespace
+
+    b = _one_recording(monkeypatch, [(0.0, 900.0, "baseline")])
+
+    class Model:
+        def predict(self, s, stream, extent):
+            t = np.concatenate([np.asarray(x, float) for x in s.streams[stream].t50rise])
+            t = np.sort(t[(t >= extent[0]) & (t < extent[1])])[:200]
+            return SimpleNamespace(onset_sec=t, width_sec=np.zeros(t.size)), None
+
+    monkeypatch.setitem(d._MODELS, "stand-in", Model())
+    out = d.recording_task((0, "unused", {"slow": {}}, {"chorus_norm@slow": "stand-in"}, 20, 1))
+    assert out["ok"], out.get("error")
+    rows = {r["variant"]: r for r in out["rows"] if r["detector"] == "chorus_norm"}
+    parts = [c["participants"] for c in out["calls"] if c["detector"] == "chorus_norm"]
+    own = rows["own_floor"]["min_participants"]
+    assert rows["own_plus_1"]["min_participants"] == own + 1
+    assert rows["own_floor"]["n_calls"] == sum(p >= own for p in parts)
+    assert rows["own_plus_1"]["n_calls"] == sum(p >= own + 1 for p in parts)
+    assert rows["own_plus_1"]["n_calls"] <= rows["own_floor"]["n_calls"]
+
+
 def test_participants_are_rois_with_an_onset_in_the_call_widened_to_two_seconds():
     trains = [np.array([10.0]), np.array([11.5]), np.array([13.0]), np.array([]),
               np.array([9.0, 10.2])]
