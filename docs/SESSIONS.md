@@ -21,6 +21,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   `docs/goals/coded-detector-optimization.md`. Cutoff: phase 2 starts tonight only if both PRs are
   on `main` by 01:00 EDT (05:00 UTC).
 
+### 065/figures-3-4-rerender — DARKROOM claim: `bugarach/2026-09-25-final-parameters/report/figure3_elevated_rate.png` and `figure4_bench_floors.png`
+- **Status:** claimed 2026-09-25 ~08:40 UTC, before writing, by WSMIP065 at the orchestrator's
+  request: Figures 3 and 4 of the final-parameters report re-rendered (fonts, panel letters, chorus
+  limits, no baked caption). Released by the merge that brings this block to `main`.
+- **Touches:** those two files in `report/` only; nothing else there, and no number changes.
+
 ### 065/bench-adr-0009 — DARKROOM claim: `bugarach/2026-09-25-final-parameters/065/` (NEW, under the orchestrator's #807 claim)
 - **Status:** claimed 2026-09-25 ~02:10 UTC, before writing, by WSMIP065 for PR A of the
   final-parameters night (`docs/handoffs/2026-09-25-overnight-final-parameters.md`, phase 0; ADR-0009 decision 1).

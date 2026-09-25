@@ -17,9 +17,10 @@ drawn.
 the stretch, against ``MAX_PROBE_PER_MIN``, which gates both backgrounds. Bottom row: calls per
 hour outside it, against ``MAX_FALSE_POSITIVES_PER_HOUR``, which gates the quiet background only
 (the background that budget was measured on); busy is reported, not gated. Each budget is a short
-black bar over its detector. Chorus has no budget of its own and none is drawn for it. Filled marks
-are the quiet background, open marks the busy one; circles are the shipped point, triangles the
-search's proposal.
+black bar over its detector. Chorus has no budget of its own; it is held to CoactDetect's, as the
+chorus pick is, so that bar is drawn over the chorus columns too, dashed. Filled marks are the
+quiet background, open marks the busy one; circles are the shipped point, triangles the search's
+proposal. Panels are lettered; the caption lives in the report, not in the image.
 """
 from __future__ import annotations
 
@@ -39,13 +40,17 @@ STREAMS = ("fast", "slow", "combined")
 MODULE = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
           "combined": "bugarach.bench_combined"}
 ORDER = ("coact", "loco", "sce", "rate", "sync", "cicada", "chorus_norm", "chorus_gain_norm")
-NAME = {"coact": "CoactDetect", "loco": "LoCo", "sce": "SCE", "rate": "rate+context",
+NAME = {"coact": "CoactDetect", "loco": "LoCo", "sce": "binned SCE", "rate": "rate+context",
         "sync": "SPIKE-synch", "cicada": "locust", "chorus_norm": "chorus_norm",
         "chorus_gain_norm": "chorus_gain_norm"}
 INK = {"coact": "#0072B2", "loco": "#E69F00", "sce": "#56B4E9", "rate": "#D55E00",
        "sync": "#999933", "cicada": "#000000", "chorus_norm": "#009E73",
        "chorus_gain_norm": "#CC79A7"}
 BACKGROUNDS = ("baseline_quiet", "baseline_busy")
+CHORUS = ("chorus_norm", "chorus_gain_norm")
+FONT = 12
+"""Points. At 150 dpi on a figure 13 in wide, a report page scales the image to about 0.4, so this
+keeps every label near 10 px there (the report asked for nothing under about 9 px)."""
 
 
 def collect(paths) -> dict:
@@ -69,7 +74,8 @@ def collect(paths) -> dict:
 
 
 def draw(rows: dict, out_png: Path) -> Path:
-    fig, axes = plt.subplots(2, 3, figsize=(15, 8.2), sharey="row")
+    plt.rcParams.update({"font.size": FONT})
+    fig, axes = plt.subplots(2, 3, figsize=(13, 10.5), sharey="row")
     for col, stream in enumerate(STREAMS):
         b = importlib.import_module(MODULE[stream])
         present = [f for f in ORDER if any(k[0] == f for k in rows[stream])]
@@ -92,33 +98,38 @@ def draw(rows: dict, out_png: Path) -> Path:
                         ax.plot(x + dx + (-0.05 if quiet else 0.05), v, mk, ms=7,
                                 color=INK[fam], mfc=INK[fam] if quiet else "white", mew=1.4)
                 if fam in budget:
-                    ax.plot([x - 0.35, x + 0.35], [budget[fam]] * 2, color="black", lw=2)
+                    ax.plot([x - 0.35, x + 0.35], [budget[fam]] * 2, color="black", lw=2.2)
+                elif fam in CHORUS and "coact" in budget:
+                    # Chorus is held to CoactDetect's limits (the chorus pick's own rule).
+                    ax.plot([x - 0.35, x + 0.35], [budget["coact"]] * 2, color="black", lw=2.2,
+                            ls=(0, (2, 1.5)))
             ax.set_yscale("symlog", linthresh=0.1)
             ax.set_xticks(range(len(present)))
-            ax.set_xticklabels([NAME[f] for f in present], rotation=35, ha="right", fontsize=8)
+            ax.set_xticklabels([NAME[f] for f in present], rotation=40, ha="right",
+                               fontsize=FONT - 1)
+            ax.tick_params(axis="y", labelsize=FONT - 1)
             ax.set_xlim(-0.6, len(present) - 0.4)
             ax.grid(axis="y", color="0.9", lw=0.6)
+            ax.text(0.0, 1.02, "abcdef"[row_i * 3 + col], transform=ax.transAxes,
+                    fontsize=FONT + 3, fontweight="bold", va="bottom", ha="left")
             if col == 0:
-                ax.set_ylabel(("inside the stretch, " if row_i == 0 else "outside the stretch, ")
-                              + unit + "\n(symmetric log scale)", fontsize=9)
+                ax.set_ylabel(("inside the stretch,\n" if row_i == 0 else "outside the stretch,\n")
+                              + unit + " (symmetric log)", fontsize=FONT)
             if row_i == 1:
-                ax.set_xlabel(f"{stream} stream", fontsize=10)
+                ax.set_xlabel(f"{stream} stream", fontsize=FONT + 1)
     handles = [
         Line2D([], [], marker="o", ls="none", color="0.3", label="shipped point"),
         Line2D([], [], marker="^", ls="none", color="0.3", label="search's proposal"),
         Line2D([], [], marker="o", ls="none", color="0.3", label="quiet background (filled)"),
         Line2D([], [], marker="o", ls="none", mfc="white", mec="0.3",
                label="busy background (open)"),
-        Line2D([], [], color="black", lw=2,
-               label="budget: top row gates both backgrounds, bottom row the quiet one only"),
+        Line2D([], [], color="black", lw=2.2, label="limit (top: both backgrounds; "
+                                                     "bottom: quiet only)"),
+        Line2D([], [], color="black", lw=2.2, ls=(0, (2, 1.5)),
+               label="CoactDetect's limit, applied to chorus"),
         *[Line2D([], [], marker="o", ls="none", color=INK[f], label=NAME[f]) for f in ORDER]]
-    fig.legend(handles=handles, loc="lower center", ncol=7, fontsize=8, frameon=False,
-               bbox_to_anchor=(0.5, 0.04))
-    fig.text(0.01, 0.008, "Figure 3. The elevated-rate recording (ADR-0009): calls inside its "
-             "300 s stretch (top) and outside it (bottom), 12 recordings per background on "
-             "seeds 66000–66011. Chorus shows each training run's picked seed and has no budget "
-             "of its own.", fontsize=8.5, color="0.25")
-    fig.tight_layout(rect=(0, 0.13, 1, 1))
+    fig.legend(handles=handles, loc="lower center", ncol=4, fontsize=FONT - 1, frameon=False)
+    fig.tight_layout(rect=(0, 0.115, 1, 1))
     out_png.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_png, dpi=150)
     plt.close(fig)
