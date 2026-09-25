@@ -243,6 +243,20 @@ Unsettled, they would leave the run ending on the same list:
 
 5. **A value at a hard limit** (a guard, `C_min` or merge gap of 0): does it count as bracketed?
    Five proposals were held back on this alone on 2026-09-25.
+   **Ruled 2026-09-25 by Tony: neither. A setting at the value that switches it off is a finding,
+   not a tuned value.** It means the setting is not needed, or something stops it from having
+   an effect. Likely causes on 2026-09-25: the guard had nothing to exclude, because the old bench
+   planted no neighbours within 120 s; `C_min` (every value from 0 to 0.03 gave identical calls)
+   may be made redundant by the floor-set minimum count; locust's run of 1 frame means no minimum
+   run.
+   - **Tonight** the search keeps every such setting, because the realistic bench is the test of
+     whether it does anything.
+   - **In the morning**, for each setting still at its off-limit, the report checks whether moving
+     it off the limit changes any calls. If no calls change, the setting is ineffective: the report
+     names the likely cause, and Tony decides whether to fix the cause or remove the setting. If
+     calls change but the search still prefers the limit, the setting is fixed off and removed from
+     that detector's search, which takes its own record.
+   - No value at an off-limit is adopted as a tuned value under this record.
 6. **CoactDetect's `alpha`**, which ran to the extension cap (1e-9) on fast and combined: take it
    out of the search, fix its value, or raise the cap.
 7. **Contexts shorter than 20 s**, which fast LoCo's search reached by extension (5 s): allow them,
