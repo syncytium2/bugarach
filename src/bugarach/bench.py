@@ -1155,12 +1155,35 @@ def spacing_overrides(stream: str, recording: dict) -> dict:
                                              recording["duration_sec"]))
 
 
-def seed_factor(stream: str) -> int:
+def seed_factor(stream: str, spacing_name: str | None = None) -> int:
     """Seed-count multiplier under the realistic spacings: 2 on fast, 1 elsewhere. Real fast
     events are sparser (9.7 per hour), so a 45-minute fast recording plants about 7 events
     instead of 15, and doubling fast's selection, held-out and fresh seeds holds the number of
-    scored events (ADR-0010 ruling 2)."""
-    return 2 if stream == "fast" and spacing() != "bench" else 1
+    scored events (ADR-0010 ruling 2).
+
+    **The one place this is decided.** The search (selection and held-out seeds), the training
+    tool (fit, test and no-coordination seeds) and the fresh-seed scorer (fresh and null seeds)
+    all read it, so fast's seeds are doubled exactly once. ``spacing_name`` defaults to the
+    spacing in force (:func:`spacing`)."""
+    s = spacing() if spacing_name is None else spacing_name
+    if s not in SPACINGS:
+        raise ValueError(f"spacing {s!r} is not one of {SPACINGS}")
+    return 2 if stream == "fast" and s != "bench" else 1
+
+
+def spacing_from_args(spacing_arg: str | None, realistic_flag: bool) -> str:
+    """Resolve a tool's ``--spacing`` and its ``--realistic`` alias into one spacing name.
+
+    ``--realistic`` means ``--spacing realistic``; given together with ``--spacing bench`` the
+    two contradict each other and are refused. Neither given is ``"bench"``. Every tool that takes
+    the flags resolves them here, so one flag, in either spelling, names the whole realistic
+    setup: the recordings (:func:`spacing_overrides`), the search's ADR-0010 rulings, boundary
+    planting in training, and fast's doubled seeds (:func:`seed_factor`)."""
+    if realistic_flag:
+        if spacing_arg == "bench":
+            raise ValueError("--realistic and --spacing bench contradict each other")
+        return spacing_arg or "realistic"
+    return spacing_arg or "bench"
 
 
 def make_recording(regime: str, seed: int, **overrides):

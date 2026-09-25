@@ -94,33 +94,93 @@ def test_seeds_are_doubled_on_fast_only_and_only_under_a_realistic_spacing(spaci
         assert sbc.seeds_for("slow") == tuple(range(6000, 6024))
 
 
-def test_the_search_doubles_fast_seeds_and_drops_the_crowded_veto_under_realistic(spacing,
-                                                                                 monkeypatch,
-                                                                                 tmp_path):
+SPELLINGS = [([], "bench"), (["--realistic"], "realistic"),
+             (["--spacing", "realistic"], "realistic"), (["--realistic", "--spacing", "orx"], "orx"),
+             (["--spacing", "orx"], "orx")]
+
+
+def _search_until_after_its_arguments(monkeypatch, argv, tmp_path):
+    """Run the search's main to just past its argument handling; return what it resolved."""
     import search_all_settings as sas
 
-    captured = {}
+    seen = {}
 
-    def stop(*a, **k):                 # stop main just after its argument handling
+    def stop(*a, **k):
+        seen["realistic"] = sas.realistic()
+        seen["recording"] = sas._bench.make_recording("baseline_quiet", 1)[1]
         raise SystemExit(0)
 
     monkeypatch.setattr(sas, "shipped_value", lambda d, k: stop())
-    for argv, seeds, veto in ((["--bench", "fast"], 48, True),
-                              (["--bench", "fast", "--spacing", "realistic"], 96, False),
-                              (["--bench", "slow", "--spacing", "realistic"], 48, False)):
-        orig = sas.argparse.ArgumentParser.parse_args
+    orig = sas.argparse.ArgumentParser.parse_args
 
-        def spy(self, args=None, namespace=None, _orig=orig):
-            ns = _orig(self, args, namespace)
-            captured["ns"] = ns
-            return ns
-        monkeypatch.setattr(sas.argparse.ArgumentParser, "parse_args", spy)
-        with pytest.raises(SystemExit):
-            sas.main(argv + ["--out", str(tmp_path / "search")])
-        ns = captured["ns"]
-        assert ns.seeds == seeds and (not ns.no_crowded_veto) == veto
-        monkeypatch.delenv(bench.SPACING_ENV, raising=False)
+    def spy(self, args=None, namespace=None):
+        ns = orig(self, args, namespace)
+        seen["ns"] = ns
+        return ns
+    monkeypatch.setattr(sas.argparse.ArgumentParser, "parse_args", spy)
+    with pytest.raises(SystemExit):
+        sas.main(argv + ["--out", str(tmp_path / "search")])
     sas.use_bench("fast")
+    return seen
+
+
+@pytest.mark.parametrize("bench_name", ["fast", "slow"])
+@pytest.mark.parametrize("flags,expected", SPELLINGS,
+                         ids=["none", "--realistic", "--spacing-realistic", "both-orx", "orx"])
+def test_one_flag_in_either_spelling_names_the_whole_realistic_search(spacing, monkeypatch,
+                                                                      tmp_path, bench_name,
+                                                                      flags, expected):
+    """#829 review: realistic recordings AND every ADR-0010 search ruling AND fast's doubled
+    seeds from one flag; no flag changes nothing."""
+    seen = _search_until_after_its_arguments(monkeypatch, ["--bench", bench_name] + flags,
+                                             tmp_path)
+    ns = seen["ns"]
+    assert bench.spacing() == expected
+    on = expected != "bench"
+    assert seen["realistic"] is on                         # the search's rulings
+    assert ("gap_source" in seen["recording"].params) is on  # the recordings
+    assert ns.no_crowded_veto is on                        # part 4
+    assert ns.seeds == (96 if on and bench_name == "fast" else 48)
+
+
+def test_realistic_with_spacing_bench_is_refused(spacing, monkeypatch, tmp_path):
+    import search_all_settings as sas
+    import train_learned_on_bench as T
+
+    with pytest.raises(SystemExit) as e:
+        sas.main(["--realistic", "--spacing", "bench", "--out", str(tmp_path / "s")])
+    assert e.value.code == 2
+    with pytest.raises(SystemExit) as e:
+        T.main(["--bench", "fast", "--realistic", "--spacing", "bench", "--out", str(tmp_path)])
+    assert e.value.code == 2
+    with pytest.raises(ValueError):
+        bench.spacing_from_args("bench", True)
+
+
+@pytest.mark.parametrize("flags,expected", SPELLINGS[:3],
+                         ids=["none", "--realistic", "--spacing-realistic"])
+def test_one_flag_names_realistic_training_with_boundary_planting_and_fast_seeds_once(
+        spacing, monkeypatch, tmp_path, flags, expected):
+    import bugarach.learn.train as lt
+    import train_learned_on_bench as T
+
+    seen = {}
+
+    def capture(rec, keys):
+        seen["keys"], seen["gt"] = list(keys), rec(1000)[1]
+        raise SystemExit(0)
+
+    monkeypatch.setattr(lt, "fold_maker", capture)
+    with pytest.raises(SystemExit):
+        T.main(["--bench", "fast", "--out", str(tmp_path)] + flags)
+    on = expected != "bench"
+    assert bench.spacing() == expected
+    assert ("gap_source" in seen["gt"].params) is on           # realistic recordings
+    assert ("boundary_planting" in seen["gt"].params) is on    # #828's boundary planting
+    assert len(seen["keys"]) == 2 * 24 * (2 if on else 1)      # fit seeds x both backgrounds
+    fit, test, nulls = T.seed_sets("fast", on)
+    assert (len(fit), len(test), len(nulls)) == ((48, 48, 24) if on else (24, 24, 12))
+    assert T.seed_sets("slow", on) == (T.FIT, T.TEST, T.NULLS)
 
 
 def test_the_context_rule_is_retired_only_under_a_realistic_spacing(spacing):

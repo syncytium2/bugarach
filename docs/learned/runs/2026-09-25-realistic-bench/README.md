@@ -6,11 +6,22 @@
 
 ## The bench
 
-**How it is chosen.** A spacing name, `bench.SPACINGS`, set by `--spacing` on the search
-(`tools/search_all_settings.py`), the fresh-seed scorer (`tools/score_bench_candidates.py`), the
-training tool (`tools/train_learned_on_bench.py`) and the floor probe
-(`tools/probe_bench_floor.py`). The name travels to every worker in `BUGARACH_BENCH_SPACING`, as the
-stream already does in `BUGARACH_BENCH`.
+**How it is chosen.** A spacing name, `bench.SPACINGS`. It is set by `--spacing` on four tools:
+the search (`tools/search_all_settings.py`), the fresh-seed scorer
+(`tools/score_bench_candidates.py`), the training tool (`tools/train_learned_on_bench.py`) and the
+floor probe (`tools/probe_bench_floor.py`). The name travels to every worker in
+`BUGARACH_BENCH_SPACING`, as the stream already does in `BUGARACH_BENCH`.
+
+**One switch.** `bench.spacing()` is the only source of truth, and one flag names the whole
+realistic setup:
+- the realistic recordings;
+- in the search, every one of ADR-0010's rulings (#828's `realistic()` reads the spacing);
+- in training, boundary planting and floor labels;
+- fast's doubled seeds, decided once by `bench.seed_factor`.
+
+`--realistic`, #828's flag on the search and training tools, is an alias for `--spacing
+realistic`, and is refused together with `--spacing bench`. #828's `BUGARACH_REALISTIC` and a bench
+module's `REALISTIC` attribute are retired.
 
 | Spacing | Planted gaps | Events per 45-minute recording | Use |
 |---|---|---|---|
