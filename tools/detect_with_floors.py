@@ -369,7 +369,8 @@ def main(argv=None) -> int:
                                                    params=settings[sname][det])
         for m, info in B["chorus"].items():
             if info.get("picked"):
-                model_paths[f"{m}@{sname}"] = str(a.models / f"models-{sname}" / info["picked"])
+                root = Path(info.get("models_root") or a.models)   # the scorer records it
+                model_paths[f"{m}@{sname}"] = str(root / f"models-{sname}" / info["picked"])
                 chosen[sname]["chorus"][m] = info["picked"]
     folder = dataset.default()
     n = len(load_folder(folder))

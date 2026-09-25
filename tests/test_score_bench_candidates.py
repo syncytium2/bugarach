@@ -42,6 +42,52 @@ def test_a_missing_search_is_an_error_not_a_skip(tmp_path):
         sbc.load_search(tmp_path, "search-{bench}/{det}", "fast", "coact")
 
 
+def test_searches_are_read_in_place_from_several_roots(tmp_path):
+    """The full-panel night: fast searched on WSMIP064, slow and combined on WSMIP065."""
+    _record(tmp_path / "064" / "search-fast" / "coact", "064-fast")
+    _record(tmp_path / "065" / "search-slow" / "coact", "065-slow")
+    roots = [tmp_path / "064", tmp_path / "065"]
+    assert sbc.load_search(roots, "search-{bench}/{det}", "fast", "coact")["marker"] == "064-fast"
+    assert sbc.load_search(roots, "search-{bench}/{det}", "slow", "coact")["marker"] == "065-slow"
+    with pytest.raises(FileNotFoundError):
+        sbc.load_search(roots, "search-{bench}/{det}", "combined", "coact")
+
+
+def test_the_same_search_under_two_roots_is_an_error_not_a_choice(tmp_path):
+    _record(tmp_path / "064" / "search-slow" / "coact", "064")
+    _record(tmp_path / "065" / "search-slow" / "coact", "065")
+    with pytest.raises(ValueError, match="more than one"):
+        sbc.load_search([tmp_path / "064", tmp_path / "065"], "search-{bench}/{det}", "slow",
+                        "coact")
+
+
+def test_every_model_the_training_tool_trains_is_scored():
+    import train_learned_on_bench as T
+
+    assert sbc.MODELS is T.MODELS and len(sbc.MODELS) == 8
+
+
+def test_a_run_with_no_seed_in_budget_has_no_pick():
+    rows = [dict(path="a", mean=0.9, null_per_hour=3.0), dict(path="b", mean=0.5, null_per_hour=0.5)]
+    assert sbc.picked(rows, 1.0)["path"] == "b"
+    assert sbc.picked(rows, 0.1) is None
+
+
+def test_phase2_repeats_and_every_root_reaches_the_scorer(tmp_path, monkeypatch):
+    """Run main as far as it reads the searches, with two roots, and check each was consulted."""
+    seen = []
+
+    def spy(phase2, pattern, bench, det):
+        seen.append(list(phase2))
+        raise SystemExit(0)
+
+    monkeypatch.setattr(sbc, "load_search", spy)
+    with pytest.raises(SystemExit):
+        sbc.main(["--phase2", str(tmp_path / "064"), "--phase2", str(tmp_path / "065"),
+                  "--out", str(tmp_path / "o"), "--benches", "slow"])
+    assert seen == [[tmp_path / "064", tmp_path / "065"]]
+
+
 def test_an_unknown_bench_is_refused(tmp_path):
     with pytest.raises(SystemExit):
         sbc.main(["--phase2", str(tmp_path), "--out", str(tmp_path / "o"), "--benches", "medium"])
