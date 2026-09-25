@@ -3,9 +3,9 @@ status: waiting-on-tony
 filed: 2026-09-25
 ---
 
-# Land the Python 3.14 floor (#825), then drop the 3.11 and 3.13 required checks
+# Land the Python 3.14 floor (#825)
 
-waiting: Once #825 has merged, remove `test (3.11)` and `test (3.13)` from main's required checks (Settings → Branches). Until then, every PR waits for two checks that never run.
+waiting: After #825 merges, drop the 3.11 and 3.13 required checks.
 
 **What:** [ADR-0011](../adr/0011-bugarach-supports-the-python-its-machines-run.md), on draft PR
 #825 (branch `python-floor-3-14`). `requires-python` goes to `>=3.14`, CI tests only 3.14, and
