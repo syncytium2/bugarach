@@ -169,9 +169,18 @@ before its explanation.
 
 - The two structural findings above.
 - The decision to publish clamor's `malsburg1986.py` (and its copyright notice) in a public repo.
-- Has anyone written to von der Malsburg's group, or has clamor's interlibrary-loan request for
-  Schneider's 1986 thesis come back? The thesis is the source most likely to settle the step
-  size.
+- Has anyone written to von der Malsburg's group? **Schneider's 1986 thesis is on a library shelf
+  across town, and Tony will pick it up** (said 2026-09-25). It is the source most likely to settle
+  what this proposal and clamor both left open. What to look for in it:
+  - the step size *q*₀: the paper states 0.01, and its p. 35 implies about 0.01/12 (clamor
+    CLAIMS item 2);
+  - whether equation 7 updates the breaking cell's row or its column (item 3);
+  - the general coactivity formula for a burst that is not half the period, which clamor
+    interpolates;
+  - the Fig. 4 correction at break-off and restart (item 1), and the subliminal gate's exact
+    length;
+  - whether Schneider ever ran the rule on recorded data, which would be the prior art this
+    proposal most needs.
 - Papers not read: the 1986 PDF (held by Tony), the 1981 report (open access, blocked here), the
   Schneider thesis. Literatures not searched: fast weights, STDP as a pattern detector
   (Masquelier et al. 2008), and oscillator synchronization.
