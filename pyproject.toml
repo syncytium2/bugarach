@@ -15,7 +15,7 @@ version = "0.1.0"
 description = "Web port of interface2's explore_sce coordination viewer"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",
