@@ -46,6 +46,11 @@ amendments that change no signed threshold, all adopted by Tony the same day
 ([run record](../reviews/2026-09-14-preregistration-is-rigid-shift-usable_2026-09-14.md)).
 **The one blind review pass after amendment found the rule still not buildable; nothing is built or run until Tony chooses between a rule written as tested code and stopping the goal** ([blind-round record](../reviews/2026-09-14-preregistration-is-rigid-shift-usable_2026-09-14-round2.md)).
 
+- **A second route, drafted 2026-09-25 and not yet ruled on: a coupling that learns within one
+  recording.** The 1986 cocktail-party plasticity rule, copied from `syncytium2/clamor`, learns with
+  no training negatives, so it does not wait on the screen; the circular shift enters only as a
+  significance null. Two cheap checks come first, and either can stop it
+  ([proposal](../proposals/2026-09-25-hebbian-coupling-detector.md)).
 - **The surrogate screen is stopped** (Tony, 2026-09-12). He was asked how to settle the
   family-size question below and whether to write a third re-evaluation; he answered that the first
   needs discussion before deciding and to stop there for now
