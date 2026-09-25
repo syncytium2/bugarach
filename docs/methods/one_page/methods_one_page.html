@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Methods: detection of coordinated calcium events</title>
+<meta name="author" content="Tony DeFazio">
+<style>
+  @page { size: letter; margin: 0.5in 0.55in; }
+  :root { --ink: #111; --muted: #555; --paper: #fff; }
+  body { font-family: "Times New Roman", Times, "Liberation Serif", serif; font-size: 9.6pt;
+         line-height: 1.22; color: var(--ink); background: var(--paper); margin: 0; }
+  h1 { font-size: 12pt; margin: 0 0 2pt 0; }
+  p { margin: 0 0 3pt 0; }
+  .runin { font-weight: bold; }
+  .note { color: var(--muted); }
+  .refs { break-before: page; }
+  .refs p { padding-left: 1.4em; text-indent: -1.4em; margin-bottom: 4pt; }
+  sub, sup { line-height: 0; }
+</style>
+</head>
+<body>
+
+<h1>Methods: detection of coordinated calcium events</h1>
+
+<p><span class="runin">Input.</span> A <i>coordinated event</i> is a group of calcium-event onsets in several regions of interest (ROIs, one cell each) within about a second; a detector reports each one it finds as a <i>call</i>, an interval of time. The input is the imaging pipeline&rsquo;s per-ROI event table: each event&rsquo;s onset, its half-rise time (t<sub>50</sub>), on a 0.1&nbsp;s frame grid. The pipeline exports two event sets, <i>fast</i> and <i>slow</i>, assigned upstream; a third, <i>combined</i>, stream is the time-sorted union of each ROI&rsquo;s fast and slow onsets, near-coincident pairs kept. Each recording is divided into <i>windows</i>, its baseline and treatment periods. The data are 66 recordings (2,109 ROIs, 36 mice) whose first treatment was TTX or senktide, in four groups: diestrus females (DI, 17 recordings), ovariectomized females (OVX, 17), males (MALE, 13) and orchidectomized males (ORX, 19). Group is nested in imaging day.</p>
+
+<p><span class="runin">Event floor.</span> A call needs at least the <i>event floor</i> of ROIs co-active within 2&nbsp;s: the smallest count chance reaches at most once per hour, and never fewer than 3 ROIs. Chance comes from 1,000 draws that shift each ROI&rsquo;s onset train as a whole by its own offset, uniform in [&minus;20&nbsp;s, 20&nbsp;s), keeping each ROI&rsquo;s rate and intervals (after Pipa et al., 2008, but dropping rather than wrapping onsets pushed past the window&rsquo;s edge). The null keeps coordinated onsets, so coordination-rich windows get a higher, conservative floor. Each window of each stream, and each simulated recording, has its own floor; treatment windows are also scored under their baseline floor.</p>
+
+<p><span class="runin">Parameters for simulation.</span> Detectors were tuned and scored on simulated recordings with known (<i>planted</i>) coordinated events, whose statistics were measured on baseline windows and pooled over groups. <i>Spacing</i>: coordinated events were located, without the detectors compared here, as runs of the co-active count at or above the floor (peaks under 2&nbsp;s apart merged). Median gaps between neighbors were 41.3&nbsp;s (fast), 25.1&nbsp;s (slow) and 24.8&nbsp;s (combined), at 9.7, 22.0 and 25.3 events per hour of baseline; events cluster, so the median gap is short. <i>Participation</i>: median participants per cluster of at least 4 co-active ROIs over median ROI count (fast 0.20, slow 0.38, combined 0.25) set the middle of three planted levels; the outer two were chosen. <i>Background</i>: quiet and busy per-ROI event rates are the 25th and 75th percentiles across recordings, coordinated onsets removed, varied across ROIs and over time by Gamma factors fitted to the data. <i>Timing spread</i>: the standard deviation (SD) of onsets within an event (fast 0.105&nbsp;s, slow 0.131&nbsp;s, combined 0.150&nbsp;s) came from the half-width of the cross-ROI onset correlogram (Perkel et al., 1967), calibrated on simulations of known spread.</p>
+
+<p><span class="runin">Simulated recordings.</span> Each has 32 ROIs (the measured median) and lasts 45&nbsp;min. It plants the stream&rsquo;s measured events per 45&nbsp;min (fast 7, slow 17, combined 19) over the three levels, laid end to end at gaps resampled from the pooled gaps and placed at a random time, plus six <i>decoys</i> (bursts built like middle-level events but not scored as events), on a quiet or busy background. Each seed also yields a <i>no-coordination recording</i> (quiet, nothing planted) and an <i>elevated-rate recording</i> (a 300&nbsp;s stretch at the 99th percentile of background rate). A variant spaced like ORX checks the rankings. Separate seeds serve <i>selection</i>, <i>held-out</i> confirmation and <i>final</i> scoring; fast gets twice as many, having fewer events.</p>
+
+<p><span class="runin">Scoring.</span> A call matches a planted event lying in its span or within 2.5&nbsp;s of it, one to one, closest pairs first. A planted event under its recording&rsquo;s floor, and any call matched to it, leave the score. F1, the harmonic mean of precision and recall, is pooled per background and averaged over the two; calls on decoys count against precision. Calls holding two or more scored events are counted as merges. Every setting must meet budgets set at 1.6&times; the rates of CoactDetect&rsquo;s released settings: calls per hour on the no-coordination recording (fast 7, slow 1, combined 10), 1 call per minute in the elevated stretch, and a quiet-to-busy precision difference of at most 0.10.</p>
+
+<p><span class="runin">CoactDetect.</span> S(t) counts the ROIs with an onset in (t&nbsp;&minus;&nbsp;w, t], w being the count interval. Its mean and variance under a null that circularly shifts each ROI&rsquo;s onsets within a surrounding <i>context</i>, optionally excluding a guard band around t, are computed exactly; t is called when S reaches the floor and z&nbsp;=&nbsp;(S&nbsp;&minus;&nbsp;mean)/SD passes a cutoff &alpha; stated as a normal tail, a z threshold rather than a false-alarm probability. Calls closer than a merge gap are joined. The design resembles cell-averaging constant-false-alarm-rate radar detection (Finn &amp; Johnson, 1968), reached independently. Settings were searched in this sliding form (fast&rsquo;s released setting uses fixed 2&nbsp;s bins) by coordinate search from the released settings: &alpha; down to 6&times;10<sup>&minus;16</sup> (z&nbsp;&asymp;&nbsp;8), contexts 20&ndash;120&nbsp;s, guard at most a quarter of the context. The floor is always computed at 2&nbsp;s, whatever w. A candidate was adoptable if its held-out F1 gain had a 95% bootstrap interval above zero, its best values lay inside the tested range, and it met every budget; a best value at a cap, or one that switches a setting off, was reported, not adopted.</p>
+
+<p><span class="runin">Chorus.</span> This learned detector reads a binary ROI &times; frame onset raster. A four-layer dilated convolutional stack (Yu &amp; Koltun, 2016) shared by all ROIs filters each ROI; each channel is standardized over the whole input and passed through a sigmoid as a per-ROI vote. Votes are pooled across ROIs (mean, SD, mean of the top four), so any number of ROIs in any order is accepted (Qi et al., 2017; Zaheer et al., 2017), and a dilated head scores each frame; frames over a threshold chosen on validation recordings become calls, runs within 2&nbsp;s merged. Standardization spans 409.6&nbsp;s excerpts in training and the whole window at inference. A participation variant sums the votes into a bounded count, takes the floor as input and learns which ROIs took part. Training was per stream (Adam, Kingma &amp; Ba, 2015; learning rate 0.01; 900 steps; class-weighted binary cross-entropy), with extra events planted at the floor and one ROI either side, sub-floor events labelled negative. Of five initializations, the best on selection recordings within the no-coordination budget was kept (the best overall if none met it).</p>
+
+<p><span class="runin">Benchmark.</span> Each tuned or trained detector was compared with CoactDetect on the final seeds as a paired F1 difference with a 95% bootstrap interval over seeds (2,000 resamples; Efron, 1979). A detector more than 0.01 F1 behind the best on at least two streams is dropped from further tuning.</p>
+
+<p><span class="runin">Output.</span> Every call is measured the same way, whatever detector made it. Onsets within &plusmn;1&nbsp;s (fast) or &plusmn;5&nbsp;s (slow, combined) of the call&rsquo;s center, widened to its span, are split where consecutive onsets are over 0.5&nbsp;s (fast) or 2.5&nbsp;s (slow, combined) apart; the group with most distinct ROIs is the event&rsquo;s <i>core</i>. These lengths were chosen, not measured. The event time is the core&rsquo;s first onset; <i>width</i> is the core&rsquo;s first-to-last onset span, floored at one frame; <i>amplitude</i> is core ROIs divided by width (ROIs&nbsp;s<sup>&minus;1</sup>), undefined for one ROI. Amplitude measures packing, not fluorescence, is dominated by width, and has a provisional name. The core&rsquo;s ROI count has been checked against planted participants on simulated data only, where it over-counts on combined; width and amplitude are unchecked.</p>
+
+<div class="refs">
+<h1>References</h1>
+<p>Efron B (1979). Bootstrap methods: another look at the jackknife. <i>Annals of Statistics</i> 7(1):1&ndash;26. doi:10.1214/aos/1176344552</p>
+<p>Finn HM, Johnson RS (1968). Adaptive detection mode with threshold control as a function of spatially sampled clutter-level estimates. <i>RCA Review</i> 29(3):414&ndash;464.</p>
+<p>Kingma DP, Ba J (2015). Adam: a method for stochastic optimization. <i>International Conference on Learning Representations</i>. arXiv:1412.6980</p>
+<p>Perkel DH, Gerstein GL, Moore GP (1967). Neuronal spike trains and stochastic point processes. II. Simultaneous spike trains. <i>Biophysical Journal</i> 7(4):419&ndash;440. doi:10.1016/S0006-3495(67)86597-4</p>
+<p>Pipa G, Wheeler DW, Singer W, Nikoli&cacute; D (2008). NeuroXidence: reliable and efficient analysis of an excess or deficiency of joint-spike events. <i>Journal of Computational Neuroscience</i> 25(1):64&ndash;88. doi:10.1007/s10827-007-0065-3</p>
+<p>Qi CR, Su H, Mo K, Guibas LJ (2017). PointNet: deep learning on point sets for 3D classification and segmentation. <i>IEEE Conference on Computer Vision and Pattern Recognition</i>, 652&ndash;660. doi:10.1109/CVPR.2017.16</p>
+<p>Yu F, Koltun V (2016). Multi-scale context aggregation by dilated convolutions. <i>International Conference on Learning Representations</i>. arXiv:1511.07122</p>
+<p>Zaheer M, Kottur S, Ravanbakhsh S, P&oacute;czos B, Salakhutdinov R, Smola AJ (2017). Deep Sets. <i>Advances in Neural Information Processing Systems</i> 30. arXiv:1703.06114</p>
+</div>
+
+</body>
+</html>
