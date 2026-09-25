@@ -57,6 +57,55 @@ def test_every_coded_detector_runs_on_a_recording_whose_settings_carry_no_micros
     assert ran == set(bench_slow.OPERATING_POINTS)
 
 
+def test_every_detector_that_draws_random_numbers_runs_seeded_on_real_data(monkeypatch):
+    """Two real-data runs on 2026-09-25 differed in four locust verdicts: this tool never passed
+    ``rng_seed``, so locust and SCE drew surrogate thresholds from an unseeded generator. A repeat
+    run cannot catch that on a small recording, where the threshold rarely moves the calls, so
+    this checks what each detector was handed."""
+    from types import SimpleNamespace
+
+    import bugarach.detect_folder as df
+    import bugarach.detectors.cicada as mc
+    import bugarach.detectors.coact as mco
+    import bugarach.detectors.loco as ml
+    import bugarach.detectors.sce as ms
+    import bugarach.io as bio
+    from bugarach import bench_slow
+    from bugarach.detect_folder import RNG_SEED
+
+    s, _ = bench_slow.make_recording("baseline_quiet", 1)
+    s.meta = {"group_id": "DI", "subject_id": "m1"}
+    s.streams["slow"] = s.streams.pop(bench_slow.STREAM)
+    win = SimpleNamespace(win_start=0.0, win_end=900.0, label="baseline", slot=1)
+    monkeypatch.setattr(bio, "load_folder", lambda folder: [s])
+    monkeypatch.setattr(df, "folder_analysis_windows", lambda rec: (rec, [win]))
+    seen = {}
+    for mod, name in ((mc, "cicada_detect"), (mco, "coact_detect"), (ml, "loco_detect"),
+                      (ms, "sce_detect")):
+        real = getattr(mod, name)
+
+        def spy(*a, _real=real, _name=name, **kw):
+            seen[_name] = kw.get("rng_seed")
+            return _real(*a, **kw)
+        monkeypatch.setattr(mod, name, spy)
+    settings = {"slow": {det: {k: v for k, v in op.params.items() if k != "rng_seed"}
+                         for det, op in bench_slow.OPERATING_POINTS.items()}}
+    out = d.recording_task((0, "unused", settings, {}, 20))
+    assert out["ok"], out.get("error")
+    assert seen == {n: RNG_SEED for n in ("cicada_detect", "coact_detect", "loco_detect",
+                                          "sce_detect")}
+
+
+def test_every_detector_that_draws_random_numbers_is_seeded_unless_the_settings_name_a_seed():
+    from bugarach.bench import OPERATING_POINTS
+    from bugarach.detect_folder import RNG_SEED
+
+    for det, op in OPERATING_POINTS.items():
+        got = d.seeded(det, {"x": 1})
+        assert got.get("rng_seed") == (RNG_SEED if op.takes_rng else None), det
+    assert d.seeded("cicada", {"rng_seed": 7})["rng_seed"] == 7
+
+
 def test_baseline_is_read_from_the_label():
     assert d.is_baseline("baseline") and d.is_baseline(" Baseline 2")
     assert not d.is_baseline("senktide") and not d.is_baseline(None)
