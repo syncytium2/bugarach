@@ -268,6 +268,10 @@ def _job(args):
                                       per_seed=scores if keep else None)
 
 
+ELEVATED = "elevated_"
+"""Prefix of the elevated-rate recording's kind in :func:`warm_floors`, one per regime."""
+
+
 def _warm(args):
     """Compute one recording's ADR-0008 floor into the shared cache (``bench.FLOOR_CACHE_ENV``)."""
     kind, seed = args
@@ -278,6 +282,8 @@ def _warm(args):
         rec, gt = bench.make_elevated_rate_recording(kind[len(ELEVATED):], seed)
     elif kind in TAIL:
         rec, gt = bench.make_tail_recording("baseline_" + kind.split("_", 1)[1], seed)
+    elif kind.startswith(ELEVATED):
+        rec, gt = bench.make_elevated_rate_recording(kind[len(ELEVATED):], seed)
     else:
         rec, gt = bench.make_recording(kind, seed)
     f = gt.params.get("event_floor")
@@ -290,6 +296,8 @@ def warm_floors(pool, sel, ho, log=print) -> dict:
     jobs = [(k, s) for k in (*REGIMES, NULL, *(ELEVATED + r for r in REGIMES))
             for s in (*sel, *ho)]
     jobs += [(k, s) for k in TAIL for s in (*list(sel)[:N_TAIL], *list(ho)[:N_TAIL])]
+    if hasattr(_load_bench(), "make_elevated_rate_recording"):     # ADR-0009 decision 1
+        jobs += [(ELEVATED + k, s) for k in REGIMES for s in (*sel, *ho)]
     t0 = time.time()
     out: dict = {}
     for kind, seed, f in pool.imap_unordered(_warm, jobs, chunksize=1):
