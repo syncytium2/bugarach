@@ -21,6 +21,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   `docs/goals/coded-detector-optimization.md`. Cutoff: phase 2 starts tonight only if both PRs are
   on `main` by 01:00 EDT (05:00 UTC).
 
+### 064/final-parameters — DARKROOM claim: `bugarach/2026-09-25-final-parameters/064/` (NEW, inside the orchestrator's)
+- **Status:** claimed 2026-09-25 02:00 UTC, before writing, by WSMIP064 under the orchestrator's
+  block above. PR B (`floor-and-grids`: the ADR-0008 floor in `run_detector` and the scorer,
+  don't-care scoring, both floors in `detect_with_floors.py`, the grids and bracketing), then the
+  phase 1 pilot and WSMIP064's phase 2 share (fast: every coded detector, and chorus). Released with
+  the orchestrator's block.
+- **Touches:** this block; `064/` in the darkroom folder only; PR B's files.
+
 ### 064/chorus-span-sweep — DARKROOM claim, released on merge: `bugarach/2026-09-24-chorus-span-sweep/` (NEW)
 - **Status:** claimed 2026-09-24, before writing; **released by the merge that brings this block to
   `main`**. Tony: *"train it at 400, run it short"*. The picked chorus checkpoints (trained on

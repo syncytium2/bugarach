@@ -51,8 +51,9 @@ def test_a_best_value_on_the_grid_edge_widens_the_grid():
     ev, summ, adm = _fake(f)
     state, _, grown = S.coordinate_rounds(["d"], {"d": {"x": 1.0}}, space, ev, summ, adm,
                                           log=lambda m: None)
-    assert max(grown["d"]["x"]) == 16.0       # 2 -> 4 -> 8 -> 16, three extensions
-    assert state["d"]["x"] == 16.0
+    top = 2.0 * 2 ** S.MAX_EXTENSIONS          # 2 -> 4 -> 8 -> ..., one doubling per extension
+    assert max(grown["d"]["x"]) == top
+    assert state["d"]["x"] == top
 
 
 def test_an_inadmissible_value_is_never_chosen_however_good():

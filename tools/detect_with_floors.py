@@ -8,11 +8,14 @@
 analysis window the folder declares (``detect_folder.folder_analysis_windows``, the same windows
 ``bugarach detect`` scores), on the fast, slow and combined streams:
 
-* **CoactDetect** at the setting ``tools/score_bench_candidates.py`` recorded for that stream (the
-  search's proposal where it had one, else the shipped operating point), run three ways:
-  ``tuned`` at the ``min_rois`` the setting carries (the overnight stop-gap, **pre-ADR-0008
-  floor**), ``own_floor`` at the window's own ADR-0008 floor, and ``baseline_floor`` at the same
-  recording's baseline floor;
+* **Every coded detector** in ``candidates.json`` at the setting ``tools/score_bench_candidates.py``
+  recorded for that stream (the search's proposal where it had one, else the shipped operating
+  point), run two ways (ADR-0008 decision 4, via ``event_floor.treatment_floors``): ``own_floor``
+  at the window's own floor and ``baseline_floor`` at the same recording's baseline floor. The
+  floor is the participation minimum of CoactDetect, LoCo and binned SCE and SPIKE-synch's
+  ``min_n`` (``bench.FLOORED_SETTING``); rate+context and locust have none, so their calls are
+  kept when their participants reach it. The pre-ADR-0008 ``tuned`` run of 2026-09-24 is gone:
+  nothing tonight is scored pre-ADR-0008;
 * **chorus** (``chorus_norm`` and ``chorus_gain_norm``, the checkpoint each training run's own rule
   picked for that stream), once per window. It has no participation parameter, so each call's
   **participants** are counted (ROIs with an onset inside the call's span, the span widened to the
@@ -48,7 +51,11 @@ sys.path.insert(0, str(REPO / "src"))
 
 TAG = "detect-with-floors-2026-09-24"
 STREAMS = ("fast", "slow", "combined")
-VARIANTS = ("tuned", "own_floor", "baseline_floor")
+VARIANTS = ("own_floor", "baseline_floor")
+from bugarach.bench import FLOOR_LABEL  # noqa: E402  (after the sys.path line above)
+from bugarach.bench import FLOORED_SETTING as FLOORED  # noqa: E402
+# The detectors whose participation minimum the floor sets run at it. The rest (rate+context,
+# locust) run as tuned and keep the calls whose participants reach the floor, as chorus does.
 _MODELS: dict = {}
 
 
@@ -72,8 +79,12 @@ def recording_task(args):
     from bugarach import event_floor as ef
     from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detect_folder import _region_index, folder_analysis_windows
+    from bugarach.detectors.cicada import cicada_detect
     from bugarach.detectors.coact import coact_detect
-    from bugarach.detectors.rate import stream_trains
+    from bugarach.detectors.loco import loco_detect
+    from bugarach.detectors.rate import rate_detect, stream_trains
+    from bugarach.detectors.sce import sce_detect
+    from bugarach.detectors.sync import sync_detect
     from bugarach.io import load_folder
 
     s = load_folder(Path(folder))[i]
@@ -111,6 +122,21 @@ def recording_task(args):
                 except ValueError:
                     floors[(idx, sname)] = None
         base_idx = next((idx for _, _, _, idx, label in wins if is_baseline(label)), None)
+        # Slice-level detectors (LoCo, binned SCE) take one participation minimum for the whole
+        # recording, so they run once per distinct floor and each window keeps the calls of the
+        # run at its own floor.
+        nested_runs: dict = {}
+
+        def nested(det_name, params, k):
+            key = (det_name, int(k))
+            if key not in nested_runs:
+                fn = {"loco": loco_detect, "sce": sce_detect, "cicada": cicada_detect}[det_name]
+                p = dict(params)
+                if det_name in FLOORED:
+                    p[FLOORED[det_name]] = int(k)
+                nested_runs[key] = fn(s, **p)
+            return nested_runs[key]
+
         for w, lo, hi, idx, label in wins:
             hours = (hi - lo) / 3600.0
             for sname in STREAMS:
@@ -119,33 +145,55 @@ def recording_task(args):
                 tr = stream_trains(s.streams[sname], (lo, hi))
                 own = floors.get((idx, sname))
                 base = floors.get((base_idx, sname)) if base_idx is not None else None
-                fl = dict(own_floor=own.floor if own else None,
-                          baseline_floor=base.floor if base else None)
+                pair = ef.treatment_floors(own, base) if own and base else None
+                fl = dict(own_floor=pair["own"] if pair else (own.floor if own else None),
+                          baseline_floor=pair["baseline"] if pair else
+                          (base.floor if base else None))
                 common = dict(**head, region_idx=idx, label=label,
                               window_kind="baseline" if is_baseline(label) else "treatment",
                               stream=sname, win_start=lo, win_end=hi, hours=hours,
                               n_roi=len(tr), **fl,
                               own_chance_floor=own.chance_floor if own else None,
                               own_floor_stable=own.stable if own else None)
-                params = dict(settings[sname])
-                tuned = int(params.get("min_rois", 3))
-                for variant in VARIANTS:
-                    k = tuned if variant == "tuned" else fl[variant]
-                    if k is None:
-                        rows.append(dict(common, detector="coact", variant=variant,
-                                         min_participants=None, n_calls=None,
-                                         calls_per_hour=None))
-                        continue
-                    det = coact_detect(tr, (lo, hi), **{**params, "min_rois": int(k)})
-                    on = np.asarray(det.onset_sec, float)
-                    wd = np.asarray(det.width_sec, float)
-                    for a_, b_ in zip(on, wd):
-                        calls.append(dict(common, detector="coact", variant=variant,
-                                          onset_sec=float(a_), width_sec=float(b_),
-                                          participants=participants(tr, a_, b_, ef.WINDOW_SEC)))
-                    rows.append(dict(common, detector="coact", variant=variant,
-                                     min_participants=int(k), n_calls=int(on.size),
-                                     calls_per_hour=on.size / hours if hours else None))
+                for det_name, params in settings[sname].items():
+                    params = {k: v for k, v in params.items() if k != FLOORED.get(det_name)}
+                    for variant in VARIANTS:
+                        k = fl[variant]
+                        if k is None:
+                            rows.append(dict(common, detector=det_name, variant=variant,
+                                             min_participants=None, n_calls=None,
+                                             calls_per_hour=None))
+                            continue
+                        if det_name in ("coact", "rate", "sync"):
+                            fn = {"coact": coact_detect, "rate": rate_detect,
+                                  "sync": sync_detect}[det_name]
+                            p = dict(params)
+                            if det_name in FLOORED:
+                                p[FLOORED[det_name]] = int(k)
+                            det = fn(tr, (lo, hi), **p)
+                        else:
+                            det = nested(det_name, params, k).streams[sname]
+                        on = np.asarray(getattr(det, "onset_sec", getattr(det, "locs", [])),
+                                        float)
+                        wd = np.asarray(getattr(det, "width_sec", getattr(det, "widths", [])),
+                                        float)
+                        inside = (on >= lo) & (on < hi)
+                        on, wd = on[inside], wd[inside]
+                        parts = [participants(tr, a_, b_, ef.WINDOW_SEC)
+                                 for a_, b_ in zip(on, wd)]
+                        # A detector with no participation minimum has the floor applied to its
+                        # calls' participants, as chorus does; one that takes it ran at it.
+                        keep = ([True] * len(parts) if det_name in FLOORED
+                                else [p_ >= k for p_ in parts])
+                        for a_, b_, p_, ok in zip(on, wd, parts, keep):
+                            if ok:
+                                calls.append(dict(common, detector=det_name, variant=variant,
+                                                  onset_sec=float(a_), width_sec=float(b_),
+                                                  participants=int(p_)))
+                        n = int(sum(keep))
+                        rows.append(dict(common, detector=det_name, variant=variant,
+                                         min_participants=int(k), n_calls=n,
+                                         calls_per_hour=n / hours if hours else None))
                 for name, path in model_paths.items():
                     if not name.endswith(f"@{sname}"):
                         continue
@@ -213,11 +261,15 @@ def main(argv=None) -> int:
     settings, model_paths, chosen = {}, {}, {}
     for sname in STREAMS:
         B = cand["benches"][sname]
-        prop = B["coact_proposal"]
-        settings[sname] = dict(prop["params"] if prop["name"] != "shipped"
-                               else B["coact_shipped"])
-        chosen[sname] = dict(coact=("proposal" if prop["name"] != "shipped" else "shipped"),
-                             coact_params=settings[sname], chorus={})
+        dets = B.get("detectors") or {"coact": dict(shipped=B["coact_shipped"],
+                                                    proposal=B["coact_proposal"])}
+        settings[sname], chosen[sname] = {}, dict(detectors={}, chorus={})
+        for det, info in dets.items():
+            prop = info["proposal"]
+            use = prop["name"] != "shipped"
+            settings[sname][det] = dict(prop["params"] if use else info["shipped"])
+            chosen[sname]["detectors"][det] = dict(which="proposal" if use else "shipped",
+                                                   params=settings[sname][det])
         for m, info in B["chorus"].items():
             if info.get("picked"):
                 model_paths[f"{m}@{sname}"] = str(a.models / f"models-{sname}" / info["picked"])
@@ -251,8 +303,8 @@ def main(argv=None) -> int:
         wr.writerows(calls)
     res = dict(tag=TAG, dataset=dataset.stamp(), recordings=n, failed=failed,
                elapsed_sec=time.time() - t0, draws=a.draws, groups=groups, chosen=chosen,
-               floor="pre-ADR-0008 floor for 'tuned'; ADR-0008 per-window floor for "
-                     "'own_floor' and 'baseline_floor' (bugarach.event_floor)",
+               floor=FLOOR_LABEL + ": every window under its own floor and its recording's "
+                     "baseline floor (event_floor.treatment_floors); chorus also 'unfloored'",
                participants_rule="ROIs with an onset in [onset, onset + max(width, 2 s)]",
                summary=summarise(rows, groups),
                floors={rec["slice_id"]: rec["floors"] for rec in recs})

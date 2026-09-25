@@ -15,11 +15,15 @@ operating point.** Adopting anything it finds is a separate decision.
 **What is searched.** The settings each detector declares in
 ``bench.OPERATING_POINTS`` (see :data:`SPACE`), excluding surrogate counts, which trade
 precision for compute time, and ``grid_dt``, which is the recording's frame interval.
-``min_rois`` **is** searched (it has been in ``FULL_GRIDS`` since 2026-09-17; this line used to
-say otherwise), but never below 3: a pair never counts as a coordinated event (ADR-0008,
-decision 1). That is the overnight stop-gap of 2026-09-24, "pre-ADR-0008 floor". Under ADR-0008
-the floor is set per recording from its own null and ``min_rois`` leaves the grids; that change is
-PR #793 and waits on two decisions.
+``min_rois`` and SPIKE-synch's ``min_n`` are **not** searched: since 2026-09-25 each recording's
+ADR-0008 floor sets them (``bench.run_detector``; ADR-0008 decision 6, ADR-0009 decision 3), and a
+planted event under that floor is "don't care" in the score (ADR-0009 decision 2). Every run
+record says so: ``"floor": bench.FLOOR_LABEL``.
+
+**Bracketing.** A setting is extended past a grid edge up to :data:`MAX_EXTENSIONS` times. Every
+candidate whose chosen value still sits at an edge of the final grid, or on an axis that used up
+its extensions, is recorded as **unbracketed** in ``search.json`` (``bracketing``), and
+``tools/score_bench_candidates.py`` carries that into ``candidates.json`` as not adoptable.
 
 **How, in three stages, each saved to ``search.json`` as it finishes:**
 
@@ -95,7 +99,10 @@ NULL = "null"
 TAIL = ("tail_quiet", "tail_busy")
 N_TAIL = 12
 MAX_ROUNDS = 4
-MAX_EXTENSIONS = 3
+MAX_EXTENSIONS = 6
+"""Extensions per axis over a whole search. 3 until 2026-09-25, when fast SPIKE-synch's ``dt`` and
+``C_min`` stopped at it unbracketed; raised for the final-parameters night, value set from the
+pilot's timings."""
 MOVE_EPS = 0.002
 BOOTSTRAP = 400
 BOOTSTRAP_SEED = 20260917
@@ -134,11 +141,8 @@ INTEGER = {"n_synchronous_frames", "sce_min_distance_frames", "min_rois", "min_n
 #: its largest gain of the six, which could not be installed (PR #754). An all-integer grid
 #: is treated the same way even when its name is missing here.
 COUNT_FLOOR = {"min_rois": 3, "min_n": 2}
-# min_rois: 3 since 2026-09-24 (ADR-0008, decision 1; the overnight stop-gap). SPIKE-synch's
-# min_n is not an ROI count but a sum of its coincidence measure over an event's bins, so ADR-0008
-# does not obviously set it; whether it does is filed for Tony (PR #793's todo).
-"""The smallest value a count may be extended to. A participant floor below two cells is not
-coordination; everything else stops at one."""
+"""The smallest value a count may be extended to, for a caller that still searches one: since
+2026-09-25 neither ``min_rois`` nor ``min_n`` is in ``FULL_GRIDS`` (ADR-0008's floor sets both)."""
 FRACTION = {"C_threshold", "C_min"}
 
 
@@ -247,7 +251,65 @@ def _job(args):
     return (det, items, regime), dict(f1=r.f1, recall=r.recall, precision=r.precision,
                                       probe_per_min=r.hot_fa_per_min, n_hit=r.n_hit,
                                       n_planted=r.n_planted,
+                                      under_floor=bench.under_floor_report(r),
                                       per_seed=scores if keep else None)
+
+
+def _warm(args):
+    """Compute one recording's ADR-0008 floor into the shared cache (``bench.FLOOR_CACHE_ENV``)."""
+    kind, seed = args
+    bench = _load_bench()
+    if kind == NULL:
+        rec, gt = bench.make_null_recording(seed)
+    elif kind in TAIL:
+        rec, gt = bench.make_tail_recording("baseline_" + kind.split("_", 1)[1], seed)
+    else:
+        rec, gt = bench.make_recording(kind, seed)
+    f = gt.params.get("event_floor")
+    return kind, seed, None if f is None else int(f)
+
+
+def warm_floors(pool, sel, ho, log=print) -> dict:
+    """Every recording's floor once, in parallel, before anything is scored — so no worker
+    recomputes one another worker already has. Returns ``{kind: {seed: floor}}``."""
+    jobs = [(k, s) for k in (*REGIMES, NULL) for s in (*sel, *ho)]
+    jobs += [(k, s) for k in TAIL for s in (*list(sel)[:N_TAIL], *list(ho)[:N_TAIL])]
+    t0 = time.time()
+    out: dict = {}
+    for kind, seed, f in pool.imap_unordered(_warm, jobs, chunksize=1):
+        out.setdefault(kind, {})[seed] = f
+    log(f"  floors: {len(jobs)} recordings in {time.time() - t0:.0f} s")
+    return out
+
+
+def bracketing(det: str, params: dict, grids: dict, declared: dict,
+               max_extensions: int) -> dict:
+    """Is this candidate an interior optimum on every axis it could move along?
+
+    An axis is unbracketed when the chosen value sits at an end of the final grid. ``reason``
+    says why it stayed there: ``cap`` (the axis used up :data:`MAX_EXTENSIONS`), ``limit`` (the
+    grid cannot go further, e.g. a guard of 0), or ``edge`` (extension stopped for another
+    reason). The runbook's rule is that any of the three makes the candidate not adoptable;
+    ``only_at_limits`` says when every one of them is a ``limit``, for the reader.
+    """
+    axes = {}
+    for k, values in grids.items():
+        numeric = all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values)
+        if not (numeric and len(values) > 1) or not _bench.setting_applies(det, k, params):
+            continue
+        v = params.get(k)
+        if v is None or (isinstance(v, float) and math.isnan(v)):
+            continue
+        if v not in (min(values), max(values)):
+            continue
+        low = v == min(values)
+        used = len(values) - len(declared.get(k, values))
+        can = extend(k, list(values), low_end=low) is not None
+        reason = "limit" if not can else "cap" if used >= max_extensions else "edge"
+        axes[k] = dict(side="low" if low else "high", value=v, extensions_used=max(used, 0),
+                       reason=reason)
+    return dict(bracketed=not axes, unbracketed_axes=axes,
+                only_at_limits=bool(axes) and all(a["reason"] == "limit" for a in axes.values()))
 
 
 class Evaluator:
@@ -653,8 +715,10 @@ def held_out(pool, candidates, seeds, log=print):
             q, b, n = (per[name][r] for r in (*REGIMES, NULL))
             gains = [mean_f1(name, idx) - bb for idx, bb in zip(idx_draws, base)]
             gains = [g for g in gains if math.isfinite(g)]
+            under_floor = {r: bench.under_floor_report(bench.pool_scores(
+                per[name][r]["per_seed"], detector=d, regime=r)) for r in REGIMES}
             out[d][name] = dict(
-                params=p, f1_quiet=q["f1"], f1_busy=b["f1"],
+                params=p, under_floor=under_floor, f1_quiet=q["f1"], f1_busy=b["f1"],
                 mean_f1=mean_f1(name, full),
                 probe_quiet_per_hour=60 * q["probe_per_min"],
                 probe_busy_per_hour=60 * b["probe_per_min"],
@@ -853,6 +917,8 @@ def main(argv=None) -> int:
                     help="which stream's bench to search: bugarach.bench (fast, the default) "
                          "or bugarach.bench_slow. Every stage and every worker reads the one "
                          "chosen here (docs/handoffs/2026-09-21-slow-bench.md)")
+    ap.add_argument("--max-extensions", type=int, default=MAX_EXTENSIONS,
+                    help=f"extensions per axis past a grid edge (default {MAX_EXTENSIONS})")
     ap.add_argument("--out", type=Path, default=None,
                     help="destination (default: <darkroom>/<date>-full-search, with -slow "
                          "appended for --bench slow, so a fast and a slow search on the same "
@@ -921,8 +987,18 @@ def main(argv=None) -> int:
 
     sel, ho = list(range(1, n + 1)), list(range(n + 1, 2 * n + 1))
     rep = dict(started=datetime.datetime.now().isoformat(timespec="seconds"),
-               bench=_bench.__name__, selection_seeds=sel, held_out_seeds=ho, space=space, shipped=shipped,
+               bench=_bench.__name__,
+               floor=(_bench.FLOOR_LABEL if _bench.floor_enabled()
+                      else f"pre-ADR-0008 ({_bench.FLOOR_SWITCH_ENV}=off)"),
+               max_extensions=a.max_extensions,
+               selection_seeds=sel, held_out_seeds=ho, space=space, shipped=shipped,
                stage="started", selection={})
+    # Set before the pool starts: workers spawned on Windows inherit it, and each recording's
+    # floor is then computed once between all of them (`warm_floors`), not once per worker.
+    # A cache already named in the environment wins: an --out in the Dropbox darkroom would
+    # otherwise sync hundreds of small files, and a machine-local cache is shared across runs.
+    import os
+    os.environ.setdefault(_bench.FLOOR_CACHE_ENV, str(dest / "floor_cache"))
 
     def save():
         (dest / "search.json").write_text(json.dumps(rep, indent=1, default=str))
@@ -932,6 +1008,11 @@ def main(argv=None) -> int:
     with Pool(a.workers) as pool:
         ev = Evaluator(pool, sel, log)
         ev.crowded = not a.no_crowded_veto
+        log("floors: each recording's ADR-0008 floor, once")
+        floors = warm_floors(pool, sel, ho, log)
+        rep["recording_floors"] = {k: {str(s): f for s, f in sorted(v.items())}
+                                   for k, v in floors.items()}
+        save()
         gate = admissible
         if ev.crowded:
             # The reference is what the setting a candidate would REPLACE scores on the
@@ -959,7 +1040,8 @@ def main(argv=None) -> int:
 
         log("stage 1: coordinate rounds")
         state, history, grown = coordinate_rounds(
-            dets, shipped, space, ev.run, ev.summary, gate, valid, log)
+            dets, shipped, space, ev.run, ev.summary, gate, valid, log,
+            max_extensions=a.max_extensions)
         rep.update(stage="rounds done", rounds=dict(state=state, history=history, grids=grown))
         save()
 
@@ -977,6 +1059,14 @@ def main(argv=None) -> int:
                 c["pair"] = pairs[d]["best"]
             candidates[d] = c
             rep["selection"][d] = {name: ev.summary(d, p)["mean_f1"] for name, p in c.items()}
+            rep.setdefault("bracketing", {})[d] = {
+                name: bracketing(d, p, grown[d], space[d], a.max_extensions)
+                for name, p in c.items()}
+            for name, br in rep["bracketing"][d].items():
+                if name != "shipped" and not br["bracketed"]:
+                    log(f"  {NAMES[d]} {name}: UNBRACKETED on "
+                        + ", ".join(f"{k} ({v['side']} {v['reason']})"
+                                    for k, v in br["unbracketed_axes"].items()))
 
         log("stage 3: held-out confirmation")
         rep["held_out"] = held_out(pool, candidates, ho, log)

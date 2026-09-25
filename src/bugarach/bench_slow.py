@@ -69,6 +69,10 @@ import numpy as np
 
 from bugarach import bench as _fast
 from bugarach.bench import (  # noqa: F401  (shared: none reads a stream constant)
+    FLOOR_CACHE_ENV,
+    FLOOR_LABEL,
+    FLOOR_SWITCH_ENV,
+    FLOORED_SETTING,
     FULL_GRID_PAIRS,
     MIN_BASELINE_SEC,
     NOT_SEARCHED,
@@ -79,11 +83,15 @@ from bugarach.bench import (  # noqa: F401  (shared: none reads a stream constan
     OperatingPoint,
     TooPromiscuous,
     context_fits_the_null,
+    floor_enabled,
     fold_split,
     nearest_neighbour_gaps,
     pool_scores,
+    recording_floor,
     setting_applies,
     settings_are_valid,
+    under_floor_report,
+    with_floor,
 )
 from bugarach.detectors.cicada import cicada_detect
 from bugarach.detectors.coact import coact_detect
@@ -372,8 +380,9 @@ def measured_constants() -> dict[str, float]:
 
 
 def _simulate(seed, spec, overrides):
-    return simulate_coordination(seed=seed, width_quantiles=MEASURED_WIDTH_QUANTILES,
-                                 **{**spec, **overrides})
+    # Every recording carries its own ADR-0008 floor (`bench.with_floor`; ADR-0009).
+    return _fast.with_floor(simulate_coordination(
+        seed=seed, width_quantiles=MEASURED_WIDTH_QUANTILES, **{**spec, **overrides}))
 
 
 def make_recording(regime: str, seed: int, **overrides):
@@ -399,12 +408,14 @@ def make_null_recording(seed: int, **overrides):
     return _simulate(seed, {**BENCH_RECORDING, **NULL_RECORDING}, overrides)
 
 
-def run_detector(name: str, s, *, rng_seed: int = 20260706, **overrides):
+def run_detector(name: str, s, *, rng_seed: int = 20260706, floor: bool | None = None,
+                 **overrides):
     """One detector on a slice at THIS module's operating point. Copy of ``bench``'s."""
     if name not in OPERATING_POINTS:
         raise ValueError(f"unknown detector {name!r} — have {sorted(OPERATING_POINTS)}")
     op = OPERATING_POINTS[name]
-    params = {**op.params, **overrides}
+    params = _fast.floored_params(name, s, op.params, overrides, STREAM,
+                                  floor)
     if op.takes_rng:
         params["rng_seed"] = rng_seed
     if name in ("loco", "cicada", "sce"):
