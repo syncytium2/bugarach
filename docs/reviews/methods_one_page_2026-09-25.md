@@ -83,7 +83,7 @@ escalation point. It is the next step if Tony wants the run continued.
 - ⚠ **Role 5's prose tool** (`murderboard_prose.sh`) is not vendored here; roles 5 ran the
   banned-construction search by hand, each round, with zero hits.
 - ⚠ **Upstream murderboard bug**: `murderboard_roster.sh` strips every underscore from the
-  `reports:` line, so the archive name the skill prescribes (`<artifact-stem>_<date>-roles`)
+  archive declaration, so the archive name the skill prescribes (`<artifact-stem>_<date>-roles`)
   can never resolve when the stem has an underscore. The archive here is named with hyphens
   instead. A report for upstream, not a local edit (the tool is vendored).
 - ⚠ **The blind rounds ran as generic reviewers**, not the named role agents, and both declared
