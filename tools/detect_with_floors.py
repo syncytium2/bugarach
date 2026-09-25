@@ -63,6 +63,22 @@ def is_baseline(label) -> bool:
     return (label or "").strip().lower().startswith("baseline")
 
 
+def seeded(det: str, params: dict) -> dict:
+    """``params`` with the fixed ``rng_seed`` `bugarach detect` gives every detector that draws
+    random numbers (``detect_folder.RNG_SEED``), unless the settings name one.
+
+    Without it locust and SCE draw their surrogate thresholds from an unseeded generator, so the
+    same run gives different calls: the final-parameters night's two real-data runs differed in
+    four locust verdicts for no other reason (2026-09-25)."""
+    from bugarach.bench import OPERATING_POINTS
+    from bugarach.detect_folder import RNG_SEED
+
+    op = OPERATING_POINTS.get(det)
+    if op is None or not op.takes_rng or "rng_seed" in params:
+        return params
+    return {**params, "rng_seed": RNG_SEED}
+
+
 def frames_in(trains_sec, lo: float, dt: float) -> list[np.ndarray]:
     return [np.unique(np.floor((np.asarray(t, float) - lo) / dt + 1e-9).astype(np.int64))
             for t in trains_sec]
@@ -100,7 +116,7 @@ def recording_task(args):
         # The settings were tuned on the bench; rate+context's grid and locust's frame rate belong
         # to this recording's microscope, as in `bugarach detect` (detect_folder.with_microscope).
         # Until 2026-09-25 this tool ran CoactDetect only, so neither was ever reached.
-        settings = {sn: {d: with_microscope(d, p, dt) for d, p in by_det.items()}
+        settings = {sn: {d: seeded(d, with_microscope(d, p, dt)) for d, p in by_det.items()}
                     for sn, by_det in settings.items()}
         for name, path in model_paths.items():
             if path not in _MODELS:
