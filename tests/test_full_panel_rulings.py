@@ -20,14 +20,15 @@ import train_learned_on_bench as T  # noqa: E402
 
 @pytest.fixture
 def off(monkeypatch):
-    monkeypatch.delenv(S.REALISTIC_ENV, raising=False)
-    monkeypatch.setattr(S._bench, "REALISTIC", False, raising=False)
+    from bugarach import bench
+    monkeypatch.delenv(bench.SPACING_ENV, raising=False)
     assert not S.realistic()
 
 
 @pytest.fixture
 def on(monkeypatch):
-    monkeypatch.setenv(S.REALISTIC_ENV, "1")
+    from bugarach import bench
+    monkeypatch.setenv(bench.SPACING_ENV, "realistic")
     assert S.realistic()
 
 
@@ -54,9 +55,15 @@ def test_without_the_realistic_bench_every_old_rule_stands(off):
     assert "findings" not in br and br["only_at_limits"] is True
 
 
-def test_a_bench_that_declares_itself_realistic_names_it(monkeypatch):
-    monkeypatch.delenv(S.REALISTIC_ENV, raising=False)
+def test_the_spacing_is_the_one_switch(monkeypatch):
+    """#828's BUGARACH_REALISTIC and a bench module's REALISTIC attribute are retired: the spacing
+    alone names the rulings, and the ORX spacing runs under them too."""
+    from bugarach import bench
+    monkeypatch.delenv(bench.SPACING_ENV, raising=False)
+    monkeypatch.setenv("BUGARACH_REALISTIC", "1")
     monkeypatch.setattr(S._bench, "REALISTIC", True, raising=False)
+    assert not S.realistic()
+    monkeypatch.setenv(bench.SPACING_ENV, "orx")
     assert S.realistic()
 
 

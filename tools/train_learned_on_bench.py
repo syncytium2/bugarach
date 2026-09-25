@@ -64,9 +64,6 @@ TEST = tuple(range(4000, 4024))
 NULLS = tuple(range(4000, 4012))
 REG = ("baseline_quiet", "baseline_busy")
 BUSY = 100_000
-REALISTIC_ENV = "BUGARACH_REALISTIC"
-"""Set by ``--realistic`` (as ``tools/search_all_settings.py`` sets it), for a bench module that
-selects its realistic recordings by it."""
 
 
 def config(model: str) -> dict:
@@ -78,10 +75,11 @@ def config(model: str) -> dict:
 def seed_sets(bench: str, realistic: bool):
     """(fit, test, nulls) seeds. ADR-0010 ruling 2: on the realistic bench fast plants about 7
     events per recording instead of 15, so its seed counts are doubled to hold the number of
-    scored events."""
-    if realistic and bench == "fast":
-        return (tuple(range(1000, 1048)), tuple(range(4000, 4048)), tuple(range(4000, 4024)))
-    return FIT, TEST, NULLS
+    scored events. The factor is ``bench.seed_factor``'s, the one place that decides it."""
+    from bugarach.bench import seed_factor
+
+    f = seed_factor(bench, "realistic" if realistic else "bench")
+    return tuple(tuple(range(s[0], s[0] + len(s) * f)) for s in (FIT, TEST, NULLS))
 
 
 def training_recording(b, realistic: bool):
@@ -124,18 +122,27 @@ def main(argv=None) -> int:
     ap.add_argument("--device", default=None, help="cuda, or omit for CPU (about 200 s a fit)")
     ap.add_argument("--steps", type=int, default=900)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--spacing", choices=("bench", "realistic", "orx"), default=None,
+                    help="how the bench spaces its planted events (bench.SPACINGS; default "
+                         "'bench', unchanged). 'realistic' (or 'orx') trains on the realistic "
+                         "recordings with boundary planting and floor labels, fast's seeds "
+                         "doubled (ADR-0010)")
     ap.add_argument("--realistic", action="store_true",
-                    help="ADR-0010: train on the realistic bench with boundary planting (events "
-                         "at floor - 1, floor, floor + 1; under the floor labelled no-event for "
-                         "training only, don't-care for scoring), fast's seeds doubled")
+                    help="the same as --spacing realistic: realistic recordings with boundary "
+                         "planting (events at floor - 1, floor, floor + 1; under the floor "
+                         "labelled no-event for training only, don't-care for scoring), fast's "
+                         "seeds doubled. Refused with --spacing bench")
     a = ap.parse_args(argv)
 
-    import os
-
-    if a.realistic:
-        os.environ[REALISTIC_ENV] = "1"
-    else:
-        os.environ.pop(REALISTIC_ENV, None)
+    from bugarach import bench as _b
+    try:
+        a.spacing = _b.spacing_from_args(a.spacing, a.realistic)
+    except ValueError as e:
+        ap.error(str(e))
+    # One source of truth: the spacing. It plants the realistic recordings (bench.make_recording
+    # reads it), and it is what switches on boundary planting and the doubled seeds below.
+    _b.use_spacing(a.spacing)
+    a.realistic = a.spacing != "bench"
     from bugarach.learn.checkpoint import save
     from bugarach.learn.train import fold_maker, train
 
@@ -157,10 +164,9 @@ def main(argv=None) -> int:
         path = a.out / f"{a.model}_{a.bench}_seed{seed}.json"
         how = ("participation.boundary_recording over " if a.realistic else "")
         save(tr, path, trained_on=f"{how}{name}.make_recording seeds {fit[0]}-{fit[-1]}, "
-                                  f"quiet+busy", train_seed=seed, steps=a.steps, n_fit=10,
-             n_threshold_val=n_val,
-             note=f"tools/train_learned_on_bench.py --bench {a.bench}"
-                  + (" --realistic" if a.realistic else ""))
+                                  f"quiet+busy, spacing {a.spacing}", train_seed=seed,
+             steps=a.steps, n_fit=10, n_threshold_val=n_val,
+             note=f"tools/train_learned_on_bench.py --bench {a.bench} --spacing {a.spacing}")
         row = dict(seed=seed, path=path.name, threshold=float(tr.threshold),
                    **held_out(b, lambda sl: tr.predict(sl)[0], test, nulls),
                    sec=round(time.time() - t0))
@@ -171,6 +177,7 @@ def main(argv=None) -> int:
     best = max(ok, key=lambda r: r["mean"])
     shutil.copyfile(a.out / best["path"], a.out / "best.json")
     summary = dict(bench=name, model=a.model, config=config(a.model),
+                   spacing=a.spacing,
                    **(dict(realistic=True, floor_labels=True,
                            boundary_planting="floor - 1, floor, floor + 1; one event each")
                       if a.realistic else {}),

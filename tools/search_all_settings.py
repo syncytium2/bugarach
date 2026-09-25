@@ -165,12 +165,12 @@ FRACTION = {"C_threshold", "C_min"}
 
 # ------------------------------------------------------------------ ADR-0010's search rulings
 #
-# Applied ONLY when the realistic bench is named (`--realistic`, or a bench module that sets
-# `REALISTIC = True`). Every other run searches exactly as before (tests pin that).
+# Applied ONLY when a realistic spacing is named (`--spacing realistic` or `orx`, or its alias
+# `--realistic`). Every other run searches exactly as before (tests pin that). The one source of
+# truth is `bench.spacing()`, read from BUGARACH_BENCH_SPACING, which `main` sets before the pool
+# starts so workers spawned on Windows read the same mode. (#828's BUGARACH_REALISTIC and a bench
+# module's REALISTIC attribute are retired: two switches let either one alone run half of ADR-0010.)
 
-REALISTIC_ENV = "BUGARACH_REALISTIC"
-"""Set to ``1`` by ``--realistic`` before the pool starts, so workers spawned on Windows, which
-re-import this module, read the same mode."""
 ALPHA_CAP = 6e-16
 """Ruling 6: CoactDetect's ``alpha`` extends down to about 8 standard deviations of its normal
 approximation (one-sided 8 SD is 6.2e-16), in tenfold steps, exempt from the per-axis extension
@@ -196,11 +196,11 @@ N_STEP_OFF_SEEDS = 8
 
 
 def realistic() -> bool:
-    """Is this run on the realistic bench (ADR-0010)? Named by ``--realistic``, or by a bench
-    module declaring ``REALISTIC = True``."""
-    import os
+    """Is this run on a realistic spacing (ADR-0010)? ``bench.spacing() != "bench"``: the ORX
+    spacing is scored under the same rulings as the realistic one."""
+    from bugarach import bench as _b
 
-    return os.environ.get(REALISTIC_ENV) == "1" or bool(getattr(_bench, "REALISTIC", False))
+    return _b.spacing() != "bench"
 
 
 def realistic_space(space: dict) -> dict:
@@ -1157,8 +1157,15 @@ def main(argv=None) -> int:
 
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--seeds", type=int, default=48,
-                    help="recordings per point for selection; held-out uses as many more")
+    ap.add_argument("--seeds", type=int, default=None,
+                    help="recordings per point for selection; held-out uses as many more "
+                         "(default 48, doubled on fast under a realistic --spacing, ADR-0010 "
+                         "ruling 2)")
+    ap.add_argument("--spacing", choices=("bench", "realistic", "orx"), default=None,
+                    help="how the bench spaces its planted events (bench.SPACINGS): 'bench', "
+                         "the old >= 120 s (the default, unchanged); 'realistic', gaps and "
+                         "event counts from the measured real intervals, searched under "
+                         "ADR-0010's rulings; 'orx', spaced like ORX, under the same rulings")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--full", nargs="*", default=[], choices=list(SPACE),
                     help="also search every combination for these detectors")
@@ -1180,24 +1187,33 @@ def main(argv=None) -> int:
     ap.add_argument("--max-extensions", type=int, default=MAX_EXTENSIONS,
                     help=f"extensions per axis past a grid edge (default {MAX_EXTENSIONS})")
     ap.add_argument("--realistic", action="store_true",
-                    help="search the realistic bench under ADR-0010's rulings: alpha down to "
-                         "~8 SD (6e-16), contexts inside [20 s, 120 s], LoCo's threshold held "
-                         "at shipped, the guard cap, the close-events recording retired, and "
-                         "every value at an off-limit or a cap recorded as a finding (ruling 5). "
-                         "On by itself when the bench module declares REALISTIC = True")
+                    help="the same as --spacing realistic: realistic recordings, searched under "
+                         "ADR-0010's rulings (alpha down to ~8 SD, 6e-16; contexts inside "
+                         "[20 s, 120 s]; LoCo's threshold held at shipped; the guard cap; the "
+                         "close-events recording retired; every value at an off-limit or a cap "
+                         "recorded as a finding, ruling 5), fast's seeds doubled. Refused with "
+                         "--spacing bench")
     ap.add_argument("--out", type=Path, default=None,
                     help="destination (default: <darkroom>/<date>-full-search, with -slow "
                          "appended for --bench slow, so a fast and a slow search on the same "
                          "day never write one folder)")
     a = ap.parse_args(argv)
-    import os
-    # Always set by `main`, like the bench: a value left in the shell cannot switch a run's
-    # rulings silently.
-    if a.realistic:
-        os.environ[REALISTIC_ENV] = "1"
-    else:
-        os.environ.pop(REALISTIC_ENV, None)
+    from bugarach import bench as _b
+    try:
+        a.spacing = _b.spacing_from_args(a.spacing, a.realistic)
+    except ValueError as e:
+        ap.error(str(e))
     use_bench(a.bench)
+    # Always set by `main`, before the pool starts, like the bench: every worker plants at the
+    # same spacing and searches under the same rules, and a value left in the shell cannot switch
+    # a run's rulings silently. `realistic()` reads it.
+    _b.use_spacing(a.spacing)
+    if a.seeds is None:
+        a.seeds = 48 * _b.seed_factor(a.bench)       # the one place: 96 on fast, realistic
+    if realistic() and not a.no_crowded_veto:
+        # ADR-0010 part 4: the close-events recording and its allowance are retired on the
+        # realistic bench, whose scored recordings carry close events themselves.
+        a.no_crowded_veto = True
 
     if a.out:
         dest = a.out.expanduser()
@@ -1270,6 +1286,8 @@ def main(argv=None) -> int:
     sel, ho = list(range(1, n + 1)), list(range(n + 1, 2 * n + 1))
     rep = dict(started=datetime.datetime.now().isoformat(timespec="seconds"),
                bench=_bench.__name__,
+               spacing=_b.spacing(),
+               crowded_veto=not a.no_crowded_veto,
                floor=(_bench.FLOOR_LABEL if _bench.floor_enabled()
                       else f"pre-ADR-0008 ({_bench.FLOOR_SWITCH_ENV}=off)"),
                max_extensions=a.max_extensions,

@@ -35,7 +35,9 @@ scores a correct detector at zero.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
@@ -568,7 +570,13 @@ def context_fits_the_null(p: dict, min_sep_sec: float) -> bool:
     ``min_sep_sec`` is the SCORED recordings' spacing, so a caller scoring something other
     than :data:`BENCH_RECORDING` passes its own — goal 2's home spec plants at 171 s, and its
     per-fold search binds this rule with that number.
+
+    **Retired under a realistic** :func:`spacing` (ADR-0010 part 4): there a neighbouring event
+    inside the context is realistic and part of what the bench measures, so every context passes.
+    ADR-0009 decision 5's cap of 120 s on contexts stands; it lives in the search grids.
     """
+    if spacing() != "bench":
+        return True
     context = p.get("context_win_sec", p.get("context_win"))
     return context is None or context <= min_sep_sec
 
@@ -1078,6 +1086,106 @@ history above now describe that recording's stretch.
 """
 
 
+# --- the spacing of planted events (ADR-0010 part 2, rulings 1 and 2) ------------------------------
+
+SPACING_ENV = "BUGARACH_BENCH_SPACING"
+"""Which spacing the benches plant events at. Set by a tool's ``--spacing`` before its pool starts,
+so every worker reads the same one, as ``BUGARACH_BENCH`` does for the stream. Unset is
+``"bench"``."""
+
+SPACINGS = ("bench", "realistic", "orx")
+"""``"bench"``: the old spacing, at least 120 s (every recording byte-identical to before).
+``"realistic"``: every planted gap drawn from the measured baseline gaps of the stream, pooled over
+the four groups, and as many events as the stream's measured events per hour give a 45-minute
+recording (ADR-0010 ruling 2: replace, not mix). ``"orx"``: the same, with gaps from ORX's
+recordings alone, for scoring only (ruling 1: check the rankings hold where ORX's spacing differs,
+slow above all)."""
+
+INTERVALS_RUN = (Path(__file__).resolve().parents[2]
+                 / "docs" / "learned" / "runs" / "2026-09-25-real-intervals")
+"""The committed measurement (``tools/measure_real_intervals.py``), so a run reproduces from a
+clone rather than from a darkroom copy."""
+
+
+def spacing() -> str:
+    """The spacing in force (:data:`SPACING_ENV`), refused if it is not one of :data:`SPACINGS`."""
+    import os
+
+    s = os.environ.get(SPACING_ENV, "bench").strip() or "bench"
+    if s not in SPACINGS:
+        raise ValueError(f"{SPACING_ENV}={s!r} is not one of {SPACINGS}")
+    return s
+
+
+def use_spacing(name: str) -> str:
+    """Set :data:`SPACING_ENV` for this process and every worker it starts."""
+    import os
+
+    if name not in SPACINGS:
+        raise ValueError(f"spacing {name!r} is not one of {SPACINGS}")
+    os.environ[SPACING_ENV] = name
+    return name
+
+
+def realistic_counts(stream: str, n_levels: int, duration_sec: float) -> tuple[int, ...]:
+    """Events per participation level for a recording of ``duration_sec`` at the stream's
+    measured events per hour (baseline windows, all groups), rounded; split as evenly as possible,
+    the middle (measured) level first, then the highest. Fast: 9.7 per hour, 7 events."""
+    rec = json.loads((INTERVALS_RUN / "summary.json").read_text(encoding="utf-8"))
+    total = int(round(rec["summary"][stream]["all"]["events_per_hour"] * duration_sec / 3600.0))
+    base, rem = divmod(total, n_levels)
+    counts = [base] * n_levels
+    for i in ((n_levels // 2, 0, n_levels - 1) if n_levels >= 3 else range(n_levels))[:rem]:
+        counts[i] += 1
+    return tuple(counts)
+
+
+def spacing_overrides(stream: str, recording: dict) -> dict:
+    """What a planted recording's maker adds under :func:`spacing`: nothing for ``"bench"``."""
+    from bugarach.real_intervals import load_gaps
+
+    s = spacing()
+    if s == "bench":
+        return {}
+    pool = "pooled" if s == "realistic" else "ORX"
+    return dict(gap_source=load_gaps(stream, pool=pool,
+                                     path=INTERVALS_RUN / "gaps_for_generator.json"),
+                gap_mix=0.0,
+                n_per_level=realistic_counts(stream, len(recording["n_per_level"]),
+                                             recording["duration_sec"]))
+
+
+def seed_factor(stream: str, spacing_name: str | None = None) -> int:
+    """Seed-count multiplier under the realistic spacings: 2 on fast, 1 elsewhere. Real fast
+    events are sparser (9.7 per hour), so a 45-minute fast recording plants about 7 events
+    instead of 15, and doubling fast's selection, held-out and fresh seeds holds the number of
+    scored events (ADR-0010 ruling 2).
+
+    **The one place this is decided.** The search (selection and held-out seeds), the training
+    tool (fit, test and no-coordination seeds) and the fresh-seed scorer (fresh and null seeds)
+    all read it, so fast's seeds are doubled exactly once. ``spacing_name`` defaults to the
+    spacing in force (:func:`spacing`)."""
+    s = spacing() if spacing_name is None else spacing_name
+    if s not in SPACINGS:
+        raise ValueError(f"spacing {s!r} is not one of {SPACINGS}")
+    return 2 if stream == "fast" and s != "bench" else 1
+
+
+def spacing_from_args(spacing_arg: str | None, realistic_flag: bool) -> str:
+    """Resolve a tool's ``--spacing`` and its ``--realistic`` alias into one spacing name.
+
+    ``--realistic`` means ``--spacing realistic``; given together with ``--spacing bench`` the
+    two contradict each other and are refused. Neither given is ``"bench"``. Every tool that takes
+    the flags resolves them here, so one flag, in either spelling, names the whole realistic
+    setup: the recordings (:func:`spacing_overrides`), the search's ADR-0010 rulings, boundary
+    planting in training, and fast's doubled seeds (:func:`seed_factor`)."""
+    if realistic_flag:
+        if spacing_arg == "bench":
+            raise ValueError("--realistic and --spacing bench contradict each other")
+        return spacing_arg or "realistic"
+    return spacing_arg or "bench"
+
+
 def make_recording(regime: str, seed: int, **overrides):
     """One bench recording. ``regime`` selects the background rate.
 
@@ -1085,11 +1193,15 @@ def make_recording(regime: str, seed: int, **overrides):
     treatment regime to accept. See :data:`REGIMES`. Like every simulated
     recording it carries per-event widths for locust — see
     :data:`bugarach.simulate.MEASURED_WIDTH_QUANTILES`.
+
+    Under a realistic :func:`spacing` the planted gaps and the event count come from the real
+    data (:func:`spacing_overrides`); unset, the recording is exactly what it always was.
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
     return with_floor(simulate_coordination(
-        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides}))
+        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime],
+                      **spacing_overrides("fast", BENCH_RECORDING), **overrides}))
 
 
 CROWDED_RECORDING = dict(BENCH_RECORDING, min_sep_sec=14.0, duration_sec=10800.0,

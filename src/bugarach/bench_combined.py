@@ -363,10 +363,12 @@ def _simulate(seed, spec, overrides):
 
 
 def make_recording(regime: str, seed: int, **overrides):
-    """One combined bench recording; ``regime`` selects the background. Copy of ``bench``'s."""
+    """One combined bench recording; ``regime`` selects the background. Copy of ``bench``'s,
+    including its spacing switch (``bench.spacing_overrides``, combined's own gaps and count)."""
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return _simulate(seed, {**BENCH_RECORDING, **REGIMES[regime]}, overrides)
+    return _simulate(seed, {**BENCH_RECORDING, **REGIMES[regime],
+                            **_fast.spacing_overrides("combined", BENCH_RECORDING)}, overrides)
 
 
 def make_crowded_recording(regime: str, seed: int, **overrides):
