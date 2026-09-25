@@ -207,8 +207,10 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
    spacing: combined medians run from 23 to 32 s. Slow ORX is the one clear difference in
    spacing, a median of 45 s against 25 s for the rest, from 17 gaps. So the morning report also
    scores the panel on a bench spaced like slow ORX, to check the rankings hold there.
-2. **Replace or mix.** Draw every planted gap from the real distribution (as written), or keep a
-   share of isolated 120 s events as a reference.
+2. **Replace or mix. Ruled 2026-09-25 by Tony: replace.** Every planted gap is drawn from the
+   real distribution, and no share is kept at the old ≥120 s spacing. Isolated events stay in the
+   bench anyway: 8–24% of real baseline gaps are 120 s or longer (95th percentile 171–368 s). The
+   old bench is not scored as a reference.
 3. **The review tool's counting window.** ±1 s around the call's span (as written), or another
    width.
 4. **The learned models' bar** (part 5), as stated or otherwise.
