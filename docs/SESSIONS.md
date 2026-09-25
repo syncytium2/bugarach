@@ -10,6 +10,17 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### orchestrator/overnight-final-parameters — DARKROOM claim: `bugarach/2026-09-25-final-parameters/` (NEW)
+- **Status:** claimed 2026-09-25 01:50 UTC, before any session writes, by the orchestrator of the
+  night in `HANDOFF-overnight-final-parameters.md`. Workers: WSMIP065 builds PR A (the bench,
+  ADR-0009 decision 1, and the re-measured floors); WSMIP064 builds PR B (the floor in
+  `run_detector` and the scorer, the search grids) and runs the pilot. Each worker writes only under
+  its own subfolder (`065/`, `064/`) and adds its own block here for it. Released by the merge that
+  brings the morning report to `main`.
+- **Touches:** this block; the phase PRs' run records under `docs/learned/runs/`; the goal page
+  `docs/goals/coded-detector-optimization.md`. Cutoff: phase 2 starts tonight only if both PRs are
+  on `main` by 01:00 EDT (05:00 UTC).
+
 ### 065/bench-adr-0009 — DARKROOM claim: `bugarach/2026-09-25-final-parameters/065/` (NEW, under the orchestrator's #807 claim)
 - **Status:** claimed 2026-09-25 ~02:10 UTC, before writing, by WSMIP065 for PR A of the
   final-parameters night (`HANDOFF-overnight-final-parameters.md`, phase 0; ADR-0009 decision 1).
