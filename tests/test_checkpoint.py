@@ -56,8 +56,10 @@ def _raster(n_roi=24, n_frame=600, seed=3):
 
 
 def _score(tr, x):
+    # A model that reads the recording's floor (ADR-0010 part 5) refuses to run without one.
+    kw = {"floor": 4} if getattr(tr.model, "reads_floor", False) else {}
     with torch.no_grad():
-        return tr.model(x).squeeze(0).numpy()
+        return tr.model(x, **kw).squeeze(0).numpy()
 
 
 @pytest.mark.parametrize("arch", sorted(ARCHITECTURES))

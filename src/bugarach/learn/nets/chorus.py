@@ -22,7 +22,7 @@ __all__ = ["build_chorus"]
                          "statistics instead of one sum",
           roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=4)
 def build_chorus(*, roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=4,
-                 input_gain=None, norm=False, vote_gain=None, eps=1e-6):
+                 input_gain=None, norm=False, vote_gain=None, eps=1e-6, participation=False):
     """Filter every cell, bound its vote, and pool the field into its SHAPE.
 
     ``tube`` averages the cell axis away in its second stage and everything after
@@ -75,11 +75,20 @@ def build_chorus(*, roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=
     * ``vote_gain`` -- ``line``'s vote on the standardised output,
       ``sigmoid(gain * (z - bias))`` with a learnable gain started at this value and a
       learnable bias started at 0.5 (``chorus_gain_norm``, with ``norm``).
+
+    ``participation`` (off by default; ADR-0010 part 5, the ``*_part`` variants) adds a
+    per-cell vote -- a 1x1 convolution over the cell's ``roi_width`` bounded channels, then a
+    sigmoid -- whose **sum over cells** is a count in [0, n_roi], and hands the head that
+    count and the recording's floor (``bugarach.learn.participation.count_features``). The
+    model then needs ``forward(x, floor=...)``; ``return_votes=True`` also returns the votes,
+    which the membership loss trains. Off, nothing is built and nothing moves.
     """
     torch = _torch()
     nn = torch.nn
 
     import math
+
+    from bugarach.learn import participation as part
 
     class Chorus(nn.Module):
         def __init__(self):
@@ -94,9 +103,13 @@ def build_chorus(*, roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=
                 self.vote_gain = nn.Parameter(torch.full((roi_width,), float(vote_gain)))
                 self.vote_bias = nn.Parameter(torch.full((roi_width,), 0.5))
             # three pooled statistics, each `roi_width` channels wide
-            self.head = _dilated_stack(nn, 3 * roi_width, 1, head_width, head_depth)
+            self.reads_floor = bool(participation)
+            self.head = _dilated_stack(nn, 3 * roi_width + (3 if participation else 0), 1,
+                                       head_width, head_depth)
+            if participation:
+                self.vote_head = part.vote_head(nn, roi_width)
 
-        def forward(self, x):                       # (B, n_roi, T)
+        def forward(self, x, floor=None, return_votes=False):     # (B, n_roi, T)
             b, n, t = x.shape
             xr = x.reshape(b * n, 1, t)
             if input_gain is not None:
@@ -110,6 +123,10 @@ def build_chorus(*, roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=
                                   * (h - self.vote_bias.view(1, -1, 1)))
             else:
                 h = torch.sigmoid(h)                # <- one cell, one vote (soft)
+            votes = None
+            if self.reads_floor:
+                # ADR-0010 part 5: one bounded vote per cell, so their sum is a count.
+                votes = torch.sigmoid(self.vote_head(h)).reshape(b, n, t)
             h = h.reshape(b, n, -1, t)
 
             # The pool. Every one of these is symmetric in the cell axis, so the
@@ -129,6 +146,11 @@ def build_chorus(*, roi_width=4, roi_depth=4, head_width=8, head_depth=8, top_m=
             top = srt[:, :self.m].mean(dim=1)
 
             z = torch.cat([mean, spread, top], dim=1)   # (B, 3*roi_width, T)
-            return self.head(z).squeeze(1)
+            if not self.reads_floor:
+                return self.head(z).squeeze(1)
+            fl = part.floor_tensor(floor, b, x.device)
+            z = torch.cat([z, part.count_features(votes.sum(dim=1), fl)], dim=1)
+            out = self.head(z).squeeze(1)
+            return (out, votes) if return_votes else out
 
     return Chorus()
