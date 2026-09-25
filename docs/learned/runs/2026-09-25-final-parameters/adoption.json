@@ -96,6 +96,12 @@
        "value": 0.003942243754155972,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -269,6 +275,12 @@
        "value": 0.08926803898870939,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -430,6 +442,12 @@
        "value": 0.09828159385681512,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -603,6 +621,12 @@
        "value": 0.032874099726467376,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -761,6 +785,12 @@
        "value": 0.08799498442745624,
        "limit": 0.5,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -926,6 +956,12 @@
        "value": 0.0050000000000000044,
        "limit": 0.5,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -1082,6 +1118,12 @@
        "value": 0.17497998210164378,
        "limit": 0.1,
        "ok": false
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -1233,6 +1275,12 @@
        "value": 0.14774193548387093,
        "limit": 0.1,
        "ok": false
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -1384,6 +1432,12 @@
        "value": 0.10805600328687459,
        "limit": 0.2,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -1547,6 +1601,12 @@
        "value": 0.06027073485174039,
        "limit": 0.2,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -1644,6 +1704,12 @@
       "value": 0.05848115299334811,
       "limit": 0.1,
       "ok": true
+     },
+     "crowded": {
+      "value": null,
+      "limit": -0.02,
+      "ok": null,
+      "note": "not run on the fresh seeds"
      }
     }
    },
@@ -1734,6 +1800,12 @@
       "value": 0.0917589805980662,
       "limit": 0.1,
       "ok": true
+     },
+     "crowded": {
+      "value": null,
+      "limit": -0.02,
+      "ok": null,
+      "note": "not run on the fresh seeds"
      }
     }
    },
@@ -1893,6 +1965,12 @@
        "value": 0.019346298747581647,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -2053,6 +2131,12 @@
        "value": 0.022413409065597523,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -2222,6 +2306,12 @@
        "value": 0.016441675320179927,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -2381,6 +2471,12 @@
        "value": 0.03490667092098365,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -2542,6 +2638,12 @@
        "value": 0.022205882352941186,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -2698,6 +2800,12 @@
        "value": 0.03384216589861755,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -2863,6 +2971,12 @@
        "value": 0.027387473207906687,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -3027,6 +3141,12 @@
        "value": 0.017878640674171553,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -3199,6 +3319,12 @@
        "value": 0.010201002859154262,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -3357,6 +3483,12 @@
        "value": 0.12526935424087648,
        "limit": 0.15,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -3516,6 +3648,12 @@
        "value": 0.04076702833896595,
        "limit": 0.15,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -3613,6 +3751,12 @@
       "value": 0.04471544715447151,
       "limit": 0.1,
       "ok": true
+     },
+     "crowded": {
+      "value": null,
+      "limit": -0.02,
+      "ok": null,
+      "note": "not run on the fresh seeds"
      }
     }
    },
@@ -3703,6 +3847,12 @@
       "value": 0.02768256333830099,
       "limit": 0.1,
       "ok": true
+     },
+     "crowded": {
+      "value": null,
+      "limit": -0.02,
+      "ok": null,
+      "note": "not run on the fresh seeds"
      }
     }
    },
@@ -3858,6 +4008,12 @@
        "value": 0.04111976471869716,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -4027,6 +4183,12 @@
        "value": 0.06217832800111278,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -4190,6 +4352,12 @@
        "value": 0.06453313770890168,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -4340,6 +4508,12 @@
        "value": 0.048467691048314165,
        "limit": 0.15,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -4501,6 +4675,12 @@
        "value": 0.010457836039913904,
        "limit": 0.15,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -4661,6 +4841,12 @@
        "value": 0.257101346142442,
        "limit": 0.15,
        "ok": false
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -4830,6 +5016,12 @@
        "value": 0.09061330005348545,
        "limit": 0.15,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -4990,6 +5182,12 @@
        "value": 0.0920351344717556,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -5158,6 +5356,12 @@
        "value": 0.026378896882493952,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -5317,6 +5521,12 @@
        "value": 0.04313794313794317,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     }
@@ -5480,6 +5690,12 @@
        "value": 0.0054536334432598865,
        "limit": 0.1,
        "ok": true
+      },
+      "crowded": {
+       "value": null,
+       "limit": -0.02,
+       "ok": null,
+       "note": "not run on the fresh seeds"
       }
      }
     },
@@ -5577,6 +5793,12 @@
       "value": 0.029729937087616953,
       "limit": 0.1,
       "ok": true
+     },
+     "crowded": {
+      "value": null,
+      "limit": -0.02,
+      "ok": null,
+      "note": "not run on the fresh seeds"
      }
     }
    },
@@ -5667,6 +5889,12 @@
       "value": 0.03171460892049127,
       "limit": 0.1,
       "ok": true
+     },
+     "crowded": {
+      "value": null,
+      "limit": -0.02,
+      "ok": null,
+      "note": "not run on the fresh seeds"
      }
     }
    },

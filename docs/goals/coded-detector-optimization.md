@@ -46,17 +46,18 @@ minimum. **Nothing is adopted.**
 
 - **Adoptable under the runbook's strict rule:** binned SCE on fast; binned SCE, rate+context and
   SPIKE-synch on combined. Each has a held-out gain interval above zero, passes every budget that was
-  checked on the selection, held-out and fresh seeds, and is bracketed. The held-out seeds also
+  measured on the selection, held-out and fresh seeds, and is bracketed. The held-out seeds also
   picked among the search's final candidates, so the fresh seeds are the independent check: all four
-  paired fresh-seed gains are above zero. Most of each gain is fewer calls on decoys, and combined
-  SPIKE-synch's proposal fixes its coincidence window, which is no longer Kreuz SPIKE-synchronization.
+  paired fresh-seed gains are above zero. The gains sit on the busy background, mostly as fewer false
+  alarms that are not decoys. Combined SPIKE-synch's proposal fixes its coincidence window, which is
+  no longer Kreuz SPIKE-synchronization.
 - **Held back on bracketing only:** five proposals, among them locust on all three streams (+0.036
   to +0.102), which sit at a value that cannot go further. Whether that counts as bracketed is
-  Tony's.
+  Tony's, and the three locust proposals also carry the open anchor question.
 - **Four shipped points are out of budget** on the new bench: the precision swing for SPIKE-synch and
   rate+context on fast and rate+context on combined (the floor, and decoys under it), and the
   elevated-rate test for locust on slow (the test's new recording, not the floor).
-- **Waits on Tony:** the adoption itself and the report's eight rulings, listed in the table below.
+- **Waits on Tony:** the adoption itself and the report's other eight rulings (nine decisions in all), listed in the table below.
 
 **2026-09-24, evening: the rulings for final parameters are made, and the night is planned.**
 [ADR-0009](../adr/0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md)

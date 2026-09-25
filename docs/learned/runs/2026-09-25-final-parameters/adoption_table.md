@@ -1,68 +1,68 @@
-| stream | detector | settings that change, shipped → proposal | held-out gain in F1 [95% interval] | fresh F1, shipped → proposal [95% interval] | fresh F1 without decoy calls, shipped → proposal | bracketed (strict) | bracketed if a limit counts | adoptable (strict) |
-|---|---|---|---|---|---|---|---|---|
-| fast | CoactDetect | `alpha` 0.0001 → 1.4e-09; `context_win_sec` 60 s → 30 s; `window_mode` binned → sliding | +0.055 [+0.036, +0.075] (against sliding at the shipped values) | 0.769 [0.755, 0.782] → 0.809 [0.791, 0.831] | 0.981 → 0.956 | no: `alpha` (cap), `guard_sec` (limit) | no | no |
-| fast | LoCo | `context_win_sec` 120 s → 20 s; `threshold_pctile` 99.5 percentile → 99.99 percentile; `window_mode` binned → sliding | +0.010 [+0.001, +0.018] (against sliding at the shipped values) | 0.777 [0.755, 0.802] → 0.794 [0.779, 0.809] | 0.946 → 0.989 | no: `threshold_pctile` (cap), `guard_sec` (limit) | no | no |
-| fast | binned SCE | `bin_width_sec` 10 s → 2 s; `merge_gap_sec` none (no merge) → 10 s | +0.060 [+0.046, +0.077] | 0.747 [0.729, 0.765] → 0.785 [0.769, 0.802] | 0.953 → 0.981 | yes | yes | **yes** |
-| fast | rate+context | none (no proposal) | — | 0.703 [0.678, 0.727] | 0.931 | — | — | — |
-| fast | SPIKE-synch | none (no proposal) | — | 0.792 [0.763, 0.823] | 0.899 | — | — | — |
-| fast | locust | `sce_min_distance_frames` 4 frames → 128 frames; `sce_percentile` 99.999 percentile → 99.99995 percentile | +0.098 [+0.087, +0.110] | 0.699 [0.682, 0.716] → 0.766 [0.747, 0.786] | 0.954 → 0.995 | no: `n_synchronous_frames` (limit) | yes | no |
-| fast | chorus_norm | the fit the training rule picked (training seed 1) | — | 0.773 [0.746, 0.802] | 0.891 | — | — | — |
-| fast | chorus_gain_norm | the fit the training rule picked (training seed 4) | — | 0.744 [0.723, 0.766] | 0.883 | — | — | — |
-| slow | CoactDetect | none (no proposal) | — | 0.848 [0.838, 0.857] | 1.000 | — | — | — |
-| slow | LoCo | `merge_gap_sec` 4 s → 8 s; `null_context_mode` maxlt → symmetric | +0.012 [+0.009, +0.016] | 0.831 [0.824, 0.837] → 0.846 [0.837, 0.855] | 0.996 → 1.000 | no: `threshold_pctile` (cap), `context_win_sec` (edge), `guard_sec` (limit) | no | no |
-| slow | binned SCE | `merge_gap_sec` none (no merge) → 5 s | +0.014 [+0.011, +0.019] | 0.818 [0.808, 0.826] → 0.835 [0.824, 0.846] | 0.982 → 0.988 | yes | yes | no |
-| slow | rate+context | `merge_gap_s` 3 s → 5 s | +0.005 [+0.003, +0.007] | 0.830 [0.822, 0.837] → 0.834 [0.825, 0.843] | 0.995 → 0.995 | no: `guard_sec` (limit) | yes | no |
-| slow | SPIKE-synch | `dt` 0.1 s → 0.00625 s; `max_gap` 4 s → 8 s; `tau_max` 0.5 s → 1 s | +0.043 [+0.035, +0.051] | 0.796 [0.783, 0.807] → 0.845 [0.835, 0.854] | 0.956 → 0.999 | no: `C_min` (limit) | yes | no |
-| slow | locust | `sce_min_distance_frames` 4 frames → 256 frames | +0.102 [+0.091, +0.115] | 0.740 [0.726, 0.754] → 0.845 [0.833, 0.857] | 0.914 → 0.974 | no: `n_synchronous_frames` (limit) | yes | no |
-| slow | chorus_norm | the fit the training rule picked (training seed 3) | — | 0.825 [0.815, 0.834] | 0.989 | — | — | — |
-| slow | chorus_gain_norm | the fit the training rule picked (training seed 3) | — | 0.827 [0.819, 0.834] | 0.993 | — | — | — |
-| combined | CoactDetect | `alpha` 1e-05 → 1.4e-09; `int_win_sec` 2 s → 3 s | +0.039 [+0.026, +0.056] | 0.777 [0.763, 0.788] → 0.803 [0.788, 0.818] | 1.000 → 0.978 | no: `alpha` (cap) | no | no |
-| combined | LoCo | none (no proposal) | — | 0.804 [0.787, 0.822] | 0.983 | — | — | — |
-| combined | binned SCE | `threshold_pctile` 98 percentile → 99 percentile | +0.015 [+0.006, +0.024] | 0.748 [0.731, 0.763] → 0.764 [0.748, 0.781] | 0.950 → 0.960 | yes | yes | **yes** |
-| combined | rate+context | `excess_threshold_hz` 4.5 Hz → 6 Hz; `merge_gap_s` 8 s → 16 s | +0.093 [+0.076, +0.113] | 0.683 [0.642, 0.726] → 0.773 [0.748, 0.793] | 0.855 → 0.978 | yes | yes | **yes** |
-| combined | SPIKE-synch | `C_threshold` 0.08 → 0.1; `tau_mode` isi_adaptive → fixed | +0.029 [+0.016, +0.043] | 0.761 [0.734, 0.782] → 0.782 [0.768, 0.794] | 0.949 → 0.978 | yes | yes | **yes** |
-| combined | locust | `n_synchronous_frames` 5 frames → 1 frames; `sce_percentile` 99.999 percentile → 99.99995 percentile | +0.036 [+0.020, +0.052] | 0.762 [0.745, 0.777] → 0.782 [0.768, 0.796] | 0.982 → 0.979 | no: `n_synchronous_frames` (limit) | yes | no |
-| combined | chorus_norm | the fit the training rule picked (training seed 1) | — | 0.778 [0.760, 0.796] | 0.950 | — | — | — |
-| combined | chorus_gain_norm | the fit the training rule picked (training seed 0) | — | 0.772 [0.752, 0.793] | 0.940 | — | — | — |
+| stream | detector | settings that change, shipped → proposal | held-out gain in F1 [95% interval] | fresh F1, shipped → proposal [95% interval] | fresh F1 without decoy calls, shipped → proposal | calls on under-floor events, shipped → proposal | bracketed (strict) | bracketed if a limit counts | adoptable (strict) |
+|---|---|---|---|---|---|---|---|---|---|
+| fast | CoactDetect | significance cutoff (`alpha`) 1e-4 → 1.4e-9; context window (`context_win_sec`) 60 s → 30 s; counting (`window_mode`) binned → sliding | +0.055 [+0.036, +0.075] (against sliding at the shipped values) | 0.769 [0.755, 0.782] → 0.809 [0.791, 0.831] | 0.981 → 0.956 | 60 → 39 of 325 events | no: `alpha` (cap), `guard_sec` (limit) | no | no |
+| fast | LoCo | context window (`context_win_sec`) 120 s → 20 s; threshold (`threshold_pctile`) 99.5th percentile → 99.99th percentile; counting (`window_mode`) binned → sliding | +0.010 [+0.001, +0.018] (against sliding at the shipped values) | 0.777 [0.755, 0.802] → 0.794 [0.779, 0.809] | 0.946 → 0.989 | 34 → 43 of 325 events | no: `threshold_pctile` (cap), `guard_sec` (limit) | no | no |
+| fast | binned SCE | bin width (`bin_width_sec`) 10 s → 2 s; merge gap (`merge_gap_sec`) none (no merge) → 10 s | +0.060 [+0.046, +0.077] | 0.747 [0.729, 0.765] → 0.785 [0.769, 0.802] | 0.953 → 0.981 | 105 → 60 of 325 events | yes | yes | **yes** |
+| fast | rate+context | none (no proposal) | — | 0.703 [0.678, 0.727] | 0.931 | 112 of 325 events | — | — | — |
+| fast | SPIKE-synch | none (no proposal) | — | 0.792 [0.763, 0.823] | 0.899 | 8 of 325 events | — | — | — |
+| fast | locust | minimum spacing between calls (`sce_min_distance_frames`) 4 frames (0.4 s at 0.1 s per frame) → 128 frames (12.8 s at 0.1 s per frame); threshold (`sce_percentile`) 99.999th percentile → 99.99995th percentile | +0.098 [+0.087, +0.110] | 0.699 [0.682, 0.716] → 0.766 [0.747, 0.786] | 0.954 → 0.995 | 122 → 81 of 325 events | no: `n_synchronous_frames` (limit) | yes | no |
+| fast | chorus_norm | the fit the training rule picked (training seed 1) | — | 0.773 [0.746, 0.802] | 0.891 | 21 of 325 events | — | — | — |
+| fast | chorus_gain_norm | the fit the training rule picked (training seed 4) | — | 0.744 [0.723, 0.766] | 0.883 | 26 of 325 events | — | — | — |
+| slow | CoactDetect | none (no proposal) | — | 0.848 [0.838, 0.857] | 1.000 | 41 of 50 events | — | — | — |
+| slow | LoCo | merge gap (`merge_gap_sec`) 4 s → 8 s; null's context (maxlt: before the window only; symmetric: both sides) (`null_context_mode`) maxlt → symmetric | +0.012 [+0.009, +0.016] | 0.831 [0.824, 0.837] → 0.846 [0.837, 0.855] | 0.996 → 1.000 | 29 → 29 of 50 events | no: `threshold_pctile` (cap), `context_win_sec` (edge), `guard_sec` (limit) | no | no |
+| slow | binned SCE | merge gap (`merge_gap_sec`) none (no merge) → 5 s | +0.014 [+0.011, +0.019] | 0.818 [0.808, 0.826] → 0.835 [0.824, 0.846] | 0.982 → 0.988 | 41 → 41 of 50 events | yes | yes | no |
+| slow | rate+context | merge gap (`merge_gap_s`) 3 s → 5 s | +0.005 [+0.003, +0.007] | 0.830 [0.822, 0.837] → 0.834 [0.825, 0.843] | 0.995 → 0.995 | 50 → 50 of 50 events | no: `guard_sec` (limit) | yes | no |
+| slow | SPIKE-synch | bin width (`dt`) 0.1 s → 0.00625 s; longest gap inside one call (`max_gap`) 4 s → 8 s; longest coincidence window (`tau_max`) 0.5 s → 1 s | +0.043 [+0.035, +0.051] | 0.796 [0.783, 0.807] → 0.845 [0.835, 0.854] | 0.956 → 0.999 | 19 → 35 of 50 events | no: `C_min` (limit) | yes | no |
+| slow | locust | minimum spacing between calls (`sce_min_distance_frames`) 4 frames (0.4 s at 0.1 s per frame) → 256 frames (25.6 s at 0.1 s per frame) | +0.102 [+0.091, +0.115] | 0.740 [0.726, 0.754] → 0.845 [0.833, 0.857] | 0.914 → 0.974 | 49 → 46 of 50 events | no: `n_synchronous_frames` (limit) | yes | no |
+| slow | chorus_norm | the fit the training rule picked (training seed 3) | — | 0.825 [0.815, 0.834] | 0.989 | 50 of 50 events | — | — | — |
+| slow | chorus_gain_norm | the fit the training rule picked (training seed 3) | — | 0.827 [0.819, 0.834] | 0.993 | 48 of 50 events | — | — | — |
+| combined | CoactDetect | significance cutoff (`alpha`) 1e-5 → 1.4e-9; co-activity window (`int_win_sec`) 2 s → 3 s | +0.039 [+0.026, +0.056] | 0.777 [0.763, 0.788] → 0.803 [0.788, 0.818] | 1.000 → 0.978 | 62 → 49 of 295 events | no: `alpha` (cap) | no | no |
+| combined | LoCo | none (no proposal) | — | 0.804 [0.787, 0.822] | 0.983 | 13 of 295 events | — | — | — |
+| combined | binned SCE | threshold (`threshold_pctile`) 98th percentile → 99th percentile | +0.015 [+0.006, +0.024] | 0.748 [0.731, 0.763] → 0.764 [0.748, 0.781] | 0.950 → 0.960 | 94 → 69 of 295 events | yes | yes | **yes** |
+| combined | rate+context | rate-excess threshold (`excess_threshold_hz`) 4.5 Hz → 6 Hz; merge gap (`merge_gap_s`) 8 s → 16 s | +0.093 [+0.076, +0.113] | 0.683 [0.642, 0.726] → 0.773 [0.748, 0.793] | 0.855 → 0.978 | 130 → 67 of 295 events | yes | yes | **yes** |
+| combined | SPIKE-synch | coincidence threshold (`C_threshold`) 0.08 → 0.1; coincidence window (`tau_mode`) isi_adaptive → fixed | +0.029 [+0.016, +0.043] | 0.761 [0.734, 0.782] → 0.782 [0.768, 0.794] | 0.949 → 0.978 | 89 → 66 of 295 events | yes | yes | **yes** |
+| combined | locust | minimum run of synchronous frames (`n_synchronous_frames`) 5 frames (0.5 s at 0.1 s per frame) → 1 frame; threshold (`sce_percentile`) 99.999th percentile → 99.99995th percentile | +0.036 [+0.020, +0.052] | 0.762 [0.745, 0.777] → 0.782 [0.768, 0.796] | 0.982 → 0.979 | 123 → 46 of 295 events | no: `n_synchronous_frames` (limit) | yes | no |
+| combined | chorus_norm | the fit the training rule picked (training seed 1) | — | 0.778 [0.760, 0.796] | 0.950 | 24 of 295 events | — | — | — |
+| combined | chorus_gain_norm | the fit the training rule picked (training seed 0) | — | 0.772 [0.752, 0.793] | 0.940 | 26 of 295 events | — | — | — |
 
-| stream | detector | version | selection seeds 1–48 | held-out seeds 49–96 | fresh seeds 6000–6023 |
+| stream | detector | version | selection seeds 1–48 | held-out seeds 49–96 (precision swing not recorded) | fresh seeds 6000–6023 (close-events test not run) |
 |---|---|---|---|---|---|
-| fast | CoactDetect | shipped | pass | pass (precision swing not recorded) (the sliding starting point) | pass |
-| fast | CoactDetect | proposal | pass | **fail: close-events test** (precision swing not recorded) (close-events against the sliding starting point) | pass |
-| fast | LoCo | shipped | pass | pass (precision swing not recorded) (the sliding starting point) | pass |
-| fast | LoCo | proposal | pass | pass (precision swing not recorded) (close-events against the sliding starting point) | pass |
-| fast | binned SCE | shipped | pass | pass (precision swing not recorded) | pass |
-| fast | binned SCE | proposal | pass | pass (precision swing not recorded) | pass |
-| fast | rate+context | shipped | **fail: precision swing** | pass (precision swing not recorded) | **fail: precision swing** |
-| fast | SPIKE-synch | shipped | **fail: precision swing** | pass (precision swing not recorded) | **fail: precision swing** |
-| fast | locust | shipped | pass | pass (precision swing not recorded) | pass |
-| fast | locust | proposal | pass | pass (precision swing not recorded) | pass |
+| fast | CoactDetect | shipped | pass | pass (the sliding starting point) | pass |
+| fast | CoactDetect | proposal | pass | **fail: close-events test** (close-events against the sliding starting point) | pass |
+| fast | LoCo | shipped | pass | pass (the sliding starting point) | pass |
+| fast | LoCo | proposal | pass | pass (close-events against the sliding starting point) | pass |
+| fast | binned SCE | shipped | pass | pass | pass |
+| fast | binned SCE | proposal | pass | pass | pass |
+| fast | rate+context | shipped | **fail: precision swing** | pass | **fail: precision swing** |
+| fast | SPIKE-synch | shipped | **fail: precision swing** | pass | **fail: precision swing** |
+| fast | locust | shipped | pass | pass | pass |
+| fast | locust | proposal | pass | pass | pass |
 | fast | chorus_norm | picked fit | not run | not run | pass (CoactDetect's limits) |
 | fast | chorus_gain_norm | picked fit | not run | not run | pass (CoactDetect's limits) |
-| slow | CoactDetect | shipped | pass | pass (precision swing not recorded) | pass |
-| slow | LoCo | shipped | pass | pass (precision swing not recorded) | pass |
-| slow | LoCo | proposal | pass | pass (precision swing not recorded) | pass |
-| slow | binned SCE | shipped | pass | pass (precision swing not recorded) | pass |
-| slow | binned SCE | proposal | pass | **fail: close-events test** (precision swing not recorded) | pass |
-| slow | rate+context | shipped | pass | pass (precision swing not recorded) | pass |
-| slow | rate+context | proposal | pass | pass (precision swing not recorded) | pass |
-| slow | SPIKE-synch | shipped | pass | pass (precision swing not recorded) | pass |
-| slow | SPIKE-synch | proposal | pass | pass (precision swing not recorded) | pass |
-| slow | locust | shipped | **fail: elevated-rate test, inside the stretch** | **fail: elevated-rate test, inside the stretch** (precision swing not recorded) | **fail: elevated-rate test, inside the stretch** |
-| slow | locust | proposal | pass | pass (precision swing not recorded) | pass |
+| slow | CoactDetect | shipped | pass | pass | pass |
+| slow | LoCo | shipped | pass | pass | pass |
+| slow | LoCo | proposal | pass | pass | pass |
+| slow | binned SCE | shipped | pass | pass | pass |
+| slow | binned SCE | proposal | pass | **fail: close-events test** | pass |
+| slow | rate+context | shipped | pass | pass | pass |
+| slow | rate+context | proposal | pass | pass | pass |
+| slow | SPIKE-synch | shipped | pass | pass | pass |
+| slow | SPIKE-synch | proposal | pass | pass | pass |
+| slow | locust | shipped | **fail: elevated-rate test, inside the stretch** | **fail: elevated-rate test, inside the stretch** | **fail: elevated-rate test, inside the stretch** |
+| slow | locust | proposal | pass | pass | pass |
 | slow | chorus_norm | picked fit | not run | not run | **fail: elevated-rate test, inside the stretch** (CoactDetect's limits) |
 | slow | chorus_gain_norm | picked fit | not run | not run | pass (CoactDetect's limits) |
-| combined | CoactDetect | shipped | pass | pass (precision swing not recorded) | pass |
-| combined | CoactDetect | proposal | pass | pass (precision swing not recorded) | pass |
-| combined | LoCo | shipped | pass | pass (precision swing not recorded) | pass |
-| combined | binned SCE | shipped | pass | pass (precision swing not recorded) | pass |
-| combined | binned SCE | proposal | pass | pass (precision swing not recorded) | pass |
-| combined | rate+context | shipped | **fail: precision swing** | pass (precision swing not recorded) | **fail: precision swing** |
-| combined | rate+context | proposal | pass | pass (precision swing not recorded) | pass |
-| combined | SPIKE-synch | shipped | pass | pass (precision swing not recorded) | pass |
-| combined | SPIKE-synch | proposal | pass | pass (precision swing not recorded) | pass |
-| combined | locust | shipped | pass | pass (precision swing not recorded) | pass |
-| combined | locust | proposal | pass | pass (precision swing not recorded) | pass |
+| combined | CoactDetect | shipped | pass | pass | pass |
+| combined | CoactDetect | proposal | pass | pass | pass |
+| combined | LoCo | shipped | pass | pass | pass |
+| combined | binned SCE | shipped | pass | pass | pass |
+| combined | binned SCE | proposal | pass | pass | pass |
+| combined | rate+context | shipped | **fail: precision swing** | pass | **fail: precision swing** |
+| combined | rate+context | proposal | pass | pass | pass |
+| combined | SPIKE-synch | shipped | pass | pass | pass |
+| combined | SPIKE-synch | proposal | pass | pass | pass |
+| combined | locust | shipped | pass | pass | pass |
+| combined | locust | proposal | pass | pass | pass |
 | combined | chorus_norm | picked fit | not run | not run | pass (CoactDetect's limits) |
 | combined | chorus_gain_norm | picked fit | not run | not run | pass (CoactDetect's limits) |
 

@@ -68,7 +68,10 @@ def fresh_budgets(bench, det: str, row: dict, limit_det: str) -> dict:
         null=dict(value=row["null_calls_per_hour"], limit=fp, ok=row["null_calls_per_hour"] <= fp),
         elevated_out_quiet=dict(value=elev, limit=fp, ok=elev is not None and elev <= fp),
         precision_swing=dict(value=swing, limit=bench.MAX_PRECISION_DROP[limit_det],
-                             ok=swing <= bench.MAX_PRECISION_DROP[limit_det]))
+                             ok=swing <= bench.MAX_PRECISION_DROP[limit_det]),
+        # The fresh seeds never ran the close-events recordings: named, not passed.
+        crowded=dict(value=None, limit=-bench.MAX_CROWDED_DROP, ok=None,
+                     note="not run on the fresh seeds"))
 
 
 def held_out_budgets(bench, det: str, ho: dict) -> dict:
@@ -284,7 +287,12 @@ def figure1(rep: dict, dest: Path) -> Path:
         for yi, a, b in zip(y, ship, prop):
             if math.isfinite(a) and math.isfinite(b):
                 ax.plot([a, b], [yi, yi], color="#d8d7d2", lw=1, zorder=1)
-        ax.scatter(prop, [yi - 0.12 for yi in y], marker="D", c=colors, s=40, zorder=4)
+        # Chorus has no shipped point and is not a proposal, so it gets its own shape.
+        chorus = [r["kind"] == "chorus" for r in rs]
+        for is_ch, mk in ((False, "D"), (True, "s")):
+            ax.scatter([v for v, c in zip(prop, chorus) if c == is_ch],
+                       [yi - 0.12 for yi, c in zip(y, chorus) if c == is_ch], marker=mk,
+                       c=[k for k, c in zip(colors, chorus) if c == is_ch], s=40, zorder=4)
         # The shipped circle is drawn last: where the two sit at the same F1 it stays visible.
         ax.scatter(ship, [yi + 0.12 for yi in y], marker="o", facecolors="white",
                    edgecolors="#1b1b1a", s=46, zorder=5)
@@ -301,7 +309,7 @@ def figure1(rep: dict, dest: Path) -> Path:
                Line2D([], [], color="#d8d7d2", lw=1, label="joins a shipped point to its proposal"),
                Line2D([], [], marker="D", ls="", color="#1f6fb4", label="proposal, adoptable (strict rule)"),
                Line2D([], [], marker="D", ls="", color="#c9822a", label="proposal, not adoptable"),
-               Line2D([], [], marker="D", ls="", color="#6b6a64", label="chorus fit the training rule picked")]
+               Line2D([], [], marker="s", ls="", color="#6b6a64", label="chorus, the fit its training rule picked")]
     fig.legend(handles=handles, loc="lower center", ncol=4, frameon=False, fontsize=10)
     fig.tight_layout(rect=(0, 0.14, 1, 1))
     out = dest / "figure1_fresh_f1.png"
@@ -322,6 +330,7 @@ def figure2(rep: dict, dest: Path) -> Path:
     im = None
     for ax, det in zip(axes.ravel(), dets):
         m = np.full((3, 3), np.nan)
+        ci = np.full((3, 3, 2), np.nan)
         for i, tuned in enumerate(STREAMS):
             variant = xs["chosen"][det][tuned]
             for j, scored in enumerate(STREAMS):
@@ -329,13 +338,23 @@ def figure2(rep: dict, dest: Path) -> Path:
                           and x["scored"] == scored and x["variant"] == variant), None)
                 if r and "mean_f1" in r:
                     m[i, j] = r["mean_f1"]
+                    if r.get("mean_f1_ci"):
+                        ci[i, j] = r["mean_f1_ci"]
         im = ax.imshow(m, vmin=0.6, vmax=0.9, cmap="Blues")
         for i in range(3):
             for j in range(3):
                 if np.isfinite(m[i, j]):
-                    ax.text(j, i, f"{m[i, j]:.2f}", ha="center", va="center", fontsize=12,
+                    # Beats its column's diagonal: outlined; with no overlap of the two 95%
+                    # intervals: starred as well (Decision 2 reads exactly these).
+                    beats = i != j and m[i, j] > m[j, j]
+                    clear = beats and ci[i, j, 0] > ci[j, j, 1]
+                    ax.text(j, i, f"{m[i, j]:.2f}" + ("*" if clear else ""), ha="center",
+                            va="center", fontsize=12,
                             color="white" if m[i, j] > 0.78 else "#1b1b1a",
                             fontweight="bold" if i == j else "normal")
+                    if beats:
+                        ax.add_patch(plt.Rectangle((j - 0.47, i - 0.47), 0.94, 0.94, fill=False,
+                                                   ec="#1b1b1a", lw=2.2))
         ax.set_xticks(range(3), STREAMS)
         ax.set_yticks(range(3), STREAMS)
         ax.set_xlabel("scored on (bench)")
@@ -352,11 +371,15 @@ def figure2(rep: dict, dest: Path) -> Path:
 # ------------------------------------------------------------------ table
 
 def _v(x):
-    """A setting's value as a person reads it: NaN merge gaps mean "do not merge"."""
+    """A setting's value as a person reads it: NaN merge gaps mean "do not merge", and a small
+    number is written the way the prose writes it (1e-4, 1.4e-9), not as 0.0001 or 1.4e-09."""
     if isinstance(x, float):
         if math.isnan(x):
             return "none (no merge)"
-        return f"{x:.2g}" if 0 < abs(x) < 1e-3 else f"{x:.10g}"
+        if 0 < abs(x) < 1e-3:
+            m, e = f"{x:.1e}".split("e")
+            return f"{m.removesuffix('.0')}e{int(e)}"
+        return f"{x:.10g}"
     return str(x)
 
 
@@ -375,12 +398,13 @@ BUDGET_NAME = {"probe": "elevated-rate test, inside the stretch",
 *close-events test* replaced "probe" and "crowded" on 2026-09-21)."""
 
 
-def _bud(b):
-    """A budget cell. A check that was never measured is named, never folded into "pass"."""
+def _bud(b, in_header=()):
+    """A budget cell. A check that was never measured is named, never folded into "pass" — in the
+    cell, or once in the column header when a whole seed set lacks it (``in_header``)."""
     if b is None:
-        return "**not checked**"
+        return "not run"
     fails = [BUDGET_NAME.get(k, k) for k, v in b.items() if v["ok"] is False]
-    unrec = [BUDGET_NAME.get(k, k) for k, v in b.items() if v["ok"] is None]
+    unrec = [BUDGET_NAME.get(k, k) for k, v in b.items() if v["ok"] is None and k not in in_header]
     s = "pass" if not fails else "**fail: " + ", ".join(fails) + "**"
     return s + (f" ({', '.join(unrec)} not recorded)" if unrec else "")
 
@@ -394,11 +418,42 @@ UNIT = {"bin_width_sec": "s", "merge_gap_sec": "s", "merge_gap_s": "s", "context
 """The unit each setting is in, so a table cell never carries a bare number (CLAUDE.md)."""
 
 
+PLAIN = {"bin_width_sec": "bin width", "merge_gap_sec": "merge gap", "merge_gap_s": "merge gap",
+         "context_win_sec": "context window", "context_win": "context window",
+         "int_win_sec": "co-activity window", "rate_win": "rate window", "guard_sec": "guard",
+         "dt": "bin width", "tau_max": "longest coincidence window", "tau_mode": "coincidence window",
+         "max_gap": "longest gap inside one call", "threshold_pctile": "threshold",
+         "sce_percentile": "threshold", "sce_min_distance_frames": "minimum spacing between calls",
+         "n_synchronous_frames": "minimum run of synchronous frames", "alpha": "significance cutoff",
+         "excess_threshold_hz": "rate-excess threshold", "C_threshold": "coincidence threshold",
+         "C_min": "minimum coincidence", "window_mode": "counting",
+         "null_context_mode": "null's context (maxlt: before the window only; symmetric: both sides)",
+         "threshold_mode": "threshold form", "threshold_alpha": "threshold multiplier"}
+"""A plain name for each setting, written before its identifier so a reader who has never seen
+the code can tell what a change does (murderboard role 8, round 3)."""
+
+
+def _ordinal(s: str) -> str:
+    if "." in s:
+        return s + "th"
+    n = int(s)
+    return s + ("th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th"))
+
+
 def _vu(k, x):
     u = UNIT.get(k)
     s = _v(x)
-    return f"{s} {u}" if u and isinstance(x, (int, float)) and not (
-        isinstance(x, float) and math.isnan(x)) else s
+    if not u or not isinstance(x, (int, float)) or (isinstance(x, float) and math.isnan(x)):
+        return s
+    if u == "percentile":
+        return f"{_ordinal(s)} percentile"
+    if u == "frames":
+        return f"{s} frame" if x == 1 else f"{s} frames ({x * 0.1:g} s at 0.1 s per frame)"
+    return f"{s} {u}"
+
+
+def _setting(k: str) -> str:
+    return f"{PLAIN[k]} (`{k}`)" if k in PLAIN else f"`{k}`"
 
 
 def _f1(f: dict) -> str:
@@ -410,33 +465,50 @@ def _open(p: dict) -> str:
     return ", ".join(f"`{k}` ({v})" for k, v in p["open_axes"].items())
 
 
+def under_floor_calls(uf: dict) -> tuple[int, int]:
+    """(calls matched to planted events under the floor, planted events under the floor), summed
+    over both backgrounds and every participation level."""
+    calls = events = 0
+    for reg in REG:
+        for v in ((uf.get(reg) or {}).get("by_participation") or {}).values():
+            calls += int(v.get("calls_on_under_floor", 0))
+            events += int(v.get("under_floor", 0))
+    return calls, events
+
+
 def table(rep: dict) -> str:
     """The decision table: one row per detector × stream."""
     head = ("| stream | detector | settings that change, shipped → proposal | "
             "held-out gain in F1 [95% interval] | fresh F1, shipped → proposal [95% interval] | "
-            "fresh F1 without decoy calls, shipped → proposal | bracketed (strict) | "
+            "fresh F1 without decoy calls, shipped → proposal | "
+            "calls on under-floor events, shipped → proposal | bracketed (strict) | "
             "bracketed if a limit counts | adoptable (strict) |\n"
-            "|---|---|---|---|---|---|---|---|---|\n")
+            "|---|---|---|---|---|---|---|---|---|---|\n")
     lines = []
     for r in rep["rows"]:
         name = NAME[r["detector"]]
         if r["kind"] == "chorus":
             seed = r["picked"].split("_")[-1].replace(".json", "").replace("seed", "training seed ")
+            c, n = under_floor_calls(r["under_floor"])
             lines.append(f"| {r['stream']} | {name} | the fit the training rule picked ({seed}) | — | "
-                         f"{_f1(r['fresh'])} | {r['fresh']['f1_without_decoys']:.3f} | — | — | — |")
+                         f"{_f1(r['fresh'])} | {r['fresh']['f1_without_decoys']:.3f} | "
+                         f"{c} of {n} events | — | — | — |")
             continue
         s, p = r["shipped"], r.get("proposal")
+        cs, n = under_floor_calls(r["under_floor"])
         if not p:
             lines.append(f"| {r['stream']} | {name} | none (no proposal) | — | {_f1(s['fresh'])} | "
-                         f"{s['fresh']['f1_without_decoys']:.3f} | — | — | — |")
+                         f"{s['fresh']['f1_without_decoys']:.3f} | {cs} of {n} events | — | — | — |")
             continue
-        ch = "; ".join(f"`{k}` {_vu(k, a)} → {_vu(k, b)}" for k, (a, b) in p["changed"].items())
+        cp, _ = under_floor_calls(p["under_floor"])
+        ch = "; ".join(f"{_setting(k)} {_vu(k, a)} → {_vu(k, b)}" for k, (a, b) in p["changed"].items())
         anchor =("" if p["held_out_anchor"] == "the shipped point"
                   else f" (against {p['held_out_anchor']})")
         lines.append(
             f"| {r['stream']} | {name} | {ch} | {_gain(p['held_out_gain'])}{anchor} | "
             f"{_f1(s['fresh'])} → {_f1(p['fresh'])} | "
             f"{s['fresh']['f1_without_decoys']:.3f} → {p['fresh']['f1_without_decoys']:.3f} | "
+            f"{cs} → {cp} of {n} events | "
             f"{'yes' if p['bracketed_strict'] else 'no: ' + _open(p)} | "
             f"{'yes' if p['bracketed_if_limit_counts'] else 'no'} | "
             f"{'**yes**' if p['adoptable_strict'] else 'no'} |")
@@ -445,14 +517,16 @@ def table(rep: dict) -> str:
 
 def budget_table(rep: dict) -> str:
     """Every budget, for the shipped point and the proposal, on each seed set."""
-    head = ("| stream | detector | version | selection seeds 1–48 | held-out seeds 49–96 | "
-            "fresh seeds 6000–6023 |\n|---|---|---|---|---|---|\n")
+    head = ("| stream | detector | version | selection seeds 1–48 | held-out seeds 49–96 "
+            "(precision swing not recorded) | fresh seeds 6000–6023 (close-events test not run) |\n"
+            "|---|---|---|---|---|---|\n")
+    ho_gap, fr_gap = ("precision_swing",), ("crowded",)
     lines = []
     for r in rep["rows"]:
         name = NAME[r["detector"]]
         if r["kind"] == "chorus":
             lines.append(f"| {r['stream']} | {name} | picked fit | not run | not run | "
-                         f"{_bud(r['budgets']['fresh'])} (CoactDetect's limits) |")
+                         f"{_bud(r['budgets']['fresh'], fr_gap)} (CoactDetect's limits) |")
             continue
         sliding = (r.get("proposal") or {}).get("held_out_anchor", "the shipped point") \
             != "the shipped point" or r["stream"] == "fast" and r["detector"] in ("coact", "loco")
@@ -466,7 +540,7 @@ def budget_table(rep: dict) -> str:
             note = (" (the sliding starting point)" if label == "shipped" else
                     " (close-events against the sliding starting point)") if sliding else ""
             lines.append(f"| {r['stream']} | {name} | {label} | {_bud(b['selection'])} | "
-                         f"{_bud(b['held_out'])}{note} | {_bud(b['fresh'])} |")
+                         f"{_bud(b['held_out'], ho_gap)}{note} | {_bud(b['fresh'], fr_gap)} |")
     return head + "\n".join(lines) + "\n"
 
 

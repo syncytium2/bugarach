@@ -380,7 +380,8 @@ load-bearing terms with no glossary entry.
   not a coordinated event. A negative that is meant to be confusable. On the bench it
   is built exactly as an 18% planted event is built and differs only in its label, so
   whether a call on one should count against a detector is an open question
-  (`score.py`); today it counts as a false alarm, for every detector alike.
+  (`score.py`); today it counts as a false alarm, for every detector alike. *Decoy* is
+  an accepted alias in prose (the 2026-09-25 final-parameters report uses it).
 - **merge gap** — how close two calls may be before a detector merges them into one.
   Tuned for the coded detectors (`merge_gap_sec`, `merge_gap_s`); the learned models decode
   at `pick_threshold`'s default of 20 frames, which is what the fair comparison ran, and it
