@@ -730,11 +730,10 @@ def test_no_treatment_is_a_source_for_any_coordination_property():
     assert 0.0381 not in rates, "senktide median is being used as an endpoint"
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "ADR-0009, 2026-09-25: with the elevated-rate stretch gone from the planted recording, SCE "
-    "(a percentile over bins) now hits all 12 decoys, as the other five do, on seeds 1-2; on "
-    "main before the change it hit 2, and that was the whole spread. Its percentile had been "
-    "spent on the stretch. Reported to the orchestrator for Tony; not re-tuned here."))
+# Pre-ADR-0009: without the stretch SCE hits all 12 decoys like the other five (it hit 2 with it,
+# and that was the whole spread). Due for re-measurement, not re-baselining:
+# docs/todo/2026-09-25-pinned-bench-measurements-predate-adr-0009.md.
+@pytest.mark.usefixtures("pre_adr_0009_bench_here")
 def test_the_distractors_can_actually_discriminate():
     """A control every detector answers identically controls nothing.
 
