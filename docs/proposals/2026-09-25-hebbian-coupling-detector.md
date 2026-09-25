@@ -1,183 +1,333 @@
-# A coupling that learns within one recording — the 1986 plasticity rule as a detector
+# A coupling that learns inside one recording: the von der Malsburg–Schneider plasticity rule as a detector
 
-> **Status: DRAFT for Tony. Nothing here has been built or run.** Goal:
-> [unsupervised learning](../goals/unsupervised-learning.md). It needs no ruling that is still open
-> to start its first stage, and it does not touch the stopped surrogate screen: the rule learns
-> without training negatives, and the one null it uses is the assessor's existing circular shift,
-> used as a significance test only.
->
-> Tony chose on 2026-09-25 to take the rule into bugarach as a stamped copy of the two functions
-> from `syncytium2/clamor`, not as a dependency and not as a move (both repositories are his;
-> clamor is private, so a dependency would break CI and outside reproduction here).
+> **Status: draft for Tony, revised after one murderboard round. Nothing has been built or run.**
+> Goal: [unsupervised learning](../goals/unsupervised-learning.md). Its first stage waits on two
+> numbers only Tony sets, the stop thresholds under [What is asked](#what-is-asked).
+> Review record: [`reviews/2026-09-25-hebbian-coupling-detector_2026-09-25.md`](../reviews/2026-09-25-hebbian-coupling-detector_2026-09-25.md).
 
-Abbreviations: **ROI**, region of interest, one imaged cell; **STTC**, the spike time tiling
-coefficient, the pairwise coincidence measure `bugarach.graph.sttc_matrix` computes; **Co**, the
-coactivity kernel of the 1986 paper's equation 7; ***W***, the learned coupling matrix, one entry
-per ROI pair; ***s*₀**, the resting coupling every entry starts at; ***D*** = *W* − *s*₀, the
-learned deviation; ***w***, the coincidence width in seconds; ***q*₀**, the size of one
-plasticity step.
+Abbreviations and symbols, used throughout:
+
+- **ROI**: region of interest, one imaged cell.
+- **Stream**: the fast or slow class of calcium event, analyzed separately (FOUNDATIONS §3).
+- **STTC**: spike time tiling coefficient (Cutts & Eglen 2014), the pairwise coincidence
+  measure `bugarach.graph.sttc_matrix` computes. The name is the literature's; here it scores
+  calcium-event onsets.
+- **CoactDetect**: the repository's coincidence-count detector, one of its six hand-coded
+  detectors of coordinated events.
+- **Frame**: one imaging frame, about 0.1 s on the default dataset.
+- ***m***: the coincidence span, in whole frames. Two onsets closer than *m* frames can update a
+  coupling; further apart they cannot.
+- **Co(*k*)**: the coincidence kernel, the weight one pair of onsets *k* frames apart adds to
+  their coupling. The paper calls it "coactivity"; this page does not, because the glossary
+  reserves that word for a count of active ROIs.
+- ***s***: the coupling between two ROIs, written *W*<sub>ij</sub> as a matrix. ***s*₀** = 0.012 is
+  its resting value in the paper's units; ***s***<sub>d</sub> = 0.8 sets the bound, so every
+  coupling stays between 0.2 *s*₀ and 1.8 *s*₀.
+- ***q*(*s*)**: the size of one step at coupling *s*. ***q*₀** is its largest value, at rest.
+- ***D*** = *W* − *s*₀: the learned deviation, 0 for a pair that never changed. ***Z***: *D*
+  standardized pair by pair against its own surrogates.
 
 ---
 
+## The gap
+
+This project has a detector-learning goal with one route, and that route is stopped. The goal
+wants a detector that learns from real recordings rather than from the simulator, whose
+assumptions every learned number here currently inherits. Its one route trains a network to tell
+a recording from a surrogate of itself, and it waits on Tony's choice of surrogate, via a stopped
+screen and a pre-registration that has not been cleared to build
+([goal page](../goals/unsupervised-learning.md)).
+
+The rule proposed here learns inside one real recording, from that recording's own onsets, with
+no training negatives. It cannot have learned the simulator, and it does not wait on the screen.
+It still needs a null for significance and a simulator to set its two knobs. Both are named
+below, so the claim is narrower than "label-free".
+
+**Its main job is the detector.** A second job comes with it, and a stop that ends one ends both:
+the learned coupling matrix is an instrument aimed at the assembly result's first open risk.
+That result found no recurring groups of cells by modularity, which sorts every cell into
+exactly one group and cannot see cells that belong to several
+([the open-risks todo](../todo/2026-08-20-what-could-still-overturn-the-assembly-negative.md),
+item 1).
+
 ## The idea
 
-Treat each ROI as a unit coupled to every other. Walk through a baseline window in time order. Every
-time two ROIs have event onsets close together, strengthen their coupling; every time they have
-onsets a near-miss apart, weaken it. At the end of the window, *W* is a record of which pairs kept
-coinciding more than their timing would give by chance, and a frame in which the active ROIs are
-strongly coupled to one another scores high.
+Treat each ROI as a unit coupled to every other. Walk through a baseline window in time order.
+When two ROIs have onsets within a frame or two of each other, strengthen their coupling. When
+the onsets are a near-miss apart, close to *m* frames, weaken it. At the end, the couplings
+record which pairs kept coinciding more often than their event rates alone would produce.
+Figure 1 shows the kernel that does this and what it gives a real pair.
 
-That is a Hebbian rule, and a plain one does not work here: coupling grows for any two busy cells,
-so it learns event rates rather than coordination, and it grows without bound. The rule below
-comes with both repairs already in it.
+A plain Hebbian rule, which only strengthens, fails twice here. Coupling grows for any two busy
+cells, so it learns event rates rather than coordination. And it grows without bound.
 
-## The rule: von der Malsburg & Schneider 1986, equations 7 and 8
+![Figure 1, the coincidence kernel on the frame grid, the expected update for a coordinated pair, and the step-size bound](2026-09-25-hebbian-coupling-detector/hebbian_kernel.png)
 
-The source is *A Neural Cocktail-Party Processor*, Biological Cybernetics 54:29–40 (1986),
-DOI [10.1007/BF00337113](https://doi.org/10.1007/BF00337113), as transcribed in
-`syncytium2/clamor` (`clamor/malsburg1986.py`, `CocktailParty.coactivity` and
-`CocktailParty.control`). In that model the coupling is not trained across stimuli: it changes
-during a single stimulus, which is what makes it usable one recording at a time.
+**Figure 1. The kernel, what one update is worth, and the bound.** Computed from the rule's
+definitions by `tools/make_hebbian_kernel_figure.py`; no recording is read.
+**(A)** The coincidence kernel on whole-frame lags at *m* = 4 frames (0.4 s). The dashed curve is
+the continuous cosine; the two hollow end lags carry half weight, which makes the sum over lags 0
+rather than −1. **(B)** The expected weight of one update for a pair of ROIs that share event
+times. Their onsets are scattered by the ruled per-participant jitter σ and floored to 0.1 s
+frames. Independent onsets average 0 at every span, and a same-frame artifact scores 1. At
+*m* = 2 frames a coordinated fast pair averages 0.144 and a same-frame artifact 1, so an artifact
+weighs about seven coordinated pairs. ⚠ σ was measured on a folder since superseded (see the
+span, under Method detail). **(C)** Equation 8's step size *q*(*s*) at the paper's
+*q*₀ = 0.01 (curve), the clamp at 0.2 *s*₀ and 1.8 *s*₀ (dashed), and where one coincidence from
+rest lands at three step sizes (triangles). At the paper's step it lands past the clamp.
 
-**Equation 7, the kernel.** Co(Δ*t*) is **+1** when two bursts coincide, **0** when they overlap
-for half their duration and **−1** in antiphase. The paper states it exactly as a cosine for the
-case of a burst lasting half the period, and describes other cases in words; clamor's general form
-is its own interpolation, marked `INTERPOLATED` in the code.
+## Why this rule
 
-**Equation 8, the bound.** Each step is scaled by *q*(*s*) = *q*₀ · (1 − ((*s* − *s*₀)/(*s*₀ · *s*_d))²),
-largest at rest and zero at *s*₀(1 ± *s*_d), so every coupling stays within 80 % of its resting
-value at the paper's *s*_d = 0.8. The paper's reason is the one that matters here: a stray episode
-of false synchrony cannot move a coupling far.
+Three properties, each a repair to the plain rule or a fit to this project:
 
-**The subliminal rule** (paper, p. 33): a cell that has not burst recently changes no synapse. For
-us this is automatic, below, and it is the right behaviour under FOUNDATIONS §9: an ROI with no
-events in the window keeps *s*₀, is not penalised, and is not dropped.
-
-## What changes for calcium events
-
-The 1986 units are oscillators, and "antiphase" means half a period away. Calcium events are not
-periodic, so the oscillator is left behind and only the kernel's shape is kept, over a finite
-window:
-
-- **Pairs.** On each onset of ROI *i*, every onset of every other ROI *j* within ±*w* contributes
-  one update to *W*_ij and *W*_ji, of size *q*(*W*_ij) · Co(Δ*t*). Pairs further apart than *w*
-  contribute nothing. An ROI with no onsets forms no pairs, which is the subliminal rule.
-- **Symmetric.** Co is even, and the update is applied to both entries. clamor updates one row per
-  burst and carries an open question about which (its `update_column`); the symmetric form
-  sidesteps it and is a deliberate deviation from the paper.
-- **The kernel, at the one point the paper states exactly.** Call clamor's `coactivity` with
-  period 2*w* and burst *w*: Co is +1 at Δ*t* = 0, 0 at *w*/2 and −1 at *w*. That is the
-  burst-equals-half-period case, where clamor's interpolation reduces to the paper's own cosine,
-  Co = cos(π Δ*t* / *w*) — checked in clamor's `selftest()` — so the part of the transcription that
-  is a judgement call is never exercised.
-- **Why that point and no other: it is rate-neutral.** Over |Δ*t*| ≤ *w* that cosine integrates to
-  zero. For two ROIs whose onsets are independent, Δ*t* is close to uniform over the window, so the
-  expected update is zero **however busy either ROI is**: the covariance rule's subtraction of
-  chance, without a rate term. (The bound *q*(*s*) varies as *W* moves, so this holds to first
-  order.) Any other window length breaks it — longer than *w* and the
-  negative lobe outweighs the positive, so busy pairs drift down; shorter and they drift up. This is
-  derived here, not measured, and stage 1 tests it.
-- **On the frame grid, the ends count half.** Onsets sit on a frame grid of about 0.1 s on this
-  folder (`frame_interval_sec` in `slices.csv`; the jitter run's README, Figure 2), so Δ*t* takes
-  only whole-frame lags. Summed over lags −*K* … *K* frames with *w* = *K* frames, the cosine gives
-  **−1, not 0**, for every *K*, because both ends sit at −1. The integral's zero is recovered by
-  weighting the two end lags by one half (the trapezoid rule), and the rule is written that way.
-- **The width.** *w* is set from the ruled jitter constant (Tony, 2026-09-22; `decisions_pending.md`
-  item 2): measured cross-ROI jitter of **0.106 s fast** and **0.135 s slow** — one to two frames.
-  A width of one jitter would leave the kernel three lags long, all shape gone, so *w* is a
-  multiple of the jitter; two, three and four jitters are the stage-1 sweep, and one value is
-  frozen before stage 2 reads a real recording. The same README warns that anything putting ROIs
-  into the same frame — motion, light, neuropil — sharpens the zero-lag peak; that is the positive
-  lobe's centre, and another reason distance and crosstalk matter below.
-- **The step.** *q*₀ is an open question in clamor itself: the paper's stated 0.01 against a step
-  about twelve times smaller that its own figures imply. Stage 1 runs both and one between.
+- **It learns during one stimulus.** In von der Malsburg & Schneider (1986) the coupling is not
+  trained across stimuli; it changes within a single presentation. Here that means one matrix per
+  recording, built from that recording alone. Negatives drawn across recordings taught a model
+  which recording it was looking at in every study the goal page found that measured it; this
+  rule never compares two recordings.
+- **Its kernel averages to zero.** A learning window that integrates to zero causes no drift
+  from event rates alone. That principle is Kempter, Gerstner & van Hemmen (1999), not this page.
+  Figure 1A shows how the kernel meets it on a frame grid. The zero is in the mean only: the
+  spread of *D* still grows with how busy a pair is, which is why readouts use *Z*.
+- **Its step shrinks near the bound.** *q*(*s*) is largest at rest and zero at the clamp, so no
+  coupling leaves 0.2–1.8 *s*₀. That holds only with the clamp in place and a step below 0.0048,
+  as Figure 1C shows.
 
 ## What the detector reports
 
-Three readouts, from least to most assumption:
+Three readouts. Each is computed on *Z*, *D* standardized pair by pair against its surrogates,
+so a busy pair's larger chance swings do not read as structure:
 
-1. **Per recording — is there learned structure?** A statistic of *D* (its Frobenius norm and its
-   leading eigenvalue), against the same statistic after the same rule has run on the assessor's
-   per-ROI circular-shift surrogates of the same window (`assess.circular_shift_trains`). This is a
-   significance test, not a training contrast; the rule never sees a surrogate while it learns.
-2. **Per recording — what shape?** The spectrum of *D*, and an overlap-tolerant grouping of its
-   positive part (mixed-membership or link communities). This is the readout that could answer the
-   assembly report's main open risk: modularity finds a partition, and cannot see cells that belong
-   to more than one group ([the todo](../todo/2026-08-20-what-could-still-overturn-the-assembly-negative.md), item 1).
-3. **Per frame — a call.** For the set *A*(*t*) of ROIs with an onset within *w* of frame *t*, the
-   score *E*(*t*) = Σ over pairs in *A*(*t*) of *D*_ij, with *D* frozen at the end of the window and
-   the threshold set on the circular-shift surrogates. This is the readout that makes it a detector
-   comparable with the six coded ones.
+1. **Does the rule register coordination at all?** The largest eigenvalue of *Z* against the
+   same statistic from surrogates that keep each ROI's slow rate changes and destroy its fine
+   timing. The surrogates are onsets jittered uniformly within ±20 s and snapped to frames
+   (`graph.jitter_trains`, the null behind the modularity result). These recordings are known to
+   be coordinated, so this should come out significant nearly everywhere. It is a **power check,
+   not a finding**: a recording where it fails is one where the rule cannot see what every other
+   instrument sees ([why a timing-destroying null says yes everywhere](../todo/2026-08-18-do-real-slices-have-recurring-assemblies.md)).
+2. **Is there structure beyond coordination?** The eigenvalues of *Z* after the first, and
+   overlapping groups found in *Z* by a method that lets one ROI join several. This null must
+   hold the coordinated events fixed and move only who takes part in them. It is the
+   fixed-margin (curveball) null the assembly report uses for membership, applied to the onsets
+   inside the assessor's coordinated clusters. ⚠ Building that null for timed trains is new work.
+   The grouping method is not chosen: a weighted stochastic block model (Aicher, Jacobs & Clauset
+   2015) handles signed weights, and link communities (Ahn, Bagrow & Lehmann 2010) take only
+   positive ones. With about 32 ROIs per recording, either must pass its own null first.
+3. **A call per frame.** For the set *A*(*t*) of ROIs with an onset within *m* frames of frame
+   *t*, the score *E*(*t*) is the mean of *Z* over the pairs in *A*(*t*). A mean rather than a
+   sum, because a sum grows with the square of the active count. *Z* is learned on one half of
+   the baseline window and scores the other, then the halves swap, so no frame is scored by
+   couplings it built. The threshold comes from surrogates put through the same learn-and-score.
+   This readout makes the rule a seventh detector, comparable with the six.
 
-**Baseline only**, as FOUNDATIONS §9 requires. Carrying a baseline *W* into a treatment window is
-the quiet → busy transfer the goal page lists under *Waiting on Tony*, and is out of scope here.
+**Baseline only**, as FOUNDATIONS §9 requires (coordination properties come from untreated
+recordings). Carrying a baseline *Z* into a treatment window is the quiet-to-busy transfer the
+goal page lists under *Waiting on Tony*, and is out of scope.
 
-## What could make this worthless — checked before anything is built
+## What could make this worthless
 
-Two things, each cheap, each with a way to fail.
+Two checks. The first runs before any detector code exists; the second needs the rule and runs
+first in the simulation stage.
 
-**Check A — is there anything beyond a busy core?** The assembly report describes this field as a
-core with a long tail and no recurring modules. If the coupling ends up near rank one, readout 2
-has nothing to find and readout 3 reduces to a weighted count of active ROIs, which is roughly
-CoactDetect with per-ROI weights. On the existing STTC matrices of the baseline windows, per
-stream: the share of off-diagonal variance left after the leading eigenvector, against the same
-share on circular-shift surrogates. The assembly report's eigenvalue statistic was computed on the
-participation matrix of detected events, not on the STTC graph, so this has not been run.
-**Proposed stop:** if the residual is at null level in most recordings of a stream, readout 2 is
-dropped for that stream and the proposal continues only if readout 3 can beat CoactDetect in stage 1.
+**The busy-core check: is there anything beyond one busy core?** Stop if, in more than half the
+recordings of a stream, none of the second to fourth eigenvalues of the STTC matrix exceeds the
+95th percentile of the same eigenvalue on ±20 s jitter surrogates. That stream stops, and the
+proposal ends if both do: without structure beyond a core, the shape readout has nothing to find
+and the call reduces to a weighted count of active ROIs, which CoactDetect already is.
+- Why this statistic: a matrix that is one core plus noise leaves little variance after the
+  first eigenvector, and so does a surrogate. Comparing that remaining share against surrogates
+  would pass a pure core. The second to fourth eigenvalues do not have that blind spot.
+- The STTC is computed fresh at a tile of half the coincidence span, to match the kernel's
+  positive lobe. The only STTC matrices this project has computed used a 2 s tile and were never
+  stored. The diagonal is zeroed, and ROIs with no onsets are left out of this check only; STTC
+  is undefined for them.
+- Controls: a planted one-core-plus-noise matrix must trip the stop, and a planted two-group
+  matrix must pass it.
+- The assembly report calls the field core–periphery as an interpretation, not a fitted model.
+  This check is the test that interpretation lacked.
 
-**Check B — is the learned matrix just STTC?** With a rate-neutral kernel and a bound, *D* may be
-a monotone function of a signed coincidence count, which is a close cousin of STTC. What the rule
-adds over STTC is the negative lobe (a near-miss counts against a pair) and the bound (one burst of
-coincidences cannot dominate). This check needs the rule, so it runs first thing in stage 1: rank
-correlation between *D* and the STTC matrix at the same *w*, per recording. **Proposed stop:** if
-it is above 0.9 in most recordings, the rule is STTC with extra steps, and that is the finding; the
-detector is not built, and readouts 1 and 2 are run on STTC directly.
+**The just-STTC check: is *Z* STTC by another name?** Stop if either arm says yes:
+- *Rank*: Kendall's τ-b between *Z* and STTC exceeds 0.9 in more than half the recordings of a
+  stream, over pairs where STTC is defined, at whichever STTC tile (half the span or the full
+  span) agrees best. τ-b because most pairs in a sparse recording never update and sit tied at 0.
+- *Recovery*: on simulated recordings with planted overlapping groups, *Z* does not recover the
+  planted pairs better than STTC does, measured as area under the curve (AUC) for planted pairs
+  against the rest, over 20 seeds.
 
-The stop thresholds are proposals, for Tony to set or change before any number is read.
+If either arm says yes, the finding is that the rule adds nothing to STTC; the detector is not
+built, and the shape readout runs on STTC directly.
+
+## What is asked
+
+**Now**
+- Set the two stop thresholds or accept the drafts above ("more than half the recordings", the
+  95th percentile, τ-b 0.9, 20 seeds). They are proposals, not measurements, and are set before
+  any number is read.
+- Approve the busy-core check. It needs no detector code and reads baseline windows from the
+  confirmed default dataset. The work is STTC matrices at the chosen tile and their jitter
+  surrogates: 66 recordings × 2 streams × 200 surrogate draws, the count the modularity run
+  used.
+
+**Later, at each stage's end**
+- Approve the simulation stage, then the real-recording stage.
+- Post one request to the producer, drafted here: centroid positions and a penumbra-subtracted
+  export folder (see Distance).
+- Say whether anyone has written to von der Malsburg or his group about equations 7 and 8, or
+  about the step size. clamor's record plans to write and shows no letter. Correspondence would
+  be cited as a dated personal communication, never quoted.
 
 ## Stages
 
-0. **Check A**, on the default dataset's baseline windows, both streams. No new detector code.
-1. **Simulation.** The rule on synthetic recordings with known answers: independent trains at
-   mismatched rates (the rate-neutrality claim: *D* should stay at *s*₀ within surrogate spread),
-   planted overlapping groups at the strengths `tools/assembly_power.py` already plants (can it
-   recover them where the membership test has power?), and CoactDetect on the same recordings
-   (does readout 3 add anything?). **Check B** runs here. *w* and *q*₀ are chosen here and frozen.
-2. **Real baseline recordings**, both streams, reported per group in the order DI, OVX, MALE, ORX —
-   never as a pooled number alone, because group effects run in opposite directions (§9).
-3. **Back to clamor.** What *q*₀ does on real calcium data, and whether *W* goes block-diagonal or
-   collapses on the core, written as a finding in clamor. clamor has only synthetic stimuli and a
-   step size it cannot pin; this is the first real data its rule will see.
+| stage | what runs | ends with | stops if |
+|---|---|---|---|
+| **Busy-core check** | the check above, both streams | a per-stream verdict | the check's stop triggers in both streams |
+| **Simulation** | the rule on simulated recordings (below); the just-STTC check | *m* and *q*₀ frozen by a declared objective | either just-STTC arm says yes |
+| **Real baseline recordings** | the three readouts, both streams | per-group results, in the order DI (diestrus female), OVX (ovariectomized female), MALE, ORX (orchiectomized male) | — |
+| **Back to clamor** | a finding for clamor on what *q*₀ and the kernel do on real calcium data | clamor's record | — |
+| **Distance** | whether couplings fall with distance between ROIs | a covariate result | waits on data bugarach does not have |
 
-A fourth stage waits on data bugarach does not have. **Distance.** The export carries no ROI
-positions. If it did, the question is whether *D* falls with distance and whether that falloff
-survives the penumbra-subtracted store — nearby ROIs share scattered light, so a coupling learned
-between neighbours may be optical crosstalk, not coordination. Distance is a covariate to test
-against, never a restriction on which pairs couple: a neighbours-only network would mostly learn
-crosstalk. Under ADR-0007 the request states an outcome: *each ROI's centroid, in µm, in the export
-folder; every other file unchanged* — drafted here, posted by Tony.
+**The simulation stage** needs a generator that does not exist yet: timed onsets with planted,
+overlapping groups. `tools/assembly_power.py` plants one group in a table with no times. So this
+stage adds a group-membership option to `simulate_coordination`. That option inherits the
+simulator's rate spread, burstiness, dead-time floor and frame grid. "Strength" keeps
+`assembly_power.py`'s meaning, the fraction of events recruited from a group. It runs:
+- **Rate neutrality.** Independent trains at mismatched rates: mean *D* regressed on the product
+  of the two event counts must have a slope within ±2 surrogate standard errors of 0. The same
+  kernel without half-weighted ends must fail this, which proves the test can.
+- **Recovery.** Planted groups at the strengths the membership test has power for, with the
+  just-STTC recovery arm.
+- **The call.** The per-frame call against CoactDetect, against *E*(*t*) with *Z* replaced by
+  its own mean (a squared active count), and against *Z* shuffled with row sums kept. "Beats"
+  means a higher F1 score (the harmonic mean of precision and recall) on the planted events,
+  with a 20-seed paired 95 % interval that excludes 0.
+- **Two comparison arms.** A covariance rule (Sejnowski 1977): a flat positive window minus the
+  coincidences expected from the two rates, with no negative lobe. For calcium events a
+  near-miss may mean loose coordination rather than evidence against it (antiphase), and if the
+  covariance arm recovers as well, the lobe is dropped. Also a same-frame-excluded kernel, whose
+  negative lobe is rescaled to keep the lag sum 0. Real-data conclusions must survive it, because
+  same-frame coincidences are where motion, light and neuropil artifacts sit.
+- **Freezing.** *m* is chosen from 3 to 6 frames and *q*₀ from {0.004, 0.01/12} by planted-pair
+  AUC at the middle strength. That objective is declared here, before any simulation is run.
 
-## How the code arrives
+**The real-recording stage** reports every result per group and per stream, never pooled alone.
+FOUNDATIONS §9 makes group-dependence mandatory. Two limits travel with every per-group number:
+- Group is nested in imaging day on the approved export (no date holds more than one group), so
+  a per-group difference is not a group effect.
+- The unit of replication is the mouse: 66 recordings from 36 mice (ADR-0008).
 
-`coactivity()` and `control()` are copied from `syncytium2/clamor` into
-`src/bugarach/detectors/` with a line-1 provenance stamp (`vendored from syncytium2/clamor @ <sha>`)
-and never edited in place, the convention `docs/session_protocol.md` and the murderboard copies
-already follow. Both repositories are BSD-3-Clause under the same owner; clamor's open licence item
-concerns its own vendored tooling, not this model. `tools/check_vendor_freshness.sh` gains a clamor
-family so the check reports when clamor's rule moves on. The copy is torch code; torch is already in
-bugarach's `dev` and `dl` extras, so the suite and CI can run it.
+**Distance.** The export carries no ROI positions. Nearby ROIs share scattered light, so a
+coupling learned between neighbors may be optical crosstalk. Distance is therefore a covariate to
+test against, never a restriction on which pairs couple. The request goes to the producer as an
+outcome, not a method (ADR-0007: bugarach sessions do not act in interface2): *each ROI's
+centroid, in µm, and a penumbra-subtracted copy of the default folder; every other file
+unchanged.* The penumbra-subtracted data exist only as a `.mat` store, which analysis here may
+not read.
 
-At the kernel point chosen above, Co is one cosine, and copying sixty lines for it looks like
-overkill. The copy is kept because stage 1 sweeps *w* against the window, where the interpolated
-form is exercised, and because a stamp is how a later change to clamor's rule gets noticed here.
+## Method detail
+
+**The source.** von der Malsburg & Schneider, *A Neural Cocktail-Party Processor*, Biological
+Cybernetics 54:29–40 (1986), DOI [10.1007/BF00337113](https://doi.org/10.1007/BF00337113). It
+applies the synaptic modulation of von der Malsburg's 1981 correlation theory. ⚠ Neither the
+1986 PDF nor the 1981 report was reachable during review, so every "the paper says" below is
+verified against clamor's transcription only (syncytium2/clamor, file `malsburg1986.py`, at
+`c25c7e5`).
+
+- **Equation 7**, the kernel: +1 when two bursts coincide, 0 at half overlap, −1 in antiphase. The
+  paper states it exactly as a cosine for a burst lasting half the period. clamor's general form
+  for other burst lengths is its own interpolation, marked `INTERPOLATED`.
+- **Equation 8**, the step: *q*(*s*) = *q*₀ (1 − ((*s* − *s*₀)/(*s*₀ *s*<sub>d</sub>))²).
+- **The subliminal rule** (p. 33): no change for a cell that has not burst within one period
+  plus half a burst.
+
+**What changes for calcium events.** The 1986 units are oscillators, and antiphase means half a
+period away. Calcium events are not periodic, so the oscillator is left behind and the kernel's
+shape is kept over a finite span:
+- **The kernel at the one point the paper states exactly.** Period 2*m* and burst *m* give
+  Co(*k*) = cos(π*k*/*m*): +1 at lag 0, 0 at *m*/2, −1 at *m*. That is the burst-equals-half-period
+  case, where clamor's `selftest()` pins its general form to the paper's cosine. No sweep here
+  leaves this case, so the interpolated form is never used.
+- **Whole frames, ends at half weight.** Onsets are floored to frames before lags are taken, and
+  *m* is a whole number of frames for each recording's own frame interval. Summed over lags −*m*
+  to *m*, the cosine gives −1 for every *m*, because both ends sit at −1. Weighting the two end
+  lags by one half (the trapezoid rule) gives 0 (Figure 1A). At a span that is not a whole number
+  of frames there is no end lag to halve, and the sum drifts either way.
+- **Gated before the kernel.** clamor's kernel wraps lags modulo the period, so a pair 2*m* apart
+  would score as a perfect coincidence. Pairs further apart than *m* frames are dropped before the
+  kernel is called. This is also this page's version of the subliminal rule: a ±*m* cutoff, not
+  the paper's one and a half periods, listed as a deliberate deviation.
+- **One update per pair of onsets, symmetric.** Each unordered pair of onsets within ±*m*
+  updates *W*<sub>ij</sub> and *W*<sub>ji</sub> once, when the later onset arrives. clamor updates
+  one row per burst and leaves open whether that row is the pre- or postsynaptic cell; Co is even,
+  and the symmetric form sidesteps the question.
+- **The span.** The ruled jitter is σ = 0.106 s fast and 0.135 s slow, each participant's scatter
+  around a shared event time (`decisions_pending.md` item 2). The lag between two participants
+  scatters by σ√2, so a span of two jitters puts about a fifth of coordinated updates on the
+  negative lobe (Figure 1B). The sweep therefore runs from 3 to 6 frames. ⚠ The jitter was
+  measured on a folder since superseded ([todo](../todo/2026-09-23-the-overnight-runs-are-pinned-to-an-export-that-has-changed.md));
+  *m* is frozen only after it is re-measured on the default dataset.
+- **The step and the clamp.** The bound needs the clamp in clamor's `modulate()`, not only
+  *q*(*s*). At the paper's *q*₀ = 0.01 one coincidence from rest lands at 0.0220, past the clamp at
+  0.0216. There *q* = 0, so the coupling never moves again, and each entry of *D* records the sign
+  of its first pair of onsets (Figure 1C). Below *q*₀ = *s*₀*s*<sub>d</sub>/2 = 0.0048, no step from
+  inside the band crosses the clamp. The paper's 0.01 is therefore out of the sweep. clamor's own
+  question about the step size (the paper states 0.01; its p. 35 implies about 0.01/12) is
+  what the Back to clamor stage reports on.
+- **Rate neutrality is in the mean.** For independent onsets the expected update is 0 however
+  busy either ROI is, because the kernel's lag sum is 0 (Kempter et al. 1999). Before the clamp
+  that is exact, not approximate. The spread is not neutral: the variance of *D*<sub>ij</sub>
+  grows with the number of onset pairs, roughly the product of the two event counts. At the
+  per-ROI background rates FOUNDATIONS §9 gives, most independent pairs in a baseline window
+  never update at all (derived during review, not measured).
+
+## Where the code comes from
+
+clamor's `malsburg1986.py` is copied **whole and verbatim** into `third_party/clamor/`, stamped
+`vendored from syncytium2/clamor @ <sha>` and never edited. That follows the draughtsman
+precedent in `third_party/draughtsman/`. Tony chose a stamped copy over a dependency on
+2026-09-25, in the session that wrote this page, and an architecture decision record (ADR) goes
+with the first commit that copies code. Copying two methods out of the class would have lost the
+clamp and the module constants the step reads, and an excerpt cannot be checked against its
+source.
+
+- Both repositories are BSD-3-Clause, under the same GitHub organization. clamor's open license
+  item concerns tooling it copied from elsewhere, not this model.
+- The module imports torch, which bugarach has only as an optional extra (`dl`, `dev`). The
+  detector imports it lazily, so `import bugarach.detectors` still works without torch. The
+  kernel's functions take tensors, and the detector converts at the boundary.
+- `tools/check_vendor_freshness.sh` gains a clamor family, read through a local clone named by
+  `BUGARACH_CLAMOR`, as draughtsman is. That gate is advisory and nothing runs it on its own
+  ([todo](../todo/2026-09-19-the-vendor-freshness-gate-is-advisory-and-nothing-runs-it.md)), so
+  the stamp records which version was measured rather than guaranteeing it is current.
+- A seventh detector registers where the six do (`detect_folder.DETECTORS`, the operating
+  points, the display names). It takes its frame interval from `with_microscope`, its baseline
+  windows from `effective_region_windows`, its input from `dataset.default()` and its group
+  order from `bugarach.groups`. It cannot have a MATLAB parity test, and its landing PR says so.
 
 ## What this does not claim
 
-- That the preparation has assemblies. The assembly negative stands until something overturns it;
-  this is one instrument that could, and a null result from it is a result.
-- That rate-neutrality holds for real trains. It is derived for independent, stationary trains, and
-  real trains have a refractory floor and slow drift. Stage 1 measures it.
-- That the 1986 model reproduces its own paper. clamor's record says the stability test reproduces
-  and the one-step amplification does not; only equations 7 and 8 are used here, and neither is
-  what fails there.
+- That the preparation has assemblies. The assembly negative stands until something overturns it.
+  This is one instrument that could, and a null result from it is a result.
+- That rate neutrality holds for real trains beyond the mean. It is exact in expectation for
+  independent trains. Real trains have a dead-time floor and slow drift, and the simulation stage
+  measures what those do.
+- That clamor's transcription reproduces the paper. clamor's record says the first stability
+  test reproduces and the second does not (its CLAIMS item 5). A one-step onset gap reproduces
+  under one reading of the paper's Figure 4 (item 1). Equation 8's step size re-locks streams the
+  dynamics had separated (item 2). So the step size is an open fidelity question in the source,
+  which is why it is swept here and not taken from the paper.
+
+## References
+
+- Ahn, Bagrow & Lehmann 2010, *Nature* 466:761–764, doi:10.1038/nature09182.
+- Aicher, Jacobs & Clauset, *Learning latent block structure in weighted networks*,
+  arXiv:1404.0431 (the weighted stochastic block model).
+- Cutts & Eglen 2014, *J Neurosci* 34:14288–14303, doi:10.1523/JNEUROSCI.2767-14.2014.
+- Kempter, Gerstner & van Hemmen 1999, *Phys Rev E* 59:4498–4514, doi:10.1103/PhysRevE.59.4498.
+- Sejnowski 1977, *J Math Biol* 4:303–321, doi:10.1007/BF00275079.
+- Stark & Abeles 2009, *J Neurosci Methods* 179:90–100, doi:10.1016/j.jneumeth.2008.12.029. A
+  cross-correlogram statistic with a hollowed window, the nearest relative of the kernel's
+  positive center and negative flanks.
+- von der Malsburg & Schneider 1986, *Biol Cybern* 54:29–40, doi:10.1007/BF00337113.
+- ⚠ Not reached: von der Malsburg 1981, *The Correlation Theory of Brain Function* (the rule's
+  origin). Not searched: the machine-learning "fast weights" literature (weights that change
+  within one input sequence), and oscillator-synchronization physics.
