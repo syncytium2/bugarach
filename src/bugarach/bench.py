@@ -133,7 +133,16 @@ def recording_floor(s, stream: str = STREAM):
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(f".{os.getpid()}.tmp")
         tmp.write_text(json.dumps(f.as_dict()))
-        os.replace(tmp, path)
+        try:
+            os.replace(tmp, path)
+        except PermissionError:
+            # Windows refuses a replace while another process holds the target — which happens
+            # when two workers compute the same recording's floor at once. The floor is a
+            # function of the recording, so the file already there holds the same number.
+            # Seen in phase 3 of 2026-09-25 (score_bench_candidates.py, 44 workers).
+            tmp.unlink(missing_ok=True)
+            if not path.exists():
+                raise
     return f
 
 
