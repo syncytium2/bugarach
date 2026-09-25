@@ -78,7 +78,7 @@ def recording_task(args):
     i, folder, settings, model_paths, draws = args
     from bugarach import event_floor as ef
     from bugarach.combined import COMBINED, has_sources, stream_of
-    from bugarach.detect_folder import _region_index, folder_analysis_windows
+    from bugarach.detect_folder import _region_index, folder_analysis_windows, with_microscope
     from bugarach.detectors.cicada import cicada_detect
     from bugarach.detectors.coact import coact_detect
     from bugarach.detectors.loco import loco_detect
@@ -97,6 +97,11 @@ def recording_task(args):
         if has_sources(s) and COMBINED not in s.streams:
             s.streams[COMBINED] = stream_of(s, COMBINED)
         dt = s.require_dt()
+        # The settings were tuned on the bench; rate+context's grid and locust's frame rate belong
+        # to this recording's microscope, as in `bugarach detect` (detect_folder.with_microscope).
+        # Until 2026-09-25 this tool ran CoactDetect only, so neither was ever reached.
+        settings = {sn: {d: with_microscope(d, p, dt) for d, p in by_det.items()}
+                    for sn, by_det in settings.items()}
         for name, path in model_paths.items():
             if path not in _MODELS:
                 from bugarach.learn.checkpoint import load
