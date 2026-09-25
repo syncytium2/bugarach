@@ -59,6 +59,7 @@ from __future__ import annotations
 import argparse
 import csv
 import dataclasses
+import json
 import os
 import sys
 import tempfile
@@ -411,7 +412,43 @@ LANE_COLORS = {
     "tube": "#7F0000", "tube_guard": "#D62828",
     "tube_ratio": "#F77F00", "tube_ratio_guard": "#FCBF49",
     "trace": "#5C5C5C", "tiny": "#8C8C8C",
+    # The chorus models (the learned family's current names), in the same warm ramp.
+    "chorus_norm": "#7F0000", "chorus_gain_norm": "#F77F00",
 }
+
+#: A lane key may name a variant of a detector, "<detector> · <variant>" (for example
+#: "coact · floor+1"). It takes its detector's colour; a "+N" variant takes it lighter, so the
+#: two lanes of one detector read as one family. A lane's label is its key.
+LANE_VARIANT_SEP = " · "
+
+
+def _lighter(hex_color: str, amount: float = 0.45) -> str:
+    h = hex_color.lstrip("#")
+    rgb = [int(h[i:i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(f"{round(c + (255 - c) * amount):02X}" for c in rgb)
+
+
+def lane_color(lane: str, fallback: str = "#555555") -> str:
+    """The colour for one lane key: its detector's, lightened for a "+N" variant."""
+    from bugarach.ui.app import COLORS
+
+    if lane in LANE_COLORS:
+        return LANE_COLORS[lane]
+    base, _, variant = lane.partition(LANE_VARIANT_SEP)
+    c = LANE_COLORS.get(base) or COLORS.get(base, fallback)
+    return _lighter(c) if variant and "+" in variant else c
+
+
+def read_floors(results: Path) -> dict:
+    """``(slice_id, region_idx, stream) -> own floor`` from ``tools/detect_with_floors.py``'s
+    ``results.json``, for the page header. ``None`` where a window had no floor."""
+    rec = json.loads(Path(results).read_text(encoding="utf-8"))
+    out = {}
+    for sid, per in (rec.get("floors") or {}).items():
+        for key, f in per.items():
+            idx, _, stream = key.partition("|")
+            out[(sid, idx, stream)] = (f or {}).get("floor")
+    return out
 
 
 def detector_lanes(*detections: Path):
@@ -493,7 +530,9 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
                 # has too much white space"). The rows keep their size; the padding goes.
                 panels.append(lane_panel(shifted, ext=ext, width=width,
                                          row_px=row, not_run=not_run,
-                                         names=LANE_NAMES, colors=LANE_COLORS)
+                                         names=LANE_NAMES,
+                                         colors={d: lane_color(d)
+                                                 for d in set(per_det) | set(not_run)})
                               .opts(height=row * n_rows + LANE_PAD_PX,
                                     backend_opts=TIGHT))
             marked, n_red = [], 0
@@ -555,8 +594,13 @@ def block_heights(slice_id: str, n_rois: int) -> tuple[int, int]:
 def header_html(group: str, treatment: str, members, ext, folder: Path,
                 *, stream: str = "", unscanned: bool = False, ran=(), not_run=(),
                 excluded=(), note=None, removed: dict | None = None,
-                detections: Path | None = None, roi_px: int | None = None) -> str:
-    """The key, and the provenance. Outside every plot, per the conventions."""
+                detections: Path | None = None, roi_px: int | None = None,
+                floors: dict | None = None) -> str:
+    """The key, and the provenance. Outside every plot, per the conventions.
+
+    ``floors`` (from :func:`read_floors`) adds each recording's own floor per window, in
+    co-active ROIs, as a header line: a floor is a number about the window, and nothing is drawn
+    on the raster."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
 
     def chip(colour, label):
@@ -608,7 +652,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
             "<div style='margin:4px 0 0;color:#444'>detector lanes, one block per "
             "stream, between the periods and the raster they were called on: &nbsp; "
             + " &nbsp; ".join(
-                chip(LANE_COLORS.get(d) or COLORS.get(d, "#555"),
+                chip(lane_color(d),
                      LANE_NAMES.get(d, TITLES.get(d, d)))
                 for d in ran))
         if excluded:
@@ -630,6 +674,16 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
                    "pass <code>--detections</code> to draw the calls</div>")
     src = "".join(f" &nbsp;·&nbsp; {d.parent.name}/{d.name}" for d in (detections or []))
     note_html = (f"<div style='margin:4px 0 0;color:#b00'>⚠ {note}</div>") if note else ""
+    if floors:
+        per = []
+        for sl, _ in members:
+            ws = [f"{r.name or r.slot} {floors[(sl.slice_id, str(r.slot), stream)]}"
+                  for r in sl.regions
+                  if floors.get((sl.slice_id, str(r.slot), stream)) is not None]
+            per.append(f"<b>{sl.slice_id}</b>: {', '.join(ws) if ws else 'no floor'}")
+        note_html += ("<div style='margin:4px 0 0;color:#444'>own floor per window "
+                      "(co-active ROIs; floor + 1 is one more): " + " &nbsp;·&nbsp; ".join(per)
+                      + "</div>")
     return (
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
         f"<b style='font-size:16px'>{group} · {treatment} · {stream}</b> &nbsp;—&nbsp; "
@@ -703,7 +757,11 @@ def main(argv=None) -> int:
                          "so their absence is visible rather than silent. Defaults to "
                          "the learned models when --detections is given, because "
                          "nothing persists a trained model.")
+    ap.add_argument("--floors", type=Path, default=None,
+                    help="results.json from tools/detect_with_floors.py: put each recording's "
+                         "own floor per window, in co-active ROIs, in the page header")
     a = ap.parse_args(argv)
+    floors = read_floors(a.floors) if a.floors else None
 
     folder = resolve_folder(a.folder, unscanned=a.unscanned,
                             steps_excluded=a.steps_excluded)
@@ -758,7 +816,8 @@ def main(argv=None) -> int:
                                           unscanned=a.unscanned, ran=ran,
                                           not_run=not_run, excluded=a.exclude,
                                           detections=a.detections, note=a.note,
-                                          removed=removed, roi_px=a.roi_px))]
+                                          removed=removed, roi_px=a.roi_px,
+                                          floors=floors))]
         for sl, panels in blocks:
             # THE ID, ROTATED, IN ITS OWN COLUMN — an HTML block and not the
             # raster's y-label. As a y-label it is clipped to the plot's height:
