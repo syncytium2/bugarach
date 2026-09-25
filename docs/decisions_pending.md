@@ -24,6 +24,17 @@ file's last item and that todo goes with it.
 **Not murderboarded** — working material for sessions in this tree. Every number below names
 the file it came from. Nothing here is for an outside reader.
 
+**Cleared 2026-09-25, Tony approving:**
+- **Items 3 (the nets on the slow bench), 8 (the tuning branch, #642) and 10 (the combined-stream
+  goal) were overtaken by [ADR-0010](adr/0010-tune-train-and-review-against-the-data-as-they-are.md)'s
+  full-panel night.** It trains every learned family on the slow and combined realistic benches,
+  with the `--bench` switch #642 was the only home for, now on `main`. #642 is closed as superseded.
+- **"Two scorers, two winners"** was settled by [ADR-0009](adr/0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md)
+  decision 1: the elevated-rate test is scored on a recording of its own, against its own budget,
+  and never enters precision.
+- **"Run-record naming"** is not ready for a ruling: its prior-art pass has not been run. It is
+  an open todo until it has.
+
 ---
 
 ## 1. Pinning — CLOSED 2026-09-22, the producer answered
@@ -94,23 +105,6 @@ stops at a 3 s bin where the bins run to 5 s, and the bench absorbs `jit_obs` ra
 [`todo/2026-09-22-what-else-came-from-the-clustering-instrument.md`](todo/2026-09-22-what-else-came-from-the-clustering-instrument.md).
 **What the ruling does not settle:** the operating points. The re-searches propose settings on
 the new bench; adopting any of them is still Tony's, as it was for the slow reference.
-
-## 3. The nets on the slow bench — run, re-pilot, or drop
-
-**Decide:** whether step C runs at all, and on which bench.
-
-**Blocking:** the last step of the slow-stream job. 064 correctly stopped rather than guessing.
-
-**Evidence:** `docs/handoffs/2026-09-21-slow-bench.md`, step C, and
-`docs/learned/runs/2026-09-21-slow-pilot/README.md`. Two untuned nets at three seeds against
-the slow reference land everything within **0.827–0.859 mean F1**, the nets 0.016 to 0.032
-below CoactDetect, against 0.29 of spread on fast. Fits take 5 to 16 s on the GPU, so a full
-slow comparison is hours rather than the fast run's roughly 14 hours — the cost argument is
-weaker than it looked, and the bench's own stability is the real question.
-
-**Recommendation:** hold until item 2 is ruled, then re-pilot rather than re-run: a bench where
-every detector scores above 0.8 separates nets from coded detectors less well, and the slow
-participation of 0.38 is the value the whole slow bench turns on.
 
 ## 4. The export contract fireflies proposes
 
@@ -189,19 +183,7 @@ ships uncited because nobody in this tree has read them.
 **Recommendation:** they go on the literature shelf and someone reads them before the section
 reaches an outside reader. An uncited method claim is the kind of thing a referee opens with.
 
-## 8. The tuning branch's fate
-
-**Decide:** whether [#642](https://github.com/syncytium2/bugarach/pull/642) lands, and who adds
-its `--bench fast|slow` seam.
-
-**Blocking:** step C in item 3 — the tool is on that draft branch and nowhere else, and without
-the seam a slow run trains on fast recordings and stamps them slow.
-
-**Recommendation:** rule item 3 first. If step C is held indefinitely, the branch should still
-land for the run it already produced; a tool that exists only on a draft branch is a tool the
-next session will rebuild.
-
-## 9. Slow comodulation: the page and the held review round
+## 9. Slow comodulation: the page and the held review round — DEFERRED 2026-09-23 by Tony
 
 **Decide:** the round-3 role reports held in the darkroom, and who finishes the page.
 
@@ -221,33 +203,6 @@ for followup as important but off target for today's goals."* The three-stream r
 the scoring design, minute-scale shared change is treated as **background**, a working choice and
 not a finding:
 [`todo/2026-09-23-minute-scale-shared-change-is-background-for-now.md`](todo/2026-09-23-minute-scale-shared-change-is-background-for-now.md).
-
----
-
-## 10. The combined-stream goal: when it starts, and what shape it takes
-
-**Decide:** whether goal 4 starts before or after the jitter ruling and the slow stream's
-last step, and whether a combined stream **replaces** the two passes or sits beside them.
-
-**Blocking:** nothing today — the goal is new and nothing is built. It is here because two of
-its three open questions are yours and one is the producer's, and because the order matters:
-it would inherit benches that items 2 and 3 are about to move.
-
-**Evidence:** [`goals/combined-stream-coordination.md`](goals/combined-stream-coordination.md),
-set by Tony 2026-09-22. Fast and slow are detected one stream at a time today, so an event
-recruiting three fast cells and two slow ones is two small calls or none. The concern he
-raised with it — that the two streams may draw from **one pool of events** — is real and
-half-answered: the export contract settles that only the *width* rule differs between them
-and that the detection is methodically identical, but it says nothing about what assigns an
-event to a stream or whether one transient can appear in both. **That part is a producer
-question**, by the same rule as item 1.
-
-**Recommendation:** ask the producer the membership question in the same message as item 1's
-pinning question — they go to the same people and one of them is already overdue. Then run
-the one cheap measurement that does not wait on anybody: per ROI, the gap from each slow
-onset to the nearest fast onset, against the frame interval. A mass at zero is a shared pool.
-Start the build after items 2 and 3, and after the one-stream-aware bench rebuild — a third
-copy of the scoring path is the strongest argument yet for that refactor landing first.
 
 ## Under check — claims that are not rulings yet
 
@@ -273,12 +228,6 @@ decision, that decision joins the numbered list above.
 
 ## Already in the queue, listed so this page is the whole of it
 
-- **Two scorers, two winners, and nothing decides between them** —
-  [`todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md`](todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md).
-  The re-fit cannot start until the elevated-rate test's place in the score is chosen.
-- **Run-record naming, four decisions** —
-  [`todo/2026-08-31-run-record-naming-decisions.md`](todo/2026-08-31-run-record-naming-decisions.md).
-  They amend ADR-0005 and land in a contract two other teams read.
 - **Bench participation 0.18 → 0.19**, already scheduled for after the 2026-09-22 meeting —
   [`todo/2026-09-21-bench-participation-to-0-19-after-the-meeting.md`](todo/2026-09-21-bench-participation-to-0-19-after-the-meeting.md).
   Not a ruling; listed because it moves the same constants as item 2 and the two reruns should
