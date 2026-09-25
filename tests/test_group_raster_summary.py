@@ -318,3 +318,60 @@ def test_the_floors_come_from_detect_with_floors_results(tmp_path):
     got = mod.read_floors(p)
     assert got[("s1", "1", "fast")] == 7 and got[("s1", "2", "fast")] == 9
     assert got[("s1", "2", "slow")] is None
+
+
+# --- ADR-0010 part 6: every call drawn, its participants and floors in the lane's hover -------
+
+def _calls_csv(tmp_path):
+    import csv
+
+    rows = [
+        # CoactDetect ran at each floor: only the run at own_floor is drawn.
+        dict(slice_id="r1", stream="combined", detector="coact", variant="own_floor",
+             onset_sec=10, width_sec=2, participants=12, own_floor=10, baseline_floor=8),
+        dict(slice_id="r1", stream="combined", detector="coact", variant="baseline_floor",
+             onset_sec=11, width_sec=2, participants=9, own_floor=10, baseline_floor=8),
+        # Chorus ran once: every call is drawn, the one under the floor too.
+        dict(slice_id="r1", stream="combined", detector="chorus_norm", variant="unfloored",
+             onset_sec=30, width_sec=4, participants=15, own_floor=10, baseline_floor=8),
+        dict(slice_id="r1", stream="combined", detector="chorus_norm", variant="unfloored",
+             onset_sec=60, width_sec=4, participants=4, own_floor=10, baseline_floor=""),
+    ]
+    p = tmp_path / "calls.csv"
+    with p.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    return p
+
+
+def test_call_lanes_draw_every_unfloored_call_and_one_floored_run(tmp_path):
+    lanes = mod.call_lanes(_calls_csv(tmp_path))
+    per = lanes[("r1", "combined")]
+    on, wd, info = per["coact"]
+    assert on.tolist() == [10.0] and len(info) == 1
+    on, wd, info = per["chorus_norm"]
+    assert on.tolist() == [30.0, 60.0], "a call under the floor is drawn, not removed"
+    assert info[0] == "15 participants · own floor 10 · baseline floor 8 (co-active ROIs)"
+    assert "baseline floor —" in info[1]
+    assert mod.call_lanes(_calls_csv(tmp_path), "baseline_floor")[("r1", "combined")][
+        "coact"][0].tolist() == [11.0]
+
+
+def test_a_lane_with_hover_lines_puts_them_on_the_lane_only():
+    """The number goes in the lane's hover, never on the raster: the lane's bars carry a
+    `call` value per call and a hover tool; a lane without lines renders as before."""
+    import holoviews as hv
+
+    from bugarach.ui.diagnostic import lane_panel
+
+    hv.extension("bokeh")
+    with_info = lane_panel({"chorus_norm": (np.array([30.0, 60.0]), np.array([4.0, 4.0]),
+                                            ["15 participants", "4 participants"])},
+                           ext=(0.0, 100.0))
+    plain = lane_panel({"chorus_norm": (np.array([30.0, 60.0]), np.array([4.0, 4.0]))},
+                       ext=(0.0, 100.0))
+    rects = [el for el in with_info if isinstance(el, hv.Rectangles)]
+    assert rects and rects[0].dimension_values("call").tolist() == ["15 participants",
+                                                                   "4 participants"]
+    assert not [el for el in plain if isinstance(el, hv.Rectangles) and el.vdims]

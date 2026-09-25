@@ -10,6 +10,13 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/real-intervals — DARKROOM claim: `bugarach/2026-09-25-real-intervals/` (NEW)
+- **Status:** claimed 2026-09-25 ~15:45 UTC, before writing, by WSMIP065 for ADR-0010 (proposed)
+  part 2, step 1: the real inter-event intervals, measured without a detector, on the default
+  dataset's baseline windows. Measurement only; no bench change. Released by the merge of the PR
+  that carries its run record.
+- **Touches:** that folder only.
+
 ### 065/floor-plus-one-variant — DARKROOM claim: `bugarach/2026-09-25-floor-plus-one-review/` (NEW)
 - **Status:** claimed 2026-09-25 ~11:00 UTC, before writing, by WSMIP065 at the orchestrator's
   request (Tony weighing the event floor + 1): `run/` (detect_with_floors with `--floor-offset 1`,
