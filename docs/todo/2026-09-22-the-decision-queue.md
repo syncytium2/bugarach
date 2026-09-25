@@ -5,7 +5,7 @@ filed: 2026-09-22
 
 # The ruling queue: one page, so a session can see all of it at once
 
-waiting: Rule the nine open items in `docs/decisions_pending.md` — the jitter constant first, because every tuned number on both streams is provisional until it is answered. The pinning question closed itself on 2026-09-22: the producer ran the geometric test and the ROIs are clean.
+waiting: Rule items 4–7 in `docs/decisions_pending.md`: the fireflies export contract, five code defects, the name "amplitude", two unread citations.
 
 **Read [`docs/decisions_pending.md`](../decisions_pending.md).** This file is the queue entry;
 that one is the content.
