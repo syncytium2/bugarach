@@ -73,3 +73,22 @@ def assert_close_naninf(ours, ref, rtol=1e-9, atol=1e-9, err_msg=""):
     np.testing.assert_allclose(ours[finite], ref[finite], rtol=rtol, atol=atol,
                                err_msg=err_msg)
     assert not np.isfinite(ours[~finite]).any(), f"{err_msg}: finite vs null"
+
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def pre_adr_0008_bench():
+    """The bench as it was before 2026-09-25: no ADR-0008 floor on a recording or a detector.
+
+    For a test that pins a measurement taken before the floor, or that exercises detector
+    mechanics the floor has nothing to do with (a shift, a column mapping). Its numbers are
+    pre-ADR-0008 by construction, and a test using this says so by naming it. The floor's own
+    tests are in ``tests/test_bench_floor.py``.
+    """
+    # Module scope, because several of these modules build their recordings in module-scoped
+    # fixtures, which a function-scoped patch reaches too late.
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv("BUGARACH_BENCH_FLOOR", "off")
+        yield

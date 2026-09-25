@@ -16,6 +16,11 @@ from bugarach import bench
 from bugarach.detectors import sliding as sl
 
 
+# Pre-ADR-0008 by construction: these pin measurements taken before the floor, or exercise detector
+# mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
+pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench")
+
+
 def _trains(seed=0, n_roi=12, T=300.0, rate=0.08):
     rng = np.random.RandomState(seed)
     return [np.sort(np.round(rng.uniform(0, T, rng.poisson(rate * T)), 1)) for _ in range(n_roi)]

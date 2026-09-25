@@ -81,6 +81,27 @@ def test_the_elevated_rate_recording_is_drawn_on_its_own_seed_range(b):
     assert not elevated & others
 
 
+@pytest.mark.parametrize("b", BENCHES, ids=IDS)
+def test_the_elevated_rate_recording_carries_its_own_floor_over_the_whole_recording(b):
+    """ADR-0009 decision 1: its floor comes from its own null, stretch included, and the stretch
+    lifts it above the planted recording's."""
+    if not b.floor_enabled():
+        pytest.skip("floor switched off for this run")
+    _, ge = b.make_elevated_rate_recording("baseline_quiet", 1)
+    _, gt = b.make_recording("baseline_quiet", 1)
+    assert ge.params["event_floor"] == b.recording_floor(
+        b.make_elevated_rate_recording("baseline_quiet", 1)[0], b.STREAM).floor
+    assert ge.params["event_floor"] > gt.params["event_floor"]
+
+
+def test_the_search_warms_the_elevated_rate_floors_too():
+    """So its workers do not each compute them (``bench.FLOOR_CACHE_ENV``)."""
+    kind, seed, f = sas._warm(("elevated:baseline_quiet", 1))
+    _, ge = bench.make_elevated_rate_recording("baseline_quiet", 1)
+    assert (kind, seed) == ("elevated:baseline_quiet", 1)
+    assert f == ge.params.get("event_floor")
+
+
 def test_a_probe_nobody_ran_is_nan_not_zero():
     r = bench.BenchResult(detector="coact", regime="baseline_quiet", n_planted=10, n_hit=5,
                           n_detected=6)

@@ -55,6 +55,122 @@ from bugarach.simulate import simulate_coordination
 STREAM = "events"
 """The single-stream slice the generator emits (FOUNDATIONS §3)."""
 
+FLOORED_SETTING = {"coact": "min_rois", "loco": "min_rois", "sce": "min_rois", "sync": "min_n"}
+"""The setting each detector's participation minimum lives in, which ADR-0008 sets and no search
+does (ADR-0008 decision 6; ADR-0009 decision 3 for SPIKE-synch's ``min_n``). rate+context and
+locust have no participation minimum, so the floor reaches them only through the scorer."""
+
+FLOOR_LABEL = "ADR-0008 per-window floor, bench per ADR-0009"
+"""What every run record scored under this module's floor says about it."""
+
+FLOOR_CACHE_ENV = "BUGARACH_FLOOR_CACHE"
+"""A folder where :func:`recording_floor` keeps each recording's floor, keyed by its events. A
+search sets it so its workers compute each floor once between them, not once each."""
+
+FLOOR_SWITCH_ENV = "BUGARACH_BENCH_FLOOR"
+"""Set to ``off`` to build and score this bench pre-ADR-0008: no floor recorded on a recording,
+none injected into a detector. For tests that pin a measurement made before 2026-09-25 or that
+exercise detector mechanics the floor has nothing to do with, and for reproducing earlier runs.
+Anything run this way is pre-ADR-0008 and says so."""
+
+_FLOORS: dict = {}
+
+
+def floor_enabled() -> bool:
+    """Is ADR-0008's floor on for this bench (the default)? Read at every call."""
+    import os
+
+    return os.environ.get(FLOOR_SWITCH_ENV, "on").strip().lower() not in ("off", "0", "false")
+
+
+def _floor_key(s, stream: str):
+    import hashlib
+
+    ext = recording_extent(s)
+    trains = stream_trains(s.streams[stream], ext)
+    dt = s.require_dt()
+    h = hashlib.sha256(repr((stream, float(dt), float(ext[0]), float(ext[1]))).encode())
+    for t in trains:
+        h.update(np.asarray(t, dtype=np.float64).tobytes())
+        h.update(b"|")
+    return h.hexdigest()[:32], trains, ext, dt
+
+
+def recording_floor(s, stream: str = STREAM):
+    """ADR-0008's floor for one simulated recording, from that recording's own events.
+
+    ADR-0008 decision 5: every bench recording gets its floor from its own null, exactly as a real
+    window does. ADR-0009 decision 1: nothing is left out of it, the elevated-rate stretch
+    included. The null is seeded by a digest of the recording's events, so the same recording
+    always gets the same floor, in any process. Returns a
+    :class:`bugarach.event_floor.Floor`.
+    """
+    import json
+    import os
+    from pathlib import Path
+
+    from bugarach import event_floor as ef
+
+    key, trains, ext, dt = _floor_key(s, stream)
+    if key in _FLOORS:
+        return _FLOORS[key]
+    cache = os.environ.get(FLOOR_CACHE_ENV)
+    path = Path(cache) / f"{key}.json" if cache else None
+    if path is not None and path.exists():
+        try:
+            f = ef.Floor(**{k: v for k, v in json.loads(path.read_text()).items()
+                            if k != "stable"})
+            _FLOORS[key] = f
+            return f
+        except (OSError, ValueError, TypeError):
+            pass                              # a half-written file: compute it again
+    frames = [np.unique(np.floor((np.asarray(t, float) - ext[0]) / dt + 1e-9).astype(np.int64))
+              for t in trains]
+    n_frames = int(round((ext[1] - ext[0]) / dt))
+    f = ef.window_floor(frames, n_frames, dt, key=("bench", stream, key))
+    _FLOORS[key] = f
+    if path is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(f.as_dict()))
+        os.replace(tmp, path)
+    return f
+
+
+def with_floor(pair, stream: str = STREAM):
+    """``(slice, ground_truth)`` with the recording's floor recorded in ``gt.params``, where
+    :func:`bugarach.score.score_detections` reads it (ADR-0009 decision 2)."""
+    s, gt = pair
+    if not floor_enabled():
+        return s, gt
+    f = recording_floor(s, stream)
+    gt.params["event_floor"] = f.floor
+    gt.params["event_floor_detail"] = f.as_dict()
+    return s, gt
+
+
+def floored_params(name: str, s, op_params: dict, overrides: dict, stream: str,
+                   floor: bool | None) -> dict:
+    """The operating point's ``op_params`` with ``overrides`` applied and the detector's
+    participation minimum set to the recording's floor.
+
+    An override of that setting to anything but the operating point's own value is refused while
+    the floor is on: ADR-0008 sets it, and a caller who wants the pre-ADR-0008 behaviour says so
+    with ``floor=False``. Passing the operating point's parameters through unchanged, as the
+    search's crowded reference does, is not an override and is allowed.
+    """
+    params = {**op_params, **overrides}
+    setting = FLOORED_SETTING.get(name)
+    if floor is None:
+        floor = floor_enabled()
+    if not floor or setting is None:
+        return params
+    if setting in overrides and overrides[setting] != op_params.get(setting):
+        raise ValueError(f"{name}.{setting} is set by ADR-0008's per-recording floor, not by a "
+                         f"caller; pass floor=False to run at {setting}={overrides[setting]!r}")
+    return {**params, setting: int(recording_floor(s, stream).floor)}
+
+
 MEASURED_PROVENANCE = (
     "constellation/coordination_timescale_summary.csv — flavour 'all-baseline', "
     "fast stream, min_rois=4 (the file's own headline_K). 84 slices. Produced by "
@@ -229,16 +345,22 @@ what switching them cost and who decided to spend it.
 MEASURED_BURST_BINS = (300.0, 60.0)
 """Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""
 
+CONTEXT_GRID_SEC = (20.0, 30.0, 45.0, 60.0, 90.0, 120.0)
+"""The context windows searched for CoactDetect, LoCo and rate+context (ADR-0009 decision 5): none
+longer than 120 s, the bench's own cap (:func:`context_fits_the_null`), and short ones so a search
+can find a short context where one works."""
+
+GUARD_MAX_CONTEXT_FRACTION = 0.25
+"""A guard may cover at most this fraction of the context it sits in (the final-parameters
+runbook, 2026-09-24). It binds on slow and combined, whose grids add an 8 s guard, at contexts
+of 20 s and 30 s; :func:`settings_are_valid` enforces it."""
+
 FULL_GRIDS: dict[str, dict[str, tuple]] = {
     "loco": {
         "threshold_pctile": (97.0, 98.0, 99.0, 99.5, 99.9, 99.99),
         "bin_width_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
-        "context_win_sec": (30.0, 60.0, 120.0, 240.0, 480.0),
+        "context_win_sec": CONTEXT_GRID_SEC,
         "merge_gap_sec": (0.5, 1.0, 2.0, 4.0, 8.0),
-        # No 2: a pair never counts as a coordinated event (ADR-0008, decision 1). This is the
-        # overnight stop-gap of 2026-09-24, "pre-ADR-0008 floor"; under the ADR the floor is set
-        # per recording and min_rois leaves the grid (PR #793, waiting on two decisions).
-        "min_rois": (3, 4, 5, 6, 8),
         "null_context_mode": ("maxlt", "symmetric"),
         "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
         "detection_mode": ("threshold", "peak"),
@@ -250,7 +372,6 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
         "C_min": (0.02, 0.05, 0.1, 0.15, 0.2),
         "tau_max": (0.1, 0.25, 0.5, 1.0, 2.0),
         "max_gap": (0.1, 0.25, 0.5, 1.0, 2.0),
-        "min_n": (2, 3, 4, 5, 6, 8),
         "tau_mode": ("isi_adaptive", "fixed"),
         # The profile's own bin width, NOT the recording's frame interval (FOUNDATIONS §6).
         "dt": (0.05, 0.1, 0.2, 0.5),
@@ -261,8 +382,7 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
     "coact": {
         "alpha": (1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6),
         "int_win_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
-        "context_win_sec": (20.0, 30.0, 60.0, 120.0, 240.0),
-        "min_rois": (3, 4, 5, 6, 8),        # no 2: the stop-gap above, pre-ADR-0008 floor
+        "context_win_sec": CONTEXT_GRID_SEC,
         "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
         "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
         "guard_norm": ("compact", "exposure"),
@@ -272,7 +392,7 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
     },
     "rate": {
         "excess_threshold_hz": (3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0),
-        "context_win": (20.0, 30.0, 60.0, 120.0, 240.0),
+        "context_win": CONTEXT_GRID_SEC,
         "rate_win": (0.5, 1.0, 2.0, 3.0, 5.0),
         # ⚠ Starts at 0.1 s, not 0: at and below 0.001 s this detector returns NO calls at
         # all, which is a defect rather than a setting —
@@ -288,10 +408,6 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
     "sce": {
         "threshold_pctile": (70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5),
         "bin_width_sec": (2.0, 5.0, 10.0, 15.0, 20.0, 30.0),
-        # This floor does NOTHING below about 8 here: 2, 4 and 6 give byte-identical output,
-        # because these episodes already recruit more cells than that. It starts binding at
-        # 10 and empties the output at 25, so the grid is where it can bite.
-        "min_rois": (3, 6, 8, 10, 12, 16),
         # Shipped is NaN, which means "do not merge". NaN is not a grid value: the search
         # carries it as the starting state, and this grid is what it may move to.
         "merge_gap_sec": (0.0, 5.0, 10.0, 15.0, 20.0, 30.0),
@@ -324,7 +440,8 @@ a grid is how the two machines came to tune different things on 2026-09-16.
 
 **Every knob the bench can see, since 2026-09-17** (goal 1 step 3). Widened from the four
 declared settings per detector to every parameter a detector takes bar the data's own —
-``min_rois``, the merge gaps, the guards, the peak-mode group and the categorical axes.
+the merge gaps, the guards, the peak-mode group and the categorical axes. ``min_rois`` was one
+of them until 2026-09-25, when ADR-0008's floor took it (and SPIKE-synch's ``min_n``) out.
 What is deliberately NOT here is in :data:`NOT_SEARCHED`, each with the reason, because a
 parameter left out silently is a parameter nobody knows was left out.
 
@@ -347,16 +464,20 @@ NOT_SEARCHED: dict[str, dict[str, str]] = {
     "coact": {
         "window_mode": "a decision, not a score: sliding is chosen because calls should not "
                        "move with the grid (forks.md §14), which F1 on this bench cannot see",
+        "min_rois": "set per recording by ADR-0008's floor (decision 6), in run_detector",
     },
     "loco": {
         "window_mode": "as coact",
+        "min_rois": "as coact",
     },
     "sce": {
+        "min_rois": "as coact",
         "analysis_mode": "measured inert: 'whole' and 'regional' give identical output on "
                          "bench recordings, which carry one implicit window",
         "surrogate_model": "only 'circular_shift' is implemented; 'jitter' raises",
     },
     "sync": {
+        "min_n": "a participation minimum, so set by ADR-0008's floor (ADR-0009 decision 3)",
         "synchrony_statistic": "measured inert: it aggregates ROIs sharing an EXACT "
                                "timestamp, and the generator draws times continuously so "
                                "ties never happen. Live on real data, which is frame-"
@@ -442,6 +563,13 @@ def context_fits_the_null(p: dict, min_sep_sec: float) -> bool:
     return context is None or context <= min_sep_sec
 
 
+def guard_fits_the_context(p: dict) -> bool:
+    """A guard of at most :data:`GUARD_MAX_CONTEXT_FRACTION` of its context window."""
+    context = p.get("context_win_sec", p.get("context_win"))
+    guard = float(p.get("guard_sec", 0.0) or 0.0)
+    return context is None or guard <= GUARD_MAX_CONTEXT_FRACTION * float(context)
+
+
 def settings_are_valid(det: str, p: dict) -> bool:
     """Do these settings make sense together?
 
@@ -464,6 +592,8 @@ def settings_are_valid(det: str, p: dict) -> bool:
             return False
         return (p["bin_width_sec"] * 4 <= p["context_win_sec"]
                 and p["merge_gap_sec"] < p["context_win_sec"])
+    if not guard_fits_the_context(p):
+        return False
     if det == "coact":
         return p["int_win_sec"] * 4 <= p["context_win_sec"]
     if det == "rate":
@@ -945,8 +1075,8 @@ def make_recording(regime: str, seed: int, **overrides):
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
-        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides})
+    return with_floor(simulate_coordination(
+        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides}))
 
 
 CROWDED_RECORDING = dict(BENCH_RECORDING, min_sep_sec=14.0, duration_sec=10800.0,
@@ -1093,8 +1223,8 @@ def make_tail_recording(regime: str, seed: int, **overrides):
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
-        seed=seed, **{**TAIL_RECORDING, **REGIMES[regime], **overrides})
+    return with_floor(simulate_coordination(
+        seed=seed, **{**TAIL_RECORDING, **REGIMES[regime], **overrides}))
 
 
 CROWDING_GAP_SEC = 30.0
@@ -1156,8 +1286,8 @@ def make_crowded_recording(regime: str, seed: int, **overrides):
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
-        seed=seed, **{**CROWDED_RECORDING, **REGIMES[regime], **overrides})
+    return with_floor(simulate_coordination(
+        seed=seed, **{**CROWDED_RECORDING, **REGIMES[regime], **overrides}))
 
 
 def make_null_recording(seed: int, **overrides):
@@ -1168,8 +1298,8 @@ def make_null_recording(seed: int, **overrides):
     there is none: every detection is a false positive *of this construction*.
     See :data:`NULL_RECORDING` for what that does and does not license.
     """
-    return simulate_coordination(
-        seed=seed, **{**BENCH_RECORDING, **NULL_RECORDING, **overrides})
+    return with_floor(simulate_coordination(
+        seed=seed, **{**BENCH_RECORDING, **NULL_RECORDING, **overrides}))
 
 
 def false_positives_per_hour(name: str, seeds=(1, 2, 3), **overrides) -> float:
@@ -1240,9 +1370,10 @@ def make_elevated_rate_recording(regime: str, seed: int, **overrides):
     ``seed +`` :data:`ELEVATED_SEED_OFFSET`. See :data:`ELEVATED_RATE_RECORDING`."""
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
+    # Its own ADR-0008 floor, over the whole recording, stretch included (ADR-0009 decision 1).
+    return with_floor(simulate_coordination(
         seed=seed + ELEVATED_SEED_OFFSET,
-        **{**BENCH_RECORDING, **REGIMES[regime], **ELEVATED_RATE_RECORDING, **overrides})
+        **{**BENCH_RECORDING, **REGIMES[regime], **ELEVATED_RATE_RECORDING, **overrides}))
 
 
 @dataclass
@@ -1298,17 +1429,23 @@ def evaluate_elevated_rate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: 
                         tol_sec=tol_sec, **overrides)
 
 
-def run_detector(name: str, s, *, rng_seed: int = 20260706, **overrides):
+def run_detector(name: str, s, *, rng_seed: int = 20260706, floor: bool | None = None,
+                 **overrides):
     """Run one detector on a slice at its declared operating point.
 
     Absorbs the two call shapes — three detectors take a ``Slice`` and run every
     stream, three take one stream's trains plus the extent — so callers work in
     detector names rather than signatures.
+
+    ``floor`` (on unless :data:`FLOOR_SWITCH_ENV` says ``off``): the detector's participation
+    minimum (:data:`FLOORED_SETTING`) is the recording's own ADR-0008 floor
+    (:func:`recording_floor`), whatever the operating point says. ``floor=False`` runs the
+    operating point as declared, which is pre-ADR-0008 and is labelled so wherever it is used.
     """
     if name not in OPERATING_POINTS:
         raise ValueError(f"unknown detector {name!r} — have {sorted(OPERATING_POINTS)}")
     op = OPERATING_POINTS[name]
-    params = {**op.params, **overrides}
+    params = floored_params(name, s, op.params, overrides, STREAM, floor)
     if op.takes_rng:
         params["rng_seed"] = rng_seed
 
@@ -1343,6 +1480,12 @@ class BenchResult:
     decoy_calls: int = 0
     """Calls outside the probe that match no planted event and land on a decoy (ADR-0006)."""
     by_frac: dict = field(default_factory=dict)
+    dont_care_by_frac: dict = field(default_factory=dict)
+    """``{participation_fraction: (n_under_floor, n_calls_matched_to_them)}``, pooled: planted
+    events under their recording's floor and the calls on them, both out of the score (ADR-0009
+    decision 2) and reported beside it."""
+    floors: tuple = ()
+    """Each pooled recording's ADR-0008 floor, in pooling order; empty when none was applied."""
     seeds: tuple = ()
     probe: ProbeResult | None = None
     """The same detector's calls on the elevated-rate recording (ADR-0009 decision 1), on the same
@@ -1554,7 +1697,26 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
         for frac, (n, h) in sc.by_frac.items():
             pn, ph = out.by_frac.get(frac, (0, 0))
             out.by_frac[frac] = (pn + n, ph + h)
+        for frac, (n, c) in (getattr(sc, "dont_care_by_frac", None) or {}).items():
+            pn, pc = out.dont_care_by_frac.get(frac, (0, 0))
+            out.dont_care_by_frac[frac] = (pn + n, pc + c)
+        if getattr(sc, "floor", None) is not None:
+            out.floors += (int(sc.floor),)
     return out
+
+
+def under_floor_report(r: BenchResult) -> dict:
+    """The counts ADR-0009 decision 2 says go with every score, by participation level: planted
+    events scored, planted events under the floor, and calls on those, plus the floors."""
+    levels = sorted(set(r.by_frac) | set(r.dont_care_by_frac), reverse=True)
+    return dict(
+        floor=FLOOR_LABEL if r.floors else "none",
+        floors=dict(min=min(r.floors), median=float(np.median(r.floors)), max=max(r.floors))
+        if r.floors else None,
+        by_participation={f"{f:g}": dict(scored=r.by_frac.get(f, (0, 0))[0],
+                                         under_floor=r.dont_care_by_frac.get(f, (0, 0))[0],
+                                         calls_on_under_floor=r.dont_care_by_frac.get(f, (0, 0))[1])
+                          for f in levels})
 
 
 def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,

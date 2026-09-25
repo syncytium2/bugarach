@@ -64,6 +64,23 @@ def proposal(search: dict, det: str = "coact") -> tuple[str, dict, dict]:
     return best[0], dict(best[1]["params"]), best[1]
 
 
+def bracketing_of(search: dict, det: str, name: str) -> dict:
+    """The search's bracketing verdict for one candidate. A search that predates the record
+    (before 2026-09-25) cannot say, and is reported as unknown, never as bracketed."""
+    br = (search.get("bracketing") or {}).get(det, {}).get(name)
+    if br is None:
+        return dict(bracketed=None, unbracketed_axes={}, note="not recorded by this search")
+    return br
+
+
+def adoptable_on_the_search(name: str, row: dict, br: dict) -> bool:
+    """A proposal whose held-out gain interval is above zero AND which is bracketed. Budgets on
+    fresh seeds are the morning report's to add; an unbracketed proposal is never adoptable."""
+    g = row.get("gain_vs_shipped") or {}
+    return (name != "shipped" and br.get("bracketed") is True
+            and g.get("lo") is not None and g["lo"] > 0)
+
+
 def train_rows(log: Path) -> list[dict]:
     rows = []
     for line in log.read_text(encoding="utf-8").splitlines():
@@ -78,6 +95,11 @@ def picked(rows: list[dict], budget: float) -> dict | None:
 
 
 CODED = ("coact", "loco", "sce", "rate", "sync", "cicada")
+
+
+def b_under_floor(bench: str, r) -> dict:
+    """ADR-0009 decision 2's counts for one pooled score."""
+    return importlib.import_module(BENCHES[bench]).under_floor_report(r)
 
 
 def _runner(kind: str, spec):
@@ -141,9 +163,15 @@ def main(argv=None) -> int:
         for det in a.detectors:
             pname, pparams, prow = proposal(search, det)
             shipped = dict(b.OPERATING_POINTS[det].params)
+            br = bracketing_of(search, det, pname)
             meta[bench]["detectors"][det] = dict(
-                shipped=shipped, proposal=dict(name=pname, params=pparams, search_row=prow),
-                budget_null_per_hour=float(b.MAX_FALSE_POSITIVES_PER_HOUR[det]))
+                shipped=shipped, proposal=dict(name=pname, params=pparams, search_row=prow,
+                                               bracketing=br,
+                                               unbracketed=br.get("bracketed") is not True
+                                               and pname != "shipped",
+                                               adoptable=adoptable_on_the_search(pname, prow, br)),
+                budget_null_per_hour=float(b.MAX_FALSE_POSITIVES_PER_HOUR[det]),
+                search_floor=search.get("floor", "pre-ADR-0008 (not recorded by the search)"))
             if det == "coact":      # the keys detect_with_floors.py reads
                 meta[bench]["coact_shipped"] = shipped
                 meta[bench]["coact_proposal"] = dict(name=pname, params=pparams,
@@ -191,7 +219,8 @@ def main(argv=None) -> int:
                             elevated_calls_per_hour_outside=(sum(e["calls_out"] for e in el)
                                                              / sum(e["hours_out"] for e in el)),
                             recall_by_participation={f"{f:g}": r.recall_at(f)
-                                                     for f in sorted(r.by_frac)})
+                                                     for f in sorted(r.by_frac)},
+                            under_floor=b_under_floor(bench, r))
         nulls = [got[(bench, kind, name, "null", s)] for s in NULLS]
         row["null_calls_per_hour"] = (sum(n["n_detected"] for n in nulls)
                                       / sum(n["hours"] for n in nulls))
@@ -204,13 +233,16 @@ def main(argv=None) -> int:
               f"(without decoys {row['mean_f1_without_decoys']:.3f}), "
               f"{row['null_calls_per_hour']:.2f} calls/h on the empty recording"
               + ("  COLLAPSED" if row["collapsed"] else ""), flush=True)
-    from bugarach.bench import ELEVATED_SEED_OFFSET, NULL_SEED_OFFSET
+    from bugarach.bench import ELEVATED_SEED_OFFSET, FLOOR_LABEL, NULL_SEED_OFFSET
     rec = dict(seeds=[SEEDS[0], SEEDS[-1]],
                null_seeds=[NULLS[0] + NULL_SEED_OFFSET, NULLS[-1] + NULL_SEED_OFFSET],
                elevated_rate_seeds=[NULLS[0] + ELEVATED_SEED_OFFSET,
                                     NULLS[-1] + ELEVATED_SEED_OFFSET],
-               benches=meta, results=results,
-               note="floor: pre-ADR-0008 (min_rois >= 3 in the search; chorus has no floor)")
+               benches=meta, results=results, floor=FLOOR_LABEL,
+               note="coded detectors run at each recording's ADR-0008 floor (min_rois, and "
+                    "SPIKE-synch's min_n); planted events under it are don't-care in every "
+                    "score (ADR-0009 decision 2), counted in under_floor. chorus has no "
+                    "participation parameter and is scored under the same rule.")
     (a.out / "candidates.json").write_text(json.dumps(rec, indent=1, default=float) + "\n")
     print(f"wrote {a.out / 'candidates.json'}")
     return 0

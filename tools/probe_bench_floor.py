@@ -24,8 +24,9 @@ neither hit nor miss.
 ``HANDOFF-overnight-final-parameters.md``: outside ADR-0009's expected ranges, or the middle planted
 level mostly under the floor on quiet recordings, goes to Tony before anything else runs.
 
-It measures and decides nothing. Floors use ``bugarach.event_floor.window_floor`` at ADR-0008's
-settings (1,000 draws).
+It measures and decides nothing. Floors are the ones each recording carries
+(``bugarach.bench.recording_floor``: ``event_floor.window_floor`` at ADR-0008's settings, 1,000
+draws), so they are the floors the scorer and ``run_detector`` use.
 """
 from __future__ import annotations
 
@@ -49,49 +50,32 @@ EXPECTED = {"fast": (5, 10), "slow": (6, 8), "combined": (5, 10)}
 """ADR-0009's expected planted-recording floors, in co-active ROIs (its Consequences section)."""
 
 
-def frames_of(s, stream_name):
-    """Each ROI's onset frames on the recording's extent, and the extent's length in frames."""
-    from bugarach.bench import recording_extent
-    dt = s.require_dt()
-    a, b = recording_extent(s)
-    L = int(round((b - a) / dt))
-    out = []
-    for v in s.streams[stream_name].t50rise:
-        v = np.asarray(v, float)
-        v = v[(v >= a) & (v < b)]
-        out.append(np.unique(np.floor((v - a) / dt + 1e-9).astype(np.int64)))
-    return out, L, dt
-
-
 def job(args):
     import importlib
 
-    from bugarach import event_floor as ef
     name, regime, seed = args
     b = importlib.import_module(name)
-    key = ("bench-floor-probe-adr-0009", name, regime, seed)
+    # The floor each recording carries (`bench.with_floor`, PR B), which is the one the scorer and
+    # `run_detector` use, so this measures what the bench actually scores under.
     s, gt = b.make_recording(regime, seed)
     assert gt.params["hot_window"] is None, "a planted recording still carries the stretch"
-    tr, L, dt = frames_of(s, b.STREAM)
-    floor = ef.window_floor(tr, L, dt, key=(*key, "bench"))
-    e, ge = b.make_elevated_rate_recording(regime, seed)
-    tre, Le, dte = frames_of(e, b.STREAM)
-    elevated = ef.window_floor(tre, Le, dte, key=(*key, "elevated_rate"))
+    floor = int(gt.params["event_floor"])
+    _, ge = b.make_elevated_rate_recording(regime, seed)
     parts = np.array([ev.n_part for ev in gt.events])
     levels = {}
     for ev in gt.events:
         n, u = levels.get(ev.n_part, (0, 0))
-        levels[ev.n_part] = (n + 1, u + int(ev.n_part < floor.floor))
-    row = dict(bench=STREAM_OF[name], regime=regime, seed=seed, n_roi=len(tr),
+        levels[ev.n_part] = (n + 1, u + int(ev.n_part < floor))
+    row = dict(bench=STREAM_OF[name], regime=regime, seed=seed, n_roi=gt.params["n_roi"],
                elevated_rate_seed=ge.params["seed"],
-               floors=dict(bench=floor.as_dict(), elevated_rate=elevated.as_dict()),
-               share_below_floor=float(np.mean(parts < floor.floor)),
+               floors=dict(bench=gt.params["event_floor_detail"],
+                           elevated_rate=ge.params["event_floor_detail"]),
+               share_below_floor=float(np.mean(parts < floor)),
                below_floor_by_participants={str(k): dict(planted=n, below_floor=u)
                                             for k, (n, u) in sorted(levels.items())})
     if regime == "baseline_quiet":
-        n, _ = b.make_null_recording(seed)
-        trn, Ln, dtn = frames_of(n, b.STREAM)
-        row["floors"]["null"] = ef.window_floor(trn, Ln, dtn, key=(*key, "null")).as_dict()
+        _, gn = b.make_null_recording(seed)
+        row["floors"]["null"] = gn.params["event_floor_detail"]
     return row
 
 

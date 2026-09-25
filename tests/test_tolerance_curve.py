@@ -21,6 +21,11 @@ from bugarach.bench import (DETECTORS, TOLERANCE_GRID, describe_curve,
                             evaluate, evaluate_curve, plateau_tol)
 from bugarach.score import TOL_SEC
 
+# Pre-ADR-0008 by construction: these pin measurements taken before the floor, or exercise detector
+# mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
+pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench")
+
+
 SEEDS = (1, 2, 3)
 REGIME = "baseline_quiet"
 

@@ -16,6 +16,11 @@ from bugarach.combined import (COMBINED, combine, has_sources, near_coincident, 
                                stream_of)
 from bugarach.store import Slice, Stream
 
+# Pre-ADR-0008 by construction: these pin measurements taken before the floor, or exercise detector
+# mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
+pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench")
+
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools"))
 
