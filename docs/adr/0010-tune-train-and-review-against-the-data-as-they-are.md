@@ -200,9 +200,13 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
 
 ## Open for Tony before acceptance
 
-1. **Pooling groups.** Pool DI, OVX, MALE and ORX baseline intervals into one distribution per
-   stream, unless they differ materially. What counts as material is to be decided once the
-   intervals are measured.
+1. **Pooling groups. Ruled 2026-09-25 by Tony: pool, and check ORX.** Each stream's generator
+   draws from the pooled baseline gaps of all four groups. The measurement
+   ([run record](../learned/runs/2026-09-25-real-intervals/README.md)) found that the groups differ
+   mainly in events per hour, up to about 12 times (combined DI 56.5, ORX 4.5), and much less in
+   spacing: combined medians run from 23 to 32 s. Slow ORX is the one clear difference in
+   spacing, a median of 45 s against 25 s for the rest, from 17 gaps. So the morning report also
+   scores the panel on a bench spaced like slow ORX, to check the rankings hold there.
 2. **Replace or mix.** Draw every planted gap from the real distribution (as written), or keep a
    share of isolated 120 s events as a reference.
 3. **The review tool's counting window.** ±1 s around the call's span (as written), or another
