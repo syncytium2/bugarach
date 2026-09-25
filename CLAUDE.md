@@ -475,6 +475,11 @@ Name things; don't index them. Shas and dates are lookup keys, not content.
 Prefer the consequence to the label. Full version, with the examples that
 prompted it: [`docs/writing_conventions.md`](docs/writing_conventions.md).
 
+**Times are Michigan local time** (Tony, 2026-09-25: *"We are in Michigan use local time"*).
+Anything written for Tony — status updates, check-in times, cutoffs, report prose — gives clock
+times in US Eastern (EDT/EST), labelled. Machine records (run logs, JSON stamps) may stay UTC; when
+a UTC time is quoted to a person, convert it.
+
 **"Data" is plural — house rule** (Tony, 2026-09-14). Its verbs and pronouns are
 plural everywhere you write: *the data **are***, *the data **show***, *the data
 **were***, *the data **themselves***, *these data*. "Metadata" and "dataset" keep
