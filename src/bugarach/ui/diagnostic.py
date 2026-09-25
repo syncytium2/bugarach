@@ -196,8 +196,26 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
     for key, ev in lanes.items():
         y = ypos[key]
         colour = (colors or {}).get(key) or COLORS.get(key, "#555555")
+        info = ev[2] if len(ev) > 2 else None
         sp = _spans(ev[0], ev[1] if len(ev) > 1 else None, ext, tol_sec)
-        if sp:
+        if sp and info is not None:
+            # A LANE THAT CARRIES A LINE PER CALL shows it on hover, and only there: a number
+            # about a call (its participants, its window's floor) belongs in the lane's hover
+            # or label, never on the raster (CLAUDE.md; ADR-0010 part 6). Spans are rebuilt
+            # call by call so each keeps its own line; the ink is the same as below.
+            from bokeh.models import HoverTool
+
+            o = np.asarray(ev[0], dtype=float).ravel()
+            w = (np.asarray(ev[1], dtype=float).ravel() if len(ev) > 1 and ev[1] is not None
+                 else np.zeros_like(o))
+            rows_ = []
+            for a, b, text in zip(o, w if w.size == o.size else np.zeros_like(o), info):
+                for s0, s1 in _spans([a], [b], ext, tol_sec):
+                    rows_.append((s0, y - 0.30, s1, y + 0.30, str(text)))
+            items.append(hv.Rectangles(rows_, vdims=["call"]).opts(
+                color=colour, line_color=None, line_alpha=0, alpha=0.9,
+                tools=[HoverTool(tooltips=[(str(key), "@call")])]))
+        elif sp:
             # No stroke. A 1 px outline on a bar whose fill is under a pixel
             # wide is most of the ink, and it is ink that stands for nothing —
             # it made every detection look about 3 px of time across whatever
