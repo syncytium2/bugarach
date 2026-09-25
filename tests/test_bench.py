@@ -41,6 +41,11 @@ from bugarach.bench import (
 from bugarach.detectors.rate import recording_extent, stream_trains
 from bugarach.simulate import simulate_coordination
 
+# Pre-ADR-0008 by construction: these pin measurements taken before the floor, or exercise detector
+# mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
+pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench")
+
+
 SEEDS = (1, 2)
 
 
