@@ -16,6 +16,7 @@ that improves it.
 import numpy as np
 import pytest
 
+from bugarach import bench as bench_module
 from bugarach.bench import (
     BENCH_RECORDING,
     DETECTORS,
@@ -24,8 +25,10 @@ from bugarach.bench import (
     BenchResult,
     CROWDED_RECORDING,
     CROWDING_GAP_SEC,
+    ELEVATED_RATE_RECORDING,
     MAX_PROBE_PER_MIN,
     DegenerateSweep,
+    ProbeResult,
     EdgeOfRange,
     TooPromiscuous,
     evaluate,
@@ -223,8 +226,9 @@ def test_the_probe_stays_out_of_the_headline_numbers(bench):
     0.68 in the upstream campaign, on 599 probe firings out of 601 false alarms.
     """
     cicada = bench[("cicada", "baseline_quiet")]
-    assert cicada.hot_fa > 50, "the probe should be provoking CICADA"
-    assert cicada.n_scored == cicada.n_detected - cicada.hot_fa
+    # Since ADR-0009 the probe is a recording of its own, so it cannot reach the scored set at all.
+    assert cicada.probe.calls_in > 50, "the probe should be provoking CICADA"
+    assert cicada.hot_fa == 0 and cicada.n_scored == cicada.n_detected
     assert cicada.f1 > 0.4, "the probe has leaked into the headline F1"
 
 
@@ -359,26 +363,30 @@ def test_the_declared_grid_brackets_its_own_optimum(name):
 def _probe_curve(f1s, probes):
     """A curve carrying a probe rate per point, for the selection gate.
 
-    Probe firings are part of ``n_detected`` and are then excluded from the
-    scored set (``n_scored = n_detected - hot_fa``), which is the whole shape of
-    the defect: they leave both halves of precision. Building them as an extra on
-    top instead pushes precision above 1."""
+    Since ADR-0009 the probe's calls come from the elevated-rate recording and
+    ride on :attr:`BenchResult.probe`; the scored recording's counts do not
+    include them."""
+    span = _probe_minutes()
     out = []
     for i, (f, hot) in enumerate(zip(f1s, probes)):
         r = BenchResult(detector="rate", regime="baseline_quiet",
                         knob_value=float(i), n_planted=100,
-                        n_detected=100 + hot, n_hit=int(round(f * 100)))
-        r.hot_fa = hot
+                        n_detected=100, n_hit=int(round(f * 100)),
+                        probe=ProbeResult(calls_in=hot, minutes_in=span))
         out.append(r)
     return out
+
+
+def _probe_minutes():
+    h0, h1 = ELEVATED_RATE_RECORDING["hot_window"]
+    return (h1 - h0) / 60.0
 
 
 def test_a_promiscuous_winner_is_refused_rather_than_calibrated():
     """The hole this closes. A budget test catches a regression at the SHIPPED
     point; nothing watched the sweep that chooses one, so a calibration could
     select a setting that wins on F1 by firing where nothing was planted."""
-    probe_min = BENCH_RECORDING["hot_window"]
-    span = (probe_min[1] - probe_min[0]) / 60.0
+    span = _probe_minutes()
     over = int((MAX_PROBE_PER_MIN["rate"] + 5) * span)
     with pytest.raises(TooPromiscuous, match="keying on rate"):
         pick_operating_point(
@@ -388,8 +396,7 @@ def test_a_promiscuous_winner_is_refused_rather_than_calibrated():
 def test_the_gate_can_be_turned_off_for_a_check_that_is_not_about_it():
     """`None` restores the pre-2026-08-22 behaviour, so a test about bracketing
     can isolate bracketing."""
-    probe_min = BENCH_RECORDING["hot_window"]
-    span = (probe_min[1] - probe_min[0]) / 60.0
+    span = _probe_minutes()
     over = int((MAX_PROBE_PER_MIN["rate"] + 5) * span)
     got = pick_operating_point(_probe_curve([0.5, 0.9, 0.6], [0, over, 0]),
                                max_probe_per_min=None)
@@ -664,7 +671,8 @@ def test_the_bench_is_reproducible():
     drifts between runs cannot support a claim about a change."""
     a = evaluate("loco", "baseline_quiet", (1,))
     b = evaluate("loco", "baseline_quiet", (1,))
-    assert (a.n_hit, a.n_fa, a.hot_fa) == (b.n_hit, b.n_fa, b.hot_fa)
+    assert (a.n_hit, a.n_fa, a.probe.calls_in, a.probe.calls_out) == (
+        b.n_hit, b.n_fa, b.probe.calls_in, b.probe.calls_out)
 
 
 # --- a recording with nothing planted in it ---------------------------------
@@ -758,6 +766,9 @@ def test_pool_scores_is_the_one_place_pooling_happens():
         assert pooled.n_scored == direct.n_scored
         assert pooled.precision == pytest.approx(direct.precision)
         assert pooled.by_frac == direct.by_frac
-        # and the probe really is being excluded, or this test proves nothing
-        assert pooled.hot_fa > 0
-        assert pooled.precision != pytest.approx(pooled.n_hit / pooled.n_detected)
+        # Since ADR-0009 the probe is not in the scored recording at all, so nothing is left to
+        # exclude; it rides beside the score, pooled through the same shared path.
+        assert pooled.hot_fa == 0 and pooled.probe is None
+        probe = bench_module.evaluate_elevated_rate(name, "baseline_busy", SEEDS)
+        assert (direct.probe.calls_in, direct.probe.calls_out) == (probe.calls_in, probe.calls_out)
+        assert direct.probe.calls_in > 0, "the stretch should provoke rate and sce"

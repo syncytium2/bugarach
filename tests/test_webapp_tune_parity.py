@@ -35,9 +35,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from bugarach.bench import (BENCH_RECORDING, BenchResult, DegenerateSweep,
-                            EdgeOfRange, MAX_PROBE_PER_MIN, OPERATING_POINTS,
-                            TooPromiscuous, pick_operating_point)
+from bugarach.bench import (BENCH_RECORDING, ELEVATED_RATE_RECORDING, BenchResult,
+                            DegenerateSweep, EdgeOfRange, MAX_PROBE_PER_MIN, OPERATING_POINTS,
+                            ProbeResult, TooPromiscuous, pick_operating_point)
 from bugarach.detectors.rate import rate_detect
 from bugarach.detectors.sync import sync_detect
 from bugarach.score import score_detections
@@ -543,8 +543,9 @@ def _gate_rows(f1s, rates):
 
 # One seed and a 300 s probe window is five minutes, so `hot_fa` five times the
 # per-minute rate. Stated here rather than left for the reader to divide.
-HOT_MIN = (BENCH_RECORDING["hot_window"][1]
-           - BENCH_RECORDING["hot_window"][0]) / 60.0
+# Since ADR-0009 the window is the elevated-rate recording's, not the scored one's.
+HOT_WINDOW = list(ELEVATED_RATE_RECORDING["hot_window"])
+HOT_MIN = (HOT_WINDOW[1] - HOT_WINDOW[0]) / 60.0
 
 
 def _promiscuous_curve(rate_per_min):
@@ -560,11 +561,12 @@ def _promiscuous_curve(rate_per_min):
     """
     shape = [(20, 6), (40, 28), (60, 64), (20, 30), (20, 12)]
     curve = [BenchResult(detector="rate", regime="baseline_quiet", knob_value=i,
-                         n_planted=100, n_detected=d, n_hit=h, seeds=(1,))
+                         n_planted=100, n_detected=d, n_hit=h, seeds=(1,),
+                         probe=ProbeResult(minutes_in=HOT_MIN, seeds=(1,)))
              for i, (d, h) in enumerate(shape)]
-    hot = int(round(rate_per_min * HOT_MIN))
-    curve[2].hot_fa = hot
-    curve[2].n_detected += hot
+    # Since ADR-0009 the probe's calls are on their own recording, so they no longer touch
+    # n_detected and the F1 shape is held fixed without the compensation described above.
+    curve[2].probe.calls_in = int(round(rate_per_min * HOT_MIN))
     return curve
 
 
@@ -586,8 +588,8 @@ def test_a_winner_that_fires_into_the_empty_block_is_refused_on_both_sides(
         pick_operating_point(curve)
 
     got = gated_pick_in_browser(
-        _gate_rows([r.f1 for r in curve], [r.hot_fa / HOT_MIN for r in curve]),
-        "rate", list(BENCH_RECORDING["hot_window"]))
+        _gate_rows([r.f1 for r in curve], [r.hot_fa_per_min for r in curve]),
+        "rate", HOT_WINDOW)
     assert got["knob"] is None, "the browser took a setting Python refuses"
     assert got["promiscuous"], got
     assert "nothing was planted" in got["why"], got["why"]
@@ -602,8 +604,8 @@ def test_a_winner_inside_its_budget_is_taken_on_both_sides(gated_pick_in_browser
     assert pick_operating_point(curve).knob_value == 2
 
     got = gated_pick_in_browser(
-        _gate_rows([r.f1 for r in curve], [r.hot_fa / HOT_MIN for r in curve]),
-        "rate", list(BENCH_RECORDING["hot_window"]))
+        _gate_rows([r.f1 for r in curve], [r.hot_fa_per_min for r in curve]),
+        "rate", HOT_WINDOW)
     assert got["knob"] == 2, got
     assert not got["promiscuous"]
 
@@ -620,7 +622,7 @@ def test_no_probe_means_the_gate_passes_rather_than_refusing_everything(
     """
     curve = _promiscuous_curve(MAX_PROBE_PER_MIN["rate"] + 20.0)
     got = gated_pick_in_browser(
-        _gate_rows([r.f1 for r in curve], [r.hot_fa / HOT_MIN for r in curve]),
+        _gate_rows([r.f1 for r in curve], [r.hot_fa_per_min for r in curve]),
         "rate", None)
     assert got["knob"] == 2, "with no probe window there is nothing to gate on"
     assert not got["promiscuous"]
@@ -633,6 +635,6 @@ def test_an_unknown_detector_is_calibratable_rather_than_refused(
     somebody writes it a ceiling."""
     curve = _promiscuous_curve(999.0)
     got = gated_pick_in_browser(
-        _gate_rows([r.f1 for r in curve], [r.hot_fa / HOT_MIN for r in curve]),
-        "nosuchdetector", list(BENCH_RECORDING["hot_window"]))
+        _gate_rows([r.f1 for r in curve], [r.hot_fa_per_min for r in curve]),
+        "nosuchdetector", HOT_WINDOW)
     assert got["knob"] == 2, got

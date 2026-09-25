@@ -99,11 +99,19 @@ def job(args):
     b = importlib.import_module(BENCHES[bench])
     run = _runner(kind, spec)
     if regime == "null":
-        sl, gt = b.make_null_recording(seed + 50_000)
+        sl, gt = b.make_null_recording(seed + b.NULL_SEED_OFFSET)
         det = run(b, sl)
         sc = score_stream(gt, det)
         return (bench, kind, name, regime, seed), dict(
             n_detected=sc.n_detected, hours=gt.params["duration_sec"] / 3600.0)
+    if regime.startswith("elevated:"):
+        # ADR-0009's elevated-rate recording; the maker adds ELEVATED_SEED_OFFSET itself.
+        sl, gt = b.make_elevated_rate_recording(regime.split(":", 1)[1], seed)
+        sc = score_stream(gt, run(b, sl))
+        h0, h1 = gt.params["hot_window"]
+        return (bench, kind, name, regime, seed), dict(
+            calls_in=sc.hot_fa, calls_out=sc.n_detected - sc.hot_fa, minutes_in=(h1 - h0) / 60.0,
+            hours_out=(gt.params["duration_sec"] - (h1 - h0)) / 3600.0)
     sl, gt = b.make_recording(regime, seed)
     sc = score_stream(gt, run(b, sl))
     return (bench, kind, name, regime, seed), sc
@@ -159,6 +167,8 @@ def main(argv=None) -> int:
             for reg in REG for s in SEEDS]
     jobs += [(bench, kind, name, spec, "null", s) for bench, kind, name, spec in cands
              for s in NULLS]
+    jobs += [(bench, kind, name, spec, f"elevated:{reg}", s) for bench, kind, name, spec in cands
+             for reg in REG for s in NULLS]
     with mp.Pool(a.workers) as pool:
         got = dict(pool.map(job, jobs, chunksize=4))
 
@@ -170,11 +180,16 @@ def main(argv=None) -> int:
             scores = [got[(bench, kind, name, reg, s)] for s in SEEDS]
             one_call += sum(sc.n_detected == 1 for sc in scores)
             r = pool_scores(scores, detector=kind, regime=reg, seeds=SEEDS)
+            el = [got[(bench, kind, name, f"elevated:{reg}", s)] for s in NULLS]
             row[reg] = dict(f1=r.f1, f1_without_decoys=r.f1_without_decoys, recall=r.recall,
                             precision=r.precision,
                             precision_without_decoys=r.precision_without_decoys,
                             decoy_calls=r.decoy_calls, n_planted=r.n_planted, n_hit=r.n_hit,
-                            n_detected=r.n_detected, probe_calls_per_min=r.hot_fa_per_min,
+                            n_detected=r.n_detected,
+                            probe_calls_per_min=(sum(e["calls_in"] for e in el)
+                                                 / sum(e["minutes_in"] for e in el)),
+                            elevated_calls_per_hour_outside=(sum(e["calls_out"] for e in el)
+                                                             / sum(e["hours_out"] for e in el)),
                             recall_by_participation={f"{f:g}": r.recall_at(f)
                                                      for f in sorted(r.by_frac)})
         nulls = [got[(bench, kind, name, "null", s)] for s in NULLS]
@@ -189,7 +204,11 @@ def main(argv=None) -> int:
               f"(without decoys {row['mean_f1_without_decoys']:.3f}), "
               f"{row['null_calls_per_hour']:.2f} calls/h on the empty recording"
               + ("  COLLAPSED" if row["collapsed"] else ""), flush=True)
-    rec = dict(seeds=[SEEDS[0], SEEDS[-1]], null_seeds=[NULLS[0] + 50_000, NULLS[-1] + 50_000],
+    from bugarach.bench import ELEVATED_SEED_OFFSET, NULL_SEED_OFFSET
+    rec = dict(seeds=[SEEDS[0], SEEDS[-1]],
+               null_seeds=[NULLS[0] + NULL_SEED_OFFSET, NULLS[-1] + NULL_SEED_OFFSET],
+               elevated_rate_seeds=[NULLS[0] + ELEVATED_SEED_OFFSET,
+                                    NULLS[-1] + ELEVATED_SEED_OFFSET],
                benches=meta, results=results,
                note="floor: pre-ADR-0008 (min_rois >= 3 in the search; chorus has no floor)")
     (a.out / "candidates.json").write_text(json.dumps(rec, indent=1, default=float) + "\n")

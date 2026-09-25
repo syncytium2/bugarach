@@ -38,7 +38,10 @@ PR #793 and waits on two decisions.
 
 **Admissible** means under all three budgets ``bench.py`` holds: ``MAX_PROBE_PER_MIN`` on both
 backgrounds, ``MAX_FALSE_POSITIVES_PER_HOUR`` on the empty recording, and
-``MAX_PRECISION_DROP`` between the backgrounds.
+``MAX_PRECISION_DROP`` between the backgrounds. Since ADR-0009 the probe is read off the
+elevated-rate recording (``bench.evaluate_elevated_rate``, seeds + ``ELEVATED_SEED_OFFSET``), and
+that recording's calls outside its stretch are held to ``MAX_FALSE_POSITIVES_PER_HOUR`` at the
+quiet background too.
 
 **LoCo and CoactDetect are searched in their sliding form** (``window_mode="sliding"``, shipped
 2026-09-16): their counts slide and their nulls are exact, so ``thr_step_sec`` and the surrogate
@@ -236,6 +239,11 @@ def _job(args):
             else:
                 rec, gt = bench.make_recording(regime, s)
             scores.append(score_stream(gt, bench.run_detector(det, rec, **params)))
+        # ADR-0009: the stretch is no longer inside the scored recording, so the probe is read off
+        # the elevated-rate recording, same seeds + ELEVATED_SEED_OFFSET. Skipping it would leave
+        # the probe NaN, and NaN fails every budget: loud, not silent.
+        probe = (None if regime in TAIL
+                 else bench.evaluate_elevated_rate(det, regime, seeds, **params))
     except (ValueError, NotImplementedError) as e:
         # A detector refusing a COMBINATION of settings is a fact about the detector, not a
         # crash: `loco` refuses a guard under the symmetric null, and an hour of search must
@@ -243,9 +251,11 @@ def _job(args):
         # `Evaluator.run` prints each distinct refusal once, and the candidate is
         # inadmissible rather than missing.
         return (det, items, regime), dict(refused=f"{type(e).__name__}: {e}")
-    r = bench.pool_scores(scores, detector=det, regime=regime, seeds=tuple(seeds))
+    r = bench.pool_scores(scores, detector=det, regime=regime, seeds=tuple(seeds), probe=probe)
     return (det, items, regime), dict(f1=r.f1, recall=r.recall, precision=r.precision,
-                                      probe_per_min=r.hot_fa_per_min, n_hit=r.n_hit,
+                                      probe_per_min=r.hot_fa_per_min,
+                                      elevated_out_per_hour=r.elevated_out_per_hour,
+                                      n_hit=r.n_hit,
                                       n_planted=r.n_planted,
                                       per_seed=scores if keep else None)
 
@@ -302,12 +312,15 @@ class Evaluator:
             return dict(f1_quiet=nan, f1_busy=nan, mean_f1=nan,
                         precision_quiet=nan, precision_busy=nan,
                         probe_quiet=nan, probe_busy=nan, null_per_hour=nan,
+                        elevated_out_quiet=nan, elevated_out_busy=nan,
                         refused=next(r["refused"] for r in (q, b, n) if r.get("refused")))
         out = dict(f1_quiet=q["f1"], f1_busy=b["f1"],
                    mean_f1=(q["f1"] + b["f1"]) / 2,
                    precision_quiet=q["precision"], precision_busy=b["precision"],
                    probe_quiet=q["probe_per_min"], probe_busy=b["probe_per_min"],
-                   null_per_hour=n["null_per_hour"])
+                   null_per_hour=n["null_per_hour"],
+                   elevated_out_quiet=q["elevated_out_per_hour"],
+                   elevated_out_busy=b["elevated_out_per_hour"])
         if self.crowded:
             tq, tb = (self.cache.get((k[0], k[1], r)) for r in TAIL)
             if tq and tb and not (tq.get("refused") or tb.get("refused")):
@@ -331,6 +344,10 @@ def make_admissible(reference_crowded=None):
         ok = (math.isfinite(s["f1_quiet"]) and math.isfinite(s["f1_busy"])
               and s["probe_quiet"] <= ceiling and s["probe_busy"] <= ceiling
               and s["null_per_hour"] <= bench.MAX_FALSE_POSITIVES_PER_HOUR[det]
+              # ADR-0009: outside its stretch the elevated-rate recording is a recording with
+              # nothing planted, held to the same budget. At the quiet background only, the one
+              # that budget was measured on; the busy figure is reported beside it, not gated.
+              and s["elevated_out_quiet"] <= bench.MAX_FALSE_POSITIVES_PER_HOUR[det]
               and math.isfinite(swing) and swing <= bench.MAX_PRECISION_DROP[det])
         if not ok or reference_crowded is None:
             return ok
@@ -659,6 +676,8 @@ def held_out(pool, candidates, seeds, log=print):
                 probe_quiet_per_hour=60 * q["probe_per_min"],
                 probe_busy_per_hour=60 * b["probe_per_min"],
                 null_per_hour=n["null_per_hour"],
+                elevated_out_quiet_per_hour=q["elevated_out_per_hour"],
+                elevated_out_busy_per_hour=b["elevated_out_per_hour"],
                 crowded_mean_f1=tail_f1(name),
                 crowded_gain_vs_shipped=tail_f1(name) - tail_f1("shipped"),
                 gain_vs_shipped=dict(

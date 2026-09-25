@@ -10,6 +10,13 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/bench-adr-0009 — DARKROOM claim: `bugarach/2026-09-25-final-parameters/065/` (NEW, under the orchestrator's #807 claim)
+- **Status:** claimed 2026-09-25 ~02:10 UTC, before writing, by WSMIP065 for PR A of the
+  final-parameters night (`HANDOFF-overnight-final-parameters.md`, phase 0; ADR-0009 decision 1).
+  Released with the parent claim, by the merge that brings the morning report to `main`.
+- **Touches:** `065/bench-floor/bench_floor.json` (the re-measured bench floors, phase 0 step 7);
+  anything else this session writes tonight goes under `065/` too. Nothing in `064/` or the parent.
+
 ### 064/chorus-span-sweep — DARKROOM claim, released on merge: `bugarach/2026-09-24-chorus-span-sweep/` (NEW)
 - **Status:** claimed 2026-09-24, before writing; **released by the merge that brings this block to
   `main`**. Tony: *"train it at 400, run it short"*. The picked chorus checkpoints (trained on

@@ -21,8 +21,9 @@ object, and builds a slow recording to check its rates and its widths are slow o
 **Shared, because they read no stream constant:** the result and error classes,
 :func:`~bugarach.bench.pool_scores`, :func:`~bugarach.bench.fold_split`,
 :func:`~bugarach.bench.nearest_neighbour_gaps`, the setting-validity rules, and the scoring
-(:mod:`bugarach.score`). ``BenchResult.hot_fa_per_min`` reads the FAST bench's hot window;
-the slow bench keeps the same window, and the test pins that.
+(:mod:`bugarach.score`), and :func:`~bugarach.bench.probe_counts`, which is handed this module's
+maker and runner. ``BenchResult.hot_fa_per_min`` reads the counts it pools, so it carries the
+elevated-rate recording's own stretch rather than reading any module's constant (ADR-0009).
 
 **What is measured and what is chosen.** Measured on the default folder's slow baselines by
 ``tools/measure_slow_bench.py`` → :data:`MEASURED_RECORD`: the backgrounds, the rate and
@@ -76,7 +77,10 @@ from bugarach.bench import (  # noqa: F401  (shared: none reads a stream constan
     BenchResult,
     DegenerateSweep,
     EdgeOfRange,
+    ELEVATED_SEED_OFFSET,
+    NULL_SEED_OFFSET,
     OperatingPoint,
+    ProbeResult,
     TooPromiscuous,
     context_fits_the_null,
     fold_split,
@@ -177,15 +181,19 @@ BENCH_RECORDING = dict(
     bg_rate_shape=MEASURED_RATE_SHAPE,
     bg_burst_shape=MEASURED_BURST_SHAPE,
     bg_burst_bin_sec=MEASURED_BURST_BINS,
-    hot_window=(1200.0, 1500.0),
-    hot_rate_hz=0.0321,
-    ramp_sec=30.0,
+    # ADR-0009 decision 1: the stretch moved to ELEVATED_RATE_RECORDING; 1200-1500 s is background.
+    hot_window=None,
+    hot_rate_hz=0.0,
+    ramp_sec=0.0,
     n_distractors=6,
     distractor_frac=0.38,
     distractor_window=(120.0, 1100.0),
 )
 """The recording the slow bench scores on. ``n_roi`` 32 is the measured median;
 the rest is in the module docstring.
+
+**No elevated-rate stretch since 2026-09-25** (ADR-0009 decision 1), as on fast: it moved to
+:data:`ELEVATED_RATE_RECORDING`, and ``hot_rate_hz`` below now describes that recording's stretch.
 
 **Re-measured 2026-09-23 on the default folder's 66 recordings:** ``n_roi`` 32 ROIs
 (27–34.5), unchanged; the middle ``participation`` 0.375 (0.308–0.445), from 0.38;
@@ -399,6 +407,19 @@ def make_null_recording(seed: int, **overrides):
     return _simulate(seed, {**BENCH_RECORDING, **NULL_RECORDING}, overrides)
 
 
+ELEVATED_RATE_RECORDING = dict(_fast.ELEVATED_RATE_RECORDING, hot_rate_hz=0.0321)
+"""The slow elevated-rate recording: fast's, at slow's stretch rate (the slow background 99th
+percentile, measured; see :data:`BENCH_RECORDING`). What it is for: ``bench.ELEVATED_RATE_RECORDING``."""
+
+
+def make_elevated_rate_recording(regime: str, seed: int, **overrides):
+    """The slow elevated-rate recording, on ``seed + ELEVATED_SEED_OFFSET``. Copy of ``bench``'s."""
+    if regime not in REGIMES:
+        raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
+    return _simulate(seed + ELEVATED_SEED_OFFSET,
+                     {**BENCH_RECORDING, **REGIMES[regime], **ELEVATED_RATE_RECORDING}, overrides)
+
+
 def run_detector(name: str, s, *, rng_seed: int = 20260706, **overrides):
     """One detector on a slice at THIS module's operating point. Copy of ``bench``'s."""
     if name not in OPERATING_POINTS:
@@ -429,16 +450,29 @@ def false_positives_per_hour(name: str, seeds=(1, 2, 3), **overrides) -> float:
     return total / hours if hours else float("nan")
 
 
+def evaluate_elevated_rate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
+                           **overrides) -> ProbeResult:
+    """Calls on the slow elevated-rate recording, inside and outside the stretch. Copy of ``bench``'s."""
+    return _fast.probe_counts(make_elevated_rate_recording, run_detector, name, regime, seeds,
+                              tol_sec=tol_sec, **overrides)
+
+
 def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
-             gen: dict | None = None, **overrides) -> BenchResult:
+             gen: dict | None = None, probe: bool = True, **overrides) -> BenchResult:
     """One detector over several slow recordings, pooled. Copy of ``bench``'s."""
+    gen = gen or {}
     scores = []
     for seed in seeds:
-        s, gt = make_recording(regime, seed, **(gen or {}))
+        s, gt = make_recording(regime, seed, **gen)
         det = run_detector(name, s, **overrides)
         scores.append(score_stream(gt, det, tol_sec=tol_sec))
+    pr = None
+    if probe:
+        g = {k: v for k, v in gen.items() if k not in ELEVATED_RATE_RECORDING}
+        pr = _fast.probe_counts(lambda r, sd: make_elevated_rate_recording(r, sd, **g),
+                                run_detector, name, regime, seeds, tol_sec=tol_sec, **overrides)
     return pool_scores(scores, detector=name, regime=regime, seeds=seeds,
-                       knob_value=overrides.get(OPERATING_POINTS[name].knob))
+                       knob_value=overrides.get(OPERATING_POINTS[name].knob), probe=pr)
 
 
 BACKGROUND_GRID = (0.0008, 0.0014, 0.0024, 0.0038, 0.0059, 0.0093, 0.0140, 0.0210)
