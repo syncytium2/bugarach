@@ -13,14 +13,20 @@ analysis window the folder declares (``detect_folder.folder_analysis_windows``, 
   point), run two ways (ADR-0008 decision 4, via ``event_floor.treatment_floors``): ``own_floor``
   at the window's own floor and ``baseline_floor`` at the same recording's baseline floor. The
   floor is the participation minimum of CoactDetect, LoCo and binned SCE and SPIKE-synch's
-  ``min_n`` (``bench.FLOORED_SETTING``); rate+context and locust have none, so their calls are
-  kept when their participants reach it. The pre-ADR-0008 ``tuned`` run of 2026-09-24 is gone:
-  nothing tonight is scored pre-ADR-0008;
+  ``min_n`` (``bench.FLOORED_SETTING``). Rate+context and locust have none, so they run once
+  (variant ``unfloored``) and every call is kept (ADR-0010 part 6);
 * **chorus** (``chorus_norm`` and ``chorus_gain_norm``, the checkpoint each training run's own rule
-  picked for that stream), once per window. It has no participation parameter, so each call's
-  **participants** are counted (ROIs with an onset inside the call's span, the span widened to the
-  2 s co-activity window when it is shorter) and the call is kept or not under each floor. That is
-  ADR-0008's "the scoring of treatment windows runs twice … reuses the same trained models".
+  picked for that stream), once per window, every call kept, as for rate+context and locust.
+
+**Every call carries its participants**, by one rule for every detector
+(:data:`PARTICIPANT_PAD_SEC`): ROIs with an onset in [onset − 1 s, onset + width + 1 s]. Beside
+each call are the window's own floor and its baseline floor. For a detector with no participation
+setting, ``reaches_<variant>`` says whether the call reaches each floor, and ``windows.csv`` counts
+those calls per floor, **labelled with its rule** (``count_rule``). The counts are readings of the
+calls (verdict flips, calls lost at floor + 1); no call is removed. **The review tool shows what
+detectors call, and never changes it** (ADR-0010 part 6, agreed by Tony 2026-09-25). Until then this
+tool deleted the rate+context, locust and chorus calls whose participants, counted forward only
+from the onset, missed the floor.
 
 **Floors** are ``bugarach.event_floor.window_floor`` per window and stream, from that window's own
 events: ``max(3, chance floor)`` at 1 call per hour, *J* = 20 s, 1,000 draws. A window shorter than
@@ -89,10 +95,52 @@ def frames_in(trains_sec, lo: float, dt: float) -> list[np.ndarray]:
             for t in trains_sec]
 
 
-def participants(trains_sec, onset: float, width: float, min_span: float) -> int:
-    """ROIs with at least one onset in ``[onset, onset + max(width, min_span)]``."""
-    hi = onset + max(float(width), min_span)
-    return int(sum(np.any((t >= onset) & (t <= hi)) for t in trains_sec))
+PARTICIPANT_PAD_SEC = 1.0
+"""How far either side of a call's span its participants are counted (ADR-0010 part 6). One rule for
+every detector, stated on the page: ROIs with an onset in [onset − pad, onset + width + pad]. The
+width is open for Tony (ADR-0010 open point 3), so it is a named constant rather than a literal.
+
+It replaced ``[onset, onset + max(width, 2 s)]``, which looked only forward: chorus puts its onset
+mid-stripe, so the old window missed the stripe's first half and the old filter deleted chorus
+calls whose centred count cleared the floor (ADR-0010, Context)."""
+
+PARTICIPANTS_RULE = ("ROIs with an onset in [onset - {pad:g} s, onset + width + {pad:g} s], "
+                     "the same for every detector").format(pad=PARTICIPANT_PAD_SEC)
+
+COUNT_RULE_RAN = "the detector ran at this floor, its own participation minimum (ADR-0008)"
+COUNT_RULE_ALL = "every call the detector made; nothing removed"
+COUNT_RULE_COUNTED = ("calls whose participants reach this floor, counted beside the calls; "
+                      "no call removed (ADR-0010 part 6)")
+
+
+def participants(trains_sec, onset: float, width: float,
+                 pad: float = PARTICIPANT_PAD_SEC) -> int:
+    """ROIs with at least one onset in ``[onset − pad, onset + width + pad]``. A missing or
+    negative width counts as zero."""
+    w = float(width) if np.isfinite(width) and width > 0 else 0.0
+    lo, hi = onset - pad, onset + w + pad
+    return int(sum(np.any((np.asarray(t, float) >= lo) & (np.asarray(t, float) <= hi))
+                   for t in trains_sec))
+
+
+def reaches(p: int, fl: dict, variants) -> dict:
+    """``reaches_<variant>``: whether a call's participants reach each floor, or ``None`` where
+    that floor does not exist. A label beside the call, never a filter on it."""
+    return {f"reaches_{v}": (None if fl.get(v) is None else bool(p >= fl[v])) for v in variants}
+
+
+def counted_rows(common: dict, det_name: str, parts, fl: dict, variants, hours) -> list[dict]:
+    """The window rows of a detector with no participation setting: every call under
+    ``unfloored``, then, per floor, how many of those calls reach it. The counts are labelled
+    with their rule, because they are a reading of the calls, not calls a detector made."""
+    out = []
+    for variant, k, rule in (("unfloored", 0, COUNT_RULE_ALL),
+                             *((v, fl[v], COUNT_RULE_COUNTED) for v in variants)):
+        n = None if k is None else int(sum(p >= k for p in parts))
+        out.append(dict(common, detector=det_name, variant=variant, min_participants=k,
+                        n_calls=n, calls_per_hour=(n / hours) if n is not None and hours else None,
+                        count_rule=rule))
+    return out
 
 
 def plus_variant(offset: int) -> str | None:
@@ -193,62 +241,69 @@ def recording_task(args):
                               n_roi=len(tr), **fl,
                               own_chance_floor=own.chance_floor if own else None,
                               own_floor_stable=own.stable if own else None)
+                def run(det_name, params, k):
+                    """One run of a coded detector, its calls inside this window."""
+                    if det_name in ("coact", "rate", "sync"):
+                        fn = {"coact": coact_detect, "rate": rate_detect,
+                              "sync": sync_detect}[det_name]
+                        p = dict(params)
+                        if det_name in FLOORED:
+                            p[FLOORED[det_name]] = int(k)
+                        det = fn(tr, (lo, hi), **p)
+                    else:
+                        det = nested(det_name, params, k).streams[sname]
+                    on = np.asarray(getattr(det, "onset_sec", getattr(det, "locs", [])), float)
+                    wd = np.asarray(getattr(det, "width_sec", getattr(det, "widths", [])), float)
+                    inside = (on >= lo) & (on < hi)
+                    return on[inside], wd[inside]
+
                 for det_name, params in settings[sname].items():
                     params = {k: v for k, v in params.items() if k != FLOORED.get(det_name)}
+                    if det_name not in FLOORED:
+                        # NO PARTICIPATION SETTING: THE DETECTOR RUNS AS DEFINED, ONCE, AND EVERY
+                        # CALL IS KEPT (ADR-0010 part 6). Until 2026-09-25 this tool deleted the
+                        # calls of rate+context and locust whose participants missed the floor,
+                        # a rule of the tool's own that the bench never applied to them.
+                        on, wd = run(det_name, params, 0)
+                        parts = [participants(tr, a_, b_) for a_, b_ in zip(on, wd)]
+                        for a_, b_, p_ in zip(on, wd, parts):
+                            calls.append(dict(common, detector=det_name, variant="unfloored",
+                                              onset_sec=float(a_), width_sec=float(b_),
+                                              participants=int(p_),
+                                              **reaches(p_, fl, variants)))
+                        rows.extend(counted_rows(common, det_name, parts, fl, variants, hours))
+                        continue
                     for variant in variants:
                         k = fl[variant]
                         if k is None:
                             rows.append(dict(common, detector=det_name, variant=variant,
                                              min_participants=None, n_calls=None,
-                                             calls_per_hour=None))
+                                             calls_per_hour=None, count_rule=COUNT_RULE_RAN))
                             continue
-                        if det_name in ("coact", "rate", "sync"):
-                            fn = {"coact": coact_detect, "rate": rate_detect,
-                                  "sync": sync_detect}[det_name]
-                            p = dict(params)
-                            if det_name in FLOORED:
-                                p[FLOORED[det_name]] = int(k)
-                            det = fn(tr, (lo, hi), **p)
-                        else:
-                            det = nested(det_name, params, k).streams[sname]
-                        on = np.asarray(getattr(det, "onset_sec", getattr(det, "locs", [])),
-                                        float)
-                        wd = np.asarray(getattr(det, "width_sec", getattr(det, "widths", [])),
-                                        float)
-                        inside = (on >= lo) & (on < hi)
-                        on, wd = on[inside], wd[inside]
-                        parts = [participants(tr, a_, b_, ef.WINDOW_SEC)
-                                 for a_, b_ in zip(on, wd)]
-                        # A detector with no participation minimum has the floor applied to its
-                        # calls' participants, as chorus does; one that takes it ran at it.
-                        keep = ([True] * len(parts) if det_name in FLOORED
-                                else [p_ >= k for p_ in parts])
-                        for a_, b_, p_, ok in zip(on, wd, parts, keep):
-                            if ok:
-                                calls.append(dict(common, detector=det_name, variant=variant,
-                                                  onset_sec=float(a_), width_sec=float(b_),
-                                                  participants=int(p_)))
-                        n = int(sum(keep))
+                        # The floor is this detector's own participation minimum: it ran at it,
+                        # and every call it made is kept.
+                        on, wd = run(det_name, params, k)
+                        for a_, b_ in zip(on, wd):
+                            calls.append(dict(common, detector=det_name, variant=variant,
+                                              onset_sec=float(a_), width_sec=float(b_),
+                                              participants=participants(tr, a_, b_)))
+                        n = int(on.size)
                         rows.append(dict(common, detector=det_name, variant=variant,
                                          min_participants=int(k), n_calls=n,
-                                         calls_per_hour=n / hours if hours else None))
+                                         calls_per_hour=n / hours if hours else None,
+                                         count_rule=COUNT_RULE_RAN))
                 for name, path in model_paths.items():
                     if not name.endswith(f"@{sname}"):
                         continue
                     res, _ = _MODELS[path].predict(s, stream=sname, extent=(lo, hi))
-                    parts = [participants(tr, a_, b_, ef.WINDOW_SEC)
+                    parts = [participants(tr, a_, b_)
                              for a_, b_ in zip(res.onset_sec, res.width_sec)]
                     det_name = name.split("@")[0]
                     for a_, b_, p in zip(res.onset_sec, res.width_sec, parts):
                         calls.append(dict(common, detector=det_name, variant="unfloored",
                                           onset_sec=float(a_), width_sec=float(b_),
-                                          participants=int(p)))
-                    for variant, k in (("unfloored", 0), *((v, fl[v]) for v in variants)):
-                        n = None if k is None else int(sum(p >= k for p in parts))
-                        rows.append(dict(common, detector=det_name, variant=variant,
-                                         min_participants=k, n_calls=n,
-                                         calls_per_hour=(n / hours) if n is not None and hours
-                                         else None))
+                                          participants=int(p), **reaches(p, fl, variants)))
+                    rows.extend(counted_rows(common, det_name, parts, fl, variants, hours))
         return dict(head, ok=True, rows=rows, calls=calls,
                     floors={f"{idx}|{sn}": (f.as_dict() if f else None)
                             for (idx, sn), f in floors.items()})
@@ -330,7 +385,8 @@ def main(argv=None) -> int:
     failed = [dict(slice_id=r["slice_id"], error=r["error"]) for r in recs if not r["ok"]]
     groups = in_group_order(r["group"] for r in recs if r.get("group"))
     fields = ["slice_id", "group", "mouse", "region_idx", "label", "window_kind", "stream",
-              "detector", "variant", "min_participants", "n_calls", "calls_per_hour", "hours",
+              "detector", "variant", "count_rule", "min_participants", "n_calls",
+              "calls_per_hour", "hours",
               "n_roi", "own_floor", "baseline_floor", *((plus,) if plus else ()),
               "own_chance_floor", "own_floor_stable", "win_start", "win_end"]
     with (a.out / "windows.csv").open("w", newline="", encoding="utf-8") as fh:
@@ -339,7 +395,8 @@ def main(argv=None) -> int:
         wr.writerows(rows)
     cfields = ["slice_id", "group", "region_idx", "label", "window_kind", "stream", "detector",
                "variant", "onset_sec", "width_sec", "participants", "own_floor",
-               "baseline_floor", *((plus,) if plus else ())]
+               "baseline_floor", *((plus,) if plus else ()),
+               *(f"reaches_{v}" for v in (*VARIANTS, *((plus,) if plus else ())))]
     with (a.out / "calls.csv").open("w", newline="", encoding="utf-8") as fh:
         wr = csv.DictWriter(fh, fieldnames=cfields, extrasaction="ignore")
         wr.writeheader()
@@ -347,8 +404,13 @@ def main(argv=None) -> int:
     res = dict(tag=TAG, dataset=dataset.stamp(), recordings=n, failed=failed,
                elapsed_sec=time.time() - t0, draws=a.draws, groups=groups, chosen=chosen,
                floor=FLOOR_LABEL + ": every window under its own floor and its recording's "
-                     "baseline floor (event_floor.treatment_floors); chorus also 'unfloored'",
-               participants_rule="ROIs with an onset in [onset, onset + max(width, 2 s)]",
+                     "baseline floor (event_floor.treatment_floors). CoactDetect, LoCo, binned "
+                     "SCE and SPIKE-synch run at each floor; rate+context, locust and chorus run "
+                     "once ('unfloored'), keep every call, and are counted against each floor "
+                     "(ADR-0010 part 6)",
+               participants_rule=PARTICIPANTS_RULE, participant_pad_sec=PARTICIPANT_PAD_SEC,
+               count_rules=dict(ran=COUNT_RULE_RAN, unfloored=COUNT_RULE_ALL,
+                                counted=COUNT_RULE_COUNTED),
                floor_offset=a.floor_offset, offset_variant=plus,
                summary=summarise(rows, groups),
                floors={rec["slice_id"]: rec["floors"] for rec in recs})

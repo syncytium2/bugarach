@@ -490,6 +490,50 @@ def detector_lanes(*detections: Path):
     return out
 
 
+def call_line(row: dict) -> str:
+    """One call's hover line: its participants and its window's two floors, in co-active ROIs."""
+    def n(v):
+        return "—" if v in (None, "") else f"{int(float(v))}"
+    return (f"{n(row.get('participants'))} participants · own floor {n(row.get('own_floor'))} · "
+            f"baseline floor {n(row.get('baseline_floor'))} (co-active ROIs)")
+
+
+def call_lanes(calls_csv: Path, variant: str = "own_floor"):
+    """(slice_id, stream) -> {detector: (onsets, widths, hover lines)}, from
+    ``tools/detect_with_floors.py``'s ``calls.csv``.
+
+    Every call a detector made is drawn (ADR-0010 part 6). A detector that takes the floor as its
+    own participation minimum ran once per floor, so its lane shows the run at ``variant``; one
+    without (rate+context, locust, chorus) ran once, under ``unfloored``, and every call is
+    shown. Each call's participants and its window's floors go in the hover, never on the raster.
+    """
+    import csv
+
+    from bugarach.detect_folder import DETECTORS
+
+    acc: dict = defaultdict(lambda: defaultdict(lambda: ([], [], [])))
+    seen_order: list[str] = []
+    with Path(calls_csv).open(newline="", encoding="utf-8") as fh:
+        for r in csv.DictReader(fh):
+            if r.get("variant") not in (variant, "unfloored"):
+                continue
+            key = (r["slice_id"], str(r["stream"]).strip().lower())
+            det = r["detector"]
+            if det not in seen_order:
+                seen_order.append(det)
+            on, wd, info = acc[key][det]
+            on.append(float(r["onset_sec"]))
+            wd.append(float(r.get("width_sec") or 0.0))
+            info.append(call_line(r))
+    order = list(DETECTORS) + [d for d in seen_order if d not in DETECTORS]
+    ran = [d for d in order if any(d in per for per in acc.values())]
+    return {key: {d: (np.asarray(per[d][0] if d in per else [], float),
+                      np.asarray(per[d][1] if d in per else [], float),
+                      list(per[d][2]) if d in per else [])
+                  for d in ran}
+            for key, per in acc.items()}
+
+
 def build_page(members, *, ext, manifest, width: int, stream: str,
                lanes=None, not_run=(), lane_px: int = None, roi_px: int = None):
     """Regions over detector lanes over raster, for ONE stream, per recording."""
@@ -519,7 +563,7 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
             # the marks they are a claim about.
             per_det = lanes.get((sl.slice_id, sname), {})
             if per_det or not_run:
-                shifted = {d: (on - anchor, wd) for d, (on, wd) in per_det.items()}
+                shifted = {d: (v[0] - anchor, *v[1:]) for d, v in per_det.items()}
                 row = lane_px or LANE_PX
                 n_rows = len(set(per_det) | set(not_run))
                 # SIZED TO ITS ROWS, NOT TO lane_panel's FLOOR. The shared panel is
@@ -760,8 +804,22 @@ def main(argv=None) -> int:
     ap.add_argument("--floors", type=Path, default=None,
                     help="results.json from tools/detect_with_floors.py: put each recording's "
                          "own floor per window, in co-active ROIs, in the page header")
+    ap.add_argument("--calls", type=Path, default=None,
+                    help="calls.csv from tools/detect_with_floors.py: draw every call it lists, "
+                         "each with its participants and its window's floors in the lane's "
+                         "hover (ADR-0010 part 6). Replaces --detections for the detectors it "
+                         "contains")
+    ap.add_argument("--calls-variant", default="own_floor",
+                    help="which run to draw for detectors that take the floor as their own "
+                         "minimum (default own_floor); the rest ran once and are all drawn")
     a = ap.parse_args(argv)
     floors = read_floors(a.floors) if a.floors else None
+    if a.calls:
+        from detect_with_floors import PARTICIPANTS_RULE
+
+        rule = (f"Hover a call for its participants ({PARTICIPANTS_RULE}) and its window's "
+                f"floors. Every call is drawn; no floor removes one.")
+        a.note = f"{a.note} {rule}" if a.note else rule
 
     folder = resolve_folder(a.folder, unscanned=a.unscanned,
                             steps_excluded=a.steps_excluded)
@@ -792,6 +850,9 @@ def main(argv=None) -> int:
         return 1
 
     lanes = detector_lanes(*a.detections) if a.detections else {}
+    if a.calls:
+        for key, per in call_lanes(a.calls, a.calls_variant).items():
+            lanes.setdefault(key, {}).update(per)
     if a.exclude:
         drop = set(a.exclude)
         lanes = {k: {d: v for d, v in per.items() if d not in drop}
