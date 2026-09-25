@@ -117,21 +117,54 @@ def _fit_pin_recordings():
     return rec
 
 
-@pytest.mark.parametrize("name", ["tube", "chorus_norm", "line"])
-def test_a_default_fit_is_the_fit_main_made(name):
-    """Ten steps of an existing architecture: its weights, threshold, loss history and training
-    record keys match what ``main`` produced (pinned before the change)."""
-    pin = PINS["fits"][name]
-    mk, n_fit, _ = fold_maker(_fit_pin_recordings(), [1000, 1001, 1002])
+PLATFORM_SENSITIVE_FITS = {"chorus_norm"}
+"""Fits whose weights after ten steps at lr 1e-2 differ between platforms beyond 1e-4, so an
+absolute pin taken on one machine cannot prove anything on another.
+
+chorus_norm's pin (213.029, taken on ``main`` 538ae74 on Windows) reproduces there exactly, with
+one intra-op thread (``train.pin_threads``) and with ``torch.use_deterministic_algorithms`` on
+or off. On CI's Linux legs, same torch 2.14.0, it read 213.220 on Python 3.13 and 213.145 on 3.14,
+which also disagree with each other. Threads are already pinned and CPU kernels already
+deterministic, so this is platform arithmetic amplified by the fit, not a moved default. For
+these fits the test proves the claim in the run instead (below). Loosening the tolerance until
+the numbers fit would prove nothing."""
+
+
+def _fit(name, mk, n_fit, **kw):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        tr = train(name, mk, n_train=n_fit, steps=10, crop=1024, batch=2, lr=1e-2, seed=0)
+        return train(name, mk, n_train=n_fit, steps=10, crop=1024, batch=2, lr=1e-2, seed=0,
+                     **kw)
+
+
+@pytest.mark.parametrize("name", ["tube", "chorus_norm", "line"])
+def test_a_default_fit_is_the_fit_main_made(name):
+    """Ten steps of an existing architecture fit as ``main`` fitted it.
+
+    **Every leg:** the threshold and the training record's keys match the pins taken on ``main``
+    before this change, and the registered fit is identical, weight for weight, threshold and
+    loss, to the same fit with participation switched off explicitly (``membership_weight=0``,
+    ``floor_labels=False``). So the new code is off by default and takes the old path.
+
+    **Where the arithmetic is portable** (tube, line): the weights and losses also match
+    ``main``'s absolute pin. chorus_norm's are not portable (:data:`PLATFORM_SENSITIVE_FITS`);
+    its architecture and its checkpoint's outputs are pinned by the tests above."""
+    pin = PINS["fits"][name]
+    mk, n_fit, _ = fold_maker(_fit_pin_recordings(), [1000, 1001, 1002])
+    tr = _fit(name, mk, n_fit)
+    off = _fit(name, mk, n_fit, membership_weight=0.0, floor_labels=False)
+    for (ka, a), (kb, b) in zip(tr.model.state_dict().items(), off.model.state_dict().items()):
+        assert ka == kb and torch.equal(a, b), ka
+    assert tr.threshold == off.threshold
+    assert [l for _, l in tr.history] == [l for _, l in off.history]
+    assert tr.threshold == pin["threshold"]
+    assert sorted(tr.training) == pin["training_keys"]
+    if name in PLATFORM_SENSITIVE_FITS:
+        return
     w = sum(float(np.abs(v.detach().numpy().astype(np.float64)).sum())
             for v in tr.model.state_dict().values())
     assert np.isclose(w, pin["abs_sum"], rtol=1e-4)
-    assert tr.threshold == pin["threshold"]
     assert np.allclose([l for _, l in tr.history], pin["loss"], rtol=1e-4)
-    assert sorted(tr.training) == pin["training_keys"]
 
 
 def test_membership_is_refused_for_a_model_without_votes():
