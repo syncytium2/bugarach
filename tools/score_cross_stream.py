@@ -84,9 +84,11 @@ def versions_from(records: list[dict], models: Path) -> list[dict]:
     for tuned in STREAMS:
         coded_src = next((r for r in reversed(records)
                           if r["benches"].get(tuned, {}).get("detectors")), None)
+        # Every chorus model needs its pick from the same record: a record that picked only one
+        # would otherwise be chosen here and fail on the other model's missing pick below.
         chorus_src = next((r for r in reversed(records)
-                           if any(c.get("picked") for c in
-                                  r["benches"].get(tuned, {}).get("chorus", {}).values())), None)
+                           if all((r["benches"].get(tuned, {}).get("chorus", {}).get(m) or {})
+                                  .get("picked") for m in CHORUS)), None)
         if coded_src is None or chorus_src is None:
             raise SystemExit(f"no record covers the {tuned} stream's "
                              f"{'coded detectors' if coded_src is None else 'chorus picks'}")

@@ -366,7 +366,7 @@ load-bearing terms with no glossary entry.
 - **elevated-rate test** (formerly *promiscuity probe*, *probe*; code: `hot_window`,
   `probe_per_hour`, `MAX_PROBE_PER_MIN`) — a 5-minute stretch (20:00–25:00, easing in over
   30 s) where each cell's independent event rate is elevated to the background's 99th
-  percentile, with *no* planted events. **Since ADR-0009 (2026-09-25) it lives in a recording
+  percentile, with *no* planted events. **Since ADR-0009 (2026-09-24) it lives in a recording
   of its own, the elevated-rate recording**, with nothing planted anywhere; before that it
   sat inside every bench recording (at 0.06 per second on fast, about 12× the quiet
   background). It is scored for calls inside the stretch and, against the no-coordination

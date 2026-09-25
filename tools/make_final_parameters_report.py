@@ -296,12 +296,14 @@ def figure1(rep: dict, dest: Path) -> Path:
             ax.spines[s_].set_visible(False)
     from matplotlib.lines import Line2D
     handles = [Line2D([], [], marker="o", ls="", mfc="white", mec="#1b1b1a", label="shipped point"),
-               Line2D([], [], color="#1b1b1a", lw=1, label="95% interval over fresh seeds"),
+               Line2D([], [], color="#1b1b1a", lw=1, label="95% interval, shipped"),
+               Line2D([], [], color="#8a8983", lw=1, label="95% interval, proposal or chorus"),
+               Line2D([], [], color="#d8d7d2", lw=1, label="joins a shipped point to its proposal"),
                Line2D([], [], marker="D", ls="", color="#1f6fb4", label="proposal, adoptable (strict rule)"),
                Line2D([], [], marker="D", ls="", color="#c9822a", label="proposal, not adoptable"),
                Line2D([], [], marker="D", ls="", color="#6b6a64", label="chorus fit the training rule picked")]
-    fig.legend(handles=handles, loc="lower center", ncol=5, frameon=False)
-    fig.tight_layout(rect=(0, 0.08, 1, 1))
+    fig.legend(handles=handles, loc="lower center", ncol=4, frameon=False, fontsize=10)
+    fig.tight_layout(rect=(0, 0.14, 1, 1))
     out = dest / "figure1_fresh_f1.png"
     fig.savefig(out, dpi=160)
     plt.close(fig)
@@ -316,7 +318,7 @@ def figure2(rep: dict, dest: Path) -> Path:
 
     xs = rep["cross_stream"]
     dets = (*CODED, *CHORUS)
-    fig, axes = plt.subplots(2, 4, figsize=(14, 7.6))
+    fig, axes = plt.subplots(2, 4, figsize=(14, 6.6))
     im = None
     for ax, det in zip(axes.ravel(), dets):
         m = np.full((3, 3), np.nan)
@@ -327,20 +329,20 @@ def figure2(rep: dict, dest: Path) -> Path:
                           and x["scored"] == scored and x["variant"] == variant), None)
                 if r and "mean_f1" in r:
                     m[i, j] = r["mean_f1"]
-        im = ax.imshow(m, vmin=0.4, vmax=0.9, cmap="Blues")
+        im = ax.imshow(m, vmin=0.6, vmax=0.9, cmap="Blues")
         for i in range(3):
             for j in range(3):
                 if np.isfinite(m[i, j]):
-                    ax.text(j, i, f"{m[i, j]:.2f}", ha="center", va="center", fontsize=10,
-                            color="white" if m[i, j] > 0.7 else "#1b1b1a",
+                    ax.text(j, i, f"{m[i, j]:.2f}", ha="center", va="center", fontsize=12,
+                            color="white" if m[i, j] > 0.78 else "#1b1b1a",
                             fontweight="bold" if i == j else "normal")
         ax.set_xticks(range(3), STREAMS)
         ax.set_yticks(range(3), STREAMS)
         ax.set_xlabel("scored on (bench)")
         ax.set_ylabel(f"{NAME[det]} · tuned on")
-    fig.tight_layout(rect=(0, 0, 0.93, 1))
+    fig.tight_layout(rect=(0, 0, 0.93, 1), h_pad=0.6)
     cax = fig.add_axes((0.945, 0.15, 0.012, 0.7))
-    fig.colorbar(im, cax=cax, label="mean F1 on fresh seeds (0.4–0.9)")
+    fig.colorbar(im, cax=cax, label="mean F1 on fresh seeds (0.6–0.9)")
     out = dest / "figure2_cross_stream.png"
     fig.savefig(out, dpi=160)
     plt.close(fig)
@@ -374,10 +376,29 @@ BUDGET_NAME = {"probe": "elevated-rate test, inside the stretch",
 
 
 def _bud(b):
+    """A budget cell. A check that was never measured is named, never folded into "pass"."""
     if b is None:
         return "**not checked**"
     fails = [BUDGET_NAME.get(k, k) for k, v in b.items() if v["ok"] is False]
-    return "pass" if not fails else "**fail: " + ", ".join(fails) + "**"
+    unrec = [BUDGET_NAME.get(k, k) for k, v in b.items() if v["ok"] is None]
+    s = "pass" if not fails else "**fail: " + ", ".join(fails) + "**"
+    return s + (f" ({', '.join(unrec)} not recorded)" if unrec else "")
+
+
+UNIT = {"bin_width_sec": "s", "merge_gap_sec": "s", "merge_gap_s": "s", "context_win_sec": "s",
+        "context_win": "s", "int_win_sec": "s", "rate_win": "s", "guard_sec": "s", "dt": "s",
+        "tau_max": "s", "max_gap": "s", "peak_min_distance_sec": "s",
+        "excess_threshold_hz": "Hz", "threshold_pctile": "percentile",
+        "sce_percentile": "percentile", "sce_min_distance_frames": "frames",
+        "n_synchronous_frames": "frames"}
+"""The unit each setting is in, so a table cell never carries a bare number (CLAUDE.md)."""
+
+
+def _vu(k, x):
+    u = UNIT.get(k)
+    s = _v(x)
+    return f"{s} {u}" if u and isinstance(x, (int, float)) and not (
+        isinstance(x, float) and math.isnan(x)) else s
 
 
 def _f1(f: dict) -> str:
@@ -409,8 +430,8 @@ def table(rep: dict) -> str:
             lines.append(f"| {r['stream']} | {name} | none (no proposal) | — | {_f1(s['fresh'])} | "
                          f"{s['fresh']['f1_without_decoys']:.3f} | — | — | — |")
             continue
-        ch = "; ".join(f"`{k}` {_v(a)} → {_v(b)}" for k, (a, b) in p["changed"].items())
-        anchor = ("" if p["held_out_anchor"] == "the shipped point"
+        ch = "; ".join(f"`{k}` {_vu(k, a)} → {_vu(k, b)}" for k, (a, b) in p["changed"].items())
+        anchor =("" if p["held_out_anchor"] == "the shipped point"
                   else f" (against {p['held_out_anchor']})")
         lines.append(
             f"| {r['stream']} | {name} | {ch} | {_gain(p['held_out_gain'])}{anchor} | "

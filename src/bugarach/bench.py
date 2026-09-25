@@ -361,8 +361,9 @@ can find a short context where one works."""
 
 GUARD_MAX_CONTEXT_FRACTION = 0.25
 """A guard may cover at most this fraction of the context it sits in (the final-parameters
-runbook, 2026-09-24). It binds on slow and combined, whose grids add an 8 s guard, at contexts
-of 20 s and 30 s; :func:`settings_are_valid` enforces it."""
+runbook, 2026-09-24). It binds wherever a guard grid reaches past a quarter of a short
+context: slow and combined's 8 s guard at 20 s and 30 s, fast LoCo's 2 and 4 s guards at 5 s;
+:func:`settings_are_valid` enforces it."""
 
 FULL_GRIDS: dict[str, dict[str, tuple]] = {
     "loco": {
@@ -592,8 +593,8 @@ def settings_are_valid(det: str, p: dict) -> bool:
     if p.get("window_mode") == "sliding" and p.get("detection_mode", "threshold") != "threshold":
         return False
     # Before any detector's own branch: until 2026-09-25 this sat after LoCo's early return, so
-    # the guard cap never reached LoCo and the slow and combined searches of the final-parameters
-    # night walked LoCo's 8 s guard at 20 s and 30 s contexts (murderboard role 7).
+    # the guard cap never reached LoCo: on the final-parameters night fast LoCo's search, at a 5 s
+    # context, could try guards of 2 and 4 s against a 1.25 s cap (murderboard roles 1 and 7).
     if not guard_fits_the_context(p):
         return False
     if det == "loco":
