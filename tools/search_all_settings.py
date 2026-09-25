@@ -995,8 +995,10 @@ def main(argv=None) -> int:
                stage="started", selection={})
     # Set before the pool starts: workers spawned on Windows inherit it, and each recording's
     # floor is then computed once between all of them (`warm_floors`), not once per worker.
+    # A cache already named in the environment wins: an --out in the Dropbox darkroom would
+    # otherwise sync hundreds of small files, and a machine-local cache is shared across runs.
     import os
-    os.environ[_bench.FLOOR_CACHE_ENV] = str(dest / "floor_cache")
+    os.environ.setdefault(_bench.FLOOR_CACHE_ENV, str(dest / "floor_cache"))
 
     def save():
         (dest / "search.json").write_text(json.dumps(rep, indent=1, default=str))
