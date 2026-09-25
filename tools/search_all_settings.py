@@ -925,8 +925,15 @@ def main(argv=None) -> int:
 
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--seeds", type=int, default=48,
-                    help="recordings per point for selection; held-out uses as many more")
+    ap.add_argument("--seeds", type=int, default=None,
+                    help="recordings per point for selection; held-out uses as many more "
+                         "(default 48, doubled on fast under a realistic --spacing, ADR-0010 "
+                         "ruling 2)")
+    ap.add_argument("--spacing", choices=("bench", "realistic", "orx"), default="bench",
+                    help="how the bench spaces its planted events (bench.SPACINGS): 'bench', "
+                         "the old >= 120 s (the default, unchanged); 'realistic', gaps and "
+                         "event counts from the measured real intervals (ADR-0010); 'orx', "
+                         "spaced like ORX, for scoring checks")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--full", nargs="*", default=[], choices=list(SPACE),
                     help="also search every combination for these detectors")
@@ -953,6 +960,15 @@ def main(argv=None) -> int:
                          "day never write one folder)")
     a = ap.parse_args(argv)
     use_bench(a.bench)
+    # Set before the pool starts, like the bench, so every worker plants at the same spacing.
+    from bugarach import bench as _b
+    _b.use_spacing(a.spacing)
+    if a.seeds is None:
+        a.seeds = 48 * _b.seed_factor(a.bench)
+    if a.spacing != "bench" and not a.no_crowded_veto:
+        # ADR-0010 part 4: the close-events recording and its allowance are retired on the
+        # realistic bench, whose scored recordings carry close events themselves.
+        a.no_crowded_veto = True
 
     if a.out:
         dest = a.out.expanduser()
@@ -1016,6 +1032,8 @@ def main(argv=None) -> int:
     sel, ho = list(range(1, n + 1)), list(range(n + 1, 2 * n + 1))
     rep = dict(started=datetime.datetime.now().isoformat(timespec="seconds"),
                bench=_bench.__name__,
+               spacing=_b.spacing(),
+               crowded_veto=not a.no_crowded_veto,
                floor=(_bench.FLOOR_LABEL if _bench.floor_enabled()
                       else f"pre-ADR-0008 ({_bench.FLOOR_SWITCH_ENV}=off)"),
                max_extensions=a.max_extensions,

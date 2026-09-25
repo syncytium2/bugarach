@@ -10,6 +10,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/night-bench-adr-0010 — DARKROOM claim: `bugarach/2026-09-25-realistic-bench/` (NEW)
+- **Status:** claimed 2026-09-25 ~17:50 UTC by WSMIP065 for ADR-0010 parts 2-4: the realistic
+  bench's re-measured floors (`bench-floor-realistic/`, `bench-floor-orx/`) and the call_measure
+  check (`call-measure/`). Released by the merge of the PR that carries their run record.
+- **Touches:** that folder only.
+
 ### 065/real-intervals — DARKROOM claim: `bugarach/2026-09-25-real-intervals/` (NEW)
 - **Status:** claimed 2026-09-25 ~15:45 UTC, before writing, by WSMIP065 for ADR-0010 (proposed)
   part 2, step 1: the real inter-event intervals, measured without a detector, on the default

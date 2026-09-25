@@ -83,10 +83,17 @@ def main(argv=None) -> int:
     ap.add_argument("--device", default=None, help="cuda, or omit for CPU (about 200 s a fit)")
     ap.add_argument("--steps", type=int, default=900)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--spacing", choices=("bench", "realistic", "orx"), default="bench",
+                    help="how the bench spaces its planted events (bench.SPACINGS; default "
+                         "'bench', unchanged). ADR-0010: train on 'realistic', the generator the "
+                         "search uses, on its own seeds")
     a = ap.parse_args(argv)
 
+    from bugarach import bench as _b
     from bugarach.learn.checkpoint import save
     from bugarach.learn.train import fold_maker, train
+
+    _b.use_spacing(a.spacing)
 
     name = BENCHES[a.bench]
     b = importlib.import_module(name)
@@ -102,7 +109,7 @@ def main(argv=None) -> int:
         path = a.out / f"{a.model}_{a.bench}_seed{seed}.json"
         save(tr, path, trained_on=f"{name}.make_recording seeds {FIT[0]}-{FIT[-1]}, quiet+busy",
              train_seed=seed, steps=a.steps, n_fit=10, n_threshold_val=n_val,
-             note=f"tools/train_learned_on_bench.py --bench {a.bench}")
+             note=f"tools/train_learned_on_bench.py --bench {a.bench} --spacing {a.spacing}")
         row = dict(seed=seed, path=path.name, threshold=float(tr.threshold),
                    **held_out(b, lambda sl: tr.predict(sl)[0]), sec=round(time.time() - t0))
         rows.append(row)
