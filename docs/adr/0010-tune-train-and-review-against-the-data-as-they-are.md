@@ -166,8 +166,17 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
      detector without a participation setting runs unfloored until it has one.
    - **The floor is shown, never applied.** Every call is drawn. Each call's participant count and
      its window's floor appear in the lane's label or hover text, never on the raster. One counting
-     rule serves every detector, and it is stated on the page: ROIs with an onset in
-     [onset − 1 s, onset + width + 1 s].
+     rule serves every detector, and it is stated on the page. On each stream where it passes the
+     check below, the rule is the universal call measure's core count (`core_n_roi` from
+     `src/bugarach/call_measure.py`): distinct cells in the densest onset group around the call's
+     centre. Where it does not pass, the rule is ROIs with an onset in
+     [onset − 1 s, onset + width + 1 s], labelled as the review tool's own count.
+   - **The call measure is checked before it is shown.** Its lengths per stream are judgements
+     (slow and combined are fast's multiplied by five), and it has never been compared with planted
+     truth on any stream. The full-panel night compares its core count with the planted
+     participant count, per stream, on the realistic bench, split by the gap to the neighbouring
+     event. Adopting it on a stream is a morning decision based on that comparison. Making its
+     lengths adaptive would move every past width and amplitude, so it is not part of this record.
    - **Analysis and review read the same unaltered calls.** A floor-based count (verdict flips,
      calls lost at floor + 1) is computed beside the calls and labelled with its rule, and never
      replaces them.
@@ -217,8 +226,13 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
    Recording length stays 45 minutes on every stream: a longer recording would change the window
    the floor is computed over, and events within one recording share its background. The cost is
    about twice fast's search time, well under an hour more for the night.
-3. **The review tool's counting window.** ±1 s around the call's span (as written), or another
-   width.
+3. **The review tool's counting window. Ruled 2026-09-25 by Tony: validate the universal call
+   measure first, then adopt it.** The review tool shows `call_measure`'s core count on each
+   stream where it tracks the planted participants on the realistic bench, and its own
+   ±1 s window, labelled as such, elsewhere (part 6). Validation runs on the full-panel night; adoption
+   per stream is decided the next morning. An adaptive version (lengths set from each stream's own
+   onset spread) was considered and deferred, because it would change every past width and
+   amplitude.
 4. **The learned models' bar** (part 5), as stated or otherwise.
 
 **Carried over from the 2026-09-25 report**, because a full-panel search meets each of them again.
