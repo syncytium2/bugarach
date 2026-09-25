@@ -232,3 +232,45 @@ def test_candidates_json_never_calls_an_unbracketed_proposal_adoptable():
 
 def test_detect_with_floors_runs_every_window_under_both_floors_and_nothing_pre_adr():
     assert dwf.VARIANTS == ("own_floor", "baseline_floor")
+
+
+def test_a_floor_another_worker_already_wrote_is_not_an_error(recording, monkeypatch, tmp_path):
+    """Windows refuses os.replace while another process holds the target (phase 3, 2026-09-25)."""
+    import os
+    s, _ = recording
+    monkeypatch.setattr(bench, "_FLOORS", {})
+    monkeypatch.setenv(bench.FLOOR_CACHE_ENV, str(tmp_path))
+    want = bench.recording_floor(s)                 # writes the file
+    monkeypatch.setattr(bench, "_FLOORS", {})
+    for f in tmp_path.glob("*.json"):
+        f.write_text("not json")                    # force a recompute past the cached file
+
+    def refuse(*_a, **_k):
+        raise PermissionError("Access is denied")
+    monkeypatch.setattr(os, "replace", refuse)
+    assert bench.recording_floor(s) == want
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_the_cross_stream_versions_come_from_tonights_records(tmp_path):
+    import score_cross_stream as xs
+    row = dict(mean_f1=0.5, mean_f1_without_decoys=0.6, null_calls_per_hour=0.0)
+    coded = {d: dict(shipped={"a": 1}, proposal=dict(name="shipped", params={"a": 1}))
+             for d in xs.CODED}
+    coded["sce"] = dict(shipped={"a": 1}, proposal=dict(name="rounds", params={"a": 2}))
+    results = {f"{d}:shipped": row for d in xs.CODED} | {"sce:proposal": row}
+    chorus = {m: dict(picked=f"{m}_x_seed1.json") for m in xs.CHORUS}
+    chorus_rows = {f"chorus:{m}_x_seed1.json": row for m in xs.CHORUS}
+    fast = dict(floor="F", benches={"fast": dict(detectors=coded, chorus=chorus)},
+                results={"fast": results | chorus_rows})
+    other = dict(floor="F", benches={b: dict(detectors=coded, chorus={}) for b in ("slow", "combined")},
+                 results={b: results for b in ("slow", "combined")})
+    chorus_only = dict(floor="F", benches={b: dict(detectors={}, chorus=chorus)
+                                           for b in ("slow", "combined")},
+                       results={b: chorus_rows for b in ("slow", "combined")})
+    vs = xs.versions_from([fast, other, chorus_only], tmp_path)
+    assert {v["tuned"] for v in vs} == set(xs.STREAMS)
+    assert sum(v["variant"] == "proposal" for v in vs) == 3          # sce, one per stream
+    assert sum(v["kind"] == "chorus" for v in vs) == 6
+    with pytest.raises(SystemExit, match="slow"):
+        xs.versions_from([fast], tmp_path)

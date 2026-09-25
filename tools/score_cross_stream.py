@@ -2,6 +2,12 @@
 """Each stream's version of each detector, scored on all three benches: the 3 x 3.
 
     python tools/score_cross_stream.py --models <phase2 folder> --out <folder> [--workers 24]
+    python tools/score_cross_stream.py --candidates <a/candidates.json> <b/candidates.json> \
+        --models <folder holding models-<bench>/> --out <folder>
+
+``--candidates`` (2026-09-25) takes the versions from tonight's records instead of the two fixed
+2026-09-24 paths below, and the record's ``floor`` label travels into the output. Without it the
+tool is unchanged.
 
 **Why.** Tony, 2026-09-23 and again 2026-09-24: *"Add to each table the performance across fast
 slow and combined."* Every detector has three versions, one per stream (fast, slow, combined),
@@ -62,6 +68,40 @@ NAME = {"coact": "CoactDetect", "loco": "LoCo", "sce": "SCE", "rate": "rate+cont
         "chorus_gain_norm": "chorus_gain_norm"}
 N_BOOT = 2000
 _MODELS: dict = {}
+
+
+def versions_from(records: list[dict], models: Path) -> list[dict]:
+    """The versions from one or more ``candidates.json`` records (``score_bench_candidates.py``
+    since #811), in place of last night's two fixed paths.
+
+    For each stream, the coded detectors come from the record whose ``benches[stream]`` carries
+    ``detectors``, and the chorus picks from the record whose ``benches[stream]`` carries picked
+    ``chorus`` rows. A later record wins where two carry the same thing. A stream that no record
+    covers is an error, never a silent gap."""
+    out = []
+    for tuned in STREAMS:
+        coded_src = next((r for r in reversed(records)
+                          if r["benches"].get(tuned, {}).get("detectors")), None)
+        chorus_src = next((r for r in reversed(records)
+                           if any(c.get("picked") for c in
+                                  r["benches"].get(tuned, {}).get("chorus", {}).values())), None)
+        if coded_src is None or chorus_src is None:
+            raise SystemExit(f"no record covers the {tuned} stream's "
+                             f"{'coded detectors' if coded_src is None else 'chorus picks'}")
+        for d in CODED:
+            M = coded_src["benches"][tuned]["detectors"][d]
+            res = coded_src["results"][tuned]
+            out.append(dict(det=d, variant="shipped", tuned=tuned, kind="coded",
+                            spec=M["shipped"], reference=res[f"{d}:shipped"]))
+            if M["proposal"]["name"] != "shipped":
+                out.append(dict(det=d, variant="proposal", tuned=tuned, kind="coded",
+                                spec=M["proposal"]["params"], reference=res[f"{d}:proposal"]))
+        for m in CHORUS:
+            pick = chorus_src["benches"][tuned]["chorus"][m]["picked"]
+            out.append(dict(det=m, variant=pick.split("_")[-1].replace(".json", ""), tuned=tuned,
+                            kind="chorus", spec=str(models / f"models-{tuned}" / pick),
+                            reference=chorus_src["results"][tuned][f"chorus:{pick}"]))
+    return out
 
 
 def versions(models: Path) -> list[dict]:
@@ -156,9 +196,15 @@ def main(argv=None) -> int:
                     help="last night's phase-2 folder, holding models-<bench>/")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--workers", type=int, default=24)
+    ap.add_argument("--candidates", type=Path, nargs="+", default=None,
+                    help="candidates.json records to take the versions from (later wins), in "
+                         "place of the 2026-09-24 run records; --models then holds the chorus "
+                         "checkpoints they picked")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
-    vs = versions(a.models)
+    records = ([json.loads(p.read_text(encoding="utf-8")) for p in a.candidates]
+               if a.candidates else None)
+    vs = versions_from(records, a.models) if records else versions(a.models)
     jobs = [(i, v, s, reg, seed) for i, v in enumerate(vs) for s in STREAMS
             for reg in REG for seed in SEEDS]
     jobs += [(i, v, s, "null", seed) for i, v in enumerate(vs) for s in STREAMS for seed in NULLS]
@@ -191,8 +237,12 @@ def main(argv=None) -> int:
                                     ref["null_calls_per_hour"]]))
     chosen_map = {d: {t: chosen(vs, d, t)["variant"] for t in STREAMS}
                   for d in (*CODED, *CHORUS)}
+    floors = {r.get("floor") for r in records} if records else set()
+    floor = (floors.pop() if len(floors) == 1 else f"mixed: {sorted(map(str, floors))}"
+             ) if records else "pre-ADR-0008 (min_rois never below 3 when tuned)"
     rec = dict(seeds=[SEEDS[0], SEEDS[-1]], null_seeds=[NULLS[0] + 50_000, NULLS[-1] + 50_000],
-               n_boot=N_BOOT, floor="pre-ADR-0008 (min_rois never below 3 when tuned)",
+               n_boot=N_BOOT, floor=floor,
+               sources=[str(p.name) for p in a.candidates] if a.candidates else None,
                chosen=chosen_map, diagonal_check=dict(all_reproduce=all(d["reproduces"]
                                                                           for d in diag),
                                                       rows=diag),
