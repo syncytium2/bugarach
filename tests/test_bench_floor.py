@@ -175,6 +175,23 @@ def test_the_context_grids_run_20_to_120_seconds(b):
     assert tuple(b.FULL_GRIDS["rate"]["context_win"]) == bench.CONTEXT_GRID_SEC
 
 
+@pytest.mark.parametrize("b", [bench, bench_slow, bench_combined], ids=lambda m: m.__name__)
+def test_the_guard_cap_reaches_every_guarded_detector(b):
+    """It sat after LoCo's early return until 2026-09-25 and never reached LoCo."""
+    for det in ("loco", "coact", "rate"):
+        p = dict(b.OPERATING_POINTS[det].params)
+        ctx = "context_win" if det == "rate" else "context_win_sec"
+        p.update({ctx: 20.0, "guard_sec": 8.0})
+        if det == "loco":
+            p.update(null_context_mode="maxlt", bin_width_sec=2.0, merge_gap_sec=4.0)
+        if det == "coact":
+            p.update(int_win_sec=2.0)
+        if det == "rate":
+            p.update(rate_win=1.0)
+        assert not b.settings_are_valid(det, p), det
+        assert b.settings_are_valid(det, {**p, "guard_sec": 4.0}), det
+
+
 def test_a_guard_longer_than_a_quarter_of_its_context_is_not_valid():
     p = dict(bench.OPERATING_POINTS["coact"].params, int_win_sec=2.0, context_win_sec=20.0)
     assert bench.settings_are_valid("coact", {**p, "guard_sec": 5.0})

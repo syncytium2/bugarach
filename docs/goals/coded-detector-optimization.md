@@ -39,6 +39,26 @@ recordings and re-scored on a set the search never saw.
 
 ## Where it stands
 
+**2026-09-25, morning: the final-parameters night ran, under ADR-0008's floor and ADR-0009's bench**
+([report](../learned/runs/2026-09-25-final-parameters/README.md)). Every detector was searched on all
+three benches, and chorus was retrained, with each recording's own floor setting the participation
+minimum. **Nothing is adopted.**
+
+- **Adoptable under the runbook's strict rule:** binned SCE on fast; binned SCE, rate+context and
+  SPIKE-synch on combined. Each has a held-out gain interval above zero, passes every budget that was
+  measured on the selection, held-out and fresh seeds, and is bracketed. The held-out seeds also
+  picked among the search's final candidates, so the fresh seeds are the independent check: all four
+  paired fresh-seed gains are above zero. The gains sit on the busy background, mostly as fewer false
+  alarms that are not decoys. Combined SPIKE-synch's proposal fixes its coincidence window, which is
+  no longer Kreuz SPIKE-synchronization.
+- **Held back on bracketing only:** five proposals, among them locust on all three streams (+0.036
+  to +0.102), which sit at a value that cannot go further. Whether that counts as bracketed is
+  Tony's, and the three locust proposals also carry the open anchor question.
+- **Four shipped points are out of budget** on the new bench: the precision swing for SPIKE-synch and
+  rate+context on fast and rate+context on combined (the floor, and decoys under it), and the
+  elevated-rate test for locust on slow (the test's new recording, not the floor).
+- **Waits on Tony:** the adoption itself and the report's other eight rulings (nine decisions in all), listed in the table below.
+
 **2026-09-24, evening: the rulings for final parameters are made, and the night is planned.**
 [ADR-0009](../adr/0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md)
 answers #793's two questions and three more (R1–R5):
@@ -48,7 +68,7 @@ answers #793's two questions and three more (R1–R5):
 - the budgets stand;
 - no context longer than 120 s is searched.
 
-The runbook for the night is [`HANDOFF-overnight-final-parameters.md`](../../HANDOFF-overnight-final-parameters.md).
+The runbook for the night is [`docs/handoffs/2026-09-25-overnight-final-parameters.md`](../handoffs/2026-09-25-overnight-final-parameters.md).
 Every tuned number below is pre-ADR-0008 and is re-searched, not adopted.
 
 **2026-09-24, the 3 × 3** ([run record](../learned/runs/2026-09-24-cross-stream-3x3/README.md)):
@@ -149,6 +169,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 
 | decision | why it gates the goal | filed |
 |---|---|---|
+| **The final-parameters night's decisions** (2026-09-25): adopt the four strictly adoptable proposals, one of which changes what SPIKE-synch measures; one setting per stream when another stream's version sometimes scores higher; four shipped points out of budget on the new bench; all of the lowest planted level, and on busy recordings part of the middle one, under the floor on fast and combined; whether a value at a hard limit counts as bracketed; slow binned SCE at the close-events allowance; CoactDetect's `alpha` at the extension cap; contexts shorter than 20 s and LoCo's threshold under the floor; the guard cap | They decide which of the night's proposals can be adopted, and whether the budgets and the bench still say what they were set to say | [report, Decisions 1–9](../learned/runs/2026-09-25-final-parameters/README.md) |
 | **Binned SCE at 98 or at 75** — 98 gives mean F1 0.525 at 3.4 calls an hour on an empty recording; 75 gives 0.665 at 41.8, against a declared limit of 6. The F1 optimum is excluded by the budget, not by noise | Decides whether the budget or the score is the binding constraint, for every detector and not only this one | [todo](../todo/2026-09-16-binned-sce-trades-false-alarms-for-f1.md) |
 | **How the promiscuity probe enters the score** — two live rules pick opposite winners for the rate detector | [`MILESTONES.md`](../MILESTONES.md) lists it as blocking the re-fit; waiting since 2026-08-25 | [todo](../todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md) |
 | **locust's anchor** — the half-rise in Python, the peak in the browser, and the width now painted forward from it | Two surfaces answer the same question differently, and the retune's locust numbers rest on one of them | [todo](../todo/2026-09-16-locust-anchor-and-the-panel-viewer.md) |

@@ -1,16 +1,18 @@
 # Runbook: the night that takes the detectors to final parameters
 
+> **Retired 2026-09-25**, the morning its report landed: [the final-parameters report](../learned/runs/2026-09-25-final-parameters/README.md). Moved here from the repo root; the text below is as the orchestrator wrote it, with its links made relative to this folder. Where it says it sits at the root because work is in flight, that was true until the move.
+
 **For a fresh orchestrator session.** Written 2026-09-24 by the orchestrator, at Tony's request:
 *"R1-R5 as recommended, write the runbook for a fresh orchestrator session"*. It is at the repo root
 because the work is in flight. Phase 0 finishes
 [#793](https://github.com/syncytium2/bugarach/pull/793). When the morning report lands, move it to
-[`docs/handoffs/`](docs/handoffs/README.md).
+[`docs/handoffs/`](README.md).
 
-**Read first, in this order:** `CLAUDE.md`, [`docs/FOUNDATIONS.md`](docs/FOUNDATIONS.md),
-[ADR-0008](docs/adr/0008-the-event-floor-is-set-per-window-from-its-own-null.md) (the floor),
-[ADR-0009](docs/adr/0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md) (how the
+**Read first, in this order:** `CLAUDE.md`, [`docs/FOUNDATIONS.md`](../FOUNDATIONS.md),
+[ADR-0008](../adr/0008-the-event-floor-is-set-per-window-from-its-own-null.md) (the floor),
+[ADR-0009](../adr/0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md) (how the
 bench meets it; tonight's rulings R1–R5), and the goal page
-[`docs/goals/coded-detector-optimization.md`](docs/goals/coded-detector-optimization.md).
+[`docs/goals/coded-detector-optimization.md`](../goals/coded-detector-optimization.md).
 
 ## What "final" means
 
