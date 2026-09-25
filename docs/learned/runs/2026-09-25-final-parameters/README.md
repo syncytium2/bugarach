@@ -170,7 +170,7 @@ background separately, while the search's held-out interval uses one index for b
 - **One proposal goes over a limit where that limit is not applied.** Calls outside the stretch are
   held to their limit on the quiet background only. On busy, combined rate+context's proposal makes
   1.28 calls per hour on the held-out seeds and 1.38 on the fresh ones, against a limit of 1
-  (Figure 3, bottom right).
+  (Figure 3, panel f).
 
 **Decide:** adopt all four, some, or none. For combined SPIKE-synch, either rule on whether a fixed
 coincidence window may still be called SPIKE-synch, or ask for the `C_threshold`-only variant to be
@@ -250,7 +250,7 @@ failing.**
 
 **Also failing, in Table 2 only until now:** slow chorus_norm's picked fit fails the elevated-rate
 test inside the stretch, against CoactDetect's limits (about 1.4 calls per minute on quiet, limit
-1.0). Figure 3 draws no limit for chorus.
+1.0). Figure 3 draws CoactDetect's limits over the chorus columns, dashed; this is panel b.
 
 Fast SPIKE-synch and rate+context have no proposal because every neighbouring setting the search
 tried also failed, which left it no allowed move. The diagnosis is in the darkroom, at
@@ -265,7 +265,9 @@ tried also failed, which left it no allowed move. The diagnosis is in the darkro
   backgrounds.
 - The bottom row, calls per hour outside it, is held to its limit on the quiet background only. An
   open marker (busy) above its bar there is not a failure.
-- The recordings are 12 per background, on seeds 66000–66011. "SCE" on its axis is binned SCE.
+- The recordings are 12 per background, on seeds 66000–66011.
+- Panels a–c are inside the stretch and d–f outside it, for the fast, slow and combined streams.
+  Chorus has no limit of its own and is held to CoactDetect's, drawn dashed over its columns.
 
 ![Figure 3](figure3_elevated_rate.png)
 
@@ -295,10 +297,10 @@ because neither is a neutral re-measurement:
 
 **Figure 4. The bench floors re-measured on the ADR-0009 bench, supplied by WSMIP065.**
 
-- Left: each recording kind's floor in co-active ROIs, as the range over 8 seeds, against the range
-  ADR-0009 expected. The elevated-rate recording's range is drawn as a dotted line whose ▼ marks its
-  top, not a separate value.
-- Right: the share of planted events under the floor at each participant count, over the same
+- Panel a: each recording kind's floor in co-active ROIs, as the range over 8 seeds, against the
+  range ADR-0009 expected. The elevated-rate recording's range is drawn as a dotted line with a
+  plain tick at each end.
+- Panel b: the share of planted events under the floor at each participant count, over the same
   8 seeds × 5 events.
 
 ![Figure 4](figure4_bench_floors.png)
