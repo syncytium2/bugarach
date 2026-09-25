@@ -261,6 +261,7 @@ def _job(args):
                                       elevated_out_per_hour=r.elevated_out_per_hour,
                                       n_hit=r.n_hit,
                                       n_planted=r.n_planted,
+                                      merged_calls=r.n_merged_calls,
                                       under_floor=bench.under_floor_report(r),
                                       per_seed=scores if keep else None)
 

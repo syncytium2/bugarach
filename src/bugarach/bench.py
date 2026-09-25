@@ -1515,6 +1515,10 @@ class BenchResult:
     not. ``None`` where nothing was pooled — a result assembled by hand has no
     tolerance to claim.
     """
+    n_merged_calls: int = 0
+    """Calls whose span contains two or more scored planted events, pooled
+    (:attr:`bugarach.score.Score.n_merged_calls`; ADR-0010, Proposed, part 3). Reported
+    beside the score and used by nothing: no budget until a run has measured it."""
 
     @property
     def n_scored(self) -> int:
@@ -1601,7 +1605,7 @@ class BenchResult:
         return (f"{self.detector:6}/{self.regime:6}{knob}  recall {self.recall:.2f}  "
                 f"precision {self.precision:.2f}  F1 {self.f1:.2f}{tol}  "
                 f"FA {self.n_fa - self.hot_fa}  |  probe {self.hot_fa_per_min:5.1f}/min  "
-                f"distractor {self.distractor_hits}   [{by}]")
+                f"distractor {self.distractor_hits}  merged {self.n_merged_calls}   [{by}]")
 
 
 @dataclass(frozen=True)
@@ -1707,6 +1711,7 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
         out.hot_fa += sc.hot_fa
         out.distractor_hits += sc.distractor_hits
         out.decoy_calls += getattr(sc, "decoy_calls", 0)
+        out.n_merged_calls += getattr(sc, "n_merged_calls", 0)
         for frac, (n, h) in sc.by_frac.items():
             pn, ph = out.by_frac.get(frac, (0, 0))
             out.by_frac[frac] = (pn + n, ph + h)
