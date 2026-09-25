@@ -211,6 +211,12 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
    real distribution, and no share is kept at the old ≥120 s spacing. Isolated events stay in the
    bench anyway: 8–24% of real baseline gaps are 120 s or longer (95th percentile 171–368 s). The
    old bench is not scored as a reference.
+   **Fast gets more seeds, also ruled by Tony.** With real gaps, a 45-minute fast recording plants
+   about 7 events instead of 15, because real fast events are sparser (9.7 per hour). So fast's
+   selection, held-out and fresh seed counts are doubled, which holds the number of scored events.
+   Recording length stays 45 minutes on every stream: a longer recording would change the window
+   the floor is computed over, and events within one recording share its background. The cost is
+   about twice fast's search time, well under an hour more for the night.
 3. **The review tool's counting window.** ±1 s around the call's span (as written), or another
    width.
 4. **The learned models' bar** (part 5), as stated or otherwise.
