@@ -47,6 +47,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 - **Touches:** this block; the night's run records under `docs/learned/runs/`; the goal pages the
   result updates.
 
+### WSMIP065/full-panel-065 — DARKROOM claim: `bugarach/2026-09-26-full-panel/065/` (NEW)
+- **Status:** claimed 2026-09-25 by WSMIP065, inside the orchestrator's claim above. Step A (slow
+  and combined searches, `search-<bench>/<det>/`), step C (`fresh-realistic/`, `fresh-orx/`),
+  step D (`review/`), step E (`README.md`, `RUN_A.md`). The first launch of step A died at startup
+  on #829's missing `import os` (fixed by #832); its logs stay beside the rerun's.
+  Released with the orchestrator's block.
+- **Touches:** that folder only. The floor cache is machine-local, outside the darkroom.
+
 ### orchestrator/overnight-final-parameters — DARKROOM claim: `bugarach/2026-09-25-final-parameters/` (NEW)
 - **Status:** claimed 2026-09-25 01:50 UTC, before any session writes, by the orchestrator of the
   night in `docs/handoffs/2026-09-25-overnight-final-parameters.md`. Workers: WSMIP065 builds PR A (the bench,
