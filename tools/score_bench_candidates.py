@@ -224,6 +224,7 @@ def main(argv=None) -> int:
                             precision=r.precision,
                             precision_without_decoys=r.precision_without_decoys,
                             decoy_calls=r.decoy_calls, n_planted=r.n_planted, n_hit=r.n_hit,
+                            merged_calls=r.n_merged_calls,
                             n_detected=r.n_detected,
                             probe_calls_per_min=(sum(e["calls_in"] for e in el)
                                                  / sum(e["minutes_in"] for e in el)),

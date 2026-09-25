@@ -426,6 +426,70 @@ def _place_renewal(rng, m, lo, hi, min_sep, exclude, interval_cv):
     return times
 
 
+def _place_mixed(rng, m, lo, hi, min_sep, exclude, interval_cv, gaps, mix, max_tries=1000):
+    """Planted times whose gaps mix the old renewal rule with measured gaps (ADR-0010 part 2).
+
+    Only reached with ``gap_source`` set and ``gap_mix < 1``; see
+    :func:`simulate_coordination` for the layout. Returns ``(times, info)``.
+    """
+    gap_lo = gap_hi = None
+    if exclude is not None:
+        gap_lo = max(lo, exclude[0] - min_sep)
+        gap_hi = min(hi, exclude[1] + min_sep)
+        if gap_hi <= gap_lo:
+            gap_lo = gap_hi = None
+    gap_width = 0.0 if gap_lo is None else (gap_hi - gap_lo)
+    hi = hi - gap_width
+    span = hi - lo
+    if span <= 0:
+        raise ValueError(
+            "the excluded window leaves no room for planted events — "
+            "lengthen duration_sec or shrink hot_window")
+
+    n = m - 1
+    # The old rule's gap, exactly as `_place_renewal` draws it: the floor plus a Gamma excess
+    # whose mean makes m events fill the span.
+    excess_mean = span / (m + 1) - min_sep
+    for attempt in range(max_tries):
+        iso = rng.random_sample(n) < mix
+        k = int(iso.sum())
+        g = np.zeros(n, dtype=float)
+        if k:
+            if excess_mean <= 0:
+                raise ValueError(
+                    f"cannot fit {m} events {min_sep}s apart in {span:.1f}s — "
+                    f"reduce the count or min_sep_sec, or lengthen duration_sec")
+            if interval_cv <= 0:
+                g[iso] = min_sep + excess_mean
+            else:
+                shape = 1.0 / (interval_cv ** 2)
+                g[iso] = min_sep + rng.gamma(shape, excess_mean / shape, size=k)
+        if n - k:
+            g[~iso] = gaps.draw(rng, n - k)
+        total = float(g.sum())
+        if total > span and k:
+            # The old rule's own remedy first: shrink the old-rule gaps' excess above the floor.
+            # Measured gaps are never rescaled, since their lengths are the measurement.
+            room = span - float(g[~iso].sum()) - min_sep * k
+            excess = g[iso] - min_sep
+            if room >= 0 and excess.sum() > 0:
+                g[iso] = min_sep + excess * (room / excess.sum())
+                total = float(g.sum())
+        if total <= span:
+            break
+    else:
+        raise ValueError(
+            f"could not fit {m} events with the given gaps into {span:.1f}s in {max_tries} "
+            "draws — lengthen duration_sec, reduce the count, or raise gap_mix")
+
+    start = lo + rng.random_sample() * (span - total)
+    times = start + np.concatenate([[0.0], np.cumsum(g)])
+    if gap_lo is not None:
+        times = np.where(times >= gap_lo, times + gap_width, times)
+    return times, dict(n_gaps_old_rule=int(k), n_gaps_measured=int(n - k),
+                       n_gap_redraws=int(attempt))
+
+
 def simulate_coordination(
     spec=None,
     *,
@@ -459,6 +523,8 @@ def simulate_coordination(
     regions=None,
     seed: int | None = None,
     width_quantiles=None,
+    gap_source=None,
+    gap_mix: float = 1.0,
 ) -> tuple[Slice, GroundTruth]:
     """Build a synthetic recording with planted coordinated events.
 
@@ -586,6 +652,38 @@ def simulate_coordination(
       :data:`MEASURED_WIDTH_QUANTILES`; the slow bench passes its own
       (``bench_slow.MEASURED_WIDTH_QUANTILES``), so locust reads slow widths on a slow
       recording. Widths come off their own RNG, so the table moves no event time.
+    gap_source / gap_mix: **planted gaps drawn from intervals measured in the real data**
+      (ADR-0010, Proposed, part 2), **off by default**. ``gap_source`` is a
+      :class:`bugarach.real_intervals.GapDistribution` (``real_intervals.load_gaps``) or a bare
+      sequence of gaps in seconds. ``gap_mix`` is the share of gaps kept at the old rule, 0 to 1;
+      it answers ADR-0010's open point 2 (replace or mix) by offering both.
+
+      * ``gap_source=None`` (the default) or ``gap_mix=1.0``: the old placement exactly, with no
+        extra random number drawn, so every recording is byte-identical to before
+        (``tests/test_real_intervals_off_by_default.py``). A ``gap_mix`` below 1 with no source is
+        refused.
+      * ``gap_mix < 1``: the planted events keep their count and their participation levels;
+        only their times change. Each of the ``m - 1`` gaps between neighbouring events is, with
+        probability ``gap_mix``, an old-rule gap (``min_sep_sec`` plus the same Gamma excess
+        ``"renewal"`` draws), and otherwise a measured gap resampled from ``gap_source``. The
+        gaps are laid end to end and the block starts at a uniformly drawn time, so it fits
+        inside ``[margin_sec, duration_sec - margin_sec]``. ``gap_mix=0`` makes every gap a
+        measured one.
+      * **The recording length never changes.** When the drawn gaps overrun the span, the
+        old-rule gaps' excess above the floor is shrunk first, as ``"renewal"`` does; measured
+        gaps are never rescaled. If they still do not fit, every gap is drawn again from the
+        same generator (deterministic for a seed), up to 1000 times, and then the call is
+        refused. The count of redraws is recorded.
+      * Every event stays separately labelled with its own members and onsets, as always; two
+        events a few seconds apart are two entries in ``gt.events``.
+      * Only with ``spacing="renewal"``; ``"uniform"`` is refused. A source and the mix are
+        recorded in ``gt.params`` (``gap_source``, ``gap_mix``, and the realized counts of
+        old-rule and measured gaps) only when a source is given, so ``params`` is unchanged
+        otherwise.
+
+      With ``gap_mix=0`` and the bench's 15 events, the events sit within a stretch about as
+      long as 14 measured gaps, and the rest of the recording carries background and decoys
+      only. Raising ``n_per_level`` is how to spread more of them through it.
 
     Returns ``(slice, ground_truth)``.
     """
@@ -653,6 +751,22 @@ def simulate_coordination(
     if duration_sec <= 2 * margin_sec:
         raise ValueError(
             f"margin_sec={margin_sec} leaves no room in duration_sec={duration_sec}")
+    # ADR-0010 part 2, off by default. Checked here, before any random number is drawn; with no
+    # source and the mix at 1 nothing below changes.
+    gap_mix = float(gap_mix)
+    if not 0.0 <= gap_mix <= 1.0:
+        raise ValueError(f"gap_mix is a share between 0 and 1, got {gap_mix}")
+    if gap_source is None:
+        if gap_mix != 1.0:
+            raise ValueError(
+                "gap_mix below 1 needs a gap_source to draw the other gaps from "
+                "(bugarach.real_intervals.load_gaps)")
+    else:
+        from bugarach.real_intervals import as_gap_distribution
+
+        gap_source = as_gap_distribution(gap_source)
+        if spacing != "renewal":
+            raise ValueError("gap_source works with spacing='renewal' only")
 
     rng = np.random.RandomState(seed)
     T, nR = float(duration_sec), int(n_roi)
@@ -827,8 +941,16 @@ def simulate_coordination(
     m = fracs.size
     lo, hi = margin_sec, T - margin_sec
     excl = None if hot_window is None else (float(hot_window[0]), float(hot_window[1]))
+    gap_info: dict | None = None
+    if gap_source is not None:
+        gap_info = dict(gap_source=gap_source.summary(), gap_mix=gap_mix,
+                        n_gaps_old_rule=max(m - 1, 0), n_gaps_measured=0, n_gap_redraws=0)
     if m:
-        if spacing == "uniform":
+        if gap_source is not None and gap_mix < 1.0:
+            times, placed = _place_mixed(rng, m, lo, hi, min_sep_sec, excl, interval_cv,
+                                         gap_source, gap_mix)
+            gap_info.update(placed)
+        elif spacing == "uniform":
             times = _place_uniform(rng, m, lo, hi, min_sep_sec, excl)
         else:
             times = _place_renewal(rng, m, lo, hi, min_sep_sec, excl, interval_cv)
@@ -918,6 +1040,9 @@ def simulate_coordination(
         # Only in floor mode, so a caller comparing params dicts from before the
         # floor existed sees exactly the keys it always saw.
         gt.params.update(floor_info)
+    if gap_info is not None:
+        # Likewise only with a gap source (ADR-0010 part 2), so params are unchanged without one.
+        gt.params.update(gap_info)
     return slice_, gt
 
 

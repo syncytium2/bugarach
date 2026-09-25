@@ -119,6 +119,15 @@ class Score:
     dont_care_by_frac: dict = field(default_factory=dict)
     """``{participation_fraction: (n_under_floor, n_calls_matched_to_them)}``. Both leave the
     score: the events leave recall, the calls leave precision. Reported with every score."""
+    n_merged_calls: int = 0
+    """Calls whose span contains two or more scored planted events: a **merge** (ADR-0010,
+    Proposed, part 3). Reporting only; nothing is computed from it, and it has no budget.
+
+    A call's span is the one it is matched over, ``[onset, onset + width]`` (or its declared
+    extent), both ends included and no tolerance added. *Scored* means counted toward recall, so a
+    "don't care" event under the floor (ADR-0009 decision 2) does not make a call a merge. Matching
+    stays one to one, so a merge already costs a miss; this counts how often that happens. A
+    zero-width call can contain two events only if they share a time."""
 
     @property
     def n_dont_care_calls(self) -> int:
@@ -192,7 +201,9 @@ class Score:
             parts.append(f"hot-window FA {self.hot_fa}")
         if self.distractor_hits:
             parts.append(f"on distractors {self.distractor_hits}")
-        by = " ".join(f"{int(f * 100)}%:{self.recall_at(f):.2f}"
+        if self.n_merged_calls:
+            parts.append(f"merged calls {self.n_merged_calls}")
+        by =" ".join(f"{int(f * 100)}%:{self.recall_at(f):.2f}"
                       for f in sorted(self.by_frac, reverse=True))
         return "  ".join(parts) + (f"   [{by}]" if by else "")
 
@@ -303,6 +314,13 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC,
         by_frac[e.frac] = (n + 1, h + int(hit))
     n_absorbed = sum(c for _, c in dont_care.values())
 
+    # ADR-0010 part 3, reporting only: calls whose span holds two or more scored events.
+    scored = planted if care is None else planted[care]
+    n_merged = 0
+    if nD and scored.size >= 2:
+        inside = (scored[None, :] >= lo[:, None]) & (scored[None, :] <= hi[:, None])
+        n_merged = int(np.sum(inside.sum(axis=1) >= 2))
+
     # The probe counts a false alarm that *overlaps* the window, not one whose
     # left edge happens to land in it — a span straddling the boundary was still
     # fired inside the dense block. Zero-width spans reduce to containment.
@@ -331,7 +349,8 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC,
                  fa_times=fa_times, dup_times=dup_times, by_frac=by_frac,
                  hot_fa=hot_fa, distractor_hits=distractor_hits,
                  tol_sec=tol_sec, decoy_calls=decoy_calls, care=care,
-                 floor=None if floor is None else int(floor), dont_care_by_frac=dont_care)
+                 floor=None if floor is None else int(floor), dont_care_by_frac=dont_care,
+                 n_merged_calls=n_merged)
 
 
 _ONSET_FIELDS = (("onset_sec", "width_sec"), ("locs", "widths"))

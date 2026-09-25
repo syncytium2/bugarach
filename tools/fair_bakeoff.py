@@ -74,6 +74,7 @@ def _rows(r, *, folds_note=None) -> dict:
                 n_planted=r.n_planted, n_hit=r.n_hit,
                 n_detected=r.n_detected, n_scored=r.n_scored,
                 hot_fa=r.hot_fa, distractor_hits=r.distractor_hits,
+                merged_calls=getattr(r, "n_merged_calls", 0),
                 by_frac={f"{f:g}": r.recall_at(f) for f in sorted(r.by_frac)})
 
 
