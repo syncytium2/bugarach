@@ -233,7 +233,10 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
    per stream is decided the next morning. An adaptive version (lengths set from each stream's own
    onset spread) was considered and deferred, because it would change every past width and
    amplitude.
-4. **The learned models' bar** (part 5), as stated or otherwise.
+4. **The learned models' bar** (part 5). **Ruled 2026-09-25 by Tony: decided on the new numbers.**
+   The bar reads the night's results and does not change what runs, so it is settled in the
+   morning. The report shows each learned model's paired fresh-seed F1 difference from
+   CoactDetect, with its interval, on every stream, so any bar can be read off it.
 
 **Carried over from the 2026-09-25 report**, because a full-panel search meets each of them again.
 Unsettled, they would leave the run ending on the same list:
