@@ -31,6 +31,13 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   carries the summary.
 - **Touches:** that folder only.
 
+### WSMIP064/full-panel — DARKROOM claim: `bugarach/2026-09-26-full-panel/064/`
+- **Status:** ACTIVE 2026-09-25 19:40 UTC (3:40 PM EDT) — the full-panel night, WSMIP064's half, on
+  the orchestrator's go: the six fast searches on the CPU and the eight learned models × three
+  streams on the GPU, from a detached worktree at `main` ef41e99. Released when `064/README.md` is
+  written and the morning report merges.
+- **Touches:** `bugarach/2026-09-26-full-panel/064/` only (search-fast/, models-<bench>/, train logs,
+  README.md).
 ### orchestrator/full-panel — DARKROOM claim: `bugarach/2026-09-26-full-panel/` (NEW)
 - **Status:** claimed 2026-09-25 17:35 UTC (1:35 PM EDT), before any session writes, by the
   orchestrator of the full-panel night under ADR-0010. Workers: WSMIP065 builds the realistic bench,
