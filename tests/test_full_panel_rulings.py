@@ -261,3 +261,23 @@ def test_realistic_training_recordings_carry_the_boundary_events():
     s, gt = T.training_recording(bench, True)(1000)
     bp = gt.params["boundary_planting"]
     assert [c - bp["planned_floor"] for c in bp["counts"]] == [-1, 0, 1]
+
+
+# ------------------------------------------------------------------ main, end to end
+
+def test_the_search_runs_end_to_end_on_the_realistic_bench(tmp_path, monkeypatch):
+    """`main` itself, on two recordings: the full-panel night's six fast searches all died in
+    `main` on a name the unit tests above never reach (`os`, lost in the merge of #828 with
+    #829). A search that cannot start is caught here, not at night."""
+    from bugarach import bench
+
+    monkeypatch.setenv(bench.FLOOR_CACHE_ENV, str(tmp_path / "floors"))
+    # `main` sets these for its workers; monkeypatch restores them for the tests after this one.
+    monkeypatch.delenv(bench.SPACING_ENV, raising=False)
+    monkeypatch.delenv(S.BENCH_ENV, raising=False)
+    rc = S.main(["--bench", "fast", "--spacing", "realistic", "--smoke", "--only", "coact",
+                 "--workers", "2", "--out", str(tmp_path / "out")])
+    assert rc == 0
+    import json
+    rep = json.loads((tmp_path / "out" / "search.json").read_text())
+    assert rep["stage"] == "finished" and rep["adr_0010"]["realistic"] is True
