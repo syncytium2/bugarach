@@ -209,3 +209,24 @@ def test_the_call_measure_check_bins_by_the_nearest_neighbour():
     rows = [dict(stream="fast", gap_bin="under 10 s", error=e) for e in (0, 0, 1, 3)]
     s = ccm.summarise(rows)["fast"]["under 10 s"]
     assert s["events"] == 4 and s["share_exact"] == 0.5 and s["share_within_1"] == 0.75
+
+
+@pytest.mark.parametrize("flags", [[], ["--spacing", "realistic"]], ids=["bench", "realistic"])
+def test_the_search_reaches_its_worker_pool(spacing, monkeypatch, tmp_path, flags):
+    """2026-09-25: #829's merge with #828 dropped `import os` from `main`, and every search of the
+    full-panel night died at the floor-cache line with a NameError. The other tests stop at the
+    argument handling, before that line; this one runs `main` up to the moment the pool starts."""
+    import search_all_settings as sas
+
+    class Reached(Exception):
+        pass
+
+    def pool(*a, **k):
+        raise Reached
+
+    monkeypatch.setattr(sas, "Pool", pool)
+    monkeypatch.delenv(bench.FLOOR_CACHE_ENV, raising=False)
+    with pytest.raises(Reached):
+        sas.main(["--bench", "slow", "--only", "coact", "--smoke", "--out", str(tmp_path)] + flags)
+    assert (tmp_path / "search.json").exists()
+    sas.use_bench("fast")
