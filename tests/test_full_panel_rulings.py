@@ -272,9 +272,12 @@ def test_the_search_runs_end_to_end_on_the_realistic_bench(tmp_path, monkeypatch
     from bugarach import bench
 
     monkeypatch.setenv(bench.FLOOR_CACHE_ENV, str(tmp_path / "floors"))
-    # `main` sets these for its workers; monkeypatch restores them for the tests after this one.
-    monkeypatch.delenv(bench.SPACING_ENV, raising=False)
-    monkeypatch.delenv(S.BENCH_ENV, raising=False)
+    # `main` sets these for its workers. SET them here first, so monkeypatch records their
+    # original state and restores it after the test: `delenv(..., raising=False)` on a variable
+    # that is not set records nothing, and the realistic spacing then leaked into every test file
+    # after this one in the same process (it reddened test_real_intervals on CI).
+    monkeypatch.setenv(bench.SPACING_ENV, "bench")
+    monkeypatch.setenv(S.BENCH_ENV, S.BENCHES["fast"])
     rc = S.main(["--bench", "fast", "--spacing", "realistic", "--smoke", "--only", "coact",
                  "--workers", "2", "--out", str(tmp_path / "out")])
     assert rc == 0
