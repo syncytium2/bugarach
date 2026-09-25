@@ -25,6 +25,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   carries the summary.
 - **Touches:** that folder only.
 
+### orchestrator/full-panel — DARKROOM claim: `bugarach/2026-09-26-full-panel/` (NEW)
+- **Status:** claimed 2026-09-25 17:35 UTC (1:35 PM EDT), before any session writes, by the
+  orchestrator of the full-panel night under ADR-0010. Workers: WSMIP065 builds the realistic bench,
+  its floors, paired scoring and the call-measure check; WSMIP064 builds the search grids and
+  training, and writes the runbook. Each writes only under its own subfolder (`065/`, `064/`) and
+  adds its own block here for it. Released by the merge that brings the morning report to `main`.
+- **Touches:** this block; the night's run records under `docs/learned/runs/`; the goal pages the
+  result updates.
+
 ### orchestrator/overnight-final-parameters — DARKROOM claim: `bugarach/2026-09-25-final-parameters/` (NEW)
 - **Status:** claimed 2026-09-25 01:50 UTC, before any session writes, by the orchestrator of the
   night in `docs/handoffs/2026-09-25-overnight-final-parameters.md`. Workers: WSMIP065 builds PR A (the bench,
