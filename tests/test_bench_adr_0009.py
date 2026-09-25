@@ -96,9 +96,9 @@ def test_the_elevated_rate_recording_carries_its_own_floor_over_the_whole_record
 
 def test_the_search_warms_the_elevated_rate_floors_too():
     """So its workers do not each compute them (``bench.FLOOR_CACHE_ENV``)."""
-    kind, seed, f = sas._warm(("elevated:baseline_quiet", 1))
+    kind, seed, f = sas._warm((sas.ELEVATED + "baseline_quiet", 1))
     _, ge = bench.make_elevated_rate_recording("baseline_quiet", 1)
-    assert (kind, seed) == ("elevated:baseline_quiet", 1)
+    assert (kind, seed) == (sas.ELEVATED + "baseline_quiet", 1)
     assert f == ge.params.get("event_floor")
 
 

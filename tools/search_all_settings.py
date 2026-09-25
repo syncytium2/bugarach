@@ -94,9 +94,6 @@ _bench = _load_bench()
 
 REGIMES = ("baseline_quiet", "baseline_busy")
 NULL = "null"
-#: Prefix of the elevated-rate recording's kind in the floor warm-up (``elevated:<regime>``).
-#: Scored inside each regime's job (ADR-0009), so it is never a cache key of its own.
-ELEVATED = "elevated:"
 #: The crowded tail (bench.TAIL_RECORDING): planted events 6 s apart and more of them,
 #: fitted to the most crowded real recordings. A CHECK on held-out candidates, never a
 #: selection input — bench.py forbids calibrating on it. It exists here because the
@@ -278,8 +275,6 @@ def _warm(args):
     bench = _load_bench()
     if kind == NULL:
         rec, gt = bench.make_null_recording(seed)
-    elif kind.startswith(ELEVATED):
-        rec, gt = bench.make_elevated_rate_recording(kind[len(ELEVATED):], seed)
     elif kind in TAIL:
         rec, gt = bench.make_tail_recording("baseline_" + kind.split("_", 1)[1], seed)
     elif kind.startswith(ELEVATED):
@@ -293,8 +288,7 @@ def _warm(args):
 def warm_floors(pool, sel, ho, log=print) -> dict:
     """Every recording's floor once, in parallel, before anything is scored — so no worker
     recomputes one another worker already has. Returns ``{kind: {seed: floor}}``."""
-    jobs = [(k, s) for k in (*REGIMES, NULL, *(ELEVATED + r for r in REGIMES))
-            for s in (*sel, *ho)]
+    jobs = [(k, s) for k in (*REGIMES, NULL) for s in (*sel, *ho)]
     jobs += [(k, s) for k in TAIL for s in (*list(sel)[:N_TAIL], *list(ho)[:N_TAIL])]
     if hasattr(_load_bench(), "make_elevated_rate_recording"):     # ADR-0009 decision 1
         jobs += [(ELEVATED + k, s) for k in REGIMES for s in (*sel, *ho)]
