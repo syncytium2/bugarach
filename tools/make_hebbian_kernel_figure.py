@@ -13,10 +13,11 @@ here from the rule's own definitions; no recording is read.
 - **B. What one update is worth.** The expected Co for a pair of ROIs that share an event
   time (onsets scattered by the ruled per-participant jitter sigma, floored to 0.1 s frames),
   against m. A pair with independent onsets has expected Co 0 at every m (panel A's lag
-  sum), and a same-frame artifact scores 1.
+  sum), and a same-frame artifact scores 1. Both are per coordinated onset PAIR, including
+  pairs further apart than m, which never update.
 - **C. The bound.** Equation 8's step size q(s) with the clamp at s0(1 +- s_d), and where
-  one coincidence from rest lands at three step sizes. Above q0 = s0 s_d / 2 a single step
-  from rest overshoots the clamp.
+  one coincidence from rest lands at three step sizes. A step from rest overshoots the clamp
+  above q0 = s0 s_d; a step from anywhere inside the band can, above q0 = s0 s_d / 2.
 
 Writes an SVG (and a PNG through Playwright chromium when it can) to the darkroom by
 default; `--also` writes the repo copy.
@@ -39,7 +40,7 @@ SPANS = (2, 3, 4, 5, 6)               # coincidence span m, in whole frames
 # Equation 8's constants, as clamor transcribes them (clamor/malsburg1986.py).
 S0, S_D, Q0 = 0.012, 0.8, 0.01
 S_MIN, S_MAX = S0 * (1 - S_D), S0 * (1 + S_D)
-Q0_LIMIT = S0 * S_D / 2               # largest step whose first move from rest stays inside
+Q0_LIMIT = S0 * S_D / 2               # largest step that cannot cross the clamp from anywhere inside
 
 
 def weight(k: int, m: int) -> float:
@@ -244,7 +245,8 @@ def main(argv=None):
                   f"{neg * 100:.0f}% of coordinated updates negative")
     for label, (q0, s1) in meas["steps"].items():
         print(f"{label}: one coincidence from rest lands at s = {s1:.5f} "
-              f"(clamp {S_MIN:.4f}-{S_MAX:.4f}; overshoot limit q0 < {Q0_LIMIT:.4f})")
+              f"(clamp {S_MIN:.4f}-{S_MAX:.4f}; no step from inside the band crosses it "
+              f"while q0 <= {Q0_LIMIT:.4f})")
 
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
     from bugarach.paths import darkroom

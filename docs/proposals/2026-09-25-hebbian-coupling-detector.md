@@ -1,9 +1,33 @@
 # A coupling that learns inside one recording: the von der Malsburg–Schneider plasticity rule as a detector
 
-> **Status: draft for Tony, revised after one murderboard round. Nothing has been built or run.**
-> Goal: [unsupervised learning](../goals/unsupervised-learning.md). Its first stage waits on two
-> numbers only Tony sets, the stop thresholds under [What is asked](#what-is-asked).
-> Review record: [`reviews/2026-09-25-hebbian-coupling-detector_2026-09-25.md`](../reviews/2026-09-25-hebbian-coupling-detector_2026-09-25.md).
+> **Status: draft, NOT converged — two review rounds, stopped for a decision that is Tony's.
+> Nothing has been built or run. Do not approve any stage below as written.**
+> Goal: [unsupervised learning](../goals/unsupervised-learning.md). Review record:
+> [`reviews/2026-09-25-hebbian-coupling-detector_2026-09-25.md`](../reviews/2026-09-25-hebbian-coupling-detector_2026-09-25.md).
+>
+> **What the second round found, which the page below does not yet reflect:**
+>
+> - **In the regime the page allows, the rule is not learning much.** Below the step size that
+>   avoids the clamp, each coupling is close to *q*₀ times a sum of kernel weights, and
+>   standardizing to *Z* cancels *q*₀. So *Z* is a fixed, kernel-weighted cross-correlogram (a
+>   centre-minus-flanks statistic, close to Stark & Abeles 2009) plus a little saturation for
+>   busy pairs. That may still be a useful detector. It is not the Hebbian learner the title
+>   promises, and the page should either say so or give the nonlinearity a job.
+> - **The busy-core stop cannot trigger as written.** Against ±20 s jitter surrogates, two
+>   independent simulations of a pure one-core field passed it in 9 of 9 and 12 of 12 recordings:
+>   varying membership from event to event lifts eigenvalues 2–4 above any timing-destroying
+>   null. The stop needs the membership (curveball) null the page reserves for readout 2, with
+>   controls planted as trains, and it should be judged per group.
+> - **Known errors in the body.** The recovery test tunes *m* and *q*₀ on the metric it then
+>   scores. *Z* is 0/0 for pairs that never update. The call's comparison control is a
+>   constant. At the paper's step only a same-frame first pair locks a coupling, not "the sign
+>   of its first pair". *m* = 3 puts more coordinated updates on the negative lobe than *m* = 2,
+>   so the stated reason for the 3–6 sweep is wrong. σ was re-measured on the default dataset
+>   on 2026-09-23 (0.105 s fast, 0.131 s slow). The ±20 s surrogates are not snapped to frames
+>   by `graph.jitter_trains`. And a penumbra-subtracted export folder does exist, as the `eval`
+>   role `pensub`.
+> - **One decision the page leaves out.** clamor is private and bugarach is public, so
+>   vendoring `malsburg1986.py` publishes it, along with its copyright notice.
 
 Abbreviations and symbols, used throughout:
 

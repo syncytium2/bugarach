@@ -49,9 +49,12 @@ amendments that change no signed threshold, all adopted by Tony the same day
 - **A second route, drafted 2026-09-25 and not yet ruled on: a coupling that learns within one
   recording.** The von der Malsburg–Schneider 1986 plasticity rule, to be copied from
   `syncytium2/clamor`, accumulates with no training negatives, so it does not wait on the screen.
-  It still needs a significance null and the simulator to set its two knobs. A busy-core check
-  runs before any detector code and can end it; a just-STTC check runs first in simulation
-  ([proposal](../proposals/2026-09-25-hebbian-coupling-detector.md)).
+  It still needs a significance null and the simulator to set its two knobs. ⚠ **Not converged
+  after two review rounds**: in the step range that avoids the clamp, the standardized rule reduces
+  to a fixed kernel-weighted cross-correlogram, and its busy-core stop cannot trigger against a
+  timing-destroying null. Whether it is still worth building is Tony's call
+  ([proposal](../proposals/2026-09-25-hebbian-coupling-detector.md),
+  [review record](../reviews/2026-09-25-hebbian-coupling-detector_2026-09-25.md)).
 - **The surrogate screen is stopped** (Tony, 2026-09-12). He was asked how to settle the
   family-size question below and whether to write a third re-evaluation; he answered that the first
   needs discussion before deciding and to stop there for now
