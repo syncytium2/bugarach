@@ -46,7 +46,10 @@ from bugarach.bench import (  # noqa: F401  (shared: none reads a stream constan
     BenchResult,
     DegenerateSweep,
     EdgeOfRange,
+    ELEVATED_SEED_OFFSET,
+    NULL_SEED_OFFSET,
     OperatingPoint,
+    ProbeResult,
     TooPromiscuous,
     context_fits_the_null,
     floor_enabled,
@@ -154,14 +157,17 @@ BENCH_RECORDING = dict(
     n_roi=32,
     participation=(0.40, 0.25, 0.13),
     jitter_sec=0.150,
-    hot_rate_hz=0.1529,
     distractor_frac=0.24,
     bg_rate_shape=MEASURED_RATE_SHAPE,
     bg_burst_shape=MEASURED_BURST_SHAPE,
     bg_burst_bin_sec=MEASURED_BURST_BINS,
 )
-"""The recording the combined bench scores on. Measured 2026-09-23; hot window, spacing and
-length remain the fast bench's, as on slow.
+"""The recording the combined bench scores on. Measured 2026-09-23; spacing and length remain the
+fast bench's, as on slow.
+
+**No elevated-rate stretch since 2026-09-25** (ADR-0009 decision 1): it inherits slow's
+``hot_window=None``, and the stretch rate, ``hot_rate_hz`` below, moved to
+:data:`ELEVATED_RATE_RECORDING`.
 
 **Re-measured the same day on the default folder's 66 recordings:** ``n_roi`` 32 ROIs
 (27–34.5), unchanged; the middle ``participation`` 0.25 (0.209–0.367), from 0.24;
@@ -379,6 +385,20 @@ def make_null_recording(seed: int, **overrides):
     return _simulate(seed, {**BENCH_RECORDING, **NULL_RECORDING}, overrides)
 
 
+ELEVATED_RATE_RECORDING = dict(_fast.ELEVATED_RATE_RECORDING, hot_rate_hz=0.1529)
+"""The combined elevated-rate recording: fast's, at combined's stretch rate (the combined background
+99th percentile, measured; see :data:`BENCH_RECORDING`). What it is for:
+``bench.ELEVATED_RATE_RECORDING``."""
+
+
+def make_elevated_rate_recording(regime: str, seed: int, **overrides):
+    """The combined elevated-rate recording, on ``seed + ELEVATED_SEED_OFFSET``. Copy of ``bench``'s."""
+    if regime not in REGIMES:
+        raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
+    return _simulate(seed + ELEVATED_SEED_OFFSET,
+                     {**BENCH_RECORDING, **REGIMES[regime], **ELEVATED_RATE_RECORDING}, overrides)
+
+
 def run_detector(name: str, s, *, rng_seed: int = 20260706, floor: bool | None = None,
                  **overrides):
     """One detector on a slice at THIS module's operating point. Copy of ``bench``'s."""
@@ -411,16 +431,30 @@ def false_positives_per_hour(name: str, seeds=(1, 2, 3), **overrides) -> float:
     return total / hours if hours else float("nan")
 
 
+def evaluate_elevated_rate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
+                           **overrides) -> ProbeResult:
+    """Calls on the combined elevated-rate recording, inside and outside the stretch. Copy of
+    ``bench``'s."""
+    return _fast.probe_counts(make_elevated_rate_recording, run_detector, name, regime, seeds,
+                              tol_sec=tol_sec, **overrides)
+
+
 def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
-             gen: dict | None = None, **overrides) -> BenchResult:
+             gen: dict | None = None, probe: bool = True, **overrides) -> BenchResult:
     """One detector over several combined recordings, pooled. Copy of ``bench``'s."""
+    gen = gen or {}
     scores = []
     for seed in seeds:
-        s, gt = make_recording(regime, seed, **(gen or {}))
+        s, gt = make_recording(regime, seed, **gen)
         det = run_detector(name, s, **overrides)
         scores.append(score_stream(gt, det, tol_sec=tol_sec))
+    pr = None
+    if probe:
+        g = {k: v for k, v in gen.items() if k not in ELEVATED_RATE_RECORDING}
+        pr = _fast.probe_counts(lambda r, sd: make_elevated_rate_recording(r, sd, **g),
+                                run_detector, name, regime, seeds, tol_sec=tol_sec, **overrides)
     return pool_scores(scores, detector=name, regime=regime, seeds=seeds,
-                       knob_value=overrides.get(OPERATING_POINTS[name].knob))
+                       knob_value=overrides.get(OPERATING_POINTS[name].knob), probe=pr)
 
 
 BACKGROUND_GRID = (0.0028, 0.0045, 0.0071, 0.0114, 0.0182, 0.0292, 0.0440, 0.0660)

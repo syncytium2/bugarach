@@ -83,7 +83,8 @@ COPIED = ("BENCH_RECORDING", "REGIMES", "NULL_RECORDING", "CROWDED_RECORDING",
           "MAX_FALSE_POSITIVES_PER_HOUR", "MAX_PRECISION_DROP", "MEASURED_RECORD",
           "make_recording", "make_crowded_recording", "make_tail_recording",
           "make_null_recording", "run_detector", "false_positives_per_hour", "evaluate",
-          "sweep", "pick_operating_point")
+          "sweep", "pick_operating_point",
+          "ELEVATED_RATE_RECORDING", "make_elevated_rate_recording", "evaluate_elevated_rate")
 
 
 @pytest.mark.parametrize("other", [bench, bench_slow], ids=["fast", "slow"])
@@ -107,8 +108,12 @@ def test_the_combined_bench_scores_a_detector():
     assert 0.0 <= r.f1 <= 1.0
 
 
-def test_the_combined_bench_keeps_the_shared_hot_window():
-    assert bench_combined.BENCH_RECORDING["hot_window"] == bench.BENCH_RECORDING["hot_window"]
+def test_the_combined_elevated_rate_recording_keeps_the_shared_stretch_at_its_own_rate():
+    _, gt = bench_combined.make_elevated_rate_recording("baseline_quiet", 1)
+    assert gt.params["hot_window"] == bench.ELEVATED_RATE_RECORDING["hot_window"]
+    assert gt.params["hot_rate_hz"] == bench_combined.ELEVATED_RATE_RECORDING["hot_rate_hz"]
+    assert gt.params["hot_rate_hz"] not in (bench.ELEVATED_RATE_RECORDING["hot_rate_hz"],
+                                            bench_slow.ELEVATED_RATE_RECORDING["hot_rate_hz"])
 
 
 def test_the_measured_constants_agree_with_the_combined_record_once_there_is_one():

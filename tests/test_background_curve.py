@@ -109,7 +109,10 @@ from bugarach.bench import (BACKGROUND_GRID, BACKGROUND_TOLERABLE_SPREAD,
 
 # Pre-ADR-0008 by construction: these pin measurements taken before the floor, or exercise detector
 # mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
-pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench")
+# And pre-ADR-0009: measured with the elevated-rate stretch inside the planted recording, so due
+# for re-measurement without it, not for re-baselining
+# (docs/todo/2026-09-25-pinned-bench-measurements-predate-adr-0009.md).
+pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench", "pre_adr_0009_bench")
 
 
 SEEDS = tuple(range(1, 13))

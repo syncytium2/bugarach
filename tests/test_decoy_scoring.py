@@ -22,9 +22,9 @@ def _calls(times):
 
 def test_a_call_on_every_decoy_and_every_event_leaves_precision_one_without_decoys():
     s, gt = bench.make_recording("baseline_quiet", 1)
-    hot = gt.params["hot_window"]
-    decoys = [d.time for d in gt.distractors if not hot[0] <= d.time <= hot[1]]
-    assert decoys, "the bench plants decoys outside the probe"
+    assert gt.params["hot_window"] is None, "ADR-0009: no stretch on a planted recording"
+    decoys = [d.time for d in gt.distractors]
+    assert decoys, "the bench plants decoys"
     sc = score_stream(gt, _calls(list(gt.times) + decoys))
     assert sc.n_hit == len(gt.events)
     assert sc.decoy_calls == len(decoys)
@@ -38,10 +38,9 @@ def test_a_call_on_every_decoy_and_every_event_leaves_precision_one_without_deco
 
 def test_a_call_on_nothing_is_still_a_false_alarm_both_ways():
     s, gt = bench.make_recording("baseline_quiet", 2)
-    near = [d.time for d in gt.distractors] + list(gt.times) + list(gt.params["hot_window"])
+    near = [d.time for d in gt.distractors] + list(gt.times)
     t = next(x for x in np.arange(30.0, 2600.0, 7.0)
-             if min(abs(x - y) for y in near) > 30 and not
-             gt.params["hot_window"][0] <= x <= gt.params["hot_window"][1])
+             if min(abs(x - y) for y in near) > 30)
     sc = score_stream(gt, _calls(list(gt.times) + [t]))
     assert sc.decoy_calls == 0
     r = bench.pool_scores([sc], detector="x", regime="baseline_quiet")

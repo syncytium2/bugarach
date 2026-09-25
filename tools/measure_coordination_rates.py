@@ -633,7 +633,9 @@ def main(argv=None) -> int:
             recs = [r[stream] for r in real if stream in r]
             probe_now = None
             if stream in BENCHES:
-                probe_now = importlib.import_module(BENCHES[stream]).BENCH_RECORDING["hot_rate_hz"]
+                # ADR-0009: the stretch rate lives on the elevated-rate recording now.
+                probe_now = importlib.import_module(
+                    BENCHES[stream]).ELEVATED_RATE_RECORDING["hot_rate_hz"]
             # The per-recording coordinated share, at the primary window and the model
             # the bench adopts, so `tools/remeasure_bench.py` can subtract it per
             # recording and bootstrap the regimes honestly rather than being handed a

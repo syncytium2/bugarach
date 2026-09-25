@@ -936,9 +936,11 @@ BENCH_RECORDING = dict(
     bg_rate_shape=MEASURED_RATE_SHAPE,
     bg_burst_shape=MEASURED_BURST_SHAPE,
     bg_burst_bin_sec=MEASURED_BURST_BINS,
-    hot_window=(1200.0, 1500.0),
-    hot_rate_hz=0.1334,
-    ramp_sec=30.0,
+    # ADR-0009 decision 1: no elevated-rate stretch on a recording with planted events. The span
+    # 1200-1500 s carries ordinary background; the stretch lives in ELEVATED_RATE_RECORDING.
+    hot_window=None,
+    hot_rate_hz=0.0,
+    ramp_sec=0.0,
     n_distractors=6,
     distractor_frac=0.18,
     distractor_window=(120.0, 1100.0),
@@ -1047,10 +1049,19 @@ would hand a model the clock as a shortcut (the plan's warning that regularity
 is a cue). Shortening this recording is therefore not the free win it looks
 like.
 
-The hot window is dense-but-random with no planted events (a rate-fooled
-detector fires there) and the distractors are correlated bursts that are real
-coincidence but not coordination. Both are negatives with no recall value; they
-exist so the bench can fail a detector for firing on them.
+The distractors are correlated bursts that are real coincidence but not
+coordination: negatives with no recall value, there so the bench can fail a
+detector for calling on them.
+
+**It carries no elevated-rate stretch since 2026-09-25** (ADR-0009 decision 1).
+Until then 1200–1500 s held one — every ROI's rate raised together, nothing
+planted — and under ADR-0008 that shared rate change lifted the whole
+recording's floor above every planted event (16–20 co-active ROIs on fast,
+`tools/probe_bench_floor.py`). The stretch moved to a recording of its own,
+:data:`ELEVATED_RATE_RECORDING`, and the span here carries ordinary background.
+Placement no longer skips it, so the realized spacing changes; the floor
+``min_sep_sec`` and ``duration_sec`` do not. ``hot_rate_hz`` 0.1334 Hz and its
+history above now describe that recording's stretch.
 """
 
 
@@ -1315,6 +1326,109 @@ def false_positives_per_hour(name: str, seeds=(1, 2, 3), **overrides) -> float:
     return total / hours if hours else float("nan")
 
 
+NULL_SEED_OFFSET = 50_000
+"""What the scoring tools add to a bench seed to draw the no-coordination recording, so it never
+shares a simulator seed with a recording that has planted events (``tools/score_bench_candidates.py``:
+fresh seeds 6000–6011 read the null on 56000–56011)."""
+
+ELEVATED_SEED_OFFSET = 60_000
+"""What :func:`make_elevated_rate_recording` adds to the seed it is given, beside
+:data:`NULL_SEED_OFFSET`. Fixed on 2026-09-25 (the final-parameters night): a search on bench seeds
+1–96 reads the elevated-rate recording on 60001–60096, and fresh-seed scoring on 6000–6011 reads it
+on 66000–66011, clear of 1–96, 6000–6023 and the null's 56000–56011. The offset is applied inside
+the maker rather than by each caller, so no caller can forget it."""
+
+ELEVATED_RATE_RECORDING = dict(
+    n_per_level=(0, 0, 0),
+    n_distractors=0,
+    hot_window=(1200.0, 1500.0),
+    hot_rate_hz=0.1334,
+    ramp_sec=30.0,
+)
+"""The elevated-rate test's recording (ADR-0009 decision 1): the stretch and nothing planted.
+
+Laid over :data:`BENCH_RECORDING` and a regime, so its length, ROI count and background are the
+bench's; only the stretch is added and the planted events and decoys are taken away. The stretch
+is the one :data:`BENCH_RECORDING` carried until 2026-09-25: 1200–1500 s, every ROI at
+``hot_rate_hz`` 0.1334 Hz (the background 99th percentile of 300 s baseline stretches, measured —
+see :data:`BENCH_RECORDING`), with 30 s ramps.
+
+**Scored only for calls**, against the budgets that already exist: calls per minute inside the
+stretch against :data:`MAX_PROBE_PER_MIN`, and calls per hour outside it against
+:data:`MAX_FALSE_POSITIVES_PER_HOUR`, where it is a recording with nothing planted. No decoys, so
+that outside part is comparable with :data:`NULL_RECORDING`, which carries none either.
+
+**Its floor is its own** (ADR-0008 decision 5, ADR-0009 decision 1): computed from its own null
+over the whole recording, stretch included, with nothing left out. The stretch lifts it, as a real
+stretch lifts a real window's floor, so a detector that honours the floor calls little there by
+construction; the test still separates detectors by what they call above it.
+"""
+
+
+def make_elevated_rate_recording(regime: str, seed: int, **overrides):
+    """The elevated-rate recording at ``regime``'s background, simulated on
+    ``seed +`` :data:`ELEVATED_SEED_OFFSET`. See :data:`ELEVATED_RATE_RECORDING`."""
+    if regime not in REGIMES:
+        raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
+    # Its own ADR-0008 floor, over the whole recording, stretch included (ADR-0009 decision 1).
+    return with_floor(simulate_coordination(
+        seed=seed + ELEVATED_SEED_OFFSET,
+        **{**BENCH_RECORDING, **REGIMES[regime], **ELEVATED_RATE_RECORDING, **overrides}))
+
+
+@dataclass
+class ProbeResult:
+    """One detector's calls on the elevated-rate recording, pooled over seeds.
+
+    Every call there is a false one, since nothing is planted, so the two counts are the whole
+    score: calls inside the stretch (the *probe*) and calls outside it. A call overlapping the
+    stretch counts inside, as :func:`bugarach.score.score_stream` counts ``hot_fa``.
+    """
+
+    calls_in: int = 0
+    calls_out: int = 0
+    minutes_in: float = 0.0
+    hours_out: float = 0.0
+    seeds: tuple = ()
+
+    @property
+    def per_min_in(self) -> float:
+        """Calls per minute inside the stretch, the number :data:`MAX_PROBE_PER_MIN` gates."""
+        return self.calls_in / self.minutes_in if self.minutes_in else float("nan")
+
+    @property
+    def per_hour_out(self) -> float:
+        """Calls per hour outside the stretch, the number :data:`MAX_FALSE_POSITIVES_PER_HOUR` gates."""
+        return self.calls_out / self.hours_out if self.hours_out else float("nan")
+
+
+def probe_counts(make, run, name: str, regime: str, seeds, *, tol_sec: float = TOL_SEC,
+                 **overrides) -> ProbeResult:
+    """Pool one detector's calls over elevated-rate recordings built by ``make`` and run by ``run``.
+
+    Takes the maker and the runner rather than reading them, so the slow and combined benches
+    share it without scoring a fast recording under their own label (the trap
+    :mod:`bugarach.bench_slow` is laid out to avoid)."""
+    out = ProbeResult(seeds=tuple(seeds))
+    for seed in seeds:
+        s, gt = make(regime, seed)
+        sc = score_stream(gt, run(name, s, **overrides), tol_sec=tol_sec)
+        h0, h1 = gt.params["hot_window"]
+        span = h1 - h0
+        out.calls_in += sc.hot_fa
+        out.calls_out += sc.n_detected - sc.hot_fa
+        out.minutes_in += span / 60.0
+        out.hours_out += (gt.params["duration_sec"] - span) / 3600.0
+    return out
+
+
+def evaluate_elevated_rate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
+                           **overrides) -> ProbeResult:
+    """One detector's calls on the elevated-rate recording, inside and outside the stretch."""
+    return probe_counts(make_elevated_rate_recording, run_detector, name, regime, seeds,
+                        tol_sec=tol_sec, **overrides)
+
+
 def run_detector(name: str, s, *, rng_seed: int = 20260706, floor: bool | None = None,
                  **overrides):
     """Run one detector on a slice at its declared operating point.
@@ -1373,6 +1487,10 @@ class BenchResult:
     floors: tuple = ()
     """Each pooled recording's ADR-0008 floor, in pooling order; empty when none was applied."""
     seeds: tuple = ()
+    probe: ProbeResult | None = None
+    """The same detector's calls on the elevated-rate recording (ADR-0009 decision 1), on the same
+    seeds shifted by :data:`ELEVATED_SEED_OFFSET`. ``None`` when it was not run, and then
+    :attr:`hot_fa_per_min` is NaN rather than zero: a probe nobody ran has not been passed."""
     tol_sec: float | None = None
     """The match tolerance every pooled score was measured at.
 
@@ -1446,11 +1564,19 @@ class BenchResult:
 
     @property
     def hot_fa_per_min(self) -> float:
-        """The promiscuity probe's own number: firings per minute inside the
-        dense-but-random block, where by construction there is nothing to find."""
-        span = BENCH_RECORDING["hot_window"]
-        minutes = (span[1] - span[0]) / 60.0 * max(1, len(self.seeds))
-        return self.hot_fa / minutes if minutes else float("nan")
+        """The promiscuity probe's own number: calls per minute inside the elevated-rate
+        stretch, where by construction there is nothing to find.
+
+        Read from :attr:`probe`, the elevated-rate recording, since 2026-09-25 (ADR-0009). It used
+        to read ``BENCH_RECORDING["hot_window"]`` and divide :attr:`hot_fa`, when the stretch sat
+        inside the scored recording; with the stretch gone from there that would read zero for
+        every detector and pass every gate in silence."""
+        return self.probe.per_min_in if self.probe is not None else float("nan")
+
+    @property
+    def elevated_out_per_hour(self) -> float:
+        """Calls per hour on the elevated-rate recording outside its stretch, NaN if not run."""
+        return self.probe.per_hour_out if self.probe is not None else float("nan")
 
     def summary(self) -> str:
         knob = "" if self.knob_value is None else f" @{self.knob_value:g}"
@@ -1530,7 +1656,7 @@ def fold_split(*, n_folds: int = 4, seeds_per_fold: int = 3,
 
 
 def pool_scores(scores, *, detector: str, regime: str, seeds=(),
-                knob_value=None) -> BenchResult:
+                knob_value=None, probe: ProbeResult | None = None) -> BenchResult:
     """Pool per-seed :class:`~bugarach.score.Score` objects into one result.
 
     **Anything scored against this bench pools through here** — including
@@ -1552,7 +1678,7 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
     would be invisible, since counts add whatever they were counted against.
     """
     out = BenchResult(detector=detector, regime=regime, knob_value=knob_value,
-                      seeds=tuple(seeds))
+                      seeds=tuple(seeds), probe=probe)
     tols = {float(sc.tol_sec) for sc in scores if sc.tol_sec is not None}
     if len(tols) > 1:
         raise ValueError(
@@ -1594,7 +1720,7 @@ def under_floor_report(r: BenchResult) -> dict:
 
 
 def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
-             gen: dict | None = None, **overrides) -> BenchResult:
+             gen: dict | None = None, probe: bool = True, **overrides) -> BenchResult:
     """Run one detector over several seeds and pool the outcome.
 
     ``gen`` passes generator settings through to :func:`make_recording`, so a
@@ -1603,14 +1729,26 @@ def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SE
     ``docs/learned/generator_spec.json``, say, instead of the bench's flat one.
     Separate from ``**overrides``, which are the *detector's* knobs: the two used
     to be impossible to tell apart because only one of them existed.
+
+    ``probe`` also runs the detector on the elevated-rate recording for the same seeds
+    (:func:`evaluate_elevated_rate`), which is where :attr:`BenchResult.hot_fa_per_min` comes from
+    since ADR-0009. It doubles the cost; ``probe=False`` leaves that number NaN, which the probe
+    gates read as not passed.
     """
+    gen = gen or {}
     scores = []
     for seed in seeds:
-        s, gt = make_recording(regime, seed, **(gen or {}))
+        s, gt = make_recording(regime, seed, **gen)
         det = run_detector(name, s, **overrides)
         scores.append(score_stream(gt, det, tol_sec=tol_sec))
+    pr = None
+    if probe:
+        # The background settings travel; what makes it the elevated-rate recording does not.
+        g = {k: v for k, v in gen.items() if k not in ELEVATED_RATE_RECORDING}
+        pr = probe_counts(lambda r, sd: make_elevated_rate_recording(r, sd, **g), run_detector,
+                          name, regime, seeds, tol_sec=tol_sec, **overrides)
     return pool_scores(scores, detector=name, regime=regime, seeds=seeds,
-                       knob_value=overrides.get(OPERATING_POINTS[name].knob))
+                       knob_value=overrides.get(OPERATING_POINTS[name].knob), probe=pr)
 
 
 TOLERANCE_GRID = (0.1, 0.15, 0.25, 0.4, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0)

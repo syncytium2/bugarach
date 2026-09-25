@@ -24,6 +24,7 @@ COPIED = ("BENCH_RECORDING", "REGIMES", "NULL_RECORDING", "CROWDED_RECORDING",
           "MAX_FALSE_POSITIVES_PER_HOUR", "MAX_PRECISION_DROP", "MEASURED_RECORD",
           "make_recording", "make_crowded_recording", "make_tail_recording",
           "make_null_recording", "run_detector", "false_positives_per_hour", "evaluate",
+          "ELEVATED_RATE_RECORDING", "make_elevated_rate_recording", "evaluate_elevated_rate",
           "sweep", "pick_operating_point")
 
 
@@ -42,9 +43,14 @@ def test_the_fast_bench_is_untouched_by_the_copy():
         del bench_slow.OPERATING_POINTS["__probe__"]
 
 
-def test_the_shared_result_class_reads_a_hot_window_the_slow_bench_also_uses():
-    # BenchResult.hot_fa_per_min reads bench.BENCH_RECORDING["hot_window"].
-    assert bench_slow.BENCH_RECORDING["hot_window"] == bench.BENCH_RECORDING["hot_window"]
+def test_the_slow_elevated_rate_recording_is_slow_and_carries_the_shared_stretch():
+    # BenchResult.hot_fa_per_min pools the stretch's own minutes (ADR-0009), so no bench's
+    # constant is read; the span is still the shared one and the rate is slow's.
+    _, gt = bench_slow.make_elevated_rate_recording("baseline_quiet", 1)
+    assert gt.params["hot_window"] == bench.ELEVATED_RATE_RECORDING["hot_window"]
+    assert gt.params["hot_rate_hz"] == bench_slow.ELEVATED_RATE_RECORDING["hot_rate_hz"]
+    assert gt.params["hot_rate_hz"] != bench.ELEVATED_RATE_RECORDING["hot_rate_hz"]
+    assert gt.params["width_quantiles"] == tuple(bench_slow.MEASURED_WIDTH_QUANTILES)
 
 
 def test_a_slow_recording_runs_at_the_slow_background():

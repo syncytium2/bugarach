@@ -237,7 +237,8 @@ def bench_task(args):
     from bugarach.detectors.rate import stream_trains
     stream, regime, seed = args
     b = importlib.import_module(BENCHES[stream])
-    s, gt = b.make_recording(regime, seed)
+    # ADR-0009: the bench's stretch is on the elevated-rate recording, not the planted one.
+    s, gt = b.make_elevated_rate_recording(regime, seed)
     lo, hi = recording_extent(s)
     tr = stream_trains(s.streams[b.STREAM], (lo, hi))
     m = measure_window(tr, lo, hi, None)
