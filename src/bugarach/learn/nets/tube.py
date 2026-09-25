@@ -21,7 +21,7 @@ __all__ = ["build_tube"]
                        "bypass the kernel does not reach",
           n_scales=4, width=8, depth=6, max_center_frames=128, max_ratio=40.0)
 def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
-               max_ratio=40.0, bypass=True):
+               max_ratio=40.0, bypass=True, participation=False, count_frames=20):
     """Look down a tube as the recording slides past.
 
     The tube is dark; onsets are specks. When several cells fire together a bright
@@ -87,10 +87,22 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
     item 4 of the learned-detector handoff. It is off only in ``tube_no_bypass``, the
     control for ``gauge``: ``gauge`` drops the bypass as well as standardising, and
     without this control a ``gauge`` score could not say which change moved it.
+
+    ``participation`` (off by default; ADR-0010 part 5, ``tube_part``) hands the head a count
+    and the recording's floor (``bugarach.learn.participation.count_features``). Tube has no
+    per-cell vote to sum -- it averages cells away first -- so its equivalent is **the number of
+    ROIs with an onset in a centred window of** ``count_frames`` **frames**
+    (``participation.window_count``): bounded by the ROI count, with nothing to learn, and at
+    the default 20 frames the same 2 s window ADR-0008's floor counts in at a 0.1 s grid. It
+    is taken from the raster, not from the ``max_pool1d`` above, whose width follows a fitted
+    centre and so would count over a window the floor was not measured in. No membership
+    loss: there is no per-cell stage to train. The model then needs ``forward(x, floor=...)``.
     """
     torch = _torch()
     nn = torch.nn
     import math
+
+    from bugarach.learn import participation as part
 
     class Tube(nn.Module):
         def __init__(self):
@@ -110,8 +122,10 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             self.log_ratio = nn.Parameter(torch.full((n_scales,), math.log(8.0)))
             self.gain = nn.Parameter(torch.ones(n_scales))
             self.bypass = bool(bypass)
-            self.head = _dilated_stack(nn, n_scales + int(self.bypass), 1, width,
-                                       depth)
+            self.reads_floor = bool(participation)
+            self.count_frames = int(count_frames)
+            self.head = _dilated_stack(nn, n_scales + int(self.bypass)
+                                       + (3 if participation else 0), 1, width, depth)
 
         def _kernels(self, device):
             """Difference of Gaussians, centre minus surround, area-normalised so
@@ -127,7 +141,7 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             surround = surround / surround.sum(dim=1, keepdim=True)
             return ((centre - surround) * self.gain.view(-1, 1)).unsqueeze(1)
 
-        def forward(self, x):                       # (B, n_roi, T)
+        def forward(self, x, floor=None):           # (B, n_roi, T)
             b, n, t = x.shape
             # --- widen each cell's onsets, which is NOT one cell one vote -----
             # This was written as "smooth each cell, then clamp -- exact, not a
@@ -156,6 +170,11 @@ def build_tube(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             # the head alongside the zero-integral responses, so the kernel's DC
             # invariance is not the model's. Removing this channel is a filed
             # experiment, not a tidy-up: it moves every published number.
+            if self.reads_floor:
+                # ADR-0010 part 5: tube's count is ROIs lit in a fixed window, not a vote sum.
+                feats = part.count_features(part.window_count(x, self.count_frames),
+                                            part.floor_tensor(floor, b, x.device))
+                resp = torch.cat([resp, feats], dim=1)
             if not self.bypass:
                 return self.head(resp).squeeze(1)
             return self.head(torch.cat([bright, resp], dim=1)).squeeze(1)

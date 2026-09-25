@@ -1,0 +1,1522 @@
+{
+ "_about": "Pinned on origin/main 538ae74 before ADR-0010 part 5 was added: every pre-existing architecture state_dict shapes, two bench recordings (scored seed 1, training seed 1000), outputs of the repository checkpoints on a fixed raster, and ten-step default fits. tests/test_learned_participation.py reads it.",
+ "checkpoints": {
+  "chorus_gain_norm": {
+   "at300": -54.47254180908203,
+   "first": [
+    -12.49100112915039,
+    -11.534667015075684,
+    -11.526973724365234
+   ],
+   "path": "docs/learned/runs/2026-09-18-quick-replicate1/chosen/gated/outer0/chorus_gain_norm/seed0.json",
+   "sum": -24209.14951221645
+  },
+  "chorus_norm": {
+   "at300": -34.51088333129883,
+   "first": [
+    -11.006589889526367,
+    -10.709335327148438,
+    -10.250551223754883
+   ],
+   "path": "docs/learned/runs/2026-09-18-quick-replicate1/chosen/gated/outer0/chorus_norm/seed0.json",
+   "sum": -16402.844200134277
+  },
+  "line_length": {
+   "at300": -22.78064727783203,
+   "first": [
+    -20.725982666015625,
+    -20.253433227539062,
+    -19.71731948852539
+   ],
+   "path": "docs/learned/runs/2026-09-18-quick-replicate1/chosen/gated/outer0/line_length/seed0.json",
+   "sum": -17189.724528193474
+  },
+  "tube": {
+   "at300": 7.149806976318359,
+   "first": [
+    0.9247615337371826,
+    1.848676323890686,
+    2.7123653888702393
+   ],
+   "path": "docs/learned/runs/2026-09-18-quick-replicate1/chosen/gated/outer0/tube/seed0.json",
+   "sum": -10604.706746987998
+  }
+ },
+ "fits": {
+  "chorus_norm": {
+   "abs_sum": 213.02939157083165,
+   "loss": [
+    0.6054516434669495,
+    3.12058424949646
+   ],
+   "threshold": 0.0001,
+   "training_keys": [
+    "batch",
+    "crop_frames",
+    "dt_sec",
+    "loss",
+    "lr",
+    "n_train",
+    "optimizer",
+    "steps",
+    "stream",
+    "threads",
+    "threshold_rule",
+    "torch_version",
+    "train_seed"
+   ]
+  },
+  "line": {
+   "abs_sum": 194.29521832964383,
+   "loss": [
+    0.5800918340682983,
+    3.1674695014953613
+   ],
+   "threshold": 0.0001,
+   "training_keys": [
+    "batch",
+    "crop_frames",
+    "dt_sec",
+    "loss",
+    "lr",
+    "n_train",
+    "optimizer",
+    "steps",
+    "stream",
+    "threads",
+    "threshold_rule",
+    "torch_version",
+    "train_seed"
+   ]
+  },
+  "tube": {
+   "abs_sum": 139.1156953513855,
+   "loss": [
+    0.6972026824951172,
+    2.9554715156555176
+   ],
+   "threshold": 0.0001,
+   "training_keys": [
+    "batch",
+    "crop_frames",
+    "dt_sec",
+    "loss",
+    "lr",
+    "n_train",
+    "optimizer",
+    "steps",
+    "stream",
+    "threads",
+    "threshold_rule",
+    "torch_version",
+    "train_seed"
+   ]
+  }
+ },
+ "recordings": {
+  "bench:baseline_quiet:1": "5ba8a3c31a03ca3c6b123e76",
+  "bench:baseline_quiet:1000": "aef2d63e710d07dc4b1d6ee1"
+ },
+ "shapes": {
+  "chorus": {
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    12,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    8
+   ],
+   "head.12.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.14.bias": [
+    8
+   ],
+   "head.14.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.16.bias": [
+    1
+   ],
+   "head.16.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "roi.0.bias": [
+    4
+   ],
+   "roi.0.weight": [
+    4,
+    1,
+    3
+   ],
+   "roi.2.bias": [
+    4
+   ],
+   "roi.2.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.4.bias": [
+    4
+   ],
+   "roi.4.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.6.bias": [
+    4
+   ],
+   "roi.6.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.8.bias": [
+    4
+   ],
+   "roi.8.weight": [
+    4,
+    4,
+    1
+   ]
+  },
+  "chorus_gain": {
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    12,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    8
+   ],
+   "head.12.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.14.bias": [
+    8
+   ],
+   "head.14.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.16.bias": [
+    1
+   ],
+   "head.16.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_input_gain": [],
+   "roi.0.bias": [
+    4
+   ],
+   "roi.0.weight": [
+    4,
+    1,
+    3
+   ],
+   "roi.2.bias": [
+    4
+   ],
+   "roi.2.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.4.bias": [
+    4
+   ],
+   "roi.4.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.6.bias": [
+    4
+   ],
+   "roi.6.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.8.bias": [
+    4
+   ],
+   "roi.8.weight": [
+    4,
+    4,
+    1
+   ]
+  },
+  "chorus_gain_norm": {
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    12,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    8
+   ],
+   "head.12.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.14.bias": [
+    8
+   ],
+   "head.14.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.16.bias": [
+    1
+   ],
+   "head.16.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "roi.0.bias": [
+    4
+   ],
+   "roi.0.weight": [
+    4,
+    1,
+    3
+   ],
+   "roi.2.bias": [
+    4
+   ],
+   "roi.2.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.4.bias": [
+    4
+   ],
+   "roi.4.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.6.bias": [
+    4
+   ],
+   "roi.6.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.8.bias": [
+    4
+   ],
+   "roi.8.weight": [
+    4,
+    4,
+    1
+   ],
+   "vote_bias": [
+    4
+   ],
+   "vote_gain": [
+    4
+   ]
+  },
+  "chorus_line": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    19,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ],
+   "log_smear": [
+    4
+   ],
+   "vote_bias": [
+    4
+   ],
+   "vote_gain": [
+    4
+   ]
+  },
+  "chorus_norm": {
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    12,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    8
+   ],
+   "head.12.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.14.bias": [
+    8
+   ],
+   "head.14.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.16.bias": [
+    1
+   ],
+   "head.16.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "roi.0.bias": [
+    4
+   ],
+   "roi.0.weight": [
+    4,
+    1,
+    3
+   ],
+   "roi.2.bias": [
+    4
+   ],
+   "roi.2.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.4.bias": [
+    4
+   ],
+   "roi.4.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.6.bias": [
+    4
+   ],
+   "roi.6.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.8.bias": [
+    4
+   ],
+   "roi.8.weight": [
+    4,
+    4,
+    1
+   ]
+  },
+  "gauge": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    4,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ],
+   "phase": [
+    8
+   ]
+  },
+  "line": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    11,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ],
+   "log_smear": [
+    4
+   ],
+   "vote_bias": [
+    4
+   ],
+   "vote_gain": [
+    4
+   ]
+  },
+  "line_bound": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    11,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ],
+   "log_smear": [
+    4
+   ],
+   "vote_bias": [
+    4
+   ],
+   "vote_gain": [
+    4
+   ]
+  },
+  "line_length": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ],
+   "log_smear": [
+    4
+   ],
+   "vote_bias": [
+    4
+   ],
+   "vote_gain": [
+    4
+   ]
+  },
+  "tiny": {
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    16,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    8
+   ],
+   "head.12.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.14.bias": [
+    8
+   ],
+   "head.14.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.16.bias": [
+    8
+   ],
+   "head.16.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.18.bias": [
+    8
+   ],
+   "head.18.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.20.bias": [
+    1
+   ],
+   "head.20.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "roi.0.bias": [
+    4
+   ],
+   "roi.0.weight": [
+    4,
+    1,
+    3
+   ],
+   "roi.2.bias": [
+    4
+   ],
+   "roi.2.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.4.bias": [
+    4
+   ],
+   "roi.4.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.6.bias": [
+    4
+   ],
+   "roi.6.weight": [
+    4,
+    4,
+    3
+   ],
+   "roi.8.bias": [
+    4
+   ],
+   "roi.8.weight": [
+    4,
+    4,
+    1
+   ]
+  },
+  "trace": {
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    2,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    8
+   ],
+   "head.12.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.14.bias": [
+    8
+   ],
+   "head.14.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.16.bias": [
+    8
+   ],
+   "head.16.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.18.bias": [
+    8
+   ],
+   "head.18.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.20.bias": [
+    8
+   ],
+   "head.20.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.22.bias": [
+    1
+   ],
+   "head.22.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ]
+  },
+  "tube": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    5,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ]
+  },
+  "tube_guard": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    5,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ]
+  },
+  "tube_no_bypass": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    4,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ]
+  },
+  "tube_ratio": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    5,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ]
+  },
+  "tube_ratio_guard": {
+   "gain": [
+    4
+   ],
+   "head.0.bias": [
+    8
+   ],
+   "head.0.weight": [
+    8,
+    5,
+    3
+   ],
+   "head.10.bias": [
+    8
+   ],
+   "head.10.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.12.bias": [
+    1
+   ],
+   "head.12.weight": [
+    1,
+    8,
+    1
+   ],
+   "head.2.bias": [
+    8
+   ],
+   "head.2.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.4.bias": [
+    8
+   ],
+   "head.4.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.6.bias": [
+    8
+   ],
+   "head.6.weight": [
+    8,
+    8,
+    3
+   ],
+   "head.8.bias": [
+    8
+   ],
+   "head.8.weight": [
+    8,
+    8,
+    3
+   ],
+   "log_center": [
+    4
+   ],
+   "log_ratio": [
+    4
+   ]
+  }
+ }
+}

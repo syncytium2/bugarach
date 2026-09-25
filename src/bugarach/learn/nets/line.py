@@ -24,7 +24,7 @@ __all__ = ["build_line"]
           vote_gain=8.0, orientation=True)
 def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
                max_ratio=40.0, vote_gain=8.0, orientation=True, bound_vote=False,
-               eps=1e-3, extra_pools=False, top_m=4):
+               eps=1e-3, extra_pools=False, top_m=4, participation=False):
     """How many distinct ROIs are lit right now, judged against its own background.
 
     Tony, 2026-09-15, on the tube models trained against rigid shift: *"i wonder if
@@ -123,10 +123,19 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
       still soft: the factor is read frame by frame, so a burst's flanks keep more
       than its peak. How much is measured in ``tests/test_line_vote.py``, not
       asserted here.
+
+    ``participation`` (off by default; ADR-0010 part 5, ``line_part``) adds one vote per ROI
+    -- a 1x1 convolution over that ROI's ``n_scales`` votes, then a sigmoid -- whose **sum
+    over ROIs** is a count in [0, n_roi], and hands the head that count and the recording's
+    floor (``bugarach.learn.participation.count_features``). The model then needs
+    ``forward(x, floor=...)``; ``return_votes=True`` also returns the per-ROI votes for the
+    membership loss. Off, nothing is built and nothing moves.
     """
     torch = _torch()
     nn = torch.nn
     import math
+
+    from bugarach.learn import participation as part
 
     class Line(nn.Module):
         def __init__(self):
@@ -153,7 +162,10 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
             self.m = int(top_m)
             c_in = (2 * n_scales + (n_scales - 1 if self.orientation else 0)
                     + (2 * n_scales if self.extra_pools else 0))
-            self.head = _dilated_stack(nn, c_in, 1, width, depth)
+            self.reads_floor = bool(participation)
+            self.head = _dilated_stack(nn, c_in + (3 if participation else 0), 1, width, depth)
+            if participation:
+                self.vote_head = part.vote_head(nn, n_scales)
 
         def _smear(self, device):
             """Per-ROI Gaussians, PEAK-normalised: one onset reaches 1 at any width."""
@@ -201,7 +213,7 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
                 vote, self._centre(device), padding=self.k, groups=vote.shape[1])
             return mass.amax(dim=2).squeeze(0)
 
-        def forward(self, x):                       # (B, n_roi, T)
+        def forward(self, x, floor=None, return_votes=False):     # (B, n_roi, T)
             b, n, t = x.shape
             # --- thickness: each ROI smoothed on its own, one scale per channel ---
             smeared = torch.nn.functional.conv1d(
@@ -237,6 +249,13 @@ def build_line(*, n_scales=4, width=8, depth=6, max_center_frames=128,
                 channels.append(votes.std(dim=1, unbiased=False))
                 srt, _ = votes.sort(dim=1, descending=True)
                 channels.append(srt[:, :self.m].mean(dim=1))
-            return self.head(torch.cat(channels, dim=1)).squeeze(1)
+            if not self.reads_floor:
+                return self.head(torch.cat(channels, dim=1)).squeeze(1)
+            # --- ADR-0010 part 5: one bounded vote per ROI, summed into a count ---
+            votes = torch.sigmoid(self.vote_head(vote)).reshape(b, n, t)
+            fl = part.floor_tensor(floor, b, x.device)
+            channels.append(part.count_features(votes.sum(dim=1), fl))
+            out = self.head(torch.cat(channels, dim=1)).squeeze(1)
+            return (out, votes) if return_votes else out
 
     return Line()

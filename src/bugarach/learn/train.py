@@ -98,19 +98,25 @@ def model_device(model):
     return next(model.parameters()).device
 
 
-def probabilities(model, raster, *, logits: bool = False):
+def probabilities(model, raster, *, logits: bool = False, floor=None):
     """Per-frame probabilities for one encoded raster, on whatever device the model is on.
 
     The one place inference crosses to the device and back: :func:`pick_threshold`,
     :meth:`Trained.predict` and the tuning tool all call it, so a model trained on the GPU is
     scored exactly as a CPU one is. ``logits=True`` returns the raw output instead of its
     sigmoid, for :func:`pick_threshold`'s logit mode.
+
+    ``floor`` is the window's ADR-0008 floor, for a model that reads one (the ``*_part``
+    variants, ADR-0010 part 5); such a model refuses to run without it. Every other model
+    ignores it and is called exactly as before.
     """
     import torch
 
+    from bugarach.learn.participation import reads_floor
+
     with torch.no_grad():
         x = torch.from_numpy(raster).unsqueeze(0).to(model_device(model))
-        z = model(x)
+        z = model(x, floor=floor) if reads_floor(model) else model(x)
         return (z if logits else torch.sigmoid(z)).squeeze(0).cpu().numpy()
 
 
@@ -173,8 +179,12 @@ class Trained:
     seed, torch version. Separate from ``cfg`` on purpose: ``cfg`` says what to build, this
     says how it was fitted, and a tuning run varies both."""
 
-    def predict(self, slice_, *, stream=None, extent=None):
+    def predict(self, slice_, *, stream=None, extent=None, floor=None):
         """Detections in the six ports' contract, ready for ``score_stream``.
+
+        ``floor`` matters only to a model that reads one (ADR-0010 part 5). When it is not
+        given, such a model gets the ADR-0008 floor of exactly the window it is shown,
+        computed from that window's own null (``participation.encoded_floor``).
 
         ``extent`` restricts the encoding to one window of the recording, which
         is what makes a learned model comparable with the six on real data: the
@@ -184,8 +194,12 @@ class Trained:
         no other detector on the page was given, and the difference would land
         in the comparison without appearing in it.
         """
+        from bugarach.learn import participation as part
+
         enc = encode(slice_, dt=self.dt, stream=stream, extent=extent)
-        p = probabilities(self.model, enc.raster)
+        if part.reads_floor(self.model) and floor is None:
+            floor = part.encoded_floor(enc)
+        p = probabilities(self.model, enc.raster, floor=floor)
         det = decode(p, threshold=self.threshold,
                      merge_gap_frames=self.merge_gap_frames)
         return det.to_seconds(enc), enc
@@ -200,6 +214,7 @@ def _recording(make, seed, dt, stream=None):
 def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
           steps: int = 300, crop: int = 4096, batch: int = 4,
           lr: float = 3e-3, seed: int = 0, stream=None, device: str | None = None,
+          membership_weight: float | None = None, floor_labels: bool | None = None,
           **arch_over) -> Trained:
     """Fit one architecture. Returns it with a threshold already chosen.
 
@@ -211,10 +226,18 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
       ``"cuda"`` trains on the GPU with :func:`deterministic_cuda`, and the returned model stays
       there, so its scoring runs there too. GPU and CPU arithmetic differ, so a run's fits must
       all come from one device; ``training["device"]`` records which.
+    membership_weight / floor_labels: ADR-0010 part 5 (``bugarach.learn.participation``).
+      ``None`` takes the architecture's own default (``Arch.training``), which is 0 and
+      ``False`` for every architecture registered before it, so their fits do not move.
+      ``membership_weight`` > 0 adds the per-cell membership term to the loss (a model with
+      per-cell votes only); ``floor_labels`` labels events under the recording's floor as no
+      event. A model that reads the floor is handed each training recording's floor.
     """
     import time
 
     import torch
+
+    from bugarach.learn import participation as part
 
     dev = torch.device(device) if device is not None else None
     if dev is not None and dev.type == "cuda":
@@ -227,9 +250,35 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
         model = model.to(dev)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
 
+    mw = float(arch.training.get("membership_weight", 0.0)
+               if membership_weight is None else membership_weight)
+    fl_labels = bool(arch.training.get("floor_labels", False)
+                     if floor_labels is None else floor_labels)
+    wants_floor = part.reads_floor(model)
+    if mw > 0 and not wants_floor:
+        raise ValueError(f"{name} has no per-cell vote, so membership_weight={mw} has "
+                         "nothing to train (ADR-0010 part 5: chorus and line families only)")
+    participating = wants_floor or mw > 0 or fl_labels
+
     seeds = [TRAIN_SEED_BLOCK + seed * 1000 + i for i in range(n_train)]
     assert not set(seeds) & set(BENCH_SEEDS), "training seed collides with the bench"
-    data = [_recording(make_recording, s, dt, stream)[:2] for s in seeds]
+    if not participating:
+        data = [_recording(make_recording, s, dt, stream)[:2] for s in seeds]
+        floors, member = None, None
+    else:
+        # ADR-0010 part 5. Kept apart from the branch above so a fit without it reads its
+        # recordings exactly as before.
+        data, floors, member, centres = [], [], [], []
+        for s in seeds:
+            sl, gt = make_recording(s)
+            enc = encode(sl, dt=dt, stream=stream)
+            f = part.recording_floor(sl, gt, stream)
+            data.append((enc, part.training_targets(gt, enc, f if fl_labels else None)))
+            floors.append(float(f))
+            member.append(part.membership_targets(gt, enc) if mw > 0 else None)
+            # Crops are centred on EVERY planted event, sub-floor ones included, so the
+            # boundary's negatives are seen as often as its positives.
+            centres.append(np.flatnonzero(frame_targets(gt, enc) > 0))
 
     # Events occupy ~1% of frames. Without a positive weight the model learns to
     # answer "no" and scores 99% accuracy while detecting nothing.
@@ -247,19 +296,20 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
     # naturally-sampled recordings so this sampling never reaches the operating
     # point (`simulation_plan.md` §5: event frequency is a knob on the label
     # distribution, not a cosmetic detail).
-    pos_idx = [np.flatnonzero(y > 0) for _, y in data]
+    pos_idx = ([np.flatnonzero(y > 0) for _, y in data] if not participating else centres)
 
     rng = np.random.RandomState(seed)
     t0 = time.time()
     hist = []
     model.train()
     for step in range(steps):
-        xs, ys = [], []
+        xs, ys, fs, ms, ks = [], [], [], [], []
         for _ in range(batch):
             di = rng.randint(len(data))
             enc, y = data[di]
             if enc.n_frame <= crop:
                 x, yy = enc.raster, y
+                a, b = 0, enc.n_frame
             else:
                 pi = pos_idx[di]
                 if pi.size and rng.rand() < 0.5:
@@ -267,10 +317,16 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
                     a = int(np.clip(c - crop // 2, 0, enc.n_frame - crop))
                 else:
                     a = rng.randint(0, enc.n_frame - crop)
+                b = a + crop
                 x = enc.raster[:, a:a + crop]
                 yy = y[a:a + crop]
             xs.append(torch.from_numpy(np.ascontiguousarray(x)))
             ys.append(torch.from_numpy(np.ascontiguousarray(yy)))
+            if floors is not None:
+                fs.append(floors[di])
+            if member is not None and member[di] is not None:
+                ms.append(torch.from_numpy(np.ascontiguousarray(member[di][0][:, a:b])))
+                ks.append(torch.from_numpy(np.ascontiguousarray(member[di][1][:, a:b])))
         # Recordings can differ in ROI count; a batch must not silently assume
         # they do not. Same n_roi within a batch is guaranteed by one generator,
         # but the model itself is ROI-count agnostic and that is the point.
@@ -279,7 +335,16 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
         if dev is not None:
             x, y = x.to(dev), y.to(dev)
         opt.zero_grad()
-        loss = lossf(model(x), y)
+        if not participating:
+            loss = lossf(model(x), y)
+        elif mw > 0:
+            out, votes = model(x, floor=fs, return_votes=True)
+            m_t, m_k = torch.stack(ms), torch.stack(ks)
+            if dev is not None:
+                m_t, m_k = m_t.to(dev), m_k.to(dev)
+            loss = lossf(out, y) + mw * part.membership_loss(votes, m_t, m_k)
+        else:
+            loss = lossf(model(x, floor=fs) if wants_floor else model(x), y)
         loss.backward()
         opt.step()
         if step % 50 == 0 or step == steps - 1:
@@ -295,6 +360,17 @@ def train(name: str, make_recording, *, dt: float = 0.1, n_train: int = 12,
                 "threads": int(threads), "torch_version": torch.__version__,
                 "loss": "BCEWithLogitsLoss, pos_weight from the training recordings",
                 "threshold_rule": "pick_threshold, pooled F1 on the validation block"}
+    if participating:
+        # Only when used: a fit without participation keeps the record it always had.
+        training["participation"] = {
+            "adr": "ADR-0010 part 5 (Proposed)", "reads_floor": wants_floor,
+            "membership_weight": mw, "floor_labels": fl_labels,
+            "train_floors": [int(f) for f in floors]}
+        training["loss"] = ("BCEWithLogitsLoss, pos_weight from the training recordings"
+                            + (", labels exclude events under the recording's floor"
+                               if fl_labels else "")
+                            + (f", plus {mw:g} x balanced per-cell membership BCE"
+                               if mw > 0 else ""))
     if dev is not None:
         # Only when asked: a CPU fit's record stays byte-identical to one from before this option.
         training["device"] = str(dev)
@@ -334,11 +410,16 @@ def pick_threshold(model, make_recording, *, dt, seed, n_val: int = 4,
     seeds = [VAL_SEED_BLOCK + seed * 1000 + i for i in range(n_val)]
     assert not set(seeds) & set(BENCH_SEEDS)
 
+    from bugarach.learn import participation as part
+
     scored = []
     for s in seeds:
         sl, gt = make_recording(s)
         enc = encode(sl, dt=dt, stream=stream)
-        scored.append((probabilities(model, enc.raster, logits=logits), enc, gt))
+        # A model that reads the floor gets the recording's own, as in training (ADR-0010
+        # part 5); scoring below is unchanged, ADR-0009 decision 2.
+        fl = part.recording_floor(sl, gt, stream) if part.reads_floor(model) else None
+        scored.append((probabilities(model, enc.raster, logits=logits, floor=fl), enc, gt))
 
     # The grid must BRACKET the optimum. `tube` first picked 0.95 — the top of a
     # 0.05-0.95 sweep — and this repo already refuses a boundary answer for the

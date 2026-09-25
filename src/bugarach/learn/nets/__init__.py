@@ -53,15 +53,24 @@ class Arch:
     """``build(n_rate_quantiles=..., **cfg) -> torch.nn.Module``."""
     cfg: dict = field(default_factory=dict)
     note: str = ""
+    training: dict = field(default_factory=dict)
+    """How :func:`bugarach.learn.train.train` fits this architecture when the caller does not
+    say: ``membership_weight`` and ``floor_labels`` (``bugarach.learn.participation``). Empty
+    for every architecture registered before ADR-0010 part 5, so their fits do not move; kept
+    apart from ``cfg`` because ``cfg`` is what to build and is what a checkpoint rebuilds."""
 
     def make(self, **over):
         return self.build(**{**self.cfg, **over})
 
 
-def register(name: str, note: str = "", **cfg):
-    """Add an architecture to the sweep. One line per architecture, by design."""
+def register(name: str, note: str = "", training: dict | None = None, **cfg):
+    """Add an architecture to the sweep. One line per architecture, by design.
+
+    ``training`` sets the fit's defaults for this architecture (see :attr:`Arch.training`).
+    """
     def deco(fn):
-        ARCHITECTURES[name] = Arch(name=name, build=fn, cfg=cfg, note=note)
+        ARCHITECTURES[name] = Arch(name=name, build=fn, cfg=cfg, note=note,
+                                   training=dict(training or {}))
         return fn
     return deco
 
