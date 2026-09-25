@@ -271,6 +271,16 @@ Unsettled, they would leave the run ending on the same list:
      `alpha`. Ruling 5's rule applies: no value at a cap is adopted as a tuned value.
 7. **Contexts shorter than 20 s**, which fast LoCo's search reached by extension (5 s): allow them,
    or make 20 s the floor of the grid.
+   **Ruled 2026-09-25 by Tony, in two parts.**
+   - **20 s is the shortest context.** The grid is not extended below it. Real median gaps between
+     events are 25 s (slow, combined) and 41 s (fast), so a shorter context cannot average over the
+     background between events and mostly sees the event and its neighbour. The bench's background
+     is stationary and would not penalise that, but recordings are not.
+   - **LoCo's own threshold (`threshold_pctile`) leaves the search** and stays at its shipped value
+     on each stream. Under the floor it is ineffective: on combined, the shipped setting and the 1st
+     percentile made the same calls (held-out gain exactly 0 on 48 recordings), because the floor
+     sits above LoCo's own chance level. The report records it as ineffective, cause known, under
+     ruling 5. Whether LoCo keeps the setting at all is decided later.
 8. **The guard cap** (a guard at most a quarter of its context), which now reaches LoCo too:
    confirm it.
 
