@@ -9,9 +9,15 @@ Accepted when Tony rules on the open points at the end of this record.
 **One record, six parts, on purpose.** This directory's convention is one decision per file. Tony
 asked for one record because the parts are one decision: stop measuring detectors on a bench and
 through a review tool that the real data contradict. The parts depend on each other. The bench
-change (part 2) is what gives the merge penalty (part 3) and the chorus training (part 5)
+change (part 2) is what gives the merge penalty (part 3) and the participation training (part 5)
 something to act on. The review-tool rule (part 6) decides what the first review of the result
 shows.
+
+**Revised the same day, before acceptance.** The first draft focused tuning on CoactDetect and the
+chorus models. Tony then pointed out that nothing had been trained on realistic intervals, so every
+ranking behind that focus came from the bench this record replaces. He asked instead to optimise the
+full panel one last time on the new bench (*"cover our asses and optimize the full panel of
+detectors one last time on the new real interval simulated data"*). Part 1 now says that.
 
 It **amends** [ADR-0009](0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md)
 without superseding it. ADR-0009's five decisions stand. What changes is a premise it took from the
@@ -29,6 +35,17 @@ CoactDetect's shipped setting passes every budget on all three streams; four oth
 do not. The chorus models were level with CoactDetect on fast and combined and 0.02 below on slow.
 Tony, the same morning: *"I feel we have enough evidence to focus on coact detect and the learned
 models."*
+
+**Every ranking so far comes from a bench with events at least 120 s apart.** Among the learned
+models, chorus has led each comparison: chorus_norm at 0.745–0.763 held-out F1 per fold in the fair
+comparison's replicate draw (2026-09-18), against line_length at 0.661–0.725 and tube at
+0.637–0.657, with CoactDetect at 0.744–0.752
+([`replicate_summary.json`](../learned/tuned_vs_coact/fair_comparison_2026_09_18/replicate_summary.json)).
+But chorus's lead over CoactDetect shrank each time the bench got fairer: +0.103 F1 untuned on the
+retired home spec, nearly tied in the fair comparison, tied or behind on 2026-09-25. None of these
+models, and none of the coded detectors, has been trained or tuned with events seconds apart, which
+is where the families differ most: separating neighbours, and counting cells against a floor. Tony:
+*"nothing has been trained on the realistic intervals."*
 
 **The bench plants events at least 120 s apart; real events are often seconds apart.** In
 `bench.BENCH_RECORDING` the minimum spacing is 120 s, and the scored recordings' neighbouring events
@@ -74,15 +91,23 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
 
 ## Decision
 
-1. **Tuning and training focus on CoactDetect and the learned models.**
-   - The other five coded detectors (LoCo, binned SCE, rate+context, SPIKE-synch and locust) are
-     frozen at their shipped settings as comparators. They are still scored, so CoactDetect's
-     number has a reference, and they are not searched again.
-   - The four proposals the 2026-09-25 report found adoptable are not adopted.
-   - A frozen detector whose shipped setting fails a budget is marked as out of budget wherever a
+1. **The full panel is optimised one last time on the realistic bench, and the focus is chosen from
+   the result.**
+   - **Coded:** all six detectors (CoactDetect, LoCo, binned SCE, rate+context, SPIKE-synch and
+     locust) are searched on the fast, slow and combined benches.
+   - **Learned:** chorus_norm, chorus_gain_norm, line (with its orientation channel) and tube are
+     trained on all three benches, each with the participation changes its architecture allows
+     (part 5).
+   - **Final** means what the 2026-09-25 runbook defined: tuned under the definitions it is scored
+     under, bracketed, confirmed on fresh seeds within every budget, and adopted by Tony.
+   - **The focus is decided after the run**, by a rule fixed before it: a detector more than one
+     noise unit behind the leader on at least two streams is dropped from further tuning. One noise
+     unit is 0.01 F1, the draw-to-draw spread measured in the fair comparison. Dropped detectors stay
+     scored, at their final settings, as comparators.
+   - The four proposals the 2026-09-25 report found adoptable are not adopted. They were tuned on
+     the bench this record replaces.
+   - A shipped setting that fails a budget on the new bench is marked as out of budget wherever a
      user can pick it.
-   - The reason is parsimony, not superiority: no other coded detector beats CoactDetect, and it
-     passes every budget on every stream.
 
 2. **The bench plants events at intervals measured in the real data.**
    - **Measured without a detector.** For each recording and stream: count ROIs with an onset
@@ -113,12 +138,18 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
    - ADR-0009 decision 5's cap of 120 s on contexts stands. It is Tony's preference, not only a
      consequence of the spacing.
 
-5. **Chorus learns participation in its next retrain.**
-   - **A count it can see.** Chorus gets a pooled count, the sum of its bounded per-cell votes, and
-     the recording's floor as an input. The sum is bounded by the number of ROIs, because each vote
-     lies between 0 and 1. That keeps it clear of the unbounded sum that failed in `tiny`.
-   - **Membership is trained.** A per-cell term in the loss uses the bench's planted membership:
-     a cell's vote is pushed high at an event that recruited it, and low otherwise.
+5. **Every learned model trained under this record learns participation.** Each model in the
+   registry combines its cells into a fraction of the field (the chorus and line families by a vote
+   per cell; tube and trace by averaging cells away early), so none can represent the floor's
+   absolute count. Each model gets what its architecture allows:
+   - **A count it can see** (every family). A pooled count, the sum of its bounded per-cell votes or
+     its equivalent, and the recording's floor as an input. The sum is bounded by the number of ROIs,
+     because each vote lies between 0 and 1. That keeps it clear of the unbounded sum that failed in
+     `tiny`.
+   - **Membership is trained** (the chorus and line families, which have per-cell votes). A per-cell
+     term in the loss uses the bench's planted membership: a cell's vote is pushed high at an event
+     that recruited it, and low otherwise. Tube and trace average cells away before any such stage,
+     so they train without it.
    - **The boundary is planted.** Each recording plants events at its floor − 1, at its floor and at
      floor + 1, besides the higher levels. For training, events under the floor are labelled as no
      event. For scoring, ADR-0009 decision 2 is unchanged: they are "don't care".
@@ -155,9 +186,17 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
 - **Chorus lanes on review pages get busier.** They show every call the bench scores.
 - **Floor + 1 stays evidence, not a rule.** It is re-examined on the corrected review, and adopting
   it would take its own record.
-- **Work, in order:** measure the intervals; build the generator and the review-tool change;
-  re-measure floors; one night to re-search CoactDetect and retrain chorus; review both on the same
-  rasters.
+- **Work, in order:**
+  1. Measure the intervals.
+  2. Build the generator, the participation changes and the review-tool change.
+  3. Re-measure the floors.
+  4. One night: search the six coded detectors, train the four learned models, and score all of
+     them on fresh seeds.
+  5. Review all of them on the same rasters.
+  6. Choose the focus by the rule in part 1.
+
+  A full coded search took about 35 minutes per machine on 2026-09-25, running one process per
+  detector, and a learned fit takes seconds on the GPU. So the panel fits in one night.
 
 ## Open for Tony before acceptance
 
@@ -169,6 +208,18 @@ chorus on Tony's review pages was not the chorus that earned its bench F1.
 3. **The review tool's counting window.** ±1 s around the call's span (as written), or another
    width.
 4. **The learned models' bar** (part 5), as stated or otherwise.
+
+**Carried over from the 2026-09-25 report**, because a full-panel search meets each of them again.
+Unsettled, they would leave the run ending on the same list:
+
+5. **A value at a hard limit** (a guard, `C_min` or merge gap of 0): does it count as bracketed?
+   Five proposals were held back on this alone on 2026-09-25.
+6. **CoactDetect's `alpha`**, which ran to the extension cap (1e-9) on fast and combined: take it
+   out of the search, fix its value, or raise the cap.
+7. **Contexts shorter than 20 s**, which fast LoCo's search reached by extension (5 s): allow them,
+   or make 20 s the floor of the grid.
+8. **The guard cap** (a guard at most a quarter of its context), which now reaches LoCo too:
+   confirm it.
 
 ## References
 
