@@ -55,8 +55,8 @@ previous draft's claim that its square-root axis is a no-op: it is not.
 
 | source | path |
 |---|---|
-| production run | `<darkroom>/bugarach/2026-09-11-surrogate-screen/` — `cells.csv`, `stats.csv`, `destruction.csv`, `yardsticks.csv`, `meta.json`, `discriminator/` |
-| probe (instrument only) | `<darkroom>/bugarach/probe-surrogate-screen/` — `stage2_*` 259 splits/519 draws, `stage2b_*` 260/520, `stage4_*` discriminator |
+| production run | `<darkroom>/bugarach/archive/2026-09/2026-09-11-surrogate-screen/` — `cells.csv`, `stats.csv`, `destruction.csv`, `yardsticks.csv`, `meta.json`, `discriminator/` |
+| probe (instrument only) | `<darkroom>/bugarach/archive/2026-09/probe-surrogate-screen/` — `stage2_*` 259 splits/519 draws, `stage2b_*` 260/520, `stage4_*` discriminator |
 | code | branch `surrogate-screen-overnight`, commit `0dc6356`: `surrogate_stats.correction_reach`/`smallest_n`/`score_cell`, `surrogates.py`, `surrogate_discriminator.py`, `tools/probe_discriminator.py` |
 | review of the withdrawn draft | `docs/reviews/2026-09-12-surrogate-screen-reevaluated_2026-09-12.md` |
 

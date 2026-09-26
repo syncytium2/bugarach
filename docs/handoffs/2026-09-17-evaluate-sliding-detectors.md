@@ -14,7 +14,7 @@ create a new handoff with the revised models for evaluation by a new session."*
 ## 0. First: which run failed?
 
 The settings search this handoff describes **did not fail on the machine that wrote it**:
-`<darkroom>/bugarach/2026-09-16-full-search/` holds `search.json` with `stage: finished`
+`<darkroom>/bugarach/archive/2026-09/2026-09-16-full-search/` holds `search.json` with `stage: finished`
 (2026-09-16 17:02, 11 minutes), an **empty** `search.err`, a complete `search.log`, and a correct
 figure (`full_search.png`). Two earlier attempts were stopped on purpose and their files set
 aside (`stepped-run-stopped/`, `prototype-run-stopped/`).
@@ -77,7 +77,7 @@ in sliding mode. Chosen on bench recordings 1–48, **scored on 49–96**, which
 with a 95% bootstrap interval on the gain. Eligible only under all three budgets in `bench.py`.
 Every held-out candidate also scored on 12 **crowded** recordings per background
 (`bench.make_tail_recording`, planted events as little as 6 s apart) — a check, never a selection
-input. Full output and Figures 1–4: `<darkroom>/bugarach/2026-09-16-full-search/`.
+input. Full output and Figures 1–4: `<darkroom>/bugarach/archive/2026-09/2026-09-16-full-search/`.
 
 | detector | candidate | settings changed | held-out mean F1 | gain (95% interval) | crowded mean F1 (change) | false alarms/hour on the empty recording (limit) |
 |---|---|---|---|---|---|---|

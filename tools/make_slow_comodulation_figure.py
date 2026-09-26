@@ -4,7 +4,7 @@
     python tools/make_slow_comodulation_figure.py --run <folder>
     python tools/make_slow_comodulation_figure.py --run <folder> --also docs/learned/slow_comodulation
 
-Writes into ``<darkroom>/bugarach/2026-09-17-slow-comodulation/`` unless ``--out`` names a folder:
+Writes into ``<darkroom>/bugarach/archive/2026-09/2026-09-17-slow-comodulation/`` unless ``--out`` names a folder:
 
 * ``fig1_two_kinds.png`` — synthetic: planted events, shared modulation on a 20 s timescale and
   shared drift on a 5-minute one, as rasters and as cross-correlograms.

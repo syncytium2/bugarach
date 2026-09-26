@@ -93,7 +93,7 @@ question.
 ## Results — run 2026-09-13
 
 `python tools/measure_recording_identity.py`: both streams, 1,669 windows from 84 recordings and 44 mice,
-199 permutations, 2,000 bootstraps. Outputs are in `<darkroom>/bugarach/2026-09-13-recording-identity/`,
+199 permutations, 2,000 bootstraps. Outputs are in `<darkroom>/bugarach/archive/2026-09/2026-09-13-recording-identity/`,
 with repo copies in [`recording_identity/`](recording_identity/).
 
 ⚠ **Disclosure.** A 300-window, fast-stream smoke run (`--quick`) was seen **before** the declared section

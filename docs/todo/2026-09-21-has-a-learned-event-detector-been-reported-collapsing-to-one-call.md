@@ -20,7 +20,7 @@ two papers:
   more likely deeper and narrower — Table 1's ordering. But its theory is ReLU-only and forbids the
   recovery the page demonstrates.
 
-Both are filed on the literature shelf, `<darkroom>/bugarach/lit/optimization/`, with the distinction
+Both are filed on the literature shelf, `<darkroom>/bugarach/archive/2026-08/lit/optimization/`, with the distinction
 written into each entry.
 
 What the page now claims is narrower: a head can start almost silent in a network with **no zero

@@ -133,7 +133,7 @@ third, `20260629_314`, is absent from the census: a blind whole-frame scan by in
 **Corrected 2026-09-22, and this paragraph said otherwise for four days.** It used to end
 "the pinning detector has not been run over it … unexamined for one". **That is false, and
 the producer withdrew it the day they wrote it** — see the same-day correction in their
-answer, `<darkroom>/bugarach/2026-09-18-pinned-rois-answer/README.md`. All 85 archive
+answer, `<darkroom>/bugarach/archive/2026-09/2026-09-18-pinned-rois-answer/README.md`. All 85 archive
 slices went through the per-ROI trace-derivative detector, these three included:
 `20260630_325` came back **marginal** and is in the census (ROI 10, 3.6 s), with Tony
 reviewing its trace panel himself; `20250926_237` and `20260629_314` came back with **no

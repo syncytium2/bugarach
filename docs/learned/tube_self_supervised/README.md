@@ -871,7 +871,7 @@ carried over unchanged.
 **What is in the repo and what is not.** FOUNDATIONS §5 keeps anything derived from real recordings
 machine-local, and on Tony's ruling of 2026-09-17 that now includes this run's per-recording event
 times (`real_compare/events.json`, keyed by recording id) and the 120 checkpoints trained on real
-recordings. They are in the claimed darkroom folder `bugarach/2026-09-18-rigid-shift-de-pinned/`
+recordings. They are in the claimed darkroom folder `bugarach/archive/2026-09/2026-09-18-rigid-shift-de-pinned/`
 (`docs/SESSIONS.md`), together with the six figures and a copy of this page; the repo keeps
 `real_compare/summary.json`, which is what this page quotes. ⚠ The copies removed from the repo are
 still in git history and in every clone, so this is a removal and not a retraction.

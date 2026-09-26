@@ -385,7 +385,7 @@ nowhere on the page.
 
 **To flip any of these:** the argument is in
 [`detector_history.md`](detector_history.md) §6, with the primaries on the shelf
-at `<darkroom>/bugarach/lit/radar/`.
+at `<darkroom>/bugarach/archive/2026-08/lit/radar/`.
 
 ---
 

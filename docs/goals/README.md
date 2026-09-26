@@ -96,7 +96,7 @@ the grids are held fixed, so a difference between the two runs is a difference b
 `--replicate 0` declares byte for byte what WSMIP064 is already running, so that run stays resumable.
 
 Both runs write a `progress.json` mirrored about once a minute into the darkroom —
-`bugarach/2026-09-18-fair-comparison-run/` and `bugarach/2026-09-18-replicate-run-status/`. **An `at`
+`bugarach/archive/2026-09/2026-09-18-fair-comparison-run/` and `bugarach/archive/2026-09/2026-09-18-replicate-run-status/`. **An `at`
 more than a few minutes old means the run has stopped**, and `STATUS.txt` beside it says the age in
 words, so the answer is readable from any machine rather than from the one the run is on
 (`tools/mirror_run_status.py`).

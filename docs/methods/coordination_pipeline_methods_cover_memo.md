@@ -19,7 +19,7 @@ ranks all three beside the four known pinned recordings.
 **Corrected 2026-09-22.** This section said `20260629_314` had never been run through the
 pinning detector, taking that from the export's own note. It is false, and the producer withdrew
 it the day they wrote it — their answer of 2026-09-18 carries a same-day correction
-(`<darkroom>/bugarach/2026-09-18-pinned-rois-answer/README.md`). All 85 archive slices went
+(`<darkroom>/bugarach/archive/2026-09/2026-09-18-pinned-rois-answer/README.md`). All 85 archive slices went
 through the per-ROI trace-derivative detector: `20260630_325` came back marginal and is in the
 census, and `20250926_237` and `20260629_314` came back with no ROI flagged. The note in
 `current_export.toml` has now been corrected too, which is where this section and the round-3

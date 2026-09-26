@@ -78,8 +78,8 @@ and worth a look on real calls before adopting.
   per background (`bench.make_tail_recording`) — a check, never a selection input. Earlier runs'
   files are in `stepped-run-stopped/` and `prototype-run-stopped/`.
 - **Command** (from `bugarach-worktrees/full-search`, `PYTHONPATH=src`):
-  `python tools/search_all_settings.py --workers 44 --full loco --out "<darkroom>/bugarach/2026-09-16-full-search"`
-- **Output**, all in `<darkroom>/bugarach/2026-09-16-full-search/`:
+  `python tools/search_all_settings.py --workers 44 --full loco --out "<darkroom>/bugarach/archive/2026-09/2026-09-16-full-search"`
+- **Output**, all in `<darkroom>/bugarach/archive/2026-09/2026-09-16-full-search/`:
   - `search.log` — progress, one timestamped line per step; `search.err` — stderr.
   - `search.json` — **rewritten after every stage**; its `stage` field says how far it got
     (`rounds done` → `pairs done` → `held-out done` → `full loco done` → `finished`).
@@ -120,7 +120,7 @@ retune found and rejected as inside the noise.
 |---|---|
 | #593 | binned SCE calls scored over their own bins (`SceStream.extent_sec`) |
 | #594 | locust holds each cell for the event's own `width_sec`; every simulated recording carries widths from the export's FAST distribution |
-| #597 | retune of the one swept setting per detector: binned SCE 99 → 98, LoCo 99.9 → 99.5, rate+context 5.0 → 4.5 Hz; the empty-recording budget moved into `bench.py`; `tools/retune_operating_points.py`; Figure in `<darkroom>/bugarach/2026-09-16-best-parameters/` |
+| #597 | retune of the one swept setting per detector: binned SCE 99 → 98, LoCo 99.9 → 99.5, rate+context 5.0 → 4.5 Hz; the empty-recording budget moved into `bench.py`; `tools/retune_operating_points.py`; Figure in `<darkroom>/bugarach/archive/2026-09/2026-09-16-best-parameters/` |
 
 The full table Tony saw, one unit (false alarms per hour), 48 recordings:
 

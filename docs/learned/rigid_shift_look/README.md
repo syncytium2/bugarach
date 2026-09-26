@@ -37,7 +37,7 @@
 > figure he reads himself. The dashed lines at 0.55, ±2 % and 0.25 are the thresholds he signed
 > earlier, drawn for reference, not applied as a rule. Not murderboarded. Baseline windows of the
 > lab folder only.
-> Results: `<darkroom>/bugarach/2026-09-15-rigid-shift-look/`. Code: `tools/look_rigid_shift.py`
+> Results: `<darkroom>/bugarach/archive/2026-09/2026-09-15-rigid-shift-look/`. Code: `tools/look_rigid_shift.py`
 > and `tools/make_rigid_shift_look_figure.py` on branch `unsup/rule-as-code`.
 
 ## The answer, short

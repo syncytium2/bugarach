@@ -45,7 +45,7 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 
 ## Where the shelf is
 
-`<darkroom>/bugarach/lit/<topic>/<first-author>_<year>_<slug>.pdf` — resolve the darkroom with
+`<darkroom>/bugarach/archive/2026-08/lit/<topic>/<first-author>_<year>_<slug>.pdf` — resolve the darkroom with
 `bugarach.paths.darkroom()` or `python -m bugarach.paths`. **Never hardcode it**: the path carries
 a person's name and this repo is public (SAP004).
 

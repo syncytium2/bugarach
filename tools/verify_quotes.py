@@ -2,7 +2,7 @@
 """Report which quotations in a document can be found in a PDF on the lit shelf.
 
     python tools/verify_quotes.py docs/detector_history.md \
-        "<darkroom>/bugarach/lit/radar" "<darkroom>/bugarach/lit/coordination"
+        "<darkroom>/bugarach/archive/2026-08/lit/radar" "<darkroom>/bugarach/archive/2026-08/lit/coordination"
 
 Murderboard role 2 ("DOI or Die") done by machine, for the one class of claim it
 cannot check by reasoning: a quoted sentence either is in the source or it is not.

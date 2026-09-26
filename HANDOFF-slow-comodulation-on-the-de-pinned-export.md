@@ -59,12 +59,12 @@ is the correct outcome for 83 events out of 264,075, and is itself worth stating
 
 | what | where |
 |---|---|
-| the run | `<darkroom>/bugarach/2026-09-17-slow-comodulation-pins-excluded/` — `results.json`, `summary.json`, six figures, `one_recording.png` |
-| the superseded run | `<darkroom>/bugarach/2026-09-17-slow-comodulation/` — keep it; the page's current text belongs to it |
+| the run | `<darkroom>/bugarach/archive/2026-09/2026-09-17-slow-comodulation-pins-excluded/` — `results.json`, `summary.json`, six figures, `one_recording.png` |
+| the superseded run | `<darkroom>/bugarach/archive/2026-09/2026-09-17-slow-comodulation/` — keep it; the page's current text belongs to it |
 | the page | `docs/learned/slow_comodulation/README.md` — **still the old run**, with a stop notice at the top |
 | the figures in the repo | **deliberately still the old run's**, so page and figures agree. The new ones are in the darkroom |
 | the murderboard record | `docs/reviews/slow-comodulation-2026-09-17.md` — describes the old run, three blind rounds, delivered unconverged |
-| the held role report | `<darkroom>/bugarach/2026-09-17-slow-comodulation/round3-roles-held/` — waits on Tony |
+| the held role report | `<darkroom>/bugarach/archive/2026-09/2026-09-17-slow-comodulation/round3-roles-held/` — waits on Tony |
 
 Reproduce: `python tools/measure_slow_comodulation.py --jobs 12 --draws 32 --boot 4000`,
 then `python tools/make_slow_comodulation_figure.py --run <that folder> --also

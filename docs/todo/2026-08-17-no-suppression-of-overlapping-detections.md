@@ -55,4 +55,4 @@ against a 1.5 s window, and precision rises without the detector having improved
 See `2026-08-17-scoring-cannot-see-localization.md` — settle what the scorer can
 see before tuning anything that changes what it is shown.
 
-Source on the shelf: `<darkroom>/bugarach/lit/coordination/chambon_2019_dosed.pdf`.
+Source on the shelf: `<darkroom>/bugarach/archive/2026-08/lit/coordination/chambon_2019_dosed.pdf`.

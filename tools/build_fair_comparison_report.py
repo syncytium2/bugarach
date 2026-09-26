@@ -70,7 +70,7 @@ SEL_NAME = {"ungated": "F1 alone", "gated": "F1 under the budget"}
 NET_INK, CODED_INK, GREY = "#1b5fa8", "#111", "#8a8a8a"
 PLANT_INK, REPL_INK, THR_INK = "#1b5fa8", "#c2410c", "#7a4fa3"
 PART_INK = {0.3: "#1b5fa8", 0.18: "#5b8fd0", 0.1: "#b3cbea"}
-REPLICATE_PAGE = "&lt;darkroom&gt;/bugarach/2026-09-18-replicate-run-status/"
+REPLICATE_PAGE = "&lt;darkroom&gt;/bugarach/archive/2026-09/2026-09-18-replicate-run-status/"
 ARCH_REPO = "docs/learned/comparison/comparison.svg"
 GOAL_PAGE = "docs/goals/learned-model-family.md"
 

@@ -20,7 +20,7 @@ Controls: real against real (must read chance), 30% thinning (must be detected).
 bootstraps over mice of the cross-validated per-pair correctness.
 
 Output: ``results.json`` and ``recording_identity.png`` in the darkroom folder
-``<darkroom>/bugarach/2026-09-13-recording-identity/`` by default; ``--also`` copies both into
+``<darkroom>/bugarach/archive/2026-09/2026-09-13-recording-identity/`` by default; ``--also`` copies both into
 the repo.
 """
 from __future__ import annotations

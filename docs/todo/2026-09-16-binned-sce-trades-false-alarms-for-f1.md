@@ -11,7 +11,7 @@ filed: 2026-09-16
 
 **What was measured** — `tools/retune_operating_points.py`, 2026-09-16, 48 bench recordings per
 point, scored over each call's own bins. `retune.json` and Figure 1 are in
-`<darkroom>/bugarach/2026-09-16-best-parameters/`.
+`<darkroom>/bugarach/archive/2026-09/2026-09-16-best-parameters/`.
 
 | threshold percentile | mean F1 (quiet, busy) | calls/hour on the empty recording |
 |---|---|---|

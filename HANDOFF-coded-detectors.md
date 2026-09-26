@@ -53,7 +53,7 @@ The decisions, in short (full text in the goals README; they hold until Tony cha
 |---|---|---|
 | Sliding LoCo and CoactDetect: counts in a trailing window, and a null computed exactly rather than drawn | `sliding-loco-coact` @ `005ae98`: `src/bugarach/detectors/sliding.py`, `window_mode="sliding"` in `coact.py` / `loco.py`, `docs/forks.md` §14 | no. CI is red at the binned-tuned values: sliding LoCo gives 4.0 calls per hour on the empty recording against a limit of 3, CoactDetect 7.7 against 7 |
 | The search over every **declared** setting, and the sliding-vs-binned probe | `full-search` @ `75df220`: `tools/search_all_settings.py` (+ tests), `tools/probe_sliding_vs_binned.py` | no |
-| The search's results | `<darkroom>/bugarach/2026-09-16-full-search/`: `search.log`, `search.json`, Figures 1–4. The run finished 2026-09-16 at 17:02 in 11 minutes with an empty `search.err` | darkroom |
+| The search's results | `<darkroom>/bugarach/archive/2026-09/2026-09-16-full-search/`: `search.log`, `search.json`, Figures 1–4. The run finished 2026-09-16 at 17:02 in 11 minutes with an empty `search.err` | darkroom |
 | The nested tuning tool, now with GPU training | `tune-learned-vs-coact` @ `828cb80` (WSMIP064's): `tools/tune_learned_vs_coact.py`, `train(device=...)` | no |
 | A wider reference grid for CoactDetect and LoCo | `tune-wider-reference-grid` @ `314a887` (WSMIP064's) | no |
 
@@ -313,7 +313,7 @@ to keep. Nothing below edits WSMIP064's branch. It all arrives through `main`.
   **CoactDetect's shared onsets move a median +0.30 s** (median absolute 0.50 s) where LoCo's move
   0.00 s — the bin edge becoming the first participating event, which is the whole of why only half
   of CoactDetect's calls match at 0.5 s. Run, figures and note:
-  `<darkroom>/bugarach/2026-09-17-sliding-vs-binned/`. Next: §3 step 3, the every-knob search.
+  `<darkroom>/bugarach/archive/2026-09/2026-09-17-sliding-vs-binned/`. Next: §3 step 3, the every-knob search.
 - 2026-09-17 23:50 (WSMIP065): **§3 step 3 done for the sliding pair; step 4 is HELD.** The values
   are chosen, measured and bracketed, and both operating points are **still binned on `main`**:
   switching them moves the viewer's calibrated defaults while the browser runs both detectors
@@ -338,7 +338,7 @@ to keep. Nothing below edits WSMIP064's branch. It all arrives through `main`.
   and refuses to start when the shipped point is not measurable here. `TIE_F1` in
   `tests/test_background_curve.py` widened 0.01 → 0.02 against a measurement, not to fit a result: at
   12 seeds the new values leave no steady leader; at 36 seeds CoactDetect leads every grid point with
-  deficit 0.000. Run: `<darkroom>/bugarach/2026-09-17-full-search/sliding5/`; the binned every-knob
+  deficit 0.000. Run: `<darkroom>/bugarach/archive/2026-09/2026-09-17-full-search/sliding5/`; the binned every-knob
   run and the artifact it exposed are in the parent folder.
   **Still open, measured and not landed:** locust's 128-frame minimum distance (+0.119 held-out,
   +0.149 crowded, but unbracketed at the extension ceiling and tangled with the anchor question);
