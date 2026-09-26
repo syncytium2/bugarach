@@ -1,11 +1,14 @@
 ---
-status: waiting-on-tony
+status: done
 filed: 2026-09-25
+closed: 2026-09-26
 ---
 
 # Land the Python 3.14 floor (#825)
 
-waiting: After #825 merges, drop the 3.11 and 3.13 required checks.
+**Done, 2026-09-26.** Tony removed `test (3.11)` and `test (3.13)` from main's required checks, and
+#825 merged. The PR that closes this file is the first to run CI on `test (3.14)` alone, and it
+merged only on that check.
 
 **What:** [ADR-0011](../adr/0011-bugarach-supports-the-python-its-machines-run.md), on draft PR
 #825 (branch `python-floor-3-14`). `requires-python` goes to `>=3.14`, CI tests only 3.14, and
