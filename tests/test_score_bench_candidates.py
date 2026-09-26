@@ -67,6 +67,27 @@ def test_every_model_the_training_tool_trains_is_scored():
     assert sbc.MODELS is T.MODELS and len(sbc.MODELS) == 8
 
 
+def _row(seed):
+    return json.dumps(dict(seed=seed, path=f"m_slow_seed{seed}.json", mean=0.5, null_per_hour=0.0))
+
+
+def test_a_log_opening_with_a_byte_order_mark_keeps_its_first_seed(tmp_path):
+    """2026-09-26: every training log PowerShell wrote opened with a BOM, and seed 0 was lost."""
+    log = tmp_path / "train-m-slow.log"
+    log.write_text("\n".join([_row(0), _row(1), "best: m_slow_seed0.json mean F1 0.5"]) + "\n",
+                   encoding="utf-8-sig")
+    assert log.read_bytes()[:3] == b"\xef\xbb\xbf"
+    assert [r["seed"] for r in sbc.train_rows(log)] == [0, 1]
+
+
+def test_a_best_seed_missing_from_the_rows_is_an_error(tmp_path):
+    log = tmp_path / "train-m-slow.log"
+    log.write_text("\n".join(["noise" + _row(0), _row(1), "best: m_slow_seed0.json"]) + "\n",
+                   encoding="utf-8")
+    with pytest.raises(ValueError, match="not among the rows"):
+        sbc.train_rows(log)
+
+
 def test_a_run_with_no_seed_in_budget_has_no_pick():
     rows = [dict(path="a", mean=0.9, null_per_hour=3.0), dict(path="b", mean=0.5, null_per_hour=0.5)]
     assert sbc.picked(rows, 1.0)["path"] == "b"

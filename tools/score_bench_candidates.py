@@ -145,10 +145,19 @@ def adoptable_on_the_search(name: str, row: dict, br: dict) -> bool:
 
 
 def train_rows(log: Path) -> list[dict]:
-    rows = []
-    for line in log.read_text(encoding="utf-8").splitlines():
+    """Every seed row the training tool printed. ``utf-8-sig``: a log redirected by Windows
+    PowerShell opens with a byte-order mark, which hid the first row, seed 0, from every one of
+    the full-panel night's 24 logs (2026-09-26). The log's own ``best:`` line must name a row
+    read here, so a row lost some other way is an error rather than a silent gap."""
+    rows, best = [], None
+    for line in log.read_text(encoding="utf-8-sig").splitlines():
+        line = line.strip()
         if line.startswith("{") and '"seed"' in line:
             rows.append(json.loads(line))
+        elif line.startswith("best: "):
+            best = line.split()[1]
+    if best is not None and best not in {r["path"] for r in rows}:
+        raise ValueError(f"{log}: its best seed {best} is not among the rows read")
     return rows
 
 
