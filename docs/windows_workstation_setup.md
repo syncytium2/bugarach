@@ -229,7 +229,7 @@ proof settled:
 
 ### For WSMIP064: the fair comparison launched 2026-09-18 at 16:14
 
-That run already copies `progress.json` into `<darkroom>/bugarach/2026-09-18-fair-comparison-run/`
+That run already copies `progress.json` into `<darkroom>/bugarach/archive/2026-09/2026-09-18-fair-comparison-run/`
 itself, through the tuning tool's `--mirror`, at least once a minute. That copy is written **by the
 run's own driver**, so if the driver dies it stops, and a reader has to notice that its `at` has gone
 old. The scheduled mirror is the independent check: a separate process with a one-line verdict. Two

@@ -10,7 +10,7 @@ closed: 2026-08-25
 >
 > `tools/compare_routes.py` on `2026-08-18_revised_2v_periods` — 84 recordings,
 > stream `fast`, detectors pinned to `rate,coact,sce` on both sides, **both output
-> files kept** this time (`<darkroom>/bugarach/two_routes/`):
+> files kept** this time (`<darkroom>/bugarach/archive/2026-08/two_routes/`):
 >
 > | detector | CLI rows | browser rows | agreed | CLI only | browser only |
 > |---|---|---|---|---|---|

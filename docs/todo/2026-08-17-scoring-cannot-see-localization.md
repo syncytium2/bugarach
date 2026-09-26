@@ -52,7 +52,7 @@ Two changes, the first small.
    (Tapia-Rivas et al. 2024) — and DOSED (Chambon et al. 2019) reports F1 across
    an overlap criterion swept 0.1–0.9, re-tuning every competitor at each value
    so the comparison stays fair at each. Both are on the shelf at
-   `<darkroom>/bugarach/lit/coordination/`.
+   `<darkroom>/bugarach/archive/2026-08/lit/coordination/`.
 
 Note the unit difference before copying either: **their criterion is IoU, a
 ratio; ours is an absolute gap in seconds.** A ratio is scale-free and an

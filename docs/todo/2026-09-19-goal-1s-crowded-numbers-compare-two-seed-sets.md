@@ -6,7 +6,7 @@ filed: 2026-09-19
 # Goal 1's published crowded numbers for sliding CoactDetect and LoCo compare two seed sets
 
 **Found** by the fair comparison's review (round 3, role 3) and confirmed against goal 1's own run
-record, `<darkroom>/bugarach/2026-09-17-full-search/sliding5/search.json`, on 2026-09-19.
+record, `<darkroom>/bugarach/archive/2026-09/2026-09-17-full-search/sliding5/search.json`, on 2026-09-19.
 
 The goal 1 page (`docs/goals/coded-detector-optimization.md`, the row on sliding LoCo and
 CoactDetect) and `HANDOFF-coded-detectors.md` record, for the sliding values now in `bench.py`:

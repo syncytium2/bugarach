@@ -4,7 +4,7 @@
     python tools/fair_comparison_evidence.py fold-draws --fits %USERPROFILE%/runs/fair-comparison-2026-09-18/fits
     python tools/fair_comparison_evidence.py merge-gap  --fits %USERPROFILE%/runs/fair-comparison-2026-09-18/fits
     python tools/fair_comparison_evidence.py breakdown  --fits %USERPROFILE%/runs/fair-comparison-2026-09-18/fits
-    python tools/fair_comparison_evidence.py replicate  --source <darkroom>/bugarach/2026-09-18-replicate-run-status/results
+    python tools/fair_comparison_evidence.py replicate  --source <darkroom>/bugarach/archive/2026-09/2026-09-18-replicate-run-status/results
 
 All four write into ``--run`` (default ``docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/``).
 The per-fit and per-score files (``--fits``, and ``scores/`` beside it) are too large for git; they
@@ -308,7 +308,7 @@ def replicate(source: Path) -> dict:
              "WSMIP065's results so this report can show both draws; WSMIP065's own report is the "
              "authority on the replicate",
         generator="tools/fair_comparison_evidence.py replicate",
-        source="<darkroom>/bugarach/2026-09-18-replicate-run-status/results/results.json and meta.json",
+        source="<darkroom>/bugarach/archive/2026-09/2026-09-18-replicate-run-status/results/results.json and meta.json",
         code="branch replicate-run @ " + str(m["started"]["git"]["commit"])[:7]
              + " (this run's code plus --replicate)",
         replicate=d.get("replicate"),
