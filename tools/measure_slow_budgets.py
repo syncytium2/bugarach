@@ -69,6 +69,11 @@ def main(argv=None) -> int:
     p.add_argument("--bench", choices=("slow", "combined"), default="slow",
                    help="the bench to budget (default slow); combined writes "
                         "bench_combined.BUDGETS_RECORD. The fast bench is always measured beside it")
+    p.add_argument("--only", nargs="+", default=None,
+                   help="measure only these detectors and MERGE their rows into the existing "
+                        "record, leaving every other row as it was measured. For a detector "
+                        "added after the record was written (count, 2026-09-26): re-measuring "
+                        "the rest would move ceilings nobody asked to move")
     a = p.parse_args(argv)
 
     from bugarach import bench
@@ -77,7 +82,11 @@ def main(argv=None) -> int:
     bench_slow = target  # the name the rest of this function reads; slow unless --bench combined
     record_path = target.BUDGETS_RECORD
     mods = {"bugarach.bench": bench, target.__name__: target}
-    tasks = [(m, d, w) for m in mods for d in bench_slow.DETECTORS
+    dets = tuple(a.only) if a.only else bench_slow.DETECTORS
+    unknown = [d for d in dets if d not in bench_slow.DETECTORS]
+    if unknown:
+        p.error(f"unknown detector(s) {unknown}; have {list(bench_slow.DETECTORS)}")
+    tasks = [(m, d, w) for m in mods for d in dets
              for w in (*REGIMES, "null")]
     if a.jobs > 1:
         with ProcessPoolExecutor(max_workers=a.jobs) as ex:
@@ -91,7 +100,7 @@ def main(argv=None) -> int:
     rows = {}
     for m, mod in mods.items():
         rows[m] = {}
-        for d in bench_slow.DETECTORS:
+        for d in dets:
             g = got[m][d]
             probe = max(g[r]["probe"] for r in REGIMES)
             swing = abs(g["baseline_quiet"]["precision"] - g["baseline_busy"]["precision"])
@@ -99,7 +108,7 @@ def main(argv=None) -> int:
                        f1_quiet=g["baseline_quiet"]["f1"], f1_busy=g["baseline_busy"]["f1"],
                        ceiling_probe=ceiling_rate(probe), ceiling_null=ceiling_rate(g["null"]),
                        ceiling_swing=ceiling_swing(swing))
-            if m == "bugarach.bench":
+            if m == "bugarach.bench" and d in bench.MAX_PROBE_PER_MIN:
                 row.update(declared_probe=bench.MAX_PROBE_PER_MIN[d],
                            declared_null=bench.MAX_FALSE_POSITIVES_PER_HOUR[d],
                            declared_swing=bench.MAX_PRECISION_DROP[d])
@@ -116,7 +125,17 @@ def main(argv=None) -> int:
                   f"{r['precision_swing']:7.3f}   {r['ceiling_probe']:5g} {r['ceiling_null']:5g} "
                   f"{r['ceiling_swing']:5g}      {dec}")
 
-    if not a.no_write:
+    if not a.no_write and a.only:
+        rec = json.loads((REPO / record_path).read_text(encoding="utf-8"))
+        for m in mods:
+            rec["rows"].setdefault(m, {}).update(rows[m])
+        rec.setdefault("merged", []).append(dict(
+            detectors=list(dets), measured_on=_dt.date.today().isoformat(),
+            note="rows merged with --only; every other row is as first measured"))
+        (REPO / record_path).write_text(json.dumps(rec, indent=1, sort_keys=True) + "\n",
+                                        encoding="utf-8")
+        print(f"\nmerged {', '.join(dets)} into {record_path}")
+    elif not a.no_write:
         from bugarach import dataset
         rec = dict(tool="tools/measure_slow_budgets.py", measured_on=_dt.date.today().isoformat(),
                    seeds=[SEEDS[0], SEEDS[-1]], rule_rate="max(1, ceil(1.6 x measured))",

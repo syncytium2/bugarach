@@ -102,6 +102,11 @@ WITHHELD_FROM_THE_BUILD = _withheld_from_the_viewer()
 #: read off the viewer rather than chosen here.
 CROWDED_OUT = ("sce", "sync", "loco")
 
+#: On the bench and not published: benched against the six, not offered by the viewer page
+#: (`tests/test_registries_do_not_drift.NOT_IN_THE_BROWSER`), so not drawn in its figures
+#: either. A third reason, distinct from attribution and from legibility.
+BENCH_ONLY = ("count", "count_sliding")
+
 # Every way a page can talk to a host, including the ones that do not look like a
 # request. Kept here, next to the build that refuses on them, and imported by
 # tests/test_site_viewer.py so the two can never drift into disagreeing about what
@@ -1205,7 +1210,7 @@ def main(argv=None):
             # must not come back as a lane label in a PNG, where no check on the
             # served HTML can see it. Kept in step with the viewer's own
             # `WITHHELD` by `tests/test_site_withholding.py`.
-            "--without", *WITHHELD_FROM_THE_BUILD,
+            "--without", *WITHHELD_FROM_THE_BUILD, *BENCH_ONLY,
             "--tube"]
     print("$", " ".join(diag))
     rd = subprocess.run(diag, cwd=ROOT)
@@ -1220,7 +1225,7 @@ def main(argv=None):
            # `WITHHELD_FROM_THE_BUILD` is about attribution and is read off the
            # viewer; `CROWDED_OUT` is this page's own editorial call about
            # legibility. Kept apart because they move independently.
-           "--without", *WITHHELD_FROM_THE_BUILD, *CROWDED_OUT,
+           "--without", *WITHHELD_FROM_THE_BUILD, *CROWDED_OUT, *BENCH_ONLY,
            # One from each class means the learned one too, and it is the lane
            # this page exists to show. It trains inside the build (~8 s) on seeds
            # from the training block — never the seed the figure is drawn on.

@@ -20,7 +20,7 @@ and it stands whatever happens to that proposal.
 `surrogate_discriminator.py`, on the screen branch). Its job is to check the machinery — folds,
 scaling, the null — and it must not flag.
 
-In `<darkroom>/bugarach/2026-09-11-surrogate-screen/discriminator/steps_excluded/fast/controls/`:
+In `<darkroom>/bugarach/archive/2026-09/2026-09-11-surrogate-screen/discriminator/steps_excluded/fast/controls/`:
 
 | file | what it holds |
 |---|---|

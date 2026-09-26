@@ -159,7 +159,7 @@ range and should not be quoted as recovering the timescale.
 ## Where the outputs are
 
 - Report: `docs/learned/report.html`, published, and copied to
-  `<darkroom>/bugarach/2026-08-16-learned-detectors/`
+  `<darkroom>/bugarach/archive/2026-08/2026-08-16-learned-detectors/`
 - Board claim on `docs/SESSIONS.md` — **mark it DONE when you pick this up**
 - Six other PRs are open and none should be merged without Tony: #45 (peer
   session), #46, #48, #50, #51, #52

@@ -111,9 +111,14 @@ RNG_SEED = 20260706
 
 #: The six, in the order the glossary names them. Three take a stream's trains
 #: and a time range; three take the whole slice and window it themselves.
-FLAT = ("rate", "coact", "sync")
+FLAT = ("rate", "coact", "sync", "count", "count_sliding")
 NESTED = ("loco", "sce", "cicada")
 DETECTORS = ("rate", "coact", "loco", "sce", "cicada", "sync")
+#: What may be asked for by name. ``count`` and ``count_sliding`` (the simple rule, binned and
+#: sliding, 2026-09-26) run when named and are **not** in the default :data:`DETECTORS`: adding
+#: them there would change what every existing folder run writes to ``detections.csv``, and
+#: they are on the bench to be measured, not shipped.
+AVAILABLE = DETECTORS + ("count", "count_sliding")
 
 #: Which per-event time each detector anchors on. Recorded in
 #: ``detector_settings.csv`` rather than left implicit, because **the six do not
@@ -128,7 +133,8 @@ DETECTORS = ("rate", "coact", "loco", "sce", "cicada", "sync")
 #: wrong thing off five columns. :mod:`bugarach.store` has the full note,
 #: including why cicada's is not to be "corrected".
 ONSET_FIELD = {"rate": "t50rise", "coact": "t50rise", "sync": "t50rise",
-               "loco": "t50rise", "sce": "t50rise", "cicada": "locs"}
+               "loco": "t50rise", "sce": "t50rise", "cicada": "locs", "count": "t50rise",
+               "count_sliding": "t50rise"}
 
 
 class NoRecordingDetectedOn(RuntimeError):
@@ -351,13 +357,15 @@ def _signature_defaults(name: str) -> dict:
 
     from bugarach.detectors.cicada import cicada_detect
     from bugarach.detectors.coact import coact_detect
+    from bugarach.detectors.count import count_detect, count_sliding_detect
     from bugarach.detectors.loco import loco_detect
     from bugarach.detectors.rate import rate_detect
     from bugarach.detectors.sce import sce_detect
     from bugarach.detectors.sync import sync_detect
 
     fn = {"rate": rate_detect, "coact": coact_detect, "loco": loco_detect,
-          "sce": sce_detect, "cicada": cicada_detect, "sync": sync_detect}[name]
+          "sce": sce_detect, "cicada": cicada_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[name]
     return {p.name: p.default for p in inspect.signature(fn).parameters.values()
             if p.default is not inspect.Parameter.empty}
 
@@ -506,6 +514,7 @@ def _run_flat(name, s, windows, want_streams, params_by_stream, identity):
     """The three that take one stream at a time — so they can take one stream's
     settings at a time, which is what the settings file's `stream` column is for."""
     from bugarach.detectors.coact import coact_detect
+    from bugarach.detectors.count import count_detect, count_sliding_detect
     from bugarach.detectors.rate import rate_detect, stream_trains
     from bugarach.detectors.sync import sync_detect
 
@@ -522,6 +531,10 @@ def _run_flat(name, s, windows, want_streams, params_by_stream, identity):
                 res = rate_detect(stream_trains(st, span), span, **params)
             elif name == "coact":
                 res = coact_detect(st.t50rise, span, **params)
+            elif name == "count":
+                res = count_detect(st.t50rise, span, **params)
+            elif name == "count_sliding":
+                res = count_sliding_detect(st.t50rise, span, **params)
             else:
                 res = sync_detect(st.t50rise, span, **params)
             out.extend(events_from(
@@ -749,11 +762,11 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
 
     folder = Path(folder)
     out_dir = Path(out_dir)
-    bad = [d for d in detectors if d not in DETECTORS]
+    bad = [d for d in detectors if d not in AVAILABLE]
     if bad:
         raise ValueError(
             f"unknown detector(s) {', '.join(bad)} — have "
-            f"{', '.join(DETECTORS)}")
+            f"{', '.join(AVAILABLE)}")
 
     # Same rule as the settings file below: a checkpoint that no longer matches
     # its architecture fails on recording 0, not on 84 of 85.
@@ -761,7 +774,7 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
     if models:
         from bugarach.learn.checkpoint import load as _load_model
         loaded = [m if hasattr(m, "predict") else _load_model(m) for m in models]
-        clash = sorted({m.name for m in loaded} & set(DETECTORS))
+        clash = sorted({m.name for m in loaded} & (set(DETECTORS) | set(AVAILABLE)))
         if clash:
             raise ValueError(
                 f"model(s) named {', '.join(clash)} collide with a hand-written "

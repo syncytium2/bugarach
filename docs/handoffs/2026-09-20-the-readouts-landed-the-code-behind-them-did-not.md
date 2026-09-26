@@ -38,7 +38,7 @@ under nested cross-validation, on two independent seed draws — now has both of
 
 - **The report for a new reader** — [PR #665](https://github.com/syncytium2/bugarach/pull/665).
   Repo copy `docs/learned/tuned_vs_coact/fair_comparison_2026_09_18/index.html`; built copy
-  `<darkroom>/bugarach/2026-09-18-fair-comparison-run/report/index.html`. Run record
+  `<darkroom>/bugarach/archive/2026-09/2026-09-18-fair-comparison-run/report/index.html`. Run record
   `docs/reviews/fair-comparison-2026-09-19.md`.
 - **The merge-gap addendum** — [PR #671](https://github.com/syncytium2/bugarach/pull/671). The
   nets' merge gap selected by the same rules the run used for everything else, on both draws, with

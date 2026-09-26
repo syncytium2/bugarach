@@ -36,4 +36,4 @@ among 195 clear stripes sit 0.5-4.7 s after a period boundary). Not fixed for th
 - Ask: does Nunemaker, DeFazio et al. 2001 (J Neurophysiol 86:86-93, Moenter lab) already use a chance test
   on coincident firing or episodes in summed firing rate? If so, credit rate+context / CoactDetect / LoCo.
 
-Review records: `<darkroom>/bugarach/2026-09-15-detector-review-plain/reviews/`.
+Review records: `<darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review-plain/reviews/`.

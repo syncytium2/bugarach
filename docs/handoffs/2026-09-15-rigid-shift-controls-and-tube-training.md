@@ -176,7 +176,7 @@ Tony chose option 1. The tools are `tools/tube_ssl_real_compare.py` and
 - **Not an edge artefact:** only 3–4 % of their events sit within 5 s of a window edge.
 
 **Figures** (darkroom only, because they hold real rasters):
-`<darkroom>/bugarach/tube_real_lanes_20250827_199_baseline.png` and `..._zoom.png`.
+`<darkroom>/bugarach/archive/2026-09/tube_real_lanes_20250827_199_baseline.png` and `..._zoom.png`.
 
 **Reading.** They are a real but weaker coordination detector, not an artefact detector. They
 find most of the bursts the hand-written detectors find, but about half of their calls sit on

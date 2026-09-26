@@ -14,6 +14,12 @@ parity test):
             broken since 0.8.0 (fix filed upstream as PySpike#89),
             so it is a test-suite cross-check only,
             in the uncapped regime)
+  count     count                              -- not a port: the simple rule
+            (a bin and a count against the ADR-0008 floor), written here
+            on 2026-09-26 as the baseline the others are measured against
+            (see count.py)
+  count_sliding  count (sliding)                -- the same rule in a window that
+            slides: CoactDetect's sliding form without its null (count.py)
 
 **Only the fifth row has a key that is not its name.** ``cicada`` is the
 identifier — module, ``cicada_detect``, and the value in ``detections.csv``'s
@@ -37,6 +43,8 @@ DISPLAY_NAMES = {
     "sce": "binned SCE",
     "cicada": "locust",
     "sync": "SPIKE-synch",
+    "count": "count (binned)",
+    "count_sliding": "count (sliding)",
 }
 """The name a person sees, by code key — the table above, as data.
 
@@ -60,6 +68,7 @@ from bugarach.detectors.cicada import (  # noqa: E402
     rise_durations,
 )
 from bugarach.detectors.coact import CoactDetection, coact_detect
+from bugarach.detectors.count import CountDetection, count_detect, count_sliding_detect
 from bugarach.detectors.loco import (
     LocoDetection,
     LocoStream,
@@ -104,6 +113,9 @@ __all__ = [
     "cicada_detect",
     "DurationIsNotOursToDerive",
     "coact_detect",
+    "CountDetection",
+    "count_detect",
+    "count_sliding_detect",
     "event_rate",
     "loco_detect",
     "region_windows",

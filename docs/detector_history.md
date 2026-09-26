@@ -182,7 +182,7 @@ darkroom literature shelf.*
 > **Revised 2026-08-22: the radar primaries have been retrieved, and they were
 > worth retrieving.** This document first shipped with every attribution in §4
 > flagged unverified. Two of the four are now **read in full** and shelved at
-> `<darkroom>/bugarach/lit/radar/`; the other two are confirmed from Rohling's
+> `<darkroom>/bugarach/archive/2026-08/lit/radar/`; the other two are confirmed from Rohling's
 > printed reference list but **not read**, and §7.2 says what they would settle
 > and how to get them.
 >
@@ -473,7 +473,7 @@ named for exactly the choices bugarach made by benchmark.
 | binned SCE, locust | one bar per region | pre-CFAR fixed threshold | — | — |
 
 **Five of the table's papers are held and read in full**, on the shelf at
-`<darkroom>/bugarach/lit/radar/`, each with a read-status entry: Finn & Johnson,
+`<darkroom>/bugarach/archive/2026-08/lit/radar/`, each with a read-status entry: Finn & Johnson,
 Hansen & Sawyers, Rohling and Gandhi & Kassam, and Hansen 1973. Tony supplied Hansen &
 Sawyers and Gandhi & Kassam on 2026-08-22, closing item 2 of §7. Hansen 1973, which
 this document used to cite as greatest-of's origin, came later, on 2026-09-14, as an
@@ -1032,7 +1032,7 @@ provenance note; 2, 4 and 5 follow from §4.
    shelf, abstract and methods opening already read. Settles or complicates
    rate+context's priority. An hour, no fetching.
 2. ~~**Verify §4's CFAR attributions against primary sources.**~~ **Done
-   2026-08-22**, and the shelf is at `<darkroom>/bugarach/lit/radar/` with a
+   2026-08-22**, and the shelf is at `<darkroom>/bugarach/archive/2026-08/lit/radar/` with a
    read-status entry per work. Finn & Johnson 1968 and Rohling 1983 are **read in
    full**; both support the claims made of them, and Finn & Johnson turned out to
    quantify the masking failure in its own abstract (§5.1). One claim was corrected
@@ -1103,12 +1103,12 @@ SPIKE-synch's accuracy, and that number measures a degenerate sweep.
 - `interface2:docs/handoffs/coordination.md` (2026-08-05) — the calibrated
   per-stream MATLAB F1 table, its PROVISIONAL marking, and the weak-optimum and
   grid-edge caveats §6 leans on.
-- `<darkroom>/bugarach/lit/coordination/README.md` (2026-08-17, updated 2026-08-22)
+- `<darkroom>/bugarach/archive/2026-08/lit/coordination/README.md` (2026-08-17, updated 2026-08-22)
   — the prior-art shelf and its read-status discipline. The SCE-primary gap it
   recorded is now closed: `malvache_2016_awake_reactivations.pdf`, *Science*
   353(6305):1280–1283. Every Malvache quotation in §2 is from that PDF; the
   supplementary methods are still outstanding and the entry says so.
-- `<darkroom>/bugarach/lit/radar/README.md` (2026-08-22) — the CFAR shelf built to
+- `<darkroom>/bugarach/archive/2026-08/lit/radar/README.md` (2026-08-22) — the CFAR shelf built to
   close §7.2, with read status per work; the two library orders it lists were
   delivered the same day. Every radar quotation in this document is from a PDF on
   that shelf, except those from US patent 4,318,101 in §4.1 (Google Patents text).

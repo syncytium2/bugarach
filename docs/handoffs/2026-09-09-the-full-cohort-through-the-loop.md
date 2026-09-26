@@ -5,7 +5,7 @@
 >
 > **This file carries no number derived from the recordings** (FOUNDATIONS §5: anything
 > derived from real data stays machine-local). Every measured result, every figure and the
-> full run record are in `<darkroom>/bugarach/2026-09-09-full-cohort-senktide-ttx/`;
+> full run record are in `<darkroom>/bugarach/archive/2026-09/2026-09-09-full-cohort-senktide-ttx/`;
 > resolve `<darkroom>` with `bugarach.paths.darkroom()`, or `python -m bugarach.paths`.
 >
 > **Not murderboarded**, and neither is the run record it points at — both are working

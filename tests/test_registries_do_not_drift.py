@@ -72,11 +72,20 @@ def _webapp_detector_keys() -> set[str]:
     return set(keys) | registered
 
 
+#: Detectors the library benches and the viewer page deliberately does not offer, and why.
+NOT_IN_THE_BROWSER = {
+    "count": "the simple rule (2026-09-26) is on the bench to be measured against the six, "
+             "not shipped; it is ported to the page only if the bench says it earns a place",
+    "count_sliding": "as count; the page's turbo marks (`turboMarks`) count the same thing "
+                     "and differ in the three details `count_sliding_detect` names",
+}
+
+
 def test_the_browser_offers_every_detector_the_library_has():
     from bugarach.bench import OPERATING_POINTS
 
     page, lib = _webapp_detector_keys(), set(OPERATING_POINTS)
-    missing, extra = lib - page, page - lib
+    missing, extra = lib - page - set(NOT_IN_THE_BROWSER), page - lib
     assert not missing, (
         f"the library has {sorted(missing)} and the viewer page does not offer them. "
         "Add them to `const DETECTORS` in docs/site/raster_viewer.html, or if the "

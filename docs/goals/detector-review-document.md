@@ -69,7 +69,7 @@ is a ruling, *argued* is reasoning nobody has measured.
 
 | finding | strength | source |
 |---|---|---|
-| **The document is darkroom-only, and that is a rule, not a preference.** It embeds real treatment recordings, so under FOUNDATIONS §5 it is written to `<darkroom>/bugarach/2026-09-15-detector-review/` and never to the repo: no repo copy of those figures, no web link. Every sentence that describes a real recording lives beside it in `real_prose.json`, which stays out of the tree — and the page cannot build without it | decided | [FOUNDATIONS §5](../FOUNDATIONS.md); [PR #587](https://github.com/syncytium2/bugarach/pull/587) |
+| **The document is darkroom-only, and that is a rule, not a preference.** It embeds real treatment recordings, so under FOUNDATIONS §5 it is written to `<darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review/` and never to the repo: no repo copy of those figures, no web link. Every sentence that describes a real recording lives beside it in `real_prose.json`, which stays out of the tree — and the page cannot build without it | decided | [FOUNDATIONS §5](../FOUNDATIONS.md); [PR #587](https://github.com/syncytium2/bugarach/pull/587) |
 | **Every number in the prose is a token filled from the stage that drew the matching figure**, so a figure and the sentence about it cannot drift apart silently | built | `tools/make_detector_review.py` ⚠ **on the branch, not on `main`** |
 | **Section numbers are computed from the template, never typed.** A restructure that leaves a stale cross-reference is the failure this prevents | built | same |
 | **Captions do not follow their figures, and that cost the document twice.** A figure was replaced and its caption survived, reading plausibly and describing data that were no longer there. Captions that state a fact are now written from that figure's own measured tokens, which is the only form the build can check | measured, twice, the hard way | `HANDOFF-detector-review.md` on the branch ⚠ **not on `main`** |
@@ -122,7 +122,7 @@ document assembled from them inherits it.
    CLAUDE.md requires it, and the last run was delivered unconverged with ten items open.
 4. **Work the ten open items** from the run record rather than treating the round cap as a pass.
 5. **Release the darkroom claim.** [`SESSIONS.md`](../SESSIONS.md) on `main` still reads **ACTIVE** on
-   `bugarach/2026-09-15-detector-review/`. The release exists — on the unmerged branch. Until that
+   `bugarach/archive/2026-09/2026-09-15-detector-review/`. The release exists — on the unmerged branch. Until that
    branch lands, every session on every machine reads a folder held by a session that is gone.
 6. **Re-derive the three flat-field documents** the review draws on, or say inside the document which
    of their claims it is not using.
@@ -135,7 +135,7 @@ document assembled from them inherits it.
 | The plain-language builder | `tools/make_plain_detector_review.py`, rebuilt with `--from-review <the review folder> --stages page` ⚠ **not on `main`** |
 | The murderboard record and all three rounds' role reports | `docs/reviews/detector_review_2026-09-15.md`, `docs/reviews/detector-review-2026-09-15/` ⚠ **not on `main`** |
 | The live note-by-note state of the plain page | `docs/reviews/detector_review_plain_notes.md` ⚠ **not on `main`** — read it before touching the page |
-| The built pages | `<darkroom>/bugarach/2026-09-15-detector-review/` and `<darkroom>/bugarach/2026-09-15-detector-review-plain/` — resolve with `bugarach.paths.darkroom()` |
+| The built pages | `<darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review/` and `<darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review-plain/` — resolve with `bugarach.paths.darkroom()` |
 | The session's own working notes, including what not to relearn | `HANDOFF-detector-review.md` on the branch ⚠ **not on `main`** |
 | The argument about what optimization can honestly claim | `HANDOFF-detector-optimization.md` on the branch ⚠ **not on `main`** |
 | The review process itself | [`doc_review_process.md`](../doc_review_process.md), and the vendored `/murderboard` skill |
