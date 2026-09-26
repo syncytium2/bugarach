@@ -139,6 +139,7 @@ document assembled from them inherits it.
 | The session's own working notes, including what not to relearn | `HANDOFF-detector-review.md` on the branch ⚠ **not on `main`** |
 | The argument about what optimization can honestly claim | `HANDOFF-detector-optimization.md` on the branch ⚠ **not on `main`** |
 | The review process itself | [`doc_review_process.md`](../doc_review_process.md), and the vendored `/murderboard` skill |
+| **Any recording's calls, zoomable, from a run's output** (2026-09-26) | the browser viewer: open the export folder, then *Open results* on the run's `detections.csv` — one lane per detector × variant above the raster. A run from before that date writes its `detections.csv` with `python tools/detect_with_floors.py --detections-from <run folder>`. A page can link one recording as `viewer.html#slice=<slice_id>&stream=<stream>`. [`INDEX.md`](../INDEX.md), *the viewer opens results* |
 
 ## Keeping this page true
 

@@ -43,6 +43,17 @@ recording × window × stream × detector × variant: floors, calls, calls per h
 ``results.json`` (the dataset stamp, settings, and the group summaries in ``bugarach.groups``
 order), which is also the finish marker ``tools/archive_run.py`` waits for. Nothing is filtered:
 every recording in the folder is run, and one that fails is recorded with its error.
+
+**And ``detections.csv``: the same calls in the output contract** (``bugarach.emit.COLUMNS``,
+``docs/export_folder_spec.md``, "What bugarach emits back"), which is the file the browser viewer
+opens beside an export folder to draw the calls above its raster. ``calls.csv`` is this tool's own
+dialect and stays, because the review pages read it; ``detections.csv`` is derived from it by
+:func:`write_detections`, never computed separately, so the two cannot disagree. ``n_roi`` is the
+call's participants; ``variant``, ``window_kind``, the floors and ``reaches_*`` ride as carried
+columns after the contract's twelve, which is how the viewer draws one lane per detector ×
+variant. For a run that finished before this existed, write it without re-running:
+
+    python tools/detect_with_floors.py --detections-from <run folder> [--out <folder>]
 """
 from __future__ import annotations
 
@@ -336,11 +347,73 @@ def summarise(rows, groups):
     return out
 
 
+#: The columns of ``calls.csv`` that ``detections.csv`` carries after the contract's own, in this
+#: order: what a call is beyond when it happened. ``group`` is renamed ``group_id``, the
+#: ``slices.csv`` column it was read from, because carried identity keeps the producer's name.
+#: ``own_plus_<N>`` and ``reaches_*`` follow, as many as the run wrote.
+CARRIED = ("group_id", "window_kind", "variant", "own_floor", "baseline_floor")
+
+
+def _na(v):
+    """A ``calls.csv`` field as a value: the empty string ``csv`` writes for ``None`` is absence."""
+    return None if v in (None, "") else v
+
+
+def _mode_of(detector: str, stream: str, chosen: dict):
+    """``threshold`` or ``peak`` for a coded detector, from the setting it ran with (the
+    fallback is ``emit``'s, for a detector whose settings do not say); ``None``, written ``NA``,
+    for a learned one, which is called neither way."""
+    by_det = ((chosen.get(stream) or {}).get("detectors") or {})
+    if detector not in by_det:
+        return None
+    return (by_det[detector].get("params") or {}).get("detection_mode") or "threshold"
+
+
+def write_detections(run: Path, out: Path | None = None, chosen: dict | None = None) -> Path:
+    """``detections.csv`` from a finished run's ``calls.csv`` and ``results.json``.
+
+    One row per call, nothing dropped. The contract's columns this tool does not measure are
+    written ``NA`` rather than filled: ``width_def`` (the width is the detector's own, but which
+    rule measured it is not recorded per call here), ``strength`` and ``strength_unit``.
+    ``chosen`` is ``results.json``'s settings block, read from there when not given.
+    """
+    from bugarach.emit import DetectedEvent
+    from bugarach.emit import write_detections as emit_write
+
+    run = Path(run)
+    if chosen is None:
+        res = json.loads((run / "results.json").read_text(encoding="utf-8"))
+        chosen = res.get("chosen") or {}
+    events = []
+    with (run / "calls.csv").open(encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        extra = [c for c in (reader.fieldnames or [])
+                 if c.startswith("own_plus_") or c.startswith("reaches_")]
+        for r in reader:
+            carried = {"group_id": r.get("group"),
+                       **{k: r.get(k) for k in CARRIED[1:]},
+                       **{k: r.get(k) for k in extra}}
+            idx, parts = _na(r.get("region_idx")), _na(r.get("participants"))
+            events.append(DetectedEvent(
+                slice_id=r["slice_id"], stream=r["stream"], detector=r["detector"],
+                mode=_mode_of(r["detector"], r["stream"], chosen),
+                onset_sec=float(r["onset_sec"]), width_sec=float(r["width_sec"]),
+                strength=None, strength_unit=None, width_def=None,
+                region_idx=None if idx is None else int(idx),
+                region_label=_na(r.get("label")),
+                n_roi=None if parts is None else int(parts),
+                identity={k: _na(v) for k, v in carried.items()}))
+    return emit_write(events, Path(out or run) / "detections.csv")
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--candidates", type=Path, required=True)
-    ap.add_argument("--models", type=Path, required=True, help="the phase-2 folder")
-    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--detections-from", type=Path, default=None, metavar="RUN",
+                    help="write detections.csv from a finished run folder's calls.csv and "
+                         "results.json and do nothing else (into --out if given, else RUN)")
+    ap.add_argument("--candidates", type=Path)
+    ap.add_argument("--models", type=Path, help="the phase-2 folder")
+    ap.add_argument("--out", type=Path)
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--draws", type=int, default=1000)
     ap.add_argument("--limit", type=int, default=None)
@@ -349,6 +422,14 @@ def main(argv=None) -> int:
                          "ROIs, as the variant own_plus_<N> (default 0: no extra variant). "
                          "Evidence for a decision, not ADR-0008's rule")
     a = ap.parse_args(argv)
+    if a.detections_from is not None:
+        if a.out:
+            a.out.mkdir(parents=True, exist_ok=True)
+        print(f"wrote {write_detections(a.detections_from, a.out)}")
+        return 0
+    missing = [f"--{n}" for n in ("candidates", "models", "out") if getattr(a, n) is None]
+    if missing:
+        ap.error(f"a run needs {', '.join(missing)}")
     a.out.mkdir(parents=True, exist_ok=True)
     plus = plus_variant(a.floor_offset)
 
@@ -417,6 +498,9 @@ def main(argv=None) -> int:
                floor_offset=a.floor_offset, offset_variant=plus,
                summary=summarise(rows, groups),
                floors={rec["slice_id"]: rec["floors"] for rec in recs})
+    # Before results.json, which is the finish marker archive_run waits for; from the calls.csv
+    # just written, so it is what --detections-from gives on this folder later, byte for byte.
+    write_detections(a.out, chosen=chosen)
     (a.out / "results.json").write_text(json.dumps(res, indent=1, default=float) + "\n")
     print(f"{n} recordings, {len(failed)} failed, {len(calls)} calls, "
           f"{time.time() - t0:.0f} s; wrote {a.out}")
