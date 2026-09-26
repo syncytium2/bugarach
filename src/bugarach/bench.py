@@ -43,6 +43,7 @@ import numpy as np
 
 from bugarach.detectors.cicada import cicada_detect
 from bugarach.detectors.coact import coact_detect
+from bugarach.detectors.count import count_detect, count_sliding_detect
 from bugarach.detectors.loco import loco_detect
 from bugarach.detectors.rate import (
     rate_detect,
@@ -57,10 +58,12 @@ from bugarach.simulate import simulate_coordination
 STREAM = "events"
 """The single-stream slice the generator emits (FOUNDATIONS §3)."""
 
-FLOORED_SETTING = {"coact": "min_rois", "loco": "min_rois", "sce": "min_rois", "sync": "min_n"}
+FLOORED_SETTING = {"coact": "min_rois", "loco": "min_rois", "sce": "min_rois", "sync": "min_n",
+                   "count": "min_rois", "count_sliding": "min_rois"}
 """The setting each detector's participation minimum lives in, which ADR-0008 sets and no search
 does (ADR-0008 decision 6; ADR-0009 decision 3 for SPIKE-synch's ``min_n``). rate+context and
-locust have no participation minimum, so the floor reaches them only through the scorer."""
+locust have no participation minimum, so the floor reaches them only through the scorer. count's
+threshold is this floor plus its own ``k_offset``, which a search does tune (``count.py``)."""
 
 FLOOR_LABEL = "ADR-0008 per-window floor, bench per ADR-0009"
 """What every run record scored under this module's floor says about it."""
@@ -433,6 +436,22 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
         "sce_min_distance_frames": (1, 2, 4, 8, 16),
         "threshold_scope": ("global", "regional"),
     },
+    "count": {
+        # One frame (0.1 s, the generator's grid) to 10 s. The search does not extend below
+        # one frame: a bin narrower than the frame interval counts nothing more
+        # (`tools/search_all_settings.FLOAT_FLOOR`).
+        "bin_sec": (0.1, 0.5, 1.0, 2.0, 5.0, 10.0),
+        # Cells above the recording's floor. 0 is the floor itself; below it is chance
+        # (ADR-0008), so the grid cannot extend down.
+        "k_offset": (0, 1, 2, 3),
+        "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
+    },
+    "count_sliding": {
+        # v1's grids, the window width under its own name: a window that slides is not a bin.
+        "win_sec": (0.1, 0.5, 1.0, 2.0, 5.0, 10.0),
+        "k_offset": (0, 1, 2, 3),
+        "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
+    },
 }
 """The values each detector's settings are searched over — **one declaration, both
 machines**.
@@ -506,6 +525,12 @@ NOT_SEARCHED: dict[str, dict[str, str]] = {
                                 "width column. 'If you find yourself asking which duration "
                                 "locust should use, the answer is the column'",
         "active_duration_sec": "as active_duration_mode",
+    },
+    "count": {
+        "min_rois": "as coact: the floor. count's own offset above it, k_offset, is searched",
+    },
+    "count_sliding": {
+        "min_rois": "as count",
     },
 }
 """Parameters deliberately left out of :data:`FULL_GRIDS`, and why.
@@ -796,6 +821,25 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
                "empty stretch, and 0.12 ties it (mean F1 0.449).",
         knob="C_threshold", grid=(0.005, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16,
                                   0.2, 0.3),
+        takes_rng=False),
+    "count": OperatingPoint(
+        # The simple rule at the floor itself (k_offset 0), in CoactDetect's 2 s bins with its
+        # 3 s merge gap: the starting point the orchestrator set on 2026-09-26, not a tuned one.
+        params=dict(bin_sec=2.0, k_offset=0, merge_gap_sec=3.0),
+        source="not tuned: the starting point set 2026-09-26 (Tony: 'have we tried to optimize "
+               "the simple rule: a bin and a count?'). Bins and merge gap as CoactDetect's "
+               "binned FAST point; threshold the ADR-0008 floor with no offset.",
+        # The bin width, because k_offset's only honest grid starts at the operating point
+        # (0 is the floor) and a sweep has to bracket what it sweeps.
+        knob="bin_sec", grid=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0),
+        takes_rng=False),
+    "count_sliding": OperatingPoint(
+        # v2 at v1's starting point, the window sliding (Tony, 2026-09-26: "Simple rule v2
+        # should be sliding").
+        params=dict(win_sec=2.0, k_offset=0, merge_gap_sec=3.0),
+        source="not tuned: v1's starting point with the window sliding, set 2026-09-26. "
+               "CoactDetect's sliding form without its null.",
+        knob="win_sec", grid=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0),
         takes_rng=False),
 }
 
@@ -1580,7 +1624,8 @@ def run_detector(name: str, s, *, rng_seed: int = 20260706, floor: bool | None =
 
     ext = recording_extent(s)
     trains = stream_trains(s.streams[STREAM], ext)
-    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect}[name]
+    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[name]
     return fn(trains, ext, **params)
 
 
@@ -2129,6 +2174,10 @@ MAX_PROBE_PER_MIN = {
     "rate": 4.5,       # measured: 3.83 shipped, 4.98 at the setting the gate refuses
     "sce": 9.0,        # measured: 5.92, was 5.6 — barely moved
     "cicada": 48.0,    # measured: 29.66, was 17.3 — still the most rate-fooled of the six
+    # 2026-09-26, seeds 1-48, by bench_slow_budgets.json's rule (tools/measure_slow_budgets.py
+    # --only count, which measures this bench beside the slow one).
+    "count": 1.0,      # measured: 0.02
+    "count_sliding": 1.0,  # measured: 0.10
 }
 """Firings per minute each detector may make inside a block containing nothing.
 
@@ -2204,6 +2253,8 @@ MAX_PRECISION_DROP = {
     "sync": 0.10,      # measured: 0.01
     "cicada": 0.20,    # measured: 0.10
     "sce": 0.50,       # measured: 0.46 — a real degradation, recorded not excused
+    "count": 0.10,     # measured: 0.030 (2026-09-26, as MAX_PROBE_PER_MIN's count row)
+    "count_sliding": 0.10,  # measured: 0.032
 }
 """How far precision may differ between the quiet and busy backgrounds at one setting.
 
@@ -2252,6 +2303,8 @@ MAX_FALSE_POSITIVES_PER_HOUR = {
     "cicada": 6.0,     # measured: 3.1
     "sce": 6.0,        # measured: 3.1
     "coact": 7.0,      # measured: 4.4
+    "count": 1.0,      # measured: 0.11 (2026-09-26, as MAX_PROBE_PER_MIN's count row)
+    "count_sliding": 1.0,  # measured: 0.31
 }
 """Calls per hour each detector may report on :func:`make_null_recording`, where
 nothing was planted at all (:func:`false_positives_per_hour`).

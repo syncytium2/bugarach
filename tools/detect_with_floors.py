@@ -160,6 +160,7 @@ def recording_task(args):
     from bugarach.detect_folder import _region_index, folder_analysis_windows, with_microscope
     from bugarach.detectors.cicada import cicada_detect
     from bugarach.detectors.coact import coact_detect
+    from bugarach.detectors.count import count_detect, count_sliding_detect
     from bugarach.detectors.loco import loco_detect
     from bugarach.detectors.rate import rate_detect, stream_trains
     from bugarach.detectors.sce import sce_detect
@@ -243,9 +244,10 @@ def recording_task(args):
                               own_floor_stable=own.stable if own else None)
                 def run(det_name, params, k):
                     """One run of a coded detector, its calls inside this window."""
-                    if det_name in ("coact", "rate", "sync"):
+                    if det_name in ("coact", "rate", "sync", "count", "count_sliding"):
                         fn = {"coact": coact_detect, "rate": rate_detect,
-                              "sync": sync_detect}[det_name]
+                              "sync": sync_detect, "count": count_detect,
+                              "count_sliding": count_sliding_detect}[det_name]
                         p = dict(params)
                         if det_name in FLOORED:
                             p[FLOORED[det_name]] = int(k)

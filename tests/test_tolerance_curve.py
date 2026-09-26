@@ -25,6 +25,11 @@ from bugarach.score import TOL_SEC
 # mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
 pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench")
 
+# The six this file measured. `count` (2026-09-26) is left out: this file runs with the floor
+# OFF, and count's threshold IS the floor, so here it would run at a fixed minimum of 3 cells,
+# which is not the rule. Its tolerance plateau is for a floored measurement to establish.
+DETECTORS = tuple(d for d in DETECTORS if d not in ("count", "count_sliding"))
+
 
 SEEDS = (1, 2, 3)
 REGIME = "baseline_quiet"

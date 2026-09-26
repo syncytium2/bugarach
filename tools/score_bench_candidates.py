@@ -168,7 +168,7 @@ def picked(rows: list[dict], budget: float) -> dict | None:
     return max(ok, key=lambda r: r["mean"]) if ok else None
 
 
-CODED = ("coact", "loco", "sce", "rate", "sync", "cicada")
+CODED = ("coact", "loco", "sce", "rate", "sync", "cicada", "count", "count_sliding")
 
 
 def b_under_floor(bench: str, r) -> dict:

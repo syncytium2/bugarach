@@ -107,6 +107,14 @@ from bugarach.bench import (BACKGROUND_GRID, BACKGROUND_TOLERABLE_SPREAD,
                             describe_background, evaluate,
                             evaluate_background_curve)
 
+# THE SIX THESE MEASUREMENTS WERE TAKEN ON. The rankings pinned below (who wins, who moves
+# most) were measured on 2026-09-23 over six detectors; a seventh competitor changes the field
+# they describe, which is a re-measurement and not a line added here. `count` (2026-09-26) is
+# left out for a second reason too: this file runs with the floor OFF, and count's threshold
+# IS the floor, so without it count falls back to a fixed minimum of 3 cells, which is not the
+# rule being measured.
+DETECTORS = tuple(d for d in DETECTORS if d not in ("count", "count_sliding"))
+
 # Pre-ADR-0008 by construction: these pin measurements taken before the floor, or exercise detector
 # mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
 # And pre-ADR-0009: measured with the elevated-rate stretch inside the planted recording, so due
