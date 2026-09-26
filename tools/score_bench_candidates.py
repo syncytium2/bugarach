@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """Score tuned CoactDetect settings and trained chorus checkpoints on bench seeds nothing chose on.
 
-    python tools/score_bench_candidates.py --phase2 <folder> --out <folder> [--workers 20]
+    python tools/score_bench_candidates.py --phase2 <folder> [--phase2 <folder> ...] --out <folder>
+
+``--phase2`` repeats: the full-panel night (ADR-0010) searched and trained on two machines, each
+into its own folder, and the scorer reads both in place rather than from a copy. Each search and
+each training log is taken from the one root that holds it; two roots holding the same one is an
+error, never a silent choice. Every model the training tool trains (its ``MODELS``) is scored
+when its log is there.
 
 **Why.** The overnight run of 2026-09-24 tuned CoactDetect (``tools/search_all_settings.py``) and
 trained two chorus nets (``tools/train_learned_on_bench.py``) on each of the fast, slow and combined
@@ -47,8 +53,44 @@ BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
 REG = ("baseline_quiet", "baseline_busy")
 SEEDS = tuple(range(6000, 6024))
 NULLS = tuple(range(6000, 6012))
-MODELS = ("chorus_norm", "chorus_gain_norm")
+sys.path.insert(0, str(REPO / "tools"))
+from train_learned_on_bench import MODELS  # noqa: E402  the panel the training tool trains
 _MODEL_CACHE: dict = {}
+BOOTSTRAP = 2000
+BOOTSTRAP_SEED = 20260925
+
+
+def seeds_for(bench: str) -> tuple:
+    """Fresh seeds for ``bench``: :data:`SEEDS`, doubled on fast under a realistic spacing
+    (``bench.seed_factor``; ADR-0010 ruling 2), continuing the same range."""
+    from bugarach.bench import seed_factor
+    return tuple(range(SEEDS[0], SEEDS[0] + len(SEEDS) * seed_factor(bench)))
+
+
+def nulls_for(bench: str) -> tuple:
+    """No-coordination and elevated-rate seeds for ``bench``: :data:`NULLS`, doubled the same way."""
+    from bugarach.bench import seed_factor
+    return tuple(range(NULLS[0], NULLS[0] + len(NULLS) * seed_factor(bench)))
+
+
+def per_seed_f1(got: dict, pool_scores, bench: str, kind: str, name: str, seeds) -> np.ndarray:
+    """F1 per seed, pooled over that seed's quiet and busy recordings."""
+    return np.array([pool_scores([got[(bench, kind, name, reg, s)] for reg in REG],
+                                 detector=kind, regime="both").f1 for s in seeds], float)
+
+
+def paired_difference(f1: np.ndarray, ref: np.ndarray) -> dict:
+    """Mean F1 minus the reference's over the same seeds, with a 95% bootstrap interval over
+    seeds (ADR-0010 ruling 4). Seeds where either F1 is undefined are left out and counted."""
+    ok = np.isfinite(f1) & np.isfinite(ref)
+    d = (f1 - ref)[ok]
+    if not d.size:
+        return dict(mid=None, lo=None, hi=None, n_seeds=0, n_dropped=int((~ok).sum()))
+    rng = np.random.RandomState(BOOTSTRAP_SEED)
+    boot = d[rng.randint(0, d.size, size=(BOOTSTRAP, d.size))].mean(axis=1)
+    return dict(mid=float(d.mean()), lo=float(np.percentile(boot, 2.5)),
+                hi=float(np.percentile(boot, 97.5)), n_seeds=int(d.size),
+                n_dropped=int((~ok).sum()))
 
 
 def proposal(search: dict, det: str = "coact") -> tuple[str, dict, dict]:
@@ -64,11 +106,25 @@ def proposal(search: dict, det: str = "coact") -> tuple[str, dict, dict]:
     return best[0], dict(best[1]["params"]), best[1]
 
 
-def load_search(phase2: Path, pattern: str, bench: str, det: str) -> dict:
+def the_one_root(roots, rel: str) -> Path | None:
+    """The single root under which ``rel`` exists; None when none does. Two roots holding it is
+    an error: which machine's run gets scored is not the scorer's to choose."""
+    roots = [roots] if isinstance(roots, (str, Path)) else list(roots)
+    hits = [Path(r) for r in roots if (Path(r) / rel).exists()]
+    if len(hits) > 1:
+        raise ValueError(f"{rel} is in more than one --phase2 root: {', '.join(map(str, hits))}")
+    return hits[0] if hits else None
+
+
+def load_search(phase2, pattern: str, bench: str, det: str) -> dict:
     """The search record that holds ``det`` on ``bench``: one folder per bench, or, when the
-    pattern names ``{det}``, one folder per detector (a search run with ``--only``)."""
-    return json.loads((phase2 / pattern.format(bench=bench, det=det) / "search.json")
-                      .read_text(encoding="utf-8"))
+    pattern names ``{det}``, one folder per detector (a search run with ``--only``). ``phase2``
+    is one root or several; the record must be under exactly one."""
+    rel = f"{pattern.format(bench=bench, det=det)}/search.json"
+    root = the_one_root(phase2, rel)
+    if root is None:
+        raise FileNotFoundError(f"no {rel} under {phase2}")
+    return json.loads((root / rel).read_text(encoding="utf-8"))
 
 
 def bracketing_of(search: dict, det: str, name: str) -> dict:
@@ -89,15 +145,26 @@ def adoptable_on_the_search(name: str, row: dict, br: dict) -> bool:
 
 
 def train_rows(log: Path) -> list[dict]:
-    rows = []
-    for line in log.read_text(encoding="utf-8").splitlines():
+    """Every seed row the training tool printed. ``utf-8-sig``: a log redirected by Windows
+    PowerShell opens with a byte-order mark, which hid the first row, seed 0, from every one of
+    the full-panel night's 24 logs (2026-09-26). The log's own ``best:`` line must name a row
+    read here, so a row lost some other way is an error rather than a silent gap."""
+    rows, best = [], None
+    for line in log.read_text(encoding="utf-8-sig").splitlines():
+        line = line.strip()
         if line.startswith("{") and '"seed"' in line:
             rows.append(json.loads(line))
+        elif line.startswith("best: "):
+            best = line.split()[1]
+    if best is not None and best not in {r["path"] for r in rows}:
+        raise ValueError(f"{log}: its best seed {best} is not among the rows read")
     return rows
 
 
 def picked(rows: list[dict], budget: float) -> dict | None:
-    ok = [r for r in rows if r["null_per_hour"] <= budget] or rows
+    """The training rule's pick: the best held-out mean among seeds within the empty-recording
+    budget. None when no seed is within it: that run is scored as a comparator, never picked."""
+    ok = [r for r in rows if r["null_per_hour"] <= budget]
     return max(ok, key=lambda r: r["mean"]) if ok else None
 
 
@@ -148,7 +215,9 @@ def job(args):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--phase2", type=Path, required=True)
+    ap.add_argument("--phase2", type=Path, required=True, action="append",
+                    help="a folder holding searches and training (train-<model>-<bench>.log, "
+                         "models-<bench>/); repeat to read several, each in place")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--detectors", nargs="+", default=["coact"], choices=CODED,
@@ -158,10 +227,19 @@ def main(argv=None) -> int:
                          "in it, one search per detector (search_all_settings.py --only)")
     ap.add_argument("--benches", nargs="+", default=list(BENCHES), choices=list(BENCHES),
                     help="which benches to score (default all three)")
+    ap.add_argument("--spacing", choices=("bench", "realistic", "orx"), default="bench",
+                    help="how the bench spaces its planted events (bench.SPACINGS; default "
+                         "'bench', unchanged). Under 'realistic' and 'orx' fast's fresh and null "
+                         "seeds are doubled (ADR-0010 ruling 2)")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
 
+    from bugarach import bench as _b
     from bugarach.bench import pool_scores
+
+    _b.use_spacing(a.spacing)            # before the pool: every worker plants at this spacing
+    S = {bn: seeds_for(bn) for bn in a.benches}
+    N = {bn: nulls_for(bn) for bn in a.benches}
 
     cands, meta = [], {}
     for bench in a.benches:
@@ -191,23 +269,27 @@ def main(argv=None) -> int:
             if pname != "shipped":
                 cands.append((bench, det, "proposal", pparams))
         for m in MODELS:
-            log = a.phase2 / f"train-{m}-{bench}.log"
-            if not log.exists():
+            root = the_one_root(a.phase2, f"train-{m}-{bench}.log")
+            if root is None:
                 continue
-            rows = train_rows(log)
+            rows = train_rows(root / f"train-{m}-{bench}.log")
             pick = picked(rows, budget)
-            meta[bench]["chorus"][m] = dict(train_rows=rows,
-                                            picked=pick["path"] if pick else None)
+            best = max(rows, key=lambda r: r["mean"]) if rows else None
+            meta[bench]["chorus"][m] = dict(
+                train_rows=rows, models_root=str(root), picked=pick["path"] if pick else None,
+                out_of_budget=None if pick or not best else dict(
+                    best=best["path"], note="no seed within the empty-recording budget; scored "
+                                            "as a comparator, never a pick"))
             for r in rows:
                 cands.append((bench, "chorus", r["path"],
-                              str(a.phase2 / f"models-{bench}" / r["path"])))
+                              str(root / f"models-{bench}" / r["path"])))
 
     jobs = [(bench, kind, name, spec, reg, s) for bench, kind, name, spec in cands
-            for reg in REG for s in SEEDS]
+            for reg in REG for s in S[bench]]
     jobs += [(bench, kind, name, spec, "null", s) for bench, kind, name, spec in cands
-             for s in NULLS]
+             for s in N[bench]]
     jobs += [(bench, kind, name, spec, f"elevated:{reg}", s) for bench, kind, name, spec in cands
-             for reg in REG for s in NULLS]
+             for reg in REG for s in N[bench]]
     with mp.Pool(a.workers) as pool:
         got = dict(pool.map(job, jobs, chunksize=4))
 
@@ -215,6 +297,7 @@ def main(argv=None) -> int:
     for bench, kind, name, spec in cands:
         row = {}
         one_call = 0
+        SEEDS, NULLS = S[bench], N[bench]
         for reg in REG:
             scores = [got[(bench, kind, name, reg, s)] for s in SEEDS]
             one_call += sum(sc.n_detected == 1 for sc in scores)
@@ -245,8 +328,29 @@ def main(argv=None) -> int:
               f"(without decoys {row['mean_f1_without_decoys']:.3f}), "
               f"{row['null_calls_per_hour']:.2f} calls/h on the empty recording"
               + ("  COLLAPSED" if row["collapsed"] else ""), flush=True)
+    # Ruling 4 (ADR-0010): every candidate's fresh-seed F1 as a PAIRED difference from
+    # CoactDetect on the same recordings, with a 95% bootstrap interval over seeds.
+    for bench in a.benches:
+        for ref in ("coact:shipped", "coact:proposal"):
+            if f"{ref}" not in results.get(bench, {}):
+                continue
+            rk, rn = ref.split(":", 1)
+            ref_f1 = per_seed_f1(got, pool_scores, bench, rk, rn, S[bench])
+            for key, row in results[bench].items():
+                kind, name = key.split(":", 1)
+                row.setdefault("paired_f1_vs_coact", {})[rn] = paired_difference(
+                    per_seed_f1(got, pool_scores, bench, kind, name, S[bench]), ref_f1)
     from bugarach.bench import ELEVATED_SEED_OFFSET, FLOOR_LABEL, NULL_SEED_OFFSET
-    rec = dict(seeds=[SEEDS[0], SEEDS[-1]],
+    # The single-range keys stay for readers written before per-bench seeds: the first bench's.
+    SEEDS, NULLS = S[a.benches[0]], N[a.benches[0]]
+    rec = dict(spacing=_b.spacing(),
+               seeds_by_bench={bn: [S[bn][0], S[bn][-1]] for bn in a.benches},
+               null_seeds_by_bench={bn: [N[bn][0] + NULL_SEED_OFFSET, N[bn][-1] + NULL_SEED_OFFSET]
+                                    for bn in a.benches},
+               elevated_rate_seeds_by_bench={bn: [N[bn][0] + ELEVATED_SEED_OFFSET,
+                                                  N[bn][-1] + ELEVATED_SEED_OFFSET]
+                                             for bn in a.benches},
+               seeds=[SEEDS[0], SEEDS[-1]],
                null_seeds=[NULLS[0] + NULL_SEED_OFFSET, NULLS[-1] + NULL_SEED_OFFSET],
                elevated_rate_seeds=[NULLS[0] + ELEVATED_SEED_OFFSET,
                                     NULLS[-1] + ELEVATED_SEED_OFFSET],

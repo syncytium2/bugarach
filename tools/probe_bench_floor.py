@@ -122,14 +122,24 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--seeds", type=int, default=8)
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 2))
+    ap.add_argument("--spacing", choices=("bench", "realistic", "orx"), default="bench",
+                    help="how the bench spaces its planted events (bench.SPACINGS). ADR-0009's "
+                         "expected ranges, and so its stop rule, describe the 'bench' spacing "
+                         "only; under the others the floors are measured and reported")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
+    from bugarach import bench as _b
+    _b.use_spacing(a.spacing)                 # before the pool: every worker reads it
     jobs = [(n, r, s) for n in BENCHES for r in REGIMES for s in range(1, a.seeds + 1)]
     with mp.Pool(a.jobs) as pool:
         rows = pool.map(job, jobs)
     summary, stops = summarize(rows)
+    if a.spacing != "bench":
+        stops = [f"not applied: ADR-0009's expected ranges describe the 'bench' spacing, and this "
+                 f"is '{a.spacing}'"]
     (a.out / "bench_floor.json").write_text(json.dumps(
         dict(rows=rows, summary=summary, stop_rule=stops, expected=EXPECTED,
+             spacing=a.spacing,
              note="ADR-0008 per-window floor, bench per ADR-0009"), indent=1))
     for k, v in summary.items():
         print(k, json.dumps(v))

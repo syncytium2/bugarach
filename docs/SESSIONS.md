@@ -10,6 +10,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### 065/night-bench-adr-0010 — DARKROOM claim: `bugarach/2026-09-25-realistic-bench/` (NEW)
+- **Status:** claimed 2026-09-25 ~17:50 UTC by WSMIP065 for ADR-0010 parts 2-4: the realistic
+  bench's re-measured floors (`bench-floor-realistic/`, `bench-floor-orx/`) and the call_measure
+  check (`call-measure/`). Released by the merge of the PR that carries their run record.
+- **Touches:** that folder only.
+
 ### 065/real-intervals — DARKROOM claim: `bugarach/2026-09-25-real-intervals/` (NEW)
 - **Status:** claimed 2026-09-25 ~15:45 UTC, before writing, by WSMIP065 for ADR-0010 (proposed)
   part 2, step 1: the real inter-event intervals, measured without a detector, on the default
@@ -24,6 +30,30 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   `SUMMARY.md`. Evidence for a decision; nothing adopted. Released by the merge of the PR that
   carries the summary.
 - **Touches:** that folder only.
+
+### WSMIP064/full-panel — DARKROOM claim: `bugarach/2026-09-26-full-panel/064/`
+- **Status:** ACTIVE 2026-09-25 19:40 UTC (3:40 PM EDT) — the full-panel night, WSMIP064's half, on
+  the orchestrator's go: the six fast searches on the CPU and the eight learned models × three
+  streams on the GPU, from a detached worktree at `main` ef41e99. Released when `064/README.md` is
+  written and the morning report merges.
+- **Touches:** `bugarach/2026-09-26-full-panel/064/` only (search-fast/, models-<bench>/, train logs,
+  README.md).
+### orchestrator/full-panel — DARKROOM claim: `bugarach/2026-09-26-full-panel/` (NEW)
+- **Status:** claimed 2026-09-25 17:35 UTC (1:35 PM EDT), before any session writes, by the
+  orchestrator of the full-panel night under ADR-0010. Workers: WSMIP065 builds the realistic bench,
+  its floors, paired scoring and the call-measure check; WSMIP064 builds the search grids and
+  training, and writes the runbook. Each writes only under its own subfolder (`065/`, `064/`) and
+  adds its own block here for it. Released by the merge that brings the morning report to `main`.
+- **Touches:** this block; the night's run records under `docs/learned/runs/`; the goal pages the
+  result updates.
+
+### WSMIP065/full-panel-065 — DARKROOM claim: `bugarach/2026-09-26-full-panel/065/` (NEW)
+- **Status:** claimed 2026-09-25 by WSMIP065, inside the orchestrator's claim above. Step A (slow
+  and combined searches, `search-<bench>/<det>/`), step C (`fresh-realistic/`, `fresh-orx/`),
+  step D (`review/`), step E (`README.md`, `RUN_A.md`). The first launch of step A died at startup
+  on #829's missing `import os` (fixed by #832); its logs stay beside the rerun's.
+  Released with the orchestrator's block.
+- **Touches:** that folder only. The floor cache is machine-local, outside the darkroom.
 
 ### orchestrator/overnight-final-parameters — DARKROOM claim: `bugarach/2026-09-25-final-parameters/` (NEW)
 - **Status:** claimed 2026-09-25 01:50 UTC, before any session writes, by the orchestrator of the
