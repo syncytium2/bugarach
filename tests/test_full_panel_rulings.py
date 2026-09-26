@@ -165,6 +165,22 @@ def test_one_step_off_is_inward():
     assert S.step_off("guard_sec", 0.0, [0.0]) is None
 
 
+def test_one_step_off_never_lands_on_another_off_limit():
+    """Binned SCE ships "do not merge" (NaN) and its grid also holds 0 s, which is no merge too.
+    On the 2026-09-25 night the step went NaN -> 0 s and ruling 5 reported "no change" between
+    two ways of switching merging off. The step must reach the smallest gap that merges."""
+    grid = list(S._bench.FULL_GRIDS["sce"]["merge_gap_sec"]) + [float("nan")]
+    assert any(S.is_off_limit("merge_gap_sec", v) for v in grid if v == v)  # 0 s is in it
+    got = S.step_off("merge_gap_sec", float("nan"), grid)
+    assert got is not None and not S.is_off_limit("merge_gap_sec", got)
+    assert got == min(v for v in grid if v == v and v > 0)
+    # A cap stepping inward onto an off-limit has nothing to compare against: None, not "off".
+    assert S.step_off("guard_sec", 4.0, [0.0, 4.0]) is None
+    assert S.step_off("merge_gap_sec", float("nan"), [0.0]) is None
+    # From a finite off-limit, past any other off-limit on the way in.
+    assert S.step_off("merge_gap_s", 0.0, [0.0, 0.0, 3.0]) == 3.0
+
+
 def test_ruling_5_check_reports_whether_calls_change_one_step_off(monkeypatch):
     """A planted case: the calls at the limit and one step off are compared per recording, and
     the record says how many recordings changed."""

@@ -496,20 +496,24 @@ def _calls_job(args):
 
 def step_off(setting: str, value, grid: list):
     """The grid value one step off ``value``, inward, or None. A NaN merge gap ("do not merge")
-    steps to the smallest merge gap the grid holds."""
+    steps to the smallest merge gap the grid holds that is not itself an off-limit.
+
+    Never an off-limit: ruling 5 asks whether the calls change once the setting is switched
+    on, and a step from one off-limit to another compares "off" with "off". Binned SCE's grid
+    holds both NaN and 0 s, which are both no merge, and the 2026-09-25 night reported "no
+    change in 0 of 16 recordings" for exactly that pair. With nothing on-limit in the step's
+    direction, None: no comparison rather than a vacuous one."""
     finite = sorted(v for v in grid if isinstance(v, (int, float)) and not isinstance(v, bool)
                     and math.isfinite(v))
-    if not finite:
-        return None
+    on = [v for v in finite if not is_off_limit(setting, v)]
     if isinstance(value, float) and math.isnan(value):
-        return finite[0]
-    if value not in finite:
+        return on[0] if on else None
+    if value not in finite or len(finite) < 2:
         return None
     i = finite.index(value)
-    if len(finite) < 2:
-        return None
     # Inward: down from the top of the grid (a cap), up from anywhere else (an off-limit).
-    return finite[i - 1] if i == len(finite) - 1 else finite[i + 1]
+    inward = reversed(finite[:i]) if i == len(finite) - 1 else finite[i + 1:]
+    return next((v for v in inward if not is_off_limit(setting, v)), None)
 
 
 def ruling_5_checks(pool, det: str, params: dict, findings: list, grids: dict, seeds,
