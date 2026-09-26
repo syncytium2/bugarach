@@ -10,6 +10,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### orchestrator/darkroom-archive — DARKROOM claim: `bugarach/` top level and `bugarach/archive/` (NEW)
+- **Status:** claimed 2026-09-26 ~21:10 UTC by the orchestrator, on Tony's instruction ("the
+  bugarach darkroom folder is extremely crowded. Time to archive some stuff"). It moves the 135
+  top-level items last modified before 2026-09-19 into `archive/<YYYY-MM>/`, writes
+  `archive/INDEX.md` (old path → new path), and repoints the repo's links. It keeps `runs/`,
+  `detector_history*`, `leaderboard.html` and `README.md`, which tools write to by name. No live
+  claim covers a moved item. Released by the merge of this PR.
+- **Touches:** the darkroom's `bugarach/` top level (moves only, no deletes), `bugarach/archive/`,
+  and repo docs that name a moved path.
+
 ### 065/night-bench-adr-0010 — DARKROOM claim: `bugarach/2026-09-25-realistic-bench/` (NEW)
 - **Status:** claimed 2026-09-25 ~17:50 UTC by WSMIP065 for ADR-0010 parts 2-4: the realistic
   bench's re-measured floors (`bench-floor-realistic/`, `bench-floor-orx/`) and the call_measure
