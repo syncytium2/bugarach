@@ -192,8 +192,10 @@ def build(night: Path) -> dict:
         if c is not None and c.get("spacing", "bench") != spacing:
             raise SystemExit(f"{p} was scored at spacing {c.get('spacing')!r}, not {spacing!r}")
         sources[col] = dict(path=rel, present=c is not None, written=when_edt(p),
-                            seeds={s: len((c or {}).get("seeds_by_bench", {}).get(s, []))
-                                   for s in STREAMS} if c else None)
+                            # seeds_by_bench holds each stream's [first, last] seed, inclusive
+                        seeds={s: (lambda r: r[1] - r[0] + 1 if len(r) == 2 else None)(
+                                   (c or {}).get("seeds_by_bench", {}).get(s, []))
+                               for s in STREAMS} if c else None)
         benches[col] = {s: bench_rows(c, s, mods[s]) for s in STREAMS
                         if c and s in c["results"]} if c else {}
     # Later runs in the scorer's schema add rows on the bench their spacing names.
@@ -427,13 +429,14 @@ def figure1(model: dict, dest: Path) -> Path:
     lo, hi = min(vals), max(vals)
     pad = 0.06 * (hi - lo or 0.1)
     lo, hi = lo - pad, hi + pad
-    step = next(st for st in (0.01, 0.02, 0.025, 0.05, 0.1, 0.2) if (hi - lo) / st <= 10)
+    # Steps whose ticks print exactly at two decimals, so a label never rounds away from its line.
+    step = next(st for st in (0.01, 0.02, 0.05, 0.1, 0.2) if (hi - lo) / st <= 10)
 
     def X(v):
         return LEFT + (v - lo) / (hi - lo) * (W - LEFT - RIGHT)
 
     n = sum(len(model["board"][s]) for s in STREAMS)
-    H = HEAD * len(STREAMS) + ROW * n + AXIS + 40
+    H = HEAD * len(STREAMS) + ROW * n + AXIS + 70
     out = [f"<svg xmlns='http://www.w3.org/2000/svg' width='{W}' height='{H}' "
            f"viewBox='0 0 {W} {H}' font-family='system-ui, sans-serif' font-size='15' "
            f"role='img' aria-label='Figure 1, the leaderboard'>",
@@ -445,11 +448,11 @@ def figure1(model: dict, dest: Path) -> Path:
            ".bado{stroke:var(--bad,#b03a2e);fill:var(--bg,#fff)}</style>"]
     y = 10
     ticks = []
-    t = step * int(lo / step)
-    while t <= hi:
-        if t >= lo:
-            ticks.append(round(t, 6))
-        t += step
+    k = int(lo / step) - 1
+    while k * step <= hi:
+        if k * step >= lo:
+            ticks.append(round(k * step, 6))
+        k += 1
     top = y
     for s in STREAMS:
         rows = model["board"][s]
@@ -482,11 +485,11 @@ def figure1(model: dict, dest: Path) -> Path:
         out.append(f"<line class='{'zero' if t == 0 else 'ax'}' x1='{X(t):.1f}' x2='{X(t):.1f}' "
                    f"y1='{top}' y2='{bottom}' stroke-width='{1.2 if t == 0 else 0.6}'/>")
         out.append(f"<text class='m' x='{X(t):.1f}' y='{bottom + 20}' text-anchor='middle'>"
-                   f"{t:+.2f}</text>".replace("+0.00", "0"))
+                   f"{'0' if abs(t) < 1e-9 else f'{t:+.2f}'}</text>")
     out.append(f"<text class='t' x='{(LEFT + W - RIGHT) / 2}' y='{bottom + 44}' "
                f"text-anchor='middle'>ΔF1 against CoactDetect at its shipped setting (95% "
                f"interval)</text>")
-    ly = bottom + 44
+    ly = bottom + 76
     for i, (cls, label) in enumerate((("new", "new bench"), ("old", "old bench"),
                                       ("badn", "over a budget, or no pick"))):
         lx = 8 + i * 110 if i < 2 else 8 + 2 * 110

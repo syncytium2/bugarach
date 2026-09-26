@@ -54,7 +54,7 @@ def _candidates(spacing: str, shift: float = 0.0) -> dict:
                 tube=dict(picked=f"tube_{s}_seed0.json", out_of_budget=None, train_rows=[]),
                 line=dict(picked=None, train_rows=[], out_of_budget=dict(
                     best=f"line_{s}_seed2.json", note="no seed within budget"))))
-    return dict(spacing=spacing, seeds_by_bench={s: list(range(24)) for s in mb.STREAMS},
+    return dict(spacing=spacing, seeds_by_bench={s: [0, 23] for s in mb.STREAMS},
                 results=res, benches=benches)
 
 
