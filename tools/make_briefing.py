@@ -353,13 +353,15 @@ def render_example(sl, stream: str, call: dict, lanes_for: dict, dest: Path,
     big = {"yticks": "11pt", "ylabel": "11pt", "xticks": "11pt", "xlabel": "11pt"}
     lp = lane_panel(lanes, ext=ext, width=1000, row_px=30, names=LANE_NAMES,
                     colors={d: lane_color(d) for d in lanes}).opts(
-        height=30 * len(lanes) + 30, fontsize=big)
+        height=30 * len(lanes) + 30, fontsize=big, toolbar=None)
+    # A window of a minute or four, not an hour, so the marks can be drawn thicker than the
+    # group pages draw them; minimal ticks as there (the ROI count is in the label).
     rp = raster_panel(st, ext=ext, width=1000, height=max(160, min(360, 5 * st.n_rois)),
-                      name=stream).opts(fontsize=big)
+                      name=stream, mark_px=4.0, ticks="minimal").opts(fontsize=big, toolbar=None)
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td) / "ex.html"
-        pn.Column(pn.pane.HoloViews(lp, linked_axes=True),
-                  pn.pane.HoloViews(rp, linked_axes=True)).save(str(tmp))
+        pn.Column(pn.pane.HoloViews(lp, linked_axes=True, margin=0),
+                  pn.pane.HoloViews(rp, linked_axes=True, margin=0), margin=0).save(str(tmp))
         png = dest / f"{stem}.png"
         return png if _render_png(tmp, png, scale=2) else None
 
