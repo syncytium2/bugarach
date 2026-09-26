@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-23">
+<meta name="bugarach:version-date" content="2026-09-26">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -657,6 +657,16 @@
     padding: 10px 14px; margin: 10px 0; font-size: 13px;
   }
   .note { color: var(--muted); font-size: 12.5px; margin-top: 14px; max-width: 70ch; }
+  /* Results read back from a detections.csv: what joined, and every way it did
+     not, said beside the raster rather than in a console. */
+  #importNote { font-size: 12.5px; margin: 0 0 8px; max-width: 90ch; }
+  #importNote p { margin: 0 0 4px; }
+  #importNote .ok { color: var(--muted); }
+  #importNote .err { margin: 4px 0; }
+  #resultsWhat .err { margin: 6px 0 0; }
+  #impTip { position: fixed; z-index: 60; pointer-events: none; white-space: pre;
+            background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+            padding: 6px 9px; font-size: 12px; line-height: 1.45; }
   #assessOut, #detectOut, #tuneOut, #windowOut { margin: 16px 0 0; font-size: 12.5px; }
   #detectOut h4, #tuneOut h4, #windowOut h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
   #detectOut .sub, #tuneOut .sub, #windowOut .sub { color: var(--muted); margin: 0 0 8px; }
@@ -793,6 +803,14 @@
         <button id="reopen" class="ghost" hidden></button>
         <input id="dir" type="file" webkitdirectory directory multiple hidden autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
         <input id="files" type="file" accept=".csv" multiple hidden autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <!-- RESULTS READ BACK. A detections.csv — the file this page's own
+             "Save detections.csv" writes, and what `bugarach detect` and
+             `tools/detect_with_floors.py` write — opened beside the folder and
+             drawn in lanes above the raster. One found IN the folder is picked
+             up by itself. Read from this disk like the recordings, never sent. -->
+        <button id="pickResults" class="ghost">Open results (detections.csv)…</button>
+        <input id="resultsFile" type="file" accept=".csv" hidden autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
+        <div class="hint" id="resultsWhat"></div>
         <!-- THE BROWSER SAYS "UPLOAD" AND WE SAY NOTHING LEAVES. Tony,
              2026-09-04: 'folder selector says "folder to upload" and we say
              nothing leaves the computer'.
@@ -819,6 +837,9 @@
     </details>
     <details class="acc" id="accList" hidden>
       <summary>Recordings<span class="cnt" id="cntList"></span></summary>
+      <!-- the same results picker as the Open panel's, where a person looking
+           at the recordings will reach for it -->
+      <button id="pickResultsList" class="ghost" style="margin:8px 16px 4px;width:calc(100% - 32px)">Open results (detections.csv)…</button>
       <div id="checkbar" hidden></div>
       <!-- WHICH STREAM IS BEING ANALYSED, CHOSEN HERE AND NOWHERE ELSE.
            Tony, 2026-08-22: "treat fast and slow as separate folders (or build
@@ -1496,9 +1517,10 @@
         would prejudge it.
         <br><br>
         <b>Nothing is lost from work you have already done.</b> A
-        <code>detections.csv</code> that carries its rows still draws here, and
-        the Python package still runs it — only this page's ability to start a
-        new run with it is off.
+        <code>detections.csv</code> that carries its rows still draws here —
+        open it with <i>Open results</i> beside its folder and they appear in a
+        lane marked “imported” above the raster — and the Python package still
+        runs it. Only this page's ability to start a new run with it is off.
         <br><br>
         <!-- WHAT USED TO BE HERE, and why it went. The block described the
              detector, its peak anchoring, the folder columns it needs, and
@@ -1676,7 +1698,9 @@
         </div>
       </div>
       <p id="wins"></p>
+      <div id="importNote" hidden></div>
       <canvas id="cv"></canvas>
+      <div id="impTip" hidden></div>
       <!-- THE CANDIDATE LEDGER, UNDER THE RASTER IT DESCRIBES. Tony,
            2026-09-04: "have a list of possible events in a table below the
            raster. user clicks, the above arrow goes blue, the user ticks accept
@@ -1916,10 +1940,10 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-23"
+   data-bugarach-version-date="2026-09-26"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-23 · identified by its own
+  First published 2026-08-13 · this version 2026-09-26 · identified by its own
   bytes rather than by a build stamp
 </p>
 
@@ -1927,6 +1951,13 @@
 "use strict";
 
 const RESERVED = new Set(["slices.csv", "regions.csv", "metric_dictionary.csv"]);
+/* Files a RUN writes back, which end up in the folder it ran on: not recordings
+   either. Until 2026-09-26 a detections.csv saved into the folder opened as a
+   recording called "detections". `io.RESULTS` is the same list, and
+   tests/test_site_viewer.py holds the two equal. A detections.csv found here is
+   read as results instead (`ingestResults`). */
+const RESULT_FILES = new Set(["detections.csv", "detector_settings.csv", "calls.csv",
+                              "windows.csv"]);
 const NO_EVENT = new Set(["", "na", "nan", "none", "null"]);
 
 let RECORDINGS = [];   // {id, file, loaded?}
@@ -2411,9 +2442,11 @@ const DET_SHORT = {
   /* `cicada` keeps an entry though the detector is withheld from this build,
      and the entry is a neutral short form rather than its name. A folder
      analysed before it was withheld still has `cicada` rows in its
-     `detections.csv` and those still draw here; a lane with no label would be
-     worse than one labelled neutrally. See `unavailable` on `cicada` in
-     DETECTORS. */
+     `detections.csv`, and those draw here when the file is opened with "Open
+     results" (`importLanes`, which labels a lane through this table); a lane
+     with no label would be worse than one labelled neutrally. Until 2026-09-26
+     this comment said they drew and no code read a detections.csv at all. See
+     `unavailable` on `cicada` in DETECTORS. */
   rate: "rate", sce: "SCE", cicada: "sixth",
   sync: "sync", coact: "coact", loco: "LoCo",
 };
@@ -4208,6 +4241,293 @@ function detectLanes(rec) {
   }
   return out;
 }
+
+/* ---------- results read back: a detections.csv beside the folder -----------
+
+   Tony, 2026-09-26: easy access to the zoomable rasters with the detections on,
+   "just point the website at the cli results". The page could WRITE the output
+   contract and had no way to read it: two comments in this file said an old
+   detections.csv "still draws here" and nothing did.
+
+   ONE SCHEMA, AND IT IS THE CONTRACT: `bugarach.emit.COLUMNS`, which this file
+   already mirrors as `DETECTION_COLUMNS` for writing. So a file this page saved,
+   a `bugarach detect` run and a `tools/detect_with_floors.py` run all open the
+   same way, and a reader for our own writer round-trips testably. calls.csv —
+   that tool's own dialect — is refused by name, with the one command that writes
+   the same calls in this shape. Extra columns are carried: `variant` splits a
+   detector into lanes, and everything else in a row is what the hover shows.
+
+   THE JOIN IS slice_id, AND A MISS IS SAID OUT LOUD, beside the raster: a file
+   naming recordings the folder does not hold, a recording the file has no rows
+   for, calls on a stream other than the one on screen. Each is a different
+   situation and a silent empty lane would look the same for all of them.
+
+   NEVER ON THE RASTER. The lanes stack under the page's own detector lanes, in
+   the strip above the frame; each call is a ▼ at its onset pointing down at the
+   raster it describes, with a pale bar for its width. The shape and the header
+   row saying "imported" are what separate them from calls computed here, which
+   are solid bars. Nothing is fetched: the file is one the person opened. */
+let IMPORTED = null;         // {name, how, head, rows, bySlice, skipped}
+let IMPORT_REFUSAL = null;   // why the last results file was not read, verbatim
+let IMPORT_HITS = [];        // where each imported ▼ landed on the last draw
+let FOLDER_HAS_CALLS = false;
+const IMPORT_VARIANT_ORDER = ["", "unfloored", "own_floor", "baseline_floor"];
+// calls.csv's own columns, so the refusal can name that file when it is one
+const CALLS_CSV_SIGNATURE = ["variant", "participants", "label", "window_kind"];
+const CALLS_CSV_FIX = "python tools/detect_with_floors.py --detections-from <run folder>";
+
+function parseResults(text, name) {
+  const table = parseCSV(text);
+  if (!table.length) throw new Error(name + " is empty: not even a header row.");
+  const head = table[0].map(h => h.trim());
+  const missing = DETECTION_COLUMNS.filter(c => !head.includes(c));
+  if (missing.length) {
+    let msg = name + " is not a detections.csv, so nothing from it is drawn. "
+      + "It has no " + missing.join(", ") + " column"
+      + (missing.length === 1 ? "" : "s") + ". A results file has "
+      + DETECTION_COLUMNS.join(", ") + ", then any columns it carries.";
+    if (CALLS_CSV_SIGNATURE.every(c => head.includes(c)))
+      msg += " It looks like the calls.csv tools/detect_with_floors.py writes; "
+        + "the same calls in this shape come from `" + CALLS_CSV_FIX + "`.";
+    throw new Error(msg);
+  }
+  const hasVariant = head.includes("variant");
+  const rows = [], bySlice = new Map();
+  let skipped = 0;
+  for (const o of asObjects(table)) {
+    const onset = o.onset_sec === "" || o.onset_sec === NA ? NaN : Number(o.onset_sec);
+    if (!Number.isFinite(onset)) { skipped++; continue; }
+    const w = o.width_sec === "" || o.width_sec === NA ? NaN : Number(o.width_sec);
+    const r = { slice: o.slice_id, stream: o.stream, detector: o.detector,
+                variant: hasVariant && o.variant !== NA ? o.variant : "",
+                onset, width: Number.isFinite(w) && w > 0 ? w : 0, raw: o };
+    rows.push(r);
+    if (!bySlice.has(r.slice)) bySlice.set(r.slice, []);
+    bySlice.get(r.slice).push(r);
+  }
+  return { name, head, rows, bySlice, skipped };
+}
+
+/* Read one results file into `IMPORTED`, or say why not. Never throws: a
+   refusal is a state the page shows, not an exception somebody has to catch. */
+async function ingestResults(file, how) {
+  try {
+    IMPORTED = parseResults(await readText(file), file.name);
+    IMPORTED.how = how;
+    IMPORT_REFUSAL = null;
+  } catch (e) {
+    IMPORTED = null;
+    IMPORT_REFUSAL = e.message;
+  }
+}
+
+/* The person picked a results file. Draw it on the recording the link asked
+   for, or on the one on screen; with no folder open yet, say what comes next. */
+async function openResults(file) {
+  await ingestResults(file, "opened");
+  paintResultsWhat();
+  if (!RECORDINGS.length || SIMULATED) { showSection("accOpen"); return; }
+  leaveColumnViews();
+  await applyDeep();
+}
+
+const plural = (n, one, many) => n.toLocaleString() + " " + (n === 1 ? one : many);
+
+/* The Open panel's line about results: what is open, or why it is not. */
+function paintResultsWhat() {
+  const box = document.getElementById("resultsWhat");
+  if (!box) return;
+  box.textContent = "";
+  if (IMPORT_REFUSAL) box.append(el("div", IMPORT_REFUSAL, "err"));
+  else if (IMPORTED)
+    box.append(el("span", "Results: " + IMPORTED.name + " (" + IMPORTED.how
+      + "), " + plural(IMPORTED.rows.length, "call", "calls") + " for "
+      + plural(IMPORTED.bySlice.size, "recording", "recordings")
+      + ". They draw in the lanes marked “imported” above the raster."));
+  else if (FOLDER_HAS_CALLS)
+    box.append(el("span", "This folder holds a calls.csv, which this page does "
+      + "not read. `" + CALLS_CSV_FIX + "` writes the same calls as a "
+      + "detections.csv, which it does."));
+  else
+    box.append(el("span", "Results from bugarach detect, tools/detect_with_floors.py "
+      + "or this page's own Save detections.csv draw above the raster. A "
+      + "detections.csv inside the folder is picked up by itself."));
+  if (DEEP && (!RECORDINGS.length || SIMULATED))
+    box.append(el("div", "This link opens recording " + DEEP.slice
+      + (DEEP.stream ? " on stream " + DEEP.stream : "") + ". Choose the folder "
+      + "it belongs to, and its detections.csv if that is not inside it, and the "
+      + "page goes straight there.", "err"));
+}
+
+/* The streams the raster is showing — the same rule `draw` applies. */
+const shownStreams = data => [...data.streams.keys()].sort()
+  .filter(n => STREAMS_SEEN.length < 2 || !STREAM || n === STREAM);
+
+/* One lane per detector × variant, for this recording on the streams shown.
+   Registry order first, so the page's own detectors sit where they always do,
+   then any other name (learned models) alphabetically; variants unfloored,
+   own floor, baseline floor, then the rest. */
+function importLanes(rec, names) {
+  if (!IMPORTED || !rec || SIMULATED) return [];
+  const lanes = new Map();
+  for (const r of IMPORTED.bySlice.get(rec.id) || []) {
+    if (!names.includes(r.stream)) continue;
+    const k = r.detector + "\u0000" + r.variant;
+    if (!lanes.has(k)) lanes.set(k, { detector: r.detector, variant: r.variant, rows: [] });
+    lanes.get(k).rows.push(r);
+  }
+  const reg = Object.keys(DETECTORS);
+  const rank = (list, v) => { const i = list.indexOf(v); return i < 0 ? list.length : i; };
+  return [...lanes.values()].sort((a, b) =>
+    rank(reg, a.detector) - rank(reg, b.detector) || a.detector.localeCompare(b.detector)
+    || rank(IMPORT_VARIANT_ORDER, a.variant) - rank(IMPORT_VARIANT_ORDER, b.variant)
+    || a.variant.localeCompare(b.variant));
+}
+const importLabel = ln => (DET_SHORT[ln.detector] || ln.detector)
+  + (ln.variant ? " · " + ln.variant : "") + " · " + plural(ln.rows.length, "call", "calls");
+
+/* Shorten a gutter label to fit, rather than letting it run off the canvas. */
+function fitText(g, s, w) {
+  if (g.measureText(s).width <= w) return s;
+  while (s.length > 1 && g.measureText(s + "…").width > w) s = s.slice(0, -1);
+  return s + "…";
+}
+
+/* What joined and what did not, beside the raster. Repainted on every draw, so
+   switching recording or stream can never leave the last one's verdict up. */
+function paintImportNote(rec, names) {
+  const box = document.getElementById("importNote");
+  if (!box) return;
+  box.textContent = "";
+  const say = (text, bad) => box.append(el("p", text, bad ? "err" : "ok"));
+  if (!SIMULATED && DEEP && DEEP.missing)
+    say("The link asks for recording " + DEEP.slice + ", which is not in this "
+      + "folder (" + plural(RECORDINGS.length, "recording", "recordings")
+      + "). Showing " + rec.id + " instead.", true);
+  if (!SIMULATED && DEEP && DEEP.streamMissing)
+    say("The link asks for stream " + DEEP.stream + ", which " + rec.id
+      + " does not hold (it holds " + STREAMS_SEEN.join(", ") + ").", true);
+  if (IMPORT_REFUSAL) say(IMPORT_REFUSAL, true);
+  if (IMPORTED && !SIMULATED) {
+    const inFolder = new Set(RECORDINGS.map(r => r.id));
+    const named = [...IMPORTED.bySlice.keys()];
+    const outside = named.filter(id => !inFolder.has(id));
+    const file = IMPORTED.name;
+    if (outside.length === named.length && named.length) {
+      say("None of the " + plural(named.length, "recording", "recordings")
+        + " named in " + file + " is in this folder, so nothing from it is drawn. "
+        + "The file names " + namedFew(outside, 3) + "; the folder holds "
+        + namedFew([...inFolder], 3) + ".", true);
+    } else {
+      if (outside.length)
+        say(plural(outside.length, "recording", "recordings") + " named in "
+          + file + " " + (outside.length === 1 ? "is" : "are") + " not in this "
+          + "folder, and " + (outside.length === 1 ? "its" : "their")
+          + " calls are drawn nowhere: " + namedFew(outside, 3) + ".", true);
+      const mine = IMPORTED.bySlice.get(rec.id) || [];
+      const shown = mine.filter(r => names.includes(r.stream));
+      if (!mine.length)
+        say(file + " has no rows for " + rec.id + ". It names "
+          + plural(named.length, "other recording", "other recordings")
+          + ": either no detector called anything in this one, or the file "
+          + "comes from a different run.", true);
+      else if (!shown.length) {
+        const on = [...new Set(mine.map(r => r.stream))].sort();
+        say(file + " has " + plural(mine.length, "call", "calls") + " for "
+          + rec.id + " on " + on.join(", ") + " and none on " + names.join(", ")
+          + ", the stream on screen. Choose " + on[0] + " under Recordings to "
+          + "see them.", true);
+      } else {
+        const lanes = importLanes(rec, names).length;
+        say("Imported from " + file + ": " + plural(shown.length, "call", "calls")
+          + " for this recording on " + names.join(", ") + ", in "
+          + plural(lanes, "lane", "lanes") + " (one per detector × variant) above "
+          + "the raster. ▼ marks the onset and the pale bar the width; hover a ▼ "
+          + "for the row. These are the file's calls, not computed here."
+          + (IMPORTED.skipped ? " " + plural(IMPORTED.skipped, "row", "rows")
+             + " in the file had no onset_sec and are not drawn." : ""));
+      }
+    }
+  }
+  box.hidden = !box.childNodes.length;
+}
+
+/* ---------- deep link: viewer.html#slice=<slice_id>&stream=<stream> ---------
+   A FRAGMENT, NOT A QUERY STRING, because a browser never sends the fragment to
+   a server: the recording's name stays on this machine even on the public site.
+   The link cannot open the folder — only the person can — so it waits: once a
+   folder is open (and its results, if any), the page goes to that recording and
+   stream, and says so plainly if the folder does not hold it. */
+function readDeepLink() {
+  const h = (location.hash || "").replace(/^#/, "");
+  if (!h) return null;
+  const p = new URLSearchParams(h);
+  const slice = p.get("slice");
+  return slice ? { slice, stream: p.get("stream") || null, done: false } : null;
+}
+let DEEP = readDeepLink();
+
+async function applyDeep() {
+  if (!RECORDINGS.length || SIMULATED) return;
+  if (!DEEP || DEEP.done) { await show(current || RECORDINGS[0]); return; }
+  const rec = RECORDINGS.find(r => r.id === DEEP.slice);
+  DEEP.missing = !rec;
+  DEEP.streamMissing = false;
+  if (!rec) { await show(current || RECORDINGS[0]); return; }
+  await show(rec);
+  if (DEEP.stream) {
+    if (!STREAMS_SEEN.includes(DEEP.stream)) DEEP.streamMissing = true;
+    else if (DEEP.stream !== STREAM) chooseStream(DEEP.stream);
+  }
+  DEEP.done = true;
+  const b = document.querySelector('#list button[aria-current="true"]');
+  if (b && b.scrollIntoView) b.scrollIntoView({ block: "nearest" });
+  if (current && current.loaded) draw(current, current.loaded);
+}
+window.addEventListener("hashchange", async () => {
+  DEEP = readDeepLink();
+  paintResultsWhat();
+  if (DEEP && RECORDINGS.length && !SIMULATED) { leaveColumnViews(); await applyDeep(); }
+});
+
+/* The hover: what the row under the pointer carries, every column of it that
+   has a value, in the file's own names. */
+function importTip(h) {
+  const o = h.row.raw;
+  const lines = [(DET_SHORT[o.detector] || o.detector)
+      + (h.lane.variant ? " · " + h.lane.variant : "") + " · imported",
+    "onset " + fmt(h.row.onset) + " (" + h.row.onset.toFixed(2) + " s) · width "
+      + (Number.isFinite(Number(o.width_sec)) && o.width_sec !== ""
+         ? Number(o.width_sec).toFixed(2) + " s" : "NA")];
+  if (o.n_roi !== undefined && o.n_roi !== NA)
+    lines.push("participants (n_roi) " + o.n_roi + " ROIs");
+  const said = new Set(["slice_id", "stream", "detector", "variant", "onset_sec",
+                        "width_sec", "n_roi"]);
+  for (const k of IMPORTED.head)
+    if (!said.has(k) && o[k] !== undefined && o[k] !== "" && o[k] !== NA)
+      lines.push(k + " " + o[k]);
+  return lines.join("\n");
+}
+{
+  const cv = document.getElementById("cv"), tip = document.getElementById("impTip");
+  cv.addEventListener("mousemove", ev => {
+    if (!IMPORT_HITS.length) { tip.hidden = true; return; }
+    const r = cv.getBoundingClientRect();
+    const cx = ev.clientX - r.left, cy = ev.clientY - r.top;
+    let best = null, bestD = Infinity;
+    for (const h of IMPORT_HITS) {
+      const d = Math.hypot(h.x - cx, h.y - cy);
+      if (d < bestD) { bestD = d; best = h; }
+    }
+    if (!best || bestD > 7) { tip.hidden = true; return; }
+    tip.textContent = importTip(best);
+    tip.hidden = false;
+    tip.style.left = Math.min(ev.clientX + 12, window.innerWidth - tip.offsetWidth - 8) + "px";
+    tip.style.top = (ev.clientY + 14) + "px";
+  });
+  cv.addEventListener("mouseleave", () => { tip.hidden = true; });
+}
+
 function draw(rec, data) {
   const cv = document.getElementById("cv");
   const css = getComputedStyle(document.documentElement);
@@ -4223,9 +4543,10 @@ function draw(rec, data) {
      channel, so a second raster underneath it is a panel the lane says nothing
      about, in the picture being used to judge. Choosing `fast` now means the
      page is showing fast. */
-  const names = [...data.streams.keys()].sort()
-    .filter(n => STREAMS_SEEN.length < 2 || !STREAM || n === STREAM);
-  const padL = 62, padR = 14, padT = 23, padB = 40, gap = 16;
+  const names = shownStreams(data);
+  // `padL` widens for imported lanes, whose labels name a variant and a count
+  let padL = 62;
+  const padR = 14, padT = 23, padB = 40, gap = 16;
   /* SHORTER, because the raster now shares the page with the workspace under it
      rather than owning the fold. Tony, 2026-09-04: "make the raster vertically
      shorter". Still scales with ROI count -- a 51-ROI field needs more room than
@@ -4239,14 +4560,27 @@ function draw(rec, data) {
   CAND_HITS = [];
   const anyCands = names.some(n => candidatesOnPanel(rec.id, n).length > 0);
   const candH = anyCands ? CAND_LANE_H : 0;
+  // The lane strip above the frame: the page's own detector lanes, then a header
+  // row and one lane per detector x variant from an imported detections.csv.
+  const laneRuns = detectLanes(rec);
+  const impLanes = importLanes(rec, names);
+  const impRows = impLanes.length ? impLanes.length + 1 : 0;
+  const stripRows = laneRuns.length + impRows;
+  const laneH = stripRows ? stripRows * LANE_ROW + LANE_PAD : 0;
+  IMPORT_HITS = [];
+  paintImportNote(rec, names);
   const H = padT + candH + names.length * rowH + (names.length - 1) * gap + padB
-            + ((DETECT && DETECT.recId === rec.id) ? LANE_H : 0);
+            + Math.max(laneH, (DETECT && DETECT.recId === rec.id) ? LANE_H : 0);
 
   cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
   const g = cv.getContext("2d");
   g.scale(dpr, dpr);
   g.clearRect(0, 0, W, H);
   g.font = "11px -apple-system, system-ui, sans-serif";
+  if (impLanes.length) {
+    const wide = Math.max(...impLanes.map(ln => g.measureText(importLabel(ln)).width));
+    padL = Math.min(Math.max(62, Math.ceil(wide) + 12), Math.round(W * 0.35));
+  }
 
   /* THE TIME WINDOW ON SCREEN. Whole recording unless the reader has zoomed.
      `RASTER_SPAN` is how many seconds are shown and `RASTER_MID` is what they
@@ -4270,8 +4604,6 @@ function draw(rec, data) {
   // A detector lane above the top panel — a bar per call, spanning what it
   // called. Above the frame and never through the lanes: a bar drawn across the
   // rows would be indistinguishable from the coincidence it is reporting.
-  const laneRuns = detectLanes(rec);
-  const laneH = laneRuns.length ? laneRuns.length * LANE_ROW + LANE_PAD : 0;
   if (laneH) {
     /* ONE ROW PER DETECTOR, AND THEY ARE NEVER MERGED. The output contract is
        one row per event per detector with no consensus merging, because merging
@@ -4318,7 +4650,50 @@ function draw(rec, data) {
     if (anyTuned) {
       g.fillStyle = css.getPropertyValue("--muted").trim();
       g.fillText("* setting chosen by the sweep",
-                 padL, padT + laneRuns.length * LANE_ROW + 8);
+                 padL, padT + stripRows * LANE_ROW + 8);
+    }
+    /* IMPORTED LANES, under the page's own. A header row says where they came
+       from — in the gutter and in a row that holds no marks, so no text sits on
+       a call — then one lane per detector x variant, its label carrying the
+       identity and the count. Each call is a down-pointing triangle at its onset,
+       aimed at the raster below, over a pale bar for its width: a different mark
+       from the solid bars above, because these were not computed here. */
+    if (impLanes.length) {
+      const muted = css.getPropertyValue("--muted").trim();
+      const hy = padT + laneRuns.length * LANE_ROW;
+      const rasterTop = padT + candH + laneH;
+      g.fillStyle = muted;
+      g.textAlign = "end";
+      g.fillText("imported", padL - 6, hy + 8);
+      g.textAlign = "start";
+      g.fillText(fitText(g, "from " + IMPORTED.name + " · hover a ▼ for its row",
+                         W - padL - padR), padL, hy + 8);
+      impLanes.forEach((ln, i) => {
+        const ly = hy + (i + 1) * LANE_ROW;
+        g.fillStyle = muted;
+        g.textAlign = "end";
+        g.fillText(fitText(g, importLabel(ln), padL - 8), padL - 6, ly + 8);
+        g.textAlign = "start";
+        g.fillStyle = DET_COLORS[ln.detector] || css.getPropertyValue("--accent").trim();
+        for (const r of ln.rows) {
+          const a = x(r.onset), b = x(r.onset + r.width);
+          if (b < padL || a > W - padR) continue;
+          const bx = Math.max(padL, a), ex = Math.min(W - padR, b);
+          g.globalAlpha = 0.4;
+          g.fillRect(bx, ly + 8, Math.max(1, ex - bx), 2);
+          g.globalAlpha = 1;
+          if (a < padL) continue;              // its onset is off screen to the left
+          const px = Math.round(a) + 0.5;
+          g.beginPath();
+          g.moveTo(px - 3.5, ly + 1);
+          g.lineTo(px + 3.5, ly + 1);
+          g.lineTo(px, ly + 8);
+          g.closePath();
+          g.fill();
+          // `panelTop` rides along so "never on the raster" is checkable per mark
+          IMPORT_HITS.push({ x: px, y: ly + 4, row: r, lane: ln, panelTop: rasterTop });
+        }
+      });
     }
   }
 
@@ -5129,9 +5504,23 @@ async function open(fileList, opts) {
     }
   }
   for (const f of files)
-    if (!RESERVED.has(f.name))
+    if (!RESERVED.has(f.name) && !RESULT_FILES.has(f.name))
       RECORDINGS.push({ id: f.name.replace(/\.csv$/i, ""), file: f });
   RECORDINGS.sort((a, b) => natural(a.id, b.id));
+
+  /* RESULTS IN THE FOLDER ARE READ AS RESULTS. A detections.csv beside the
+     recordings replaces whatever results were open; none leaves them, because
+     opening the results first and the folder second is as good an order as the
+     other. A simulated folder takes them away: its recordings were written by
+     this page a moment ago and no file on disk is about them. */
+  FOLDER_HAS_CALLS = false;
+  if (SIMULATED) { IMPORTED = null; IMPORT_REFUSAL = null; }
+  else {
+    const res = [...files].find(f => f.name === "detections.csv");
+    if (res) await ingestResults(res, "found in the folder");
+    FOLDER_HAS_CALLS = !res && [...files].some(f => f.name === "calls.csv");
+  }
+  paintResultsWhat();
 
   /* WHICH WINDOW IS EACH RECORDING'S BASELINE — decided HERE, at import, while
      the folder is in hand and before anything has asked. Both files this reads
@@ -5221,7 +5610,14 @@ async function open(fileList, opts) {
      Landing a reader in an empty column of rasters is a worse front door than
      the rail, and it would strand them: `#view` hidden, nothing in its place.
      So the rows are built FIRST and the view only moves if there are any. */
-  if (!SIMULATED && turboIsFrontDoor()) {
+  /* NOT WHEN THE PERSON CAME FOR ONE RECORDING'S CALLS: a deep link or a
+     results file asks for the single-recording raster with its lanes, which
+     is where `applyDeep` puts them instead. */
+  const cameForResults = !SIMULATED && (DEEP || IMPORTED || IMPORT_REFUSAL);
+  if (cameForResults) {
+    leaveColumnViews();
+    await applyDeep();
+  } else if (!SIMULATED && turboIsFrontDoor()) {
     if (!TURBO && !TURBO_BUSY) {
       TURBO_BUSY = true;
       try { await turboLoad(); } finally { TURBO_BUSY = false; }
@@ -10668,7 +11064,8 @@ function registerDetector(d) {
 
    Everything the detector IS survives being withheld: its detect function, its
    parity harness, and this page's ability to draw a `detections.csv` that
-   already holds its rows. What goes is every place the page OFFERS it. */
+   already holds its rows ("Open results", `importLanes`). What goes is every
+   place the page OFFERS it. */
 const WITHHELD = new Set(["cicada"]);
 
 /* SELECTABLE, which is not the same as present. A row carrying `unavailable` is
@@ -13519,6 +13916,9 @@ async function bootDemo() {
     box.checked = demoWanted();
     box.onchange = () => setDemo(box.checked);
   }
+  /* A DEEP LINK IS SOMEBODY ABOUT TO OPEN THEIR OWN FOLDER, so no invented one
+     goes up first, and the panel they need is the one that is open. */
+  if (DEEP) { showSection("accOpen"); paintResultsWhat(); return; }
   if (!demoWanted()) { showSection("accSim"); return; }
   showSection("accSim");
   await runSim();
@@ -13680,6 +14080,14 @@ document.getElementById("pickDir").onclick = async () => {
   document.getElementById("dir").click();
 };
 document.getElementById("pickFiles").onclick = () => document.getElementById("files").click();
+for (const id of ["pickResults", "pickResultsList"])
+  document.getElementById(id).onclick = () => document.getElementById("resultsFile").click();
+document.getElementById("resultsFile").onchange = e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";          // the same file picked again is a new request
+  if (f) openResults(f);
+};
+paintResultsWhat();
 document.getElementById("dir").onchange = e => open(e.target.files);
 document.getElementById("files").onchange = e => open(e.target.files);
 document.body.addEventListener("dragover", e => e.preventDefault());

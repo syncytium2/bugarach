@@ -69,6 +69,20 @@ FRAME_INTERVAL_COL = "frame_interval_sec"
 #: fail on its columns, which is a confusing way to learn you shipped it.
 RESERVED = ("slices.csv", "regions.csv", "metric_dictionary.csv")
 
+#: Files a RUN writes back, which can end up in the folder it was run on. Not
+#: recordings, and not evidence of an export folder either — which is why they are
+#: kept apart from :data:`RESERVED`, which ``cli._is_export_folder`` reads as exactly
+#: that evidence. ``detections.csv`` and ``detector_settings.csv`` are the output
+#: contract (``docs/export_folder_spec.md``, "What bugarach emits back");
+#: ``calls.csv`` and ``windows.csv`` are what ``tools/detect_with_floors.py``
+#: writes. Before 2026-09-26 a ``detections.csv`` dropped beside the recordings
+#: loaded as a recording called "detections". The browser viewer keeps the same
+#: list as ``RESULT_FILES``, and ``tests/test_site_viewer.py`` holds the two equal.
+RESULTS = ("detections.csv", "detector_settings.csv", "calls.csv", "windows.csv")
+
+#: Every CSV name in a folder that is not a recording: the input tables, then results.
+NOT_RECORDINGS = RESERVED + RESULTS
+
 #: Spellings of "this ROI was recorded and produced no event here". The bare
 #: empty field is included because that is what a spreadsheet writes.
 NO_EVENT = ("", "na", "nan", "none", "null")
@@ -546,7 +560,7 @@ def load_folder(folder, *, dt: float | None = None,
     if not folder.is_dir():
         raise NotADirectoryError(f"{folder} is not a folder")
 
-    files = sorted(p for p in folder.glob("*.csv") if p.name not in RESERVED)
+    files = sorted(p for p in folder.glob("*.csv") if p.name not in NOT_RECORDINGS)
     if not files:
         raise FileNotFoundError(
             f"{folder} holds no recordings: an export folder is one CSV per "

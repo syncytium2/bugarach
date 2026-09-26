@@ -238,6 +238,47 @@ def test_the_viewer_reads_the_contract_it_claims_to():
         assert token in body, f"{spelling!r} means no-event in io.py but not here"
 
 
+def test_the_viewer_and_the_library_skip_the_same_result_files():
+    """A results file dropped into the folder is not a recording, to either reader.
+
+    Until 2026-09-26 the page read a `detections.csv` beside the recordings as a
+    recording called "detections", and `io.load_folder` did the same; `dataset.py`
+    kept its own list, which already disagreed with `io.RESERVED`. Three copies of
+    one answer, held equal here.
+    """
+    from bugarach.dataset import _NOT_A_RECORDING
+    from bugarach.io import NOT_RECORDINGS, RESULTS
+
+    block = re.search(r"const\s+RESULT_FILES\s*=\s*new Set\(\[(.*?)\]\)",
+                      VIEWER.read_text(encoding="utf-8"), re.S)
+    assert block, ("docs/site/raster_viewer.html no longer declares "
+                   "`const RESULT_FILES = new Set([...])` — point this test at its new "
+                   "name rather than deleting it.")
+    js = set(re.findall(r'"([^"]+)"', block.group(1)))
+    assert js == set(RESULTS), (
+        f"the page and io.py disagree about which files are results:\n"
+        f"  only in the page: {sorted(js - set(RESULTS))}\n"
+        f"  only in io.py:    {sorted(set(RESULTS) - js)}")
+    missing = set(NOT_RECORDINGS) - _NOT_A_RECORDING
+    assert not missing, f"dataset._NOT_A_RECORDING would count these as recordings: {missing}"
+
+
+def test_a_results_file_in_an_export_folder_is_not_loaded_as_a_recording(tmp_path):
+    from bugarach.conform import check_folder
+    from bugarach.dataset import kind
+    from bugarach.io import RESULTS, load_folder
+
+    (tmp_path / "rec_a.csv").write_text("roi,time_sec\n1,1.0\n2,1.1\n", encoding="utf-8")
+    (tmp_path / "slices.csv").write_text("slice_id,frame_interval_sec\nrec_a,0.1\n",
+                                         encoding="utf-8")
+    for name in RESULTS:
+        (tmp_path / name).write_text("slice_id,stream,detector\n", encoding="utf-8")
+    assert [s.slice_id for s in load_folder(tmp_path)] == ["rec_a"]
+    assert kind(tmp_path).n_recordings == 1
+    rep = check_folder(tmp_path)
+    assert not rep.errors, rep.errors
+
+
 def test_no_value_is_ever_concatenated_into_markup():
     """The page renders text somebody else wrote — a region label out of
     `regions.csv`, a recording name off a filename — and folders get shared the

@@ -29,7 +29,7 @@ from pathlib import Path
 import numpy as np
 
 from bugarach.detect_folder import folder_analysis_windows
-from bugarach.io import NO_EVENT, RESERVED, load_folder
+from bugarach.io import NO_EVENT, NOT_RECORDINGS, RESERVED, RESULTS, load_folder
 from bugarach.windows import SCAFFOLD_LABEL
 
 
@@ -164,11 +164,12 @@ def check_folder(folder) -> FolderReport:
         rep.errors.append(f"{folder} is not a folder")
         return rep
 
-    files = sorted(p for p in folder.glob("*.csv") if p.name not in RESERVED)
+    files = sorted(p for p in folder.glob("*.csv") if p.name not in NOT_RECORDINGS)
     if not files:
         rep.errors.append(
             f"no recording files. A folder holds one CSV per recording, named "
-            f"by the recording; only {', '.join(RESERVED)} are reserved. "
+            f"by the recording; only {', '.join(RESERVED)} are reserved, and "
+            f"result files ({', '.join(RESULTS)}) are skipped. "
             f"Found: {sorted(p.name for p in folder.glob('*.csv')) or 'no CSVs at all'}")
         return rep
 
