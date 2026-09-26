@@ -8,7 +8,7 @@ for: a session doing nothing but literature
 
 > ## Revision, 2026-08-17 — the reading was done; read this before the body
 >
-> **Twelve papers are on the shelf at `<darkroom>/bugarach/lit/coordination/`**, ten of
+> **Twelve papers are on the shelf at `<darkroom>/bugarach/archive/2026-08/lit/coordination/`**, ten of
 > them read in full, with per-paper read status in that folder's `README.md`. The body
 > below is left as written; what it asked for has largely happened, and three of its
 > premises moved.

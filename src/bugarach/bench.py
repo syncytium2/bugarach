@@ -679,14 +679,14 @@ class OperatingPoint:
 # averaged over the two backgrounds — and a stored value moved ONLY where the gain's
 # 95% bootstrap interval excludes zero. Three moved (sce, loco, rate); three were
 # already best or within noise (coact, sync, cicada). Figure and numbers:
-# <darkroom>/bugarach/2026-09-16-best-parameters/. Only the one swept knob per
+# <darkroom>/bugarach/archive/2026-09/2026-09-16-best-parameters/. Only the one swept knob per
 # detector was searched; every other parameter below is as it was.
 RETUNE = ("tools/retune_operating_points.py 2026-09-16 (48 recordings per point, both "
           "backgrounds, both false-alarm budgets, mean F1, moved only if the 95% "
           "bootstrap gain interval excludes zero)")
 SLIDING_SEARCH = (
     "tools/search_all_settings.py --sliding, 2026-09-17 "
-    "(<darkroom>/bugarach/2026-09-17-full-search/sliding5/): every parameter this bench can "
+    "(<darkroom>/bugarach/archive/2026-09/2026-09-17-full-search/sliding5/): every parameter this bench can "
     "see, one at a time in rounds, chosen on 48 recordings per background and scored on 48 "
     "the search never saw, under FOUR budgets — the two false-alarm limits, the precision "
     "swing, and MAX_CROWDED_DROP against what the detector ships at today — and refusing any "
