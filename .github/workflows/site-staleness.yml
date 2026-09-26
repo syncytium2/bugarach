@@ -47,7 +47,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
       - name: How far behind is the published page?
         # Standard library only — no install step, and nothing to go stale here.
         # --ref HEAD compares against exactly what was checked out rather than
