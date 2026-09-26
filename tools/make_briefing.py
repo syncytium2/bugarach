@@ -62,13 +62,17 @@ NIGHT_NAME = "2026-09-26-full-panel"
 STREAMS = ("fast", "slow", "combined")
 CODED = ("coact", "loco", "sce", "rate", "sync", "cicada")
 NAME = {"coact": "CoactDetect", "loco": "LoCo", "sce": "binned SCE", "rate": "rate+context",
-        "sync": "SPIKE-synch", "cicada": "locust"}   # the sixth detector's name, ADR-0002
+        "sync": "SPIKE-synch", "cicada": "locust",    # the sixth detector's name, ADR-0002
+        "count": "count (binned)", "count_sliding": "count (sliding)"}   # the simple rule, #841
 #: The two benches the page sets side by side, and the scorer's ``spacing`` value for each.
 BENCH_COLS = (("new", "realistic", "065/fresh-realistic/candidates.json"),
               ("old", "bench", "065/fresh-bench/candidates.json"))
 BENCH_TITLE = {"new": "new bench (realistic spacing, ADR-0010)",
                "old": "old bench (spacing before ADR-0010)"}
-COUNT_GLOB = "064/count/**/candidates.json"
+#: Later runs in the scorer's schema. Each adds the rows of detectors the night's own files do not
+#: hold, on the bench its ``spacing`` names: WSMIP064's count rule on the new bench (and ORX, which
+#: this page does not show), and the same candidates on the old bench, scored here.
+EXTRA_GLOBS = ("064/count/**/candidates.json", "065/fresh-bench-count/candidates.json")
 CALLS = "065/review/detect/calls.csv"
 WINDOWS = "065/review/detect/windows.csv"
 PAGES = "065/review/pages"
@@ -109,13 +113,15 @@ def budgets_of(bench_mod, det: str, row: dict) -> list[dict]:
     """The budgets a fresh-seed row fails, with value and limit — every budget the search's
     admissibility rule holds (``search_all_settings.make_admissible``; ADR-0010: "within every
     budget"), computed by the final-parameters report's own function so the two reports cannot
-    disagree about what a failure is. A learned model is held to CoactDetect's budgets.
+    disagree about what a failure is. A detector the bench holds budgets for is held to its own;
+    a learned model is held to CoactDetect's.
 
     The worker's README counts only the first of these, the one the training pick uses; the page
     names each failure so the difference is visible rather than a contradiction."""
     from make_final_parameters_report import fresh_budgets
 
-    b = fresh_budgets(bench_mod, det, row, det if det in CODED else "coact")
+    own = det in getattr(bench_mod, "MAX_FALSE_POSITIVES_PER_HOUR", {})
+    b = fresh_budgets(bench_mod, det, row, det if own else "coact")
     return [dict(name=k, value=v["value"], limit=v["limit"]) for k, v in b.items()
             if v["ok"] is False]
 
@@ -157,11 +163,12 @@ def bench_rows(cand: dict, stream: str, bench_mod) -> dict:
                          null_per_hour=r.get("null_calls_per_hour"),
                          budget_fails=budgets_of(bench_mod, family, r), flags=list(flags))
 
-    for det in CODED:
+    dets = list(CODED) + [d for d in meta.get("detectors", {}) if d not in CODED]
+    for det in dets:
         if f"{det}:shipped" in res:
-            put(f"{det}:shipped", f"{det}:shipped", NAME[det], "shipped", det, [])
+            put(f"{det}:shipped", f"{det}:shipped", NAME.get(det, det), "shipped", det, [])
         if f"{det}:proposal" in res:
-            put(f"{det}:proposal", f"{det}:proposal", NAME[det], "proposal", det,
+            put(f"{det}:proposal", f"{det}:proposal", NAME.get(det, det), "proposal", det,
                 [f"ruling 5: {x}" for x in _unbracketed(meta["detectors"].get(det, {}))])
     for fam, c in (meta.get("chorus") or {}).items():
         pick = c.get("picked")
@@ -174,8 +181,8 @@ def bench_rows(cand: dict, stream: str, bench_mod) -> dict:
                     ["no pick: no seed within the empty-recording budget; a comparator only"])
     for key in res:
         kind = key.split(":", 1)[0]
-        if kind not in CODED and kind != "chorus":
-            put(key, key, key.split(":", 1)[0], key.split(":", 1)[-1], kind, [])
+        if kind not in dets and kind != "chorus":
+            put(key, key, NAME.get(kind, kind), key.split(":", 1)[-1], kind, [])
     return rows
 
 
@@ -198,8 +205,11 @@ def build(night: Path) -> dict:
                                for s in STREAMS} if c else None)
         benches[col] = {s: bench_rows(c, s, mods[s]) for s in STREAMS
                         if c and s in c["results"]} if c else {}
-    # Later runs in the scorer's schema add rows on the bench their spacing names.
-    count_files = sorted(night.glob(COUNT_GLOB))
+    # Later runs in the scorer's schema add rows on the bench their spacing names, for detectors
+    # the night's own files do not hold (a later file's CoactDetect rows repeat the night's).
+    own = {col: {r["family"] for st in benches.get(col, {}).values() for r in st.values()}
+           for col, _, _ in BENCH_COLS}
+    count_files = sorted({p for g in EXTRA_GLOBS for p in night.glob(g)})
     extra = []
     for p in count_files:
         c = _load(p)
@@ -209,10 +219,10 @@ def build(night: Path) -> dict:
         for s in STREAMS:
             if s in c.get("results", {}):
                 for rid, row in bench_rows(c, s, mods[s]).items():
-                    if row["family"] not in CODED and not rid.startswith("learned:"):
+                    if row["family"] not in own[col] and not rid.startswith("learned:"):
                         benches.setdefault(col, {}).setdefault(s, {})[rid] = row
                         extra.append(rid)
-        sources.setdefault("count", []).append(str(p.relative_to(night)))
+        sources.setdefault("extra", []).append(str(p.relative_to(night)))
     board = {}
     for s in STREAMS:
         ids = list(dict.fromkeys(rid for col, _, _ in BENCH_COLS

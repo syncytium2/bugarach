@@ -189,3 +189,21 @@ def test_also_copies_the_simulation_half_and_nothing_that_names_a_recording(nigh
     assert names == ["figure1_leaderboard.svg", "leaderboard.json"]
     for p in also.iterdir():
         assert "synth" not in p.read_text(encoding="utf-8")
+
+
+def test_a_later_files_coactdetect_rows_do_not_replace_the_nights(night, tmp_path):
+    c = _candidates("realistic", shift=0.5)       # its CoactDetect proposal would read +0.54
+    for s in mb.STREAMS:
+        c["results"][s]["count_sliding:proposal"] = _row(0.02, 0.0, 0.04, swing=0.5)
+        c["benches"][s]["chorus"] = {}
+        c["benches"][s]["detectors"]["count_sliding"] = dict(proposal=dict(
+            name="rounds", unbracketed=False, bracketing=dict(bracketed=True)))
+    (night / "064/count/fresh-realistic").mkdir(parents=True)
+    (night / "064/count/fresh-realistic/candidates.json").write_text(json.dumps(c))
+    out, m = _build(night, tmp_path)
+    fast = {e["id"]: e for e in m["board"]["fast"]}
+    assert fast["coact:proposal"]["per"]["new"]["mid"] == pytest.approx(0.04)
+    row = fast["count_sliding:proposal"]
+    assert row["label"] == "count (sliding)"
+    assert [f["name"] for f in row["per"]["new"]["budget_fails"]] == ["precision_swing"]
+    assert row["per"]["old"] is None                # not scored on the old bench: said, not hidden
