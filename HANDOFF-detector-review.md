@@ -17,7 +17,7 @@
 **Tony submitted `detector_review_plain-td.docx` on 2026-09-17** and will share the reviewers' feedback
 when it arrives. Nothing is in flight; the next work starts from that feedback.
 
-- **What went out is Tony's hand-edited Word file**, `<darkroom>/bugarach/2026-09-15-detector-review-plain/detector_review_plain-td.docx`
+- **What went out is Tony's hand-edited Word file**, `<darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review-plain/detector_review_plain-td.docx`
   (PDF beside it, `detector_review_plain-td.pdf`, 40 pages). **Never rebuild over it**: the builder's `docx`
   stage writes `detector_review_plain.docx`, a different file, and the -td copy carries his edits that
   exist nowhere else. `detector_review_plain-td.before-print-figures.docx` is his copy before any figure swap.
@@ -47,7 +47,7 @@ is the state of this work** — 28 notes so far, each with what was wrong and wh
 before touching the page.
 
 **Where the work is.** Branch `detector-review-doc`, PR [#587](https://github.com/syncytium2/bugarach/pull/587),
-everything pushed. Two pages in `<darkroom>/bugarach/2026-09-15-detector-review-plain/`:
+everything pushed. Two pages in `<darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review-plain/`:
 
 | file | what it is |
 |---|---|
@@ -57,7 +57,7 @@ everything pushed. Two pages in `<darkroom>/bugarach/2026-09-15-detector-review-
 | `_work/plain.json` | all measurements the figures and tokens are drawn from |
 
 **Rebuild:** `PYTHONPATH="src;tools" python tools/make_plain_detector_review.py --from-review
-<darkroom>/bugarach/2026-09-15-detector-review --stages page` (add `figures` when a figure changes;
+<darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review --stages page` (add `figures` when a figure changes;
 `sim`/`toys`/`tube`/`real` only when the underlying measurement does — `real` takes ~8 minutes).
 
 ### What this session learned that the next one should not relearn
@@ -101,12 +101,12 @@ recordings some calls look like nothing, and some clear stripes are missed by mo
 asked that the old shift-versus-scramble deck figure (`constellation/coord_explainer/`, from
 `coord_explainers_with_arc-td.pptx`) be combined with Figure 2, and said **do not murderboard**.
 
-- **Delivered:** `<darkroom>/bugarach/2026-09-15-detector-review-plain/detector_review_plain.html`
+- **Delivered:** `<darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review-plain/detector_review_plain.html`
   (21 figures, about 6,300 words), plus its PNGs, `real_prose.json` and `_work/`.
 - **Builder:** `tools/make_plain_detector_review.py` (+ `tools/svgfig.py`,
   `tools/plain_detector_review_template.html`, `tests/test_svgfig.py`). It reads the first review's
   darkroom `measurements/` and reuses its four real-recording figures:
-  `--from-review <darkroom>/bugarach/2026-09-15-detector-review --stages all`.
+  `--from-review <darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review --stages all`.
 - **What the close-ups found** (numbers in the darkroom only): nearly all clear stripes that three or
   fewer detectors called sit outside the analysis windows, where the window-scoped detectors never
   run; inside windows most detectors call almost every clear stripe (binned SCE is the low one, partly
@@ -137,7 +137,7 @@ asked that the old shift-versus-scramble deck figure (`constellation/coord_expla
   environment-bound: `test_site_pages_render` (Playwright), `test_session_briefing` (bash) and
   `test_paths::test_windows_path_is_translated_for_wsl`. Only the tail was captured, so this is not
   proven for all 19. **CI on Linux is the check that counts.**
-- **Darkroom delivered:** `<darkroom>/bugarach/2026-09-15-detector-review/`.
+- **Darkroom delivered:** `<darkroom>/bugarach/archive/2026-09/2026-09-15-detector-review/`.
   - `detector_review.html`: sha256 `de97953b…`, stamped from commit 510aafd.
   - 19 figure PNGs.
   - `real_prose.json`: the sentences about treatment recordings, kept out of the repo (FOUNDATIONS §5).

@@ -263,6 +263,11 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   otherwise finds the mount itself, and the briefing prints what it resolved.
   Rule and the incident behind it: FOUNDATIONS §5. Never hardcode the path: it
   carries a person's name and this repo is public (sapper SAP004).
+  **The top level holds the last week; older work lives in `archive/<YYYY-MM>/`**
+  (Tony, 2026-09-26: *"the bugarach darkroom folder is extremely crowded"*, at 179 items).
+  `archive/INDEX.md` maps each moved item's old path to its new one. Tool destinations
+  that are written by name (`detect/`, `runs/`, `detector_history`, `leaderboard.html`)
+  stay at the top. A link to an archived item names its `archive/<YYYY-MM>/` path.
   **A report counts as output, and "in the repo" is not delivered.** The assembly
   report reached `docs/learned/` and stopped there, because its builder took
   `--out` as required while every figure tool defaults to the darkroom — so the

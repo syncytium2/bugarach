@@ -20,7 +20,7 @@ variable.** The two subtract variants, `tube` and `tube_guard`, are fine.
 ## What was measured
 
 Two independent lines, in `tools/probe_participation.py`. Both figures are at
-`<darkroom>/bugarach/participation_probe/`.
+`<darkroom>/bugarach/archive/2026-09/participation_probe/`.
 
 **The ladder.** Refit the four tube variants on the pilot's own
 `generator_spec.json` exactly the way `tools/run_learned_on_folder.py` fits them — same

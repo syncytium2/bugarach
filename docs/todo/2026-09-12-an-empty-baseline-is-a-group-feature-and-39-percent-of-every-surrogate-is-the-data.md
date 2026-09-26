@@ -17,7 +17,7 @@ construction, once possibly by omission — and the second one may weaken every 
 ## The measurement
 
 Read 2026-09-12 from the discriminator cells of the 2026-09-11 run,
-`<darkroom>/bugarach/2026-09-11-surrogate-screen/discriminator/**/cells/*.json`. Reproduce before
+`<darkroom>/bugarach/archive/2026-09/2026-09-11-surrogate-screen/discriminator/**/cells/*.json`. Reproduce before
 building on it.
 
 **Every generator leaves about 39% of `steps_excluded` ROIs bit-identical to the real recording.**

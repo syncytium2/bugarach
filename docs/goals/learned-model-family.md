@@ -277,7 +277,7 @@ selections (F1 alone, and F1 under a shared false-alarm budget), three training 
 **Launched 2026-09-18 at 16:14** on WSMIP064 from branch `tune-bench-comparison` @ `e8764aa`, from
 Task Scheduler, into `%USERPROFILE%\runs\fair-comparison-2026-09-18\`. All four nets and all six coded
 detectors, fast stream, bench simulation. Its `progress.json` is mirrored about once a minute to
-`<darkroom>/bugarach/2026-09-18-fair-comparison-run/`. An `at` there more than a few minutes old means
+`<darkroom>/bugarach/archive/2026-09/2026-09-18-fair-comparison-run/`. An `at` there more than a few minutes old means
 the run has stopped. Training floor 11.7 GPU-hours, so it should finish early on 2026-09-19. Status
 and readout plan: `HANDOFF-workstation-tuning.md` on that branch ⚠ **not on `main`**.
 
@@ -395,7 +395,7 @@ operating points belong to [`coded-detector-optimization.md`](coded-detector-opt
 | Gate 1, and the stop | `docs/learned/tuned_vs_coact/gate1/README.md` on that branch ⚠ **not on `main`** |
 | The proposal the three new shapes came from, and `quorum` | branch `claude/net-design-proposal-hw8rve` ⚠ **not on `main`**; its tip is an ancestor of `main` but the files were stripped back out before it merged |
 | Architecture diagrams | drawn by `syncytium2/draughtsman`; `line` beside `tube` at one scale is its queue item 13 |
-| Run outputs | `<darkroom>/bugarach/field-size-candidates/` and `<darkroom>/bugarach/2026-09-16-net-design/` — resolve with `bugarach.paths.darkroom()`. ⚠ Both notes in the net-design folder are partly wrong and the folder has no third note saying so |
+| Run outputs | `<darkroom>/bugarach/archive/2026-09/field-size-candidates/` and `<darkroom>/bugarach/archive/2026-09/2026-09-16-net-design/` — resolve with `bugarach.paths.darkroom()`. ⚠ Both notes in the net-design folder are partly wrong and the folder has no third note saying so |
 
 ## Keeping this page true
 

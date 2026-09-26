@@ -10,7 +10,7 @@ that were never recorded together, which is what the ROI swap does
 **How it was done.** Six readers ran in parallel, one per field. Each resolved every identifier from
 Crossref, OpenAlex, PubMed or Europe PMC (none from memory), fetched full text, and read the relevant
 sections. Every row below says whether it was **read** (full text of the relevant sections), **abstract
-only**, or **metadata only**. The PDFs are on the shelf at `<darkroom>/bugarach/lit/`: spike-train
+only**, or **metadata only**. The PDFs are on the shelf at `<darkroom>/bugarach/archive/2026-08/lit/`: spike-train
 ancestors in `surrogates/`, calcium-imaging detectors in `coordination/`, learning with negatives in `ml/`,
 and pseudopopulations, hyperscanning, fMRI, ecology and genomics in the new `recombination/`. Each folder's
 README has a row per file. Papers with no publisher PDF are in [`lit_needed.md`](../lit_needed.md).

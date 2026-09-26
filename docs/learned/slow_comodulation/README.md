@@ -567,7 +567,7 @@ On branch `unsup/slow-comodulation`:
 
 | step | command | output |
 |---|---|---|
-| measure | `python tools/measure_slow_comodulation.py` | `results.json` (per recording) and `summary.json` (pooled, no identifiers) in `<darkroom>/bugarach/2026-09-17-slow-comodulation/` |
+| measure | `python tools/measure_slow_comodulation.py` | `results.json` (per recording) and `summary.json` (pooled, no identifiers) in `<darkroom>/bugarach/archive/2026-09/2026-09-17-slow-comodulation/` |
 | re-summarize | `python tools/measure_slow_comodulation.py --out <that folder> --resummarise` | rebuilds the summaries and checks from an existing `results.json` |
 | draw | `python tools/make_slow_comodulation_figure.py --run <that folder> --also docs/learned/slow_comodulation` | the six figures here and in the darkroom folder, and `one_recording.png` in the darkroom only |
 

@@ -9,7 +9,7 @@
 > record sits beside it in the darkroom.** This file carries no number
 > derived from the recordings (FOUNDATIONS §5: real-data-derived output goes to the
 > darkroom and never to the repo). The numbers, the figures and the run record are in
-> `<darkroom>/bugarach/2026-09-07-pilot-apv-cnqx-gz/REPORT.md`; resolve `<darkroom>` with
+> `<darkroom>/bugarach/archive/2026-09/2026-09-07-pilot-apv-cnqx-gz/REPORT.md`; resolve `<darkroom>` with
 > `bugarach.paths.darkroom()`.
 
 Tony, 2026-09-07: *"Run the apv cnqx gz baseline data set through the coordination

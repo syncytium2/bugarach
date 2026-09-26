@@ -99,7 +99,7 @@ but how precisely it can be stated is not.
    `defined` and summaries exclude them.
 
 Corrected runs, both exports, all seeded:
-`<darkroom>/bugarach/synfire/` — `2026-08-19-corrected/` beside `2026-08-19-original/`,
+`<darkroom>/bugarach/archive/2026-08/synfire/` — `2026-08-19-corrected/` beside `2026-08-19-original/`,
 with a README. **Both sets kept side by side on Tony's instruction**; the originals are
 not superseded.
 

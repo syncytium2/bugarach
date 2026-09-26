@@ -194,8 +194,8 @@ in this list. Check *Waiting on Tony* before starting anything there.
 | Screen machinery | [`src/bugarach/surrogates.py`](../../src/bugarach/surrogates.py) (the candidates and the Elephant adapter), [`surrogate_stats.py`](../../src/bugarach/surrogate_stats.py), [`surrogate_discriminator.py`](../../src/bugarach/surrogate_discriminator.py); [`tools/build_surrogate_screen.py`](../../tools/build_surrogate_screen.py) and [`tools/build_surrogate_report.py`](../../tools/build_surrogate_report.py); the pattern-jitter clean room in [`clean_room/pattern_jitter_spec.md`](../clean_room/pattern_jitter_spec.md). Landed with [#530](https://github.com/syncytium2/bugarach/pull/530) on 2026-09-14 — **landing it is not a restart; Tony's stop stands** |
 | The recording-identity measurement | [`tools/measure_recording_identity.py`](../../tools/measure_recording_identity.py) |
 | The learned models | [`src/bugarach/learn/`](../../src/bugarach/learn/) |
-| Run outputs | `<darkroom>/bugarach/2026-09-11-surrogate-screen/`, `<darkroom>/bugarach/2026-09-13-recording-identity/` — resolve with `bugarach.paths.darkroom()` |
-| Papers | `<darkroom>/bugarach/lit/surrogates/`, `<darkroom>/bugarach/lit/recombination/`, `<darkroom>/bugarach/lit/ml/`; asks in [`lit_needed.md`](../lit_needed.md) |
+| Run outputs | `<darkroom>/bugarach/archive/2026-09/2026-09-11-surrogate-screen/`, `<darkroom>/bugarach/archive/2026-09/2026-09-13-recording-identity/` — resolve with `bugarach.paths.darkroom()` |
+| Papers | `<darkroom>/bugarach/archive/2026-08/lit/surrogates/`, `<darkroom>/bugarach/archive/2026-08/lit/recombination/`, `<darkroom>/bugarach/archive/2026-08/lit/ml/`; asks in [`lit_needed.md`](../lit_needed.md) |
 | Review records | [`reviews/`](../reviews/), files dated 2026-09-10 and later with *coordination-without-labels*, *surrogate* or *roi-swap* in the name |
 
 **Branches checked 2026-09-14.** `surrogate-screen-plan`, `surrogate-field-ruled` and

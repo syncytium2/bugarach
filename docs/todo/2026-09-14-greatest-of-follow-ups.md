@@ -15,7 +15,7 @@ that the origin stays *not established*.
   `<darkroom>/bugarach/` dates from 2026-08-29 and still reads "GO-CFAR (Hansen 1973)". Rebuild it
   with `tools/md_to_page.py docs/detector_history.md --also docs/learned`, after claiming the
   darkroom on `docs/SESSIONS.md`. A hand-written darkroom report,
-  `<darkroom>/bugarach/2026-09-07-pilot-apv-cnqx-gz/REPORT.md`, carries the same citation.
+  `<darkroom>/bugarach/archive/2026-09/2026-09-07-pilot-apv-cnqx-gz/REPORT.md`, carries the same citation.
 - **`tools/md_to_page.py` mis-renders two things in `detector_history.md`**, and GitHub renders
   both correctly. It has no strikethrough extension, so `~~…~~` shows as literal tildes. It also
   collapses the 3-space continuations in §7's numbered list into one paragraph, so items 3–5 run

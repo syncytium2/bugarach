@@ -7,7 +7,7 @@ filed: 2026-08-22
 
 Written 2026-08-22, at the end of the session that did the webapp work. **The
 figures every claim below rests on are in
-`<darkroom>/bugarach/2026-08-22-app-notes/`**, with a README walking each one.
+`<darkroom>/bugarach/archive/2026-08/2026-08-22-app-notes/`**, with a README walking each one.
 This is the repo copy, so the argument is findable without the Dropbox mounted.
 
 Tony's read at the time: *"at this point there is strong evidence to revise many

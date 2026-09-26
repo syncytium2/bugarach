@@ -123,7 +123,7 @@ CLAUDE.md says render it.
 
 ## What the shelf holds now, and what each is for
 
-`<darkroom>/bugarach/lit/` — resolve with `bugarach.paths.darkroom()`, never hardcode. `surrogates/`
+`<darkroom>/bugarach/archive/2026-08/lit/` — resolve with `bugarach.paths.darkroom()`, never hardcode. `surrogates/`
 did not exist this morning.
 
 | paper | what it is for |

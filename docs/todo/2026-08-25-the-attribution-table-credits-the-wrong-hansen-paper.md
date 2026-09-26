@@ -49,7 +49,7 @@ the table stopped.
 
 - Fix line 281: origin **Hansen 1973**, with Hansen & Sawyers 1980 named as the loss analysis
   that §5.4 actually quotes.
-- **Hansen 1973 is not on the shelf.** `<darkroom>/bugarach/lit/radar/` holds five PDFs — Finn
+- **Hansen 1973 is not on the shelf.** `<darkroom>/bugarach/archive/2026-08/lit/radar/` holds five PDFs — Finn
   & Johnson, Rohling, Gandhi & Kassam, Hansen & Sawyers, Weinberg. So the origin claim currently
   reaches this repo second-hand, and §7's standing claim that every radar attribution is matched
   against a PDF on the shelf **does not hold for this one**. Either acquire it, or mark the row

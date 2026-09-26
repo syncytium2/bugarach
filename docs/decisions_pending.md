@@ -193,7 +193,7 @@ worth stating. The page still carries the superseded run's numbers **and a stop 
 no longer true**.
 
 **Evidence:** `HANDOFF-slow-comodulation-on-the-de-pinned-export.md`, and the held reports in
-`<darkroom>/bugarach/2026-09-17-slow-comodulation/round3-roles-held/`.
+`<darkroom>/bugarach/archive/2026-09/2026-09-17-slow-comodulation/round3-roles-held/`.
 
 **Recommendation:** finish it on any machine with the data; it is done work that never shipped,
 and a stale stop notice teaches sessions to ignore stop notices.

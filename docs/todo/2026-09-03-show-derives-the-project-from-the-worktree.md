@@ -75,7 +75,7 @@ darkroom full of folders named after branches"*); it had happened.
 | `proj` | 2026-09-11 | empty — `show.py --selftest` creates `<review root>/proj` in the **real** darkroom, which is a third defect worth sending upstream with the other two |
 
 Cleaned up the same day: the duplicate was deleted, and `unsup-rule-as-code` and
-`turbo-takes-the-width` were moved to `<darkroom>/bugarach/strays-from-the-darkroom-root/`,
+`turbo-takes-the-width` were moved to `<darkroom>/bugarach/archive/2026-09/strays-from-the-darkroom-root/`,
 keeping their folder names so whoever wrote them can still find their files. The empty
 folders belonging to other repositories were left alone.
 
@@ -127,8 +127,8 @@ had just told it the tool existed. **Reproduced here in both forms before record
 it.**
 
 ```
-shutil.SameFileError: '…/darkroom/bugarach/three_scoring_rules.png' and
-                      '…/darkroom/bugarach/three_scoring_rules.png' are the same file
+shutil.SameFileError: '…/darkroom/bugarach/archive/2026-09/three_scoring_rules.png' and
+                      '…/darkroom/bugarach/archive/2026-09/three_scoring_rules.png' are the same file
 ```
 
 `main()` calls `shutil.copy2(src, dest)` unconditionally. When `src` already IS the
@@ -153,8 +153,8 @@ whose resolved spelling is the destination, and it still raises, with a message
 naming two paths that read as different:
 
 ```
-'/Users/…/Dropbox-<org>/…/bugarach/three_scoring_rules.png' and
-'/Users/…/Library/CloudStorage/Dropbox-<org>/…/bugarach/three_scoring_rules.png'
+'/Users/…/Dropbox-<org>/…/bugarach/archive/2026-09/three_scoring_rules.png' and
+'/Users/…/Library/CloudStorage/Dropbox-<org>/…/bugarach/archive/2026-09/three_scoring_rules.png'
 are the same file
 ```
 
