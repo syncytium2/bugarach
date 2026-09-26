@@ -684,11 +684,16 @@ def render(model: dict, exs: list[dict] | None, recs: list[dict], pages: list[st
     # 3. rasters -------------------------------------------------------------------------------
     parts.append("<h2 id='rasters'>3. Rasters with detection</h2>")
     parts.append(
-        "<div class='box'><b>Opening one recording.</b> Each link opens the site's viewer on this "
-        "machine, at that recording and stream, with the night's calls in lanes above the raster. "
-        "The viewer reads files you open; nothing leaves the machine. The first time, it asks for "
-        f"two things: the export folder <code>{html.escape(dataset_name or 'the default dataset')}"
-        f"</code>, and the results file <code>{html.escape(results_path or CALLS)}</code>.</div>")
+        "<div class='box'><b>Opening one recording.</b> Each link opens the site's viewer, copied "
+        "beside this page, at that recording and stream, with the night's calls in lanes above the "
+        "raster (▼ at each onset, one lane per detector and floor variant; hover a ▼ for its "
+        "participants and floors). The viewer reads only files you open; nothing leaves the "
+        "machine. The first time: <b>1.</b> click <i>Choose folder…</i> and pick the export folder "
+        f"<code>{html.escape(dataset_name or 'the default dataset')}</code>; <b>2.</b> click "
+        "<i>Open results (detections.csv)…</i> and pick "
+        f"<code>{html.escape(results_path or 'detections.csv')}</code>. After that, a link needs "
+        "one click on <i>Reopen</i> and the browser's permission prompt; the results file is "
+        "picked again each visit unless it is copied into the export folder.</div>")
     if pages:
         by = defaultdict(dict)
         for p in pages:
@@ -782,7 +787,9 @@ def main(argv=None) -> int:
     recs = recordings(a.night / WINDOWS) if (a.night / WINDOWS).exists() else []
     pages = sorted(os.path.relpath(p, a.out).replace(os.sep, "/")
                    for p in (a.night / PAGES).glob("*.html")) if (a.night / PAGES).exists() else []
-    results_path = str(a.night / CALLS)
+    # The results file the viewer opens: the night's calls in the output contract, which
+    # `detect_with_floors.py --detections-from <run>` writes beside this page.
+    results_path = str(a.out / "detections.csv") if (a.out / "detections.csv").exists() else None
     page = render(model, exs, recs, pages, dataset_name=dataset_name, results_path=results_path)
     tmp = a.out / "index.html.tmp"
     tmp.write_text(page, encoding="utf-8")
