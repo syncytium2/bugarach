@@ -48,6 +48,12 @@ from bugarach.simulate import simulate_coordination
 # mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
 pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench")
 
+# The six these pre-floor measurements are of. `count` and `count_sliding` (2026-09-26) are left
+# out: their threshold IS the floor, so with the floor off they run at a fixed 3 cells, which is
+# not the rule, and their budgets were measured with the floor on
+# (tools/measure_slow_budgets.py --only). tests/test_count_rule.py covers them.
+DETECTORS = tuple(d for d in DETECTORS if d not in ("count", "count_sliding"))
+
 
 SEEDS = (1, 2)
 

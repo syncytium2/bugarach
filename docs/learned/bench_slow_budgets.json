@@ -1,5 +1,21 @@
 {
  "measured_on": "2026-09-23",
+ "merged": [
+  {
+   "detectors": [
+    "count"
+   ],
+   "measured_on": "2026-09-26",
+   "note": "rows merged with --only; every other row is as first measured"
+  },
+  {
+   "detectors": [
+    "count_sliding"
+   ],
+   "measured_on": "2026-09-26",
+   "note": "rows merged with --only; every other row is as first measured"
+  }
+ ],
  "rows": {
   "bugarach.bench": {
    "cicada": {
@@ -27,6 +43,26 @@
     "null_per_hour": 2.9166666666666665,
     "precision_swing": 0.08000724927297231,
     "probe_per_min": 0.07916666666666666
+   },
+   "count": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8021390374331551,
+    "f1_quiet": 0.7811447811447813,
+    "null_per_hour": 0.1111111111111111,
+    "precision_swing": 0.029564275210896995,
+    "probe_per_min": 0.016666666666666666
+   },
+   "count_sliding": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.757020757020757,
+    "f1_quiet": 0.7811228641171684,
+    "null_per_hour": 0.3055555555555556,
+    "precision_swing": 0.031817144535871034,
+    "probe_per_min": 0.09583333333333334
    },
    "loco": {
     "ceiling_null": 3.0,
@@ -101,6 +137,26 @@
     "null_per_hour": 0.0,
     "precision_swing": 0.0031777557100297615,
     "probe_per_min": 0.21666666666666667
+   },
+   "count": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8072289156626506,
+    "f1_quiet": 0.8226190476190477,
+    "null_per_hour": 0.08333333333333333,
+    "precision_swing": 0.02187500000000009,
+    "probe_per_min": 0.020833333333333332
+   },
+   "count_sliding": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8276315789473685,
+    "f1_quiet": 0.8419203747072599,
+    "null_per_hour": 0.3333333333333333,
+    "precision_swing": 0.02099122048855928,
+    "probe_per_min": 0.09583333333333334
    },
    "loco": {
     "ceiling_null": 1.0,

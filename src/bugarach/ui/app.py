@@ -55,6 +55,8 @@ from bugarach.bench import OPERATING_POINTS
 from bugarach.detectors import (
     cicada_detect,
     coact_detect,
+    count_detect,
+    count_sliding_detect,
     loco_detect,
     rate_detect,
     recording_extent,
@@ -129,6 +131,9 @@ COLORS = {
     "sync":   "#d62728",
     "coact":  "#e69d00",
     "loco":   "#8c564b",
+    # The simple rule (2026-09-26): the next hue on the same qualitative wheel.
+    "count":  "#17becf",
+    "count_sliding": "#0e7c86",     # v1's hue, darker: the same rule, sliding
     # The learned lane, in the report's own `--learned` ink so a reader moving
     # between the figure and `docs/learned/` meets one colour for one idea. It is
     # deliberately not on the qualitative wheel the six sit on: the six differ
@@ -156,6 +161,7 @@ COLORS = {
 TITLES = {
     "rate": "rate+context", "sce": "binned SCE", "cicada": "sixth",
     "sync": "SPIKE-synch", "coact": "CoactDetect", "loco": "LoCo",
+    "count": "count (binned)", "count_sliding": "count (sliding)",
     # The learned lane is named for the MODEL. It used to be named for the
     # mechanism — "centre−surround (learned)" — on the reasoning that *"a reader
     # meeting `tube` in a figure has no way to know it is a network."*
@@ -179,7 +185,8 @@ TITLES = {
 # form there rendered as "he sixth detector (105", clipped at BOTH ends, which is
 # the overflow this map exists to prevent.
 SHORT = {"rate": "rate", "sce": "SCE", "cicada": "sixth",
-         "sync": "sync", "coact": "coact", "loco": "LoCo",
+         "sync": "sync", "coact": "coact", "loco": "LoCo", "count": "count",
+         "count_sliding": "count sl",
          "tube": "learned"}
 DEFAULT_ON = ["rate", "coact", "loco"]
 
@@ -261,6 +268,20 @@ _SPECS = {
         ("min_rois", "min ROIs", 3, (2, 15), 1),
         ("n_surrogates", "surrogates", CALIBRATED, (20, 500), 10),
         ("thr_step_sec", "thr step (s)", CALIBRATED, (5.0, 60.0), 5.0),
+        ("merge_gap_sec", "merge gap (s)", CALIBRATED, (0.0, 10.0), 0.5),
+    ],
+    "count": [
+        ("bin_sec", "bin (s)", CALIBRATED, (0.1, 20.0), 0.1),
+        # The floor is set per recording on the bench (ADR-0008); here it is a box, as
+        # CoactDetect's is, and k_offset rides on top of it.
+        ("min_rois", "min ROIs", 3, (1, 15), 1),
+        ("k_offset", "k above floor", CALIBRATED, (0, 10), 1),
+        ("merge_gap_sec", "merge gap (s)", CALIBRATED, (0.0, 10.0), 0.5),
+    ],
+    "count_sliding": [
+        ("win_sec", "window (s)", CALIBRATED, (0.1, 20.0), 0.1),
+        ("min_rois", "min ROIs", 3, (1, 15), 1),
+        ("k_offset", "k above floor", CALIBRATED, (0, 10), 1),
         ("merge_gap_sec", "merge gap (s)", CALIBRATED, (0.0, 10.0), 0.5),
     ],
 }
@@ -435,6 +456,12 @@ def _compute(det: str, s: Slice, ext, params: dict, *, dt: float):
             r = coact_detect(st.t50rise, ext, rng_seed=RNG_SEED, **params)
             out[name] = StreamResult(r.ctr, r.obs, (r.onset_sec, r.width_sec),
                                      {"ref": r.nullmean_prof}, r)
+    elif det in ("count", "count_sliding"):
+        fn = count_detect if det == "count" else count_sliding_detect
+        for name, st in s.streams.items():
+            r = fn(st.t50rise, ext, **params)
+            out[name] = StreamResult(r.ctr, r.obs, (r.onset_sec, r.width_sec),
+                                     {"threshold": float(r.threshold)}, r)
     elif det == "loco":
         r = loco_detect(s, rng_seed=RNG_SEED, **params)
         for name, res in r.streams.items():
