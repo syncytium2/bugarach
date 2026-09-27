@@ -22,7 +22,8 @@ as they are unless Tony rules otherwise.
   backgrounds, selection seeds, fast's doubled by ADR-0010 ruling 2), through
   ``bench.recording_floor``, the function that makes the bench's floors.
 
-Writes ``floors_<source>.csv``, ``summary_<source>.json`` and ``fig1_floor_vs_window_<source>.png``.
+Writes ``floors_<source>.csv``, ``summary_<source>.json`` and ``fig<n>_floor_vs_window_<source>.png``
+(Figure 1 the bench, Figure 2 the real recordings).
 """
 from __future__ import annotations
 
@@ -149,7 +150,8 @@ def figure(rows, path, source):
         ax.set_xlabel(f"{stream} · floor (ROIs) · {n_units} {unit}")
         ax.set_ylabel(unit)
         ax.legend(fontsize=8, frameon=False)
-    fig.suptitle(f"Figure 1. The ADR-0008 floor counted in a W-second window, "
+    number = 1 if source == "bench" else 2
+    fig.suptitle(f"Figure {number}. The ADR-0008 floor counted in a W-second window, "
                  f"{'realistic bench' if source == 'bench' else '66 real recordings, baseline'}",
                  fontsize=10, x=0.01, ha="left")
     fig.tight_layout()
@@ -193,7 +195,7 @@ def main(argv=None) -> int:
                         method="event_floor.window_floor: rigid shift ±20 s, 1000 draws, "
                                "<= 1 call/h, minimum 3", by_stream=summ), indent=1),
         encoding="utf-8")
-    figure(rows, a.out / f"fig1_floor_vs_window_{a.source}.png", a.source)
+    figure(rows, a.out / f"fig{1 if a.source == 'bench' else 2}_floor_vs_window_{a.source}.png", a.source)
     print(json.dumps(summ, indent=1))
     return 0
 
