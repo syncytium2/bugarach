@@ -41,6 +41,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   carries the summary.
 - **Touches:** that folder only.
 
+### WSMIP065/simple-vs-coact-real — DARKROOM claim: `bugarach/2026-09-27-simple-vs-coact-real/` (NEW)
+- **Status:** claimed 2026-09-27 ~8:00 AM EDT by WSMIP065 on the orchestrator's brief (Tony's
+  question: does the simple count rule tie CoactDetect only because the bench was built in its
+  image?). `tools/detect_with_floors.py` on every window of the default dataset: count and count
+  (sliding) at 064's settings, CoactDetect proposed and shipped, then the agreement between them.
+  Working material, not murderboarded; a detector-agreement result, not a treatment-effect claim.
+  Released by the merge of the PR that carries this block and the analysis tool.
+- **Touches:** that folder only (run folders, `detections.csv`, `README.md`, figures).
+
 ### WSMIP064/full-panel — DARKROOM claim: `bugarach/2026-09-26-full-panel/064/`
 - **Status:** ACTIVE 2026-09-25 19:40 UTC (3:40 PM EDT) — the full-panel night, WSMIP064's half, on
   the orchestrator's go: the six fast searches on the CPU and the eight learned models × three
