@@ -475,7 +475,7 @@ def figure1(model: dict, dest: Path) -> Path:
             cy = y + ROW / 2
             flag = " §5" if any(f.startswith("ruling 5") for v in e["per"].values() if v
                                for f in v["flags"]) else ""
-            name = f"{e['label']} · {e['setting'] if e['family'] in CODED else 'pick'}{flag}"
+            name = f"{e['label']} · {setting_words(e)}{flag}"
             out.append(f"<text class='t' x='{LEFT - 10}' y='{cy + 5}' text-anchor='end'>"
                        f"{html.escape(name)}</text>")
             out.append(f"<line class='ax' x1='{LEFT}' x2='{W - RIGHT}' y1='{y + ROW}' "
@@ -537,6 +537,7 @@ th, td { border-bottom: 1px solid var(--line); padding: .35rem .5rem; text-align
 th { font-weight: 650; }
 td.n { font-family: var(--mono); white-space: nowrap; text-align: right; }
 .bad { color: var(--bad); font-weight: 600; } .warn { color: var(--warn); }
+td.marks { padding-top: 0; }
 figure { margin: 1.2rem 0 1.8rem; } figure img { width: 100%; height: auto; background: #fff;
          border: 1px solid var(--line); }
 figcaption { color: var(--muted); margin-top: .4rem; }
@@ -564,11 +565,21 @@ def _marks_html(per: dict) -> str:
     return "<br>".join(out)
 
 
+def setting_words(e: dict) -> str:
+    """A row's setting as the table says it: shipped or proposal for a detector, and for a learned
+    model the seed its training run picked (the checkpoint's full name is in briefing.json)."""
+    if not e["id"].startswith("learned:"):
+        return e["setting"]
+    seed = e["setting"].rsplit("_seed", 1)[-1]
+    nopick = any(f.startswith("no pick") for v in e["per"].values() if v for f in v["flags"])
+    return f"{'best seed' if nopick else 'pick'}, seed {seed}"
+
+
 def leaderboard_table(model: dict, s: str, tno: int) -> str:
     rows = model["board"][s]
     head = ("<tr><th>#</th><th>detector or model</th><th>setting</th>"
             "<th>new bench ΔF1 [95%]</th><th>new mean F1</th>"
-            "<th>old bench ΔF1 [95%]</th><th>old mean F1</th><th>marks</th></tr>")
+            "<th>old bench ΔF1 [95%]</th><th>old mean F1</th></tr>")
     body = []
     for i, e in enumerate(rows, 1):
         cells = []
@@ -580,13 +591,19 @@ def leaderboard_table(model: dict, s: str, tno: int) -> str:
                 cells += [f"<td class='n'>{_f(v['mid'])} [{_f(v['lo'])}, {_f(v['hi'])}]</td>",
                           f"<td class='n'>{_f(v['mean_f1'], sign=False)}</td>"]
         marks = _marks_html(e["per"])
-        body.append(f"<tr><td class='n'>{i}</td><td>{html.escape(e['label'])}</td>"
-                    f"<td>{html.escape(e['setting'])}</td>{''.join(cells)}<td>{marks}</td></tr>")
+        # THE MARKS GO ON A LINE OF THEIR OWN under the row: as a column they pushed the table
+        # past the page and made every flagged row several lines tall.
+        edge = " style='border-bottom:none'" if marks else ""
+        body.append(f"<tr><td class='n'{edge}>{i}</td><td{edge}>{html.escape(e['label'])}</td>"
+                    f"<td{edge}>{html.escape(setting_words(e))}</td>"
+                    + "".join(c.replace("<td", f"<td{edge}", 1) for c in cells) + "</tr>")
+        if marks:
+            body.append(f"<tr><td></td><td colspan='6' class='marks'>{marks}</td></tr>")
     if not model["count_present"]:
         body.append("<tr><td class='n'>—</td><td>count (bin-and-count rule)</td><td>—</td>"
                     "<td class='n muted' colspan='4'>not scored yet: WSMIP064 is building it, and "
                     "its results land in <code>064/count/</code>. Rerunning the builder adds "
-                    "this row.</td><td></td></tr>")
+                    "this row.</td></tr>")
     return (f"<div class='tablewrap'><table><caption style='text-align:left'><b>Table {tno}.</b> "
             f"The {s} stream, {len(rows)} rows, ordered by the new bench's paired F1 difference "
             f"(ΔF1) against CoactDetect at its shipped setting.</caption>{head}{''.join(body)}"
@@ -610,7 +627,8 @@ def glance(model: dict) -> dict:
             top_e, top_v = max(rows, key=lambda ev: ev[1]["mid"])
             out[s][col] = dict(n=len(rows), above=above, below=below,
                                straddle=len(rows) - above - below,
-                               top=f"{top_e['label']} · {top_e['setting']}", top_mid=top_v["mid"])
+                               top=f"{top_e['label']} · {setting_words(top_e)}",
+                               top_mid=top_v["mid"])
     return out
 
 
