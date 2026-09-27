@@ -79,7 +79,8 @@ def night(tmp_path: Path) -> Path:
                         window_kind="baseline", stream="fast", detector="tube",
                         variant="unfloored", onset_sec=100, width_sec=1, participants=6,
                         own_floor=5, baseline_floor=5))
-    wcols = ["slice_id", "group", "region_idx", "label", "window_kind", "stream"]
+    wcols = ["slice_id", "group", "region_idx", "label", "window_kind", "stream", "win_start",
+             "win_end", "hours"]
     with (det / "windows.csv").open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, wcols)
         w.writeheader()
@@ -87,9 +88,11 @@ def night(tmp_path: Path) -> Path:
                                 ("synthC", "MALE", "TTX"), ("synthD", "OVX", "TTX")):
             for s in ("fast", "slow"):
                 w.writerow(dict(slice_id=sid, group=grp, region_idx=1, label="baseline",
-                                window_kind="baseline", stream=s))
+                                window_kind="baseline", stream=s, win_start=0, win_end=1200,
+                                hours=1 / 3))
                 w.writerow(dict(slice_id=sid, group=grp, region_idx=2, label=treat,
-                                window_kind="treatment", stream=s))
+                                window_kind="treatment", stream=s, win_start=1300, win_end=2500,
+                                hours=1 / 3))
     pages = n / "065/review/pages"
     pages.mkdir(parents=True)
     for name in ("ORX_TTX_fast", "DI_TTX_fast", "DI_TTX_slow"):
@@ -125,7 +128,7 @@ def test_budget_failures_ruling_5_and_no_pick_are_marked(night, tmp_path):
     assert any(f.startswith("no pick") for f in fast["learned:line"]["per"]["new"]["flags"])
     page = (out / "index.html").read_text(encoding="utf-8")
     # Both benches fail alike, so it is said once, with digits enough to show the excess.
-    assert "Over budget on the both benches: precision swing: 0.500 against a limit of" in page
+    assert "Over budget on both benches: precision swing: 0.500 against a limit of" in page
     assert "the elevated-rate test" in page and "probe" not in page
 
 
@@ -144,11 +147,11 @@ def test_limit_marks_say_which_rule_governs_each_stop():
     edge = marks({"context_win_sec": dict(side="high", value=120.0, reason="grid_ceiling")})
     assert "ruling 5" not in edge[0] and "part 1" in edge[0] and "120 s" in edge[0]
     floor = marks({"k_offset": dict(side="low", value=0, reason="limit")})
-    assert "by design" in floor[0] and "ruling 5" not in floor[0]
+    assert floor[0].startswith(mb.NOTE) and "by design" in floor[0] and "ruling 5" not in floor[0]
     cap = marks(findings=[dict(setting="threshold_pctile", value=99.9921875, kind="cap")])
-    assert "99.9922th percentile" in cap[0] and "extension cap" in cap[0]
+    assert "99.9921875th percentile" in cap[0] and "extension cap" in cap[0]
     none = marks(findings=[dict(setting="merge_gap_sec", value=float("nan"), kind="off_limit")])
-    assert none[0].startswith("merge gap: none")
+    assert none[0].startswith("merge gap none (no merge)")
     assert mb.limit_marks(dict(proposal=dict(name="shipped"))) == []
 
 
@@ -157,6 +160,37 @@ def test_an_unmeasured_budget_is_said_not_crashed_on():
         "not measured (limit 7 calls/h)")
     assert mb.budget_words(dict(name="precision_swing", value=0.1036, limit=0.1)) == \
         "precision swing: 0.104 against a limit of 0.100"
+
+
+def test_every_viewer_link_opens_in_the_one_viewer_tab(night, tmp_path):
+    # On file:// Chrome refuses the folder picker the viewer's Reopen needs, so a fresh page per
+    # link would ask for the folder every time. One named tab turns every later link into a
+    # fragment change, which the viewer follows without reloading (murderboard 2026-09-26).
+    out, _ = _build(night, tmp_path)
+    page = (out / "index.html").read_text(encoding="utf-8")
+    links = page.count("href='viewer.html#")
+    assert links and page.count(f"target='{mb.VIEWER_TAB}'") == links
+
+
+def test_a_shipped_setting_the_search_found_on_a_limit_is_marked(night, tmp_path):
+    # When the search proposes nothing, its best is the shipped setting, and the bracketing record
+    # can still put that on a limit (slow LoCo's guard 0 on the 2026-09-25 night).
+    for rel in ("065/fresh-realistic", "065/fresh-bench"):
+        p = night / rel / "candidates.json"
+        c = json.loads(p.read_text())
+        for s in mb.STREAMS:
+            c["benches"][s]["detectors"]["loco"]["proposal"]["bracketing"] = dict(
+                findings=[dict(setting="guard_sec", value=0.0, kind="off_limit")])
+        p.write_text(json.dumps(c))
+    _, m = _build(night, tmp_path)
+    loco = next(e for e in m["board"]["slow"] if e["id"] == "loco:shipped")
+    assert any("ruling 5" in f for f in loco["per"]["new"]["flags"])
+    assert mb.flagged(loco)
+
+
+def test_spearman_is_one_for_the_same_order_and_minus_one_reversed():
+    assert mb.spearman([1, 2, 3, 4], [10, 20, 30, 40]) == pytest.approx(1.0)
+    assert mb.spearman([1, 2, 3, 4], [4, 3, 2, 1]) == pytest.approx(-1.0)
 
 
 def test_caption_times_floor_the_minute():
