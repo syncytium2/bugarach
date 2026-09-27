@@ -46,9 +46,12 @@ def _candidates(spacing: str, shift: float = 0.0) -> dict:
         }
         benches[s] = dict(
             budget_null_per_hour=7.0, search_elapsed_min={}, detectors=dict(
+                # As the night's searches recorded it: a guard of 0 is both an unbracketed axis
+                # and an off-limit finding (ADR-0010 ruling 5).
                 coact=dict(proposal=dict(name="rounds", unbracketed=True, bracketing=dict(
                     bracketed=False, unbracketed_axes=dict(
-                        guard_sec=dict(side="low", value=0.0, reason="limit"))))),
+                        guard_sec=dict(side="low", value=0.0, reason="limit")),
+                    findings=[dict(setting="guard_sec", value=0.0, kind="off_limit")]))),
                 loco=dict(proposal=dict(name="shipped", unbracketed=False, bracketing={}))),
             chorus=dict(
                 tube=dict(picked=f"tube_{s}_seed0.json", out_of_budget=None, train_rows=[]),
@@ -117,11 +120,68 @@ def test_budget_failures_ruling_5_and_no_pick_are_marked(night, tmp_path):
     fast = {e["id"]: e for e in m["board"]["fast"]}
     assert [f["name"] for f in fast["loco:shipped"]["per"]["new"]["budget_fails"]] == \
         ["precision_swing"]
-    assert any("guard_sec" in f for f in fast["coact:proposal"]["per"]["new"]["flags"])
+    assert any("guard 0 s" in f and "ruling 5" in f
+               for f in fast["coact:proposal"]["per"]["new"]["flags"])
     assert any(f.startswith("no pick") for f in fast["learned:line"]["per"]["new"]["flags"])
     page = (out / "index.html").read_text(encoding="utf-8")
-    assert "over budget, precision change between quiet and busy backgrounds" in page
-    assert "ruling 5: guard_sec at its limit" in page
+    # Both benches fail alike, so it is said once, with digits enough to show the excess.
+    assert "Over budget on the both benches: precision swing: 0.500 against a limit of" in page
+    assert "the elevated-rate test" in page and "probe" not in page
+
+
+# THIS REPLACES AN ASSERTION THAT ENCODED THE DEFECT. The first version of this file asserted
+# "ruling 5: guard_sec at its limit" on the page, which was the page crediting ADR-0010 ruling 5
+# with every stop. Ruling 5 covers only a value that switches a setting off; a grid edge or a cap
+# is part 1's "bracketed" (murderboard 2026-09-26, roles 2, 3 and 6).
+def test_limit_marks_say_which_rule_governs_each_stop():
+    def marks(axes=None, findings=None):
+        return mb.limit_marks(dict(proposal=dict(name="rounds", unbracketed=True, bracketing=dict(
+            unbracketed_axes=axes or {}, findings=findings or []))))
+    off = marks({"guard_sec": dict(side="low", value=0.0, reason="limit")},
+                [dict(setting="guard_sec", value=0.0, kind="off_limit")])
+    assert off == ["guard 0 s, a value that switches it off (ADR-0010 ruling 5: a finding, not "
+                   "a tuned value)"]
+    edge = marks({"context_win_sec": dict(side="high", value=120.0, reason="grid_ceiling")})
+    assert "ruling 5" not in edge[0] and "part 1" in edge[0] and "120 s" in edge[0]
+    floor = marks({"k_offset": dict(side="low", value=0, reason="limit")})
+    assert "by design" in floor[0] and "ruling 5" not in floor[0]
+    cap = marks(findings=[dict(setting="threshold_pctile", value=99.9921875, kind="cap")])
+    assert "99.9922th percentile" in cap[0] and "extension cap" in cap[0]
+    none = marks(findings=[dict(setting="merge_gap_sec", value=float("nan"), kind="off_limit")])
+    assert none[0].startswith("merge gap: none")
+    assert mb.limit_marks(dict(proposal=dict(name="shipped"))) == []
+
+
+def test_an_unmeasured_budget_is_said_not_crashed_on():
+    assert mb.budget_words(dict(name="elevated_out_quiet", value=None, limit=7.0)).endswith(
+        "not measured (limit 7 calls/h)")
+    assert mb.budget_words(dict(name="precision_swing", value=0.1036, limit=0.1)) == \
+        "precision swing: 0.104 against a limit of 0.100"
+
+
+def test_caption_times_floor_the_minute():
+    # The first build printed 7m59s as 8m59s and 19m59.5s as 20m60s (f"{t/60:.0f}m...").
+    assert mb.time_label(round(478.9)) == "7m59s"
+    assert mb.time_label(round(1199.5)) == "20m"
+    assert mb.time_label(round(100.0)) == "1m40s"
+    assert mb.time_label(round(0.5)) == "0s"
+
+
+def _call(sid, det, t, w=1.0, region="1", p=6, group="DI", stream="fast"):
+    return dict(slice_id=sid, detector=det, onset_sec=str(t), width_sec=str(w), region_idx=region,
+                participants=str(p), group=group, stream=stream, window_kind="baseline")
+
+
+def test_examples_classify_span_to_span_and_pick_away_from_window_edges():
+    calls = [_call("r1", "lead", 100), _call("r1", "coact", 101.5),       # agree (within 2.5 s)
+             _call("r1", "lead", 200), _call("r1", "coact", 400),         # one each way
+             _call("r1", "lead", 12.0, p=9)]                              # near the window start
+    k = mb.classify(calls, "fast", "lead", "coact")
+    assert [len(k[x]) for x in ("agree", "leader_only", "ref_only")] == [1, 2, 1]
+    bounds = {("r1", "fast", "1"): (10.0, 500.0)}
+    pick = mb.pick_one(k["leader_only"], bounds, set())
+    assert float(pick["onset_sec"]) == 200         # the call 2 s inside the window is not shown
+    assert mb.pick_one([_call("r1", "lead", 495)], bounds, set()) is None
 
 
 def test_a_missing_old_bench_says_so_rather_than_vanishing(night, tmp_path):
@@ -145,7 +205,7 @@ def test_a_candidates_file_at_the_wrong_spacing_is_refused(night, tmp_path):
 def test_the_count_row_waits_and_a_later_run_adds_it(night, tmp_path):
     out, m = _build(night, tmp_path)
     assert m["count_present"] is False
-    assert "count (bin-and-count rule)" in (out / "index.html").read_text(encoding="utf-8")
+    assert "count (the simple rule)" in (out / "index.html").read_text(encoding="utf-8")
     c = _candidates("realistic")
     for s in mb.STREAMS:
         c["results"][s] = {"count:bin2s": _row(0.02, 0.0, 0.04)}
@@ -171,7 +231,8 @@ def test_rasters_are_in_the_house_group_order_and_link_the_viewer(night, tmp_pat
 def test_figures_are_numbered_and_type_is_never_under_11_pt(night, tmp_path):
     out, _ = _build(night, tmp_path)
     page = (out / "index.html").read_text(encoding="utf-8")
-    assert "<b>Figure 1, the leaderboard.</b>" in page
+    for s in ("a, the fast", "b, the slow", "c, the combined"):
+        assert f"<b>Figure 1{s} stream.</b>" in page
     for t in ("Table 1.", "Table 2.", "Table 3.", "Table 4.", "Table 5.", "Table 6."):
         assert t in page
     import re
@@ -186,7 +247,8 @@ def test_also_copies_the_simulation_half_and_nothing_that_names_a_recording(nigh
     also = tmp_path / "repo_copy"
     _build(night, tmp_path, "--also", str(also))
     names = sorted(p.name for p in also.iterdir())
-    assert names == ["figure1_leaderboard.svg", "leaderboard.json"]
+    assert names == ["figure1_combined.svg", "figure1_fast.svg", "figure1_slow.svg",
+                     "leaderboard.json"]
     for p in also.iterdir():
         assert "synth" not in p.read_text(encoding="utf-8")
 
