@@ -593,6 +593,47 @@ def leaderboard_table(model: dict, s: str, tno: int) -> str:
             f"</table></div>")
 
 
+def glance(model: dict) -> dict:
+    """Per stream and bench: how many rows' intervals sit wholly above, include zero, or sit wholly
+    below CoactDetect's shipped setting, and the top row. Counted from the rows on the page, so the
+    summary cannot say what the table does not (CoactDetect's own shipped row is left out)."""
+    out = {}
+    for s in STREAMS:
+        out[s] = {}
+        for col in ("new", "old"):
+            rows = [(e, e["per"][col]) for e in model["board"][s]
+                    if e["per"][col] and e["id"] != "coact:shipped"]
+            if not rows:
+                continue
+            above = sum(v["lo"] > 0 for _, v in rows)
+            below = sum(v["hi"] < 0 for _, v in rows)
+            top_e, top_v = max(rows, key=lambda ev: ev[1]["mid"])
+            out[s][col] = dict(n=len(rows), above=above, below=below,
+                               straddle=len(rows) - above - below,
+                               top=f"{top_e['label']} · {top_e['setting']}", top_mid=top_v["mid"])
+    return out
+
+
+def glance_html(g: dict) -> str:
+    head = ("<tr><th>stream</th><th>bench</th><th>rows above</th><th>interval includes zero</th>"
+            "<th>rows below</th><th>top row (ΔF1)</th></tr>")
+    body = []
+    for s in STREAMS:
+        for col in ("new", "old"):
+            v = g[s].get(col)
+            if not v:
+                body.append(f"<tr><td>{s}</td><td>{col}</td><td colspan='4' class='muted'>not "
+                            f"scored</td></tr>")
+                continue
+            body.append(f"<tr><td>{s}</td><td>{col}</td><td class='n'>{v['above']} rows</td>"
+                        f"<td class='n'>{v['straddle']} rows</td><td class='n'>{v['below']} rows"
+                        f"</td><td>{html.escape(v['top'])} ({_f(v['top_mid'])})</td></tr>")
+    return (f"<div class='tablewrap'><table><caption style='text-align:left'><b>Table 1.</b> At a "
+            f"glance: of the rows on each stream (CoactDetect's shipped row left out), how many "
+            f"have a 95% interval wholly above CoactDetect's shipped setting, including zero, or "
+            f"wholly below it, on each bench.</caption>{head}{''.join(body)}</table></div>")
+
+
 def viewer_href(slice_id: str, stream: str, t: float | None = None) -> str:
     frag = f"slice={quote(slice_id)}&stream={quote(stream)}"
     if t is not None:
@@ -633,9 +674,12 @@ def render(model: dict, exs: list[dict] | None, recs: list[dict], pages: list[st
                  "the mean over seeds of (row F1 − CoactDetect F1), with a 95% bootstrap interval "
                  "over seeds (2,000 draws). An interval clear of zero is a difference the seeds "
                  "resolve; one that straddles zero is not. The new and old benches score the "
-                 "<i>same</i> candidates; the proposals were searched on the new bench, so the old "
-                 "column is those settings on a field they were not chosen on.<br>"
+                 "<i>same</i> candidates. The proposals and the learned picks were chosen on the "
+                 "new bench, while the shipped settings, the reference among them, date from "
+                 "before ADR-0010, when the old bench was the only one: each column is partly a "
+                 "field some rows were chosen on and others were not.<br>"
                  + "<br>".join(seeds) + "</div>")
+    parts.append(glance_html(glance(model)))
     svg = model.get("_figure1_svg", "")
     parts.append(f"<figure><div class='tablewrap'>{svg}</div>"
                  f"<figcaption><b>Figure {fig_no}, the leaderboard.</b> Paired F1 difference "
@@ -644,7 +688,7 @@ def render(model: dict, exs: list[dict] | None, recs: list[dict], pages: list[st
                  f"a training run with no pick. §5: a proposal on a grid limit (ADR-0010 ruling "
                  f"5), not adoptable on the search's own rule.</figcaption></figure>")
     fig_no += 1
-    for i, s in enumerate(STREAMS, 1):
+    for i, s in enumerate(STREAMS, 2):       # Table 1 is the at-a-glance table
         parts.append(f"<h3>{s.capitalize()} stream</h3>" + leaderboard_table(model, s, i))
     # 2. examples ------------------------------------------------------------------------------
     parts.append("<h2 id='examples'>2. Examples on real recordings</h2>")
@@ -719,7 +763,7 @@ def render(model: dict, exs: list[dict] | None, recs: list[dict], pages: list[st
         parts.append(f"<p>Every recording in a group whose first treatment was the same, stacked "
                      f"and aligned at the end of its own baseline — the night's review pages, "
                      f"{len(pages)} pages:</p><div class='tablewrap'><table><caption "
-                     f"style='text-align:left'><b>Table 4.</b> Group × first-treatment pages, "
+                     f"style='text-align:left'><b>Table 5.</b> Group × first-treatment pages, "
                      f"one per stream.</caption><tr><th>group</th><th>first treatment</th>"
                      f"<th>pages</th></tr>{''.join(rows)}</table></div>")
     rows = []
@@ -729,7 +773,7 @@ def render(model: dict, exs: list[dict] | None, recs: list[dict], pages: list[st
         rows.append(f"<tr><td>{html.escape(r['group'])}</td><td>{html.escape(r['first'] or '—')}"
                     f"</td><td><code>{html.escape(r['slice_id'])}</code></td><td>{links}</td></tr>")
     parts.append(f"<p>One recording at a time, in the viewer ({len(recs)} recordings):</p>"
-                 f"<div class='tablewrap'><table><caption style='text-align:left'><b>Table 5.</b>"
+                 f"<div class='tablewrap'><table><caption style='text-align:left'><b>Table 6.</b>"
                  f" Every recording the night's detection ran on, by group and first treatment."
                  f"</caption><tr><th>group</th><th>first treatment</th><th>recording</th>"
                  f"<th>open in the viewer</th></tr>{''.join(rows)}</table></div>")

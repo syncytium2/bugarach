@@ -172,7 +172,7 @@ def test_figures_are_numbered_and_type_is_never_under_11_pt(night, tmp_path):
     out, _ = _build(night, tmp_path)
     page = (out / "index.html").read_text(encoding="utf-8")
     assert "<b>Figure 1, the leaderboard.</b>" in page
-    for t in ("Table 1.", "Table 2.", "Table 3.", "Table 4.", "Table 5."):
+    for t in ("Table 1.", "Table 2.", "Table 3.", "Table 4.", "Table 5.", "Table 6."):
         assert t in page
     import re
     # 11 pt is 14.67 px; the page's root is 17 px, so no rem or em size below 0.87.
