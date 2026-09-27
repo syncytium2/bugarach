@@ -386,11 +386,27 @@ def examples(model: dict, night: Path, dest: Path) -> list[dict]:
                 and not any((e["per"][c] or {}).get("budget_fails") for c in ("new",))]
         if not real:
             continue
-        (lead, ldet) = real[0]
-        runner = real[1][1] if len(real) > 1 else None
+        # THE LEADER FOR THE EXAMPLES DISAGREES WITH COACTDETECT AT LEAST ONCE EACH WAY. A row
+        # whose baseline calls all coincide with CoactDetect's has no disagreement to show, and
+        # showing "no such call" three times over is less use than the next row down. Every row
+        # passed over is named with its reason on the page.
+        skipped, choice = [], None
+        for i, (e, d) in enumerate(real):
+            picks = pick_examples(calls, s, d, "coact", set(used))
+            if all(p["call"] is not None for p in picks):
+                choice = i
+                break
+            n = sum(1 for r in calls if r["stream"] == s and r["window_kind"] == "baseline"
+                    and r["detector"] == d)
+            skipped.append(dict(label=f"{e['label']} · {setting_words(e)}", calls=n,
+                                missing=[p["kind"] for p in picks if p["call"] is None]))
+        if choice is None:
+            choice = 0
+        (lead, ldet) = real[choice]
+        runner = next((d for j, (_, d) in enumerate(real) if j != choice), None)
         for pick in pick_examples(calls, s, ldet, "coact", used):
             ex = dict(stream=s, leader=ldet, leader_label=lead["label"], runner=runner,
-                      kind=pick["kind"], call=pick["call"], png=None)
+                      kind=pick["kind"], call=pick["call"], png=None, skipped=skipped)
             c = pick["call"]
             if c is not None and c["slice_id"] in slices:
                 sl = slices[c["slice_id"]]
@@ -730,6 +746,13 @@ def render(model: dict, exs: list[dict] | None, recs: list[dict], pages: list[st
                 continue
             parts.append(f"<h3>{s.capitalize()} stream: {html.escape(mine[0]['leader_label'])} "
                          f"against CoactDetect</h3>")
+            for sk in mine[0].get("skipped") or []:
+                parts.append(f"<p class='muted'>Passed over: {html.escape(sk['label'])}, higher on "
+                             f"the leaderboard. Of its {sk['calls']} calls on baseline windows, "
+                             f"none gives an example of: "
+                             + "; ".join(EX_TEXT[k].format(L=html.escape(sk['label']))
+                                         for k in sk["missing"])
+                             + ". It has no disagreement with CoactDetect to show here.</p>")
             for e in mine:
                 L = mine[0]["leader_label"]
                 what = EX_TEXT[e["kind"]].format(L=html.escape(L))
