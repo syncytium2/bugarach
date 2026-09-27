@@ -596,7 +596,8 @@ def render_example(sl, stream: str, call: dict, lanes_for: dict, names: dict, co
         return png if _render_png(tmp, png, scale=3) else None
 
 
-LEADER_COLOR, RUNNER_COLOR = "#CC79A7", "#009E73"
+#: Okabe–Ito reddish purple and orange: apart from each other and from CoactDetect's lane colour.
+LEADER_COLOR, RUNNER_COLOR = "#CC79A7", "#E69F00"
 
 
 def examples(model: dict, night: Path, dest: Path) -> dict:
@@ -750,21 +751,21 @@ def figure1(model: dict, dest: Path) -> list[Path]:
             out.append(f"<circle class='{cls}' cx='{x + 6}' cy='{y - 5}' r='5' stroke-width='2'/>"
                        f"<text class='t' x='{x + 16}' y='{y}'>{text}</text>")
             x += 16 + 9 * len(text) + 22
-        out.append(f"<text class='m' x='8' y='{y + 22}'>† a proposal on a search limit, not "
+        out.append(f"<text class='m' x='8' y='{y + 24}'>† a proposal on a search limit, not "
                    f"adoptable as tuned · the vertical line at 0 is CoactDetect at its shipped "
                    f"setting</text>")
 
     paths = []
     for s in STREAMS:
         rows = model["board"][s]
-        top = 78
+        top = 108                     # title, legend, legend note, then the top tick labels
         H = top + ROW * len(rows) + 70
         out = [f"<svg xmlns='http://www.w3.org/2000/svg' width='{W}' height='{H}' "
                f"viewBox='0 0 {W} {H}' font-family='system-ui, sans-serif' font-size='15' "
                f"role='img' aria-label='Figure 1, the {s} stream'>", style]
         out.append(f"<text class='t' x='8' y='16' font-weight='650'>{s} stream · "
                    f"{n_of(len(rows), 'row')}</text>")
-        legend(40, out)
+        legend(42, out)
         axis(top - 4, out, labels_below=False)
         y = top
         for e in rows:
@@ -952,16 +953,18 @@ def headline(g: dict) -> str:
         txt = (f"<b>{s.capitalize()}:</b> on the new bench {n['above']} of {n_of(n['n'], 'row')} "
                f"sit above CoactDetect's shipped setting ({n['above_clean']} of them unflagged)")
         if o:
-            txt += (f"; on the old bench, {o['above']} of {o['n']}. CoactDetect's shipped F1 is "
-                    f"{_f(n['ref_f1'], sign=False)} on the new bench and "
-                    f"{_f(o['ref_f1'], sign=False)} on the old, while the other rows' median is "
-                    f"{_f(n['others_median_f1'], sign=False)} and "
-                    f"{_f(o['others_median_f1'], sign=False)}")
+            dr = n["ref_f1"] - o["ref_f1"]
+            dm = n["others_median_f1"] - o["others_median_f1"]
+            txt += (f"; on the old bench, {o['above']} of {o['n']}. From old bench to new, "
+                    f"CoactDetect's shipped F1 moves {_f(dr)} ({_f(o['ref_f1'], sign=False)} to "
+                    f"{_f(n['ref_f1'], sign=False)}) and the other rows' median F1 moves "
+                    f"{_f(dm)} ({_f(o['others_median_f1'], sign=False)} to "
+                    f"{_f(n['others_median_f1'], sign=False)})")
         parts.append(txt + ".")
     return ("<div class='box'><p><b>What the new bench against the old bench shows.</b> "
-            + " ".join(parts) + " Most of the change between benches is the reference moving; the "
-            "search's proposals and the learned picks were chosen on the new bench, so their "
-            "new-bench numbers favour them.</p></div>")
+            + " ".join(parts) + " The search's proposals and the learned picks were chosen on "
+            "the new bench, so their new-bench numbers favour them; the shipped settings predate "
+            "it.</p></div>")
 
 
 def viewer_href(slice_id: str, stream: str) -> str:
