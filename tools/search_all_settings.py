@@ -1307,6 +1307,8 @@ def main(argv=None) -> int:
                crowded_veto=not a.no_crowded_veto,
                floor=(_bench.FLOOR_LABEL if _bench.floor_enabled()
                       else f"pre-ADR-0008 ({_bench.FLOOR_SWITCH_ENV}=off)"),
+               # The floor-at-window experiment (bench.FLOOR_AT_WINDOW_ENV), off by default.
+               floor_at_window=(dict(_b.FLOOR_AT_OWN_WINDOW) if _b.floor_at_window() else None),
                max_extensions=a.max_extensions,
                selection_seeds=sel, held_out_seeds=ho, space=space, shipped=shipped,
                stage="started", selection={})

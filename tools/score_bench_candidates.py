@@ -355,6 +355,8 @@ def main(argv=None) -> int:
                elevated_rate_seeds=[NULLS[0] + ELEVATED_SEED_OFFSET,
                                     NULLS[-1] + ELEVATED_SEED_OFFSET],
                benches=meta, results=results, floor=FLOOR_LABEL,
+               # The floor-at-window experiment (bench.FLOOR_AT_WINDOW_ENV), off by default.
+               floor_at_window=(dict(_b.FLOOR_AT_OWN_WINDOW) if _b.floor_at_window() else None),
                note="coded detectors run at each recording's ADR-0008 floor (min_rois, and "
                     "SPIKE-synch's min_n); planted events under it are don't-care in every "
                     "score (ADR-0009 decision 2), counted in under_floor. chorus has no "
