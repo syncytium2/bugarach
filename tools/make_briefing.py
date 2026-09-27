@@ -82,6 +82,10 @@ WINDOWS = "065/review/detect/windows.csv"
 RESULTS = "065/review/detect/results.json"
 PAGES = "065/review/pages"
 VIEWER_TAB = "bugarach-viewer"
+#: The streams the viewer can open. It builds its streams from the export folder's own, and the
+#: combined stream is derived in Python (``bugarach.combined``), never stored, so a combined link
+#: would land on the viewer's "no such stream" error. Combined calls are on the review pages.
+VIEWER_STREAMS = ("fast", "slow")
 HOUSE_TZ = ZoneInfo("America/New_York")      # the house clock for Tony
 #: The half-width of an example's window, in seconds, per stream: slow and combined calls last
 #: seconds, fast ones a fraction of one. The window is cut at the baseline window's edges.
@@ -89,6 +93,13 @@ EXAMPLE_HALF_SEC = {"fast": 45.0, "slow": 120.0, "combined": 120.0}
 #: An example call is taken at least this far inside its baseline window, in seconds, so the
 #: figure shows the call and not an edge of the analysed time (every call is still counted).
 EDGE_SEC = 10.0
+#: Two spans "within the tolerance" compare with this much slack, in seconds: the scorer's test is
+#: inclusive (``score.py``, ``<= tol_sec``), and a gap of exactly 2.5 s otherwise lands on either
+#: side by floating-point error (murderboard 2026-09-26 round 3, roles 1, 4 and 6).
+EPS_SEC = 1e-6
+#: A disagreement example is drawn from calls at least this many tolerances from the other
+#: detector's nearest call, so the figure shows a call the other did not make, not a timing split.
+CLEAR_TOLS = 2.0
 #: The noise unit ADR-0010 part 1 uses for its focus rule (the draw-to-draw spread measured in the
 #: fair comparison). This page borrows it to say which rows it treats as level.
 NOISE_UNIT = 0.01
@@ -96,33 +107,45 @@ NOISE_UNIT = 0.01
 #: docs/GLOSSARY.md (axis 2); the learned lines follow each model's registry note. Bases come
 #: before the variants built on them.
 WHAT_ORDER = ("coact", "loco", "sce", "rate", "sync", "cicada", "count", "count_sliding",
-              "chorus_norm", "chorus_gain_norm", "line", "tube")
+              "chorus_norm", "line", "chorus_gain_norm", "tube")
 WHAT = {
     "coact": "counts distinct cells with an onset in a short bin and tests the count against a "
-             "rolling circular-shift null (coded)",
+             "rolling null made by circularly shifting each cell's events in time (coded)",
     "loco": "counts distinct co-active cells and compares the count with a rolling percentile "
             "threshold (coded)",
-    "sce": "counts co-active cells per bin against a surrogate threshold, ported from the "
-           "generate_sce routine (coded)",
+    "sce": "binned SCE (synchronous calcium events): counts co-active cells per bin against a "
+           "threshold from shuffled surrogates; the Yuste-lab rule of Cossart, Aronov & Yuste "
+           "2003, ported from interface2's MATLAB (coded)",
     "rate": "a population-rate excess over a slower context rate (coded)",
-    "sync": "the ISI-adaptive SPIKE-synchronization profile of the Kreuz lab, with hysteresis "
-            "detection (coded)",
-    "cicada": "sliding-window coactivity against a per-cell roll null, modified from CICADA, the "
-              "Cossart lab's software, by what it is fed (ADR-0002; coded)",
+    "sync": "the SPIKE-synchronization profile of the Kreuz lab, adaptive to each cell's "
+            "inter-event intervals, with a cap on its coincidence window and a two-threshold "
+            "(hysteresis) detection of our own (coded)",
+    "cicada": "sliding-window coactivity against a null made by rolling each cell's events in "
+              "time: the method of CICADA, the Cossart lab's software, changed only in its input "
+              "(ADR-0002; coded)",
     "count": "bins the onsets and calls a bin whose count of co-active cells reaches the "
-             "recording's participation floor plus an offset k (coded)",
+             "window's event floor plus an offset k (coded)",
     "count_sliding": "the same count over sliding windows (coded)",
     "chorus_norm": "a network that encodes each cell's trace, standardizes the encoding over time, "
                    "then pools across cells (learned)",
-    "chorus_gain_norm": "chorus_norm with line's vote, a learnable gain and bias (learned)",
-    "line": "a network with two sensors, how much of the field is lit and how tightly, then a "
-            "center-surround in time (learned)",
+    "line": "a network with two sensors, how much of the field is active at once (relative "
+            "length) and how concentrated in time that activity is, then a center-surround "
+            "filter over that count in time (learned)",
+    "chorus_gain_norm": "chorus_norm plus line's vote, with a learnable gain on that vote "
+                        "(started at 8) and a learnable bias (learned)",
     "tube": "a network running a center-surround kernel on the brightness trace, with a "
             "raw-brightness bypass (learned)",
 }
+SETTING_NOTE = ("Each row also names its setting: <i>shipped</i> (the setting in the detector's "
+                "code before this night), <i>proposal</i> (the setting the night's search found "
+                "best on the new bench), <i>starting point</i> (the count rule's first, untuned "
+                "setting, set on 2026-09-26), or, for a learned model, <i>pick</i> (the training "
+                "run chosen by held-out F1 within CoactDetect's no-coordination budget) or "
+                "<i>no pick</i> (no run met that budget; the best is shown as a comparator).")
 PART_NOTE = ("A name ending in <i>_part</i> is the same network with participation added "
-             "(ADR-0010 part 5). For the chorus and line networks that is a bounded vote per cell "
-             "summed into a count, the recording's participation floor as an input, and a "
+             "(ADR-0010 part 5 asks it of every learned model; the plain variants were trained "
+             "beside them as comparators). For the chorus and line networks that is a bounded vote per cell "
+             "summed into a count, the recording's event floor as an input, and a "
              "membership term in the training loss. <i>tube_part</i> has no per-cell stage, so it "
              "takes a count of cells with an onset in a 20-frame window and the floor as inputs, "
              "with no membership term.")
@@ -132,8 +155,6 @@ EXTRA_UNIT = {"k_offset": "cells", "bin_sec": "s"}
 #: Units for the budgets (their names are the final-parameters report's, which are the glossary's).
 BUDGET_UNIT = {"probe": "calls/min", "elevated_out_quiet": "calls/h", "null": "calls/h",
                "precision_swing": ""}
-#: A limit mark that is information, not a flag: the setting cannot go lower by design.
-NOTE = "note: "
 
 
 # --------------------------------------------------------------------------------------------
@@ -163,21 +184,30 @@ def n_of(n: int, one: str, many: str | None = None) -> str:
 
 
 def _f(x, nd=3, sign=True):
+    """A number to ``nd`` places. A negative value that rounds to zero keeps its sign
+    ("-0.000"), so the sign agrees with the source."""
     if x is None:
         return "—"
-    if sign and abs(x) < 0.5 * 10 ** -nd:
-        x = 0.0                                   # no "-0.000"
     return f"{x:+.{nd}f}" if sign else f"{x:.{nd}f}"
+
+
+def gap_words(sec: float) -> str:
+    """A gap between calls: tenths of a second under a minute, minutes and seconds above."""
+    return f"{sec:.1f} s" if sec < 60 else time_label(round(sec))
 
 
 def _setting_value(name: str, v) -> str:
     """A setting and its value in the final-parameters report's words and units, so the two
-    reports built from one night name a setting the same way."""
+    reports built from one night name a setting the same way. A float is shown to 6 significant
+    digits (a percentile of 99.9921875 reads 99.9922)."""
     from make_final_parameters_report import PLAIN, UNIT, _vu
 
+    if isinstance(v, float) and math.isfinite(v):
+        v = float(f"{v:.6g}")
     word = PLAIN.get(name) or EXTRA_PLAIN.get(name) or name
     if name in EXTRA_UNIT and name not in UNIT:
-        return f"{word} {v:g} {EXTRA_UNIT[name] if v != 1 else EXTRA_UNIT[name].rstrip('s')}"
+        unit = EXTRA_UNIT[name]
+        return f"{word} {v:g} {'cell' if unit == 'cells' and v == 1 else unit}"
     return f"{word} {_vu(name, v)}"
 
 
@@ -219,10 +249,11 @@ def limit_marks(meta: dict) -> list[str]:
     proposes nothing still found its best at the shipped setting, and that setting can sit on a
     limit too.
 
-    ADR-0010 ruling 5 covers a value that switches a setting off; a setting stopped at a grid edge
-    or an extension cap is not bracketed, which part 1 requires of a final setting. Both are
-    flags. A setting at a lower limit that exists by design (the count offset k at 0 is the
-    participation floor itself) is information, marked :data:`NOTE`, not a flag."""
+    The search's own rule decides what is flagged, not this page: any unbracketed axis makes a
+    candidate not adoptable (``search_all_settings.bracketing``: cap, limit or edge alike), and
+    ADR-0010 part 1 requires a final setting to be bracketed. ADR-0010 ruling 5 covers a value
+    that switches a setting off. Each mark says, in a clause, why the search stopped there — read
+    from the ``reason`` the search recorded, never re-guessed from the value."""
     prop = meta.get("proposal") or {}
     br = prop.get("bracketing") or {}
     out, seen = [], set()
@@ -230,8 +261,9 @@ def limit_marks(meta: dict) -> list[str]:
         name, kind = f.get("setting"), f.get("kind")
         seen.add(name)
         if kind == "off_limit":
-            out.append(f"{_setting_value(name, f.get('value'))}, a value that switches it off "
-                       f"(ADR-0010 ruling 5: a finding, not a tuned value)")
+            out.append(f"{_setting_value(name, f.get('value'))}, a value that turns the setting "
+                       f"off: the search preferring \"off\" is reported as a finding, not a tuned "
+                       f"value (ADR-0010 ruling 5)")
         elif kind == "cap":
             out.append(f"{_setting_value(name, f.get('value'))}, at the search's extension cap, "
                        f"so the best value may lie beyond it (not bracketed, ADR-0010 part 1)")
@@ -240,27 +272,20 @@ def limit_marks(meta: dict) -> list[str]:
             continue
         side = "lower" if v.get("side") == "low" else "upper"
         val = _setting_value(name, v.get("value"))
-        if v.get("reason") == "limit":
-            out.append(f"{NOTE}{val}, at its {side} limit by design (the floor itself); the "
-                       f"search could not go lower, and this is not a ruling-5 value")
-            continue
-        why = {"cap": "at the search's extension cap"}.get(v.get("reason"),
-                                                           f"at the edge of the search's grid")
-        note = ""
-        if name in ("context_win", "context_win_sec") and v.get("value") == 20.0:
-            note = ", the shortest context ruling 7 allows"
-        elif name in ("context_win", "context_win_sec") and v.get("value") == 120.0:
-            note = ", the 120 s ceiling of ADR-0009 decision 5"
-        out.append(f"{val}, {why}{note}, so the best value may lie beyond it (not bracketed, "
-                   f"ADR-0010 part 1)")
-    if prop.get("unbracketed") and not [m for m in out if not m.startswith(NOTE)]:
-        if not out:
-            out.append("not bracketed, and the search record names no setting")
+        why = {
+            "cap": "at the search's extension cap, so the best value may lie beyond it",
+            "limit": f"at the {side} limit the setting can take, so the search could not test "
+                     f"past it",
+            "grid_floor": "the shortest context allowed (ADR-0010 ruling 7), so the search could "
+                          "not test shorter",
+            "grid_ceiling": "the longest context allowed (the 120 s ceiling of ADR-0009 decision "
+                            "5), so the search could not test longer",
+        }.get(v.get("reason"), "at the edge of the search's grid, so the best value may lie "
+                               "beyond it")
+        out.append(f"{val}, {why} (not bracketed, ADR-0010 part 1)")
+    if prop.get("unbracketed") and not out:
+        out.append("not bracketed, and the search record names no setting")
     return out
-
-
-def is_flag(mark: str) -> bool:
-    return not mark.startswith(NOTE)
 
 
 # --------------------------------------------------------------------------------------------
@@ -400,22 +425,25 @@ def build(night: Path) -> dict:
             first = next(v for v in per.values() if v)
             entries.append(dict(id=rid, label=first["label"], setting=first["setting"],
                                 family=first["family"], spread=first.get("spread"), per=per,
-                                same_as=None))
+                                same_as={}))
 
         def order(e):
             mid = (e["per"]["new"] or {}).get("mid")
             return (0, -mid) if mid is not None else (1, 0.0)
         entries.sort(key=order)
         # TWO ROWS WITH THE SAME SCORES TO EVERY DIGIT are one result shown twice (fast LoCo's and
-        # CoactDetect's proposals on the 2026-09-25 night). Said beside the row, and counted once.
-        for i, e in enumerate(entries):
-            v = e["per"]["new"]
-            for f in entries[:i]:
-                w = f["per"]["new"]
-                if v and w and e["id"] != "coact:shipped" and f["id"] != "coact:shipped" and all(
-                        v[k] == w[k] for k in ("mid", "lo", "hi", "mean_f1")):
-                    e["same_as"] = f"{f['label']} · {f['setting']}"
-                    break
+        # CoactDetect's proposals on the new bench, 2026-09-25 night). Said beside the row and
+        # counted once — per bench, because the same two rows can differ on the other bench, and
+        # there they are two results (murderboard 2026-09-26 round 3, roles 1, 3 and 6).
+        for col, _, _ in BENCH_COLS:
+            for i, e in enumerate(entries):
+                v = e["per"][col]
+                for f in entries[:i]:
+                    w = f["per"][col]
+                    if v and w and e["id"] != "coact:shipped" and f["id"] != "coact:shipped" and all(
+                            v[k] == w[k] for k in ("mid", "lo", "hi", "mean_f1")):
+                        e["same_as"][col] = f"{f['label']} · {f['setting']}"
+                        break
         board[s] = entries
     model = dict(sources=sources, board=board, count_present=bool(extra), bootstrap=BOOTSTRAP,
                  extra_files=[str(p.relative_to(night)).replace(os.sep, "/") for p in extra_files])
@@ -423,28 +451,17 @@ def build(night: Path) -> dict:
     return model
 
 
-def _ranks(xs: list[float]) -> list[float]:
-    order = sorted(range(len(xs)), key=lambda i: xs[i])
-    r = [0.0] * len(xs)
-    i = 0
-    while i < len(order):
-        j = i
-        while j + 1 < len(order) and xs[order[j + 1]] == xs[order[i]]:
-            j += 1
-        for k in range(i, j + 1):
-            r[order[k]] = (i + j) / 2 + 1
-        i = j + 1
-    return r
-
-
 def spearman(a: list[float], b: list[float]) -> float | None:
+    """Spearman's rank correlation (scipy's), or ``None`` for fewer than 3 pairs or a constant
+    input, where it says nothing."""
+    from scipy.stats import spearmanr
+
     if len(a) < 3:
         return None
-    ra, rb = _ranks(a), _ranks(b)
-    ma, mb = statistics.fmean(ra), statistics.fmean(rb)
-    num = sum((x - ma) * (y - mb) for x, y in zip(ra, rb))
-    den = math.sqrt(sum((x - ma) ** 2 for x in ra) * sum((y - mb) ** 2 for y in rb))
-    return num / den if den else None
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        r = float(spearmanr(a, b).statistic)
+    return r if math.isfinite(r) else None
 
 
 def orx_check(night: Path, board: dict, mods: dict) -> dict | None:
@@ -463,36 +480,42 @@ def orx_check(night: Path, board: dict, mods: dict) -> dict | None:
     wrap = {"orx": orx}
     _merge_extra(night, {"orx": "orx"}, wrap, {}, mods, files[1:])
     out = dict(paths=[str(p.relative_to(night)).replace(os.sep, "/") for p in files], streams={})
-    tot = dict(rows=0, changed=0, crossed=0)
+    tot = dict(rows=0, changed_above=0, changed_below=0, crossed=0, top_moved=0)
     for s in STREAMS:
         pairs = [(e, wrap["orx"].get(s, {}).get(e["id"])) for e in board[s]
-                 if e["id"] != "coact:shipped" and e["per"]["new"] and not e.get("same_as")]
+                 if e["id"] != "coact:shipped" and e["per"]["new"]
+                 and not e["same_as"].get("new")]
         pairs = [(e, o) for e, o in pairs if o and o.get("mid") is not None]
         if not pairs:
             continue
         a = [e["per"]["new"]["mid"] for e, _ in pairs]
         b = [o["mid"] for _, o in pairs]
+        upper = [(x, y) for x, y in zip(a, b) if x >= 0]
         top_new = max(pairs, key=lambda p: p[0]["per"]["new"]["mid"])[0]
         top_orx = max(pairs, key=lambda p: p[1]["mid"])[0]
-        changed = sum(1 for e, o in pairs if _side(e["per"]["new"]) != _side(o))
-        crossed = sum(1 for e, o in pairs if {_side(e["per"]["new"]), _side(o)} == {"above",
-                                                                                 "below"})
-        out["streams"][s] = dict(rows=len(pairs), rho=spearman(a, b), changed=changed,
-                                 crossed=crossed,
-                                 top_new=f"{top_new['label']} · {setting_words(top_new)}",
-                                 top_orx=f"{top_orx['label']} · {setting_words(top_orx)}")
+        sides = [{_side(e["per"]["new"]), _side(o)} for e, o in pairs]
+        changed_above = sum(1 for sd in sides if sd == {"above", "includes zero"})
+        changed_below = sum(1 for sd in sides if sd == {"below", "includes zero"})
+        crossed = sum(1 for sd in sides if sd == {"above", "below"})
+        out["streams"][s] = dict(
+            rows=len(pairs), rho=spearman(a, b), upper_rows=len(upper),
+            rho_upper=spearman([x for x, _ in upper], [y for _, y in upper]),
+            changed_above=changed_above, changed_below=changed_below, crossed=crossed,
+            top_new=f"{top_new['label']} · {setting_words(top_new)}",
+            top_orx=f"{top_orx['label']} · {setting_words(top_orx)}")
         tot["rows"] += len(pairs)
-        tot["changed"] += changed
+        tot["changed_above"] += changed_above
+        tot["changed_below"] += changed_below
         tot["crossed"] += crossed
+        tot["top_moved"] += top_new["id"] != top_orx["id"]
     out.update(tot)
     return out
 
 
 def flagged(e: dict, col: str = "new") -> bool:
-    """A row the page would not put forward: over a budget, on a search limit, or no pick. A
-    limit by design (a :data:`NOTE`) is not a flag."""
+    """A row the page would not put forward: over a budget, on a search limit, or no pick."""
     v = e["per"].get(col)
-    return bool(v and (v["budget_fails"] or any(is_flag(f) for f in v["flags"])))
+    return bool(v and (v["budget_fails"] or v["flags"]))
 
 
 def glance(model: dict) -> dict:
@@ -507,7 +530,7 @@ def glance(model: dict) -> dict:
         ref = next((e for e in model["board"][s] if e["id"] == "coact:shipped"), None)
         for col in ("new", "old"):
             rows = [e for e in model["board"][s] if e["per"][col] and e["id"] != "coact:shipped"
-                    and not e.get("same_as")]
+                    and not e["same_as"].get(col)]
             if not rows:
                 continue
             sides = [_side(e["per"][col]) for e in rows]
@@ -523,6 +546,8 @@ def glance(model: dict) -> dict:
                 straddle=sides.count("includes zero"),
                 above_clean=sum(1 for e, sd in zip(rows, sides) if sd == "above"
                                 and not flagged(e, col)),
+                above_learned=sum(1 for e, sd in zip(rows, sides) if sd == "above"
+                                  and e["id"].startswith("learned:")),
                 vp_n=len(vp), vp_above=vp_sides.count("above"),
                 above_wo=sum(1 for e in rows if (e["per"][col]["mean_f1_without_decoys"] or 0)
                              > (rv.get("mean_f1_without_decoys") or 0)),
@@ -532,6 +557,7 @@ def glance(model: dict) -> dict:
                 ref_recall=(rv.get("recall_quiet"), rv.get("recall_busy")),
                 ref_decoys=rv.get("decoy_calls"), ref_planted=rv.get("planted"),
                 ref_merged=rv.get("merged_calls"),
+                seeds=((model["sources"].get(col) or {}).get("seeds") or {}).get(s),
                 others_median_f1=statistics.median(e["per"][col]["mean_f1"] for e in rows))
     return out
 
@@ -610,7 +636,8 @@ def read_windows(p: Path) -> tuple[dict, dict]:
 
 def recordings(windows_csv: Path) -> list[dict]:
     """One row per recording: its group and its first treatment (the treatment window that starts
-    first, the rule the review pages' ``treatment_one`` uses), in the house group order."""
+    earliest; on the 2026-09-25 night this agrees with the review pages' ``treatment_one`` on all
+    66 recordings, but it is a separate copy of that rule), in the house group order."""
     rec: dict = {}
     with windows_csv.open(newline="", encoding="utf-8") as fh:
         for r in csv.DictReader(fh):
@@ -633,9 +660,15 @@ def _span(c: dict) -> tuple[float, float]:
     return t0, t0 + _num(c.get("width_sec"))
 
 
-def _near(a: dict, others: list[dict], tol: float) -> list[dict]:
+def _gap(a: dict, b: dict) -> float:
+    """Seconds between two calls' spans, 0 when they overlap (``score.py``'s gap)."""
     a0, a1 = _span(a)
-    return [b for b in others if _span(b)[0] - tol <= a1 and _span(b)[1] + tol >= a0]
+    b0, b1 = _span(b)
+    return max(0.0, b0 - a1, a0 - b1)
+
+
+def _near(a: dict, others: list[dict], tol: float) -> list[dict]:
+    return [b for b in others if _gap(a, b) <= tol + EPS_SEC]
 
 
 def classify(calls: list[dict], stream: str, leader: str, ref: str) -> dict:
@@ -673,11 +706,18 @@ def _inside(c: dict, bounds: dict) -> bool:
     return t0 >= b[0] + EDGE_SEC and t1 <= b[1] - EDGE_SEC
 
 
-def pick_one(pool: list[dict], bounds: dict, used: set) -> dict | None:
+def pick_one(pool: list[dict], bounds: dict, used: set,
+             others: list[dict] | None = None) -> dict | None:
     """The call with the median participant count among the calls at least :data:`EDGE_SEC`
-    inside their baseline window, preferring a recording no earlier figure has shown. The page
-    says both conditions and prints the pool's size beside the figure."""
+    inside their baseline window, preferring a recording no earlier figure has shown. For a
+    disagreement (``others`` given: the other detector's calls), only calls at least
+    :data:`CLEAR_TOLS` tolerances from the other's nearest call qualify when any do, so the figure
+    shows a call the other did not make rather than a timing split. The page says every
+    condition and prints the pool's size and gap distribution beside the figure."""
     inner = [c for c in pool if _inside(c, bounds)]
+    if others is not None:
+        clear = [c for c in inner if (nearest_gap(c, others) or math.inf) > CLEAR_TOLS * TOL_SEC]
+        inner = clear or inner
     fresh = [c for c in inner if c["slice_id"] not in used] or inner
     if not fresh:
         return None
@@ -691,14 +731,38 @@ def pick_one(pool: list[dict], bounds: dict, used: set) -> dict | None:
 def nearest_gap(c: dict, others: list[dict]) -> float | None:
     """Seconds between a call's span and the nearest span of another detector's calls on the same
     recording and stream (0 when they overlap)."""
-    a0, a1 = _span(c)
-    gaps = [max(0.0, max(_span(b)[0] - a1, a0 - _span(b)[1])) for b in others
+    gaps = [_gap(c, b) for b in others
             if b["slice_id"] == c["slice_id"] and b["stream"] == c["stream"]]
     return min(gaps) if gaps else None
 
 
+def gap_bins(pool: list[dict], others: list[dict]) -> dict:
+    """How far a disagreement pool's calls sit from the other detector's nearest call: within 2
+    tolerances, 2 to 4, beyond 4, or no call of the other's on that recording and stream."""
+    out = dict(near=0, mid=0, far=0, none=0)
+    for c in pool:
+        g = nearest_gap(c, others)
+        key = ("none" if g is None else "near" if g <= 2 * TOL_SEC
+               else "mid" if g <= 4 * TOL_SEC else "far")
+        out[key] += 1
+    return out
+
+
+def at_floor(c: dict) -> bool:
+    """Whether a call's participants reach its window's own event floor (ADR-0008): as the
+    detection run recorded it for an unfloored call, and by comparing the two counts where the
+    column is blank (a floored run's calls, which reach it by construction)."""
+    rec = str(c.get("reaches_own_floor", "")).strip().lower()
+    if rec:
+        return rec in ("true", "1", "yes")
+    try:
+        return float(c["participants"]) >= float(c["own_floor"])
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
 def render_example(sl, stream: str, call: dict, lanes_for: dict, names: dict, colors: dict,
-                   ext: tuple, dest: Path, stem: str) -> Path | None:
+                   ext: tuple, dest: Path, stem: str, mark_label: str = "this call") -> Path | None:
     """One example: a lane marking the call (▼, pointing down), the detectors' lanes, then the
     recording's raster over the window, rows sorted by event count in the window, busiest at the
     top. Drawn through ``ui.diagnostic`` like every other raster figure; nothing on the raster."""
@@ -716,7 +780,7 @@ def render_example(sl, stream: str, call: dict, lanes_for: dict, names: dict, co
              for d, rows in lanes_for.items()}
     mark = hv.Scatter(([float(call["onset_sec"])], [0.0]), kdims=["t"], vdims=["mark"]).opts(
         marker="inverted_triangle", size=16, color="#111111", xlim=ext, ylim=(-0.8, 0.8),
-        yticks=[(0, "this call")], xaxis=None, width=W, height=48, toolbar=None,
+        yticks=[(0, mark_label)], xaxis=None, width=W, height=48, toolbar=None,
         ylabel="", fontsize=big, show_grid=False)
     lp = lane_panel(lanes, ext=ext, width=W, row_px=36, names=names, colors=colors).opts(
         height=36 * len(lanes) + 30, fontsize=big, toolbar=None)
@@ -732,10 +796,11 @@ def render_example(sl, stream: str, call: dict, lanes_for: dict, names: dict, co
         return png if _render_png(tmp, png, scale=3) else None
 
 
-#: Okabe–Ito reddish purple and orange: apart from each other and from CoactDetect's lane colour,
-#: which is the review pages' own. A leader and runner-up of the same learned family would share
-#: one colour on those pages, so the examples give them fixed ones and say so.
-LEADER_COLOR, RUNNER_COLOR = "#CC79A7", "#E69F00"
+#: Okabe–Ito reddish purple and blue: apart from each other and from CoactDetect's lane colour,
+#: which is the review pages' own, and clear of the orange and red the leaderboard uses for its
+#: marks. A leader and runner-up of the same learned family would share one colour on the review
+#: pages, so the examples give them fixed ones and say so.
+LEADER_COLOR, RUNNER_COLOR = "#CC79A7", "#0072B2"
 
 
 def _check_stamp(res: dict | None) -> None:
@@ -778,27 +843,29 @@ def examples(model: dict, night: Path, dest: Path) -> dict:
         ref_which = ((ch.get("detectors") or {}).get("coact") or {}).get("which")
         ref_row = next((e for e in board if e["id"] == f"coact:{ref_which}"), None)
         ref_label = f"CoactDetect · {ref_which or 'as run'}"
-        ref_marks = [f for f in ((ref_row or {}).get("per", {}).get("new") or {}).get("flags", [])
-                     if is_flag(f)]
+        ref_marks = list(((ref_row or {}).get("per", {}).get("new") or {}).get("flags", []))
         passed, leader, runner = [], None, None
         for e in board:
             det = ran_on_real(e, ch)
             why = None
             if e["family"] == "coact":
-                why = "CoactDetect is the comparison side"
+                why = "CoactDetect is what the leader is compared with"
             elif det is None:
                 why = "did not run on the real recordings"
             elif e["per"]["new"] and e["per"]["new"]["budget_fails"]:
                 why = "over a budget on the new bench"
-            elif e["per"]["new"] and any(is_flag(f) for f in e["per"]["new"]["flags"]):
+            elif e["per"]["new"] and e["per"]["new"]["flags"]:
                 why = "its setting sits on a search limit, so it is not adoptable as tuned"
             else:
                 k = classify(calls, s, det, "coact")
-                if not all(k[x] for x in ("agree", "leader_only", "ref_only")):
-                    why = (f"no disagreement with {ref_label} to show "
-                           f"({n_of(len(k['agree']), 'call')} agree, "
-                           f"{n_of(len(k['leader_only']), 'call')} only its own, "
-                           f"{n_of(len(k['ref_only']), 'call')} only CoactDetect's)")
+                a_, l_, r_ = (len(k[x]) for x in ("agree", "leader_only", "ref_only"))
+                if not (a_ and l_ and r_):
+                    lack = ("never shares a call with CoactDetect" if not a_ else
+                            "makes no call CoactDetect lacks" if not l_ else
+                            "never lacks a call CoactDetect makes")
+                    why = (f"{lack}, so there is no disagreement both ways to show: "
+                           f"{n_of(a_, 'call')} shared, {n_of(l_, 'call')} only its own, "
+                           f"{n_of(r_, 'call')} only CoactDetect's")
             if why is None:
                 if leader is None:
                     leader = (e, det)
@@ -816,21 +883,28 @@ def examples(model: dict, night: Path, dest: Path) -> dict:
         groups = in_group_order(g for (st, g) in hours if st == s)
         table = {k: {g: sum(1 for c in pool if group_key(c["group"]) == group_key(g))
                      for g in groups} for k, pool in kinds.items()}
-        show = [(ldet, f"{le['label']} · {setting_words(le)}", LEADER_COLOR)]
+        floor_n = {k: sum(1 for c in pool if at_floor(c)) for k, pool in kinds.items()}
+        # Lanes carry their role; the full names are printed once above the figures.
+        show = [(ldet, "leader", LEADER_COLOR,
+                 f"{le['label']} · {setting_words(le)}")]
         if runner:
-            show.append((runner[1], f"{runner[0]['label']} · {setting_words(runner[0])}",
-                         RUNNER_COLOR))
-        show.append(("coact", ref_label, lane_color("coact")))
+            show.append((runner[1], "runner-up", RUNNER_COLOR,
+                         f"{runner[0]['label']} · {setting_words(runner[0])}"))
+        show.append(("coact", "CoactDetect", lane_color("coact"), ref_label))
         L_calls = [c for c in calls if c["stream"] == s and c["detector"] == ldet]
         R_calls = [c for c in calls if c["stream"] == s and c["detector"] == "coact"]
+        other_of = {"agree": None, "leader_only": R_calls, "ref_only": L_calls}
+        gaps = {k: gap_bins(kinds[k], other_of[k]) for k in ("leader_only", "ref_only")}
         figs = []
         for kind, pool in kinds.items():
-            c = pick_one(pool, bounds, used)
+            c = pick_one(pool, bounds, used, other_of[kind])
             fig = dict(kind=kind, pool=len(pool),
                        inner=sum(1 for x in pool if _inside(x, bounds)), call=c, png=None,
                        recordings=len({x["slice_id"] for x in pool}))
             if c is not None:
-                fig["gap"] = nearest_gap(c, R_calls if kind == "leader_only" else L_calls)
+                if other_of[kind] is not None:
+                    fig["gap"] = nearest_gap(c, other_of[kind])
+                fig["floor"] = c.get("own_floor")
             if c is not None and c["slice_id"] in slices:
                 sl = slices[c["slice_id"]]
                 if s == "combined":
@@ -845,10 +919,11 @@ def examples(model: dict, night: Path, dest: Path) -> dict:
                     lanes_for = {d: [r for r in calls if r["slice_id"] == c["slice_id"]
                                      and r["stream"] == s and r["detector"] == d
                                      and _span(r)[1] >= ext[0] and _span(r)[0] <= ext[1]]
-                                 for d, _, _ in show}
-                    png = render_example(sl, s, c, lanes_for, {d: n for d, n, _ in show},
-                                         {d: col for d, _, col in show}, ext, dest,
-                                         f"example_{s}_{kind}")
+                                 for d, _, _, _ in show}
+                    whose = "CoactDetect's" if kind == "ref_only" else "leader's"
+                    png = render_example(sl, s, c, lanes_for, {d: n for d, n, _, _ in show},
+                                         {d: col for d, _, col, _ in show}, ext, dest,
+                                         f"example_{s}_{kind}", f"this call ({whose})")
                     fig.update(png=png.name if png else None, ext=list(ext),
                                cut=(ext[0] > t - half, ext[1] < t + half))
             figs.append(fig)
@@ -856,8 +931,10 @@ def examples(model: dict, night: Path, dest: Path) -> dict:
         out["streams"][s] = dict(
             passed=passed, leader=f"{le['label']} · {setting_words(le)}", leader_det=ldet,
             leader_mid=le["per"]["new"]["mid"], ref=ref_label, ref_marks=ref_marks,
-            runner=show[1][1] if runner else None, lanes=[n for _, n, _ in show],
+            runner=show[1][3] if runner else None,
+            lanes=[(role, full) for _, role, _, full in show],
             counts=table, totals={k: len(v) for k, v in kinds.items()}, many=many,
+            at_floor=floor_n, gaps=gaps,
             hours={g: hours[(s, g)] for g in groups}, figures=figs, level=lvl)
     return out
 
@@ -877,7 +954,7 @@ def figure1(model: dict, dest: Path) -> list[Path]:
     is sized from the longest label, so no row name is cut. All three share one x-range."""
     ROW, RIGHT, PLOT_W, CH = 30, 30, 640, 8.3
     labels = {e["id"] + s: f"{e['label']} · {setting_words(e, short=True)}"
-              + (" †" if any(is_flag(f) and not f.startswith("no pick")
+              + (" †" if any(not f.startswith("no pick")
                              for v in e["per"].values() if v for f in v["flags"]) else "")
               for s in STREAMS for e in model["board"][s]}
     LEFT = max(330, int(max(len(x) for x in labels.values()) * CH) + 24)
@@ -901,8 +978,8 @@ def figure1(model: dict, dest: Path) -> list[Path]:
              ".t{fill:var(--fg,#222)} .m{fill:var(--muted,#666)} .j{stroke:var(--muted,#999)} "
              ".new{stroke:var(--accent,#0072B2);fill:var(--accent,#0072B2)} "
              ".old{stroke:var(--accent,#0072B2);fill:var(--bg,#fff)} "
-             ".badn{stroke:var(--warn,#b35c00);fill:var(--warn,#b35c00)} "
-             ".bado{stroke:var(--warn,#b35c00);fill:var(--bg,#fff)}</style>")
+             ".badn{stroke:var(--bad,#b03a2e);fill:var(--bad,#b03a2e)} "
+             ".bado{stroke:var(--bad,#b03a2e);fill:var(--bg,#fff)}</style>")
 
     def axis(y, out, below=True):
         for t in ticks:
@@ -1006,11 +1083,19 @@ figure img.ex { width: 1080px; max-width: none; height: auto; background: #fff;
                 border: 1px solid var(--line); box-sizing: border-box; display: block; }
 .scrollcue { display: none; color: var(--muted); font-size: .95rem; }
 @media (max-width: 1100px) { .scrollcue { display: block; } }
+p.cap { margin: 1rem 0 .2rem; }
+.tcue { color: var(--muted); font-size: .95rem; margin: 0; }
+@media (min-width: 1500px) { .tcue.wideonly { display: none; } }
+@media (min-width: 700px) { .tcue.narrow { display: none; } }
 @media (min-width: 1400px) {
-  figure.wide { width: min(94vw, 1700px); margin-left: calc((100% - min(94vw, 1700px)) / 2); }
+  figure.wide, div.widetable { width: min(94vw, 1700px);
+                               margin-left: calc((100% - min(94vw, 1700px)) / 2); }
   figure.wide img.ex { width: 100%; }
   figure.wide svg { width: 100%; height: auto; }
 }
+dl.terms { display: grid; grid-template-columns: minmax(9rem, max-content) 1fr; gap: .35rem 1rem; }
+dl.terms dt { font-weight: 650; } dl.terms dd { margin: 0; }
+@media (max-width: 700px) { dl.terms { grid-template-columns: 1fr; } dl.terms dd { margin-bottom: .5rem; } }
 figcaption { color: var(--muted); margin-top: .4rem; }
 code { font-family: var(--mono); font-size: .95em; overflow-wrap: anywhere; }
 .box { border: 1px solid var(--line); background: var(--card); padding: .8rem 1rem;
@@ -1018,13 +1103,20 @@ code { font-family: var(--mono); font-size: .95em; overflow-wrap: anywhere; }
 .box ul, .notes { margin: .3rem 0; padding-left: 1.2rem; }
 details > summary { cursor: pointer; font-weight: 650; margin: 1rem 0 .4rem; }
 .chips a { white-space: nowrap; }
-.thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: .6rem 0 1rem; }
-.thumbs figure { margin: 0; border: 1px solid var(--line); background: var(--card); padding: 6px; }
-.thumbs img { width: 100%; height: 150px; object-fit: cover; object-position: top;
-              background: #fff; display: block; }
-.thumbs figcaption { font-size: .95rem; margin-top: .3rem; }
-@media (max-width: 800px) { .thumbs { grid-template-columns: repeat(2, 1fr); } }
+th.num { text-align: right; }
 """
+
+
+def tbl(caption: str, inner: str, *, wide: bool = False, cue: bool = False) -> str:
+    """A numbered table with its caption above the scroller, not inside it, so the caption never
+    scrolls out of view. ``wide`` breaks out of the text column on a wide screen; ``cue`` says the
+    table scrolls sideways where it does (always on a phone, below 1500 px for a wide one)."""
+    cues = ("<p class='tcue wideonly'>Scroll the table sideways for every column →</p>"
+            if wide else "") + ("<p class='tcue narrow'>Scroll the table sideways →</p>"
+                                if cue or wide else "")
+    body = f"<div class='tablewrap'><table>{inner}</table></div>"
+    return (f"<p class='cap'>{caption}</p>{cues}"
+            + (f"<div class='widetable'>{body}</div>" if wide else body))
 
 
 def _marks_html(e: dict) -> str:
@@ -1043,14 +1135,17 @@ def _marks_html(e: dict) -> str:
                        f"{html.escape(budget_words(f))}</span>")
     first = n or o
     for f in (first or {}).get("flags", []):
-        if f.startswith(NOTE):
-            out.append(f"<span class='muted'>Note: {html.escape(f[len(NOTE):])}</span>")
-            continue
         cls = "bad" if f.startswith("no pick") else "warn"
         out.append(f"<span class='{cls}'>{html.escape(f[0].upper() + f[1:])}</span>")
-    if e.get("same_as"):
-        out.append(f"<span class='muted'>Same scores as {html.escape(e['same_as'])} to every "
-                   f"digit on the new bench: one result, shown twice, and counted once.</span>")
+    for col, name in (("new", "new"), ("old", "old")):
+        if e["same_as"].get(col):
+            out.append(f"<span class='muted'>Same scores as {html.escape(e['same_as'][col])} to "
+                       f"every digit on the {name} bench: there one result, shown twice, and "
+                       f"counted once.</span>")
+    if (n and e["id"] != "coact:shipped" and n["lo"] is not None
+            and max(abs(n["lo"]), abs(n["hi"])) < 0.002):
+        out.append("<span class='muted'>Reproduces CoactDetect's shipped setting to within 0.002 "
+                   "F1 on the new bench.</span>")
     return "<br>".join(out)
 
 
@@ -1103,18 +1198,19 @@ def leaderboard_table(model: dict, s: str, tno: int) -> str:
                     "<td class='muted' colspan='6'>not scored yet: its results land in "
                     "WSMIP064's count folder, and rerunning this page's builder adds the row."
                     "</td></tr>")
-    return (f"<div class='tablewrap'><table><caption><b>Table {tno}.</b> The {s} stream, "
-            f"{n_of(len(rows), 'row')}, in Figure 1's order. F1 is the mean over the quiet and "
-            f"busy backgrounds; ΔF1 is, per simulation seed, F1 pooled over that seed's quiet "
-            f"and busy recordings, differenced against CoactDetect and averaged over seeds, so "
-            f"the F1 columns do not subtract to it exactly.</caption>{head}{''.join(body)}"
-            f"</table></div>")
+    return tbl(f"<b>Table {tno}.</b> The {s} stream, {n_of(len(rows), 'row')}, in Figure 1's "
+               f"order. F1 is the mean over the quiet and busy backgrounds; ΔF1 is, per "
+               f"simulation seed, F1 pooled over that seed's quiet and busy recordings, "
+               f"differenced against CoactDetect and averaged over seeds, so the F1 columns do "
+               f"not subtract to it exactly. Red: over a budget, or no pick. Orange: a search "
+               f"limit (†).", head + "".join(body), wide=True)
 
 
 def glance_html(g: dict) -> str:
-    head = ("<tr><th>stream</th><th>bench</th><th>interval wholly above zero</th>"
+    head = ("<tr><th>stream</th><th>bench</th><th>above CoactDetect's proposal</th>"
+            "<th>interval wholly above zero</th>"
             "<th>… of those, unflagged</th><th>includes zero</th><th>wholly below</th>"
-            "<th>above CoactDetect's proposal</th><th>F1 without decoys above the reference's"
+            "<th>F1 without decoys above the reference's"
             "</th><th>top unflagged row (ΔF1), and rows level with it</th></tr>")
     body = []
     for s in STREAMS:
@@ -1127,23 +1223,25 @@ def glance_html(g: dict) -> str:
             top = (f"{html.escape(v['top'])} ({_f(v['top_mid'])}); "
                    f"{n_of(v['level'] - 1, 'other row')} within {NOISE_UNIT:g} of it"
                    ) if v["top"] else "none"
+            learned = (f" ({v['above_learned']} learned)" if v["above_learned"] else "")
             body.append(f"<tr><td>{s}</td><td>{col}</td>"
-                        f"<td class='n'>{v['above']} of {n_of(v['n'], 'row')}</td>"
+                        f"<td class='n'>{v['vp_above']} of {n_of(v['vp_n'], 'row')}</td>"
+                        f"<td class='n'>{v['above']} of {n_of(v['n'], 'row')}{learned}</td>"
                         f"<td class='n'>{n_of(v['above_clean'], 'row')}</td>"
                         f"<td class='n'>{n_of(v['straddle'], 'row')}</td>"
                         f"<td class='n'>{n_of(v['below'], 'row')}</td>"
-                        f"<td class='n'>{v['vp_above']} of {n_of(v['vp_n'], 'row')}</td>"
                         f"<td class='n'>{v['above_wo']} of {n_of(v['n'], 'row')}</td>"
                         f"<td>{top}</td></tr>")
-    return (f"<div class='tablewrap'><table><caption><b>Table 1.</b> For each stream and bench, "
-            f"the rows besides CoactDetect's shipped setting, with a row that repeats another's "
-            f"scores counted once. The first four count columns read each row's 95% interval of "
-            f"ΔF1 against CoactDetect's shipped setting; \"unflagged\" means within every budget "
-            f"in force and not on a search limit. \"Above CoactDetect's proposal\" reads the "
-            f"interval against CoactDetect's own new-bench tuning instead, for every row but "
-            f"CoactDetect's. The next column compares point values of F1 without decoy calls. "
-            f"\"Level\" means within {NOISE_UNIT:g} F1, the noise unit ADR-0010 uses for its focus "
-            f"rule.</caption>{head}{''.join(body)}</table></div>")
+    return tbl(
+        "<b>Table 2.</b> Figure 1 tallied, per stream and bench, over the rows besides "
+        "CoactDetect's shipped setting (a row that repeats another's scores on that bench "
+        "counted once). The first column reads each row's 95% interval of ΔF1 against "
+        "CoactDetect's own proposal on that bench, every row but CoactDetect's; the next four "
+        "read it against CoactDetect's shipped setting, the zero line of Figure 1. \"Learned\" "
+        "rows' intervals cover simulation seeds only, not the spread across training runs. Each "
+        "interval stands alone, uncorrected for the many rows. The next column compares point "
+        "values of F1 without decoy calls. \"Unflagged\" and \"level\" are defined in "
+        "<a href='#terms'>Terms</a>.", head + "".join(body), cue=True)
 
 
 def reference_table(g: dict) -> str:
@@ -1153,67 +1251,131 @@ def reference_table(g: dict) -> str:
             "<th>merged calls</th></tr>")
     body = []
     for s in STREAMS:
-        for col in ("old", "new"):
+        for col in ("new", "old"):
             v = g[s].get(col)
             if not v:
                 continue
             rq, rb = v["ref_recall"]
+            per = (f"<br><span class='muted'>{v['ref_decoys'] / v['seeds']:.1f} per seed</span>"
+                   if v.get("seeds") and v["ref_decoys"] is not None else "")
+            merged = (n_of(v["ref_merged"] or 0, "call") if col == "new" else
+                      "— <span class='muted'>(none possible: events at least 120 s apart)</span>")
             body.append(f"<tr><td>{s}</td><td>{col}</td><td class='n'>"
                         f"{_f(v['ref_f1'], sign=False)} · {_f(v['ref_f1_wo'], sign=False)}</td>"
                         f"<td class='n'>{_f(rq, 2, False)} · {_f(rb, 2, False)}</td>"
                         f"<td class='n'>{n_of(v['ref_planted'] or 0, 'event')}</td>"
-                        f"<td class='n'>{n_of(v['ref_decoys'] or 0, 'call')}</td>"
-                        f"<td class='n'>{n_of(v['ref_merged'] or 0, 'call')}</td></tr>")
-    return (f"<div class='tablewrap'><table><caption><b>Table 2.</b> CoactDetect at its shipped "
-            f"setting, the reference, on each bench: what changes under it. Counts are summed "
-            f"over every simulation seed and both backgrounds.</caption>{head}{''.join(body)}"
-            f"</table></div>")
+                        f"<td class='wrapn'>{n_of(v['ref_decoys'] or 0, 'call')}{per}</td>"
+                        f"<td class='wrapn'>{merged}</td></tr>")
+    ceil = [s for s in STREAMS if g[s].get("old") and min(
+        x or 0 for x in (*g[s]["old"]["ref_recall"], g[s]["old"]["ref_f1_wo"])) >= 0.995]
+    ceil_txt = (f" On the old bench, {' and '.join(ceil)} recall and F1 without decoys sit at "
+                f"1.00, so there that bench can register little but calls on decoys." if ceil
+                else "")
+    return tbl("<b>Table 1.</b> CoactDetect at its shipped setting, Figure 1's zero line, on each "
+               "bench: what moves under it. Counts are summed over every simulation seed and both "
+               f"backgrounds.{ceil_txt}", head + "".join(body), cue=True)
 
 
 def headline(g: dict, seeds: dict | None) -> str:
     """The result first, each number computed from Tables 1 and 2, then the one reading that
     governs all of them."""
-    parts = []
+    parts, tot_vp, tot_sh = [], 0, 0
     for s in STREAMS:
         n, o = g[s].get("new"), g[s].get("old")
         if not n:
             continue
-        txt = (f"<li><b>{s.capitalize()}:</b> on the new bench {n['above']} of the "
-               f"{n_of(n['n'], 'other row')} have a 95% interval of ΔF1 wholly above zero "
-               f"against CoactDetect's shipped setting")
+        tot_vp += n["vp_above"]
+        tot_sh += n["above"]
+        txt = (f"<li><b>{s.capitalize()}:</b> against CoactDetect's own new-bench proposal, "
+               f"{n['vp_above']} of {n_of(n['vp_n'], 'row')} "
+               f"{'has' if n['vp_above'] == 1 else 'have'} a 95% interval of ΔF1 wholly above "
+               f"zero. Against its shipped setting, {n['above']} of {n['n']} "
+               f"{'does' if n['above'] == 1 else 'do'}")
+        txt += f" (old bench: {o['above']} of {o['n']})" if o else ""
         if o:
-            txt += f", against {o['above']} of {o['n']} on the old bench"
-        txt += (f". Against CoactDetect's own new-bench proposal, {n['vp_above']} of "
-                f"{n['vp_n']} do.")
-        if o:
+            verb = "falls" if (n["ref_f1"] or 0) < (o["ref_f1"] or 0) else "rises"
+            f1 = (f"its F1 {verb} from {_f(o['ref_f1'], sign=False)} to "
+                  f"{_f(n['ref_f1'], sign=False)}")
             dec_ratio = (n["ref_decoys"] or 0) / max(o["ref_decoys"] or 1, 1)
-            rq_n, rq_o = n["ref_recall"][0] or 0, o["ref_recall"][0] or 0
-            if dec_ratio >= 1.5 and abs(rq_n - rq_o) < 0.1:
-                txt += (f" CoactDetect's F1 falls from {_f(o['ref_f1'], sign=False)} to "
-                        f"{_f(n['ref_f1'], sign=False)} mainly because it calls decoys "
-                        f"{dec_ratio:.1f} times as often ({o['ref_decoys']} to {n['ref_decoys']} "
-                        f"calls) while its recall barely moves: the new bench plants about half "
-                        f"as many events per fast recording and doubles the seeds to compensate "
-                        f"(ADR-0010 ruling 2), so each planted event comes with twice the decoys. "
-                        f"On F1 without decoys, {n['above_wo']} of {n['n']} rows beat it.")
+            rq_n, rq_o = n["ref_recall"], o["ref_recall"]
+            seed_ratio = (n["seeds"] or 1) / max(o["seeds"] or 1, 1)
+            if dec_ratio >= 1.5 and abs((rq_n[0] or 0) - (rq_o[0] or 0)) < 0.1 \
+                    and seed_ratio >= 1.5 and n["seeds"] and o["seeds"]:
+                txt += (f", mostly because the shipped setting itself loses on the new bench: "
+                        f"{f1} while its recall barely moves. It calls decoys at the same rate "
+                        f"({o['ref_decoys'] / o['seeds']:.1f} against "
+                        f"{n['ref_decoys'] / n['seeds']:.1f} calls per seed), but each recording "
+                        f"now plants about {o['ref_planted'] / o['seeds']:.0f} → "
+                        f"{n['ref_planted'] / n['seeds']:.0f} scored events per seed, so decoys "
+                        f"are a larger share of its calls (ADR-0010 ruling 2 doubles the seeds to "
+                        f"keep the event count). On F1 without decoys, {n['above_wo']} of "
+                        f"{n['n']} rows beat it.")
             elif (n["ref_merged"] or 0) > (o["ref_merged"] or 0) + 5:
-                txt += (f" CoactDetect's F1 moves from {_f(o['ref_f1'], sign=False)} to "
-                        f"{_f(n['ref_f1'], sign=False)}: on the new bench its recall is "
-                        f"{_f(rq_n, 2, False)} against {_f(rq_o, 2, False)}, and it merges close "
-                        f"events ({o['ref_merged']} to {n['ref_merged']} merged calls).")
-            if n["level"] > 1 and n["top"]:
-                txt += (f" The top unflagged row has {n_of(n['level'] - 1, 'other row')} within "
-                        f"{NOISE_UNIT:g} F1 of it.")
+                txt += (f", mostly because the shipped setting itself loses on the new bench: "
+                        f"{f1}. Its recall is {_f(rq_n[0], 2, False)} quiet · "
+                        f"{_f(rq_n[1], 2, False)} busy against {_f(rq_o[0], 2, False)} · "
+                        f"{_f(rq_o[1], 2, False)}, and it merges close events "
+                        f"({n_of(n['ref_merged'], 'merged call')}; none are possible on the old "
+                        f"bench). F1 without decoys, which shows that loss directly, goes from "
+                        f"{_f(o['ref_f1_wo'], sign=False)} to {_f(n['ref_f1_wo'], sign=False)}")
+                if abs((n["ref_f1"] or 0) - (o["ref_f1"] or 0)) < 0.02:
+                    txt += (f"; F1 itself barely moves because planted events rose "
+                            f"({o['ref_planted']} to {n['ref_planted']}) while calls on decoys "
+                            f"held ({o['ref_decoys']} to {n['ref_decoys']})")
+                txt += "."
+            else:
+                txt += "."
+        else:
+            txt += "."
+        if n["level"] > 1 and n["top"]:
+            txt += (f" The top unflagged row has {n_of(n['level'] - 1, 'other row')} within "
+                    f"{NOISE_UNIT:g} F1 of it, so the leaderboard does not separate them.")
         parts.append(txt + "</li>")
-    return ("<div class='box'><p><b>What the new bench against the old bench shows.</b> Each row "
-            "below is a detector at one setting, or a learned model's picked training run, scored "
-            "on simulated recordings with known coordinated events. ΔF1 is its F1 minus "
-            "CoactDetect's at its shipped setting, the reference, on the same recordings.</p><ul>"
-            + "".join(parts) + "</ul><p>The search's proposals and the learned picks were chosen "
-            "on the new bench, so their new-bench numbers favour them; the shipped settings "
-            "predate it. The old bench is shown because Tony asked to see new against old; "
-            "ADR-0010 ruling 2 retired it as a reference, so it decides nothing. "
-            "Terms are defined <a href='#terms'>at the end</a>.</p></div>")
+    title = ("What the new bench shows: it mostly exposes CoactDetect's shipped setting, not "
+             "better detectors." if tot_sh and tot_vp * 3 < tot_sh else
+             "What the new bench against the old bench shows.")
+    return ("<div class='box'><p><b>" + title + "</b> Each row of Figure 1 below is a detector "
+            "at one setting, or a learned model's picked training run (or, where no run met the "
+            "budget, its best run, shown as a comparator), scored on simulated recordings with "
+            "known coordinated events. ΔF1 is a row's F1 minus CoactDetect's on the same "
+            "recordings. CoactDetect's <i>shipped</i> setting is the one in its code before this "
+            "night, and Figure 1's zero line; its <i>proposal</i> is the setting the night's search "
+            "found best on the new bench. <i>Decoys</i> are planted look-alike events. A row is "
+            "<i>unflagged</i> when it is within every budget and not on a search limit.</p><ul>"
+            + "".join(parts) + "</ul><p>The proposals and the learned picks were chosen on the "
+            "new bench, so their new-bench numbers favor them; the shipped settings predate it. "
+            "The old bench is shown because you asked to see new against old; ADR-0010 ruling 2 "
+            "retired it as a reference, so it decides nothing. Each interval stands alone, "
+            "uncorrected for the many rows. Section 2 says which of the top rows ran on the real "
+            "recordings. Terms are defined <a href='#terms'>at the end</a>.</p></div>")
+
+
+def orx_paragraph(orx: dict | None) -> str:
+    """ADR-0010 ruling 1's check, answered first, visible under Figure 1: it is evidence about how
+    far the order holds, not a reading instruction."""
+    if not orx or not orx["streams"]:
+        return ""
+    per = "; ".join(
+        f"{s} ρ = {v['rho']:.2f} over {n_of(v['rows'], 'row')}"
+        + (f", {v['rho_upper']:.2f} among the {v['upper_rows']} at or above zero"
+           if v.get("rho_upper") is not None else "")
+        for s, v in orx["streams"].items() if v["rho"] is not None)
+    tops = "; ".join(f"{s}: {html.escape(v['top_new'])} on the new bench, "
+                     f"{html.escape(v['top_orx'])} on the ORX-spaced one"
+                     for s, v in orx["streams"].items() if v["top_new"] != v["top_orx"])
+    n_str = len(orx["streams"])
+    head = ("The tail of the order holds; the top does not." if orx["top_moved"] == n_str
+            else "The order mostly holds.")
+    return (f"<p><b>Does the order hold on a bench spaced like the ORX recordings?</b> "
+            f"(ADR-0010 ruling 1; the same rows were scored there, the count rule included.) "
+            f"{head} Spearman rank correlation (ρ) of ΔF1 with the new bench: {per}. The top row, "
+            f"flagged or not, changes on {orx['top_moved']} of {n_of(n_str, 'stream')}"
+            + (f" ({tops})" if tops else "") + ". Against CoactDetect's shipped setting, "
+            f"{n_of(orx['changed_above'], 'interval')} of {orx['rows']} move between wholly above "
+            f"zero and including it, {orx['changed_below']} between including zero and wholly "
+            f"below, and {orx['crossed']} cross from one side to the other. (The 065 worker's run "
+            f"notes count differently: they also count intervals against CoactDetect's proposal, "
+            f"and they predate the count rule, whose rows this count includes.)</p>")
 
 
 def viewer_href(slice_id: str, stream: str) -> str:
@@ -1223,7 +1385,10 @@ def viewer_href(slice_id: str, stream: str) -> str:
 def vlink(slice_id: str, stream: str, text: str) -> str:
     """A link into the viewer tab. Every link names the same tab, so after the first one the
     browser changes only the address's fragment: the viewer jumps to the recording without
-    reloading, and the folder it already has open stays open."""
+    reloading, and the folder it already has open stays open. A stream the viewer cannot open
+    (see :data:`VIEWER_STREAMS`) gets the text alone, not a link that lands on an error."""
+    if stream not in VIEWER_STREAMS:
+        return html.escape(text)
     return (f"<a href='{viewer_href(slice_id, stream)}' target='{VIEWER_TAB}'>"
             f"{html.escape(text)}</a>")
 
@@ -1244,14 +1409,20 @@ def viewer_box(dataset_name: str | None, has_results: bool) -> str:
         "per detector and floor variant. All links open in one viewer tab. The viewer reads only "
         "files you open, and nothing leaves the machine. In that tab, the first time:<ul>"
         "<li>expand <i>Open a folder</i> in the left rail and click <i>Choose folder…</i>; pick "
-        f"the export folder <code>{html.escape(dataset_name or 'of the default dataset')}</code> "
-        "from the bugarach exports folder (opened from a file, Chrome shows its own file dialog, "
-        "which may say \"upload\": nothing is uploaded);</li>"
+        f"the export folder <code>{html.escape(dataset_name or 'of the default dataset')}</code>, "
+        "in the bugarach exports folder under this machine's data root (opened from a file, "
+        "Chrome shows its own file dialog, which may say \"upload\": nothing is uploaded);</li>"
         "<li>click <i>Open results (detections.csv)…</i> and pick "
-        f"{'the <code>detections.csv</code> beside this page' if has_results else 'the night’s detections.csv'}."
-        "</li></ul>Leave that tab open: every later link jumps within it, keeping the folder and "
-        "the results. A link opens the recording at its start; the caption gives the time of the "
-        "call.</div>")
+        f"{'the <code>detections.csv</code> beside this page' if has_results else 'the night’s detections.csv'}"
+        " (written from the night's calls by the detection run's export step; this page's "
+        "builder only links it).</li></ul>Leave that tab open: every later link jumps within it, "
+        "keeping the folder and the results. A link opens the recording at its start; the "
+        "caption gives the time of the call. The viewer names lanes by short id: <i>coact</i> is "
+        "CoactDetect, <i>sync</i> SPIKE-synch, <i>rate</i> rate+context, <i>sixth</i> locust, "
+        "and a learned model by its name; <i>own_floor</i> is the run at the window's own event "
+        "floor, which the examples use. <b>The viewer has no combined stream</b> (it is derived, "
+        "never stored in the export folder), so combined recordings carry no viewer link; their "
+        "calls are on the combined review pages in <a href='#rasters'>section 3</a>.</div>")
 
 
 def render(model: dict, exs: dict | None, recs: list[dict], pages: list[str], *,
@@ -1260,21 +1431,20 @@ def render(model: dict, exs: dict | None, recs: list[dict], pages: list[str], *,
     g = glance(model)
     parts = []
     parts.append(
-        "<h1>Full-panel night briefing</h1><p class='byline'>The night of 2026-09-25: every coded "
-        "detector's settings searched and every learned model trained on the new bench (the "
-        "full panel, ADR-0010, the decision record that moved the bench to event spacing measured "
-        "in real recordings), then scored on fresh simulation seeds, ones neither the search nor "
-        f"the training saw. Built {html.escape(model['built'])}. Every number is read from the "
-        "night's files, and the budget limits from <code>src/bugarach/bench*.py</code>; nothing "
-        "here is adopted.</p>")
+        "<h1>Full-panel night briefing</h1><p class='byline'>On the night of 2026-09-25 every "
+        "coded detector's settings were searched, and the four learned families ADR-0010 names "
+        "were trained, each with and without participation (8 models), on the new bench: "
+        "planted events spaced as measured in real recordings (ADR-0010). Everything was then "
+        "scored on fresh simulation seeds that neither the search nor the training saw; the "
+        "last scoring finished on the evening of 2026-09-26. "
+        f"Built {html.escape(model['built'])}. Every number is read from the night's files. "
+        "Nothing here is adopted.</p>")
     parts.append("<nav><a href='#leaderboard'>1. Leaderboard</a><a href='#examples'>2. Examples"
                  "</a><a href='#rasters'>3. Rasters</a><a href='#terms'>Terms</a></nav>")
     # 1. leaderboard -------------------------------------------------------------------------
     parts.append("<h2 id='leaderboard'>1. Leaderboard: every detector and learned pick against "
                  "CoactDetect</h2>")
     parts.append(headline(g, src))
-    parts.append(glance_html(g))
-    parts.append(reference_table(g))
     fams = list(dict.fromkeys(e["family"].removesuffix("_part")
                               for s in STREAMS for e in model["board"][s]))
     fams = [f for f in WHAT_ORDER if f in fams] + [f for f in fams if f not in WHAT_ORDER]
@@ -1283,18 +1453,26 @@ def render(model: dict, exs: dict | None, recs: list[dict], pages: list[str], *,
                  "</summary><ul>"
                  + "".join(f"<li><b>{html.escape(display_name(f))}</b>: {WHAT[f]}.</li>"
                            for f in fams if f in WHAT)
-                 + f"</ul><p>{PART_NOTE}</p></details>")
+                 + f"</ul><p>{PART_NOTE}</p><p>{SETTING_NOTE}</p></details>")
+    parts.append("<p>Figure 1 is sorted by ΔF1 on the new bench, top down. Red rows are over a "
+                 "budget and † rows sit on a search limit, so the first row that could be adopted "
+                 "is the first with neither; Table 2 names it per stream.</p>")
     for s, svg in zip(STREAMS, model.get("_figure1_svgs", [])):
         letter = "abc"[STREAMS.index(s)]
         cap = (f"<b>Figure 1{letter}, the {s} stream.</b> Each row's paired F1 difference (ΔF1) "
                f"against CoactDetect at its shipped setting, the vertical line at 0. Filled marks "
-               f"are the new bench, open marks the old, bars the 95% interval, and the gray line "
-               f"joins the two. Orange: over a budget on that bench, or a training run with no "
-               f"pick. All three panels share one x-range.") if letter == "a" else (
+               f"are the new bench, open marks the old, bars the 95% interval over simulation "
+               f"seeds, and the gray line joins the two. Red: over a budget on that bench, or a "
+               f"training run with no pick. Row labels are short: \"pick, run 5 of 5\" is the "
+               f"picked training run 5 of 5; \"starting point\" is the count rule's untuned "
+               f"one. All three panels share one x-range.") if letter == "a" else (
                f"<b>Figure 1{letter}, the {s} stream.</b> As Figure 1a.")
         parts.append(f"<figure class='wide'><p class='scrollcue'>Scroll the figure sideways for "
                      f"the marks →</p><div class='tablewrap'>{svg}</div><figcaption>{cap}"
                      f"</figcaption></figure>")
+    parts.append(orx_paragraph(model.get("orx")))
+    parts.append(reference_table(g))
+    parts.append(glance_html(g))
     seeds = []
     for col in ("new", "old"):
         s_ = src[col]
@@ -1308,48 +1486,46 @@ def render(model: dict, exs: dict | None, recs: list[dict], pages: list[str], *,
         else:
             seeds.append(f"<li class='bad'>The {name} is not scored yet "
                          f"(<code>{html.escape(s_['path'])}</code> is missing).</li>")
-    orx = model.get("orx")
-    orx_li = ""
-    if orx:
-        per = "; ".join(f"{s} ρ = {v['rho']:.2f}, top row "
-                        + ("the same" if v["top_new"] == v["top_orx"]
-                           else f"{html.escape(v['top_new'])} on the new bench, "
-                                f"{html.escape(v['top_orx'])} there")
-                        for s, v in orx["streams"].items() if v["rho"] is not None)
-        orx_li = (f"<li><b>Does the order hold on a bench spaced like the ORX recordings?</b> "
-                  f"ADR-0010 ruling 1 asks it; the same rows were scored there (every stream, "
-                  f"the count rule included). Rank correlation of ΔF1 with the new bench: {per}. "
-                  f"Against CoactDetect's shipped setting, {n_of(orx['changed'], 'interval')} of "
-                  f"{orx['rows']} move between above zero and including zero, and "
-                  f"{orx['crossed']} cross from above to below or back. (The worker's run notes "
-                  f"count 17, because they also count intervals against CoactDetect's proposal.)"
-                  f"</li>")
     parts.append(
         "<details><summary>How to read it, and where the numbers come from</summary><ul>"
         f"<li><b>The interval.</b> ΔF1 is paired: the mean over simulation seeds of (row F1 − "
         f"CoactDetect F1), with a 95% percentile-bootstrap interval over seeds "
         f"({model['bootstrap']:,} draws). It covers simulation seeds only, not the choice among a "
-        f"learned model's training runs, and each interval stands alone, uncorrected for the many "
-        f"rows. Fast has twice the seeds on the new bench (ADR-0010 ruling 2), so its new-bench "
-        f"intervals are narrower than its old-bench ones and count differently.</li>"
-        f"<li><b>The order.</b> Rows are sorted by ΔF1 on the new bench. This page treats rows "
-        f"within {NOISE_UNIT:g} F1 of each other as level, borrowing the noise unit ADR-0010 uses "
-        f"for its focus rule.</li>"
-        "<li><b>Decoys.</b> The bench plants look-alike events (decoys; the glossary's "
-        "distractors) and scores a call on one as a false alarm. ADR-0006 rules that such a call "
-        "is coordination by construction, so the tables give F1 without decoy calls beside F1, "
-        "and recall on each background. A row that calls little can score well on F1 when "
-        "decoys are many; its recall shows it.</li>"
+        f"learned model's training runs, whose held-out F1 can spread far wider (Tables 3–5 give "
+        f"each spread), and each interval stands alone, uncorrected for the many rows. Fast has "
+        f"twice the seeds on the new bench (ADR-0010 ruling 2), so its new-bench intervals are "
+        f"narrower than its old-bench ones and count differently.</li>"
+        f"<li><b>Level.</b> This page treats rows within {NOISE_UNIT:g} F1 of each other as level, "
+        f"borrowing the draw-to-draw spread ADR-0010 part 1 measured in an earlier comparison. "
+        f"The paired intervals here are wider than that, about ±0.015 to ±0.035, so rows further "
+        f"apart can be tied too; \"level\" is the least the page cannot separate, not the "
+        f"most.</li>"
+        "<li><b>Decoys.</b> The bench plants look-alike events (decoys) and scores a call on one "
+        "as a false alarm. Decoys are coordination by construction, so ADR-0006 rules that a "
+        "call on one is not a false alarm; the bench keeps scoring it as one until a later "
+        "decision changes its objective (ADR-0006, consequences). Hence F1 without decoy calls "
+        "beside F1, and recall on each background. The ranking itself still uses F1 with decoys, "
+        "the reading ADR-0006 disputes, and F1 without decoys has no interval here: the scored "
+        "files keep no per-seed values to draw one from.</li>"
         "<li><b>Budgets.</b> A row is marked over budget if it fails any budget in force under "
-        "the search's admissibility rule: calls on the no-coordination recording (nothing "
-        "planted), calls inside and outside the elevated-rate test's stretch (a stretch where "
-        "the background rate is raised with nothing planted; outside on the quiet background, as "
-        "the search gates it), and the precision swing between backgrounds. The limits are per "
-        "detector, mostly set from each detector's own measurement; learned models are held to "
-        "CoactDetect's. ADR-0010 part 4 retired the close-events test. The worker's run notes "
-        "count only the no-coordination budget, the one the training pick uses, so they name one "
-        "row over budget where this page marks more.</li>"
-        + "".join(seeds) + orx_li + "</ul></details>")
+        "the search's own admissibility rule. The budgets are: calls per hour on the "
+        "no-coordination test (a recording with nothing planted); calls inside and outside the "
+        "elevated-rate test's stretch (a stretch where the background rate is raised with "
+        "nothing planted), outside it only on the quiet background, as the search checks it; "
+        "and the precision swing, the change in precision between the quiet and busy "
+        "backgrounds. The limits are set per detector and stream, most just above each "
+        "detector's own shipped measurement, so a shipped setting passes its own almost by "
+        "construction; learned models are held to CoactDetect's, a stricter bar than some coded "
+        "detectors' own. The limits are read from <code>src/bugarach/bench*.py</code> as of this "
+        "build; the run records only the no-coordination limits, and those match. ADR-0010 part "
+        "4 retired the close-events test. The 065 worker's README counts only the "
+        "no-coordination budget, the one the training pick uses, so it names one row over budget "
+        "where this page marks more.</li>"
+        "<li><b>Rows the scored files do not carry.</b> A detector with no proposal row had none "
+        "in the scored file. 064's README records a rescued fast SPIKE-synch setting (maximum "
+        "τ 0.25 → 0.5 s, because the shipped point is over budget; held-out gain −0.018) that "
+        "065's README and the scoring do not carry; this page follows the scored file.</li>"
+        + "".join(seeds) + "</ul></details>")
     parts.append("<details><summary>Tables 3–5: every number behind Figure 1, with each row's "
                  "recall and its budget and limit marks</summary>")
     for i, s in enumerate(STREAMS, 3):
@@ -1357,35 +1533,69 @@ def render(model: dict, exs: dict | None, recs: list[dict], pages: list[str], *,
     parts.append("</details>")
     # 2. examples ----------------------------------------------------------------------------
     parts.append("<h2 id='examples'>2. Examples on real recordings</h2>")
-    parts.append(viewer_box(dataset_name, has_results))
     fig_no, tno = 2, 6
     if exs is None:
+        parts.append(viewer_box(dataset_name, has_results))
         parts.append("<p class='bad'>Not built: the examples read the default dataset, and this "
                      "build ran without it (<code>--no-examples</code>, or the dataset was not "
                      "confirmed for the session).</p>")
     else:
         rule = exs.get("participants_rule") or _participants_rule()
+        which = []
+        for s in STREAMS:
+            ex = exs["streams"].get(s) or {}
+            above = [p for p in ex.get("passed", []) if p.get("before_leader", True)
+                     and not p["why"].startswith("CoactDetect")]
+            nr = sum(1 for p in above if p["why"].startswith("did not run"))
+            if ex.get("leader") is None:
+                which.append(f"on {s}, no row meets the rule")
+            elif not above:
+                which.append(f"on {s}, the leader is the top row of Figure 1"
+                             f"{'abc'[STREAMS.index(s)]} besides CoactDetect's")
+            else:
+                rest = len(above) - nr
+                which.append(f"on {s}, {nr} of the {n_of(len(above), 'row')} above the leader "
+                             f"did not run on the real recordings and {rest} "
+                             f"{'was' if rest == 1 else 'were'} passed over for a budget or a "
+                             f"search limit")
         parts.append(
-            "<div class='box'><b>Read this first: the examples use a different CoactDetect.</b> "
-            "The night's detection on the real recordings ran each coded detector at its proposal "
-            "where the search made one, so here CoactDetect is at its proposal, not the shipped "
-            "setting that is the leaderboard's zero line. The leaderboard's top rows mostly did "
-            "not run on the real recordings at all, so these examples cannot test them.</div>")
+            "<div class='box'><b>Read this first.</b> The night's detection on the real "
+            "recordings ran each coded detector at its proposal where the search made one, so "
+            "here CoactDetect is at its proposal, not the shipped setting that is the "
+            "leaderboard's zero line. The examples can test only rows that ran there and are "
+            "unflagged: " + "; ".join(which) + ". And the comparison is not like for like: "
+            "CoactDetect runs at each window's event floor (ADR-0008) and cannot call below it, "
+            "while a learned leader runs without one, so a learned leader's calls that CoactDetect "
+            "lacks can fall below the floor. Each table below counts, per kind, the calls that "
+            "reach it. With no ground "
+            "truth on real recordings, a call only one detector makes is a disagreement, not a "
+            "missed event.</div>")
+        parts.append(viewer_box(dataset_name, has_results))
         parts.append(
             "<p>For each stream, the <b>leader</b> is the first row in Figure 1's order (1a, 1b or "
-            "1c) that ran on the real recordings, is within every budget, is not on a search "
-            "limit, and both agrees and disagrees with CoactDetect at least once each way. The "
-            "<b>runner-up</b> is the next row meeting the same rule. Every row passed over is "
-            "named with its reason. Only baseline windows are used, and the calls counted are the "
-            "ones the review pages draw: the four detectors that take the participation floor as "
-            "their minimum at their own window's floor, the rest as they ran.</p>"
-            f"<p>Two calls agree when their spans come within {TOL_SEC:g} s of each other (the "
-            f"bench's scoring tolerance, applied here span to span, so one call can agree with "
-            f"several). Each figure shows one call: the one with the median participant count of "
-            f"its kind among calls at least {EDGE_SEC:g} s inside their window, preferring a "
-            f"recording no earlier figure shows. Participants are counted the review tool's way, "
-            f"not the detector's: {html.escape(rule)}. In each raster the rows are cells sorted "
-            f"by their event count in the window shown, busiest at the top.</p>")
+            "1c) that ran on the real recordings, is within every budget and not on a search "
+            "limit, shares at least one call with CoactDetect, and has at least one call "
+            "CoactDetect lacks while lacking at least one of CoactDetect's. The <b>runner-up</b> "
+            "is the next row meeting the same rule. Every row passed over is named with its "
+            "reason, below each stream's figures. Only baseline windows are used. For the four "
+            "detectors that ran and take the event floor as their minimum (CoactDetect, LoCo, "
+            "binned SCE and SPIKE-synch), the calls are from the run at each window's own floor, "
+            "as the review pages draw them; the others' calls are as they ran.</p>"
+            f"<p>Two calls agree when their spans come within {TOL_SEC:g} s of each other, "
+            f"inclusive. That is the bench's tolerance value under a looser matching rule than "
+            f"the bench's one-to-one matching: span to span, so one call can agree with several. "
+            f"Each disagreement figure shows a call more than {CLEAR_TOLS * TOL_SEC:g} s from the "
+            f"other detector's nearest call where one exists, so it shows a call the other did "
+            f"not make rather than a timing split. Within that, the figure shows the call with "
+            f"the median participant count of its kind among calls at least {EDGE_SEC:g} s inside "
+            f"their window, so the window's edge is not in the picture, preferring a recording "
+            f"no earlier figure shows. Participants are counted the review tool's way: "
+            f"{html.escape(rule)}. Each window shows "
+            f"{EXAMPLE_HALF_SEC['fast']:g} s either side of a fast call and "
+            f"{EXAMPLE_HALF_SEC['slow']:g} s either side of a slow or combined one, enough for "
+            f"several events of context. In each raster the rows are cells sorted by their event "
+            f"count in the window shown, busiest at the top; cells with no event in the window "
+            f"sit at the bottom.</p>")
         for s in STREAMS:
             ex = exs["streams"].get(s)
             if not ex:
@@ -1396,53 +1606,55 @@ def render(model: dict, exs: dict | None, recs: list[dict], pages: list[str], *,
                 continue
             parts.append(f"<h3>{s.capitalize()} stream: {html.escape(ex['leader'])} against "
                          f"{html.escape(ex['ref'])}</h3>")
-            if ex["ref_marks"]:
-                parts.append(f"<p class='muted'>{html.escape(ex['ref'])} is itself on a search "
-                             f"limit: " + "; ".join(html.escape(m) for m in ex["ref_marks"])
-                             + ".</p>")
-            for before, head_ in ((True, f"Passed over for the leader, from the top of Figure 1"
-                                         f"{'abc'[STREAMS.index(s)]}"),
-                                  (False, "Passed over for the runner-up")):
-                ps = [p for p in ex["passed"] if p.get("before_leader", True) == before]
-                if ps:
-                    parts.append(f"<p class='muted'>{head_}: "
-                                 + "; ".join(f"{html.escape(p['label'])} ({html.escape(p['why'])})"
-                                             for p in ps) + ".</p>")
-            if ex.get("level", 0) > 1:
-                parts.append(f"<p class='muted'>The leader was chosen by the rule among rows the "
-                             f"leaderboard cannot separate: {n_of(ex['level'], 'row')} sit within "
-                             f"{NOISE_UNIT:g} F1 of the top unflagged row on this stream.</p>")
-            lane = [f"the leader, {html.escape(ex['lanes'][0])}"]
-            if ex["runner"]:
-                lane.append(f"the runner-up, {html.escape(ex['lanes'][1])}")
-            lane.append(f"the comparison, {html.escape(ex['lanes'][-1])}")
-            parts.append(f"<p class='muted'>Lanes in every figure below: {'; '.join(lane)}.</p>")
+            lo_, ro_ = ex["totals"]["leader_only"], ex["totals"]["ref_only"]
+            fl = ex.get("at_floor", {})
+            claim = (f"On these recordings the leader makes {n_of(lo_, 'call')} CoactDetect does "
+                     f"not, and CoactDetect makes {n_of(ro_, 'call')} the leader does not; "
+                     f"{n_of(ex['totals']['agree'], 'call')} of the leader's are shared.")
+            if lo_ and fl.get("leader_only", lo_) < lo_:
+                claim += (f" Only {fl['leader_only']} of the leader's {n_of(lo_, 'call')} "
+                          f"reach their window's event floor, the minimum CoactDetect runs at.")
+            parts.append(f"<p>{claim}</p>")
             groups = list(ex["hours"])
-            head = ("<tr><th>kind (whose calls)</th><th>all groups</th>"
-                    + "".join(f"<th>{g_}</th>" for g_ in groups) + "</tr>")
+            tot_h = sum(ex["hours"].values())
+            head = ("<tr><th>kind (whose calls)</th><th class='num'>all groups</th>"
+                    "<th class='num'>reach the event floor</th>"
+                    + "".join(f"<th class='num'>{g_}</th>" for g_ in groups) + "</tr>")
             rows = []
             for kind in ("agree", "leader_only", "ref_only"):
                 cells = "".join(
                     f"<td class='wrapn'>{n_of(ex['counts'][kind][g_], 'call')}<br>"
                     f"<span class='muted'>{ex['counts'][kind][g_] / ex['hours'][g_]:.1f} calls "
                     f"per baseline hour</span></td>" for g_ in groups)
-                rows.append(f"<tr><td>{EX_HEAD[kind]}</td><td class='n'>"
-                            f"{n_of(ex['totals'][kind], 'call')}</td>{cells}</tr>")
+                rows.append(f"<tr><td>{EX_HEAD[kind]}</td><td class='wrapn'>"
+                            f"{n_of(ex['totals'][kind], 'call')}<br><span class='muted'>"
+                            f"{ex['totals'][kind] / tot_h:.1f} calls per baseline hour</span>"
+                            f"</td><td class='n'>{n_of(fl.get(kind, 0), 'call')}</td>{cells}</tr>")
             hrs = ", ".join(f"{g_} {ex['hours'][g_]:.1f} h" for g_ in groups)
             m = ex["many"]
-            parts.append(f"<div class='tablewrap'><table><caption><b>Table {tno}.</b> {s} stream: "
-                         f"calls on baseline windows by kind and group ({hrs} of baseline). "
-                         f"{n_of(m['leader'], 'call')} of the leader's and "
-                         f"{n_of(m['ref'], 'call')} of CoactDetect's agree with two or more "
-                         f"calls of the other, where a merge would hide.</caption>{head}"
-                         f"{''.join(rows)}</table></div>")
+            gp = ex.get("gaps", {})
+            gap_txt = " ".join(
+                f"Of {who} {n_of(sum(b.values()), 'call')} the other lacks, {b['near']} "
+                f"{'lies' if b['near'] == 1 else 'lie'} within {2 * TOL_SEC:g} s of the other's "
+                f"nearest call, {b['mid']} within {2 * TOL_SEC:g} to {4 * TOL_SEC:g} s, and "
+                f"{b['far'] + b['none']} further or on a recording where the other made no call."
+                for who, b in (("the leader's", gp.get("leader_only")),
+                               ("CoactDetect's", gp.get("ref_only"))) if b and sum(b.values()))
+            parts.append(tbl(
+                f"<b>Table {tno}.</b> The {s} stream: calls on baseline windows by kind and group "
+                f"({hrs} of baseline). \"Reach the event floor\" counts the calls whose "
+                f"participants reach their window's own floor (ADR-0008). "
+                f"{n_of(m['leader'], 'call')} of the leader's and {n_of(m['ref'], 'call')} of "
+                f"CoactDetect's overlap two or more of the other's calls, so a merge of two "
+                f"events into one could be hiding there. {gap_txt}", head + "".join(rows),
+                cue=True))
             tno += 1
-            lo_, ro_ = ex["totals"]["leader_only"], ex["totals"]["ref_only"]
-            if max(lo_, ro_) >= 5 and max(lo_, ro_) >= 3 * max(min(lo_, ro_), 1):
-                who = ("the leader calls many events CoactDetect does not" if lo_ > ro_ else
-                       "the leader misses many events CoactDetect calls")
-                parts.append(f"<p>On these recordings {who}: {n_of(lo_, 'call')} only its own "
-                             f"against {n_of(ro_, 'call')} only CoactDetect's.</p>")
+            lane = [f"<i>leader</i>: {html.escape(ex['lanes'][0][1])}"]
+            if ex["runner"]:
+                lane.append(f"<i>runner-up</i>: {html.escape(ex['lanes'][1][1])}")
+            lane.append(f"<i>CoactDetect</i>: {html.escape(ex['lanes'][-1][1])}")
+            parts.append(f"<p class='muted'>Lanes in every figure below, top down under the ▼ "
+                         f"lane: {'; '.join(lane)}.</p>")
             for f in ex["figures"]:
                 what = EX_TEXT[f["kind"]].format(L=html.escape(ex["leader"]),
                                                  R=html.escape(ex["ref"]))
@@ -1461,35 +1673,70 @@ def render(model: dict, exs: dict | None, recs: list[dict], pages: list[str], *,
                             f"{n_of(f['recordings'], 'recording')} "
                             f"({n_of(f['inner'], 'call')} away from window edges)")
                 gap = ""
-                if f["kind"] != "agree" and f.get("gap") is not None:
+                if f["kind"] != "agree":
                     other = "CoactDetect's" if f["kind"] == "leader_only" else "the leader's"
-                    gap = (f" The nearest of {other} calls on this recording is {f['gap']:.1f} s "
-                           f"away, beyond the {TOL_SEC:g} s tolerance.")
+                    nobody = "CoactDetect" if f["kind"] == "leader_only" else "The leader"
+                    gap = (f" The nearest of {other} calls on this recording is "
+                           f"{gap_words(f['gap'])} away." if f.get("gap") is not None else
+                           f" {nobody} made no call on this recording and stream.")
                 shown = (f"shown from {time_label(round(f['ext'][0]))} to "
                          f"{time_label(round(f['ext'][1]))}"
                          + (" (cut at the baseline window's edge)" if any(f.get("cut", ())) else "")
                          if f.get("ext") else "")
+                fl_txt = (f" (its window's event floor is {n_of(int(float(f['floor'])), 'ROI')})"
+                          if f.get("floor") not in (None, "") else "")
+                where = ("" if s in VIEWER_STREAMS else
+                         "; no viewer link, as the viewer has no combined stream")
+                near = ""
+                if f["kind"] != "agree" and f.get("gap") is not None \
+                        and f["gap"] <= CLEAR_TOLS * TOL_SEC:
+                    near = (f" This is a near-miss, not a clear disagreement: no call of its kind "
+                            f"lies both more than {CLEAR_TOLS * TOL_SEC:g} s from the other's "
+                            f"nearest call and away from the window edges.")
                 cap = (f"<b>Figure {fig_no}.</b> {what}. Recording "
                        f"{vlink(c['slice_id'], s, c['slice_id'])} "
-                       f"({html.escape(c['group'])}), {s} stream: the call marked ▼, at "
+                       f"({html.escape(c['group'])}{where}), {s} stream: the call marked ▼, at "
                        f"{time_label(round(t))}, with "
-                       f"{n_of(int(float(c['participants'] or 0)), 'participating ROI')}; "
-                       f"{pool}; {shown}.{gap}")
+                       f"{n_of(int(float(c['participants'] or 0)), 'participating ROI')}"
+                       f"{fl_txt}; {pool}; {shown}.{gap}{near}")
                 if f["png"]:
+                    img = f"<img class='ex' src='{f['png']}' alt='Figure {fig_no}: {what}'>"
+                    if s in VIEWER_STREAMS:
+                        img = (f"<a href='{viewer_href(c['slice_id'], s)}' "
+                               f"target='{VIEWER_TAB}'>{img}</a>")
                     parts.append(f"<figure class='wide'><p class='scrollcue'>Scroll the figure "
-                                 f"sideways →</p><div class='tablewrap'>"
-                                 f"<a href='{viewer_href(c['slice_id'], s)}' "
-                                 f"target='{VIEWER_TAB}'><img class='ex' src='{f['png']}' "
-                                 f"alt='Figure {fig_no}: {what}'></a></div>"
+                                 f"sideways →</p><div class='tablewrap'>{img}</div>"
                                  f"<figcaption>{cap}</figcaption></figure>")
                 else:
                     parts.append(f"<p class='bad'>Figure {fig_no} did not render (no Playwright "
                                  f"chromium?).</p><p>{cap}</p>")
                 fig_no += 1
+            notes = []
+            if ex["ref_marks"]:
+                notes.append(f"{html.escape(ex['ref'])} is itself on a search limit: "
+                             + "; ".join(html.escape(m) for m in ex["ref_marks"]) + ".")
+            for before, head_ in ((True, f"Passed over for the leader, from the top of Figure 1"
+                                         f"{'abc'[STREAMS.index(s)]}"),
+                                  (False, "Passed over for the runner-up")):
+                ps = [p for p in ex["passed"] if p.get("before_leader", True) == before]
+                if ps:
+                    notes.append(f"{head_}: " + "; ".join(
+                        f"{html.escape(p['label'])} — {html.escape(p['why'])}" for p in ps) + ".")
+            if ex.get("level", 0) > 1:
+                k_ = ex["level"] - 1
+                notes.append(f"The leader was chosen by the rule among rows the leaderboard "
+                             f"cannot separate: {n_of(k_, 'other row')} "
+                             f"{'sits' if k_ == 1 else 'sit'} within {NOISE_UNIT:g} F1 of the top "
+                             f"unflagged row on this stream.")
+            if notes:
+                parts.append(f"<details><summary>How the {s} leader was chosen</summary>"
+                             + "".join(f"<p class='muted'>{x}</p>" for x in notes)
+                             + "</details>")
     # 3. rasters -----------------------------------------------------------------------------
     parts.append("<h2 id='rasters'>3. Rasters with detection</h2>")
     parts.append("<p>The recording links below open the viewer as described in "
-                 "<a href='#viewer-setup'>the box at the top of section 2</a>.</p>")
+                 "<a href='#viewer-setup'>the box in section 2</a>; the review pages open "
+                 "directly and carry every stream, combined included.</p>")
     if pages:
         by = defaultdict(dict)
         for p in pages:
@@ -1497,21 +1744,22 @@ def render(model: dict, exs: dict | None, recs: list[dict], pages: list[str], *,
             g_, rest = stem.split("_", 1)
             t_, s_ = rest.rsplit("_", 1)
             by[(g_, t_)][s_] = p
-        cells = []
-        for (g_, t_) in sorted(by, key=lambda k: (k[1], group_key(k[0]))):
-            links = " · ".join(f"<a href='{html.escape(by[(g_, t_)][s_])}'>{s_}</a>"
-                               for s_ in STREAMS if s_ in by[(g_, t_)])
-            thumb = by[(g_, t_)].get("fast") or next(iter(by[(g_, t_)].values()))
-            png = thumb[:-5] + ".png"
-            cells.append(f"<figure><a href='{html.escape(thumb)}'><img loading='lazy' "
-                         f"src='{html.escape(png)}' alt='{g_} {html.escape(t_)} review page'></a>"
-                         f"<figcaption>{g_} · first treatment {html.escape(t_)}: {links}"
-                         f"</figcaption></figure>")
-        parts.append(f"<p>The night's {n_of(len(pages), 'review page')}, one per group, first "
-                     f"treatment and stream. Each stacks its recordings, every one aligned at the "
-                     f"end of its own baseline, with every call in lanes above. The thumbnails "
-                     f"show the top of each fast-stream page.</p>"
-                     f"<div class='thumbs'>{''.join(cells)}</div>")
+        treatments = sorted({t_ for _, t_ in by})
+        head = ("<tr><th>group</th>" + "".join(f"<th>first treatment {html.escape(t_)}</th>"
+                                               for t_ in treatments) + "</tr>")
+        rows = []
+        for g_ in in_group_order({g_ for g_, _ in by}):
+            cells = "".join(
+                "<td>" + (" · ".join(f"<a href='{html.escape(by[(g_, t_)][s_])}'>{s_}</a>"
+                                     for s_ in STREAMS if s_ in by.get((g_, t_), {})) or "—")
+                + "</td>" for t_ in treatments)
+            rows.append(f"<tr><td>{g_}</td>{cells}</tr>")
+        parts.append(tbl(
+            f"<b>Table {tno}.</b> The night's {n_of(len(pages), 'review page')}, one per group, "
+            f"first treatment and stream. Each stacks its recordings, every one aligned at the "
+            f"end of its own baseline, with every detector's calls in lanes above the raster.",
+            head + "".join(rows), cue=True))
+        tno += 1
     grouped = defaultdict(list)
     for r in recs:
         grouped[(r["group"], r["first"] or "—")].append(r)
@@ -1524,11 +1772,13 @@ def render(model: dict, exs: dict | None, recs: list[dict], pages: list[str], *,
             for r in members)
         rows.append(f"<tr><td>{g_}</td><td>{html.escape(t_)}</td><td class='n'>"
                     f"{n_of(len(members), 'recording')}</td><td>{chips}</td></tr>")
-    parts.append(f"<details><summary>Every recording, one link per stream "
-                 f"({n_of(len(recs), 'recording')})</summary><div class='tablewrap'><table>"
-                 f"<caption><b>Table {tno}.</b> Every recording the night's detection ran on, by "
-                 f"group and first treatment.</caption><tr><th>group</th><th>first treatment</th>"
-                 f"<th>count</th><th>recordings</th></tr>{''.join(rows)}</table></div></details>")
+    parts.append(f"<details><summary>Every recording, one viewer link per stream the viewer "
+                 f"opens ({n_of(len(recs), 'recording')})</summary>" + tbl(
+                     f"<b>Table {tno}.</b> Every recording the night's detection ran on, by group "
+                     f"and first treatment. Combined is named without a link: the viewer has no "
+                     f"combined stream.", "<tr><th>group</th><th>first treatment</th>"
+                     f"<th>count</th><th>recordings</th></tr>{''.join(rows)}", cue=True)
+                 + "</details>")
     # terms ----------------------------------------------------------------------------------
     parts.append(TERMS)
     return ("<!doctype html>\n<html lang='en'>\n<head>\n"
@@ -1543,72 +1793,87 @@ def _participants_rule() -> str:
     return PARTICIPANTS_RULE
 
 
-TERMS = """<h2 id='terms'>Terms</h2><table>
-<tr><th>ADR</th><td>Architecture decision record, <code>docs/adr/</code>. ADR-0010 is the one
-this night ran under; ADR-0006 rules on decoys; ADR-0008 on the participation floor.</td></tr>
-<tr><th>full panel</th><td>Every coded detector and every learned model, searched or trained on
-one night.</td></tr>
-<tr><th>stream</th><td>Which events a detector reads: <i>fast</i>, <i>slow</i>, or
-<i>combined</i> (both).</td></tr>
-<tr><th>bench</th><td>The simulator that plants coordinated events at known times into
-recordings with a steady random background, so a call can be scored against the truth.</td></tr>
-<tr><th>new bench</th><td>Planted events spaced as measured in real recordings (ADR-0010).</td></tr>
-<tr><th>old bench</th><td>Planted events at least 120 s apart, the spacing used before
-ADR-0010.</td></tr>
-<tr><th>background</th><td>The steady random event rate of a bench recording: <i>quiet</i> or
-<i>busy</i>, the 25th and 75th percentiles of real baseline background rates per cell, with the
-coordinated share subtracted.</td></tr>
-<tr><th>simulation seed</th><td>One draw of the bench: one quiet and one busy recording.
-Distinct from a training run.</td></tr>
-<tr><th>training run</th><td>One of a learned model's five fits, each from its own starting
-seed, numbered 1 to 5 here.</td></tr>
-<tr><th>held-out F1</th><td>A training run's F1 on bench recordings it was not trained on, the
-number the pick is made by.</td></tr>
-<tr><th>F1</th><td>The harmonic mean of precision (the share of calls on a planted event) and
-recall (the share of planted events called).</td></tr>
-<tr><th>decoy</th><td>A planted look-alike (the glossary's distractor), scored as a false alarm
-when called; ADR-0006 rules it coordination by construction, hence F1 without decoys.</td></tr>
-<tr><th>ΔF1</th><td>A row's F1 minus CoactDetect's at its shipped setting, on the same seeds,
-averaged over seeds.</td></tr>
-<tr><th>the search</th><td>The night's automatic search over each coded detector's settings.</td></tr>
-<tr><th>shipped</th><td>The setting a coded detector ships with.</td></tr>
-<tr><th>proposal</th><td>The setting the night's search found best, when it was not the shipped
-one. A detector whose search found the shipped setting best has no proposal row.</td></tr>
-<tr><th>starting point (untuned)</th><td>The count rule's first setting, set on 2026-09-26; it
-ships nowhere (the count folder calls it "shipped").</td></tr>
-<tr><th>pick</th><td>The one of a learned model's training runs with the best held-out F1 among
-those within CoactDetect's no-coordination budget.</td></tr>
-<tr><th>no pick</th><td>A family with no training run inside that budget: its best run is shown
-as a comparator only.</td></tr>
-<tr><th>budget</th><td>A limit a row must stay within to count: calls per hour on the
-no-coordination recording (nothing planted), calls per minute inside the elevated-rate test's
-stretch and per hour outside it, and the precision swing between backgrounds. The coded detectors
-have their own limits (<code>src/bugarach/bench*.py</code>); learned models are held to
-CoactDetect's.</td></tr>
-<tr><th>search limit (†)</th><td>A setting the search found best that is a value switching the
-setting off (ADR-0010 ruling 5), or that stopped at the edge of the search's grid or its
-extension cap and so is not bracketed (ADR-0010 part 1). Either way it is not adoptable as tuned.
-A lower limit that exists by design, such as the count offset at the floor itself, is noted and
-not flagged.</td></tr>
-<tr><th>unflagged</th><td>Within every budget in force and not on a search limit.</td></tr>
-<tr><th>level</th><td>Within 0.01 F1 of each other, the noise unit ADR-0010 uses for its focus
-rule.</td></tr>
-<tr><th>merged calls</th><td>Calls whose span covers two or more scored planted events (a planted
+TERMS = """<h2 id='terms'>Terms</h2><dl class='terms'>
+<dt>ADR</dt><dd>Architecture decision record, <code>docs/adr/</code>. ADR-0010 is the one this
+night ran under; ADR-0006 rules on decoys; ADR-0008 sets the event floor.</dd>
+<dt>full panel</dt><dd>Every coded detector, searched, and the four learned families ADR-0010
+names (chorus_norm, chorus_gain_norm, line and tube), each with and without participation, trained
+on one night: 8 learned models.</dd>
+<dt>stream</dt><dd>Which events a detector reads: <i>fast</i>, <i>slow</i>, or <i>combined</i>
+(both).</dd>
+<dt>bench</dt><dd>The simulator that plants coordinated events at known times into recordings
+with a steady random background, so a call can be scored against the truth.</dd>
+<dt>new bench</dt><dd>Planted events spaced as measured in real recordings (ADR-0010).</dd>
+<dt>old bench</dt><dd>Planted events at least 120 s apart, the spacing used before ADR-0010.</dd>
+<dt>ORX-spaced bench</dt><dd>The new bench with each stream's event spacing taken from the ORX
+recordings alone (ADR-0010 ruling 1).</dd>
+<dt>background</dt><dd>The steady random event rate of a bench recording: <i>quiet</i> or
+<i>busy</i>, the 25th and 75th percentiles over real recordings of the per-cell baseline
+background rate, with the coordinated share subtracted.</dd>
+<dt>simulation seed</dt><dd>One draw of the bench: one quiet and one busy recording. Distinct from
+a training run.</dd>
+<dt>training run</dt><dd>One of a learned model's five fits, each from its own starting seed,
+numbered 1 to 5 here; run 1 is the run notes' seed 0.</dd>
+<dt>held-out F1</dt><dd>A training run's F1 on bench recordings it was not trained on, the number
+the pick is made by.</dd>
+<dt>F1</dt><dd>The harmonic mean of precision (the share of calls on a planted event) and recall
+(the share of planted events called).</dd>
+<dt>decoy</dt><dd>A planted look-alike event (<code>docs/GLOSSARY.md</code> calls it a
+distractor). A decoy is coordination by construction, so ADR-0006 rules that a call on one is not
+a false alarm; the bench still scores it as one until its objective is changed, hence F1 without
+decoys beside F1.</dd>
+<dt>ΔF1</dt><dd>A row's F1 minus CoactDetect's at its shipped setting, on the same seeds,
+averaged over seeds.</dd>
+<dt>the search</dt><dd>The night's automatic search over each coded detector's settings.</dd>
+<dt>shipped</dt><dd>The setting in a coded detector's code before this night.</dd>
+<dt>proposal</dt><dd>The setting the night's search found best, when it was not the shipped one.
+A detector with no proposal row had none in the scored file.</dd>
+<dt>starting point (untuned)</dt><dd>The count rule's first setting, set on 2026-09-26; it ships
+nowhere, though the count run's own files call it "shipped".</dd>
+<dt>pick</dt><dd>The one of a learned model's training runs with the best held-out F1 among those
+within CoactDetect's no-coordination budget.</dd>
+<dt>no pick</dt><dd>A model with no training run inside that budget: its best run is shown as a
+comparator only.</dd>
+<dt>budget</dt><dd>A limit a row must stay within to count: calls per hour on the no-coordination
+test (a recording with nothing planted), calls per minute inside the elevated-rate test's stretch
+and per hour outside it, and the precision swing between backgrounds. Coded detectors have their
+own limits per stream; learned models are held to CoactDetect's.</dd>
+<dt>search limit (†)</dt><dd>The search found its best at a value that turns the setting off
+(reported as a finding, ADR-0010 ruling 5), or stopped at the end of what it could test: its
+grid's edge, its extension cap, the setting's own limit (the count offset k cannot go below 0,
+the floor itself), or a ruled context limit. Such a setting is not bracketed, which ADR-0010 part
+1 requires of a final setting, and the search's own rule marks it not adoptable.</dd>
+<dt>guard</dt><dd>A detector setting: the time just around the moment under test that is left
+out of the background estimate, so an event cannot raise the threshold it has to clear. A guard of
+0 s turns it off.</dd>
+<dt>merge gap</dt><dd>Calls closer than this are merged into one; "none" means no merging.</dd>
+<dt>context window</dt><dd>The stretch of time a detector compares a moment with; ADR-0010 ruling
+7 sets 20 s as the shortest and ADR-0009 decision 5 caps it at 120 s.</dd>
+<dt>extension cap</dt><dd>The search widens a setting's grid when the best value is at its end,
+up to a fixed number of times; the cap is that number.</dd>
+<dt>unflagged</dt><dd>Within every budget in force and not on a search limit.</dd>
+<dt>level</dt><dd>Within 0.01 F1 of each other: a unit borrowed from ADR-0010 part 1, narrower
+than this page's paired intervals.</dd>
+<dt>merged calls</dt><dd>Calls whose span covers two or more scored planted events (a planted
 event under the floor is not scored), summed over the seeds and both backgrounds (ADR-0010 part
-3).</td></tr>
-<tr><th>leader, runner-up</th><td>In section 2, the first and second rows in Figure 1's order that
-meet the examples' rule.</td></tr>
-<tr><th>baseline window</th><td>The scored part of a recording's pre-treatment period.</td></tr>
-<tr><th>participation floor</th><td>ADR-0008: for each recording window, the larger of 3 ROIs and
-the smallest co-active count the window's own rigid-shift null reaches at most once an hour.
-</td></tr>
-<tr><th>floor variant</th><td>For the four detectors that take the floor as their minimum, the
-run at the window's own floor or at the baseline's; the examples use the window's own.</td></tr>
-<tr><th>participants</th><td>The cells with an onset around a call, counted the same way for every
-detector.</td></tr>
-<tr><th>span</th><td>A call's extent in time, from its onset to its onset plus its width.</td></tr>
-<tr><th>ROI</th><td>Region of interest: one cell; a raster row shows its events.</td></tr>
-<tr><th>EDT</th><td>Eastern daylight time, UTC − 4 h (the house clock's summer name).</td></tr></table>"""
+3).</dd>
+<dt>leader, runner-up</dt><dd>In section 2, the first and second rows in Figure 1's order that
+meet the examples' rule.</dd>
+<dt>baseline window</dt><dd>The scored part of a recording's pre-treatment period.</dd>
+<dt>review pages</dt><dd>The night's raster pages, one per group, first treatment and stream,
+linked in section 3.</dd>
+<dt>event floor</dt><dd>ADR-0008: for each recording window, the larger of 3 ROIs and the
+smallest co-active count the window's own rigid-shift null (every cell's events shifted together
+in time) reaches at most once an hour.</dd>
+<dt>floor variant</dt><dd>For the four detectors that ran on the real recordings and take the
+floor as their minimum (ADR-0010 part 6), the run at the window's own floor or at the baseline's;
+the examples use the window's own. The count rule takes the floor too, but did not run there.</dd>
+<dt>participants</dt><dd>The cells with an onset around a call, counted the same way for every
+detector.</dd>
+<dt>span</dt><dd>A call's extent in time, from its onset to its onset plus its width.</dd>
+<dt>ROI</dt><dd>Region of interest: one cell; a raster row shows its events.</dd>
+<dt>SCE</dt><dd>Synchronous calcium event.</dd>
+<dt>EDT</dt><dd>Eastern daylight time, the clock every time on this page is given in.</dd></dl>"""
 
 
 def _clean(out: Path) -> None:

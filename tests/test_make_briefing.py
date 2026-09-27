@@ -142,14 +142,19 @@ def test_limit_marks_say_which_rule_governs_each_stop():
             unbracketed_axes=axes or {}, findings=findings or []))))
     off = marks({"guard_sec": dict(side="low", value=0.0, reason="limit")},
                 [dict(setting="guard_sec", value=0.0, kind="off_limit")])
-    assert off == ["guard 0 s, a value that switches it off (ADR-0010 ruling 5: a finding, not "
-                   "a tuned value)"]
+    assert off == ["guard 0 s, a value that turns the setting off: the search preferring \"off\" "
+                   "is reported as a finding, not a tuned value (ADR-0010 ruling 5)"]
     edge = marks({"context_win_sec": dict(side="high", value=120.0, reason="grid_ceiling")})
     assert "ruling 5" not in edge[0] and "part 1" in edge[0] and "120 s" in edge[0]
+    # A STOP AT A HARD LIMIT IS A FLAG, as the search's own rule has it (bracketing(): cap, limit
+    # or edge alike make a candidate not adoptable). Round 2 of the murderboard exempted the count
+    # offset's k = 0 as "by design", a reading no ADR makes (round 3, roles 6 and 7).
     floor = marks({"k_offset": dict(side="low", value=0, reason="limit")})
-    assert floor[0].startswith(mb.NOTE) and "by design" in floor[0] and "ruling 5" not in floor[0]
+    assert "lower limit" in floor[0] and "part 1" in floor[0] and "ruling 5" not in floor[0]
+    high = marks({"alpha": dict(side="high", value=0.5, reason="limit")})
+    assert "upper limit" in high[0] and "lower" not in high[0]
     cap = marks(findings=[dict(setting="threshold_pctile", value=99.9921875, kind="cap")])
-    assert "99.9921875th percentile" in cap[0] and "extension cap" in cap[0]
+    assert "99.9922th percentile" in cap[0] and "extension cap" in cap[0]
     none = marks(findings=[dict(setting="merge_gap_sec", value=float("nan"), kind="off_limit")])
     assert none[0].startswith("merge gap none (no merge)")
     assert mb.limit_marks(dict(proposal=dict(name="shipped"))) == []
@@ -216,6 +221,53 @@ def test_examples_classify_span_to_span_and_pick_away_from_window_edges():
     pick = mb.pick_one(k["leader_only"], bounds, set())
     assert float(pick["onset_sec"]) == 200         # the call 2 s inside the window is not shown
     assert mb.pick_one([_call("r1", "lead", 495)], bounds, set()) is None
+
+
+def test_a_gap_of_exactly_the_tolerance_agrees():
+    # The scorer's test is inclusive. Spans 2.5 s apart landed on "no match" by floating-point
+    # error, and the page's one fast "only the leader" figure showed a call its own rule counts as
+    # agreeing (murderboard 2026-09-26 round 3, roles 1, 4 and 6).
+    a = _call("r1", "lead", 100.1, w=0.2)
+    b = _call("r1", "coact", 100.3 + mb.TOL_SEC, w=0.0)
+    assert mb._near(a, [b], mb.TOL_SEC) == [b]
+
+
+def test_a_disagreement_example_is_a_call_the_other_did_not_make():
+    # The median rule picked the one near-miss in each pool; the figure has to show a call clearly
+    # beyond the tolerance when one exists (round 3, roles 4 and 8).
+    bounds = {("r1", "fast", "1"): (0.0, 1000.0)}
+    ref = [_call("r1", "coact", 300)]
+    pool = [_call("r1", "lead", 304, p=5), _call("r1", "lead", 600, p=6),
+            _call("r1", "lead", 303.5, p=7)]
+    pick = mb.pick_one(pool, bounds, set(), ref)
+    assert float(pick["onset_sec"]) == 600
+    bins = mb.gap_bins(pool, ref)
+    assert (bins["near"], bins["far"]) == (2, 1)
+
+
+def test_rows_that_repeat_on_one_bench_are_counted_on_the_other(night, tmp_path):
+    # Fast LoCo's proposal repeats CoactDetect's on the new bench only; on the old bench the two
+    # differ and both count (round 3, roles 1, 3 and 6).
+    for rel, shift in (("065/fresh-realistic", 0.0), ("065/fresh-bench", 0.002)):
+        p = night / rel / "candidates.json"
+        c = json.loads(p.read_text())
+        r = c["results"]["fast"]
+        r["loco:proposal"] = json.loads(json.dumps(r["coact:proposal"]))
+        r["loco:proposal"]["mean_f1"] += shift
+        r["loco:proposal"]["paired_f1_vs_coact"]["shipped"]["mid"] += shift
+        p.write_text(json.dumps(c))
+    _, m = _build(night, tmp_path)
+    loco = next(e for e in m["board"]["fast"] if e["id"] == "loco:proposal")
+    assert loco["same_as"].get("new") and not loco["same_as"].get("old")
+    g = mb.glance(m)["fast"]
+    assert g["old"]["n"] == g["new"]["n"] + 1
+
+
+def test_combined_recordings_carry_no_viewer_link(night, tmp_path):
+    # The viewer has no combined stream; a link would land on its error (round 3, role 8).
+    out, _ = _build(night, tmp_path)
+    page = (out / "index.html").read_text(encoding="utf-8")
+    assert "stream=combined" not in page
 
 
 def test_a_missing_old_bench_says_so_rather_than_vanishing(night, tmp_path):
