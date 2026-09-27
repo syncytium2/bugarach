@@ -101,7 +101,7 @@ def _floor_key(s, stream: str):
     return h.hexdigest()[:32], trains, ext, dt
 
 
-def recording_floor(s, stream: str = STREAM):
+def recording_floor(s, stream: str = STREAM, window_sec: float | None = None):
     """ADR-0008's floor for one simulated recording, from that recording's own events.
 
     ADR-0008 decision 5: every bench recording gets its floor from its own null, exactly as a real
@@ -109,14 +109,26 @@ def recording_floor(s, stream: str = STREAM):
     included. The null is seeded by a digest of the recording's events, so the same recording
     always gets the same floor, in any process. Returns a
     :class:`bugarach.event_floor.Floor`.
+
+    ``window_sec`` is the co-activity window the floor is counted in. ``None`` is ADR-0008's own,
+    ``event_floor.WINDOW_SEC`` (2 s), and is what every default path uses. Any other value is the
+    floor-at-window experiment (:data:`FLOOR_AT_WINDOW_ENV`): it draws the same rigid-shift
+    offsets as the default, so floors at different windows differ only by the window, and it is
+    cached under its own key, so the default's cache entries are untouched.
     """
     import json
+    import math
     import os
     from pathlib import Path
 
     from bugarach import event_floor as ef
 
     key, trains, ext, dt = _floor_key(s, stream)
+    seed_key = key
+    if window_sec is not None and not math.isclose(window_sec, ef.WINDOW_SEC):
+        key = f"{key}-w{window_sec:g}"
+    else:
+        window_sec = ef.WINDOW_SEC
     if key in _FLOORS:
         return _FLOORS[key]
     cache = os.environ.get(FLOOR_CACHE_ENV)
@@ -132,7 +144,8 @@ def recording_floor(s, stream: str = STREAM):
     frames = [np.unique(np.floor((np.asarray(t, float) - ext[0]) / dt + 1e-9).astype(np.int64))
               for t in trains]
     n_frames = int(round((ext[1] - ext[0]) / dt))
-    f = ef.window_floor(frames, n_frames, dt, key=("bench", stream, key))
+    f = ef.window_floor(frames, n_frames, dt, key=("bench", stream, seed_key),
+                        window_sec=window_sec)
     _FLOORS[key] = f
     if path is not None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -182,7 +195,35 @@ def floored_params(name: str, s, op_params: dict, overrides: dict, stream: str,
     if setting in overrides and overrides[setting] != op_params.get(setting):
         raise ValueError(f"{name}.{setting} is set by ADR-0008's per-recording floor, not by a "
                          f"caller; pass floor=False to run at {setting}={overrides[setting]!r}")
-    return {**params, setting: int(recording_floor(s, stream).floor)}
+    window = None
+    if name in FLOOR_AT_OWN_WINDOW and floor_at_window():
+        window = float(params[FLOOR_AT_OWN_WINDOW[name]])
+    return {**params, setting: int(recording_floor(s, stream, window_sec=window).floor)}
+
+
+FLOOR_AT_WINDOW_ENV = "BUGARACH_FLOOR_AT_WINDOW"
+"""**An experiment, OFF by default.** Set to ``on`` and each detector in
+:data:`FLOOR_AT_OWN_WINDOW` gets its floor counted in its OWN co-activity window rather than
+ADR-0008's 2 s (``event_floor.WINDOW_SEC``). Nothing that ships reads it: ``WINDOW_SEC`` and
+ADR-0008 are unchanged, and the scorer's floor (which planted events are "don't care", ADR-0009
+decision 2) stays at 2 s so every candidate is scored on the same events.
+
+Why (orchestrator's brief, 2026-09-27): Tony leans toward count (sliding) as the one primary
+detector, and its threshold is the floor, measured at 2 s while the rule counts over its own
+``win_sec``. At a 0.5 s window a 2 s floor asks for more cells than chance needs, which may be why
+the night's only fast sliding winner needed k 2 and then failed the precision-swing budget.
+Results: ``<darkroom>/bugarach/2026-09-27-floor-at-window/``."""
+
+FLOOR_AT_OWN_WINDOW = {"count_sliding": "win_sec"}
+"""Under :data:`FLOOR_AT_WINDOW_ENV`, the detectors whose floor follows their own window, and
+the setting that is that window."""
+
+
+def floor_at_window() -> bool:
+    """Is the floor-at-window experiment on? Off unless :data:`FLOOR_AT_WINDOW_ENV` says ``on``."""
+    import os
+
+    return os.environ.get(FLOOR_AT_WINDOW_ENV, "off").strip().lower() in ("on", "1", "true")
 
 
 MEASURED_PROVENANCE = (

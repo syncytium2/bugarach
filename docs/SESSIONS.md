@@ -10,6 +10,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP064/floor-at-window — DARKROOM claim: `bugarach/2026-09-27-floor-at-window/` (NEW)
+- **Status:** claimed 2026-09-27 ~1:20 PM EDT by WSMIP064 on the orchestrator's brief (Tony leans
+  toward count (sliding) as the one primary detector; its threshold is the ADR-0008 floor, measured
+  at a 2 s co-activity window while the rule counts over its own W). Floors at W = 0.5, 1 and 2 s,
+  and an opt-in experimental search and scoring with each recording's floor at the candidate's own
+  W. An experiment, not a change to what ships: `WINDOW_SEC` and ADR-0008 stay as they are.
+  Working material, not murderboarded. Released by the merge of the PR that carries this block.
+- **Touches:** that folder only (floor tables, figures, search and scorer runs, `README.md`).
+
 ### orchestrator/darkroom-archive — DARKROOM claim: `bugarach/` top level and `bugarach/archive/` (NEW)
 - **Status:** claimed 2026-09-26 ~21:10 UTC by the orchestrator, on Tony's instruction ("the
   bugarach darkroom folder is extremely crowded. Time to archive some stuff"). It moves the 135
