@@ -190,11 +190,13 @@ def test_every_declared_axis_is_a_real_parameter_of_its_detector():
     """A grid for a parameter the function does not take is a search of nothing."""
     import inspect
 
-    from bugarach.detectors import (cicada_detect, coact_detect, loco_detect, rate_detect,
-                                    sce_detect, sync_detect)
+    from bugarach.detectors import (cicada_detect, coact_detect, count_detect,
+                                    count_sliding_detect, loco_detect, rate_detect, sce_detect,
+                                    sync_detect)
 
     fns = {"coact": coact_detect, "loco": loco_detect, "rate": rate_detect,
-           "sce": sce_detect, "sync": sync_detect, "cicada": cicada_detect}
+           "sce": sce_detect, "sync": sync_detect, "cicada": cicada_detect,
+           "count": count_detect, "count_sliding": count_sliding_detect}
     for det, axes in bench.FULL_GRIDS.items():
         takes = set(inspect.signature(fns[det]).parameters)
         assert set(axes) <= takes, f"{det}: {sorted(set(axes) - takes)} is not a parameter"

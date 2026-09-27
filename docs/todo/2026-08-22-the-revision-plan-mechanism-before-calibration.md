@@ -39,7 +39,7 @@ the other order and the expensive campaign gets run twice.
 ## What the primaries added — six items, numbered on from the case's six
 
 The case lists evidence 1–6. These continue it. Sources are on the shelf at
-`<darkroom>/bugarach/lit/radar/`; the full argument is
+`<darkroom>/bugarach/archive/2026-08/lit/radar/`; the full argument is
 [`detector_history.md`](../detector_history.md).
 
 ### 7 · None of the three rolling detectors excludes the moment it is testing
@@ -407,7 +407,7 @@ Two things to watch, from this session's other threads:
 
 ## The literature's advice for the learned model
 
-Tony asked. There is advice, it is on the shelf at `<darkroom>/bugarach/lit/DL/`,
+Tony asked. There is advice, it is on the shelf at `<darkroom>/bugarach/archive/2026-08/lit/DL/`,
 and **the tube already follows the structural half of it** — which is worth knowing
 before anyone changes the architecture.
 

@@ -237,3 +237,81 @@ def test_the_summary_lists_groups_in_house_order_and_counts_recordings():
     cell = s["DI"]["baseline|fast|coact|own_floor"]
     assert cell["recordings"] == 2 and cell["median_calls_per_hour"] == 1.5
     assert s["all"]["baseline|fast|coact|own_floor"]["recordings"] == 5
+
+
+def _run_folder(tmp_path, *, offset=0):
+    """A finished run's calls.csv and results.json, written the way ``main`` writes them."""
+    import csv
+    import json
+
+    plus = d.plus_variant(offset)
+    variants = (*d.VARIANTS, *((plus,) if plus else ()))
+    calls = [
+        dict(slice_id="rec_a", group="DI", region_idx=1, label="baseline", window_kind="baseline",
+             stream="fast", detector="coact", variant="own_floor", onset_sec=12.5, width_sec=1.25,
+             participants=5, own_floor=4, baseline_floor=4),
+        dict(slice_id="rec_a", group="DI", region_idx=2, label="senktide",
+             window_kind="treatment", stream="slow", detector="chorus_norm", variant="unfloored",
+             onset_sec=700.0, width_sec=3.0, participants=2, own_floor=None, baseline_floor=4,
+             **d.reaches(2, dict(own_floor=None, baseline_floor=4), variants)),
+    ]
+    if plus:
+        calls[0][plus] = 5
+    cfields = ["slice_id", "group", "region_idx", "label", "window_kind", "stream", "detector",
+               "variant", "onset_sec", "width_sec", "participants", "own_floor",
+               "baseline_floor", *((plus,) if plus else ()),
+               *(f"reaches_{v}" for v in variants)]
+    with (tmp_path / "calls.csv").open("w", newline="", encoding="utf-8") as fh:
+        wr = csv.DictWriter(fh, fieldnames=cfields, extrasaction="ignore")
+        wr.writeheader()
+        wr.writerows(calls)
+    chosen = {"fast": {"detectors": {"coact": {"which": "proposal",
+                                               "params": {"detection_mode": "threshold"}}},
+                       "chorus": {}},
+              "slow": {"detectors": {}, "chorus": {"chorus_norm": "m.json"}}}
+    (tmp_path / "results.json").write_text(json.dumps({"chosen": chosen}), encoding="utf-8")
+    return chosen
+
+
+def test_detections_csv_carries_every_call_in_the_output_contract(tmp_path):
+    """The browser viewer opens detections.csv, so the run writes its calls in that shape:
+    the contract's twelve columns first, n_roi = participants, and the variant, floors and
+    reaches_* carried so the viewer can draw one lane per detector x variant."""
+    from bugarach.emit import COLUMNS, read_detections
+
+    _run_folder(tmp_path, offset=1)
+    path = d.write_detections(tmp_path)
+    assert path == tmp_path / "detections.csv"
+    header = path.read_text(encoding="utf-8").splitlines()[0].split(",")
+    assert tuple(header[:len(COLUMNS)]) == COLUMNS
+    assert header[len(COLUMNS):] == ["group_id", "window_kind", "variant", "own_floor",
+                                     "baseline_floor", "own_plus_1", "reaches_own_floor",
+                                     "reaches_baseline_floor", "reaches_own_plus_1"]
+    coact, chorus = read_detections(path)
+    assert (coact["slice_id"], coact["stream"], coact["detector"], coact["variant"]) == \
+        ("rec_a", "fast", "coact", "own_floor")
+    assert coact["onset_sec"] == 12.5 and coact["width_sec"] == 1.25 and coact["n_roi"] == 5
+    assert coact["mode"] == "threshold" and coact["region_idx"] == 1
+    assert coact["region_label"] == "baseline" and coact["group_id"] == "DI"
+    assert coact["own_plus_1"] == "5"
+    # what this tool does not measure is written as missing, never filled
+    assert coact["strength"] is None and coact["strength_unit"] is None
+    assert coact["width_def"] is None
+    # a learned model is called neither way; its floors and verdicts ride as they were written
+    assert chorus["detector"] == "chorus_norm" and chorus["mode"] is None
+    assert chorus["own_floor"] is None and chorus["baseline_floor"] == "4"
+    assert chorus["reaches_own_floor"] is None and chorus["reaches_baseline_floor"] == "False"
+
+
+def test_detections_from_a_finished_run_writes_where_it_is_told(tmp_path):
+    """``--detections-from`` converts a run that finished before detections.csv existed,
+    without re-running it, and needs none of a run's arguments."""
+    _run_folder(tmp_path)
+    out = tmp_path / "elsewhere"
+    assert d.main(["--detections-from", str(tmp_path), "--out", str(out)]) == 0
+    assert (out / "detections.csv").is_file()
+    assert not (tmp_path / "detections.csv").exists()
+    # the same bytes as the in-run path, which passes the settings rather than reading them
+    chosen = _run_folder(tmp_path)
+    d.write_detections(tmp_path, chosen=chosen)
+    assert (tmp_path / "detections.csv").read_bytes() == (out / "detections.csv").read_bytes()

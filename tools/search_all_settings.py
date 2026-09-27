@@ -153,15 +153,20 @@ def use_bench(which: str):
 
 
 PERCENTILE = {"threshold_pctile", "sce_percentile"}
-INTEGER = {"n_synchronous_frames", "sce_min_distance_frames", "min_rois", "min_n"}
+INTEGER = {"n_synchronous_frames", "sce_min_distance_frames", "min_rois", "min_n", "k_offset"}
 #: A count is extended as a count. Until 2026-09-23 only the first two were listed, so
 #: `min_rois` and `min_n` fell through to halving: the slow search walked `sce.min_rois`
 #: 3 → 1.5 → 0.75 → 0.375, and the combined search returned SPIKE-synch at `min_n` 0.25 with
 #: its largest gain of the six, which could not be installed (PR #754). An all-integer grid
 #: is treated the same way even when its name is missing here.
-COUNT_FLOOR = {"min_rois": 3, "min_n": 2}
+COUNT_FLOOR = {"min_rois": 3, "min_n": 2, "k_offset": 0}
 """The smallest value a count may be extended to, for a caller that still searches one: since
-2026-09-25 neither ``min_rois`` nor ``min_n`` is in ``FULL_GRIDS`` (ADR-0008's floor sets both)."""
+2026-09-25 neither ``min_rois`` nor ``min_n`` is in ``FULL_GRIDS`` (ADR-0008's floor sets both).
+count's ``k_offset`` is cells above that floor and stops at 0, the floor itself."""
+FLOAT_FLOOR = {"bin_sec": 0.1, "win_sec": 0.1}
+"""The smallest value a continuous setting may be extended to. count's bins and count_sliding's
+window stop at one frame (0.1 s, the generator's grid): narrower holds no more than one frame's
+onsets."""
 FRACTION = {"C_threshold", "C_min"}
 
 # ------------------------------------------------------------------ ADR-0010's search rulings
@@ -245,13 +250,15 @@ def shipped_value(det: str, setting: str):
     import inspect
 
     bench = _load_bench()
-    from bugarach.detectors import (cicada_detect, coact_detect, loco_detect,
-                                    rate_detect, sce_detect, sync_detect)
+    from bugarach.detectors import (cicada_detect, coact_detect, count_detect,
+                                    count_sliding_detect, loco_detect, rate_detect,
+                                    sce_detect, sync_detect)
     params = bench.OPERATING_POINTS[det].params
     if setting in params:
         return params[setting]
     fn = {"loco": loco_detect, "sce": sce_detect, "cicada": cicada_detect,
-          "coact": coact_detect, "rate": rate_detect, "sync": sync_detect}[det]
+          "coact": coact_detect, "rate": rate_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[det]
     return inspect.signature(fn).parameters[setting].default
 
 
@@ -309,6 +316,10 @@ def extend(setting: str, grid: list, low_end: bool):
         new = edge / 2 if low_end else min(1.0, edge * 1.5)
     else:
         new = edge / 2 if low_end else edge * 2
+    if low_end and setting in FLOAT_FLOOR:
+        if edge <= FLOAT_FLOOR[setting] * (1 + 1e-9):
+            return None
+        new = max(FLOAT_FLOOR[setting], new)
     if any(math.isclose(new, g, rel_tol=1e-12, abs_tol=1e-15) for g in grid):
         return None
     return new
@@ -1013,8 +1024,9 @@ def full_grid(ev, det, space, is_valid, top=5):
 # ------------------------------------------------------------------ figure
 
 NAMES = {"coact": "CoactDetect", "loco": "LoCo", "rate": "rate+context",
-         "sce": "binned SCE", "cicada": "locust", "sync": "SPIKE-synch"}
-ORDER = ["coact", "loco", "rate", "sce", "cicada", "sync"]
+         "sce": "binned SCE", "cicada": "locust", "sync": "SPIKE-synch",
+         "count": "count (binned)", "count_sliding": "count (sliding)"}
+ORDER = ["coact", "loco", "rate", "sce", "cicada", "sync", "count", "count_sliding"]
 
 
 def _fmt(v):

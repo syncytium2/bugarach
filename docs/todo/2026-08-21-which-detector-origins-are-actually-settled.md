@@ -42,7 +42,7 @@ citation in the README's table. Nothing to establish.
 Two independent findings in this tree already say so.
 
 **The canonical rule reached us second-hand.** From the literature shelf's own
-gaps section (`<darkroom>/bugarach/lit/coordination/README.md`):
+gaps section (`<darkroom>/bugarach/archive/2026-08/lit/coordination/README.md`):
 
 > *The primary source for the canonical SCE rule is still missing. Malvache et
 > al. 2016 (Science) is not open access and was not retrieved; the "onsets within

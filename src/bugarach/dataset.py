@@ -44,10 +44,14 @@ ENV_VAR = "BUGARACH_DATA_ROOT"
 """Optional. Where the stores live, so a dataset can be named rather than pathed."""
 
 #: Files an export folder may hold that are not recordings. Kept in step with
-#: ``io.RESERVED``; a name here is *not* evidence of an export folder, which is the
-#: mistake that produced the detector_settings.csv error above.
-_NOT_A_RECORDING = {"slices.csv", "regions.csv", "detector_settings.csv",
-                    "PROVENANCE.md", "README.md"}
+#: ``io.NOT_RECORDINGS`` (the input tables and the result files a run writes back),
+#: and ``tests/test_site_viewer.py`` checks this set holds every one of them; a name
+#: here is *not* evidence of an export folder, which is the mistake that produced
+#: the detector_settings.csv error above. Written out rather than imported so that
+#: resolving a dataset does not pull in numpy.
+_NOT_A_RECORDING = {"slices.csv", "regions.csv", "metric_dictionary.csv",
+                    "detections.csv", "detector_settings.csv", "calls.csv",
+                    "windows.csv", "PROVENANCE.md", "README.md"}
 
 
 class DataError(Exception):

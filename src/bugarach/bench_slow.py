@@ -99,6 +99,7 @@ from bugarach.bench import (  # noqa: F401  (shared: none reads a stream constan
 )
 from bugarach.detectors.cicada import cicada_detect
 from bugarach.detectors.coact import coact_detect
+from bugarach.detectors.count import count_detect, count_sliding_detect
 from bugarach.detectors.loco import loco_detect
 from bugarach.detectors.rate import rate_detect, recording_extent, stream_trains
 from bugarach.detectors.sce import sce_detect
@@ -310,6 +311,8 @@ SLOW_EXTRA: dict[str, dict[str, tuple]] = {
     "sce": {"bin_width_sec": (45.0, 60.0), "merge_gap_sec": (45.0, 60.0),
             "peak_min_distance_sec": (20.0,)},
     "cicada": {"n_synchronous_frames": (20, 40), "sce_min_distance_frames": (32, 64)},
+    "count": {"bin_sec": (20.0,), "merge_gap_sec": (16.0,)},
+    "count_sliding": {"win_sec": (20.0,), "merge_gap_sec": (16.0,)},
 }
 """Values added past the fast grids' top on every time-valued axis — about double each top
 value, the SPIKE-synch windows four to five times — because slow timing runs two to four times
@@ -356,6 +359,8 @@ MAX_PROBE_PER_MIN: dict[str, float] = {
     "coact": 1.0,     # measured: 0.22, was 1.0 at 0.07
     "rate": 1.0,      # measured: 0.27, was 1.0 at 0.36
     "sync": 1.0,      # measured: 0.38, was 1.0 at 0.05
+    "count": 1.0,     # measured: 0.02 (2026-09-26, merged with --only count)
+    "count_sliding": 1.0,  # measured: 0.10 (2026-09-26, merged with --only count_sliding)
 }
 MAX_FALSE_POSITIVES_PER_HOUR: dict[str, float] = {
     "loco": 1.0,      # measured: 0.08, was 1.0 at 0.56
@@ -364,6 +369,8 @@ MAX_FALSE_POSITIVES_PER_HOUR: dict[str, float] = {
     "coact": 1.0,     # measured: 0.00, was 2.0 at 1.25 — tightened
     "rate": 1.0,      # measured: 0.00
     "sync": 1.0,      # measured: 0.00
+    "count": 1.0,     # measured: 0.08 (2026-09-26, merged with --only count)
+    "count_sliding": 1.0,  # measured: 0.33
 }
 MAX_PRECISION_DROP: dict[str, float] = {
     "loco": 0.10,     # measured: 0.001, was 0.10 at 0.034
@@ -372,6 +379,8 @@ MAX_PRECISION_DROP: dict[str, float] = {
     "coact": 0.10,    # measured: 0.003, was 0.15 at 0.070 — tightened
     "rate": 0.10,     # measured: 0.003
     "sync": 0.10,     # measured: 0.001
+    "count": 0.10,    # measured: 0.022 (2026-09-26, merged with --only count)
+    "count_sliding": 0.10,  # measured: 0.021
 }
 
 
@@ -446,7 +455,8 @@ def run_detector(name: str, s, *, rng_seed: int = 20260706, floor: bool | None =
         return fn(s, **params).streams[STREAM]
     ext = recording_extent(s)
     trains = stream_trains(s.streams[STREAM], ext)
-    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect}[name]
+    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[name]
     return fn(trains, ext, **params)
 
 

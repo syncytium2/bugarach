@@ -16,7 +16,7 @@ filed: 2026-09-16
 > move to the darkroom. All four are done: the stage is fixed (`95ec229`) and rerun with the
 > localization measures the round asked for, the page is rewritten around its own answer with six
 > figures, and `real_compare/events.json` and the 120 checkpoints are in
-> `bugarach/2026-09-17-rigid-shift-report/` while the repo keeps `summary.json`. **Remaining:** land
+> `bugarach/archive/2026-09/2026-09-17-rigid-shift-report/` while the repo keeps `summary.json`. **Remaining:** land
 > PR #603; then supersede the section C rows in `docs/MILESTONES.md`, pinned to its commits once they
 > are on `main`; release the darkroom claim; then the four decisions go to Tony. ⚠ The delivered text
 > has had **no blind pass**.

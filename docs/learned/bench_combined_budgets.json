@@ -1,5 +1,21 @@
 {
  "measured_on": "2026-09-22",
+ "merged": [
+  {
+   "detectors": [
+    "count"
+   ],
+   "measured_on": "2026-09-26",
+   "note": "rows merged with --only; every other row is as first measured"
+  },
+  {
+   "detectors": [
+    "count_sliding"
+   ],
+   "measured_on": "2026-09-26",
+   "note": "rows merged with --only; every other row is as first measured"
+  }
+ ],
  "rows": {
   "bugarach.bench": {
    "cicada": {
@@ -27,6 +43,26 @@
     "null_per_hour": 2.9166666666666665,
     "precision_swing": 0.049368246307084585,
     "probe_per_min": 0.06666666666666667
+   },
+   "count": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8021390374331551,
+    "f1_quiet": 0.7811447811447813,
+    "null_per_hour": 0.1111111111111111,
+    "precision_swing": 0.029564275210896995,
+    "probe_per_min": 0.016666666666666666
+   },
+   "count_sliding": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.757020757020757,
+    "f1_quiet": 0.7811228641171684,
+    "null_per_hour": 0.3055555555555556,
+    "precision_swing": 0.031817144535871034,
+    "probe_per_min": 0.09583333333333334
    },
    "loco": {
     "ceiling_null": 3.0,
@@ -101,6 +137,26 @@
     "null_per_hour": 5.777777777777778,
     "precision_swing": 0.009449524373939866,
     "probe_per_min": 0.08333333333333333
+   },
+   "count": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.7550561797752808,
+    "f1_quiet": 0.7744107744107744,
+    "null_per_hour": 0.05555555555555555,
+    "precision_swing": 0.02168013094672372,
+    "probe_per_min": 0.016666666666666666
+   },
+   "count_sliding": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.15,
+    "f1_busy": 0.7403545359749739,
+    "f1_quiet": 0.7862407862407863,
+    "null_per_hour": 0.2777777777777778,
+    "precision_swing": 0.06002493498136585,
+    "probe_per_min": 0.0875
    },
    "loco": {
     "ceiling_null": 5.0,

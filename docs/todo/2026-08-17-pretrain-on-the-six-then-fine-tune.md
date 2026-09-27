@@ -65,7 +65,7 @@ own unlabelled recordings, fine-tune on the simulation. Worth stating in any
 positioning document that we know the alternative exists.
 
 Source on the shelf:
-`<darkroom>/bugarach/lit/coordination/tapiarivas_2024_spindle_kcomplex_detector.pdf`.
+`<darkroom>/bugarach/archive/2026-08/lit/coordination/tapiarivas_2024_spindle_kcomplex_detector.pdf`.
 A7 itself is Lacourse, Delfrate, Beaudry, Peppard & Warby, *J. Neurosci. Methods*
 316:3–11 (2019), **not retrieved** — the technique is taken from SEED's
 description of it, and nothing here depends on A7's internals.
