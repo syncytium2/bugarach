@@ -57,9 +57,17 @@ not a property of coordination.
    (`bg_rate_shape`), unevenness over time (`bg_burst_shape`), and one raised stretch with a ramp
    (`hot_window`, `ramp_sec`). A measured rate course over time is new: an extension to
    `simulate.py`, not a new generator.
-3. **Coordination stays baseline's.** Intervals, participation and jitter are the baseline
-   measurements, planted unchanged through all three segments, surge included. Nothing about
-   coordination is taken from a treatment window, so FOUNDATIONS §9's reason holds.
+3. **Coordination comes from baseline, and intervals are swept, not assumed unchanged.**
+   Participation and jitter are the baseline measurements, planted through all three segments,
+   surge included. Intervals are baseline's measured distribution **scaled across a range**:
+   1×, 0.5× and 0.25× in the treatment segment. Tony, 2026-09-28: *"we know intervals decrease in
+   senktide"*. Planting baseline intervals unchanged would therefore test the wrong regime, the one
+   where close coordinated events are rare and merging costs nothing.
+
+   The scale is a **difficulty axis, not a measurement**. No interval is taken from a treatment
+   window, so FOUNDATIONS §9's reason holds. The detector has to work wherever on that axis the
+   truth lies, and the shortest scale must reach below the shortest real treatment intervals
+   (open point 6).
 4. **Every treatment recording has a null twin**: the same background with nothing planted, where
    every call is a false alarm.
 5. **Scores are reported by segment and by group, never pooled into one number:**
@@ -93,6 +101,10 @@ not a property of coordination.
   recordings and null twins for each treatment, group and stream; and scoring by segment. It is
   small against a tuning night, because nothing is searched until a floor is chosen.
 
+- **The merge rule is tested where it matters.** At 0.25× the fast intervals, pairs of
+  coordinated events closer than the 3 s merge gap plus the 2 s window are common, which is the
+  failure Tony found on the DI combined senktide page.
+
 ## Open points for Tony
 
 1. **Is the surge coordination?** ADR-0006 counts a shared rise in event rate as chance, so the
@@ -110,6 +122,10 @@ not a property of coordination.
 5. **High K⁺.** The last period of some recordings (e.g. 20250912_225) has its own surge.
    Proposed default: out of scope for now, since it is a positive control, not a treatment the
    analysis compares.
+6. **How short the interval axis goes.** Proposed default: 1×, 0.5× and 0.25× baseline's
+   distribution (fast median 41 s becomes 21 s and 10 s). If Tony's knowledge of senktide says
+   intervals fall further, the axis extends to cover it. Its range is set by what the detector
+   must survive, not fitted to treatment windows.
 
 ## References
 
