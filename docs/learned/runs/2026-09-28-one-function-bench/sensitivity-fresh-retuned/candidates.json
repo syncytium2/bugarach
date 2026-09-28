@@ -1,0 +1,2348 @@
+{
+ "spacing": "realistic",
+ "seeds_by_bench": {
+  "fast": [
+   6000,
+   6047
+  ],
+  "slow": [
+   6000,
+   6023
+  ],
+  "combined": [
+   6000,
+   6023
+  ]
+ },
+ "null_seeds_by_bench": {
+  "fast": [
+   56000,
+   56023
+  ],
+  "slow": [
+   56000,
+   56011
+  ],
+  "combined": [
+   56000,
+   56011
+  ]
+ },
+ "elevated_rate_seeds_by_bench": {
+  "fast": [
+   66000,
+   66023
+  ],
+  "slow": [
+   66000,
+   66011
+  ],
+  "combined": [
+   66000,
+   66011
+  ]
+ },
+ "seeds": [
+  6000,
+  6047
+ ],
+ "null_seeds": [
+  56000,
+  56023
+ ],
+ "elevated_rate_seeds": [
+  66000,
+  66023
+ ],
+ "benches": {
+  "fast": {
+   "budget_null_per_hour": 7.0,
+   "search_elapsed_min": {
+    "coact": 15.5,
+    "count_sliding": 15.2
+   },
+   "chorus": {},
+   "detectors": {
+    "coact": {
+     "shipped": {
+      "int_win_sec": 2.0,
+      "context_win_sec": 60.0,
+      "alpha": 0.0001,
+      "n_surrogates": 100
+     },
+     "proposal": {
+      "name": "shipped",
+      "params": {
+       "alpha": 0.0001,
+       "int_win_sec": 2.0,
+       "context_win_sec": 60.0,
+       "merge_gap_sec": 3.0,
+       "guard_sec": 0.0,
+       "guard_norm": "compact",
+       "detection_mode": "threshold",
+       "peak_prominence": 0.0,
+       "peak_min_distance_sec": 0.0,
+       "window_mode": "sliding"
+      },
+      "search_row": {
+       "params": {
+        "alpha": 0.0001,
+        "int_win_sec": 2.0,
+        "context_win_sec": 60.0,
+        "merge_gap_sec": 3.0,
+        "guard_sec": 0.0,
+        "guard_norm": "compact",
+        "detection_mode": "threshold",
+        "peak_prominence": 0.0,
+        "peak_min_distance_sec": 0.0,
+        "window_mode": "sliding"
+       },
+       "under_floor": {
+        "baseline_quiet": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 5,
+          "median": 6.0,
+          "max": 7
+         },
+         "by_participation": {
+          "0.4547": {
+           "scored": 192,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3077": {
+           "scored": 288,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.1516": {
+           "scored": 20,
+           "under_floor": 172,
+           "calls_on_under_floor": 58
+          }
+         }
+        },
+        "baseline_busy": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 6,
+          "median": 7.0,
+          "max": 9
+         },
+         "by_participation": {
+          "0.4547": {
+           "scored": 192,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3077": {
+           "scored": 288,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.1516": {
+           "scored": 0,
+           "under_floor": 192,
+           "calls_on_under_floor": 39
+          }
+         }
+        }
+       },
+       "f1_quiet": 0.6617940199335548,
+       "f1_busy": 0.7401696222050886,
+       "mean_f1": 0.7009818210693217,
+       "probe_quiet_per_hour": 2.875,
+       "probe_busy_per_hour": 3.125,
+       "null_per_hour": 0.2222222222222222,
+       "elevated_out_quiet_per_hour": 0.0,
+       "elevated_out_busy_per_hour": 0.0,
+       "crowded_mean_f1": null,
+       "crowded_gain_vs_shipped": null,
+       "merged_calls": {
+        "baseline_quiet": 2,
+        "baseline_busy": 0
+       },
+       "gain_vs_shipped": {
+        "mid": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+       }
+      },
+      "bracketing": {
+       "bracketed": false,
+       "unbracketed_axes": {
+        "guard_sec": {
+         "side": "low",
+         "value": 0.0,
+         "extensions_used": 0,
+         "reason": "limit"
+        }
+       },
+       "only_at_limits": false,
+       "findings": [
+        {
+         "setting": "guard_sec",
+         "value": 0.0,
+         "kind": "off_limit"
+        }
+       ],
+       "adoptable_blocked": true
+      },
+      "unbracketed": false,
+      "adoptable": false
+     },
+     "budget_null_per_hour": 7.0,
+     "search_floor": "ADR-0008 per-window floor, bench per ADR-0009"
+    },
+    "count_sliding": {
+     "shipped": {
+      "win_sec": 2.0,
+      "k_offset": 0,
+      "merge_gap_sec": 3.0
+     },
+     "proposal": {
+      "name": "rounds",
+      "params": {
+       "win_sec": 2.0,
+       "k_offset": 3,
+       "merge_gap_sec": 3.0
+      },
+      "search_row": {
+       "params": {
+        "win_sec": 2.0,
+        "k_offset": 3,
+        "merge_gap_sec": 3.0
+       },
+       "under_floor": {
+        "baseline_quiet": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 5,
+          "median": 6.0,
+          "max": 7
+         },
+         "by_participation": {
+          "0.4547": {
+           "scored": 192,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3077": {
+           "scored": 192,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.1516": {
+           "scored": 31,
+           "under_floor": 65,
+           "calls_on_under_floor": 2
+          }
+         }
+        },
+        "baseline_busy": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 6,
+          "median": 7.0,
+          "max": 9
+         },
+         "by_participation": {
+          "0.4547": {
+           "scored": 192,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3077": {
+           "scored": 192,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.1516": {
+           "scored": 0,
+           "under_floor": 96,
+           "calls_on_under_floor": 0
+          }
+         }
+        }
+       },
+       "f1_quiet": 0.9468479604449938,
+       "f1_busy": 0.9620915032679739,
+       "mean_f1": 0.9544697318564839,
+       "probe_quiet_per_hour": 0.0,
+       "probe_busy_per_hour": 0.0,
+       "null_per_hour": 0.0,
+       "elevated_out_quiet_per_hour": 0.0,
+       "elevated_out_busy_per_hour": 0.0,
+       "crowded_mean_f1": null,
+       "crowded_gain_vs_shipped": null,
+       "merged_calls": {
+        "baseline_quiet": 0,
+        "baseline_busy": 0
+       },
+       "gain_vs_shipped": {
+        "mid": 0.31493046647290635,
+        "lo": 0.30096820930758433,
+        "hi": 0.3295015704725752
+       }
+      },
+      "bracketing": {
+       "bracketed": true,
+       "unbracketed_axes": {},
+       "only_at_limits": false,
+       "findings": [],
+       "adoptable_blocked": false
+      },
+      "unbracketed": false,
+      "adoptable": true
+     },
+     "budget_null_per_hour": 1.0,
+     "search_floor": "ADR-0008 per-window floor, bench per ADR-0009"
+    }
+   },
+   "coact_shipped": {
+    "int_win_sec": 2.0,
+    "context_win_sec": 60.0,
+    "alpha": 0.0001,
+    "n_surrogates": 100
+   },
+   "coact_proposal": {
+    "name": "shipped",
+    "params": {
+     "alpha": 0.0001,
+     "int_win_sec": 2.0,
+     "context_win_sec": 60.0,
+     "merge_gap_sec": 3.0,
+     "guard_sec": 0.0,
+     "guard_norm": "compact",
+     "detection_mode": "threshold",
+     "peak_prominence": 0.0,
+     "peak_min_distance_sec": 0.0,
+     "window_mode": "sliding"
+    },
+    "search_row": {
+     "params": {
+      "alpha": 0.0001,
+      "int_win_sec": 2.0,
+      "context_win_sec": 60.0,
+      "merge_gap_sec": 3.0,
+      "guard_sec": 0.0,
+      "guard_norm": "compact",
+      "detection_mode": "threshold",
+      "peak_prominence": 0.0,
+      "peak_min_distance_sec": 0.0,
+      "window_mode": "sliding"
+     },
+     "under_floor": {
+      "baseline_quiet": {
+       "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+       "floors": {
+        "min": 5,
+        "median": 6.0,
+        "max": 7
+       },
+       "by_participation": {
+        "0.4547": {
+         "scored": 192,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.3077": {
+         "scored": 288,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.1516": {
+         "scored": 20,
+         "under_floor": 172,
+         "calls_on_under_floor": 58
+        }
+       }
+      },
+      "baseline_busy": {
+       "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+       "floors": {
+        "min": 6,
+        "median": 7.0,
+        "max": 9
+       },
+       "by_participation": {
+        "0.4547": {
+         "scored": 192,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.3077": {
+         "scored": 288,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.1516": {
+         "scored": 0,
+         "under_floor": 192,
+         "calls_on_under_floor": 39
+        }
+       }
+      }
+     },
+     "f1_quiet": 0.6617940199335548,
+     "f1_busy": 0.7401696222050886,
+     "mean_f1": 0.7009818210693217,
+     "probe_quiet_per_hour": 2.875,
+     "probe_busy_per_hour": 3.125,
+     "null_per_hour": 0.2222222222222222,
+     "elevated_out_quiet_per_hour": 0.0,
+     "elevated_out_busy_per_hour": 0.0,
+     "crowded_mean_f1": null,
+     "crowded_gain_vs_shipped": null,
+     "merged_calls": {
+      "baseline_quiet": 2,
+      "baseline_busy": 0
+     },
+     "gain_vs_shipped": {
+      "mid": 0.0,
+      "lo": 0.0,
+      "hi": 0.0
+     }
+    }
+   }
+  },
+  "slow": {
+   "budget_null_per_hour": 1.0,
+   "search_elapsed_min": {
+    "coact": 11.4,
+    "count_sliding": 10.2
+   },
+   "chorus": {},
+   "detectors": {
+    "coact": {
+     "shipped": {
+      "int_win_sec": 2.0,
+      "context_win_sec": 60.0,
+      "alpha": 0.0001,
+      "n_surrogates": 100,
+      "min_rois": 6,
+      "merge_gap_sec": 8.0,
+      "guard_sec": 0.0,
+      "guard_norm": "compact",
+      "detection_mode": "threshold",
+      "peak_prominence": 0.0,
+      "peak_min_distance_sec": 0.0,
+      "window_mode": "sliding"
+     },
+     "proposal": {
+      "name": "rounds",
+      "params": {
+       "alpha": 0.0001,
+       "int_win_sec": 2.0,
+       "context_win_sec": 20.0,
+       "merge_gap_sec": 3.0,
+       "guard_sec": 2.0,
+       "guard_norm": "compact",
+       "detection_mode": "threshold",
+       "peak_prominence": 0.0,
+       "peak_min_distance_sec": 0.0,
+       "window_mode": "sliding"
+      },
+      "search_row": {
+       "params": {
+        "alpha": 0.0001,
+        "int_win_sec": 2.0,
+        "context_win_sec": 20.0,
+        "merge_gap_sec": 3.0,
+        "guard_sec": 2.0,
+        "guard_norm": "compact",
+        "detection_mode": "threshold",
+        "peak_prominence": 0.0,
+        "peak_min_distance_sec": 0.0,
+        "window_mode": "sliding"
+       },
+       "under_floor": {
+        "baseline_quiet": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 8,
+          "median": 9.0,
+          "max": 11
+         },
+         "by_participation": {
+          "0.95": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.619": {
+           "scored": 288,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3467": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          }
+         }
+        },
+        "baseline_busy": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 8,
+          "median": 10.0,
+          "max": 13
+         },
+         "by_participation": {
+          "0.95": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.619": {
+           "scored": 288,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3467": {
+           "scored": 220,
+           "under_floor": 20,
+           "calls_on_under_floor": 5
+          }
+         }
+        }
+       },
+       "f1_quiet": 0.8471372984991663,
+       "f1_busy": 0.8441926345609064,
+       "mean_f1": 0.8456649665300364,
+       "probe_quiet_per_hour": 4.25,
+       "probe_busy_per_hour": 4.25,
+       "null_per_hour": 0.16666666666666666,
+       "elevated_out_quiet_per_hour": 0.0,
+       "elevated_out_busy_per_hour": 0.0,
+       "crowded_mean_f1": null,
+       "crowded_gain_vs_shipped": null,
+       "merged_calls": {
+        "baseline_quiet": 1,
+        "baseline_busy": 1
+       },
+       "gain_vs_shipped": {
+        "mid": 0.04737193928475941,
+        "lo": 0.039313744544116375,
+        "hi": 0.05511661652569787
+       }
+      },
+      "bracketing": {
+       "bracketed": false,
+       "unbracketed_axes": {
+        "context_win_sec": {
+         "side": "low",
+         "value": 20.0,
+         "extensions_used": 0,
+         "reason": "grid_floor"
+        }
+       },
+       "only_at_limits": false,
+       "findings": [],
+       "adoptable_blocked": false
+      },
+      "unbracketed": true,
+      "adoptable": false
+     },
+     "budget_null_per_hour": 1.0,
+     "search_floor": "ADR-0008 per-window floor, bench per ADR-0009"
+    },
+    "count_sliding": {
+     "shipped": {
+      "win_sec": 2.0,
+      "k_offset": 0,
+      "merge_gap_sec": 3.0
+     },
+     "proposal": {
+      "name": "rounds",
+      "params": {
+       "win_sec": 2.0,
+       "k_offset": 0,
+       "merge_gap_sec": 8.0
+      },
+      "search_row": {
+       "params": {
+        "win_sec": 2.0,
+        "k_offset": 0,
+        "merge_gap_sec": 8.0
+       },
+       "under_floor": {
+        "baseline_quiet": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 8,
+          "median": 9.0,
+          "max": 10
+         },
+         "by_participation": {
+          "0.95": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.619": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3467": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          }
+         }
+        },
+        "baseline_busy": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 8,
+          "median": 9.0,
+          "max": 11
+         },
+         "by_participation": {
+          "0.95": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.619": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3467": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          }
+         }
+        }
+       },
+       "f1_quiet": 0.8438420742486741,
+       "f1_busy": 0.8460176991150444,
+       "mean_f1": 0.8449298866818593,
+       "probe_quiet_per_hour": 4.5,
+       "probe_busy_per_hour": 4.5,
+       "null_per_hour": 0.16666666666666666,
+       "elevated_out_quiet_per_hour": 0.0,
+       "elevated_out_busy_per_hour": 0.0,
+       "crowded_mean_f1": null,
+       "crowded_gain_vs_shipped": null,
+       "merged_calls": {
+        "baseline_quiet": 3,
+        "baseline_busy": 3
+       },
+       "gain_vs_shipped": {
+        "mid": 0.005474986361787504,
+        "lo": 0.0020673809774426704,
+        "hi": 0.009025769291297952
+       }
+      },
+      "bracketing": {
+       "bracketed": false,
+       "unbracketed_axes": {
+        "k_offset": {
+         "side": "low",
+         "value": 0,
+         "extensions_used": 0,
+         "reason": "limit"
+        }
+       },
+       "only_at_limits": true,
+       "findings": [],
+       "adoptable_blocked": false
+      },
+      "unbracketed": true,
+      "adoptable": false
+     },
+     "budget_null_per_hour": 1.0,
+     "search_floor": "ADR-0008 per-window floor, bench per ADR-0009"
+    }
+   },
+   "coact_shipped": {
+    "int_win_sec": 2.0,
+    "context_win_sec": 60.0,
+    "alpha": 0.0001,
+    "n_surrogates": 100,
+    "min_rois": 6,
+    "merge_gap_sec": 8.0,
+    "guard_sec": 0.0,
+    "guard_norm": "compact",
+    "detection_mode": "threshold",
+    "peak_prominence": 0.0,
+    "peak_min_distance_sec": 0.0,
+    "window_mode": "sliding"
+   },
+   "coact_proposal": {
+    "name": "rounds",
+    "params": {
+     "alpha": 0.0001,
+     "int_win_sec": 2.0,
+     "context_win_sec": 20.0,
+     "merge_gap_sec": 3.0,
+     "guard_sec": 2.0,
+     "guard_norm": "compact",
+     "detection_mode": "threshold",
+     "peak_prominence": 0.0,
+     "peak_min_distance_sec": 0.0,
+     "window_mode": "sliding"
+    },
+    "search_row": {
+     "params": {
+      "alpha": 0.0001,
+      "int_win_sec": 2.0,
+      "context_win_sec": 20.0,
+      "merge_gap_sec": 3.0,
+      "guard_sec": 2.0,
+      "guard_norm": "compact",
+      "detection_mode": "threshold",
+      "peak_prominence": 0.0,
+      "peak_min_distance_sec": 0.0,
+      "window_mode": "sliding"
+     },
+     "under_floor": {
+      "baseline_quiet": {
+       "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+       "floors": {
+        "min": 8,
+        "median": 9.0,
+        "max": 11
+       },
+       "by_participation": {
+        "0.95": {
+         "scored": 240,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.619": {
+         "scored": 288,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.3467": {
+         "scored": 240,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        }
+       }
+      },
+      "baseline_busy": {
+       "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+       "floors": {
+        "min": 8,
+        "median": 10.0,
+        "max": 13
+       },
+       "by_participation": {
+        "0.95": {
+         "scored": 240,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.619": {
+         "scored": 288,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.3467": {
+         "scored": 220,
+         "under_floor": 20,
+         "calls_on_under_floor": 5
+        }
+       }
+      }
+     },
+     "f1_quiet": 0.8471372984991663,
+     "f1_busy": 0.8441926345609064,
+     "mean_f1": 0.8456649665300364,
+     "probe_quiet_per_hour": 4.25,
+     "probe_busy_per_hour": 4.25,
+     "null_per_hour": 0.16666666666666666,
+     "elevated_out_quiet_per_hour": 0.0,
+     "elevated_out_busy_per_hour": 0.0,
+     "crowded_mean_f1": null,
+     "crowded_gain_vs_shipped": null,
+     "merged_calls": {
+      "baseline_quiet": 1,
+      "baseline_busy": 1
+     },
+     "gain_vs_shipped": {
+      "mid": 0.04737193928475941,
+      "lo": 0.039313744544116375,
+      "hi": 0.05511661652569787
+     }
+    }
+   }
+  },
+  "combined": {
+   "budget_null_per_hour": 10.0,
+   "search_elapsed_min": {
+    "coact": 13.8,
+    "count_sliding": 10.3
+   },
+   "chorus": {},
+   "detectors": {
+    "coact": {
+     "shipped": {
+      "int_win_sec": 2.0,
+      "context_win_sec": 120.0,
+      "alpha": 1e-05,
+      "n_surrogates": 100,
+      "min_rois": 4,
+      "merge_gap_sec": 8.0,
+      "guard_sec": 8.0,
+      "window_mode": "sliding"
+     },
+     "proposal": {
+      "name": "rounds",
+      "params": {
+       "alpha": 1e-05,
+       "int_win_sec": 2.0,
+       "context_win_sec": 120.0,
+       "merge_gap_sec": 2.0,
+       "guard_sec": 8.0,
+       "guard_norm": "compact",
+       "detection_mode": "threshold",
+       "peak_prominence": 0.0,
+       "peak_min_distance_sec": 0.0,
+       "window_mode": "sliding"
+      },
+      "search_row": {
+       "params": {
+        "alpha": 1e-05,
+        "int_win_sec": 2.0,
+        "context_win_sec": 120.0,
+        "merge_gap_sec": 2.0,
+        "guard_sec": 8.0,
+        "guard_norm": "compact",
+        "detection_mode": "threshold",
+        "peak_prominence": 0.0,
+        "peak_min_distance_sec": 0.0,
+        "window_mode": "sliding"
+       },
+       "under_floor": {
+        "baseline_quiet": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 9,
+          "median": 10.0,
+          "max": 11
+         },
+         "by_participation": {
+          "0.95": {
+           "scored": 288,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.6316": {
+           "scored": 336,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3284": {
+           "scored": 288,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          }
+         }
+        },
+        "baseline_busy": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 10,
+          "median": 12.0,
+          "max": 13
+         },
+         "by_participation": {
+          "0.95": {
+           "scored": 288,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.6316": {
+           "scored": 336,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3284": {
+           "scored": 138,
+           "under_floor": 150,
+           "calls_on_under_floor": 103
+          }
+         }
+        }
+       },
+       "f1_quiet": 0.9717333333333333,
+       "f1_busy": 0.9768934531450578,
+       "mean_f1": 0.9743133932391956,
+       "probe_quiet_per_hour": 1.0,
+       "probe_busy_per_hour": 0.5,
+       "null_per_hour": 0.25,
+       "elevated_out_quiet_per_hour": 0.0,
+       "elevated_out_busy_per_hour": 0.0,
+       "crowded_mean_f1": null,
+       "crowded_gain_vs_shipped": null,
+       "merged_calls": {
+        "baseline_quiet": 1,
+        "baseline_busy": 1
+       },
+       "gain_vs_shipped": {
+        "mid": 0.05294290112433753,
+        "lo": 0.04538390814991058,
+        "hi": 0.06010643578285819
+       }
+      },
+      "bracketing": {
+       "bracketed": false,
+       "unbracketed_axes": {
+        "context_win_sec": {
+         "side": "high",
+         "value": 120.0,
+         "extensions_used": 0,
+         "reason": "grid_ceiling"
+        },
+        "guard_sec": {
+         "side": "high",
+         "value": 8.0,
+         "extensions_used": 0,
+         "reason": "edge"
+        }
+       },
+       "only_at_limits": false,
+       "findings": [],
+       "adoptable_blocked": false
+      },
+      "unbracketed": true,
+      "adoptable": false
+     },
+     "budget_null_per_hour": 10.0,
+     "search_floor": "ADR-0008 per-window floor, bench per ADR-0009"
+    },
+    "count_sliding": {
+     "shipped": {
+      "win_sec": 2.0,
+      "k_offset": 0,
+      "merge_gap_sec": 3.0
+     },
+     "proposal": {
+      "name": "rounds",
+      "params": {
+       "win_sec": 2.0,
+       "k_offset": 1,
+       "merge_gap_sec": 3.0
+      },
+      "search_row": {
+       "params": {
+        "win_sec": 2.0,
+        "k_offset": 1,
+        "merge_gap_sec": 3.0
+       },
+       "under_floor": {
+        "baseline_quiet": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 8,
+          "median": 9.0,
+          "max": 11
+         },
+         "by_participation": {
+          "0.95": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.6316": {
+           "scored": 288,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3284": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          }
+         }
+        },
+        "baseline_busy": {
+         "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+         "floors": {
+          "min": 9,
+          "median": 11.0,
+          "max": 13
+         },
+         "by_participation": {
+          "0.95": {
+           "scored": 240,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.6316": {
+           "scored": 288,
+           "under_floor": 0,
+           "calls_on_under_floor": 0
+          },
+          "0.3284": {
+           "scored": 185,
+           "under_floor": 55,
+           "calls_on_under_floor": 32
+          }
+         }
+        }
+       },
+       "f1_quiet": 0.9787508048937541,
+       "f1_busy": 0.9657102869139258,
+       "mean_f1": 0.97223054590384,
+       "probe_quiet_per_hour": 0.75,
+       "probe_busy_per_hour": 0.25,
+       "null_per_hour": 0.0,
+       "elevated_out_quiet_per_hour": 0.0,
+       "elevated_out_busy_per_hour": 0.0,
+       "crowded_mean_f1": null,
+       "crowded_gain_vs_shipped": null,
+       "merged_calls": {
+        "baseline_quiet": 0,
+        "baseline_busy": 0
+       },
+       "gain_vs_shipped": {
+        "mid": 0.026949122474648757,
+        "lo": 0.016702561959005477,
+        "hi": 0.036566732892855794
+       }
+      },
+      "bracketing": {
+       "bracketed": true,
+       "unbracketed_axes": {},
+       "only_at_limits": false,
+       "findings": [],
+       "adoptable_blocked": false
+      },
+      "unbracketed": false,
+      "adoptable": true
+     },
+     "budget_null_per_hour": 1.0,
+     "search_floor": "ADR-0008 per-window floor, bench per ADR-0009"
+    }
+   },
+   "coact_shipped": {
+    "int_win_sec": 2.0,
+    "context_win_sec": 120.0,
+    "alpha": 1e-05,
+    "n_surrogates": 100,
+    "min_rois": 4,
+    "merge_gap_sec": 8.0,
+    "guard_sec": 8.0,
+    "window_mode": "sliding"
+   },
+   "coact_proposal": {
+    "name": "rounds",
+    "params": {
+     "alpha": 1e-05,
+     "int_win_sec": 2.0,
+     "context_win_sec": 120.0,
+     "merge_gap_sec": 2.0,
+     "guard_sec": 8.0,
+     "guard_norm": "compact",
+     "detection_mode": "threshold",
+     "peak_prominence": 0.0,
+     "peak_min_distance_sec": 0.0,
+     "window_mode": "sliding"
+    },
+    "search_row": {
+     "params": {
+      "alpha": 1e-05,
+      "int_win_sec": 2.0,
+      "context_win_sec": 120.0,
+      "merge_gap_sec": 2.0,
+      "guard_sec": 8.0,
+      "guard_norm": "compact",
+      "detection_mode": "threshold",
+      "peak_prominence": 0.0,
+      "peak_min_distance_sec": 0.0,
+      "window_mode": "sliding"
+     },
+     "under_floor": {
+      "baseline_quiet": {
+       "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+       "floors": {
+        "min": 9,
+        "median": 10.0,
+        "max": 11
+       },
+       "by_participation": {
+        "0.95": {
+         "scored": 288,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.6316": {
+         "scored": 336,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.3284": {
+         "scored": 288,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        }
+       }
+      },
+      "baseline_busy": {
+       "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+       "floors": {
+        "min": 10,
+        "median": 12.0,
+        "max": 13
+       },
+       "by_participation": {
+        "0.95": {
+         "scored": 288,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.6316": {
+         "scored": 336,
+         "under_floor": 0,
+         "calls_on_under_floor": 0
+        },
+        "0.3284": {
+         "scored": 138,
+         "under_floor": 150,
+         "calls_on_under_floor": 103
+        }
+       }
+      }
+     },
+     "f1_quiet": 0.9717333333333333,
+     "f1_busy": 0.9768934531450578,
+     "mean_f1": 0.9743133932391956,
+     "probe_quiet_per_hour": 1.0,
+     "probe_busy_per_hour": 0.5,
+     "null_per_hour": 0.25,
+     "elevated_out_quiet_per_hour": 0.0,
+     "elevated_out_busy_per_hour": 0.0,
+     "crowded_mean_f1": null,
+     "crowded_gain_vs_shipped": null,
+     "merged_calls": {
+      "baseline_quiet": 1,
+      "baseline_busy": 1
+     },
+     "gain_vs_shipped": {
+      "mid": 0.05294290112433753,
+      "lo": 0.04538390814991058,
+      "hi": 0.06010643578285819
+     }
+    }
+   }
+  }
+ },
+ "results": {
+  "fast": {
+   "coact:shipped": {
+    "baseline_quiet": {
+     "f1": 0.6743801652892562,
+     "f1_without_decoys": 0.9927007299270074,
+     "recall": 0.9855072463768116,
+     "precision": 0.5125628140703518,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 194,
+     "n_planted": 207,
+     "n_hit": 204,
+     "merged_calls": 0,
+     "n_detected": 398,
+     "probe_calls_per_min": 0.016666666666666666,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.1516": 0.8,
+      "0.3077": 1.0,
+      "0.4547": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 5,
+       "median": 6.0,
+       "max": 7
+      },
+      "by_participation": {
+       "0.4547": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3077": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.1516": {
+        "scored": 15,
+        "under_floor": 33,
+        "calls_on_under_floor": 2
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.7580645161290323,
+     "f1_without_decoys": 0.9894736842105264,
+     "recall": 0.9791666666666666,
+     "precision": 0.618421052631579,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 116,
+     "n_planted": 192,
+     "n_hit": 188,
+     "merged_calls": 0,
+     "n_detected": 304,
+     "probe_calls_per_min": 0.0,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3077": 0.9583333333333334,
+      "0.4547": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 6,
+       "median": 7.0,
+       "max": 8
+      },
+      "by_participation": {
+       "0.4547": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3077": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.1516": {
+        "scored": 0,
+        "under_floor": 48,
+        "calls_on_under_floor": 6
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.16666666666666666,
+    "mean_f1": 0.7162223407091441,
+    "mean_f1_without_decoys": 0.9910872070687669,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n_seeds": 48,
+      "n_dropped": 0
+     }
+    }
+   },
+   "count_sliding:shipped": {
+    "baseline_quiet": {
+     "f1": 0.6124260355029586,
+     "f1_without_decoys": 0.9975903614457832,
+     "recall": 1.0,
+     "precision": 0.44136460554371004,
+     "precision_without_decoys": 0.9951923076923077,
+     "decoy_calls": 261,
+     "n_planted": 207,
+     "n_hit": 207,
+     "merged_calls": 0,
+     "n_detected": 469,
+     "probe_calls_per_min": 0.06666666666666667,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.1516": 1.0,
+      "0.3077": 1.0,
+      "0.4547": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 5,
+       "median": 6.0,
+       "max": 7
+      },
+      "by_participation": {
+       "0.4547": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3077": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.1516": {
+        "scored": 15,
+        "under_floor": 33,
+        "calls_on_under_floor": 7
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.6620689655172414,
+     "f1_without_decoys": 0.9948186528497409,
+     "recall": 1.0,
+     "precision": 0.4948453608247423,
+     "precision_without_decoys": 0.9896907216494846,
+     "decoy_calls": 194,
+     "n_planted": 192,
+     "n_hit": 192,
+     "merged_calls": 0,
+     "n_detected": 388,
+     "probe_calls_per_min": 0.05,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3077": 1.0,
+      "0.4547": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 6,
+       "median": 7.0,
+       "max": 8
+      },
+      "by_participation": {
+       "0.4547": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3077": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.1516": {
+        "scored": 0,
+        "under_floor": 48,
+        "calls_on_under_floor": 15
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.5555555555555556,
+    "mean_f1": 0.6372475005100999,
+    "mean_f1_without_decoys": 0.9962045071477621,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": -0.08122794569438037,
+      "lo": -0.0968374408879417,
+      "hi": -0.06569299369935157,
+      "n_seeds": 48,
+      "n_dropped": 0
+     }
+    }
+   },
+   "count_sliding:proposal": {
+    "baseline_quiet": {
+     "f1": 0.9458128078817735,
+     "f1_without_decoys": 0.9624060150375939,
+     "recall": 0.927536231884058,
+     "precision": 0.964824120603015,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 7,
+     "n_planted": 207,
+     "n_hit": 192,
+     "merged_calls": 0,
+     "n_detected": 199,
+     "probe_calls_per_min": 0.0,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.1516": 0.0,
+      "0.3077": 1.0,
+      "0.4547": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 5,
+       "median": 6.0,
+       "max": 7
+      },
+      "by_participation": {
+       "0.4547": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3077": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.1516": {
+        "scored": 15,
+        "under_floor": 33,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.9714285714285714,
+     "f1_without_decoys": 0.9868073878627968,
+     "recall": 0.9739583333333334,
+     "precision": 0.9689119170984456,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 6,
+     "n_planted": 192,
+     "n_hit": 187,
+     "merged_calls": 0,
+     "n_detected": 193,
+     "probe_calls_per_min": 0.0,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3077": 0.9479166666666666,
+      "0.4547": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 6,
+       "median": 7.0,
+       "max": 8
+      },
+      "by_participation": {
+       "0.4547": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3077": {
+        "scored": 96,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.1516": {
+        "scored": 0,
+        "under_floor": 48,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.0,
+    "mean_f1": 0.9586206896551724,
+    "mean_f1_without_decoys": 0.9746067014501953,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": 0.2398083725441462,
+      "lo": 0.2193503849462508,
+      "hi": 0.2594624879891045,
+      "n_seeds": 48,
+      "n_dropped": 0
+     }
+    }
+   }
+  },
+  "slow": {
+   "coact:shipped": {
+    "baseline_quiet": {
+     "f1": 0.8483412322274881,
+     "f1_without_decoys": 0.9972144846796658,
+     "recall": 0.9944444444444445,
+     "precision": 0.7396694214876033,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 126,
+     "n_planted": 360,
+     "n_hit": 358,
+     "merged_calls": 2,
+     "n_detected": 484,
+     "probe_calls_per_min": 0.06666666666666667,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3467": 0.9916666666666667,
+      "0.619": 1.0,
+      "0.95": 0.9916666666666667
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 8,
+       "median": 9.0,
+       "max": 10
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.619": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3467": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.851063829787234,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.7407407407407407,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 126,
+     "n_planted": 360,
+     "n_hit": 360,
+     "merged_calls": 0,
+     "n_detected": 486,
+     "probe_calls_per_min": 0.03333333333333333,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3467": 1.0,
+      "0.619": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 9,
+       "median": 9.0,
+       "max": 11
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.619": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3467": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.1111111111111111,
+    "mean_f1": 0.8497025310073612,
+    "mean_f1_without_decoys": 0.9986072423398329,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n_seeds": 24,
+      "n_dropped": 0
+     },
+     "proposal": {
+      "mid": 0.006250410962507076,
+      "lo": 0.0026539245775877365,
+      "hi": 0.00996867286412423,
+      "n_seeds": 24,
+      "n_dropped": 0
+     }
+    }
+   },
+   "coact:proposal": {
+    "baseline_quiet": {
+     "f1": 0.8421052631578948,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.7272727272727273,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 135,
+     "n_planted": 360,
+     "n_hit": 360,
+     "merged_calls": 0,
+     "n_detected": 495,
+     "probe_calls_per_min": 0.06666666666666667,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3467": 1.0,
+      "0.619": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 8,
+       "median": 9.0,
+       "max": 10
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.619": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3467": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.8450704225352113,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.7317073170731707,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 132,
+     "n_planted": 360,
+     "n_hit": 360,
+     "merged_calls": 0,
+     "n_detected": 492,
+     "probe_calls_per_min": 0.03333333333333333,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3467": 1.0,
+      "0.619": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 9,
+       "median": 9.0,
+       "max": 11
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.619": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3467": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.1111111111111111,
+    "mean_f1": 0.8435878428465531,
+    "mean_f1_without_decoys": 1.0,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": -0.006250410962507076,
+      "lo": -0.009968672864124232,
+      "hi": -0.0026539245775877426,
+      "n_seeds": 24,
+      "n_dropped": 0
+     },
+     "proposal": {
+      "mid": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n_seeds": 24,
+      "n_dropped": 0
+     }
+    }
+   },
+   "count_sliding:shipped": {
+    "baseline_quiet": {
+     "f1": 0.8421052631578948,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.7272727272727273,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 135,
+     "n_planted": 360,
+     "n_hit": 360,
+     "merged_calls": 0,
+     "n_detected": 495,
+     "probe_calls_per_min": 0.06666666666666667,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3467": 1.0,
+      "0.619": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 8,
+       "median": 9.0,
+       "max": 10
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.619": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3467": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.8450704225352113,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.7317073170731707,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 132,
+     "n_planted": 360,
+     "n_hit": 360,
+     "merged_calls": 0,
+     "n_detected": 492,
+     "probe_calls_per_min": 0.03333333333333333,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3467": 1.0,
+      "0.619": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 9,
+       "median": 9.0,
+       "max": 11
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.619": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3467": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.1111111111111111,
+    "mean_f1": 0.8435878428465531,
+    "mean_f1_without_decoys": 1.0,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": -0.006250410962507076,
+      "lo": -0.009968672864124232,
+      "hi": -0.0026539245775877426,
+      "n_seeds": 24,
+      "n_dropped": 0
+     },
+     "proposal": {
+      "mid": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n_seeds": 24,
+      "n_dropped": 0
+     }
+    }
+   },
+   "count_sliding:proposal": {
+    "baseline_quiet": {
+     "f1": 0.8483412322274881,
+     "f1_without_decoys": 0.9972144846796658,
+     "recall": 0.9944444444444445,
+     "precision": 0.7396694214876033,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 126,
+     "n_planted": 360,
+     "n_hit": 358,
+     "merged_calls": 2,
+     "n_detected": 484,
+     "probe_calls_per_min": 0.06666666666666667,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3467": 0.9916666666666667,
+      "0.619": 1.0,
+      "0.95": 0.9916666666666667
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 8,
+       "median": 9.0,
+       "max": 10
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.619": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3467": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.851063829787234,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.7407407407407407,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 126,
+     "n_planted": 360,
+     "n_hit": 360,
+     "merged_calls": 0,
+     "n_detected": 486,
+     "probe_calls_per_min": 0.03333333333333333,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3467": 1.0,
+      "0.619": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 9,
+       "median": 9.0,
+       "max": 11
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.619": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3467": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.1111111111111111,
+    "mean_f1": 0.8497025310073612,
+    "mean_f1_without_decoys": 0.9986072423398329,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n_seeds": 24,
+      "n_dropped": 0
+     },
+     "proposal": {
+      "mid": 0.006250410962507076,
+      "lo": 0.0026539245775877365,
+      "hi": 0.00996867286412423,
+      "n_seeds": 24,
+      "n_dropped": 0
+     }
+    }
+   }
+  },
+  "combined": {
+   "coact:shipped": {
+    "baseline_quiet": {
+     "f1": 0.945,
+     "f1_without_decoys": 0.9921259842519685,
+     "recall": 0.984375,
+     "precision": 0.9086538461538461,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 38,
+     "n_planted": 384,
+     "n_hit": 378,
+     "merged_calls": 6,
+     "n_detected": 416,
+     "probe_calls_per_min": 0.016666666666666666,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3284": 1.0,
+      "0.6316": 0.9930555555555556,
+      "0.95": 0.9583333333333334
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 8,
+       "median": 9.0,
+       "max": 11
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.6316": {
+        "scored": 144,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3284": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.9391979301423027,
+     "f1_without_decoys": 0.9918032786885246,
+     "recall": 0.983739837398374,
+     "precision": 0.8985148514851485,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 41,
+     "n_planted": 369,
+     "n_hit": 363,
+     "merged_calls": 6,
+     "n_detected": 404,
+     "probe_calls_per_min": 0.03333333333333333,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3284": 0.9809523809523809,
+      "0.6316": 0.9861111111111112,
+      "0.95": 0.9833333333333333
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 9,
+       "median": 10.5,
+       "max": 12
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.6316": {
+        "scored": 144,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3284": {
+        "scored": 105,
+        "under_floor": 15,
+        "calls_on_under_floor": 12
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.2222222222222222,
+    "mean_f1": 0.9420989650711513,
+    "mean_f1_without_decoys": 0.9919646314702466,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n_seeds": 24,
+      "n_dropped": 0
+     },
+     "proposal": {
+      "mid": -0.005878070804693015,
+      "lo": -0.009522889146037885,
+      "hi": -0.002025911808315004,
+      "n_seeds": 24,
+      "n_dropped": 0
+     }
+    }
+   },
+   "coact:proposal": {
+    "baseline_quiet": {
+     "f1": 0.9504950495049505,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.9056603773584906,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 40,
+     "n_planted": 384,
+     "n_hit": 384,
+     "merged_calls": 0,
+     "n_detected": 424,
+     "probe_calls_per_min": 0.016666666666666666,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3284": 1.0,
+      "0.6316": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 8,
+       "median": 9.0,
+       "max": 11
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.6316": {
+        "scored": 144,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3284": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.9449423815621,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.8956310679611651,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 43,
+     "n_planted": 369,
+     "n_hit": 369,
+     "merged_calls": 0,
+     "n_detected": 412,
+     "probe_calls_per_min": 0.03333333333333333,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3284": 1.0,
+      "0.6316": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 9,
+       "median": 10.5,
+       "max": 12
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.6316": {
+        "scored": 144,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3284": {
+        "scored": 105,
+        "under_floor": 15,
+        "calls_on_under_floor": 12
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.2222222222222222,
+    "mean_f1": 0.9477187155335252,
+    "mean_f1_without_decoys": 1.0,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": 0.005878070804693015,
+      "lo": 0.0020259118083150035,
+      "hi": 0.009522889146037883,
+      "n_seeds": 24,
+      "n_dropped": 0
+     },
+     "proposal": {
+      "mid": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n_seeds": 24,
+      "n_dropped": 0
+     }
+    }
+   },
+   "count_sliding:shipped": {
+    "baseline_quiet": {
+     "f1": 0.9504950495049505,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.9056603773584906,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 40,
+     "n_planted": 384,
+     "n_hit": 384,
+     "merged_calls": 0,
+     "n_detected": 424,
+     "probe_calls_per_min": 0.05,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3284": 1.0,
+      "0.6316": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 8,
+       "median": 9.0,
+       "max": 11
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.6316": {
+        "scored": 144,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3284": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.9449423815621,
+     "f1_without_decoys": 1.0,
+     "recall": 1.0,
+     "precision": 0.8956310679611651,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 43,
+     "n_planted": 369,
+     "n_hit": 369,
+     "merged_calls": 0,
+     "n_detected": 412,
+     "probe_calls_per_min": 0.11666666666666667,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3284": 1.0,
+      "0.6316": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 9,
+       "median": 10.5,
+       "max": 12
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.6316": {
+        "scored": 144,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3284": {
+        "scored": 105,
+        "under_floor": 15,
+        "calls_on_under_floor": 12
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.2222222222222222,
+    "mean_f1": 0.9477187155335252,
+    "mean_f1_without_decoys": 1.0,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": 0.005878070804693015,
+      "lo": 0.0020259118083150035,
+      "hi": 0.009522889146037883,
+      "n_seeds": 24,
+      "n_dropped": 0
+     },
+     "proposal": {
+      "mid": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n_seeds": 24,
+      "n_dropped": 0
+     }
+    }
+   },
+   "count_sliding:proposal": {
+    "baseline_quiet": {
+     "f1": 0.9794871794871794,
+     "f1_without_decoys": 0.9973890339425587,
+     "recall": 0.9947916666666666,
+     "precision": 0.9646464646464646,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 14,
+     "n_planted": 384,
+     "n_hit": 382,
+     "merged_calls": 0,
+     "n_detected": 396,
+     "probe_calls_per_min": 0.0,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3284": 0.9833333333333333,
+      "0.6316": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 8,
+       "median": 9.0,
+       "max": 11
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.6316": {
+        "scored": 144,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3284": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       }
+      }
+     }
+    },
+    "baseline_busy": {
+     "f1": 0.967828418230563,
+     "f1_without_decoys": 0.989041095890411,
+     "recall": 0.978319783197832,
+     "precision": 0.9575596816976127,
+     "precision_without_decoys": 1.0,
+     "decoy_calls": 16,
+     "n_planted": 369,
+     "n_hit": 361,
+     "merged_calls": 0,
+     "n_detected": 377,
+     "probe_calls_per_min": 0.016666666666666666,
+     "elevated_calls_per_hour_outside": 0.0,
+     "recall_by_participation": {
+      "0.3284": 0.9238095238095239,
+      "0.6316": 1.0,
+      "0.95": 1.0
+     },
+     "under_floor": {
+      "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+      "floors": {
+       "min": 9,
+       "median": 10.5,
+       "max": 12
+      },
+      "by_participation": {
+       "0.95": {
+        "scored": 120,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.6316": {
+        "scored": 144,
+        "under_floor": 0,
+        "calls_on_under_floor": 0
+       },
+       "0.3284": {
+        "scored": 105,
+        "under_floor": 15,
+        "calls_on_under_floor": 9
+       }
+      }
+     }
+    },
+    "null_calls_per_hour": 0.0,
+    "mean_f1": 0.9736577988588713,
+    "mean_f1_without_decoys": 0.9932150649164848,
+    "recordings_with_one_call": 0,
+    "collapsed": false,
+    "paired_f1_vs_coact": {
+     "shipped": {
+      "mid": 0.031006156398414034,
+      "lo": 0.020098830619999012,
+      "hi": 0.04057030561387356,
+      "n_seeds": 24,
+      "n_dropped": 0
+     },
+     "proposal": {
+      "mid": 0.02512808559372102,
+      "lo": 0.014730013591724272,
+      "hi": 0.03397985065405164,
+      "n_seeds": 24,
+      "n_dropped": 0
+     }
+    }
+   }
+  }
+ },
+ "floor": "ADR-0008 per-window floor, bench per ADR-0009",
+ "floor_at_window": null,
+ "note": "coded detectors run at each recording's ADR-0008 floor (min_rois, and SPIKE-synch's min_n); planted events under it are don't-care in every score (ADR-0009 decision 2), counted in under_floor. chorus has no participation parameter and is scored under the same rule."
+}

@@ -1,0 +1,17 @@
+{
+ "dataset": {
+  "role": "senktide_ttx",
+  "name": "2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED",
+  "recordings": 66,
+  "use": "input"
+ },
+ "run": "2026-09-28-one-function-bench",
+ "adr": "ADR-0012 (Proposed)",
+ "finished_utc": "2026-09-28T13:09:06Z",
+ "commit": "6392d70c",
+ "headline": "The bench's three real-data inputs now come from one function, count (sliding), at one setting fixed in advance and shared by every stream (2 s window, each window's own floor, k 0, merge 3 s). Against the bench as it stood: fast 9.7 \u2192 9.1 events per hour, participation 0.20 \u2192 0.31, jitter 0.105 \u2192 0.332 s; slow 22.0 \u2192 21.9 events per hour, participation 0.38 \u2192 0.62, jitter 0.131 \u2192 0.320 s; combined 25.3 \u2192 24.7 events per hour, participation 0.25 \u2192 0.63, jitter 0.150 \u2192 0.364 s. Retuned on the rebuilt benches, fresh-seed F1: fast count (sliding) 0.970 against CoactDetect retuned 0.764 and shipped 0.764; slow count (sliding) 0.847 against CoactDetect retuned 0.847 and shipped 0.799; combined count (sliding) 0.969 against CoactDetect retuned 0.968 and shipped 0.922. On fast the gap is a budget, not a detector: CoactDetect's search found 5 settings that score better and every one breaks the precision-swing limit of 0.10 (0.101 to 0.218), so it stays at its shipped setting, whose swing is itself 0.138 on the fresh seeds; count (sliding) gets to its setting with a swing near zero. With CoactDetect shipped building the spacing instead: fast F1 0.970 \u2192 0.959 at the same setting, 0.959 retuned (the same setting); slow F1 0.847 \u2192 0.844 at the same setting, 0.850 retuned (a different setting); combined F1 0.969 \u2192 0.948 at the same setting, 0.974 retuned (a different setting).",
+ "files": {
+  "report": "report.json",
+  "readme": "README.md"
+ }
+}

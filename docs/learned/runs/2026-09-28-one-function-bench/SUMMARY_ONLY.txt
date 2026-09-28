@@ -1,0 +1,1 @@
+Summaries only (FOUNDATIONS §5): no per-call or per-window rows, no recording ids. The full run, with calls.csv and windows.csv, is in the darkroom folder 2026-09-28-one-function-bench/. Point BUGARACH_BENCH_INPUTS at inputs-count_sliding/ to build the bench from a clone.
