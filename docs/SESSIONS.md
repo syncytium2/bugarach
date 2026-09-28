@@ -50,6 +50,19 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   carries the summary.
 - **Touches:** that folder only.
 
+### WSMIP065/one-function-bench — DARKROOM claim: `bugarach/2026-09-28-one-function-bench/` (NEW)
+- **Status:** claimed 2026-09-28 ~8:30 AM EDT by WSMIP065 on the orchestrator's brief, approved by
+  Tony that morning. count (sliding) at its untuned defaults extracts every bench input from the
+  real baseline windows (spacing, participation, timing spread), the three benches are rebuilt from
+  them, count (sliding) and CoactDetect are retuned and scored there, and the spacing is rebuilt
+  with CoactDetect shipped as the extractor for the sensitivity check. ADR-0012 (Proposed).
+  Released by the merge of the PR that carries the ADR and the tools.
+- **Touches:** that folder only (extraction, benches' inputs, searches, scoring, README, figures);
+  in git: `src/bugarach/bench.py` (an inputs-folder switch, default unchanged), NEW
+  `tools/extract_bench_inputs.py`, NEW `docs/adr/0012-*.md`, `docs/adr/README.md`,
+  `docs/goals/coded-detector-optimization.md`, `docs/INDEX.md`, tests, and the archived run under
+  `docs/learned/runs/`.
+
 ### WSMIP065/simple-vs-coact-real — DARKROOM claim: `bugarach/2026-09-27-simple-vs-coact-real/` (NEW)
 - **Status:** claimed 2026-09-27 ~8:00 AM EDT by WSMIP065 on the orchestrator's brief (Tony's
   question: does the simple count rule tie CoactDetect only because the bench was built in its
