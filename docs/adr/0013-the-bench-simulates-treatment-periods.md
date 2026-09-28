@@ -57,17 +57,31 @@ not a property of coordination.
    (`bg_rate_shape`), unevenness over time (`bg_burst_shape`), and one raised stretch with a ramp
    (`hot_window`, `ramp_sec`). A measured rate course over time is new: an extension to
    `simulate.py`, not a new generator.
-3. **Coordination comes from baseline, and intervals are swept, not assumed unchanged.**
-   Participation and jitter are the baseline measurements, planted through all three segments,
-   surge included. Intervals are baseline's measured distribution **scaled across a range**:
-   1×, 0.5× and 0.25× in the treatment segment. Tony, 2026-09-28: *"we know intervals decrease in
-   senktide"*. Planting baseline intervals unchanged would therefore test the wrong regime, the one
-   where close coordinated events are rare and merging costs nothing.
+3. **Coordination is centred on baseline and swept, never assumed unchanged.** Senktide and TTX
+   may change any property of coordinated events. Tony, 2026-09-28: *"we know intervals decrease
+   in senktide"*, and *"both senktide and ttx could alter these coordinated event properties"*.
+   So in the treatment segment each property is planted at baseline's measured value **and** at
+   levels around it:
 
-   The scale is a **difficulty axis, not a measurement**. No interval is taken from a treatment
-   window, so FOUNDATIONS §9's reason holds. The detector has to work wherever on that axis the
-   truth lies, and the shortest scale must reach below the shortest real treatment intervals
-   (open point 6).
+   | Property | Levels in the treatment segment (multiples of baseline, dimensionless) |
+   |---|---|
+   | Intervals | 1×, 0.5×, 0.25× |
+   | Participation (share of ROIs) | 0.5×, 1×, 1.5× |
+   | Jitter (onset spread, s) | 1×, 2×, 4× |
+
+   Each property is swept with the other two held at 1×, plus the two hardest corners: short
+   intervals with low participation, and short intervals with wide jitter. That makes 9 conditions
+   per treatment, group and stream, not 27. Planting baseline values alone would test the easiest
+   regime, where close coordinated events are rare and merging costs nothing.
+
+   The levels are **difficulty axes, not measurements**. No property is taken from a treatment
+   window, so FOUNDATIONS §9's reason holds, and the detector has to work wherever on each axis
+   the truth lies. The range is set by what the detector must survive (open point 6).
+
+   **Whether the treatments really change participation, jitter or intervals is an analysis
+   result, not a bench input.** It is measured on the real recordings with the detector this bench
+   validates, compared per group between baseline and treatment, and only read where the bench
+   shows the detector recovers that property at that level.
 4. **Every treatment recording has a null twin**: the same background with nothing planted, where
    every call is a false alarm.
 5. **Scores are reported by segment and by group, never pooled into one number:**
@@ -122,10 +136,18 @@ not a property of coordination.
 5. **High K⁺.** The last period of some recordings (e.g. 20250912_225) has its own surge.
    Proposed default: out of scope for now, since it is a positive control, not a treatment the
    analysis compares.
-6. **How short the interval axis goes.** Proposed default: 1×, 0.5× and 0.25× baseline's
-   distribution (fast median 41 s becomes 21 s and 10 s). If Tony's knowledge of senktide says
-   intervals fall further, the axis extends to cover it. Its range is set by what the detector
-   must survive, not fitted to treatment windows.
+6. **How far each axis goes.** Proposed defaults, as multiples of baseline:
+   - intervals 1× to 0.25× (fast median 41 s becomes 21 s and 10 s);
+   - participation 0.5× to 1.5× (fast 0.20 of ROIs becomes 0.10 and 0.30);
+   - jitter 1× to 4× (fast 0.105 s becomes 0.21 s and 0.42 s).
+
+   If Tony's knowledge of either treatment says a property moves further, that axis extends to
+   cover it. The range is set by what the detector must survive, not fitted to treatment windows.
+7. **The recovery bench for the analysis.** Beyond detection, the bench should report how well
+   each property is recovered from the calls: the participation and jitter measured on called
+   events against what was planted, at each level. Without that, a real baseline-vs-treatment
+   difference in participation or jitter cannot be told apart from a measurement that shifts
+   with the background rate. Proposed: yes, in the same run.
 
 ## References
 
