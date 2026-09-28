@@ -226,9 +226,26 @@ def count_sliding_detect(
         else:
             calls.extend(_split_at_dips(S, idx, K, split_dip))
     n = len(calls)
+    lo = np.array([starts[idx[0]] - w for idx in calls])
+    hi = np.array([ends[idx[-1]] for idx in calls])
+    # NO ONSET BELONGS TO TWO CALLS. A call reaches back one window for the onsets that
+    # raised its count, and when two calls sit closer than that (a split, or a merge gap
+    # under win_sec) the later one's reach-back ran into the earlier one's events: on the DI
+    # combined senktide page (20260130_270 near 10 min, Tony 2026-09-28) the two bars
+    # overlapped although the two coordinated events were distinct. Where that happens, both
+    # calls stop at the lowest point of the count between them; nowhere else does anything move.
+    for j in range(1, n):
+        if lo[j] < hi[j - 1]:
+            gap = np.arange(calls[j - 1][-1] + 1, calls[j][0])
+            if gap.size:
+                b = starts[gap[np.flatnonzero(S[gap] == S[gap].min())[-1]]]
+            else:
+                b = starts[calls[j][0]]
+            hi[j - 1] = min(hi[j - 1], b)
+            lo[j] = max(lo[j], b)
     onset, width, nrois = np.zeros(n), np.zeros(n), np.zeros(n)
     for j, idx in enumerate(calls):
-        tfirst, tlast, _ = sl.span_of(ev, starts[idx[0]] - w, ends[idx[-1]])
+        tfirst, tlast, _ = sl.span_of(ev, lo[j], hi[j])
         onset[j], width[j] = tfirst, tlast - tfirst
         nrois[j] = S[idx].max()
     opts = dict(win_sec=win_sec, min_rois=min_rois, k_offset=k_offset,
