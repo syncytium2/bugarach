@@ -10,6 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP064/detector-table — DARKROOM claim: `bugarach/2026-09-28-detector-table/` (NEW)
+- **Status:** claimed 2026-09-28 by WSMIP064 on Tony's brief: one table of every detector (nine
+  coded, eight learned) with fresh-seed F1 on fast, slow and combined, shipped and retuned or
+  trained, read from the full-panel night's records; a second table from the one-function bench,
+  labelled a candidate bench, not adopted. Read only, no compute; working material, not
+  murderboarded. Released by the merge of the PR that carries this block.
+- **Touches:** that folder only (`README.md`).
+
 ### WSMIP064/floor-at-window — DARKROOM claim: `bugarach/2026-09-27-floor-at-window/` (NEW)
 - **Status:** claimed 2026-09-27 ~1:20 PM EDT by WSMIP064 on the orchestrator's brief (Tony leans
   toward count (sliding) as the one primary detector; its threshold is the ADR-0008 floor, measured
