@@ -39,6 +39,17 @@ recordings and re-scored on a set the search never saw.
 
 ## Where it stands
 
+**2026-09-28: one function builds the bench and is the detector** (ADR-0012, Proposed;
+[run record](../learned/runs/2026-09-28-one-function-bench/README.md)). The realistic bench's three
+inputs (spacing, participation and timing spread) are now extracted by count (sliding) at its untuned
+defaults, the same on every stream, so the circularity is said openly rather than found. count
+(sliding) and CoactDetect were retuned on the rebuilt benches and scored on fresh seeds:
+- **Slow and combined:** the two score the same (0.847 against 0.847, and 0.969 against 0.968).
+- **Fast:** count (sliding) leads, 0.970 against 0.764, because every CoactDetect setting that
+  scored better broke the precision-swing limit of 0.10. That limit was set on the old bench.
+- **Sensitivity:** building the spacing with CoactDetect shipped instead moved count (sliding)'s F1
+  by at most 0.021 at its chosen setting.
+
 **2026-09-25, morning: the final-parameters night ran, under ADR-0008's floor and ADR-0009's bench**
 ([report](../learned/runs/2026-09-25-final-parameters/README.md)). Every detector was searched on all
 three benches, and chorus was retrained, with each recording's own floor setting the participation
@@ -169,6 +180,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 
 | decision | why it gates the goal | filed |
 |---|---|---|
+| **ADR-0012, and the precision-swing limit on its bench** (2026-09-28): accept the one-function bench as the default, and decide whether the precision-swing limit of 0.10, set on the old bench, holds on the new one, where it alone keeps CoactDetect at its shipped setting on fast | It decides which bench every later search runs on, and whether fast's 0.21 F1 gap is a detector difference or a budget | [ADR-0012](../adr/0012-the-benchs-inputs-are-extracted-by-the-detector-at-its-untuned-defaults.md), [run record](../learned/runs/2026-09-28-one-function-bench/README.md) |
 | **The final-parameters night's decisions** (2026-09-25): adopt the four strictly adoptable proposals, one of which changes what SPIKE-synch measures; one setting per stream when another stream's version sometimes scores higher; four shipped points out of budget on the new bench; all of the lowest planted level, and on busy recordings part of the middle one, under the floor on fast and combined; whether a value at a hard limit counts as bracketed; slow binned SCE at the close-events allowance; CoactDetect's `alpha` at the extension cap; contexts shorter than 20 s and LoCo's threshold under the floor; the guard cap | They decide which of the night's proposals can be adopted, and whether the budgets and the bench still say what they were set to say | [report, Decisions 1–9](../learned/runs/2026-09-25-final-parameters/README.md) |
 | **Binned SCE at 98 or at 75** — 98 gives mean F1 0.525 at 3.4 calls an hour on an empty recording; 75 gives 0.665 at 41.8, against a declared limit of 6. The F1 optimum is excluded by the budget, not by noise | Decides whether the budget or the score is the binding constraint, for every detector and not only this one | [todo](../todo/2026-09-16-binned-sce-trades-false-alarms-for-f1.md) |
 | **How the promiscuity probe enters the score** — two live rules pick opposite winners for the rate detector | [`MILESTONES.md`](../MILESTONES.md) lists it as blocking the re-fit; waiting since 2026-08-25 | [todo](../todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md) |

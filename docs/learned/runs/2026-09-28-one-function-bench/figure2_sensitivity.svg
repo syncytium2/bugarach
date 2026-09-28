@@ -1,0 +1,33 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1080' height='388' viewBox='0 0 1080 388' font-family='system-ui, sans-serif' font-size='14' role='img' aria-label='Figure 2, the sensitivity check'>
+<style>.t{fill:var(--fg,#222)} .m{fill:var(--muted,#666)} .ax{stroke:var(--line,#ccc)} .old{stroke:#888;fill:none} .new{stroke:#0072B2;fill:none} .sen{stroke:#D55E00;fill:none} .dot-old{fill:#888} .dot-new{fill:#0072B2} .dot-sen{fill:#D55E00}</style>
+<line class='ax' x1='380.0' x2='380.0' y1='40' y2='338' stroke-width='0.6'/><text class='m' x='380.0' y='356' text-anchor='middle'>0.75</text>
+<line class='ax' x1='514.0' x2='514.0' y1='40' y2='338' stroke-width='0.6'/><text class='m' x='514.0' y='356' text-anchor='middle'>0.80</text>
+<line class='ax' x1='648.0' x2='648.0' y1='40' y2='338' stroke-width='0.6'/><text class='m' x='648.0' y='356' text-anchor='middle'>0.85</text>
+<line class='ax' x1='782.0' x2='782.0' y1='40' y2='338' stroke-width='0.6'/><text class='m' x='782.0' y='356' text-anchor='middle'>0.90</text>
+<line class='ax' x1='916.0' x2='916.0' y1='40' y2='338' stroke-width='0.6'/><text class='m' x='916.0' y='356' text-anchor='middle'>0.95</text>
+<line class='ax' x1='1050.0' x2='1050.0' y1='40' y2='338' stroke-width='0.6'/><text class='m' x='1050.0' y='356' text-anchor='middle'>1.00</text>
+<text class='t' x='368' y='55' text-anchor='end'>fast · count (sliding), chosen here</text>
+<circle class='dot-new' cx='969.7' cy='50' r='6'/><text class='m' x='979.7' y='55'>0.970</text>
+<text class='t' x='368' y='79' text-anchor='end'>fast · same setting, CoactDetect-spaced bench</text>
+<circle class='dot-sen' cx='939.1' cy='74' r='6'/><text class='m' x='949.1' y='79'>0.959</text>
+<text class='t' x='368' y='103' text-anchor='end'>fast · retuned on CoactDetect-spaced bench</text>
+<circle class='dot-sen' cx='939.1' cy='98' r='6'/><text class='m' x='949.1' y='103'>0.959</text>
+<text class='t' x='368' y='127' text-anchor='end'>fast · CoactDetect shipped, this bench</text>
+<circle class='dot-old' cx='417.9' cy='122' r='6'/><text class='m' x='427.9' y='127'>0.764</text>
+<text class='t' x='368' y='151' text-anchor='end'>slow · count (sliding), chosen here</text>
+<circle class='dot-new' cx='638.7' cy='146' r='6'/><text class='m' x='648.7' y='151'>0.847</text>
+<text class='t' x='368' y='175' text-anchor='end'>slow · same setting, CoactDetect-spaced bench</text>
+<circle class='dot-sen' cx='630.8' cy='170' r='6'/><text class='m' x='640.8' y='175'>0.844</text>
+<text class='t' x='368' y='199' text-anchor='end'>slow · retuned on CoactDetect-spaced bench</text>
+<circle class='dot-sen' cx='647.2' cy='194' r='6'/><text class='m' x='657.2' y='199'>0.850</text>
+<text class='t' x='368' y='223' text-anchor='end'>slow · CoactDetect shipped, this bench</text>
+<circle class='dot-old' cx='510.8' cy='218' r='6'/><text class='m' x='520.8' y='223'>0.799</text>
+<text class='t' x='368' y='247' text-anchor='end'>combined · count (sliding), chosen here</text>
+<circle class='dot-new' cx='966.7' cy='242' r='6'/><text class='m' x='976.7' y='247'>0.969</text>
+<text class='t' x='368' y='271' text-anchor='end'>combined · same setting, CoactDetect-spaced bench</text>
+<circle class='dot-sen' cx='909.9' cy='266' r='6'/><text class='m' x='919.9' y='271'>0.948</text>
+<text class='t' x='368' y='295' text-anchor='end'>combined · retuned on CoactDetect-spaced bench</text>
+<circle class='dot-sen' cx='979.4' cy='290' r='6'/><text class='m' x='989.4' y='295'>0.974</text>
+<text class='t' x='368' y='319' text-anchor='end'>combined · CoactDetect shipped, this bench</text>
+<circle class='dot-old' cx='841.2' cy='314' r='6'/><text class='m' x='851.2' y='319'>0.922</text>
+<text class='t' x='715.0' y='378' text-anchor='middle'>fresh-seed F1 (mean over the quiet and busy backgrounds)</text></svg>
