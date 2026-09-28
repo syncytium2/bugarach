@@ -10,6 +10,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP064/senktide-sensitivity — DARKROOM claims: `bugarach/2026-09-28-senktide-rasters/` and `bugarach/2026-09-28-floor-sensitivity/` (NEW)
+- **Status:** claimed 2026-09-28 ~11:15 AM EDT by WSMIP064 on the orchestrator's brief (Tony:
+  "run the sensitivity check", "let's review the raster summaries"). Part A: count (sliding) at
+  2 s, k 0, merge 3 s on every window of the default dataset under both floors (ADR-0008
+  decision 4), drawn on the senktide raster summaries (and TTX). Part B: the floor recomputed with
+  each of its settings varied alone. Treatment data: darkroom only (FOUNDATIONS §5). Working
+  material, not murderboarded. Released by the merge of the PR that carries this block.
+- **Touches:** those two folders only (run folders, pages, figures, `README.md`).
+
 ### WSMIP064/detector-table — DARKROOM claim: `bugarach/2026-09-28-detector-table/` (NEW)
 - **Status:** claimed 2026-09-28 by WSMIP064 on Tony's brief: one table of every detector (nine
   coded, eight learned) with fresh-seed F1 on fast, slow and combined, shipped and retuned or
