@@ -215,3 +215,22 @@ def test_the_shipped_pointer_is_checked_not_assumed(monkeypatch):
     for role in [r for r in ds.declared_exports() if ds.contamination_note(r)]:
         with pytest.raises(ds.ContaminatedExport):
             ds.refuse_if_contaminated(role)
+
+
+def test_the_default_stops_while_the_pinning_census_undercounts(monkeypatch):
+    """Tony, 2026-10-05: the pinning undercount is a known contamination and the stop
+    applies now. His review of ``20260629_312`` called nine pinned ROIs where the census
+    flagged four, and the default folder's exclusion follows the census.
+
+    Through ``default()`` rather than ``refuse_if_contaminated``, because that is the call
+    an analysis makes, and the stop must come before the session confirmation: there is
+    nothing to confirm while the folder cannot be read. Delete this test in the same
+    change that makes the producer's corrected export the default and removes the note.
+    """
+    monkeypatch.delenv(ds.ACK_ENV, raising=False)
+    note = ds.contamination_note("default")
+    assert note is not None, "the default's note no longer declares the undercount"
+    assert "20260629_312" in note, "the stop must name what is contaminated"
+    assert "corrected export" in note, "and what clears it"
+    with pytest.raises(ds.ContaminatedExport):
+        ds.default()
