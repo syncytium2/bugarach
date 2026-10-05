@@ -128,6 +128,38 @@ def count_detect(
     )
 
 
+def _split_at_dips(S: np.ndarray, idx: np.ndarray, K: int, ratio: float) -> list[np.ndarray]:
+    """One merged run (``idx``: its pieces at or above ``K``) cut at every deep valley.
+
+    Walks every piece from the run's first to its last, those under ``K`` included, keeping
+    the current peak and the lowest point since it. When the count climbs back to at least
+    ``K`` and the valley behind it is below ``ratio`` times the smaller of the two peaks, the
+    run is cut at the valley. A higher peak with no deep valley before it simply becomes the
+    current peak, so a count that wobbles near its top never splits.
+    """
+    lo, hi = int(idx[0]), int(idx[-1])
+    cuts = []
+    peak, valley, v_at = S[lo], np.inf, None
+    for i in range(lo + 1, hi + 1):
+        s = S[i]
+        if v_at is not None and s >= K and valley < ratio * min(peak, s):
+            cuts.append(v_at)
+            peak, valley, v_at = s, np.inf, None
+        elif s > peak:
+            peak, valley, v_at = s, np.inf, None
+        elif s < valley:
+            valley, v_at = s, i
+    if not cuts:
+        return [idx]
+    out, prev = [], lo
+    for c in cuts + [hi + 1]:
+        part = idx[(idx >= prev) & (idx < c)]
+        if part.size:
+            out.append(part)
+        prev = c
+    return out
+
+
 def count_sliding_detect(
     trains: list[np.ndarray],
     t_range: tuple[float, float],
@@ -136,8 +168,19 @@ def count_sliding_detect(
     min_rois: int = 3,
     k_offset: int = 0,
     merge_gap_sec: float = 3.0,
+    split_dip: float | None = None,
 ) -> CountDetection:
     """v2, the sliding form (Tony, 2026-09-26: *"Simple rule v2 should be sliding"*).
+
+    **``split_dip``** (off by default) splits a call where the count falls between two peaks:
+    at a valley below ``split_dip`` times the smaller of the peaks on either side of it,
+    both peaks at or above the threshold. It exists because the window keeps the count up
+    for ``win_sec`` after each coordinated event, so two events *a* and *b* seconds apart
+    leave runs only *b* − *a* − ``win_sec`` apart, and a 3 s merge gap joins any pair
+    closer than about 5 s into one call. Tony found two such pairs on the DI combined
+    senktide raster page (2026-09-28, 20260130_270 near 2.5 min, 20260130_272 near 4.5
+    min): *"we need to fix the merge"*. A split is taken at the valley, so a ragged single
+    event whose count wobbles without falling far stays one call.
 
     At every instant t, the distinct ROIs with an onset in ``(t - win_sec, t]``; a call while
     that count is at least ``min_rois + k_offset``, and called runs joined when their gap is at
@@ -166,6 +209,8 @@ def count_sliding_detect(
         raise ValueError("k_offset must be >= 0: below the floor is chance (ADR-0008)")
     if merge_gap_sec < 0:
         raise ValueError("merge_gap_sec must be >= 0")
+    if split_dip is not None and not 0.0 < split_dip < 1.0:
+        raise ValueError("split_dip must be None or strictly between 0 and 1")
     t0, t1 = t_range
     w = float(win_sec)
     K = max(1, int(min_rois) + int(k_offset))
@@ -173,15 +218,21 @@ def count_sliding_detect(
     starts, ends, S = sl.pieces(ev, w, t0, t1)
     sig = np.flatnonzero(S >= K)
     runs = sl.merge_runs(starts[sig], ends[sig], merge_gap_sec)
-    n = len(runs)
-    onset, width, nrois = np.zeros(n), np.zeros(n), np.zeros(n)
-    for j, (a, b) in enumerate(runs):
+    calls = []                          # arrays of piece indices at or above K, one per call
+    for a, b in runs:
         idx = sig[a:b + 1]
+        if split_dip is None:
+            calls.append(idx)
+        else:
+            calls.extend(_split_at_dips(S, idx, K, split_dip))
+    n = len(calls)
+    onset, width, nrois = np.zeros(n), np.zeros(n), np.zeros(n)
+    for j, idx in enumerate(calls):
         tfirst, tlast, _ = sl.span_of(ev, starts[idx[0]] - w, ends[idx[-1]])
         onset[j], width[j] = tfirst, tlast - tfirst
         nrois[j] = S[idx].max()
     opts = dict(win_sec=win_sec, min_rois=min_rois, k_offset=k_offset,
-                merge_gap_sec=merge_gap_sec, window_mode="sliding")
+                merge_gap_sec=merge_gap_sec, split_dip=split_dip, window_mode="sliding")
     return CountDetection(
         onset_sec=onset, width_sec=width, strength=nrois.copy(), nrois=nrois,
         width_kind="tightness", ctr=starts, obs=S, threshold=K,
