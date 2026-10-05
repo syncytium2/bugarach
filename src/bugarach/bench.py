@@ -1191,6 +1191,43 @@ INTERVALS_RUN = (Path(__file__).resolve().parents[2]
 """The committed measurement (``tools/measure_real_intervals.py``), so a run reproduces from a
 clone rather than from a darkroom copy."""
 
+INPUTS_ENV = "BUGARACH_BENCH_INPUTS"
+"""A folder of the realistic bench's real-data inputs to use instead of :data:`INTERVALS_RUN`
+(ADR-0012: the inputs extracted by count (sliding) at its untuned defaults,
+``tools/extract_bench_inputs.py``). It holds ``summary.json`` and ``gaps_for_generator.json`` in
+:data:`INTERVALS_RUN`'s shapes and, optionally, ``bench_inputs.json`` with each stream's
+``participation`` levels and ``jitter_sec``. Set by a tool before its pool starts, as
+:data:`SPACING_ENV` is. Unset, every recording is exactly what it was, and the bench's
+participation and jitter are its own constants. It changes nothing under the ``"bench"``
+spacing."""
+
+
+def inputs_run() -> Path:
+    """The folder the realistic spacing reads (:data:`INPUTS_ENV`, else :data:`INTERVALS_RUN`)."""
+    import os
+
+    p = os.environ.get(INPUTS_ENV, "").strip()
+    return Path(p) if p else INTERVALS_RUN
+
+
+def _stream_inputs(stream: str) -> dict:
+    """``participation`` and ``jitter_sec`` for ``stream`` from ``bench_inputs.json`` in
+    :data:`INPUTS_ENV`'s folder; empty when the variable is unset or the file does not have them."""
+    import os
+
+    if not os.environ.get(INPUTS_ENV, "").strip():
+        return {}
+    p = inputs_run() / "bench_inputs.json"
+    if not p.exists():
+        return {}
+    rec = json.loads(p.read_text(encoding="utf-8")).get("streams", {}).get(stream, {})
+    out = {}
+    if rec.get("participation") is not None:
+        out["participation"] = tuple(float(x) for x in rec["participation"])
+    if rec.get("jitter_sec") is not None:
+        out["jitter_sec"] = float(rec["jitter_sec"])
+    return out
+
 
 def spacing() -> str:
     """The spacing in force (:data:`SPACING_ENV`), refused if it is not one of :data:`SPACINGS`."""
@@ -1216,7 +1253,7 @@ def realistic_counts(stream: str, n_levels: int, duration_sec: float) -> tuple[i
     """Events per participation level for a recording of ``duration_sec`` at the stream's
     measured events per hour (baseline windows, all groups), rounded; split as evenly as possible,
     the middle (measured) level first, then the highest. Fast: 9.7 per hour, 7 events."""
-    rec = json.loads((INTERVALS_RUN / "summary.json").read_text(encoding="utf-8"))
+    rec = json.loads((inputs_run() / "summary.json").read_text(encoding="utf-8"))
     total = int(round(rec["summary"][stream]["all"]["events_per_hour"] * duration_sec / 3600.0))
     base, rem = divmod(total, n_levels)
     counts = [base] * n_levels
@@ -1226,7 +1263,9 @@ def realistic_counts(stream: str, n_levels: int, duration_sec: float) -> tuple[i
 
 
 def spacing_overrides(stream: str, recording: dict) -> dict:
-    """What a planted recording's maker adds under :func:`spacing`: nothing for ``"bench"``."""
+    """What a planted recording's maker adds under :func:`spacing`: nothing for ``"bench"``. With
+    :data:`INPUTS_ENV` set, the gaps and counts come from that folder, and so do participation and
+    jitter when its ``bench_inputs.json`` gives them."""
     from bugarach.real_intervals import load_gaps
 
     s = spacing()
@@ -1234,10 +1273,11 @@ def spacing_overrides(stream: str, recording: dict) -> dict:
         return {}
     pool = "pooled" if s == "realistic" else "ORX"
     return dict(gap_source=load_gaps(stream, pool=pool,
-                                     path=INTERVALS_RUN / "gaps_for_generator.json"),
+                                     path=inputs_run() / "gaps_for_generator.json"),
                 gap_mix=0.0,
                 n_per_level=realistic_counts(stream, len(recording["n_per_level"]),
-                                             recording["duration_sec"]))
+                                             recording["duration_sec"]),
+                **_stream_inputs(stream))
 
 
 def seed_factor(stream: str, spacing_name: str | None = None) -> int:

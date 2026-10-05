@@ -1,0 +1,270 @@
+{
+ "dataset": {
+  "role": "senktide_ttx",
+  "name": "2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED",
+  "recordings": 66,
+  "use": "input"
+ },
+ "rules": {
+  "extractor": "coact_detect at each stream's shipped setting, min_rois = the window's own ADR-0008 floor",
+  "floor": "event_floor.window_floor, the baseline window's own, 1000 draws (the real-intervals tool's seed, so the floors match it)",
+  "windows": "baseline windows only (FOUNDATIONS \u00a79)",
+  "gap": "between neighbouring calls in the same window, call start to call start (onset_sec)",
+  "participation": "the call's peak distinct-ROI count in its 2 s window over the window's ROIs",
+  "spread": "SD of the participating ROIs' first onsets within the call's span, median over calls"
+ },
+ "groups": [
+  "DI",
+  "OVX",
+  "MALE",
+  "ORX"
+ ],
+ "summary": {
+  "fast": {
+   "all": {
+    "n_gaps": 114,
+    "n_events": 148,
+    "hours": 21.816666666666666,
+    "events_per_hour": 6.783804430863254,
+    "p5": 10.0,
+    "p25": 34.0,
+    "p50": 59.0,
+    "p75": 135.5,
+    "p95": 614.8999999999999,
+    "share_under_10_sec": 0.03508771929824561,
+    "share_under_120_sec": 0.6929824561403509,
+    "participation_median": null,
+    "participation_q25": null,
+    "participation_q75": null,
+    "spread_median_sec": 0.2332535507274922,
+    "windows": 66
+   },
+   "groups": {
+    "DI": {
+     "n_gaps": 67,
+     "n_events": 82,
+     "hours": 5.666666666666666,
+     "events_per_hour": 14.47058823529412,
+     "p5": 10.0,
+     "p25": 39.0,
+     "p50": 60.0,
+     "p75": 129.0,
+     "p95": 439.1999999999996,
+     "share_under_10_sec": 0.029850746268656716,
+     "share_under_120_sec": 0.7164179104477612,
+     "participation_median": null,
+     "recordings": 17
+    },
+    "OVX": {
+     "n_gaps": 8,
+     "n_events": 11,
+     "hours": 5.6,
+     "events_per_hour": 1.9642857142857144,
+     "p5": 19.1,
+     "p25": 40.5,
+     "p50": 113.0,
+     "p75": 164.5,
+     "p95": 346.0999999999999,
+     "share_under_10_sec": 0.0,
+     "share_under_120_sec": 0.5,
+     "participation_median": null,
+     "recordings": 17
+    },
+    "MALE": {
+     "n_gaps": 34,
+     "n_events": 44,
+     "hours": 4.266666666666667,
+     "events_per_hour": 10.3125,
+     "p5": 9.3,
+     "p25": 28.0,
+     "p50": 43.0,
+     "p75": 258.0,
+     "p95": 915.2999999999996,
+     "share_under_10_sec": 0.058823529411764705,
+     "share_under_120_sec": 0.7058823529411765,
+     "participation_median": null,
+     "recordings": 13
+    },
+    "ORX": {
+     "n_gaps": 5,
+     "n_events": 11,
+     "hours": 6.283333333333333,
+     "events_per_hour": 1.7506631299734747,
+     "p5": 38.0,
+     "p25": 54.0,
+     "p50": 62.0,
+     "p75": 374.0,
+     "p95": 598.0,
+     "share_under_10_sec": 0.0,
+     "share_under_120_sec": 0.6,
+     "participation_median": null,
+     "recordings": 19
+    }
+   }
+  },
+  "slow": {
+   "all": {
+    "n_gaps": 383,
+    "n_events": 424,
+    "hours": 21.816666666666666,
+    "events_per_hour": 19.43468296409473,
+    "p5": 12.120000000000017,
+    "p25": 20.0,
+    "p50": 31.399999999999977,
+    "p75": 56.650000000000006,
+    "p95": 179.2099999999998,
+    "share_under_10_sec": 0.0,
+    "share_under_120_sec": 0.9086161879895561,
+    "participation_median": null,
+    "participation_q25": null,
+    "participation_q75": null,
+    "spread_median_sec": 0.35518826506041407,
+    "windows": 66
+   },
+   "groups": {
+    "DI": {
+     "n_gaps": 226,
+     "n_events": 243,
+     "hours": 5.666666666666666,
+     "events_per_hour": 42.88235294117648,
+     "p5": 12.149999999999928,
+     "p25": 19.72500000000005,
+     "p50": 30.149999999999864,
+     "p75": 58.55000000000002,
+     "p95": 140.75000000000006,
+     "share_under_10_sec": 0.0,
+     "share_under_120_sec": 0.9203539823008849,
+     "participation_median": null,
+     "recordings": 17
+    },
+    "OVX": {
+     "n_gaps": 36,
+     "n_events": 41,
+     "hours": 5.6,
+     "events_per_hour": 7.321428571428572,
+     "p5": 12.899999999999963,
+     "p25": 21.949999999999974,
+     "p50": 37.14999999999998,
+     "p75": 57.875,
+     "p95": 239.37499999999997,
+     "share_under_10_sec": 0.0,
+     "share_under_120_sec": 0.9166666666666666,
+     "participation_median": null,
+     "recordings": 17
+    },
+    "MALE": {
+     "n_gaps": 105,
+     "n_events": 117,
+     "hours": 4.266666666666667,
+     "events_per_hour": 27.421875,
+     "p5": 11.859999999999967,
+     "p25": 19.30000000000001,
+     "p50": 28.899999999999864,
+     "p75": 49.0,
+     "p95": 178.55999999999997,
+     "share_under_10_sec": 0.0,
+     "share_under_120_sec": 0.9238095238095239,
+     "participation_median": null,
+     "recordings": 13
+    },
+    "ORX": {
+     "n_gaps": 16,
+     "n_events": 23,
+     "hours": 6.283333333333333,
+     "events_per_hour": 3.660477453580902,
+     "p5": 14.05000000000004,
+     "p25": 32.42499999999998,
+     "p50": 47.95000000000002,
+     "p75": 211.54999999999995,
+     "p95": 474.725,
+     "share_under_10_sec": 0.0,
+     "share_under_120_sec": 0.625,
+     "participation_median": null,
+     "recordings": 19
+    }
+   }
+  },
+  "combined": {
+   "all": {
+    "n_gaps": 426,
+    "n_events": 471,
+    "hours": 21.816666666666666,
+    "events_per_hour": 21.58899923605806,
+    "p5": 12.199999999999932,
+    "p25": 19.825000000000045,
+    "p50": 31.5,
+    "p75": 60.875,
+    "p95": 213.375,
+    "share_under_10_sec": 0.002347417840375587,
+    "share_under_120_sec": 0.8755868544600939,
+    "participation_median": null,
+    "participation_q25": null,
+    "participation_q75": null,
+    "spread_median_sec": 0.4475209492303177,
+    "windows": 66
+   },
+   "groups": {
+    "DI": {
+     "n_gaps": 256,
+     "n_events": 273,
+     "hours": 5.666666666666666,
+     "events_per_hour": 48.1764705882353,
+     "p5": 12.199999999999932,
+     "p25": 19.774999999999963,
+     "p50": 30.849999999999966,
+     "p75": 62.125000000000014,
+     "p95": 161.89999999999998,
+     "share_under_10_sec": 0.00390625,
+     "share_under_120_sec": 0.88671875,
+     "participation_median": null,
+     "recordings": 17
+    },
+    "OVX": {
+     "n_gaps": 36,
+     "n_events": 41,
+     "hours": 5.6,
+     "events_per_hour": 7.321428571428572,
+     "p5": 13.725000000000009,
+     "p25": 21.575000000000003,
+     "p50": 37.49999999999994,
+     "p75": 58.0,
+     "p95": 213.15,
+     "share_under_10_sec": 0.0,
+     "share_under_120_sec": 0.9166666666666666,
+     "participation_median": null,
+     "recordings": 17
+    },
+    "MALE": {
+     "n_gaps": 119,
+     "n_events": 131,
+     "hours": 4.266666666666667,
+     "events_per_hour": 30.703125,
+     "p5": 11.729999999999961,
+     "p25": 20.050000000000026,
+     "p50": 29.90000000000009,
+     "p75": 53.900000000000034,
+     "p95": 303.00999999999993,
+     "share_under_10_sec": 0.0,
+     "share_under_120_sec": 0.865546218487395,
+     "participation_median": null,
+     "recordings": 13
+    },
+    "ORX": {
+     "n_gaps": 15,
+     "n_events": 26,
+     "hours": 6.283333333333333,
+     "events_per_hour": 4.137931034482759,
+     "p5": 14.020000000000039,
+     "p25": 26.049999999999955,
+     "p50": 36.200000000000045,
+     "p75": 257.0,
+     "p95": 543.0699999999997,
+     "share_under_10_sec": 0.0,
+     "share_under_120_sec": 0.6666666666666666,
+     "participation_median": null,
+     "recordings": 19
+    }
+   }
+  }
+ }
+}

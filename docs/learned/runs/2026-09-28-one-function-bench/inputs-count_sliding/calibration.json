@@ -1,0 +1,167 @@
+{
+ "fast": {
+  "curve": [
+   {
+    "jitter_sec": 0.02,
+    "spread_median_sec": 0.19202864369670522,
+    "n_calls": 741
+   },
+   {
+    "jitter_sec": 0.05,
+    "spread_median_sec": 0.1965456683094033,
+    "n_calls": 738
+   },
+   {
+    "jitter_sec": 0.08,
+    "spread_median_sec": 0.2068499274671094,
+    "n_calls": 740
+   },
+   {
+    "jitter_sec": 0.12,
+    "spread_median_sec": 0.2212326142956825,
+    "n_calls": 732
+   },
+   {
+    "jitter_sec": 0.18,
+    "spread_median_sec": 0.24944382578494056,
+    "n_calls": 729
+   },
+   {
+    "jitter_sec": 0.25,
+    "spread_median_sec": 0.3112586453738834,
+    "n_calls": 726
+   },
+   {
+    "jitter_sec": 0.35,
+    "spread_median_sec": 0.39305074594622635,
+    "n_calls": 723
+   },
+   {
+    "jitter_sec": 0.5,
+    "spread_median_sec": 0.5118593556827633,
+    "n_calls": 703
+   },
+   {
+    "jitter_sec": 0.7,
+    "spread_median_sec": 0.6262764742684961,
+    "n_calls": 627
+   }
+  ],
+  "real_spread_median_sec": 0.37853518844208717,
+  "jitter_sec": 0.3322531058591648,
+  "inside_grid": true,
+  "monotone": true,
+  "points_raised_to_monotone": 0,
+  "floor_sec": 0.19202864369670522
+ },
+ "slow": {
+  "curve": [
+   {
+    "jitter_sec": 0.02,
+    "spread_median_sec": 0.04422166387136511,
+    "n_calls": 1528
+   },
+   {
+    "jitter_sec": 0.05,
+    "spread_median_sec": 0.06224949798998293,
+    "n_calls": 1533
+   },
+   {
+    "jitter_sec": 0.08,
+    "spread_median_sec": 0.09109662077470129,
+    "n_calls": 1528
+   },
+   {
+    "jitter_sec": 0.12,
+    "spread_median_sec": 0.12999999999999481,
+    "n_calls": 1534
+   },
+   {
+    "jitter_sec": 0.18,
+    "spread_median_sec": 0.18929694486001214,
+    "n_calls": 1528
+   },
+   {
+    "jitter_sec": 0.25,
+    "spread_median_sec": 0.2593876332156946,
+    "n_calls": 1534
+   },
+   {
+    "jitter_sec": 0.35,
+    "spread_median_sec": 0.35784850922639877,
+    "n_calls": 1535
+   },
+   {
+    "jitter_sec": 0.5,
+    "spread_median_sec": 0.49626102002877487,
+    "n_calls": 1525
+   },
+   {
+    "jitter_sec": 0.7,
+    "spread_median_sec": 0.6430508211390057,
+    "n_calls": 1470
+   }
+  ],
+  "real_spread_median_sec": 0.32855720686047896,
+  "jitter_sec": 0.3202508208816511,
+  "inside_grid": true,
+  "monotone": true,
+  "points_raised_to_monotone": 0,
+  "floor_sec": 0.04422166387136511
+ },
+ "combined": {
+  "curve": [
+   {
+    "jitter_sec": 0.02,
+    "spread_median_sec": 0.22467096774530831,
+    "n_calls": 1426
+   },
+   {
+    "jitter_sec": 0.05,
+    "spread_median_sec": 0.23153718374298668,
+    "n_calls": 1423
+   },
+   {
+    "jitter_sec": 0.08,
+    "spread_median_sec": 0.23342855200016482,
+    "n_calls": 1415
+   },
+   {
+    "jitter_sec": 0.12,
+    "spread_median_sec": 0.24677925358506234,
+    "n_calls": 1421
+   },
+   {
+    "jitter_sec": 0.18,
+    "spread_median_sec": 0.2777088803445546,
+    "n_calls": 1411
+   },
+   {
+    "jitter_sec": 0.25,
+    "spread_median_sec": 0.3219272777096818,
+    "n_calls": 1412
+   },
+   {
+    "jitter_sec": 0.35,
+    "spread_median_sec": 0.40657537582467107,
+    "n_calls": 1402
+   },
+   {
+    "jitter_sec": 0.5,
+    "spread_median_sec": 0.5281676915711708,
+    "n_calls": 1368
+   },
+   {
+    "jitter_sec": 0.7,
+    "spread_median_sec": 0.672755527662195,
+    "n_calls": 1261
+   }
+  ],
+  "real_spread_median_sec": 0.4181432170919576,
+  "jitter_sec": 0.3642704428272469,
+  "inside_grid": true,
+  "monotone": true,
+  "points_raised_to_monotone": 0,
+  "floor_sec": 0.22467096774530831
+ }
+}
