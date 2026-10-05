@@ -92,7 +92,7 @@ relayed by the orchestrator: *"i suspect bugarach can't run until we confirm we 
 data"*. He confirmed it in the housekeeping session the same day: **the stop applies now, not when
 the new export arrives.**
 
-- **It fires by itself.** The `senktide_ttx` note in `current_export.toml` declares the
+- **It triggers by itself.** The `senktide_ttx` note in `current_export.toml` declares the
   contamination in the form `dataset.refuse_if_contaminated` reads, so `dataset.default()` and
   `dataset.current()` refuse before the session confirmation is asked for. Pinned by
   `test_the_default_stops_while_the_pinning_census_undercounts` in `tests/test_dataset.py`.
