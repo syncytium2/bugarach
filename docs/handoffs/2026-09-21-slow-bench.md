@@ -134,7 +134,7 @@ optimization and the training on it — the same pipeline as the weekend, second
    on his yes run `python -m bugarach.dataset confirm`. Never run it on his behalf.
 3. **Check WSMIP064's own board** (`../bugarach-worktrees/SESSIONS.md` on that machine) and
    `docs/SESSIONS.md`. On the morning of 2026-09-21 WSMIP064 was dispatched the
-   crowded-allowance sensitivity sweep (`HANDOFF-goal-2-comparison.md`); if that is still
+   crowded-allowance sensitivity sweep ([the goal-2 comparison handoff](2026-09-22-goal-2-comparison.md)); if that is still
    running it holds the cores, and the GPU training in step 5 below waits for it.
 4. **Claim** a block on WSMIP064's local board before your first write, with a `Touches:`
    line. `bench.py` is contested — see "Coordination".

@@ -4,7 +4,7 @@
 > `HANDOFF-the-readouts-landed-the-code-behind-them-did-not.md`; link paths rewritten for this
 > directory, body otherwise untouched. What has happened to its items since:
 > - **The crowded allowance** is still unsigned. Tony ruled on 2026-09-21 to sweep its sensitivity
->   first; it is tracked in `HANDOFF-goal-2-comparison.md` and the
+>   first; it is tracked in [the goal-2 comparison handoff](2026-09-22-goal-2-comparison.md) and the
 >   [goal page](../goals/learned-model-family.md).
 > - **#596's picker question is ruled**: #680 registered gauge and chorus, and Tony left them in the
 >   picker on 2026-09-22. What remains of #642 is queue item 8 in
