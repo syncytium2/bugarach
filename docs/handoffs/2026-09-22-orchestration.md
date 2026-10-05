@@ -1,5 +1,10 @@
 # Handoff: where the program stands after 2026-09-22, and what to pick up
 
+> **Retired from the root on 2026-10-05, on Tony's word.** It is a dated snapshot, and the cloud
+> orchestrator's later sweeps have superseded it. Body unedited apart from relative links, which
+> were repointed for this directory. Read it as the record of 2026-09-22, not as current state:
+> [`docs/MILESTONES.md`](../MILESTONES.md) is that.
+
 > ⚠ **This file covers the orchestration thread — the ruling queue, the producer exchange and
 > the day's corrections.** The other root handoffs are other threads and are NOT superseded by
 > it. Delete only your own file.
@@ -19,11 +24,11 @@ GitHub. Nothing was measured on this machine.
 
 ## Read these three first
 
-1. [`docs/decisions_pending.md`](docs/decisions_pending.md) — **the ruling queue**, ten items,
+1. [`docs/decisions_pending.md`](../decisions_pending.md) — **the ruling queue**, ten items,
    what each blocks and what to do absent a ruling. It is the page the briefing's one
    `waiting-on-tony` entry points at.
-2. [`docs/goals/README.md`](docs/goals/README.md) — four goals now; goal 4 was added today.
-3. [`docs/handoffs/2026-09-21-slow-bench.md`](docs/handoffs/2026-09-21-slow-bench.md), the
+2. [`docs/goals/README.md`](../goals/README.md) — four goals now; goal 4 was added today.
+3. [`docs/handoffs/2026-09-21-slow-bench.md`](2026-09-21-slow-bench.md), the
    *Current state* section at the top — WSMIP064's own account of the slow thread, written at the
    end of its run. *(corrected: retired from the root on 2026-09-22, nothing in it being in
    flight; its header says where each open item went.)*
@@ -39,7 +44,7 @@ Both old values tracked bin ÷ √12 — the instrument was measuring its own co
 on `main`; **no constant moved with it**, which is why it is a ruling and not a change.
 
 Tony asked, correctly, what else the simulations absorb and whether it was measured as carelessly.
-That audit is done — [`docs/todo/2026-09-22-what-else-came-from-the-clustering-instrument.md`](docs/todo/2026-09-22-what-else-came-from-the-clustering-instrument.md):
+That audit is done — [`docs/todo/2026-09-22-what-else-came-from-the-clustering-instrument.md`](../todo/2026-09-22-what-else-came-from-the-clustering-instrument.md):
 
 - **Well measured:** `rate_shape` (ML Gamma over 81 windows / 2,643 ROIs, and it predicts the 35%
   silent-ROI figure it was never fitted to), the rate percentiles, `n_roi`.
@@ -64,9 +69,9 @@ was at `964e3ab`, well behind; **it must pull before it commits.**
 Several documents say "after the 2026-09-22 meeting". **That meeting was the morning of
 2026-09-22**, so these are live now, not pending:
 
-- **Bench participation 0.18 → 0.19** — [`docs/todo/2026-09-21-bench-participation-to-0-19-after-the-meeting.md`](docs/todo/2026-09-21-bench-participation-to-0-19-after-the-meeting.md).
+- **Bench participation 0.18 → 0.19** — [`docs/todo/2026-09-21-bench-participation-to-0-19-after-the-meeting.md`](../todo/2026-09-21-bench-participation-to-0-19-after-the-meeting.md).
   Schedule it in the same overnight pass as the jitter: both move the same bench.
-- **The one stream-aware bench** — [`docs/todo/2026-09-21-one-stream-aware-bench.md`](docs/todo/2026-09-21-one-stream-aware-bench.md),
+- **The one stream-aware bench** — [`docs/todo/2026-09-21-one-stream-aware-bench.md`](../todo/2026-09-21-one-stream-aware-bench.md),
   which deletes `bench_slow.py` and the stopgap measurement tool. Goal 4 would otherwise add a
   **third** copy of the scoring path, so this wants doing before that starts.
 
@@ -132,7 +137,7 @@ The proposal is `FORMAT_CHANGE_from_fireflies.md` in
 
 Tony saw that detections on the DI senktide rasters did not line up with the events or with each
 other. Measured against the run's own files
-([`docs/todo/2026-09-22-what-the-full-cohort-rasters-show.md`](docs/todo/2026-09-22-what-the-full-cohort-rasters-show.md)):
+([`docs/todo/2026-09-22-what-the-full-cohort-rasters-show.md`](../todo/2026-09-22-what-the-full-cohort-rasters-show.md)):
 
 - **CoactDetect ran sliding there and its onsets sit on member events** (median 0.00 s).
 - **Binned SCE floats by a median 3.5 s** — its 10 s bin edge — and **locust by +0.5 s fast and

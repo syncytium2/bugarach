@@ -1,15 +1,19 @@
 # Handoff: goal 2's comparison landed, and the stopping rule is deliberately not set
 
+> **Retired from the root on 2026-10-05, on Tony's word.** Its own exit condition was met: #683
+> and #687 merged. Body unedited apart from relative links, which were repointed for this
+> directory. Goal 2's current state is [`docs/goals/learned-model-family.md`](../goals/learned-model-family.md).
+
 > ⚠ **This file covers goal 2 alone — the learned model family against the coded
 > detectors.** The other root handoffs are other threads and are NOT superseded by this
 > one. Delete only your own file. (The `HANDOFF.md` this line used to name was retired on
 > 2026-09-21, its in-flight #466 having landed —
-> [`docs/handoffs/2026-09-08-the-loop-closes.md`](docs/handoffs/2026-09-08-the-loop-closes.md).)
+> [`docs/handoffs/2026-09-08-the-loop-closes.md`](2026-09-08-the-loop-closes.md).)
 
 **Written 2026-09-21 by the orchestration session**, which drove goal 2's two GPU runs
 from Friday evening through Monday morning and is ending here. `main` is green.
 
-**Start at [`docs/goals/learned-model-family.md`](docs/goals/learned-model-family.md)**
+**Start at [`docs/goals/learned-model-family.md`](../goals/learned-model-family.md)**
 — it is current and carries every result this file summarises.
 
 > **Not murderboarded** — working material for sessions in this tree, at Tony's
@@ -71,7 +75,7 @@ is still open.
 **Still deliberately unruled — do not infer it:**
 
 - **the fate of `tune-bench-comparison` itself.** Its scan is
-  [`docs/todo/2026-09-19-landing-tune-bench-comparison.md`](docs/todo/2026-09-19-landing-tune-bench-comparison.md);
+  [`docs/todo/2026-09-19-landing-tune-bench-comparison.md`](../todo/2026-09-19-landing-tune-bench-comparison.md);
   gate 3 closed with #672 and gate 5 is answered by #680, so gates 2 and 4 remain. The
   two-hour CI suite arrives on `main` with that branch and then applies to every PR.
 
@@ -124,7 +128,7 @@ caught by someone else. Check the denominator, and measure the disk.
 
 | what | where |
 |---|---|
-| the goal's current state | [`docs/goals/learned-model-family.md`](docs/goals/learned-model-family.md) |
+| the goal's current state | [`docs/goals/learned-model-family.md`](../goals/learned-model-family.md) |
 | both run reports and the merge-gap page | `docs/learned/tuned_vs_coact/` |
 | why a third of `chorus_norm`'s fits never train | `docs/learned/chorus_collapse/` |
 | the full field, derived from the run files | `tools/leaderboard.py` |
