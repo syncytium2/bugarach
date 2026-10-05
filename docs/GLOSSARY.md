@@ -453,6 +453,25 @@ load-bearing terms with no glossary entry.
 - **contaminated null** — a surrogate null estimated over a context window that
   contains real coordinated events, which inflates the threshold. Avoided by
   spacing events wider than the widest context window.
+- **The three inputs a simulated recording is built from** (Tony, 2026-09-28). Use these
+  names, and only these, for them; "spacing" and "timing" were used for the first two in
+  conversation and are retired.
+  - **intervals** (code: `real_intervals`, `gap_source`) — the times **between coordinated
+    events**, from one to the next. The bench draws them, with replacement, from the intervals
+    measured in real baseline windows
+    (`docs/learned/runs/2026-09-25-real-intervals/`): medians of 41.3 s fast, 25.1 s slow and
+    24.8 s combined. **Frequency** is the same quantity as a rate (9.7, 22.0 and 25.3
+    coordinated events per hour), but the two are not interchangeable: the bench draws whole
+    intervals, so quote the median interval and say where a frequency came from. Not a
+    **within-ROI interval** (one ROI's onset to its next), which the surrogate vocabulary's
+    dead time and provisional floor below are about; say "within-ROI" when you mean that one.
+  - **jitter** (code: `jitter_sec`) — the spread of calcium event onsets across the ROIs
+    **within one coordinated event**. Measured as the half-width of the cross-ROI onset
+    correlogram's peak (`tools/measure_jitter_correlogram.py`): 0.105 s fast, 0.131 s slow,
+    0.150 s combined. Not ***J***, the surrogate's jitter radius below (± 20 s for the event
+    floor's null), which is how far a surrogate moves an onset, not a property of the data.
+  - **participation** — the share of a recording's ROIs that take part in one coordinated
+    event (0.20 fast, 0.38 slow, 0.25 combined at the bench's middle level).
 - **participant floor** — the recruitment level below which a detector stops
   finding events. Reported as recall broken down by participation fraction.
 - **event floor** (ADR-0008; code: `bugarach.event_floor`, `bench.recording_floor`) — a
