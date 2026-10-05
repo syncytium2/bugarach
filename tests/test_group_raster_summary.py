@@ -259,6 +259,30 @@ def test_groups_limits_the_pages(tmp_path):
     assert sorted(pages) == [("DI", "senktide", "fast"), ("DI", "senktide", "slow")]
 
 
+def test_all_groups_puts_every_group_on_one_page_in_group_order(tmp_path):
+    """Tony, 2026-10-05: a small cohort is read as one set, so one page per stream with
+    every recording on it — rows in DI, OVX, MALE, ORX order, each saying its group."""
+    folder = _folder(tmp_path)
+    regions = (folder / "regions.csv").read_text().replace("senktide", "TTX")
+    (folder / "regions.csv").write_text(regions)
+    pages, _, _ = mod.measure(folder, ("TTX",), all_groups=True)
+    assert {k[0] for k in pages} == {mod.ALL_GROUPS}
+    members = pages[(mod.ALL_GROUPS, "TTX", "fast")]["members"]
+    assert [sl.slice_id for sl, _ in members] == ["s3", "s1", "s2"], "DI before MALE"
+    assert mod.row_label(members[0][0], all_groups=True) == "DI · s3"
+    assert mod.page_title(mod.ALL_GROUPS, members) == "all groups — 1 DI, 2 MALE recordings"
+    head = mod.header_html(mod.ALL_GROUPS, "TTX", members, (0.0, 60.0), folder,
+                           stream="fast", figure=2)
+    assert "Figure 2. all groups — 1 DI, 2 MALE recordings · TTX · fast" in head
+
+
+def test_without_all_groups_the_pages_stay_one_per_group(tmp_path):
+    pages, _, _ = mod.measure(_folder(tmp_path), ("TTX", "senktide"))
+    assert mod.ALL_GROUPS not in {k[0] for k in pages}
+    members = pages[("MALE", "TTX", "fast")]["members"]
+    assert mod.row_label(members[0][0]) == members[0][0].slice_id
+
+
 def test_a_recording_with_no_baseline_is_skipped_not_drawn_at_zero(tmp_path):
     """No anchor means no honest x — dropping it beats aligning it on nothing."""
     d = _folder(tmp_path)
