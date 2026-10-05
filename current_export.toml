@@ -76,6 +76,19 @@ All 66 recording files are byte-identical (sha256) to the same recordings in
 `steps_and_pins_excluded`, and `slices.csv`, `regions.csv` and both manifests are
 row-identical on those 66 recordings. A result that differs between the two folders
 therefore differs because of the recording set, not the event derivation.
+
+STOPPED 2026-10-05, on Tony's ruling. Known contamination this folder does NOT address: the
+moco floor-pinning census that chose which ROIs to cut undercounts. Tony reviewed every ROI
+of `20260629_312` and called nine pinned over 0-375 s (1, 2, 3, 4, 14, 16, 17, 18, 20); the
+census flagged four, so ROIs 2, 3, 4, 17 and 18 keep pinned events here, not flagged in any
+column. `20260629_309` ROI 16 is over-cut (0-15.84 min removed; Tony reads about 6 min), and
+`20260629_309`, `20260630_316` and `20250926_235` have not been reviewed ROI by ROI. All four
+are DI. Source: interface2 branch `mlspike-blanking-rerun`,
+`docs/handoffs/TASK_mlspike_pinning_census_underdetects.md`. WHAT CLEARS IT: the producer's
+corrected export, cut on the signed-off per-ROI review of those four recordings, becoming the
+default and this paragraph leaving the file. A session's judgement that the effect is small
+does not clear it. Request and status:
+`docs/todo/2026-10-05-the-pinning-census-undercounts-on-the-default-folder.md`.
 """
 
 [periods_2026_08_18]
@@ -162,6 +175,14 @@ control it caught 2 of the 4 census ROIs — so a clean result is not proof on i
 What carries the conclusion is two tests sharing no code agreeing, the per-ROI trace
 detector and the geometry. Their sampling note: 400 frames is too sparse to clear a
 slice; the result above uses 4,000.
+
+**SUPERSEDED 2026-10-05: "nothing in this folder needs to change" is no longer true.** The
+paragraph above answered whether three uncensused slices carried pinned events; it did not
+test the census on the slices it did flag. Tony's per-ROI review of `20260629_312` found nine
+pinned ROIs where the census flagged four, and `20260629_309` ROI 16 over-cut. That applies to
+this folder and to `senktide_ttx` alike (their recording files are byte-identical); the stop
+is declared on `senktide_ttx`, the default, and this archive role is already refused without
+`BUGARACH_REPRODUCE`. Record: `docs/todo/2026-10-05-the-pinning-census-undercounts-on-the-default-folder.md`.
 """
 
 [steps_excluded]
