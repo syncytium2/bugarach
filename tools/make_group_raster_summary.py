@@ -638,6 +638,16 @@ def raster_px(n_rois: int, roi_px: int | None = None) -> int:
     return (roi_px or RASTER_PX_PER_ROI) * max(int(n_rois), 1)
 
 
+#: Page order within a treatment, and so figure order: the two measurements, then the page
+#: drawing both. Any other stream name follows, alphabetically.
+STREAM_ORDER = ("fast", "slow", "combined")
+
+
+def stream_key(stream: str) -> tuple[int, str]:
+    return ((STREAM_ORDER.index(stream), "") if stream in STREAM_ORDER
+            else (len(STREAM_ORDER), stream))
+
+
 def row_label(sl, *, all_groups: bool = False) -> str:
     """The id at the left of a recording's block, with its group on a page of every group."""
     return f"{group_of(sl)} · {sl.slice_id}" if all_groups else sl.slice_id
@@ -696,28 +706,41 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
     red_key = chip(MARKED_INK, "event on a confirmed whole-field brightness step "
                                "(field-step artifact)")
     event_key = chip(RASTER_INK, "event")
+    # WHAT WAS DONE ABOUT FIELD STEPS, said on every page including the combined one. The
+    # combined page's second ink is the slow label, and until 2026-10-05 that took the slot this
+    # line lived in, so an unscanned folder's combined page dropped the warning while its fast
+    # and slow pages carried it.
+    scan_key = ""
+    if unscanned:
+        # No red on this page, and the reader has to be told WHY there is none:
+        # nobody looked, which is not the same as nothing being there.
+        scan_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
+                    "folder</b> (the producer's export report says UNCHECKED) — nothing "
+                    "is marked, and the absence of red is not evidence of a clean cohort")
+    elif removed is not None:
+        # No red here either, for the opposite reason: the artifacts were found
+        # and taken out. The count is this page's recordings on this page's
+        # stream, so a reader can see what the clean page cost. The combined page
+        # holds both streams' onsets, so it counts both.
+        sources = ("fast", "slow") if stream == "combined" else (stream,)
+        hit = sorted((sl.slice_id, sum(removed.get((sl.slice_id, s), 0) for s in sources))
+                     for sl, _ in members)
+        hit = [(sid, k) for sid, k in hit if k]
+        n = sum(k for _, k in hit)
+        where = (" — " + ", ".join(f"{sid}: {k} events" for sid, k in hit)) if hit else ""
+        scan_key = (f"<b>field-step artifacts removed by the producer</b>: {n} "
+                    f"{'+'.join(sources)} events on {len(hit)} of these {len(members)} "
+                    f"recordings{where} (listed in {EXCLUDED_MANIFEST}); nothing on this "
+                    f"page is marked")
     if stream == "combined":
         # The second ink means the slow label here, and nothing else on this page.
         event_key = chip(RASTER_INK, "fast onset")
         red_key = chip(SLOW_INK, "slow onset — every onset of both streams, one stream, "
                                    "nothing merged away")
-    elif unscanned:
-        # No red on this page, and the reader has to be told WHY there is none:
-        # nobody looked, which is not the same as nothing being there.
-        red_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
-                   "folder</b> (the producer's export report says UNCHECKED) — nothing "
-                   "is marked, and the absence of red is not evidence of a clean cohort")
-    elif removed is not None:
-        # No red here either, for the opposite reason: the artifacts were found
-        # and taken out. The count is this page's recordings on this page's
-        # stream, so a reader can see what the clean page cost.
-        hit = sorted((sl.slice_id, removed[(sl.slice_id, stream)]) for sl, _ in members
-                     if removed.get((sl.slice_id, stream)))
-        n = sum(k for _, k in hit)
-        where = (" — " + ", ".join(f"{sid}: {k} events" for sid, k in hit)) if hit else ""
-        red_key = (f"<b>field-step artifacts removed by the producer</b>: {n} {stream} "
-                   f"events on {len(hit)} of these {len(members)} recordings{where} "
-                   f"(listed in {EXCLUDED_MANIFEST}); nothing on this page is marked")
+        if scan_key:
+            red_key += f"<div style='margin:3px 0 0'>{scan_key}</div>"
+    elif scan_key:
+        red_key = scan_key
     from bugarach.ui.app import COLORS, TITLES
 
     if ran:
@@ -897,8 +920,8 @@ def main(argv=None) -> int:
     not_run = tuple(a.not_run) if a.not_run is not None else ()
 
     written, total_red, figure = [], 0, 0
-    for (group, treatment, stream), spec in sorted(pages.items(),
-                                                   key=lambda kv: (group_key(kv[0][0]), kv[0][1:])):
+    for (group, treatment, stream), spec in sorted(
+            pages.items(), key=lambda kv: (group_key(kv[0][0]), kv[0][1], stream_key(kv[0][2]))):
         if a.streams and stream not in a.streams:
             continue
         # Numbered in the order the run writes them (CLAUDE.md: number every figure).

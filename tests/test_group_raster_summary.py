@@ -317,6 +317,32 @@ def test_the_combined_page_draws_fast_in_the_raster_ink_and_slow_in_the_second(t
     assert by_ink == {RASTER_INK: 3, mod.SLOW_INK: 2}
 
 
+def test_the_combined_page_still_says_no_field_step_scan_was_run(tmp_path):
+    """Found rendering the September APV+CNQX+GZ pages (2026-10-05): the combined page's
+    slow-ink key took the slot the unscanned warning lived in, so the fast and slow pages
+    carried the warning and the combined page silently did not."""
+    d = _folder(tmp_path, manifest=None)
+    pages, _, _ = mod.measure(d, ("TTX",), unscanned=True, combined=True)
+    spec = pages[("MALE", "TTX", "combined")]
+    head = mod.header_html("MALE", "TTX", spec["members"], spec["ext"], d,
+                           stream="combined", unscanned=True)
+    assert "slow onset" in head and "no field-step scan has been run" in head
+
+
+def test_the_combined_page_counts_both_streams_removals(tmp_path):
+    d = _folder(tmp_path, manifest=None)
+    pages, _, _ = mod.measure(d, ("TTX",), steps_excluded=True, combined=True)
+    spec = pages[("MALE", "TTX", "combined")]
+    head = mod.header_html("MALE", "TTX", spec["members"], spec["ext"], d, stream="combined",
+                           removed={("s1", "fast"): 2, ("s1", "slow"): 1})
+    assert "3 fast+slow events on 1 of these 2 recordings" in head
+
+
+def test_pages_and_figures_run_fast_slow_combined():
+    assert sorted(["combined", "slow", "fast", "x"], key=mod.stream_key) == [
+        "fast", "slow", "combined", "x"]
+
+
 def test_without_combined_there_is_no_combined_page(tmp_path):
     pages, _, _ = mod.measure(_folder(tmp_path), ("TTX",))
     assert not any(k[2] == "combined" for k in pages)
