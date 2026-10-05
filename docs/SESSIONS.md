@@ -17,6 +17,9 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   unscanned, Tony's review blanking applied by the producer. Eval pages, working material, not
   murderboarded. Released by the merge of the PR that carries this block.
 - **Touches:** that folder only (`4x/`, `3x/`, `README.md`).
+- **RELEASED 2026-10-05, about 5 PM EDT.** Finished: drawn from the producer's 4:25 PM rebuild,
+  which carries Tony's long analysis windows; README current. Record:
+  `docs/handoffs/2026-10-05-s5-housekeeping-and-september-rasters.md`.
 
 ### WSMIP064/detector-table — DARKROOM claim: `bugarach/2026-09-28-detector-table/` (NEW)
 - **Status:** claimed 2026-09-28 by WSMIP064 on Tony's brief: one table of every detector (nine
