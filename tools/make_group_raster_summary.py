@@ -295,14 +295,27 @@ def _shift_stream(stream, shift: float):
 SLOW_INK = "#d55e00"
 
 
+#: The page key's group when ``all_groups`` puts every group on one page.
+ALL_GROUPS = "ALL"
+
+
+def group_of(sl) -> str:
+    return sl.meta.get("group_id") or "UNGROUPED"
+
+
 def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False,
             steps_excluded: bool = False, groups: tuple[str, ...] | None = None,
-            combined: bool = False):
+            combined: bool = False, all_groups: bool = False):
     """Which recordings go on which page, and what each page's extent must be.
 
     ``combined`` adds the combined stream (``bugarach.combined``) to every recording carrying
     fast and slow, so it gets pages of its own. Safe here and nowhere near a detector: this
-    tool draws, and draws nothing from an RNG."""
+    tool draws, and draws nothing from an RNG.
+
+    ``all_groups`` puts every group on one page per treatment and stream, rows ordered DI,
+    OVX, MALE, ORX (``bugarach.groups``) and by slice id within a group. It is for a small
+    cohort read as one set (Tony, 2026-10-05: the six September APV+CNQX+GZ recordings, one
+    page per stream with all six). The page key's group is :data:`ALL_GROUPS`."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         slices = load_folder(folder)
@@ -314,7 +327,7 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
                 sl.streams[COMBINED] = stream_of(sl, COMBINED)
     manifest = {} if (unscanned or steps_excluded) else read_manifest(folder)
     if groups:
-        slices = [sl for sl in slices if (sl.meta.get("group_id") or "UNGROUPED") in groups]
+        slices = [sl for sl in slices if group_of(sl) in groups]
 
     pages: dict[tuple[str, str], list] = defaultdict(list)
     skipped: list[str] = []
@@ -340,12 +353,12 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
             # down the page that "never pooled" exists to prevent. Split, each
             # page is one measurement of six recordings and half the height.
             for sname in sorted(sl.streams):
-                pages[(sl.meta.get("group_id") or "UNGROUPED", t, sname)].append(
+                pages[(ALL_GROUPS if all_groups else group_of(sl), t, sname)].append(
                     (sl, anchor))
 
     built = {}
     for key, members in pages.items():
-        members.sort(key=lambda p: p[0].slice_id)
+        members.sort(key=lambda p: (group_key(group_of(p[0])), p[0].slice_id))
         lo = min(-a for _, a in members)
         # THE FULL RECORDING, not the last event in it. Taking the extent from
         # the last onset ends the page wherever the quietest tail happened to
@@ -625,6 +638,22 @@ def raster_px(n_rois: int, roi_px: int | None = None) -> int:
     return (roi_px or RASTER_PX_PER_ROI) * max(int(n_rois), 1)
 
 
+def row_label(sl, *, all_groups: bool = False) -> str:
+    """The id at the left of a recording's block, with its group on a page of every group."""
+    return f"{group_of(sl)} · {sl.slice_id}" if all_groups else sl.slice_id
+
+
+def page_title(group: str, members) -> str:
+    """The page's group as a reader sees it: on an all-groups page, which groups and how many."""
+    if group != ALL_GROUPS:
+        return group
+    from bugarach.groups import in_group_order
+
+    present = [group_of(sl) for sl, _ in members]
+    return "all groups — " + ", ".join(
+        f"{present.count(g)} {g}" for g in in_group_order(present)) + " recordings"
+
+
 def block_heights(slice_id: str, n_rois: int) -> tuple[int, int]:
     """(data height, label height) for one block, in px.
 
@@ -639,7 +668,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
                 *, stream: str = "", unscanned: bool = False, ran=(), not_run=(),
                 excluded=(), note=None, removed: dict | None = None,
                 detections: Path | None = None, roi_px: int | None = None,
-                floors: dict | None = None) -> str:
+                floors: dict | None = None, figure: int | None = None) -> str:
     """The key, and the provenance. Outside every plot, per the conventions.
 
     ``floors`` (from :func:`read_floors`) adds each recording's own floor per window, in
@@ -728,9 +757,11 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         note_html += ("<div style='margin:4px 0 0;color:#444'>own floor per window "
                       "(co-active ROIs; floor + 1 is one more): " + " &nbsp;·&nbsp; ".join(per)
                       + "</div>")
+    fig = f"Figure {figure}. " if figure else ""
     return (
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
-        f"<b style='font-size:16px'>{group} · {treatment} · {stream}</b> &nbsp;—&nbsp; "
+        f"<b style='font-size:16px'>{fig}{page_title(group, members)} · {treatment} · "
+        f"{stream}</b> &nbsp;—&nbsp; "
         f"{len(members)} recording(s), each row one recording, "
         f"<b>t = 0 is the end of that recording's baseline</b>"
         f"<div style='margin:5px 0 0;color:#444'>"
@@ -772,6 +803,10 @@ def main(argv=None) -> int:
                          f"counts what {EXCLUDED_MANIFEST} says was removed.")
     ap.add_argument("--groups", nargs="+", default=None, metavar="GROUP",
                     help="only these groups (e.g. DI) — for rendering one page to review")
+    ap.add_argument("--all-groups", action="store_true",
+                    help="one page per treatment and stream with every group on it, rows "
+                         "ordered DI, OVX, MALE, ORX and each labelled with its group — for "
+                         "a small cohort read as one set (default: one page per group)")
     ap.add_argument("--detections", default=None, nargs="+", type=Path,
                     help="one or more detections.csv — detect's own, and any other "
                          "file in the same contract (a learned run, say). Draws a "
@@ -844,7 +879,8 @@ def main(argv=None) -> int:
                                        unscanned=a.unscanned,
                                        steps_excluded=a.steps_excluded,
                                        groups=tuple(a.groups) if a.groups else None,
-                                       combined=bool(a.streams and "combined" in a.streams))
+                                       combined=bool(a.streams and "combined" in a.streams),
+                                       all_groups=a.all_groups)
     if not pages:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
@@ -860,11 +896,13 @@ def main(argv=None) -> int:
     ran = list(dict.fromkeys(d for per in lanes.values() for d in per))
     not_run = tuple(a.not_run) if a.not_run is not None else ()
 
-    written, total_red = [], 0
+    written, total_red, figure = [], 0, 0
     for (group, treatment, stream), spec in sorted(pages.items(),
                                                    key=lambda kv: (group_key(kv[0][0]), kv[0][1:])):
         if a.streams and stream not in a.streams:
             continue
+        # Numbered in the order the run writes them (CLAUDE.md: number every figure).
+        figure += 1
         blocks, red = build_page(spec["members"], ext=spec["ext"],
                                  manifest=manifest, width=a.width, stream=stream,
                                  lanes=lanes, not_run=not_run, lane_px=a.lane_px,
@@ -878,7 +916,7 @@ def main(argv=None) -> int:
                                           not_run=not_run, excluded=a.exclude,
                                           detections=a.detections, note=a.note,
                                           removed=removed, roi_px=a.roi_px,
-                                          floors=floors))]
+                                          floors=floors, figure=figure))]
         for sl, panels in blocks:
             # THE ID, ROTATED, IN ITS OWN COLUMN — an HTML block and not the
             # raster's y-label. As a y-label it is clipped to the plot's height:
@@ -886,13 +924,15 @@ def main(argv=None) -> int:
             # still looks like an answer. Its own column is as tall as the id
             # needs, and a block shorter than that gets the difference as space.
             st = sl.streams.get(stream)
-            data_h, label_h = block_heights(sl.slice_id, st.n_rois if st else 0)
+            # On a page holding every group, each row says which group it is.
+            row_id = row_label(sl, all_groups=group == ALL_GROUPS)
+            data_h, label_h = block_heights(row_id, st.n_rois if st else 0)
             label = pn.pane.HTML(
                 f"<div style='height:{label_h}px;width:{LABEL_COL_PX}px;"
                 f"display:flex;align-items:center;justify-content:center'>"
                 f"<span style='writing-mode:vertical-rl;transform:rotate(180deg);"
                 f"font:600 10px system-ui,sans-serif;color:#111;white-space:nowrap'>"
-                f"{sl.slice_id}</span></div>",
+                f"{row_id}</span></div>",
                 width=LABEL_COL_PX, height=label_h, margin=(0, 0, 0, 0))
             col = [pn.pane.HoloViews(p, margin=0, linked_axes=True) for p in panels]
             if label_h > data_h:
