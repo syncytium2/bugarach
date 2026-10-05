@@ -10,6 +10,16 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP064/calibrated-inputs — DARKROOM claim: `bugarach/2026-09-28-calibrated-inputs/` (NEW)
+- **Status:** claimed 2026-09-28 ~10:35 AM EDT by WSMIP064 on the orchestrator's brief, Tony
+  approving ("use 064"). Can count (sliding) itself measure participation and jitter once
+  calibrated? Planted-truth recovery of jitter by the correlogram and by 065's through-the-calls
+  method; participation through count (sliding) with the chance ROIs subtracted and a round-trip
+  calibration; a threshold-free correlogram check. Baseline windows only. Working material, not
+  murderboarded; it feeds a decision Tony has not made. Released by the merge of the PR that
+  carries this block.
+- **Touches:** that folder only (tables, numbered figures, run records, `README.md`).
+
 ### WSMIP064/detector-table — DARKROOM claim: `bugarach/2026-09-28-detector-table/` (NEW)
 - **Status:** claimed 2026-09-28 by WSMIP064 on Tony's brief: one table of every detector (nine
   coded, eight learned) with fresh-seed F1 on fast, slow and combined, shipped and retuned or
