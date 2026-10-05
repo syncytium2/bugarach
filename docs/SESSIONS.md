@@ -10,6 +10,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP064/apv-sept-rasters — DARKROOM claim: `bugarach/2026-10-05-apv-cnqx-gz-sept-rasters/` (NEW)
+- **Status:** claimed 2026-10-05 by WSMIP064 on Tony's request via the orchestrator: fast, slow
+  and combined raster pages of the six September APV+CNQX-then-gabazine recordings, all six on
+  each page, from interface2's two eval folders (`4x/` and `3x/` sigma_est), field steps
+  unscanned, Tony's review blanking applied by the producer. Eval pages, working material, not
+  murderboarded. Released by the merge of the PR that carries this block.
+- **Touches:** that folder only (`4x/`, `3x/`, `README.md`).
+
 ### WSMIP064/detector-table — DARKROOM claim: `bugarach/2026-09-28-detector-table/` (NEW)
 - **Status:** claimed 2026-09-28 by WSMIP064 on Tony's brief: one table of every detector (nine
   coded, eight learned) with fresh-seed F1 on fast, slow and combined, shipped and retuned or
