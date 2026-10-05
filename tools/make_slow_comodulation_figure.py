@@ -4,7 +4,7 @@
     python tools/make_slow_comodulation_figure.py --run <folder>
     python tools/make_slow_comodulation_figure.py --run <folder> --also docs/learned/slow_comodulation
 
-Writes into ``<darkroom>/bugarach/2026-09-17-slow-comodulation/`` unless ``--out`` names a folder:
+Writes into ``<darkroom>/bugarach/archive/2026-09/2026-09-17-slow-comodulation/`` unless ``--out`` names a folder:
 
 * ``fig1_two_kinds.png`` — synthetic: planted events, shared modulation on a 20 s timescale and
   shared drift on a 5-minute one, as rasters and as cross-correlograms.
@@ -47,7 +47,7 @@ from bugarach.time_axis import label as tlabel  # noqa: E402
 from bugarach.time_axis import ticks as tticks  # noqa: E402
 from tube_self_supervised import rigid_frames  # noqa: E402
 
-FOLDER = "2026-09-17-slow-comodulation"
+FOLDER = "2026-09-17-slow-comodulation-pins-excluded"
 DARKROOM_ONLY = ("one_recording.png",)
 plt.rcParams.update({"font.size": 14, "axes.labelsize": 14, "xtick.labelsize": 13,
                      "ytick.labelsize": 13, "legend.fontsize": 13})
@@ -74,11 +74,22 @@ WORLD = {  # colour, style, label
     "sim_hot_window": ("#1b9e77", "-", "promiscuity probe only"),
     "benchmark": ("#e41a1c", (0, (5, 2)), "benchmark generator, whole spec"),
 }
-DATASET = {"steps_excluded/fast": "lab, fast stream", "steps_excluded/slow": "lab, slow stream",
+from bugarach import dataset as _dataset  # noqa: E402
+
+LAB = _dataset.default_role()
+"""The lab role ``measure_slow_comodulation.py`` reads — the declared default; its result keys
+are ``<role>/<stream>``. ``main`` refuses a run measured on any other folder rather than
+drawing it without its lab panels."""
+LAB_STREAMS = ("fast", "slow", "combined")
+"""The lab streams, in panel order; a run that lacks one (every run before 2026-09-23 lacks
+combined) draws the ones it has."""
+LETTERS = "ABCDEFGHIJKL"
+DATASET = {f"{LAB}/fast": "lab, fast stream", f"{LAB}/slow": "lab, slow stream",
+           f"{LAB}/combined": "lab, combined stream",
            "cossart/events": "Dard et al. 2022"}
 GROUP_INK = {"DI": "#0f9fb5", "MALE": "#b8860b", "ORX": "#6b3e26", "OVX": "#c51b7d"}
 """Four hues that differ in lightness as well as hue, so the thin dashed lines separate."""
-GROUP_ORDER = ("DI", "MALE", "ORX", "OVX")
+from bugarach.groups import GROUP_ORDER  # noqa: E402  DI OVX MALE ORX (Tony, 2026-09-23)
 LAG_TICKS = (0.3, 1.0, 5.0, 15.0, 60.0, 300.0)
 BAND_HATCH = {"minus_coact": "////"}
 
@@ -94,14 +105,31 @@ def centres(R):
     return np.sqrt(np.maximum(e[:-1], 0.15) * e[1:])
 
 
-def lag_axis(ax, R, xlabel=True):
+LAG_XLABEL = "lag between two ROIs' onsets (log scale; leftmost point holds lags 0–0.3 s)"
+
+
+def lag_axis(ax, R, xlabel=True, xtext=None, tick_fontsize=None):
+    """Tick the lag axis. ``xlabel`` controls the tick labels; ``xtext`` the axis-label text.
+
+    They separate because a row of panels wants ticks on every panel and the label once — three
+    or four copies of a sentence this long overlap each other and clip at the figure's right
+    edge. Where the label is suppressed, ``lag_caption`` writes it once under the whole row.
+    """
     ax.set_xscale("log")
     ax.set_xlim(0.13, R["lag_edges_sec"][-1] * 1.05)
     ax.set_xticks(LAG_TICKS, [tlabel(t) for t in LAG_TICKS] if xlabel else [""] * len(LAG_TICKS))
     ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+    if tick_fontsize is not None:        # narrow panels run "0.3s" into "1s" at the default size
+        ax.tick_params(axis="x", labelsize=tick_fontsize)
     ax.axhline(0, color="0.8", lw=0.8, zorder=0)
-    if xlabel:
-        ax.set_xlabel("lag between two ROIs' onsets (log scale;\nleftmost point holds lags 0–0.3 s)")
+    if xlabel if xtext is None else xtext:
+        ax.set_xlabel(LAG_XLABEL.replace("(log scale; ", "(log scale;\n"))
+
+
+def lag_caption(fig, axes, pad=0.022):
+    """One lag label centred under ``axes``, placed after ``subplots_adjust`` so it follows them."""
+    y = min(a.get_position().y0 for a in axes)
+    fig.text(0.5, y - pad, LAG_XLABEL, ha="center", va="top", fontsize=12)
 
 
 def curve(ax, R, S, arm, band=False):
@@ -436,7 +464,7 @@ def fig4(R, out):
         ax.set_xlim(-0.6, len(widths) - 0.4)
         ax.set_xlabel(f"bin width\n{DATASET[name]}\n{S['n_recordings']} recordings, "
                       f"{S['n_mice']} mice")
-        tag(ax, "ABC"[i])
+        tag(ax, LETTERS[i])
     axes[0].set_ylabel("population count variance ÷ that of\nindependent ROIs (log scale)")
     h = [Line2D([], [], color=ARM[a][0], marker=ARM[a][3], ls="none", ms=8,
                 label=ARM[a][4] + (" (lab only)" if a.startswith("minus_coact") else ""))
@@ -453,7 +481,7 @@ def fig4(R, out):
 
 # -- Figure 5: the recordings' correlograms ----------------------------------------------------
 
-ZOOM = {"steps_excluded/fast": (-0.15, 0.35), "steps_excluded/slow": (-0.8, 0.8),
+ZOOM = {f"{LAB}/fast": (-0.15, 0.35), f"{LAB}/slow": (-0.8, 0.8), f"{LAB}/combined": (-0.8, 0.8),
         "cossart/events": (-0.12, 0.12)}
 
 
@@ -462,16 +490,21 @@ def fig5(R, out):
     arms = ("circular", "rigid_1.6", "rigid_10", "rigid_20", "block_120", "minus_coact",
             "minus_coact_block_120", "real")
     fig = plt.figure(figsize=(12.5, 12.5))
-    gs = fig.add_gridspec(3, len(names), height_ratios=(1, 1.3, 0.62), hspace=0.2, wspace=0.42)
+    # wspace has to clear a column's tick labels AND its two-line y-label; at 0.42 the label
+    # landed on the previous panel's frame once the third lab stream made a fourth column.
+    gs = fig.add_gridspec(3, len(names), height_ratios=(1, 1.3, 0.62), hspace=0.2, wspace=0.58)
     marked = False
+    bottom = []
     for c, name in enumerate(names):
         S = R["folders"][name]["summary"]
         for r in range(2):
             ax = fig.add_subplot(gs[r, c])
+            if r == 1:
+                bottom.append(ax)
             for arm in arms:
                 curve(ax, R, S, arm, band=arm in ("real", "minus_coact"))
-            lag_axis(ax, R, xlabel=(r == 1))
-            tag(ax, "ABCDEF"[r * len(names) + c])
+            lag_axis(ax, R, xlabel=(r == 1), xtext=False, tick_fontsize=9)
+            tag(ax, LETTERS[r * len(names) + c])
             if r == 0:
                 ax.set_ylabel(f"excess coincidence, full range\n{DATASET[name]}", fontsize=12)
             else:
@@ -490,7 +523,8 @@ def fig5(R, out):
         h.append(Line2D([], [], color="0.35", marker="v", ls="none", ms=9,
                         label="curve beyond the view (▼ above, ▲ below)"))
     lax.legend(handles=h, loc="upper center", ncol=2, frameon=False)
-    fig.subplots_adjust(left=0.08, right=0.965, top=0.98, bottom=0.02)
+    fig.subplots_adjust(left=0.105, right=0.985, top=0.98, bottom=0.02)
+    lag_caption(fig, bottom)
     fig.savefig(out / "fig5_recordings.png", dpi=150)
     plt.close(fig)
 
@@ -498,17 +532,20 @@ def fig5(R, out):
 # -- Figure 6: by group ------------------------------------------------------------------------
 
 def fig6(R, out):
-    names = [n for n in ("steps_excluded/fast", "steps_excluded/slow") if n in R["folders"]]
+    names = [n for n in (f"{LAB}/{s}" for s in LAB_STREAMS) if n in R["folders"]]
     if not names:
         return
     fig = plt.figure(figsize=(12.5, 11.5))
-    gs = fig.add_gridspec(3, len(names), height_ratios=(1, 1, 0.55), hspace=0.22, wspace=0.26)
+    gs = fig.add_gridspec(3, len(names), height_ratios=(1, 1, 0.55), hspace=0.22, wspace=0.46)
     x = centres(R)
     marked = [False]
+    bottom = []
     for c, name in enumerate(names):
         G = R["folders"][name]["by_group"]
         for r, arm in enumerate(("real", "minus_coact_block_120")):
             ax = fig.add_subplot(gs[r, c])
+            if r == 1:
+                bottom.append(ax)
             vals, curves = [], []
             for g in GROUP_ORDER:
                 if g not in G:
@@ -518,13 +555,15 @@ def fig6(R, out):
                 ax.plot(x, v["excess_equal_mice"], color=GROUP_INK[g], lw=1.8, ls=(0, (3, 2)))
                 vals += [e for e, lag in zip(v["excess"], x) if lag > 2]
                 curves += [v["excess"], v["excess_equal_mice"]]
-            lag_axis(ax, R, xlabel=(r == 1))
+            lag_axis(ax, R, xlabel=(r == 1), xtext=False)
             hi = 0.8 if r == 0 else max(0.35, float(np.nanmax(vals)) * 1.3)
             lo = -0.8 if r == 0 else -0.1
             ax.set_ylim(lo, hi)
             marked[0] |= off_scale(ax, R, curves, hi, lo)
-            tag(ax, "ABCD"[r * 2 + c])
-            ax.set_ylabel(f"excess coincidence\n{DATASET[name]}, "
+            tag(ax, LETTERS[r * len(names) + c])
+            # Three lines, not two: the arm's name on its own line keeps the longest line inside
+            # the panel's height, which a rotated label overflows into its neighbours otherwise.
+            ax.set_ylabel(f"excess coincidence\n{DATASET[name]}\n"
                           f"{'as recorded' if arm == 'real' else 'episodes removed + block control'}",
                           fontsize=12)
     h = []
@@ -536,7 +575,7 @@ def fig6(R, out):
             S = R["folders"][name]["by_group"].get(g)
             if S:
                 parts.append(f"{100 * S['top_mouse_share_of_pairs']:.0f} % "
-                             f"{'fast' if name.endswith('fast') else 'slow'}")
+                             f"{name.rsplit('/', 1)[1]}")
         S0 = R["folders"][names[0]]["by_group"][g]
         h.append(Line2D([], [], color=GROUP_INK[g], lw=2.4,
                         label=f"{g} · {S0['n_recordings']} recordings, {S0['n_mice']} mice; "
@@ -545,11 +584,12 @@ def fig6(R, out):
           Line2D([], [], color="0.3", lw=1.8, ls=(0, (3, 2)), label="each mouse weighted equally")]
     if marked[0]:
         h += [Line2D([], [], color="0.35", marker="v", ls="none", ms=9,
-                     label="curve above the view (▲ below it)")]
+                     label="curve beyond the view (▼ above, ▲ below)")]
     lax = fig.add_subplot(gs[2, :])
     lax.axis("off")
     lax.legend(handles=h, loc="upper center", ncol=1, frameon=False)
-    fig.subplots_adjust(left=0.1, right=0.99, top=0.98, bottom=0.02)
+    fig.subplots_adjust(left=0.118, right=0.99, top=0.98, bottom=0.02)
+    lag_caption(fig, bottom)
     fig.savefig(out / "fig6_by_group.png", dpi=150)
     plt.close(fig)
 
@@ -557,7 +597,7 @@ def fig6(R, out):
 # -- darkroom only: one real recording ---------------------------------------------------------
 
 def one_recording(R, out):
-    F = R["folders"].get("steps_excluded/fast")
+    F = R["folders"].get(f"{LAB}/fast")
     if not F:
         return
     rows = [r for r in F["rows"] if "counts_per_minute" in r]
@@ -604,6 +644,12 @@ def main(argv=None):
             raise SystemExit(unresolved_message("--out"))
     a.out.mkdir(parents=True, exist_ok=True)
     R = json.loads((a.run / "results.json").read_text())
+    measured = sorted({k.split("/")[0] for k in R.get("folders", {})} - {"cossart"})
+    if measured and LAB not in measured:
+        raise SystemExit(
+            f"{a.run} was measured on {', '.join(measured)}; the default dataset is now {LAB}. "
+            f"Re-run measure_slow_comodulation.py on the default, or draw this run from the "
+            f"commit that made it.")
     for old in list(a.out.glob("fig*.png")) + [a.out / n for n in DARKROOM_ONLY]:
         if old.exists():
             old.unlink()

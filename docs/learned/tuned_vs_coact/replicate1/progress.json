@@ -1,0 +1,91 @@
+{
+ "at": "2026-09-19T07:48:04-0400",
+ "commit": "7a95e8af11a0933ff7c3ed4f082b17b86cd548a6",
+ "torch": "2.14.0+cu126",
+ "stages": {
+  "hand:coact": {
+   "total": 1,
+   "done": 1,
+   "errors": 0
+  },
+  "search:coact": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:loco": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:rate": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:sce": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:sync": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:cicada": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "inner:chorus_norm": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:chorus_norm": {
+   "total": 55,
+   "done": 55,
+   "errors": 0
+  },
+  "inner:tube": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:tube": {
+   "total": 55,
+   "done": 55,
+   "errors": 0
+  },
+  "inner:chorus_gain_norm": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:chorus_gain_norm": {
+   "total": 55,
+   "done": 55,
+   "errors": 0
+  },
+  "inner:line_length": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:line_length": {
+   "total": 50,
+   "done": 50,
+   "errors": 0
+  }
+ },
+ "errors": [],
+ "fits_last_hour": 121,
+ "running": 0,
+ "queued": 0,
+ "remaining_fits_known": 0,
+ "projected_finish": "2026-09-19T07:48:04-0400",
+ "note": "remaining_fits_known excludes outer refits not yet queued: a model's are queued when its selections are made",
+ "mirror_every_sec": 60,
+ "mirror": null
+}

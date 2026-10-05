@@ -1,0 +1,26 @@
+{
+ "arch": "tube",
+ "cfg": {
+  "n_scales": 4,
+  "width": 8,
+  "depth": 6,
+  "max_center_frames": 128,
+  "max_ratio": 80
+ },
+ "overrides": {
+  "n_scales": 4,
+  "width": 8,
+  "max_ratio": 80
+ },
+ "training": {
+  "optimizer": "Adam",
+  "lr": 0.003,
+  "steps": 900,
+  "crop_frames": 4096,
+  "batch": 3,
+  "n_train": 10
+ },
+ "draw_index": 1,
+ "is_untuned": false,
+ "config_key": "919a1fa11f096344"
+}

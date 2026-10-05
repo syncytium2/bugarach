@@ -54,7 +54,7 @@ FIGURE_ID = "assembly_answer"
 ALPHA = 0.05
 FLOOR = 5e-4          # p-value floor for the log axes; 1/(1+1000) surrogates
 K_SHOWN = 3
-GROUP_ORDER = ("DI", "MALE", "OVX", "ORX")
+from bugarach.groups import GROUP_ORDER  # noqa: E402  DI OVX MALE ORX (Tony, 2026-09-23)
 
 REAL_FAST = "#111111"
 REAL_SLOW = "#1f6fb4"

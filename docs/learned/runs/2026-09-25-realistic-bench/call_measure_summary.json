@@ -1,0 +1,143 @@
+{
+ "spacing": "realistic",
+ "seeds_per_background": {
+  "fast": 48,
+  "slow": 24,
+  "combined": 24
+ },
+ "bins": [
+  "under 10 s",
+  "10 to 30 s",
+  "over 30 s"
+ ],
+ "centred_on": "the planted event's time",
+ "defaults": "call_measure.DEFAULTS per stream",
+ "summary": {
+  "fast": {
+   "under 10 s": {
+    "events": 174,
+    "median_error_rois": 0.0,
+    "mean_error_rois": 0.367816091954023,
+    "mean_abs_error_rois": 0.367816091954023,
+    "share_exact": 0.7528735632183908,
+    "share_within_1": 0.9137931034482759,
+    "share_over": 0.2471264367816092,
+    "share_under": 0.0
+   },
+   "10 to 30 s": {
+    "events": 196,
+    "median_error_rois": 0.0,
+    "mean_error_rois": 0.42857142857142855,
+    "mean_abs_error_rois": 0.42857142857142855,
+    "share_exact": 0.6785714285714286,
+    "share_within_1": 0.9183673469387755,
+    "share_over": 0.32142857142857145,
+    "share_under": 0.0
+   },
+   "over 30 s": {
+    "events": 302,
+    "median_error_rois": 0.0,
+    "mean_error_rois": 0.41721854304635764,
+    "mean_abs_error_rois": 0.41721854304635764,
+    "share_exact": 0.7052980132450332,
+    "share_within_1": 0.9072847682119205,
+    "share_over": 0.2947019867549669,
+    "share_under": 0.0
+   },
+   "all": {
+    "events": 672,
+    "median_error_rois": 0.0,
+    "mean_error_rois": 0.40773809523809523,
+    "mean_abs_error_rois": 0.40773809523809523,
+    "share_exact": 0.7098214285714286,
+    "share_within_1": 0.9122023809523809,
+    "share_over": 0.29017857142857145,
+    "share_under": 0.0
+   }
+  },
+  "slow": {
+   "under 10 s": {
+    "events": 160,
+    "median_error_rois": 0.0,
+    "mean_error_rois": 1.325,
+    "mean_abs_error_rois": 1.325,
+    "share_exact": 0.53125,
+    "share_within_1": 0.775,
+    "share_over": 0.46875,
+    "share_under": 0.0
+   },
+   "10 to 30 s": {
+    "events": 488,
+    "median_error_rois": 0.0,
+    "mean_error_rois": 0.7889344262295082,
+    "mean_abs_error_rois": 0.7889344262295082,
+    "share_exact": 0.5881147540983607,
+    "share_within_1": 0.8237704918032787,
+    "share_over": 0.41188524590163933,
+    "share_under": 0.0
+   },
+   "over 30 s": {
+    "events": 168,
+    "median_error_rois": 0.0,
+    "mean_error_rois": 0.7797619047619048,
+    "mean_abs_error_rois": 0.7797619047619048,
+    "share_exact": 0.5833333333333334,
+    "share_within_1": 0.8095238095238095,
+    "share_over": 0.4166666666666667,
+    "share_under": 0.0
+   },
+   "all": {
+    "events": 816,
+    "median_error_rois": 0.0,
+    "mean_error_rois": 0.8921568627450981,
+    "mean_abs_error_rois": 0.8921568627450981,
+    "share_exact": 0.5759803921568627,
+    "share_within_1": 0.8112745098039216,
+    "share_over": 0.42401960784313725,
+    "share_under": 0.0
+   }
+  },
+  "combined": {
+   "under 10 s": {
+    "events": 270,
+    "median_error_rois": 3.0,
+    "mean_error_rois": 3.9592592592592593,
+    "mean_abs_error_rois": 3.9592592592592593,
+    "share_exact": 0.16296296296296298,
+    "share_within_1": 0.32592592592592595,
+    "share_over": 0.837037037037037,
+    "share_under": 0.0
+   },
+   "10 to 30 s": {
+    "events": 465,
+    "median_error_rois": 2.0,
+    "mean_error_rois": 2.412903225806452,
+    "mean_abs_error_rois": 2.412903225806452,
+    "share_exact": 0.23225806451612904,
+    "share_within_1": 0.44086021505376344,
+    "share_over": 0.7677419354838709,
+    "share_under": 0.0
+   },
+   "over 30 s": {
+    "events": 177,
+    "median_error_rois": 2.0,
+    "mean_error_rois": 2.361581920903955,
+    "mean_abs_error_rois": 2.361581920903955,
+    "share_exact": 0.2542372881355932,
+    "share_within_1": 0.4350282485875706,
+    "share_over": 0.7457627118644068,
+    "share_under": 0.0
+   },
+   "all": {
+    "events": 912,
+    "median_error_rois": 2.0,
+    "mean_error_rois": 2.8607456140350878,
+    "mean_abs_error_rois": 2.8607456140350878,
+    "share_exact": 0.21600877192982457,
+    "share_within_1": 0.4057017543859649,
+    "share_over": 0.7839912280701754,
+    "share_under": 0.0
+   }
+  }
+ }
+}

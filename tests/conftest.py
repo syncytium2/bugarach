@@ -73,3 +73,60 @@ def assert_close_naninf(ours, ref, rtol=1e-9, atol=1e-9, err_msg=""):
     np.testing.assert_allclose(ours[finite], ref[finite], rtol=rtol, atol=atol,
                                err_msg=err_msg)
     assert not np.isfinite(ours[~finite]).any(), f"{err_msg}: finite vs null"
+
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def pre_adr_0008_bench():
+    """The bench as it was before 2026-09-25: no ADR-0008 floor on a recording or a detector.
+
+    For a test that pins a measurement taken before the floor, or that exercises detector
+    mechanics the floor has nothing to do with (a shift, a column mapping). Its numbers are
+    pre-ADR-0008 by construction, and a test using this says so by naming it. The floor's own
+    tests are in ``tests/test_bench_floor.py``.
+    """
+    # Module scope, because several of these modules build their recordings in module-scoped
+    # fixtures, which a function-scoped patch reaches too late.
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv("BUGARACH_BENCH_FLOOR", "off")
+        yield
+
+
+def _restore_the_stretch(mp):
+    """Put the elevated-rate stretch back on every bench's planted recording, as it was until
+    ADR-0009 took it off on 2026-09-25: 1200-1500 s, 30 s ramps, each bench's own stretch rate
+    (the rate now held by that bench's ``ELEVATED_RATE_RECORDING``). Patched in place, because
+    every recording maker reads ``BENCH_RECORDING`` when it is called."""
+    from bugarach import bench, bench_combined, bench_slow
+
+    for b in (bench, bench_slow, bench_combined):
+        el = b.ELEVATED_RATE_RECORDING
+        for k in ("hot_window", "hot_rate_hz", "ramp_sec"):
+            mp.setitem(b.BENCH_RECORDING, k, el[k])
+
+
+@pytest.fixture(scope="module")
+def pre_adr_0009_bench():
+    """The bench as it was before ADR-0009 decision 1: the elevated-rate stretch inside every
+    planted recording (fast, slow, combined).
+
+    For a test that pins a measurement taken on that bench. Its numbers are pre-ADR-0009 by
+    construction, and are due for re-measurement on the current bench, not for re-baselining:
+    ``docs/todo/2026-09-25-pinned-bench-measurements-predate-adr-0009.md``. The current bench's
+    own tests are in ``tests/test_bench_adr_0009.py``. Module scope, like ``pre_adr_0008_bench``;
+    for one test in a module that otherwise runs the current bench, use
+    ``pre_adr_0009_bench_here``, which cannot leak into the tests after it.
+    """
+    with pytest.MonkeyPatch.context() as mp:
+        _restore_the_stretch(mp)
+        yield
+
+
+@pytest.fixture
+def pre_adr_0009_bench_here():
+    """``pre_adr_0009_bench`` for a single test."""
+    with pytest.MonkeyPatch.context() as mp:
+        _restore_the_stretch(mp)
+        yield

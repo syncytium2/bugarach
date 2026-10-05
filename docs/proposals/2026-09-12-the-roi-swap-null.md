@@ -18,7 +18,7 @@
 > listed in the revision note at the end** — read it before treating any claim here as new.
 >
 > Every screen number was read from the run's own files in
-> `<darkroom>/bugarach/2026-09-11-surrogate-screen/` on 2026-09-12. Literature claims carry their
+> `<darkroom>/bugarach/archive/2026-09/2026-09-11-surrogate-screen/` on 2026-09-12. Literature claims carry their
 > paper, or are marked not-held.
 
 ---
@@ -578,7 +578,7 @@ sensitivity most on the folder with the most empty baselines. Every "no leak det
 **Cost.** Stages one and two need no compute worth naming and run anywhere. Stage three is
 matching levels x swap fractions x seeds, doubled by the ablation, and the seed count must be declared
 before the first run because the gate is a function of it. The compute can go to the Windows
-workstation session Tony named on 2026-09-12. `<darkroom>/bugarach/2026-09-11-surrogate-screen/` is
+workstation session Tony named on 2026-09-12. `<darkroom>/bugarach/archive/2026-09/2026-09-11-surrogate-screen/` is
 claimed under board block 065; **a new run claims its own folder before writing.**
 
 ---
@@ -709,7 +709,7 @@ does not satisfy it.
 
 ## Sources
 
-On the shelf at `<darkroom>/bugarach/lit/`: `surrogates/amarasingham_2012_jitter_method.pdf` ·
+On the shelf at `<darkroom>/bugarach/archive/2026-08/lit/`: `surrogates/amarasingham_2012_jitter_method.pdf` ·
 `surrogates/amarasingham_2015_ambiguity_nonidentifiability.pdf` ·
 `surrogates/elsayed_cunningham_2017_byproduct.pdf` · `surrogates/stella_2022_comparing_surrogates.pdf` ·
 `surrogates/pipa_2008_neuroxidence.pdf` · `ml/gutmann_hyvarinen_2012_nce.pdf` ·

@@ -1,0 +1,103 @@
+{
+ "detector": "sce",
+ "outer_fold": 2,
+ "selection": "gated",
+ "config_key": "8fbdf3918c7ee8bf",
+ "config": "configs/sce/8fbdf3918c7ee8bf.json",
+ "budget": "meta.json budgets[2]",
+ "searched_by": "search_all_settings.choose_settings (goal 1's grids, per fold)",
+ "grids": {
+  "threshold_pctile": [
+   70.0,
+   75.0,
+   80.0,
+   85.0,
+   90.0,
+   95.0,
+   98.0,
+   99.0,
+   99.5
+  ],
+  "bin_width_sec": [
+   2.0,
+   5.0,
+   10.0,
+   15.0,
+   20.0,
+   30.0
+  ],
+  "min_rois": [
+   3,
+   6,
+   8,
+   10,
+   12,
+   16
+  ],
+  "merge_gap_sec": [
+   0.0,
+   5.0,
+   10.0,
+   15.0,
+   20.0,
+   30.0
+  ],
+  "detection_mode": [
+   "threshold",
+   "peak"
+  ],
+  "peak_prominence": [
+   0.0,
+   0.25,
+   0.5,
+   1.0,
+   2.0
+  ],
+  "peak_min_distance_sec": [
+   0.0,
+   1.0,
+   2.0,
+   5.0,
+   10.0
+  ]
+ },
+ "min_gain": 0.002,
+ "max_rounds": 2,
+ "inner_f1": 0.5142409197805069,
+ "moves": [],
+ "edge_flags": {
+  "min_rois": "low"
+ },
+ "n_scored": 26,
+ "n_refused": 26,
+ "inner_probe_per_hour": {
+  "quiet": 351.0,
+  "busy": 330.0
+ },
+ "inner_quiet_per_hour": 3.3333333333333335,
+ "pooled": {
+  "recordings": [
+   "quiet:2000",
+   "busy:2000",
+   "quiet:2001",
+   "busy:2001",
+   "quiet:2002",
+   "busy:2002",
+   "quiet:2003",
+   "busy:2003"
+  ],
+  "recording_seeds": [
+   2000,
+   2001,
+   2002,
+   2003
+  ],
+  "twin_seeds": [
+   102000,
+   102001,
+   102002,
+   102003
+  ]
+ },
+ "seconds": 14.923174199997447
+}

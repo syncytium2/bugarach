@@ -1,11 +1,11 @@
 ---
-status: waiting-on-tony
+status: done
 filed: 2026-08-25
 ---
 
 # Two scorers, two winners, and nothing decides between them
 
-waiting: Decide how the promiscuity probe enters the score. Two rules are live in the tree, they pick opposite winners for the rate detector, and the re-fit cannot start until one is chosen.
+closed: 2026-09-25, overtaken by ADR-0009 decision 1 (Tony approved). The elevated-rate test is scored on a recording of its own, against its own budget, and never enters precision. The one loose end is docs/todo/2026-09-25-probe-rate-mechanism-forks-the-scorer.md.
 
 > **Not murderboarded** — a finding for sessions in this tree. Every number is
 > reproducible from `tools/make_rate_bar_axis_figure.py`. **If any of it reaches an

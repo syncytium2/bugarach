@@ -1,0 +1,90 @@
+{
+ "bench": "bugarach.bench_slow",
+ "model": "chorus_norm",
+ "config": {
+  "roi_width": 4,
+  "roi_depth": 4,
+  "top_m": 4
+ },
+ "fit_seeds": [
+  1000,
+  1023
+ ],
+ "test_seeds": [
+  4000,
+  4023
+ ],
+ "null_budget_per_hour": 1.0,
+ "best_within_budget": true,
+ "best": "chorus_norm_slow_seed1.json",
+ "rows": [
+  {
+   "seed": 0,
+   "path": "chorus_norm_slow_seed0.json",
+   "threshold": 0.009180942678743854,
+   "f1": [
+    0.8460634547591068,
+    0.8314087759815243
+   ],
+   "mean": 0.8387361153703156,
+   "null_per_hour": 0.3333333333333333,
+   "sec": 336,
+   "null_per_hour_before_rescore": 0.3333333333333333
+  },
+  {
+   "seed": 1,
+   "path": "chorus_norm_slow_seed1.json",
+   "threshold": 0.9838471862538573,
+   "f1": [
+    0.8457008244994112,
+    0.8417350527549824
+   ],
+   "mean": 0.8437179386271968,
+   "null_per_hour": 0.0,
+   "sec": 325,
+   "null_per_hour_before_rescore": 0.0
+  },
+  {
+   "seed": 2,
+   "path": "chorus_norm_slow_seed2.json",
+   "threshold": 0.9000000000000001,
+   "f1": [
+    0.8433451118963486,
+    0.8440797186400937
+   ],
+   "mean": 0.8437124152682212,
+   "null_per_hour": 0.0,
+   "sec": 342,
+   "null_per_hour_before_rescore": 0.0
+  },
+  {
+   "seed": 3,
+   "path": "chorus_norm_slow_seed3.json",
+   "threshold": 0.6500000000000001,
+   "f1": [
+    0.8423529411764706,
+    0.8372093023255813
+   ],
+   "mean": 0.839781121751026,
+   "null_per_hour": 0.1111111111111111,
+   "sec": 353,
+   "null_per_hour_before_rescore": 0.2222222222222222
+  },
+  {
+   "seed": 4,
+   "path": "chorus_norm_slow_seed4.json",
+   "threshold": 0.9715809801839131,
+   "f1": [
+    0.8423529411764706,
+    0.8421052631578948
+   ],
+   "mean": 0.8422291021671827,
+   "null_per_hour": 0.0,
+   "sec": 314,
+   "null_per_hour_before_rescore": 0.0
+  }
+ ],
+ "caveat": "best is chosen on the held-out seeds; its F1 is a selection score",
+ "best_before_rescore": "chorus_norm_slow_seed1.json",
+ "rescored": "calls/hour recomputed on the corrected no-coordination recording (#761: bench_slow's NULL_RECORDING had a stale 0.0030 Hz literal where REGIMES quiet is 0.0024). The fits are untouched -- training never reads that recording -- so this is equivalent to a retrain, and best.json was re-picked by the training tool's own rule."
+}

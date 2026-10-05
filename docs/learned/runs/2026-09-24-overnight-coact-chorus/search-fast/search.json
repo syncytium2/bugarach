@@ -1,0 +1,358 @@
+{
+ "started": "2026-09-23T22:25:09",
+ "bench": "bugarach.bench",
+ "selection_seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34,
+  35,
+  36,
+  37,
+  38,
+  39,
+  40,
+  41,
+  42,
+  43,
+  44,
+  45,
+  46,
+  47,
+  48
+ ],
+ "held_out_seeds": [
+  49,
+  50,
+  51,
+  52,
+  53,
+  54,
+  55,
+  56,
+  57,
+  58,
+  59,
+  60,
+  61,
+  62,
+  63,
+  64,
+  65,
+  66,
+  67,
+  68,
+  69,
+  70,
+  71,
+  72,
+  73,
+  74,
+  75,
+  76,
+  77,
+  78,
+  79,
+  80,
+  81,
+  82,
+  83,
+  84,
+  85,
+  86,
+  87,
+  88,
+  89,
+  90,
+  91,
+  92,
+  93,
+  94,
+  95,
+  96
+ ],
+ "space": {
+  "coact": {
+   "alpha": [
+    0.01,
+    0.003,
+    0.001,
+    0.0003,
+    0.0001,
+    3e-05,
+    1e-05,
+    1e-06
+   ],
+   "int_win_sec": [
+    0.5,
+    1.0,
+    2.0,
+    3.0,
+    5.0
+   ],
+   "context_win_sec": [
+    20.0,
+    30.0,
+    60.0,
+    120.0,
+    240.0
+   ],
+   "min_rois": [
+    3,
+    4,
+    5,
+    6,
+    8
+   ],
+   "merge_gap_sec": [
+    0.0,
+    1.0,
+    2.0,
+    3.0,
+    5.0,
+    8.0
+   ],
+   "guard_sec": [
+    0.0,
+    0.5,
+    1.0,
+    2.0,
+    4.0
+   ],
+   "guard_norm": [
+    "compact",
+    "exposure"
+   ]
+  }
+ },
+ "shipped": {
+  "coact": {
+   "alpha": 0.0001,
+   "int_win_sec": 2.0,
+   "context_win_sec": 60.0,
+   "min_rois": 3,
+   "merge_gap_sec": 3.0,
+   "guard_sec": 0.0,
+   "guard_norm": "compact",
+   "detection_mode": "threshold",
+   "peak_prominence": 0.0,
+   "peak_min_distance_sec": 0.0,
+   "window_mode": "sliding"
+  }
+ },
+ "stage": "finished",
+ "selection": {
+  "coact": {
+   "shipped": 0.7207753275806966,
+   "rounds": 0.7526859896771644
+  }
+ },
+ "crowded_reference_points": {
+  "coact": {
+   "int_win_sec": 2.0,
+   "context_win_sec": 60.0,
+   "alpha": 0.0001,
+   "n_surrogates": 100
+  }
+ },
+ "crowded_reference": {
+  "coact": 0.8530443954473759
+ },
+ "rounds": {
+  "state": {
+   "coact": {
+    "alpha": 1e-05,
+    "int_win_sec": 2.0,
+    "context_win_sec": 120.0,
+    "min_rois": 3,
+    "merge_gap_sec": 8.0,
+    "guard_sec": 0.0,
+    "guard_norm": "compact",
+    "detection_mode": "threshold",
+    "peak_prominence": 0.0,
+    "peak_min_distance_sec": 0.0,
+    "window_mode": "sliding"
+   }
+  },
+  "history": {
+   "coact": [
+    {
+     "round": 1,
+     "setting": "alpha",
+     "old": 0.0001,
+     "new": 1e-05,
+     "old_f1": 0.7207753275806966,
+     "new_f1": 0.7280769160841574,
+     "rescued_from_inadmissible": false
+    },
+    {
+     "round": 1,
+     "setting": "context_win_sec",
+     "old": 60.0,
+     "new": 120.0,
+     "old_f1": 0.7280769160841574,
+     "new_f1": 0.7426151626151627,
+     "rescued_from_inadmissible": false
+    },
+    {
+     "round": 1,
+     "setting": "merge_gap_sec",
+     "old": 3.0,
+     "new": 8.0,
+     "old_f1": 0.7426151626151627,
+     "new_f1": 0.7526859896771644,
+     "rescued_from_inadmissible": false
+    }
+   ]
+  },
+  "grids": {
+   "coact": {
+    "alpha": [
+     0.01,
+     0.003,
+     0.001,
+     0.0003,
+     0.0001,
+     3e-05,
+     1e-05,
+     1e-06
+    ],
+    "int_win_sec": [
+     0.5,
+     1.0,
+     2.0,
+     3.0,
+     5.0
+    ],
+    "context_win_sec": [
+     20.0,
+     30.0,
+     60.0,
+     120.0,
+     240.0
+    ],
+    "min_rois": [
+     3,
+     4,
+     5,
+     6,
+     8
+    ],
+    "merge_gap_sec": [
+     0.0,
+     1.0,
+     2.0,
+     3.0,
+     5.0,
+     8.0,
+     16.0
+    ],
+    "guard_sec": [
+     0.0,
+     0.5,
+     1.0,
+     2.0,
+     4.0
+    ],
+    "guard_norm": [
+     "compact",
+     "exposure"
+    ]
+   }
+  }
+ },
+ "pairs": {},
+ "held_out": {
+  "coact": {
+   "shipped": {
+    "params": {
+     "alpha": 0.0001,
+     "int_win_sec": 2.0,
+     "context_win_sec": 60.0,
+     "min_rois": 3,
+     "merge_gap_sec": 3.0,
+     "guard_sec": 0.0,
+     "guard_norm": "compact",
+     "detection_mode": "threshold",
+     "peak_prominence": 0.0,
+     "peak_min_distance_sec": 0.0,
+     "window_mode": "sliding"
+    },
+    "f1_quiet": 0.7554317548746518,
+    "f1_busy": 0.6805314846909302,
+    "mean_f1": 0.717981619782791,
+    "probe_quiet_per_hour": 16.5,
+    "probe_busy_per_hour": 12.75,
+    "null_per_hour": 6.777777777777778,
+    "crowded_mean_f1": 0.8594609132201769,
+    "crowded_gain_vs_shipped": 0.0,
+    "gain_vs_shipped": {
+     "mid": 0.0,
+     "lo": 0.0,
+     "hi": 0.0
+    }
+   },
+   "rounds": {
+    "params": {
+     "alpha": 1e-05,
+     "int_win_sec": 2.0,
+     "context_win_sec": 120.0,
+     "min_rois": 3,
+     "merge_gap_sec": 8.0,
+     "guard_sec": 0.0,
+     "guard_norm": "compact",
+     "detection_mode": "threshold",
+     "peak_prominence": 0.0,
+     "peak_min_distance_sec": 0.0,
+     "window_mode": "sliding"
+    },
+    "f1_quiet": 0.7872340425531915,
+    "f1_busy": 0.7215434083601286,
+    "mean_f1": 0.7543887254566601,
+    "probe_quiet_per_hour": 13.5,
+    "probe_busy_per_hour": 11.5,
+    "null_per_hour": 4.833333333333333,
+    "crowded_mean_f1": 0.8238055055833536,
+    "crowded_gain_vs_shipped": -0.03565540763682329,
+    "gain_vs_shipped": {
+     "mid": 0.036967724331138985,
+     "lo": 0.026183372225532936,
+     "hi": 0.04516098627639452
+    }
+   }
+  }
+ },
+ "finished": "2026-09-23T22:27:03",
+ "elapsed_min": 1.9,
+ "evaluations": 74
+}

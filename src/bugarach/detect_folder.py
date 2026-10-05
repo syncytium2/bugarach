@@ -100,6 +100,7 @@ from bugarach.emit import (
     write_detector_settings,
     write_run,
 )
+from bugarach.combined import COMBINED, has_sources, only_combined
 from bugarach.store import Slice, validated_dt
 
 #: Seed for every detector that draws surrogates, so a run reproduces. Written
@@ -110,9 +111,14 @@ RNG_SEED = 20260706
 
 #: The six, in the order the glossary names them. Three take a stream's trains
 #: and a time range; three take the whole slice and window it themselves.
-FLAT = ("rate", "coact", "sync")
+FLAT = ("rate", "coact", "sync", "count", "count_sliding")
 NESTED = ("loco", "sce", "cicada")
 DETECTORS = ("rate", "coact", "loco", "sce", "cicada", "sync")
+#: What may be asked for by name. ``count`` and ``count_sliding`` (the simple rule, binned and
+#: sliding, 2026-09-26) run when named and are **not** in the default :data:`DETECTORS`: adding
+#: them there would change what every existing folder run writes to ``detections.csv``, and
+#: they are on the bench to be measured, not shipped.
+AVAILABLE = DETECTORS + ("count", "count_sliding")
 
 #: Which per-event time each detector anchors on. Recorded in
 #: ``detector_settings.csv`` rather than left implicit, because **the six do not
@@ -127,7 +133,8 @@ DETECTORS = ("rate", "coact", "loco", "sce", "cicada", "sync")
 #: wrong thing off five columns. :mod:`bugarach.store` has the full note,
 #: including why cicada's is not to be "corrected".
 ONSET_FIELD = {"rate": "t50rise", "coact": "t50rise", "sync": "t50rise",
-               "loco": "t50rise", "sce": "t50rise", "cicada": "locs"}
+               "loco": "t50rise", "sce": "t50rise", "cicada": "locs", "count": "t50rise",
+               "count_sliding": "t50rise"}
 
 
 class NoRecordingDetectedOn(RuntimeError):
@@ -340,6 +347,41 @@ def _coerce(value, like):
     return value
 
 
+def _signature_defaults(name: str) -> dict:
+    """Keyword parameters the detector function takes, with their defaults.
+
+    The data arguments (event times, spans, streams) come first and have no default
+    in any of the six, so only parameters with a default are settings.
+    """
+    import inspect
+
+    from bugarach.detectors.cicada import cicada_detect
+    from bugarach.detectors.coact import coact_detect
+    from bugarach.detectors.count import count_detect, count_sliding_detect
+    from bugarach.detectors.loco import loco_detect
+    from bugarach.detectors.rate import rate_detect
+    from bugarach.detectors.sce import sce_detect
+    from bugarach.detectors.sync import sync_detect
+
+    fn = {"rate": rate_detect, "coact": coact_detect, "loco": loco_detect,
+          "sce": sce_detect, "cicada": cicada_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[name]
+    return {p.name: p.default for p in inspect.signature(fn).parameters.values()
+            if p.default is not inspect.Parameter.empty}
+
+
+def _coerce_like(value, like):
+    """:func:`_coerce`, and for a default of ``None`` a number if it reads as one."""
+    if like is None:
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return value
+    return _coerce(value, like)
+
+
 def load_settings(path):
     """A settings CSV as ``({(detector, stream): {parameter: typed}}, provenance)``.
 
@@ -361,6 +403,16 @@ def load_settings(path):
 
     ``fitted_*`` rows come back separately: provenance to record, not arguments to
     pass.
+
+    **What counts as a parameter is the detector's own signature**, not the shipped
+    operating point. Until 2026-09-21 it was the shipped point, so a setting the bench
+    had tuned but not shipped could not reach a real folder: the weekend's every-knob
+    search chose CoactDetect's ``merge_gap_sec``, ``guard_sec`` and ``window_mode`` and
+    LoCo's ``null_context_mode`` and ``window_mode``, none of which the shipped points
+    name, and this function refused every one — the same break in the loop the
+    paragraph above describes, one knob further along. A typo is still refused: it is
+    in no signature. The type comes from the shipped value where there is one, then
+    from the signature's default.
     """
     from bugarach.bench import OPERATING_POINTS
     from bugarach.emit import read_detector_settings
@@ -375,6 +427,7 @@ def load_settings(path):
                 f"{', '.join(DETECTORS)}. A file naming a detector that is not "
                 f"here is not applied by halves.")
         shipped = OPERATING_POINTS[name].params
+        signature = _signature_defaults(name)
         for key, value in row.items():
             if key.startswith(PROVENANCE_PREFIX):
                 provenance.setdefault(f"{name}/{sname}" if sname else name,
@@ -392,17 +445,17 @@ def load_settings(path):
             if key == "rng_seed":
                 params.setdefault((name, sname), {})[key] = int(float(value))
                 continue
-            if key not in shipped:
+            if key not in shipped and key not in signature:
                 raise ValueError(
                     f"{path}: {name!r} has no parameter {key!r}. It takes "
-                    f"{', '.join(sorted(shipped))}.")
+                    f"{', '.join(sorted(set(shipped) | set(signature)))}.")
+            like = shipped[key] if key in shipped else signature[key]
             try:
-                params.setdefault((name, sname), {})[key] = _coerce(value,
-                                                                    shipped[key])
+                params.setdefault((name, sname), {})[key] = _coerce_like(value, like)
             except (TypeError, ValueError) as exc:
                 raise ValueError(
                     f"{path}: {name}.{key} = {value!r} is not a "
-                    f"{type(shipped[key]).__name__} ({exc})") from None
+                    f"{type(like).__name__} ({exc})") from None
     return params, provenance
 
 
@@ -439,6 +492,17 @@ def detector_params(name: str, *, frame_interval_sec: float,
     for key in ("", stream) if stream is not None else ("",):
         params.update((overrides or {}).get((name, key), {}))
     # AFTER the overrides, deliberately — see the docstring.
+    return with_microscope(name, params, frame_interval_sec)
+
+
+def with_microscope(name: str, params: dict, frame_interval_sec: float) -> dict:
+    """``params`` with the values that belong to the recording's microscope, not the calibration:
+    rate+context's ``grid_dt`` and locust's ``imaging_rate_hz`` (see :func:`detector_params`).
+
+    Applied last, over any setting, by every path that runs a detector on real recordings with
+    settings from elsewhere (``detector_params``, ``tools/detect_with_floors.py``), so no bench
+    grid or rig rate reaches a real recording. Returns a new dict."""
+    params = dict(params)
     if name == "rate":
         params["grid_dt"] = float(frame_interval_sec)
     elif name == "cicada":
@@ -450,6 +514,7 @@ def _run_flat(name, s, windows, want_streams, params_by_stream, identity):
     """The three that take one stream at a time — so they can take one stream's
     settings at a time, which is what the settings file's `stream` column is for."""
     from bugarach.detectors.coact import coact_detect
+    from bugarach.detectors.count import count_detect, count_sliding_detect
     from bugarach.detectors.rate import rate_detect, stream_trains
     from bugarach.detectors.sync import sync_detect
 
@@ -466,6 +531,10 @@ def _run_flat(name, s, windows, want_streams, params_by_stream, identity):
                 res = rate_detect(stream_trains(st, span), span, **params)
             elif name == "coact":
                 res = coact_detect(st.t50rise, span, **params)
+            elif name == "count":
+                res = count_detect(st.t50rise, span, **params)
+            elif name == "count_sliding":
+                res = count_sliding_detect(st.t50rise, span, **params)
             else:
                 res = sync_detect(st.t50rise, span, **params)
             out.extend(events_from(
@@ -594,7 +663,14 @@ def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
     This used to hand-parse ``meta["frame_interval_sec"]`` and phrase its own
     refusal, which made three sentences in the tree saying the same thing to the
     same producer; the todo behind PR #250 asked for exactly this deletion.
+
+    ``stream="combined"`` on a recording carrying fast and slow runs on
+    :func:`bugarach.combined.only_combined` — the merged stream **alone**, so the
+    three shared-RNG ports draw for it without moving a fast or slow draw, which
+    come from their own run.
     """
+    if stream == COMBINED and COMBINED not in s.streams and has_sources(s):
+        s = only_combined(s)
     s, windows = folder_analysis_windows(s)
 
     names = list(s.streams)
@@ -686,11 +762,11 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
 
     folder = Path(folder)
     out_dir = Path(out_dir)
-    bad = [d for d in detectors if d not in DETECTORS]
+    bad = [d for d in detectors if d not in AVAILABLE]
     if bad:
         raise ValueError(
             f"unknown detector(s) {', '.join(bad)} — have "
-            f"{', '.join(DETECTORS)}")
+            f"{', '.join(AVAILABLE)}")
 
     # Same rule as the settings file below: a checkpoint that no longer matches
     # its architecture fails on recording 0, not on 84 of 85.
@@ -698,7 +774,7 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
     if models:
         from bugarach.learn.checkpoint import load as _load_model
         loaded = [m if hasattr(m, "predict") else _load_model(m) for m in models]
-        clash = sorted({m.name for m in loaded} & set(DETECTORS))
+        clash = sorted({m.name for m in loaded} & (set(DETECTORS) | set(AVAILABLE)))
         if clash:
             raise ValueError(
                 f"model(s) named {', '.join(clash)} collide with a hand-written "
@@ -768,8 +844,12 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         windows_by_slice[s.slice_id] = rec.windows
         all_events.extend(events)
 
+        # The combined stream is built inside detect_slice, so it is not in `s.streams`.
+        ran_on = ([COMBINED] if stream == COMBINED and COMBINED not in s.streams
+                  and has_sources(s)
+                  else [n for n in s.streams if stream is None or n == stream])
         for name in detectors:
-            for sname in (n for n in s.streams if stream is None or n == stream):
+            for sname in ran_on:
                 row = dict(detector_params(name, frame_interval_sec=dt,
                                            overrides=overrides, stream=sname),
                            onset_field=ONSET_FIELD[name])

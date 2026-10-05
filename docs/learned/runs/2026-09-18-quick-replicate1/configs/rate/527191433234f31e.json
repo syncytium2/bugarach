@@ -1,0 +1,22 @@
+{
+ "detector": "rate",
+ "params": {
+  "excess_threshold_hz": 5.0,
+  "context_win": 20.0,
+  "rate_win": 1.0,
+  "grid_dt": 0.1,
+  "merge_gap_s": 8.0,
+  "guard_sec": 2.0,
+  "threshold_mode": "additive",
+  "threshold_alpha": 2.0,
+  "detection_mode": "threshold",
+  "peak_prominence": 0.0,
+  "peak_min_distance_sec": 0.0
+ },
+ "config_key": "527191433234f31e",
+ "grid_index": null,
+ "is_shipped": null,
+ "chosen_by": "search_all_settings.choose_settings",
+ "outer_fold": 0,
+ "selection": "ungated"
+}

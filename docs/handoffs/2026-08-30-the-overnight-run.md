@@ -14,7 +14,7 @@ is **released**: nobody holds it.
 
 ## Where the charts are
 
-**`<darkroom>/bugarach/2026-08-30-overnight-run/`** — every figure from tonight in
+**`<darkroom>/bugarach/archive/2026-08/2026-08-30-overnight-run/`** — every figure from tonight in
 one folder, with an `index.html` that opens and says what each one shows. Start
 with `guard_screen.png`. Repo copies are in `docs/learned/`.
 

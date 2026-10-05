@@ -24,7 +24,9 @@ separate pass and RESET §7 puts it in the same step deliberately.
   parameter; every other parameter is held at its shipped value. So this is a
   one-dimensional re-fit, and a mechanism whose parameter is not the declared knob
   cannot be found by it — the guard is the live example, since ``guard_sec`` is not
-  on coact's axis (root ``HANDOFF.md``, *"a decision, not a task"*).
+  on coact's axis (`docs/handoffs/2026-08-27-the-big-push.md`, *"a decision, not a
+  task"* — that handoff left the root before this line was written, so the citation
+  said "root HANDOFF.md" and resolved to nothing).
 - **Only the two baseline regimes.** ``REGIMES`` is ``baseline_quiet`` and
   ``baseline_busy``, both derived from untreated recordings, which is what
   FOUNDATIONS §9 requires. Both plant events ≥120 s apart against a ±30 s

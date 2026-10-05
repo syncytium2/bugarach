@@ -16,6 +16,13 @@ board claim, and update the page in the same PR as the result. A long-lived goal
 was considered and rejected on 2026-09-14: sessions start from `main`, and a branch holds
 commits, not a summary.
 
+**For "was this already decided, and why?": [`docs/adr/`](docs/adr/README.md)** — one
+immutable record per decision: context, decision, consequences. A ruling that settles how
+work is done lands there in the same PR as the first place the work reads it; changing it
+takes a new ADR that supersedes it. The habit lapsed for 25 days after ADR-0005 and was
+restarted by Tony on 2026-09-23; rulings from the gap are backfilled when a session leans
+on one ([candidates](docs/todo/2026-09-23-adr-backfill-candidates.md)).
+
 **Before you build anything, or when a lookup fails: [`docs/INDEX.md`](docs/INDEX.md).**
 Keywords — the words you would type into `grep`, not the ones in the filename —
 pointing at the file that owns the answer. It exists because on 2026-08-30 a session
@@ -103,6 +110,10 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
   convention against bare enumerated labels still holds: the name is what lets it read without
   scrolling back. **Define every abbreviation** at first use, and every symbol (*J*, τ) before a
   figure uses it.
+- **Groups are always ordered DI, OVX, MALE, ORX** (Tony, 2026-09-23) — in figures, tables,
+  legends, page lists and prose. Code takes it from `bugarach.groups` (`GROUP_ORDER`,
+  `group_key`, `in_group_order`), never from `sorted()` or a typed tuple;
+  `tests/test_group_order.py` fails on a hand-typed order.
 - **Every number carries its unit** — counts included (Tony, 2026-09-11, on a legend reading
   "finished on the Mac · 327": *"327 what?"*). Write "327 cells", "99 surrogate draws", "8
   frames", never a bare count or an abbreviated unit a reader has to decode ("fr"). Where two
@@ -145,6 +156,12 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
 - **Push important steps promptly.** A completed, verified step is committed and
   pushed in the same breath — never batched. Nothing below is a reason to sit on
   unpushed work.
+- **A finished run goes to Dropbox and the repo, not only `~/runs`** (Tony, 2026-09-21,
+  after the weekend's trained models turned up on one disk: *"crazy"*). Schedule the status
+  mirror with `--archive-as <dated-name>` and Dropbox happens by itself when `results.json`
+  appears. The repo half is a session's: the briefing names every finished run not yet in
+  the repo, and `tools/archive_run.py <run> --name <name> --to-repo` stages it. Bulk
+  (fits, scores) stays Dropbox-only. `docs/windows_workstation_setup.md` §8.
 - **Branch; land on `main` via a green PR** — full rules, and which of them fire
   by themselves, in [`docs/git_workflow.md`](docs/git_workflow.md). The two that
   are mechanized need no memory: `.githooks/pre-commit` refuses a commit on
@@ -175,6 +192,15 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   producer's own export had it right. Contract revision 6 records it.
   If a folder looks like it contains something it should not, that is a
   **conversation with the producer**, not a filter in the consumer.
+- **One default dataset, confirmed every session** (Tony, 2026-09-21). Analyses call
+  `dataset.default()`; the top-level `default = "<table>"` in `current_export.toml` is the
+  one line that changes it, and no tool names a folder or a role of its own. **Ask Tony to
+  confirm the default at the start of the session** — the briefing prints it, and
+  `dataset.default()` refuses inside a Claude session until
+  `python -m bugarach.dataset confirm` has recorded his yes. Never run that on his behalf.
+  Other folders are `eval` (read by name on purpose) or `archive` (refused unless
+  `BUGARACH_REPRODUCE` says which run). A result records `"dataset": dataset.stamp()`, and
+  `tools/check_scored_dataset.py` flags at startup every result scored on anything else.
 - **A known contamination stops the work. It does not become a caveat.** (Tony,
   2026-09-17: *"there needs to be a full stop work if there's a known 'contamination'.
   there's no point in running all of this when you know there's a problem."*) When the
@@ -215,12 +241,33 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   `optimize_detectors.m`, `calibrate6.m`. Running/validating the ports still
   needs neither MATLAB nor the checkout. See
   [`docs/todo/2026-08-12-port-coordination-benchmark.md`](docs/todo/2026-08-12-port-coordination-benchmark.md).
+- **MATLAB work goes to an interface2 session, never a bugarach one** (Tony, 2026-09-23:
+  *"in the future, use an interface2 session for matlab. i suspect there are issues"*).
+  Running interface2's code — the trace waterfall viewer, the casebooks, anything that
+  reads the archive or needs a MATLAB display — is that repository's work, done by a
+  session started in it, under its own CLAUDE.md, board and conventions. A bugarach session
+  (the orchestrator, WSMIP064/065) asks for the output and says where it should land; it
+  does not launch MATLAB itself. The reference-regeneration launch lines below are the one
+  standing exception, and they predate this rule.
+- **A bugarach session never acts in interface2, and a request to it states the outcome, not the
+  tool** ([ADR-0007](docs/adr/0007-bugarach-sessions-do-not-act-in-interface2.md), 2026-09-23).
+  No commits, comments, issue edits or scripts in that repository from the orchestrator or
+  WSMIP064/065; reading its code is fine. What bugarach needs goes as an issue saying what should
+  exist afterwards and what must not change ("folder X minus recording Y, every other file
+  byte-identical"), never "re-export" or a function name. A finding for interface2 is drafted
+  here and posted by Tony. On 2026-09-23 a request that said "re-export" sent a fresh session into
+  a 125 GB on-demand download, and a bugarach session sent into interface2 had to be stopped.
 - **Figure/report output goes to the Dropbox darkroom**, not the repo and not
   local disk. bugarach owns `<darkroom>/bugarach/` — resolve it with
   `bugarach.paths.darkroom()` — it takes `$BUGARACH_DARKROOM` when set and
   otherwise finds the mount itself, and the briefing prints what it resolved.
   Rule and the incident behind it: FOUNDATIONS §5. Never hardcode the path: it
   carries a person's name and this repo is public (sapper SAP004).
+  **The top level holds the last week; older work lives in `archive/<YYYY-MM>/`**
+  (Tony, 2026-09-26: *"the bugarach darkroom folder is extremely crowded"*, at 179 items).
+  `archive/INDEX.md` maps each moved item's old path to its new one. Tool destinations
+  that are written by name (`detect/`, `runs/`, `detector_history`, `leaderboard.html`)
+  stay at the top. A link to an archived item names its `archive/<YYYY-MM>/` path.
   **A report counts as output, and "in the repo" is not delivered.** The assembly
   report reached `docs/learned/` and stopped there, because its builder took
   `--out` as required while every figure tool defaults to the darkroom — so the
@@ -265,6 +312,33 @@ The state on `origin` must always be enough to resume elsewhere (FOUNDATIONS
   - WSL: `/mnt/c/Program Files/MATLAB/R2025b/bin/matlab.exe -batch "..."`
     (launch path only — script bodies use Windows `C:\...` paths, per
     interface2's SAP003 lesson).
+
+## CI runs the suite in parallel — two kinds of test must opt out
+
+`pytest -n auto --dist loadfile` on a 4-core runner, so a CI leg is ~7 minutes
+rather than ~15 and a whole run is ~10 rather than ~18 (merged 2026-09-16,
+`71950dd`). Three consequences when you add or move a test:
+
+- **A test that asserts on wall-clock time needs `@pytest.mark.serial`.** With four
+  workers loading the runner, a budget measures the other three as much as the code:
+  the briefing's 3-second budget read 3.1s and reddened 3.11 only. Marked tests run
+  after the parallel pass, alone and in file order, so the budget stays honest.
+- **A test that reads or writes the built `site/` needs it too.** `test_site_pages_render.py`
+  deletes and rebuilds that directory and `test_site_withholding.py` reads it; split across
+  workers, the reader's figure checks skipped on 3.13 and ran on 3.14 in the same run.
+  A skip that depends on scheduling is coverage nobody can count on.
+- **Tests in one file are NOT independent of each other, and `--dist loadfile` is why
+  they can stay that way.** The webapp suites share a module-scoped page and build on it
+  in order. Splitting per test (xdist's default) turned that into a coin toss: 3.11 went
+  red with `aimed_at: None` while the other legs happened to schedule the tests together.
+
+Two habits follow from the same change. CI prints every skip with its reason (`-rs`) and
+the 25 slowest tests, so read the log rather than a count — that is how the `site/` coin
+toss was found. And **a race the suite always had can start landing**: `backdate()` in
+`tests/test_worktree_sweep.py` walked live git repos and touched files git was deleting
+underneath it, which reddened `main` five times in two days before it was fixed
+(`5f96453`). A new red test in a parallel run is worth reading as a timing window before
+it is read as broken code.
 
 ## Multi-session coordination — assume you are not alone
 
@@ -406,11 +480,24 @@ Name things; don't index them. Shas and dates are lookup keys, not content.
 Prefer the consequence to the label. Full version, with the examples that
 prompted it: [`docs/writing_conventions.md`](docs/writing_conventions.md).
 
+**Times are Michigan local time** (Tony, 2026-09-25: *"We are in Michigan use local time"*).
+Anything written for Tony — status updates, check-in times, cutoffs, report prose — gives clock
+times in US Eastern (EDT/EST), labelled. Machine records (run logs, JSON stamps) may stay UTC; when
+a UTC time is quoted to a person, convert it.
+
 **"Data" is plural — house rule** (Tony, 2026-09-14). Its verbs and pronouns are
 plural everywhere you write: *the data **are***, *the data **show***, *the data
 **were***, *the data **themselves***, *these data*. "Metadata" and "dataset" keep
 their own grammar, and quoted words keep the speaker's. Sapper SAP015 warns on a
 new line that breaks it.
+
+**Calcium events do not "fire" — house rule** (Tony, 2026-09-23: *"these are calcium
+events. we don't know what they 'mean' to the cell"*). The word imports spikes and
+the spike-train literature's priors as if they were facts about this preparation.
+For a cell say *event*, *onset*, *active*, *event rate*; for a detector, *call*; for
+a check, *triggers*. A method borrowed from spike trains has its assumptions argued
+for calcium events, not inherited. Sapper SAP017 warns on a new line that uses it;
+[`docs/writing_conventions.md`](docs/writing_conventions.md) has the rest.
 
 ## Portfolio posture
 

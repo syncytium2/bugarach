@@ -5,7 +5,7 @@ filed: 2026-09-12
 
 # Stella 2022 answers a different question than the one the screen is asking
 
-An independent read of `<darkroom>/bugarach/lit/surrogates/stella_2022_comparing_surrogates.pdf`
+An independent read of `<darkroom>/bugarach/archive/2026-08/lit/surrogates/stella_2022_comparing_surrogates.pdf`
 (Stella, Bouss, Palm & Grün 2022, *eNeuro* 9(3) ENEURO.0505-21.2022), filed because the paper is
 being used to reason about which surrogate a self-supervised detector should train against.
 

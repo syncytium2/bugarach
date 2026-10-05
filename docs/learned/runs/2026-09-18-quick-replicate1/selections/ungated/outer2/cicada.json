@@ -1,0 +1,107 @@
+{
+ "detector": "cicada",
+ "outer_fold": 2,
+ "selection": "ungated",
+ "config_key": "9265d65bce615477",
+ "config": "configs/cicada/9265d65bce615477.json",
+ "budget": "meta.json budgets[2]",
+ "searched_by": "search_all_settings.choose_settings (goal 1's grids, per fold)",
+ "grids": {
+  "sce_percentile": [
+   99.9,
+   99.95,
+   99.99,
+   99.995,
+   99.999,
+   99.9995,
+   99.9999
+  ],
+  "n_synchronous_frames": [
+   1,
+   2,
+   3,
+   5,
+   10
+  ],
+  "sce_min_distance_frames": [
+   1,
+   2,
+   4,
+   8,
+   16
+  ],
+  "threshold_scope": [
+   "global",
+   "regional"
+  ]
+ },
+ "min_gain": 0.002,
+ "max_rounds": 2,
+ "inner_f1": 0.6597174814892612,
+ "moves": [
+  {
+   "round": 1,
+   "setting": "sce_percentile",
+   "old": 99.999,
+   "new": 99.99,
+   "old_f1": 0.530870557068217,
+   "new_f1": 0.5418237391747325,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 1,
+   "setting": "sce_min_distance_frames",
+   "old": 4,
+   "new": 16,
+   "old_f1": 0.5418237391747325,
+   "new_f1": 0.6356241234221599,
+   "rescued_from_inadmissible": false
+  },
+  {
+   "round": 2,
+   "setting": "sce_percentile",
+   "old": 99.99,
+   "new": 99.9,
+   "old_f1": 0.6356241234221599,
+   "new_f1": 0.6597174814892612,
+   "rescued_from_inadmissible": false
+  }
+ ],
+ "edge_flags": {
+  "sce_percentile": "low",
+  "n_synchronous_frames": "low",
+  "sce_min_distance_frames": "high"
+ },
+ "n_scored": 30,
+ "n_refused": 0,
+ "inner_probe_per_hour": {
+  "quiet": 867.0,
+  "busy": 588.0
+ },
+ "inner_quiet_per_hour": 23.333333333333332,
+ "pooled": {
+  "recordings": [
+   "quiet:2000",
+   "busy:2000",
+   "quiet:2001",
+   "busy:2001",
+   "quiet:2002",
+   "busy:2002",
+   "quiet:2003",
+   "busy:2003"
+  ],
+  "recording_seeds": [
+   2000,
+   2001,
+   2002,
+   2003
+  ],
+  "twin_seeds": [
+   102000,
+   102001,
+   102002,
+   102003
+  ]
+ },
+ "seconds": 48.17917140002828
+}

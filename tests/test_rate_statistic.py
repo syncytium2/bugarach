@@ -13,8 +13,9 @@ to give Python, they are a factor of about five apart:
     rates ~ Gamma(k, mean/k)   =>   mean = the knob, exactly
                                =>   median/mean = median(Gamma(k,1))/k
 
-At the fitted k = 0.275 that ratio is 0.2098. A field whose typical ROI fires at
-15 mHz has a mean of 71.
+At the fitted k = 0.291 that ratio is 0.2317. A field whose typical ROI has an
+event rate of 15 mHz has a mean of 65. (On the 84-recording folder k was 0.275 and the ratio
+0.2098; the shape was re-measured on the 66-recording default on 2026-09-23.)
 
 So the number now travels with a flag. Tony, 2026-08-21: *"can we flag the input
 to the generator as median or mean so the generator can handle either?"* — which
@@ -69,9 +70,10 @@ def test_the_ratio_is_exactly_ln2_for_the_exponential():
     assert median_over_mean(1.0) == pytest.approx(np.log(2.0), rel=1e-12)
 
 
-def test_the_typical_roi_fires_at_a_fifth_of_the_field_mean():
-    """The number this whole change is about, at the fitted shape."""
-    assert median_over_mean(bench.MEASURED_RATE_SHAPE) == pytest.approx(0.2098,
+def test_the_typical_roi_fires_at_under_a_quarter_of_the_field_mean():
+    """The number this whole change is about, at the fitted shape. It was a fifth
+    (0.2098) at k = 0.275, before the 2026-09-23 re-measure."""
+    assert median_over_mean(bench.MEASURED_RATE_SHAPE) == pytest.approx(0.2317,
                                                                        abs=1e-4)
 
 

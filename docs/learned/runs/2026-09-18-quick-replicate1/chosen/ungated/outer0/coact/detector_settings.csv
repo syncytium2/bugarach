@@ -1,0 +1,17 @@
+detector,stream,parameter,value
+coact,events,alpha,1e-06
+coact,events,context_win_sec,120.0
+coact,events,detection_mode,threshold
+coact,events,fitted_config_key,3f2fb6b897c37bb8
+coact,events,fitted_on,"simulated recordings ['quiet:2002', 'busy:2002', 'quiet:2003', 'busy:2003', 'quiet:2004', 'busy:2004', 'quiet:2005', 'busy:2005']"
+coact,events,fitted_outer_fold,0
+coact,events,fitted_selection,ungated
+coact,events,guard_norm,compact
+coact,events,guard_sec,0.0
+coact,events,int_win_sec,2.0
+coact,events,merge_gap_sec,8.0
+coact,events,min_rois,3
+coact,events,n_surrogates,100
+coact,events,peak_min_distance_sec,0.0
+coact,events,peak_prominence,0.0
+coact,events,window_mode,sliding

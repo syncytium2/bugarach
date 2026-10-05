@@ -56,8 +56,10 @@ def _raster(n_roi=24, n_frame=600, seed=3):
 
 
 def _score(tr, x):
+    # A model that reads the recording's floor (ADR-0010 part 5) refuses to run without one.
+    kw = {"floor": 4} if getattr(tr.model, "reads_floor", False) else {}
     with torch.no_grad():
-        return tr.model(x).squeeze(0).numpy()
+        return tr.model(x, **kw).squeeze(0).numpy()
 
 
 @pytest.mark.parametrize("arch", sorted(ARCHITECTURES))
@@ -68,9 +70,10 @@ def test_every_registered_architecture_survives_the_round_trip(tmp_path, arch):
     The rest of this file fixes `ARCH` on purpose: it is about the checkpoint's own
     contract (refusals, provenance, no pickle) and one model exercises that. What it
     could not see is an architecture whose state dict holds something the JSON
-    encoder does not handle. `gauge` holds an INTEGER buffer — the surrogate strides
-    — beside its float parameters, which is the first non-float tensor any model here
-    has carried, and nothing would have caught it going in.
+    encoder does not handle. `gauge` was built holding an INTEGER buffer — the
+    surrogate strides — beside its float parameters, the first non-float tensor any
+    model here had carried, and nothing would have caught it going in. The strides
+    have since become a float buffer of phases; the check stays for the next buffer.
     """
     torch.manual_seed(0)
     model = ARCHITECTURES[arch].make()

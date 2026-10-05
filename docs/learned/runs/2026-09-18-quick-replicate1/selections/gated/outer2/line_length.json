@@ -1,0 +1,64 @@
+{
+ "model": "line_length",
+ "outer_fold": 2,
+ "budget": "meta.json budgets[2]",
+ "pooled": {
+  "training_seeds": [
+   0
+  ],
+  "recordings": [
+   "busy:2000",
+   "busy:2001",
+   "busy:2002",
+   "busy:2003",
+   "quiet:2000",
+   "quiet:2001",
+   "quiet:2002",
+   "quiet:2003"
+  ],
+  "recording_seeds": [
+   2000,
+   2001,
+   2002,
+   2003
+  ],
+  "fitted_on": [
+   "busy:2000",
+   "busy:2001",
+   "busy:2002",
+   "busy:2003",
+   "quiet:2000",
+   "quiet:2001",
+   "quiet:2002",
+   "quiet:2003"
+  ],
+  "twin_seeds": [
+   102000,
+   102001,
+   102002,
+   102003
+  ]
+ },
+ "n_configurations": 2,
+ "missing_configurations": [],
+ "selection": "gated",
+ "config_key": "06fcb890a37725e6",
+ "config": "configs/line_length/06fcb890a37725e6.json",
+ "draw_index": 0,
+ "inner_f1": 0.6373419424266882,
+ "edge_flags": {
+  "lr": true,
+  "steps": false,
+  "n_scales": false,
+  "vote_gain": false
+ },
+ "threshold": 0.9838471862538573,
+ "threshold_index": 31,
+ "threshold_at_grid_edge": false,
+ "inner_probe_per_hour": {
+  "quiet": 3.0,
+  "busy": 3.0
+ },
+ "inner_quiet_per_hour": 0.3333333333333333,
+ "n_admissible": 10
+}

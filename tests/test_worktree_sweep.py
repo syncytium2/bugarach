@@ -50,7 +50,18 @@ def backdate(path: Path) -> None:
     construction, which would make the idle branch of these tests untestable."""
     for f in path.rglob("*"):
         if f.is_file():
-            os.utime(f, (946684800, 946684800))
+            try:
+                os.utime(f, (946684800, 946684800))
+            except FileNotFoundError:
+                # The walk covers live git repositories, and git deletes its own lock and
+                # temporary files under .git/ on its own schedule — so a path that existed
+                # during rglob can be gone one statement later. Skipping it is right rather
+                # than merely quiet: a file that no longer exists cannot make a worktree
+                # look live, which is the only thing this function is for. It reddened main
+                # five times in the two days after the suite began running in parallel
+                # (popen-gw0 and popen-gw3 both hit it). Parallelism changed the timing,
+                # not the behavior; serially the window was narrow enough never to be seen.
+                continue
 
 
 def sweep(repo: Path, *args: str, path_prefix: Path | None = None) -> str:

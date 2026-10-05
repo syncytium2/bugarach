@@ -1,0 +1,29 @@
+{
+ "arch": "chorus_gain_norm",
+ "cfg": {
+  "roi_width": 8,
+  "roi_depth": 6,
+  "head_width": 8,
+  "head_depth": 8,
+  "top_m": 4,
+  "norm": true,
+  "vote_gain": 4
+ },
+ "overrides": {
+  "roi_width": 8,
+  "roi_depth": 6,
+  "top_m": 4,
+  "vote_gain": 4
+ },
+ "training": {
+  "optimizer": "Adam",
+  "lr": 0.01,
+  "steps": 900,
+  "crop_frames": 4096,
+  "batch": 3,
+  "n_train": 10
+ },
+ "draw_index": 19,
+ "is_untuned": false,
+ "config_key": "7c4543c216abf2f4"
+}

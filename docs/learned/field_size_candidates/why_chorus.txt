@@ -1,0 +1,27 @@
+Output of tools/diagnose_chorus_training.py, 2026-09-16, branch eval-field-size-candidates.
+Fold 0 of the home bake-off (4 folds of 6 recordings), torch seed 0, 900 steps, crop 4,096 frames,
+batch 3. "Warning" lines from pick_threshold's edge-of-grid guard removed.
+
+chorus init gradient norm by block: {'roi': '1.51e-06', 'head': '4.09e-01'}
+chorus at init {"p_max": 0.45526, "p_q999": 0.45522, "p_mean_at_events": 0.45403, "p_mean_elsewhere": 0.45404, "logit_sd_over_time": 0.00028, "vote_mean": 0.53468, "vote_sd_over_cells_and_time": 0.09738, "share_votes_saturated": 0.0, "vote_mean_on_onset_frames": 0.53469, "pooled_mean_sd_over_time": 1e-05, "pooled_mean_at_events_minus_elsewhere": 0.0}
+line init gradient norm by block: {'log_smear': '2.94e-05', 'vote_bias': '5.00e-04', 'vote_gain': '3.09e-05', 'log_center': '7.67e-06', 'log_ratio': '4.86e-07', 'gain': '6.75e-06', 'head': '4.55e-01'}
+
+chorus lr=0.01  256 s  threshold 0.0001
+  loss every 50 steps: [1.819, 1.65, 1.526, 1.996, 1.799, 1.462, 1.6, 1.548, 1.678, 1.36, 1.774, 1.6, 1.523, 1.459, 1.578, 1.151, 1.533, 1.458, 1.881]
+  chorus lr=0.01 trained {"p_max": 0.6521, "p_q999": 0.65133, "p_mean_at_events": 0.56791, "p_mean_elsewhere": 0.5677, "logit_sd_over_time": 0.02841, "vote_mean": 0.48827, "vote_sd_over_cells_and_time": 0.13073, "share_votes_saturated": 0.0, "vote_mean_on_onset_frames": 0.48828, "pooled_mean_sd_over_time": 0.00014, "pooled_mean_at_events_minus_elsewhere": 0.0}
+
+chorus lr=0.001  256 s  threshold 0.0001
+  loss every 50 steps: [1.819, 1.7, 1.529, 1.978, 1.8, 1.461, 1.598, 1.54, 1.673, 1.354, 1.773, 1.598, 1.52, 1.446, 1.577, 1.178, 1.528, 1.459, 1.825]
+  chorus lr=0.001 trained {"p_max": 0.56694, "p_q999": 0.56686, "p_mean_at_events": 0.56686, "p_mean_elsewhere": 0.56662, "logit_sd_over_time": 0.01063, "vote_mean": 0.53997, "vote_sd_over_cells_and_time": 0.11564, "share_votes_saturated": 0.0, "vote_mean_on_onset_frames": 0.53998, "pooled_mean_sd_over_time": 2e-05, "pooled_mean_at_events_minus_elsewhere": 1e-05}
+
+line lr=0.01  52 s  threshold 0.9970
+  loss every 50 steps: [1.842, 0.642, 0.274, 0.23, 0.067, 0.09, 0.094, 0.189, 0.235, 0.194, 0.253, 0.107, 0.186, 0.059, 0.19, 0.025, 0.101, 0.126, 0.066]
+  line lr=0.01 trained {"p_max": 0.99989, "p_q999": 0.99943, "p_mean_at_events": 0.96944, "p_mean_elsewhere": 0.0129, "logit_sd_over_time": 4.76734}
+
+One onset against none, chorus's per-cell encoder alone, untrained, one cell, 4,096 frames
+(run inline the same session; the call is chorus.roi on a raster with one onset at frame 2,000,
+and eleven onsets two frames apart for the burst):
+
+init seed 0: vote with no onset 0.535; one onset moves a cell vote by at most 0.0003; eleven onsets by 0.0004; frames touched 17
+init seed 1: vote with no onset 0.483; one onset moves a cell vote by at most 0.0002; eleven onsets by 0.0006; frames touched 19
+init seed 2: vote with no onset 0.534; one onset moves a cell vote by at most 0.0003; eleven onsets by 0.0003; frames touched 22

@@ -1,0 +1,162 @@
+{
+ "at": "2026-09-21T09:33:56",
+ "elapsed_sec": 3773,
+ "completed": 22,
+ "total": 22,
+ "rows": [
+  {
+   "draw": "run",
+   "allowance": 0.02,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p020.json",
+   "status": "ok",
+   "seconds": 183.6
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.02,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p020.json",
+   "status": "ok",
+   "seconds": 176.0
+  },
+  {
+   "draw": "run",
+   "allowance": 0.03,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p030.json",
+   "status": "ok",
+   "seconds": 177.4
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.03,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p030.json",
+   "status": "ok",
+   "seconds": 182.0
+  },
+  {
+   "draw": "run",
+   "allowance": 0.01,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p010.json",
+   "status": "ok",
+   "seconds": 179.1
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.01,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p010.json",
+   "status": "incomplete-needs-crowded",
+   "seconds": 168.9
+  },
+  {
+   "draw": "run",
+   "allowance": 0.05,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p050.json",
+   "status": "ok",
+   "seconds": 171.8
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.05,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p050.json",
+   "status": "ok",
+   "seconds": 170.9
+  },
+  {
+   "draw": "run",
+   "allowance": 0.005,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p005.json",
+   "status": "ok",
+   "seconds": 178.1
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.005,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p005.json",
+   "status": "incomplete-needs-crowded",
+   "seconds": 175.2
+  },
+  {
+   "draw": "run",
+   "allowance": 0.1,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p100.json",
+   "status": "ok",
+   "seconds": 178.9
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.1,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p100.json",
+   "status": "ok",
+   "seconds": 174.7
+  },
+  {
+   "draw": "run",
+   "allowance": 0.15,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p150.json",
+   "status": "ok",
+   "seconds": 165.7
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.15,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p150.json",
+   "status": "ok",
+   "seconds": 167.6
+  },
+  {
+   "draw": "run",
+   "allowance": 0.25,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p250.json",
+   "status": "ok",
+   "seconds": 166.9
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.25,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p250.json",
+   "status": "ok",
+   "seconds": 165.9
+  },
+  {
+   "draw": "run",
+   "allowance": 0.35,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p350.json",
+   "status": "ok",
+   "seconds": 163.8
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.35,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p350.json",
+   "status": "ok",
+   "seconds": 165.1
+  },
+  {
+   "draw": "run",
+   "allowance": 9.0,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_nocheck.json",
+   "status": "ok",
+   "seconds": 167.2
+  },
+  {
+   "draw": "replicate",
+   "allowance": 9.0,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_nocheck.json",
+   "status": "ok",
+   "seconds": 164.5
+  },
+  {
+   "draw": "run",
+   "allowance": 0.0,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\run_0p000.json",
+   "status": "incomplete-needs-crowded",
+   "seconds": 165.9
+  },
+  {
+   "draw": "replicate",
+   "allowance": 0.0,
+   "out": "C:\\Users\\defazio\\AppData\\Local\\Temp\\claude\\c--Users-defazio-bugarach-bugarach\\2d52303d-8098-454a-9675-c6b64a961544\\scratchpad\\sweep\\grid\\replicate_0p000.json",
+   "status": "incomplete-needs-crowded",
+   "seconds": 163.1
+  }
+ ]
+}

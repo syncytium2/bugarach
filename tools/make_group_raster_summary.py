@@ -59,6 +59,7 @@ from __future__ import annotations
 import argparse
 import csv
 import dataclasses
+import json
 import os
 import sys
 import tempfile
@@ -72,6 +73,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from bugarach import paths  # noqa: E402
+from bugarach.groups import group_key  # noqa: E402
 from bugarach.io import load_folder  # noqa: E402
 
 MANIFEST = "field_steps_flagged.tsv"
@@ -81,10 +83,10 @@ MANIFEST = "field_steps_flagged.tsv"
 #: `MANIFEST` beside it, is what identifies the steps-excluded export.
 EXCLUDED_MANIFEST = "field_steps_excluded.tsv"
 
-#: The producer's analysis dataset — "for any new analysis, use this folder" — by
-#: its ROLE in `current_export.toml`, never by name: the pointer is the one place a
-#: folder name is declared (`tests/test_where_the_data_are.py`).
-EXCLUDED_ROLE = "steps_excluded"
+#: The analysis dataset: the declared default in `current_export.toml`, never a
+#: folder name or a role of our own (Tony, 2026-09-21 — one default dataset). It
+#: carries `field_steps_excluded.tsv`, which `resolve_folder` requires.
+EXCLUDED_ROLE = "default"
 
 #: Names the flagged review copy has shipped under. The producer's README calls
 #: it `..._STEPS_FLAGGED_FOR_REVIEW`; it arrived on this machine as
@@ -117,6 +119,7 @@ RASTER_PX_PER_ROI = 3
 #: raster rather than a taller raster: the ink stays proportional and only the
 #: gap grows.
 LABEL_COL_PX = 18
+SCROLL_GUTTER_PX = 60  # empty page margin on the left: somewhere to scroll from
 LABEL_PX_PER_CHAR = 6.2
 BLOCK_GAP_PX = 6
 
@@ -127,6 +130,7 @@ BLOCK_GAP_PX = 6
 #: ten-detector block is about the height of the raster it sits on rather than
 #: twice it, and the page holds six recordings instead of three.
 LANE_PX = 13
+LANE_PAD_PX = 6  # above and below a lane block's rows; lane_panel's own floor is set aside
 REGION_PX = 14   # two strips in one lane: the period, and the window scored
 AXIS_PX = 30     # what the bottom raster adds for the page's one x-axis
 
@@ -282,12 +286,32 @@ def _shift_stream(stream, shift: float):
     return dataclasses.replace(stream, **moved)
 
 
+#: The slow ink on the combined page. Vermillion, not the field-step red, and the reason is
+#: measured rather than taste (from the stashed prototype on `wip/combined-stream-raster`,
+#: 2026-09-22): against RASTER_INK at 2 px, OKLab ΔE ×100 under the worse of protan/deutan
+#: is 28.1 for #d55e00 against 15.0 for MARKED_INK's #c1272d, because red against near-black
+#: is exactly the pair a protan reader loses. It also keeps the second ink meaning one thing
+#: per page: red is a field step, vermillion is a slow onset.
+SLOW_INK = "#d55e00"
+
+
 def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False,
-            steps_excluded: bool = False, groups: tuple[str, ...] | None = None):
-    """Which recordings go on which page, and what each page's extent must be."""
+            steps_excluded: bool = False, groups: tuple[str, ...] | None = None,
+            combined: bool = False):
+    """Which recordings go on which page, and what each page's extent must be.
+
+    ``combined`` adds the combined stream (``bugarach.combined``) to every recording carrying
+    fast and slow, so it gets pages of its own. Safe here and nowhere near a detector: this
+    tool draws, and draws nothing from an RNG."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         slices = load_folder(folder)
+    if combined:
+        from bugarach.combined import COMBINED, has_sources, stream_of
+
+        for sl in slices:
+            if has_sources(sl):
+                sl.streams[COMBINED] = stream_of(sl, COMBINED)
     manifest = {} if (unscanned or steps_excluded) else read_manifest(folder)
     if groups:
         slices = [sl for sl in slices if (sl.meta.get("group_id") or "UNGROUPED") in groups]
@@ -388,7 +412,43 @@ LANE_COLORS = {
     "tube": "#7F0000", "tube_guard": "#D62828",
     "tube_ratio": "#F77F00", "tube_ratio_guard": "#FCBF49",
     "trace": "#5C5C5C", "tiny": "#8C8C8C",
+    # The chorus models (the learned family's current names), in the same warm ramp.
+    "chorus_norm": "#7F0000", "chorus_gain_norm": "#F77F00",
 }
+
+#: A lane key may name a variant of a detector, "<detector> · <variant>" (for example
+#: "coact · floor+1"). It takes its detector's colour; a "+N" variant takes it lighter, so the
+#: two lanes of one detector read as one family. A lane's label is its key.
+LANE_VARIANT_SEP = " · "
+
+
+def _lighter(hex_color: str, amount: float = 0.45) -> str:
+    h = hex_color.lstrip("#")
+    rgb = [int(h[i:i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(f"{round(c + (255 - c) * amount):02X}" for c in rgb)
+
+
+def lane_color(lane: str, fallback: str = "#555555") -> str:
+    """The colour for one lane key: its detector's, lightened for a "+N" variant."""
+    from bugarach.ui.app import COLORS
+
+    if lane in LANE_COLORS:
+        return LANE_COLORS[lane]
+    base, _, variant = lane.partition(LANE_VARIANT_SEP)
+    c = LANE_COLORS.get(base) or COLORS.get(base, fallback)
+    return _lighter(c) if variant and "+" in variant else c
+
+
+def read_floors(results: Path) -> dict:
+    """``(slice_id, region_idx, stream) -> own floor`` from ``tools/detect_with_floors.py``'s
+    ``results.json``, for the page header. ``None`` where a window had no floor."""
+    rec = json.loads(Path(results).read_text(encoding="utf-8"))
+    out = {}
+    for sid, per in (rec.get("floors") or {}).items():
+        for key, f in per.items():
+            idx, _, stream = key.partition("|")
+            out[(sid, idx, stream)] = (f or {}).get("floor")
+    return out
 
 
 def detector_lanes(*detections: Path):
@@ -430,8 +490,52 @@ def detector_lanes(*detections: Path):
     return out
 
 
+def call_line(row: dict) -> str:
+    """One call's hover line: its participants and its window's two floors, in co-active ROIs."""
+    def n(v):
+        return "—" if v in (None, "") else f"{int(float(v))}"
+    return (f"{n(row.get('participants'))} participants · own floor {n(row.get('own_floor'))} · "
+            f"baseline floor {n(row.get('baseline_floor'))} (co-active ROIs)")
+
+
+def call_lanes(calls_csv: Path, variant: str = "own_floor"):
+    """(slice_id, stream) -> {detector: (onsets, widths, hover lines)}, from
+    ``tools/detect_with_floors.py``'s ``calls.csv``.
+
+    Every call a detector made is drawn (ADR-0010 part 6). A detector that takes the floor as its
+    own participation minimum ran once per floor, so its lane shows the run at ``variant``; one
+    without (rate+context, locust, chorus) ran once, under ``unfloored``, and every call is
+    shown. Each call's participants and its window's floors go in the hover, never on the raster.
+    """
+    import csv
+
+    from bugarach.detect_folder import DETECTORS
+
+    acc: dict = defaultdict(lambda: defaultdict(lambda: ([], [], [])))
+    seen_order: list[str] = []
+    with Path(calls_csv).open(newline="", encoding="utf-8") as fh:
+        for r in csv.DictReader(fh):
+            if r.get("variant") not in (variant, "unfloored"):
+                continue
+            key = (r["slice_id"], str(r["stream"]).strip().lower())
+            det = r["detector"]
+            if det not in seen_order:
+                seen_order.append(det)
+            on, wd, info = acc[key][det]
+            on.append(float(r["onset_sec"]))
+            wd.append(float(r.get("width_sec") or 0.0))
+            info.append(call_line(r))
+    order = list(DETECTORS) + [d for d in seen_order if d not in DETECTORS]
+    ran = [d for d in order if any(d in per for per in acc.values())]
+    return {key: {d: (np.asarray(per[d][0] if d in per else [], float),
+                      np.asarray(per[d][1] if d in per else [], float),
+                      list(per[d][2]) if d in per else [])
+                  for d in ran}
+            for key, per in acc.items()}
+
+
 def build_page(members, *, ext, manifest, width: int, stream: str,
-               lanes=None, not_run=(), lane_px: int = None):
+               lanes=None, not_run=(), lane_px: int = None, roi_px: int = None):
     """Regions over detector lanes over raster, for ONE stream, per recording."""
     from bugarach.detect_folder import folder_analysis_windows
     from bugarach.ui.diagnostic import lane_panel, raster_panel, region_lane_panel
@@ -459,12 +563,32 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
             # the marks they are a claim about.
             per_det = lanes.get((sl.slice_id, sname), {})
             if per_det or not_run:
-                shifted = {d: (on - anchor, wd) for d, (on, wd) in per_det.items()}
+                shifted = {d: (v[0] - anchor, *v[1:]) for d, v in per_det.items()}
+                row = lane_px or LANE_PX
+                n_rows = len(set(per_det) | set(not_run))
+                # SIZED TO ITS ROWS, NOT TO lane_panel's FLOOR. The shared panel is
+                # max(90, rows x row_px + 46) tall: room for an axis and borders a
+                # standalone figure needs and this page strips. With two detectors
+                # that floor made the lanes as tall as a 30-cell raster (Tony,
+                # 2026-09-21: "the rasters themselves should dominate. the detection
+                # has too much white space"). The rows keep their size; the padding goes.
                 panels.append(lane_panel(shifted, ext=ext, width=width,
-                                         row_px=lane_px or LANE_PX, not_run=not_run,
-                                         names=LANE_NAMES, colors=LANE_COLORS))
+                                         row_px=row, not_run=not_run,
+                                         names=LANE_NAMES,
+                                         colors={d: lane_color(d)
+                                                 for d in set(per_det) | set(not_run)})
+                              .opts(height=row * n_rows + LANE_PAD_PX,
+                                    backend_opts=TIGHT))
             marked, n_red = [], 0
-            for i in range(st.n_rois):
+            if st.label is not None:
+                # THE COMBINED STREAM'S TWO INKS: fast in the raster's own ink, slow in
+                # the second. `label` is the producer's partition — which stream the
+                # export put each onset in — which is what the second ink is reserved for
+                # (Tony, 2026-09-22: "rasters with detection (two color)"). A combined
+                # page has no field-step manifest entries to compete with it.
+                marked = [np.asarray(t, float)[np.asarray(lab) == "slow"] - anchor
+                          for t, lab in zip(st.t50rise, st.label)]
+            for i in range(st.n_rois if st.label is None else 0):
                 rid = (str(sl.roi_ids[i]) if sl.roi_ids is not None
                        and i < len(sl.roi_ids) else str(i + 1))
                 hits = manifest.get((sl.slice_id, sname, rid), ())
@@ -476,7 +600,9 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
             # count. A rotated label inside a 30 px raster is clipped anyway.
             panels.append(raster_panel(
                 _shift_stream(st, anchor), ext=ext, width=width,
-                height=raster_px(st.n_rois), name=sname, marked=marked,
+                height=raster_px(st.n_rois, roi_px), name=sname, marked=marked,
+                marked_px=(2.0 if st.label is not None else None),
+                marked_ink=(SLOW_INK if st.label is not None else None),
                 ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"
             ).opts(ylabel="", backend_opts=TIGHT))
         blocks.append((sl, panels))
@@ -495,8 +621,8 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
     return blocks, red_drawn
 
 
-def raster_px(n_rois: int) -> int:
-    return RASTER_PX_PER_ROI * max(int(n_rois), 1)
+def raster_px(n_rois: int, roi_px: int | None = None) -> int:
+    return (roi_px or RASTER_PX_PER_ROI) * max(int(n_rois), 1)
 
 
 def block_heights(slice_id: str, n_rois: int) -> tuple[int, int]:
@@ -512,8 +638,13 @@ def block_heights(slice_id: str, n_rois: int) -> tuple[int, int]:
 def header_html(group: str, treatment: str, members, ext, folder: Path,
                 *, stream: str = "", unscanned: bool = False, ran=(), not_run=(),
                 excluded=(), note=None, removed: dict | None = None,
-                detections: Path | None = None) -> str:
-    """The key, and the provenance. Outside every plot, per the conventions."""
+                detections: Path | None = None, roi_px: int | None = None,
+                floors: dict | None = None) -> str:
+    """The key, and the provenance. Outside every plot, per the conventions.
+
+    ``floors`` (from :func:`read_floors`) adds each recording's own floor per window, in
+    co-active ROIs, as a header line: a floor is a number about the window, and nothing is drawn
+    on the raster."""
     from bugarach.ui.diagnostic import MARKED_INK, RASTER_INK, REGION_FILL
 
     def chip(colour, label):
@@ -535,7 +666,13 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
     # accepted it and CI's 3.11 leg did not — this project supports >=3.11.
     red_key = chip(MARKED_INK, "event on a confirmed whole-field brightness step "
                                "(field-step artifact)")
-    if unscanned:
+    event_key = chip(RASTER_INK, "event")
+    if stream == "combined":
+        # The second ink means the slow label here, and nothing else on this page.
+        event_key = chip(RASTER_INK, "fast onset")
+        red_key = chip(SLOW_INK, "slow onset — every onset of both streams, one stream, "
+                                   "nothing merged away")
+    elif unscanned:
         # No red on this page, and the reader has to be told WHY there is none:
         # nobody looked, which is not the same as nothing being there.
         red_key = ("<b style='color:#b00'>⚠ no field-step scan has been run on this "
@@ -559,7 +696,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
             "<div style='margin:4px 0 0;color:#444'>detector lanes, one block per "
             "stream, between the periods and the raster they were called on: &nbsp; "
             + " &nbsp; ".join(
-                chip(LANE_COLORS.get(d) or COLORS.get(d, "#555"),
+                chip(lane_color(d),
                      LANE_NAMES.get(d, TITLES.get(d, d)))
                 for d in ran))
         if excluded:
@@ -581,13 +718,23 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
                    "pass <code>--detections</code> to draw the calls</div>")
     src = "".join(f" &nbsp;·&nbsp; {d.parent.name}/{d.name}" for d in (detections or []))
     note_html = (f"<div style='margin:4px 0 0;color:#b00'>⚠ {note}</div>") if note else ""
+    if floors:
+        per = []
+        for sl, _ in members:
+            ws = [f"{r.name or r.slot} {floors[(sl.slice_id, str(r.slot), stream)]}"
+                  for r in sl.regions
+                  if floors.get((sl.slice_id, str(r.slot), stream)) is not None]
+            per.append(f"<b>{sl.slice_id}</b>: {', '.join(ws) if ws else 'no floor'}")
+        note_html += ("<div style='margin:4px 0 0;color:#444'>own floor per window "
+                      "(co-active ROIs; floor + 1 is one more): " + " &nbsp;·&nbsp; ".join(per)
+                      + "</div>")
     return (
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
         f"<b style='font-size:16px'>{group} · {treatment} · {stream}</b> &nbsp;—&nbsp; "
         f"{len(members)} recording(s), each row one recording, "
         f"<b>t = 0 is the end of that recording's baseline</b>"
         f"<div style='margin:5px 0 0;color:#444'>"
-        f"{chip(RASTER_INK, 'event')} &nbsp; "
+        f"{event_key} &nbsp; "
         f"{red_key}"
         f"</div>"
         f"{note_html}"
@@ -598,7 +745,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         f"<div style='margin:5px 0 0;color:#777;font-size:11px'>"
         f"{folder.name}{src} &nbsp;·&nbsp; extent {ext[0] / 60:.0f}m to +{ext[1] / 60:.0f}m, "
         f"the full recorded length of the longest recording &nbsp;·&nbsp; "
-        f"raster height is proportional to ROI count ({RASTER_PX_PER_ROI} px per ROI); "
+        f"raster height is proportional to ROI count ({roi_px or RASTER_PX_PER_ROI} px per ROI); "
         f"slice id at the left of each recording</div></div>")
 
 
@@ -634,6 +781,18 @@ def main(argv=None) -> int:
                          "files this reads — this is page space, not a data decision.")
     ap.add_argument("--lane-px", type=int, default=None,
                     help=f"height of one detector row in px (default {LANE_PX})")
+    ap.add_argument("--streams", nargs="+", default=None, metavar="STREAM",
+                    help="only these streams' pages (default: every stream). Tony, "
+                         "2026-09-21: fast only until the slow bench's run has finished")
+    ap.add_argument("--png-scale", type=int, default=3,
+                    help="device pixel ratio of the flat PNG (default 3; 6 doubles it — "
+                         "Tony, 2026-09-21. A tall page can reach Chromium's ~16k px "
+                         "screenshot limit)")
+    ap.add_argument("--roi-px", type=int, default=None,
+                    help=f"raster height per ROI in px (default {RASTER_PX_PER_ROI}). "
+                         f"Still proportional to the ROI count, so ink density reads the "
+                         f"same down the page; a larger value lets the raster dominate a "
+                         f"page with few detector lanes")
     ap.add_argument("--note", default=None,
                     help="one extra line for the header — a caveat this page must "
                          "carry that the files it reads cannot tell it")
@@ -642,7 +801,25 @@ def main(argv=None) -> int:
                          "so their absence is visible rather than silent. Defaults to "
                          "the learned models when --detections is given, because "
                          "nothing persists a trained model.")
+    ap.add_argument("--floors", type=Path, default=None,
+                    help="results.json from tools/detect_with_floors.py: put each recording's "
+                         "own floor per window, in co-active ROIs, in the page header")
+    ap.add_argument("--calls", type=Path, default=None,
+                    help="calls.csv from tools/detect_with_floors.py: draw every call it lists, "
+                         "each with its participants and its window's floors in the lane's "
+                         "hover (ADR-0010 part 6). Replaces --detections for the detectors it "
+                         "contains")
+    ap.add_argument("--calls-variant", default="own_floor",
+                    help="which run to draw for detectors that take the floor as their own "
+                         "minimum (default own_floor); the rest ran once and are all drawn")
     a = ap.parse_args(argv)
+    floors = read_floors(a.floors) if a.floors else None
+    if a.calls:
+        from detect_with_floors import PARTICIPANTS_RULE
+
+        rule = (f"Hover a call for its participants ({PARTICIPANTS_RULE}) and its window's "
+                f"floors. Every call is drawn; no floor removes one.")
+        a.note = f"{a.note} {rule}" if a.note else rule
 
     folder = resolve_folder(a.folder, unscanned=a.unscanned,
                             steps_excluded=a.steps_excluded)
@@ -666,12 +843,16 @@ def main(argv=None) -> int:
     pages, manifest, skipped = measure(folder, tuple(a.treatments),
                                        unscanned=a.unscanned,
                                        steps_excluded=a.steps_excluded,
-                                       groups=tuple(a.groups) if a.groups else None)
+                                       groups=tuple(a.groups) if a.groups else None,
+                                       combined=bool(a.streams and "combined" in a.streams))
     if not pages:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
 
     lanes = detector_lanes(*a.detections) if a.detections else {}
+    if a.calls:
+        for key, per in call_lanes(a.calls, a.calls_variant).items():
+            lanes.setdefault(key, {}).update(per)
     if a.exclude:
         drop = set(a.exclude)
         lanes = {k: {d: v for d, v in per.items() if d not in drop}
@@ -680,10 +861,14 @@ def main(argv=None) -> int:
     not_run = tuple(a.not_run) if a.not_run is not None else ()
 
     written, total_red = [], 0
-    for (group, treatment, stream), spec in sorted(pages.items()):
+    for (group, treatment, stream), spec in sorted(pages.items(),
+                                                   key=lambda kv: (group_key(kv[0][0]), kv[0][1:])):
+        if a.streams and stream not in a.streams:
+            continue
         blocks, red = build_page(spec["members"], ext=spec["ext"],
                                  manifest=manifest, width=a.width, stream=stream,
-                                 lanes=lanes, not_run=not_run, lane_px=a.lane_px)
+                                 lanes=lanes, not_run=not_run, lane_px=a.lane_px,
+                                 roi_px=a.roi_px)
         total_red += red
         html = dest / f"{group}_{treatment.replace(' ', '')}_{stream}.html"
 
@@ -692,7 +877,8 @@ def main(argv=None) -> int:
                                           unscanned=a.unscanned, ran=ran,
                                           not_run=not_run, excluded=a.exclude,
                                           detections=a.detections, note=a.note,
-                                          removed=removed))]
+                                          removed=removed, roi_px=a.roi_px,
+                                          floors=floors))]
         for sl, panels in blocks:
             # THE ID, ROTATED, IN ITS OWN COLUMN — an HTML block and not the
             # raster's y-label. As a y-label it is clipped to the plot's height:
@@ -718,13 +904,16 @@ def main(argv=None) -> int:
             tmp = Path(td) / "p.html"
             # write-then-replace: the darkroom is inside Dropbox, and writing in
             # place is what produced its 188 MB of hash-named orphans.
-            pn.Column(*items).save(str(tmp))
+            # A SCROLL GUTTER. The plots span the page, so there was nowhere to rest the
+            # cursor and scroll without landing on a plot (Tony, 2026-09-21: "need a
+            # little space on the left so there is a place to put the cursor to scroll").
+            pn.Column(*items, margin=(0, 0, 0, SCROLL_GUTTER_PX)).save(str(tmp))
             os.replace(tmp, html)
         written.append(html)
         if not a.no_png:
             from make_diagnostic import _render_png
             shot = html.with_suffix(".png")
-            if _render_png(html, shot):
+            if _render_png(html, shot, scale=a.png_scale):
                 written.append(shot)
             else:
                 print("(no PNG: pip install playwright && python -m playwright "

@@ -1,0 +1,78 @@
+{
+ "what": "CoactDetect's merge gap against no merging at all, on the crowded recordings the nets' merge-gap addendum charges its choices on",
+ "generator": "tools/coact_no_merge_crowded.py",
+ "run": "fair_comparison_2026_09_18",
+ "crowded_recordings": {
+  "builder": "bench.make_tail_recording",
+  "backgrounds": [
+   "tail_quiet",
+   "tail_busy"
+  ],
+  "seeds": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12
+  ]
+ },
+ "setting": {
+  "detector": "coact",
+  "base": {
+   "int_win_sec": 2.0,
+   "context_win_sec": 120.0,
+   "alpha": 1e-05,
+   "merge_gap_sec": 8.0,
+   "guard_sec": 1.0,
+   "n_surrogates": 100,
+   "window_mode": "sliding"
+  },
+  "as_run_merge_gap_sec": 8.0,
+  "source": "meta.json declaration.coded_base.values.coact (goal 1's sliding values, what the fair comparison scored CoactDetect at)"
+ },
+ "baseline": "gap_zero. merge_gap_sec = 0.0 merges only runs that touch, which is the minimum coherent decoding for a sliding detector. merge_gap_sec = NaN disables merging outright and reports one call per significant window; its recall matches gap_zero and its precision collapses, so it measures the decoding and not the gap. The diagnostic block is the evidence",
+ "crowded_mean_f1": {
+  "as_run": 0.8258843361951436,
+  "no_merge": 0.2851131297006483,
+  "gap_zero": 0.8385515981236686
+ },
+ "diagnostic": {
+  "recording": {
+   "background": "tail_busy",
+   "seed": 1
+  },
+  "note": "one crowded recording, to show what each setting emits",
+  "per_setting": {
+   "as_run": {
+    "calls": 119,
+    "f1": 0.7826086956521738,
+    "recall": 0.65,
+    "precision": 0.9831932773109243
+   },
+   "no_merge": {
+    "calls": 688,
+    "f1": 0.29032258064516125,
+    "recall": 0.7,
+    "precision": 0.18313953488372092
+   },
+   "gap_zero": {
+    "calls": 131,
+    "f1": 0.8102893890675241,
+    "recall": 0.7,
+    "precision": 0.9618320610687023
+   }
+  }
+ },
+ "merge_gap_worth_on_crowded_recordings": -0.012667261928525075,
+ "reading": "as_run minus gap_zero. Positive means the 8 s gap SCORES HIGHER on the crowded recordings than the minimum decoding; negative means the gap costs it there",
+ "adjudication": null,
+ "adjudication_note": "deliberately not decided here. Whether this margin passes or fails the crowded check applies the 0.02 F1 allowance, which is unsigned; that is the ruling this measurement is evidence for, not a conclusion it may draw. See docs/todo/2026-09-20-why-the-merge-gap-page-would-not-converge.md, option B.",
+ "seconds": 17.2
+}

@@ -6,8 +6,10 @@ stop the growth, the decision function that implements it, and the two constrain
 interface2's own history imposes on anything that deletes a worktree.
 
 **It is not a vendoring drop.** bugarach's implementation is a `gh` wrapper on GitHub
-pull requests; interface2 is on GitLab and shows no pull-request merge in the subjects of
-its last 300 commits. Copying the file would give you a script that cannot run.
+pull requests; interface2 was on GitLab then and showed no pull-request merge in the subjects of
+its last 300 commits. It moved to GitHub on 2026-09-18 but still lands work by fast-forwarding
+`main`, not through pull requests, so the point stands: copying the file would give you a script
+with nothing to act on.
 
 **From:** `syncytium2/bugarach` @ `7813613` (2026-08-23). The implementation landed as
 PRs #240 and #241. bugarach's package version string was `0.0.1` when this was written (0.1.0 was cut the same day), so

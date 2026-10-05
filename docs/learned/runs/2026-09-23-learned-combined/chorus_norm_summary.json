@@ -1,0 +1,83 @@
+{
+ "bench": "bugarach.bench_combined",
+ "model": "chorus_norm",
+ "config": {
+  "roi_width": 4,
+  "roi_depth": 4,
+  "top_m": 4
+ },
+ "fit_seeds": [
+  1000,
+  1023
+ ],
+ "test_seeds": [
+  4000,
+  4023
+ ],
+ "null_budget_per_hour": 10.0,
+ "best_within_budget": true,
+ "best": "chorus_norm_combined_seed0.json",
+ "rows": [
+  {
+   "seed": 0,
+   "path": "chorus_norm_combined_seed0.json",
+   "threshold": 0.9838471862538573,
+   "f1": [
+    0.8347010550996483,
+    0.7990487514863258
+   ],
+   "mean": 0.8168749032929871,
+   "null_per_hour": 1.8888888888888888,
+   "sec": 16
+  },
+  {
+   "seed": 1,
+   "path": "chorus_norm_combined_seed1.json",
+   "threshold": 0.9838471862538573,
+   "f1": [
+    0.8352941176470589,
+    0.7697841726618705
+   ],
+   "mean": 0.8025391451544647,
+   "null_per_hour": 1.3333333333333333,
+   "sec": 11
+  },
+  {
+   "seed": 2,
+   "path": "chorus_norm_combined_seed2.json",
+   "threshold": 0.9908190573212562,
+   "f1": [
+    0.829210836277974,
+    0.7909738717339668
+   ],
+   "mean": 0.8100923540059703,
+   "null_per_hour": 1.5555555555555556,
+   "sec": 11
+  },
+  {
+   "seed": 3,
+   "path": "chorus_norm_combined_seed3.json",
+   "threshold": 0.9715809801839131,
+   "f1": [
+    0.8354725787631273,
+    0.7812865497076024
+   ],
+   "mean": 0.8083795642353648,
+   "null_per_hour": 2.2222222222222223,
+   "sec": 11
+  },
+  {
+   "seed": 4,
+   "path": "chorus_norm_combined_seed4.json",
+   "threshold": 0.9908190573212562,
+   "f1": [
+    0.8260355029585799,
+    0.7791563275434243
+   ],
+   "mean": 0.802595915251002,
+   "null_per_hour": 0.5555555555555556,
+   "sec": 11
+  }
+ ],
+ "caveat": "best is chosen on the held-out seeds; its F1 is a selection score"
+}

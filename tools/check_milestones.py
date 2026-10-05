@@ -131,7 +131,10 @@ def check(doc):
                 "`fetch-depth: 0` on the checkout step. Refusing to report rows as "
                 "broken when the history to judge them against is absent."], stats
 
-    data = rows(doc.read_text())
+    # encoding="utf-8" is load-bearing on Windows: MILESTONES.md's strength column is
+    # literally "⚠ evidence", and the locale codepage decodes it to mojibake, so the
+    # legend check fails on a document that is correct. Same defect as #535's.
+    data = rows(doc.read_text(encoding="utf-8"))
     stats["rows"] = len(data)
 
     # A document with no rows certifying itself is the failure this repo has shipped

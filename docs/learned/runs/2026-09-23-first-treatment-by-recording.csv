@@ -1,0 +1,85 @@
+slice_id,group,mouse,first_treatment,regions_in_order,n_roi
+20240708_13,MALE,38,SB222200,baseline / SB222200,34
+20240708_17,MALE,38,SB222200,baseline / SB222200 / high K+,31
+20240723_22,ORX,39,SB222200,baseline / SB222200 / high K+,24
+20240726_34,MALE,40,SB222200,baseline / SB222200 / wash / high K+,34
+20240726_36,MALE,40,SB222200,baseline / SB222200 / high K+,51
+20240813_39,OVX,41,(baseline only),baseline,37
+20240813b42,OVX,41,senktide,baseline / senktide / high K+,37
+20240814a47,OVX,42,senktide,baseline / senktide,17
+20240814b49,OVX,42,senktide,baseline / senktide / high K+,43
+20240815a51,OVX,43,(baseline only),baseline,24
+20240815b53,OVX,43,SB222200,baseline / SB222200 / high K+,37
+20240827a55,MALE,44,senktide,baseline / senktide / high K+,29
+20240827b57,MALE,44,senktide,baseline / senktide / high K+,36
+20240930_65,DI,46,TTX,baseline / TTX / senktide / high K+,53
+20240930_69,DI,46,TTX,baseline / TTX,19
+20241002_72,OVX,47,TTX,baseline / TTX / senktide / high K+,19
+20241004_80,MALE,48,(baseline only),baseline,9
+20241120_94,MALE,49,SB222200,baseline / SB222200 / high K+,39
+20241120_96,MALE,49,SB222200,baseline / SB222200 / high K+,46
+20241121a_98,ORX,50,SB222200,baseline / SB222200 / high K+,28
+20241121b_103,ORX,50,SB222200,baseline / SB222200 / high K+,32
+20241122a_105,ORX,51,(baseline only),baseline,21
+20241122b_110,ORX,51,TTX,baseline / TTX / high K+,25
+20241211_124,MALE,52,(baseline only),baseline,24
+20241211_127,MALE,52,TTX,baseline / TTX / senktide,45
+20241212_131,ORX,53,TTX,baseline / TTX / senktide,33
+20241216_135,ORX,54,SB222200,baseline / SB222200 / senktide,17
+20241216_137,ORX,54,SB222200,baseline / SB222200 / senktide,23
+20250731_151,DI,57,TTX,baseline / TTX / wash / high K+,38
+20250806_174,ORX,58,TTX,baseline / TTX / wash,36
+20250806_176,ORX,58,TTX,baseline / TTX / wash,19
+20250807_178,MALE,59,TTX,baseline / TTX / wash / high K+,46
+20250807_181,MALE,59,TTX,baseline / TTX / wash / high K+,32
+20250808_183,ORX,60,TTX,baseline / TTX / wash / high K+,61
+20250808_186,ORX,60,TTX,baseline / TTX / wash / high K+,35
+20250826_190,MALE,61,TTX,baseline / TTX / high K+,15
+20250826_192,MALE,61,senktide,baseline / senktide / high K+,30
+20250827_196,MALE,62,senktide,baseline / senktide,27
+20250827_199,MALE,62,TTX,baseline / TTX,48
+20250829_204,OVX,63,TTX,baseline / TTX,32
+20250829_207,OVX,63,senktide,baseline / senktide / high K+,53
+20250904_209,OVX,64,senktide,baseline / senktide / high K+,23
+20250904_211,OVX,64,TTX,baseline / TTX / wash / high K+,45
+20250911_214,ORX,65,senktide,baseline / senktide,20
+20250911_217,ORX,65,senktide,baseline / senktide,32
+20250911_222,ORX,65,senktide,baseline / senktide,34
+20250912_225,ORX,66,senktide,baseline / senktide / high K+,45
+20250912_227,ORX,66,senktide,baseline / senktide,17
+20250912_229,ORX,66,senktide,baseline / senktide / high K+,55
+20250925_231,DI,67,senktide,baseline / senktide,20
+20250925_233,DI,67,senktide,baseline / senktide,27
+20250926_235,DI,68,senktide,baseline / senktide,23
+20250926_237,DI,68,senktide,baseline / senktide / high K+,39
+20260115_240,ORX,69,senktide,baseline / senktide / high K+,32
+20260115_243,ORX,69,senktide,baseline / senktide / high K+,43
+20260120_248,MALE,70,senktide,baseline / senktide / high K+,31
+20260121_250,ORX,71,senktide,baseline / senktide / high K+,34
+20260121_252,ORX,71,senktide,baseline / senktide / high K+,27
+20260122_256,OVX,72,senktide,baseline / senktide / high K+,36
+20260122_259,OVX,72,senktide,baseline / senktide / high K+,37
+20260130_270,DI,75,senktide,baseline / senktide / high K+,48
+20260130_272,DI,76,senktide,baseline / senktide / high K+,28
+20260225_275,ORX,77,TTX,baseline / TTX / high K+,29
+20260225_277,ORX,77,TTX,baseline / TTX / high K+,26
+20260225_280,ORX,77,TTX,baseline / TTX / high K+,15
+20260226_282,OVX,78,TTX,baseline / TTX / high K+,16
+20260226_285,OVX,78,senktide,baseline / senktide / high K+,27
+20260226_287,OVX,78,TTX,baseline / TTX / high K+,15
+20260303_290,DI,79,TTX,baseline / TTX / high K+,33
+20260303_296,DI,80,TTX,baseline / TTX / high K+,51
+20260303_301,DI,79,TTX,baseline / TTX / high K+,24
+20260629_309,DI,82,TTX,baseline / TTX / high K+,21
+20260629_312,DI,82,TTX,baseline / TTX / high K+,21
+20260629_314,DI,82,TTX,baseline / TTX / high K+,14
+20260630_316,DI,83,TTX,baseline / TTX / high K+,34
+20260630_325,DI,83,TTX,baseline / TTX / high K+,19
+20260701_328,OVX,84,TTX,baseline / TTX / high K+,25
+20260701_331,OVX,84,TTX,baseline / TTX / high K+,26
+20260702_334,OVX,85,TTX,baseline / TTX / high K+,36
+20260702_338,OVX,85,TTX,baseline / TTX / high K+,46
+20260706_341,MALE,86,TTX,baseline / TTX / high K+,33
+20260706_343,MALE,86,TTX,baseline / TTX / high K+,44
+20260707_346,MALE,87,TTX,baseline / TTX / high K+,10
+20260707_348,MALE,87,TTX,baseline / TTX / high K+,30

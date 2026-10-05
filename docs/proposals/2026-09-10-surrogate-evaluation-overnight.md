@@ -352,5 +352,5 @@ block in the root `HANDOFF.md`, which carries the loop thread and this thread's 
 - Louis, Gerstein, Grün & Diesmann 2010, *Frontiers in Computational Neuroscience* 4:127; Louis, Borgelt & Grün 2010, in *Analysis of Parallel Spike Trains*; Grün et al. 2010, *BMC Neuroscience* 11(Suppl 1):O15
 - Friedman 2003; Lopez-Paz & Oquab 2017
 - Dard et al. 2022, *eLife* 11:e78116; the dataset DANDI:000219 (Dard, Picardo & Cossart)
-- The literature shelf at `<darkroom>/bugarach/lit/` holds most of these; [`lit_needed.md`](../lit_needed.md) lists the rest
+- The literature shelf at `<darkroom>/bugarach/archive/2026-08/lit/` holds most of these; [`lit_needed.md`](../lit_needed.md) lists the rest
 - Elephant 1.2.1, `elephant/spike_train_surrogates.py`, read and run 2026-09-10 in a scratch install

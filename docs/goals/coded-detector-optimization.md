@@ -39,6 +39,65 @@ recordings and re-scored on a set the search never saw.
 
 ## Where it stands
 
+**2026-09-25, morning: the final-parameters night ran, under ADR-0008's floor and ADR-0009's bench**
+([report](../learned/runs/2026-09-25-final-parameters/README.md)). Every detector was searched on all
+three benches, and chorus was retrained, with each recording's own floor setting the participation
+minimum. **Nothing is adopted.**
+
+- **Adoptable under the runbook's strict rule:** binned SCE on fast; binned SCE, rate+context and
+  SPIKE-synch on combined. Each has a held-out gain interval above zero, passes every budget that was
+  measured on the selection, held-out and fresh seeds, and is bracketed. The held-out seeds also
+  picked among the search's final candidates, so the fresh seeds are the independent check: all four
+  paired fresh-seed gains are above zero. The gains sit on the busy background, mostly as fewer false
+  alarms that are not decoys. Combined SPIKE-synch's proposal fixes its coincidence window, which is
+  no longer Kreuz SPIKE-synchronization.
+- **Held back on bracketing only:** five proposals, among them locust on all three streams (+0.036
+  to +0.102), which sit at a value that cannot go further. Whether that counts as bracketed is
+  Tony's, and the three locust proposals also carry the open anchor question.
+- **Four shipped points are out of budget** on the new bench: the precision swing for SPIKE-synch and
+  rate+context on fast and rate+context on combined (the floor, and decoys under it), and the
+  elevated-rate test for locust on slow (the test's new recording, not the floor).
+- **Waits on Tony:** the adoption itself and the report's other eight rulings (nine decisions in all), listed in the table below.
+
+**2026-09-24, evening: the rulings for final parameters are made, and the night is planned.**
+[ADR-0009](../adr/0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md)
+answers #793's two questions and three more (R1–R5):
+- the elevated-rate test gets a recording of its own;
+- planted events under the floor are "don't care";
+- ADR-0008 sets SPIKE-synch's `min_n`;
+- the budgets stand;
+- no context longer than 120 s is searched.
+
+The runbook for the night is [`docs/handoffs/2026-09-25-overnight-final-parameters.md`](../handoffs/2026-09-25-overnight-final-parameters.md).
+Every tuned number below is pre-ADR-0008 and is re-searched, not adopted.
+
+**2026-09-24, the 3 × 3** ([run record](../learned/runs/2026-09-24-cross-stream-3x3/README.md)):
+every stream's version of every detector, scored on all three benches with bootstrap intervals.
+The diagonal reproduces last night's numbers exactly.
+- The tops of the leaderboards sit inside each other's intervals.
+- LoCo tuned on combined beats fast's own LoCo on the fast bench (0.791 [0.779, 0.803] against
+  0.746 [0.733, 0.760]).
+- SCE's slow proposal beats the shipped SCE on fast and on combined.
+
+Where the search moved nothing, it may have stopped short of the best available setting.
+
+**2026-09-24, overnight: CoactDetect searched on all three benches retuned to the 66-recording
+default**, under the stop-gap floor (`min_rois` never below 3, *pre-ADR-0008*;
+[run record](../learned/runs/2026-09-24-overnight-coact-chorus/README.md)). Fast proposes sliding
+at alpha 1e-5, a 120 s context and an 8 s merge gap: +0.037 held-out mean F1 [+0.026, +0.045],
++0.021 on fresh seeds (0.726 → 0.747; without decoy calls 0.855 → 0.874). Slow and combined moved
+nothing. **Not adopted**: the proposal waits on Tony, and ADR-0008's per-window floor waits on the
+two bench questions in #793. **The other five were searched the same night**
+([run record](../learned/runs/2026-09-24-overnight-rest-of-suite/README.md)). There are proposals
+for rate+context, SPIKE-synch and locust on fast, and for SCE, rate+context and locust on slow, and
+each holds on fresh seeds inside its detector's budget. Combined moved nothing. ⚠ Fast SPIKE-synch's
+`dt` and `C_min` stopped at the search's extension cap, unbracketed. None is adopted.
+**Run on the 66 recordings** at those settings
+([detection run](../learned/runs/2026-09-24-detect-66-floors/README.md)), every window scored under
+its own ADR-0008 floor and under its baseline floor. Senktide raises the floor most in OVX and ORX
+(fast median 6 → 24 and 4 → 26 co-active ROIs), and there the two floors give very different call
+rates. The paragraphs below are from 2026-09-16/17 and predate the slow and combined benches.
+
 **The swept knobs are done; everything else has never been searched.** All six were retuned together
 on 2026-09-16 ([PR #597](https://github.com/syncytium2/bugarach/pull/597)), and
 [`bench.py`](../../src/bugarach/bench.py)'s `RETUNE` constant states the rule that chose them. Three
@@ -47,8 +106,9 @@ question and opened the larger one: `bench.py` says in terms that **only the one
 detector was searched; every other parameter is as it was**.
 
 **A search over every *declared* setting finished** on 2026-09-16 at 17:02, into
-`<darkroom>/bugarach/2026-09-16-full-search/`. It was a **measurement, not an adoption**. Its handoff,
-`HANDOFF-evaluate-sliding-detectors.md` on branch `full-search` (⚠ unmerged), is **superseded** by
+`<darkroom>/bugarach/archive/2026-09/2026-09-16-full-search/`. It was a **measurement, not an adoption**. Its handoff, now
+[`docs/handoffs/2026-09-17-evaluate-sliding-detectors.md`](../handoffs/2026-09-17-evaluate-sliding-detectors.md)
+(`full-search` has landed; the file left the root on 2026-09-21), is **superseded** by
 [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md), which also corrects four of its
 readings. Two of them are in the table below.
 
@@ -70,17 +130,20 @@ is a ruling, *argued* is reasoning nobody has measured.
 | finding | strength | source |
 |---|---|---|
 | **All six swept knobs were retuned together against the bench as it now stands** — 48 bench recordings per point on both backgrounds and on the empty recording, grids widened until no optimum sat on an edge, candidates limited to values under **both** false-alarm budgets, best by F1 averaged over the two backgrounds, and a stored value moved **only** where the gain's 95 % bootstrap interval excludes zero | measured | the `RETUNE` constant and each detector's `source` string in [`bench.py`](../../src/bugarach/bench.py) |
-| **Three moved**: binned SCE 99 → 98 (mean F1 0.490 → 0.525), LoCo 99.9 → 99.5 (0.669 → 0.686), rate+context 5.0 → 4.5 Hz (0.606 → 0.630) | measured | the `source` strings in [`bench.py`](../../src/bugarach/bench.py); figure in `<darkroom>/bugarach/2026-09-16-best-parameters/` |
+| **Three moved**: binned SCE 99 → 98 (mean F1 0.490 → 0.525), LoCo 99.9 → 99.5 (0.669 → 0.686), rate+context 5.0 → 4.5 Hz (0.606 → 0.630) | measured | the `source` strings in [`bench.py`](../../src/bugarach/bench.py); figure in `<darkroom>/bugarach/archive/2026-09/2026-09-16-best-parameters/` |
 | **Three did not**: CoactDetect's alpha was already the best value inside both budgets; SPIKE-synch's every looser value fires over the busy-background limit; locust's 99.99 scores +0.010 mean F1 on an interval spanning zero, so 99.999 stays | measured | same `source` strings |
 | **Only one knob per detector has ever been swept.** Every other parameter in each stored operating point is as its function was written | measured from the code, and stated in the code | [`bench.py`](../../src/bugarach/bench.py); [the wall this makes](../todo/2026-08-27-one-knob-per-detector-is-the-next-wall.md) |
 | **Half the stored table is a code or viewer default rather than a calibration.** rate+context and binned SCE carry their function's defaults; SPIKE-synch and CoactDetect carry viewer FAST points; LoCo, locust and CoactDetect's alpha are the tuned ones | measured from the code | the `source` strings; `docs/todo/2026-09-16-three-detectors-run-at-code-defaults.md` ⚠ **on branch `detector-review-doc`, not on `main`** |
 | **The bench's measured values hold on `steps_excluded`**, fast stream, baseline analysis windows (2026-09-17): 7 of 8 inside their 95% bootstrap intervals over 84 recordings. `participation` 0.18 sits 0.0018 below its interval, a rounding of 6/33, waiting on Tony. A test now fails if the pointer, the record and the bench stop agreeing | measured; one value waiting | [`bench_measured.json`](../learned/bench_measured.json), `tools/remeasure_bench.py`, `tests/test_bench_is_measured_on_the_declared_folder.py` |
-| **Sliding and binned disagree on real recordings only as `forks.md` §14 predicts** (2026-09-17, the 84 baseline analysis windows of `steps_excluded`, fast stream, at the binned-tuned settings): sliding calls more (LoCo 598 → 923 calls, CoactDetect 436 → 583) and never fewer for LoCo; a median 1.00 of binned calls survive within 2.5 s; CoactDetect's shared onsets move a median +0.30 s where LoCo's move 0.00 s, the bin edge becoming the first participating event. **Nothing unexplained blocks landing sliding** | measured, one run | `tools/compare_sliding_vs_binned.py`; run, figures and note in `<darkroom>/bugarach/2026-09-17-sliding-vs-binned/` |
+| **Sliding LoCo and CoactDetect have calibrated values, chosen in that mode — and the switch is NOT on yet** (2026-09-17). It moves the viewer's calibrated defaults while the browser still runs both detectors binned, and moves the calls a slow-comodulation analysis is pinned to; it waits on those two. The values, held out on recordings the search never saw, against the binned points they would replace: LoCo mean F1 0.737 against 0.699, 1.7 calls/hour on the empty recording against a limit of 3 (sliding at the binned values was 4.0 and over), crowded 0.827 against 0.816; CoactDetect 0.746 against 0.702, 5.8 calls/hour against a limit of 7 (was 7.7 and over), crowded 0.818 against 0.808 | measured, held out | the `source` strings in [`bench.py`](../../src/bugarach/bench.py); run in `<darkroom>/bugarach/archive/2026-09/2026-09-17-full-search/sliding5/` |
+| **A search maximising F1 under the three false-alarm budgets proposes an artifact, and a fourth budget is what refuses it.** The first every-knob run gained 0.11–0.31 held-out F1 for four of six detectors by running merge gaps out to about a minute, and lost 0.25–0.32 on crowded recordings where events sit 6 s apart. **The other budgets cannot see it**: merging makes a detector call less, so the artifact looks *cleaner* on every false-alarm measure | measured, one run | `bench.MAX_CROWDED_DROP`; run in `<darkroom>/bugarach/archive/2026-09/2026-09-17-full-search/` |
+| **A context window wider than the planted spacing is rewarded for contaminating its own null**: the null sits high, the detector calls less, precision and F1 rise. The search chose 240 s on a bench that plants events 120 s apart, under all four budgets, until the rule went in front of it | measured | `bench.context_fits_the_null`; `tests/test_bench.py::test_the_bench_recording_keeps_the_null_clean` |
+| **Sliding and binned disagree on real recordings only as `forks.md` §14 predicts** (2026-09-17, the 84 baseline analysis windows of `steps_excluded`, fast stream, at the binned-tuned settings): sliding calls more (LoCo 598 → 923 calls, CoactDetect 436 → 583) and never fewer for LoCo; a median 1.00 of binned calls survive within 2.5 s; CoactDetect's shared onsets move a median +0.30 s where LoCo's move 0.00 s, the bin edge becoming the first participating event. **Nothing unexplained blocks landing sliding** | measured, one run | `tools/compare_sliding_vs_binned.py`; run, figures and note in `<darkroom>/bugarach/archive/2026-09/2026-09-17-sliding-vs-binned/` |
 | **The refusal machinery exists and is tested.** `pick_operating_point` refuses an optimum on the edge of its grid, a sweep where every value scores alike, and a winner that fires too often where nothing was planted, rather than reporting them | built | [`bench.py`](../../src/bugarach/bench.py), `tests/test_bench.py` |
 | **The empty-recording false-alarm budget moved where a calibration can see it** — `MAX_FALSE_POSITIVES_PER_HOUR` and `false_positives_per_hour`, landed with the retune | built | [`bench.py`](../../src/bugarach/bench.py) |
 | **With LoCo retuned, CoactDetect's lead is 0.003 F1**, and the background-curve tests say so with a tie margin rather than asserting an order the spread does not support | measured | `tests/test_background_curve.py` |
 | **Two corrections landed immediately before the retune and moved every curve it reads**: locust holds each cell for the event's own width instead of a fixed second, and binned SCE's calls are scored over the bins they were made on | measured | [PR #594](https://github.com/syncytium2/bugarach/pull/594), [PR #593](https://github.com/syncytium2/bugarach/pull/593) |
-| **A long context wins held-out and loses on crowded recordings.** The 240 s contexts that lead the overnight search's held-out column cost LoCo 0.044 and CoactDetect 0.022 mean F1 on the crowded check — the bench plants events at least 120 s apart, and a window-shaped setting can learn that spacing. ⚠ Corrected 2026-09-17: the LoCo winner also carries an 8 s merge gap, the top of its grid, which fuses crowded events planted 6 s apart. Part of the loss may be that, not the context | measured, one run | `HANDOFF-evaluate-sliding-detectors.md` on branch `full-search` ⚠ **not on `main`**; correction in [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §2 |
+| **A long context wins held-out and loses on crowded recordings.** The 240 s contexts that lead the overnight search's held-out column cost LoCo 0.044 and CoactDetect 0.022 mean F1 on the crowded check — the bench plants events at least 120 s apart, and a window-shaped setting can learn that spacing. ⚠ Corrected 2026-09-17: the LoCo winner also carries an 8 s merge gap, the top of its grid, which fuses crowded events planted 6 s apart. Part of the loss may be that, not the context | measured, one run | [`docs/handoffs/2026-09-17-evaluate-sliding-detectors.md`](../handoffs/2026-09-17-evaluate-sliding-detectors.md), now on `main`; correction in [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §2 |
 | **locust's minimum distance climbed to 12.8 s (128 frames), +0.119 held-out mean F1 and +0.149 crowded, and was still climbing.** ⚠ Corrected 2026-09-17: 128 frames is where the search's extension cap (`MAX_EXTENSIONS = 3`) stopped it, silently, so it is an unbracketed edge and not an optimum. A score that rises as repeat calls are suppressed points at the anchor question below | measured, one run; unbracketed | same; correction in [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md) §2 |
 
 ## Tried and dropped — do not re-propose without new evidence
@@ -106,6 +169,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 
 | decision | why it gates the goal | filed |
 |---|---|---|
+| **The final-parameters night's decisions** (2026-09-25): adopt the four strictly adoptable proposals, one of which changes what SPIKE-synch measures; one setting per stream when another stream's version sometimes scores higher; four shipped points out of budget on the new bench; all of the lowest planted level, and on busy recordings part of the middle one, under the floor on fast and combined; whether a value at a hard limit counts as bracketed; slow binned SCE at the close-events allowance; CoactDetect's `alpha` at the extension cap; contexts shorter than 20 s and LoCo's threshold under the floor; the guard cap | They decide which of the night's proposals can be adopted, and whether the budgets and the bench still say what they were set to say | [report, Decisions 1–9](../learned/runs/2026-09-25-final-parameters/README.md) |
 | **Binned SCE at 98 or at 75** — 98 gives mean F1 0.525 at 3.4 calls an hour on an empty recording; 75 gives 0.665 at 41.8, against a declared limit of 6. The F1 optimum is excluded by the budget, not by noise | Decides whether the budget or the score is the binding constraint, for every detector and not only this one | [todo](../todo/2026-09-16-binned-sce-trades-false-alarms-for-f1.md) |
 | **How the promiscuity probe enters the score** — two live rules pick opposite winners for the rate detector | [`MILESTONES.md`](../MILESTONES.md) lists it as blocking the re-fit; waiting since 2026-08-25 | [todo](../todo/2026-08-25-two-scorers-two-winners-and-nothing-decides.md) |
 | **locust's anchor** — the half-rise in Python, the peak in the browser, and the width now painted forward from it | Two surfaces answer the same question differently, and the retune's locust numbers rest on one of them | [todo](../todo/2026-09-16-locust-anchor-and-the-panel-viewer.md) |
@@ -154,7 +218,7 @@ Each is a decision, not a task, and nothing below it can be settled by a session
 | The search over every declared setting | `tools/search_all_settings.py` on branch `full-search` ⚠ **not on `main`** |
 | Sliding LoCo and CoactDetect | `src/bugarach/detectors/sliding.py` and the `window_mode` branches on branch `sliding-loco-coact` ⚠ **not on `main`**; the binned versions stay as the MATLAB ports and their parity tests are untouched |
 | Where the argument for the whole thread is written down | `HANDOFF-detector-optimization.md` on branch `detector-review-doc` ⚠ **not on `main`** — what is solid, where each detector stands, what has never been optimized, and what finishing costs |
-| Run outputs | `<darkroom>/bugarach/2026-09-16-best-parameters/` and `<darkroom>/bugarach/2026-09-16-full-search/` — resolve with `bugarach.paths.darkroom()` |
+| Run outputs | `<darkroom>/bugarach/archive/2026-09/2026-09-16-best-parameters/` and `<darkroom>/bugarach/archive/2026-09/2026-09-16-full-search/` — resolve with `bugarach.paths.darkroom()` |
 | The ordering argument this thread sits inside | [`RESET.md`](../RESET.md) §7 — mechanism, then benchmark, then calibration ⚠ its step 5 is stale, above |
 
 ## Keeping this page true

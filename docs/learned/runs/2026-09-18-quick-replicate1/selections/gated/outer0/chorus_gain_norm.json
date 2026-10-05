@@ -1,0 +1,64 @@
+{
+ "model": "chorus_gain_norm",
+ "outer_fold": 0,
+ "budget": "meta.json budgets[0]",
+ "pooled": {
+  "training_seeds": [
+   0
+  ],
+  "recordings": [
+   "busy:2002",
+   "busy:2003",
+   "busy:2004",
+   "busy:2005",
+   "quiet:2002",
+   "quiet:2003",
+   "quiet:2004",
+   "quiet:2005"
+  ],
+  "recording_seeds": [
+   2002,
+   2003,
+   2004,
+   2005
+  ],
+  "fitted_on": [
+   "busy:2002",
+   "busy:2003",
+   "busy:2004",
+   "busy:2005",
+   "quiet:2002",
+   "quiet:2003",
+   "quiet:2004",
+   "quiet:2005"
+  ],
+  "twin_seeds": [
+   102002,
+   102003,
+   102004,
+   102005
+  ]
+ },
+ "n_configurations": 2,
+ "missing_configurations": [],
+ "selection": "gated",
+ "config_key": "1cb6b0ac45c322a5",
+ "config": "configs/chorus_gain_norm/1cb6b0ac45c322a5.json",
+ "draw_index": 23,
+ "inner_f1": 0.6454212454212455,
+ "edge_flags": {
+  "lr": false,
+  "steps": false,
+  "top_m": false,
+  "vote_gain": false
+ },
+ "threshold": 0.8500000000000001,
+ "threshold_index": 27,
+ "threshold_at_grid_edge": false,
+ "inner_probe_per_hour": {
+  "quiet": 0.0,
+  "busy": 0.0
+ },
+ "inner_quiet_per_hour": 5.333333333333333,
+ "n_admissible": 27
+}

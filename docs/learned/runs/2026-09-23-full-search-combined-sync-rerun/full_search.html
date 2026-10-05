@@ -1,0 +1,32 @@
+<meta charset="utf-8"><title>Full settings search</title>
+<style>
+:root { --surface:#fcfcfb; --ink:#1b1b1a; --muted:#6b6a64; --rule:#e4e3de; }
+body { background:var(--surface); color:var(--ink); font:14px/1.45 system-ui, sans-serif;
+        margin:0; padding:20px 24px; max-width:1300px; }
+table { border-collapse:collapse; font-size:13px; }
+td, th { padding:3px 8px; border-bottom:1px solid var(--rule); text-align:left; vertical-align:top; }
+tr.ship td { border-top:2px solid #b9b8b2; }
+.cap { max-width:1250px; }
+.heats { display:flex; flex-wrap:wrap; gap:24px; }
+.heat .cap { max-width:520px; font-size:13px; }
+svg .tick { font-size:10.5px; fill:var(--muted); } svg .lab { font-size:12px; fill:var(--ink); }
+</style>
+<p class="cap"><b>Figure 1. Every declared setting of the six detectors, searched on the simulator and
+scored on recordings the search never saw.</b> <i>shipped</i> is the stored operating point; <i>rounds</i>
+moved one setting at a time with the others at their current best; <i>pair</i> searched every
+combination of two settings; <i>full</i>, where present, searched every combination of all of them.
+Each candidate was chosen on 48 simulated recordings per background ("chosen on" column: mean F1
+there) and then scored on 48 different ones (every other F1 column). Gain is the held-out mean F1
+minus the shipped point's, with its 95% bootstrap interval (400 resamples of recordings); where
+the interval includes zero the search found nothing the bench can tell apart from the shipped point.
+Only candidates under all three limits in bench.py were eligible — the two false-alarm limits and the
+largest allowed precision difference between the backgrounds. False alarms are per hour: in a dense
+stretch with nothing planted inside an ordinary recording (quiet / busy background), and on a whole
+recording with nothing planted. The last column scores each candidate on 12 crowded recordings per background (planted events as little as 6 s apart, fitted to the most crowded real recordings), never used for choosing: a setting that only works because the ordinary bench spaces planted events 120 s apart loses here. F1 is the harmonic mean of recall and precision.</p>
+<table><tr><th>detector</th><th>candidate</th><th>settings that differ from shipped</th>
+<th>mean F1, chosen on</th><th>F1 quiet</th><th>F1 busy</th><th>mean F1</th>
+<th>gain vs shipped (95% interval)</th><th>false alarms/hour, empty stretch (quiet / busy)</th>
+<th>false alarms/hour, empty recording</th>
+<th>mean F1, crowded recordings (change vs shipped)</th></tr><tr class='ship'><td>SPIKE-synch</td><td>shipped</td><td>—</td><td>0.665</td><td>0.659</td><td>0.672</td><td>0.666</td><td></td><td>392 / 526</td><td>0.0</td><td>0.816</td></tr><tr class=''><td>SPIKE-synch</td><td>rounds</td><td>C_threshold 0.1 → 0.08, C_min 0.1 → 0.0025, max_gap 0.5 → 8, min_n 3 → 2, dt 0.1 → 0.00625</td><td>0.805</td><td>0.813</td><td>0.780</td><td>0.797</td><td>+0.131 (+0.119 to +0.141)</td><td>12 / 12</td><td>0.1</td><td>0.893 (+0.076)</td></tr></table>
+
+<div class="heats"></div>

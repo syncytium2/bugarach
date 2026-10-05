@@ -96,9 +96,11 @@ that result**, and it was not checked for any other.
 
 ## What is waiting, and on whom
 
-- **interface2 branch `bct-modularity-fast`** (GitLab, pushed 2026-08-19) — makes the channel
-  an argument with the default unmoved, and adds the `IF2_DROI_CSV` override the pipeline now
-  needs. **Nobody is left to open the MR or to decide whether to repoint the default.**
+- **interface2 branch `bct-modularity-fast`** (GitLab, pushed 2026-08-19; since the 2026-09-18
+  move and triage it is the tag **`archive/bct-modularity-fast`** on the private GitHub repository —
+  restore it as a branch with `git push origin archive/bct-modularity-fast:refs/heads/bct-modularity-fast`)
+  — makes the channel an argument with the default unmoved, and adds the `IF2_DROI_CSV` override the
+  pipeline now needs. **Nobody is left to open the MR or to decide whether to repoint the default.**
 - **Whether murmuration's other conclusions carry the same two defects** — coverage,
   distance-decay, the treatment analyses. Not checked. The undefined-as-negative pattern and
   the inert `include` column are both the kind that survive a review of the numbers a document

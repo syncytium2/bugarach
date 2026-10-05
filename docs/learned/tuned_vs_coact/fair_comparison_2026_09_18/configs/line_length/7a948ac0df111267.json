@@ -1,0 +1,27 @@
+{
+ "arch": "line_length",
+ "cfg": {
+  "n_scales": 4,
+  "width": 16,
+  "depth": 6,
+  "max_center_frames": 128,
+  "max_ratio": 40.0,
+  "vote_gain": 4
+ },
+ "overrides": {
+  "n_scales": 4,
+  "width": 16,
+  "vote_gain": 4
+ },
+ "training": {
+  "optimizer": "Adam",
+  "lr": 0.003,
+  "steps": 1800,
+  "crop_frames": 4096,
+  "batch": 3,
+  "n_train": 10
+ },
+ "draw_index": 3,
+ "is_untuned": false,
+ "config_key": "7a948ac0df111267"
+}

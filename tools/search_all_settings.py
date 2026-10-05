@@ -15,9 +15,15 @@ operating point.** Adopting anything it finds is a separate decision.
 **What is searched.** The settings each detector declares in
 ``bench.OPERATING_POINTS`` (see :data:`SPACE`), excluding surrogate counts, which trade
 precision for compute time, and ``grid_dt``, which is the recording's frame interval.
-Undeclared signature defaults — ``min_rois``, the merge gaps — are **not** searched:
-``min_rois`` is the participation floor, and tuning it to the bench's planted
-participation levels would fit the generator rather than the tissue.
+``min_rois`` and SPIKE-synch's ``min_n`` are **not** searched: since 2026-09-25 each recording's
+ADR-0008 floor sets them (``bench.run_detector``; ADR-0008 decision 6, ADR-0009 decision 3), and a
+planted event under that floor is "don't care" in the score (ADR-0009 decision 2). Every run
+record says so: ``"floor": bench.FLOOR_LABEL``.
+
+**Bracketing.** A setting is extended past a grid edge up to :data:`MAX_EXTENSIONS` times. Every
+candidate whose chosen value still sits at an edge of the final grid, or on an axis that used up
+its extensions, is recorded as **unbracketed** in ``search.json`` (``bracketing``), and
+``tools/score_bench_candidates.py`` carries that into ``candidates.json`` as not adoptable.
 
 **How, in three stages, each saved to ``search.json`` as it finishes:**
 
@@ -36,7 +42,10 @@ participation levels would fit the generator rather than the tissue.
 
 **Admissible** means under all three budgets ``bench.py`` holds: ``MAX_PROBE_PER_MIN`` on both
 backgrounds, ``MAX_FALSE_POSITIVES_PER_HOUR`` on the empty recording, and
-``MAX_PRECISION_DROP`` between the backgrounds.
+``MAX_PRECISION_DROP`` between the backgrounds. Since ADR-0009 the probe is read off the
+elevated-rate recording (``bench.evaluate_elevated_rate``, seeds + ``ELEVATED_SEED_OFFSET``), and
+that recording's calls outside its stretch are held to ``MAX_FALSE_POSITIVES_PER_HOUR`` at the
+quiet background too.
 
 **LoCo and CoactDetect are searched in their sliding form** (``window_mode="sliding"``, shipped
 2026-09-16): their counts slide and their nulls are exact, so ``thr_step_sec`` and the surrogate
@@ -47,6 +56,21 @@ Settings that shape a detector's window (context, integration, bin width) are th
 most exposed to the bench's structure — planted events at least 120 s apart, widths that
 carry no signal — so a gain there needs checking on crowded recordings and on real calls
 before anyone adopts it.
+
+**On the realistic bench (ADR-0010, ``--realistic``)** the search follows the rulings made at
+acceptance, and nothing else changes without the switch:
+
+* **ruling 6:** CoactDetect's ``alpha`` extends in tenfold steps down to :data:`ALPHA_CAP`
+  (about 8 standard deviations), past the per-axis extension count;
+* **ruling 7:** contexts stay inside [20 s, 120 s] (:data:`CONTEXT_MIN_SEC`), and LoCo's
+  ``threshold_pctile`` is held at each stream's shipped value (:data:`HELD_AT_SHIPPED`);
+* **ruling 8:** the guard cap, a guard at most a quarter of its context, is
+  ``bench.settings_are_valid``, which every path here calls;
+* **part 4:** the context-versus-spacing rule and the close-events recording are retired;
+* **ruling 5:** a candidate holding a setting at its off-limit (:data:`OFF_LIMITS`) or at a cap is
+  recorded under ``findings`` in its bracketing and is never adoptable, and ``ruling_5`` records,
+  for each such setting, whether one grid step off it changes any calls
+  (:func:`ruling_5_checks`, :data:`N_STEP_OFF_SEEDS` selection seeds per background).
 """
 from __future__ import annotations
 
@@ -56,12 +80,33 @@ import datetime
 import itertools
 import json
 import math
+import os
 import sys
 import time
 from multiprocessing import Pool
 from pathlib import Path
 
-from bugarach import bench as _bench
+BENCH_ENV = "BUGARACH_BENCH"
+#: Which bench module every stage and every worker reads. ``--bench`` sets it before the pool
+#: starts, and workers spawned on Windows re-import this module and read it again, so no
+#: stage can score one stream's recordings against the other's settings. Always set by
+#: ``main`` — a value left in the shell cannot redirect a run silently.
+BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
+           "combined": "bugarach.bench_combined"}
+
+
+def _load_bench():
+    """The bench module this run searches: ``bugarach.bench`` unless ``--bench slow``."""
+    import importlib
+    import os
+
+    name = os.environ.get(BENCH_ENV, BENCHES["fast"])
+    if name not in BENCHES.values():
+        raise ValueError(f"{BENCH_ENV}={name!r} is not one of {sorted(BENCHES.values())}")
+    return importlib.import_module(name)
+
+
+_bench = _load_bench()
 
 REGIMES = ("baseline_quiet", "baseline_busy")
 NULL = "null"
@@ -73,7 +118,10 @@ NULL = "null"
 TAIL = ("tail_quiet", "tail_busy")
 N_TAIL = 12
 MAX_ROUNDS = 4
-MAX_EXTENSIONS = 3
+MAX_EXTENSIONS = 6
+"""Extensions per axis over a whole search. 3 until 2026-09-25, when fast SPIKE-synch's ``dt`` and
+``C_min`` stopped at it unbracketed; raised for the final-parameters night, value set from the
+pilot's timings."""
 MOVE_EPS = 0.002
 BOOTSTRAP = 400
 BOOTSTRAP_SEED = 20260917
@@ -83,49 +131,195 @@ BOOTSTRAP_SEED = 20260917
 #: **Declared in `bugarach.bench.FULL_GRIDS`** since 2026-09-17, so goal 2's nested
 #: cross-validation searches the same axes this search does rather than a second copy of
 #: them. Kept under the old name here because this module's own stages read it.
-SPACE = {d: {k: list(v) for k, v in axes.items()}
-         for d, axes in _bench.FULL_GRIDS.items()}
+def _space(b):
+    return {d: {k: list(v) for k, v in axes.items()} for d, axes in b.FULL_GRIDS.items()}
+
+
+SPACE = _space(_bench)
 #: Pairs searched as full two-setting grids (`bench.FULL_GRID_PAIRS`).
 PAIRS = dict(_bench.FULL_GRID_PAIRS)
+
+
+def use_bench(which: str):
+    """Point this module, and every worker it starts, at the ``fast`` or ``slow`` bench."""
+    import os
+
+    global _bench, SPACE, PAIRS
+    os.environ[BENCH_ENV] = BENCHES[which]
+    _bench = _load_bench()
+    SPACE = _space(_bench)
+    PAIRS = dict(_bench.FULL_GRID_PAIRS)
+    return _bench
+
+
 PERCENTILE = {"threshold_pctile", "sce_percentile"}
-INTEGER = {"n_synchronous_frames", "sce_min_distance_frames"}
+INTEGER = {"n_synchronous_frames", "sce_min_distance_frames", "min_rois", "min_n", "k_offset"}
+#: A count is extended as a count. Until 2026-09-23 only the first two were listed, so
+#: `min_rois` and `min_n` fell through to halving: the slow search walked `sce.min_rois`
+#: 3 → 1.5 → 0.75 → 0.375, and the combined search returned SPIKE-synch at `min_n` 0.25 with
+#: its largest gain of the six, which could not be installed (PR #754). An all-integer grid
+#: is treated the same way even when its name is missing here.
+COUNT_FLOOR = {"min_rois": 3, "min_n": 2, "k_offset": 0}
+"""The smallest value a count may be extended to, for a caller that still searches one: since
+2026-09-25 neither ``min_rois`` nor ``min_n`` is in ``FULL_GRIDS`` (ADR-0008's floor sets both).
+count's ``k_offset`` is cells above that floor and stops at 0, the floor itself."""
+FLOAT_FLOOR = {"bin_sec": 0.1, "win_sec": 0.1}
+"""The smallest value a continuous setting may be extended to. count's bins and count_sliding's
+window stop at one frame (0.1 s, the generator's grid): narrower holds no more than one frame's
+onsets."""
 FRACTION = {"C_threshold", "C_min"}
+
+# ------------------------------------------------------------------ ADR-0010's search rulings
+#
+# Applied ONLY when a realistic spacing is named (`--spacing realistic` or `orx`, or its alias
+# `--realistic`). Every other run searches exactly as before (tests pin that). The one source of
+# truth is `bench.spacing()`, read from BUGARACH_BENCH_SPACING, which `main` sets before the pool
+# starts so workers spawned on Windows read the same mode. (#828's BUGARACH_REALISTIC and a bench
+# module's REALISTIC attribute are retired: two switches let either one alone run half of ADR-0010.)
+
+ALPHA_CAP = 6e-16
+"""Ruling 6: CoactDetect's ``alpha`` extends down to about 8 standard deviations of its normal
+approximation (one-sided 8 SD is 6.2e-16), in tenfold steps, exempt from the per-axis extension
+count. A value at the cap is a finding (ruling 5), never a tuned value."""
+CONTEXT_SETTINGS = ("context_win_sec", "context_win")
+CONTEXT_MIN_SEC = 20.0
+"""Ruling 7: 20 s is the shortest context; no grid is extended below it, and declared values
+below it are dropped."""
+CONTEXT_MAX_SEC = 120.0
+"""ADR-0009 decision 5, which ADR-0010 keeps: no context longer than 120 s. On the old bench
+`bench.context_fits_the_null` stopped extension there; ADR-0010 part 4 retires that rule, so the
+cap is applied here instead."""
+HELD_AT_SHIPPED = {"loco": ("threshold_pctile",)}
+"""Ruling 7: LoCo's own threshold leaves the search and stays at each stream's shipped value
+(ineffective under the floor; recorded under ruling 5, cause known)."""
+OFF_LIMITS = {"guard_sec": 0.0, "C_min": 0.0, "merge_gap_sec": 0.0, "merge_gap_s": 0.0,
+              "n_synchronous_frames": 1}
+"""Ruling 5: the value that switches a setting off (no guard, no minimum coincidence, no merge, a
+run of one frame). A best value there is a finding, not a tuned value. A NaN merge gap ("do not
+merge") is off as well."""
+N_STEP_OFF_SEEDS = 8
+"""Selection seeds per background on which ruling 5's check compares calls one grid step off."""
+
+
+def realistic() -> bool:
+    """Is this run on a realistic spacing (ADR-0010)? ``bench.spacing() != "bench"``: the ORX
+    spacing is scored under the same rulings as the realistic one."""
+    from bugarach import bench as _b
+
+    return _b.spacing() != "bench"
+
+
+def realistic_space(space: dict) -> dict:
+    """The declared grids with ADR-0010's rulings applied: contexts inside [20 s, 120 s], LoCo's
+    threshold out. The shipped value is added back by the caller as it always is, so a shipped
+    context outside the range is still the starting point and still reported."""
+    out = {}
+    for d, axes in space.items():
+        out[d] = {}
+        for k, values in axes.items():
+            if k in HELD_AT_SHIPPED.get(d, ()):
+                continue
+            if k in CONTEXT_SETTINGS:
+                values = [v for v in values
+                          if CONTEXT_MIN_SEC - 1e-9 <= float(v) <= CONTEXT_MAX_SEC + 1e-9]
+            out[d][k] = list(values)
+    return out
+
+
+def realistic_pairs(pairs: dict, space: dict) -> dict:
+    """Two-setting grids whose settings are both still searched."""
+    return {d: ab for d, ab in pairs.items()
+            if d in space and all(k in space[d] for k in ab)}
+
+
+def is_off_limit(setting: str, value) -> bool:
+    if setting in ("merge_gap_sec", "merge_gap_s") and isinstance(value, float) \
+            and math.isnan(value):
+        return True
+    off = OFF_LIMITS.get(setting)
+    if off is None or isinstance(value, str) or value is None:
+        return False
+    try:
+        return math.isclose(float(value), float(off), abs_tol=1e-12)
+    except (TypeError, ValueError):
+        return False
 
 
 def shipped_value(det: str, setting: str):
     """The shipped value: declared in OPERATING_POINTS, or the detector's own default."""
     import inspect
 
-    from bugarach import bench
-    from bugarach.detectors import (cicada_detect, coact_detect, loco_detect,
-                                    rate_detect, sce_detect, sync_detect)
+    bench = _load_bench()
+    from bugarach.detectors import (cicada_detect, coact_detect, count_detect,
+                                    count_sliding_detect, loco_detect, rate_detect,
+                                    sce_detect, sync_detect)
     params = bench.OPERATING_POINTS[det].params
     if setting in params:
         return params[setting]
     fn = {"loco": loco_detect, "sce": sce_detect, "cicada": cicada_detect,
-          "coact": coact_detect, "rate": rate_detect, "sync": sync_detect}[det]
+          "coact": coact_detect, "rate": rate_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[det]
     return inspect.signature(fn).parameters[setting].default
 
 
-#: Settings that make sense together — `bench.settings_are_valid`, which both this search
-#: and goal 2's per-fold search read, so neither admits a combination the other rejects.
-valid = _bench.settings_are_valid
+def valid(det: str, p: dict) -> bool:
+    """Settings that make sense together, AND that this bench can honestly measure.
+
+    `bench.settings_are_valid` is the detectors' own rule, read by goal 2's per-fold search
+    too, so neither admits a combination the other rejects. On top of it, a context window
+    wider than the planted spacing puts other events inside the null the threshold comes
+    from — and a contaminated null sits high, so the setting that breaks this scores BETTER
+    here. The 2026-09-17 sliding search chose 240 s contexts on a bench that plants at 120 s
+    for exactly that reason, and `tests/test_bench.py` refused the result after the run.
+    """
+    if realistic():
+        # ADR-0010 part 4: on the realistic bench a neighbouring event inside a context is
+        # realistic, so the context-versus-spacing rule is retired. The guard cap (ruling 8)
+        # stays: it is inside `settings_are_valid`, which every search path calls.
+        return _bench.settings_are_valid(det, p)
+    return (_bench.settings_are_valid(det, p)
+            and _bench.context_fits_the_null(p, _bench.BENCH_RECORDING["min_sep_sec"]))
 
 
 def extend(setting: str, grid: list, low_end: bool):
     """One more value past an edge of ``grid``, or None when the setting cannot go further."""
     edge = min(grid) if low_end else max(grid)
+    if realistic() and setting in CONTEXT_SETTINGS:
+        # Ruling 7 and ADR-0009 decision 5: [20 s, 120 s], and nothing past either end.
+        if low_end:
+            if edge <= CONTEXT_MIN_SEC + 1e-9:
+                return None
+            new = max(CONTEXT_MIN_SEC, edge / 2)
+        else:
+            if edge >= CONTEXT_MAX_SEC - 1e-9:
+                return None
+            new = min(CONTEXT_MAX_SEC, edge * 2)
+        return None if any(math.isclose(new, g, rel_tol=1e-12) for g in grid) else new
+    if realistic() and setting == "alpha" and low_end:
+        # Ruling 6: down to about 8 standard deviations, in tenfold steps.
+        if edge <= ALPHA_CAP * (1 + 1e-9):
+            return None
+        new = max(ALPHA_CAP, edge / 10)
+        return None if any(math.isclose(new, g, rel_tol=1e-12) for g in grid) else new
     if setting in PERCENTILE:
         new = 100 - (100 - edge) * 2 if low_end else 100 - (100 - edge) / 2
         new = max(new, 1.0)
-    elif setting in INTEGER:
-        new = max(1, int(edge) // 2) if low_end else int(edge) * 2
+    elif setting in INTEGER or all(isinstance(g, int) and not isinstance(g, bool) for g in grid):
+        floor = COUNT_FLOOR.get(setting, 1)
+        if low_end:
+            new = max(floor, int(edge) - 1 if edge <= 4 else int(edge) // 2)
+        else:
+            new = int(edge) + 1 if edge < 4 else int(edge) * 2
     elif setting == "alpha":
         new = edge / 3 if low_end else min(0.5, edge * 3)
     elif setting in FRACTION:
         new = edge / 2 if low_end else min(1.0, edge * 1.5)
     else:
         new = edge / 2 if low_end else edge * 2
+    if low_end and setting in FLOAT_FLOOR:
+        if edge <= FLOAT_FLOOR[setting] * (1 + 1e-9):
+            return None
+        new = max(FLOAT_FLOOR[setting], new)
     if any(math.isclose(new, g, rel_tol=1e-12, abs_tol=1e-15) for g in grid):
         return None
     return new
@@ -154,29 +348,222 @@ def _job(args):
     recording rates) when ``keep`` — only the held-out stage needs those.
     """
     det, key_items, param_items, regime, seeds, keep = args
-    from bugarach import bench
+    bench = _load_bench()
     from bugarach.score import score_stream
 
     # `key_items` is what the cache is keyed by (NaN-safe); `param_items` is what the
     # detector is actually run with, NaN and all.
     items = key_items
     params = dict(param_items)
-    if regime == NULL:
-        rates = [bench.false_positives_per_hour(det, seeds=(s,), **params) for s in seeds]
-        return (det, items, regime), dict(null_per_hour=sum(rates) / len(rates),
-                                          per_seed=rates if keep else None)
-    scores = []
-    for s in seeds:
-        if regime in TAIL:
-            rec, gt = bench.make_tail_recording("baseline_" + regime.split("_", 1)[1], s)
-        else:
-            rec, gt = bench.make_recording(regime, s)
-        scores.append(score_stream(gt, bench.run_detector(det, rec, **params)))
-    r = bench.pool_scores(scores, detector=det, regime=regime, seeds=tuple(seeds))
+    try:
+        if regime == NULL:
+            rates = [bench.false_positives_per_hour(det, seeds=(s,), **params) for s in seeds]
+            return (det, items, regime), dict(null_per_hour=sum(rates) / len(rates),
+                                              per_seed=rates if keep else None)
+        scores = []
+        for s in seeds:
+            if regime in TAIL:
+                rec, gt = bench.make_tail_recording("baseline_" + regime.split("_", 1)[1], s)
+            else:
+                rec, gt = bench.make_recording(regime, s)
+            scores.append(score_stream(gt, bench.run_detector(det, rec, **params)))
+        # ADR-0009: the stretch is no longer inside the scored recording, so the probe is read off
+        # the elevated-rate recording, same seeds + ELEVATED_SEED_OFFSET. Skipping it would leave
+        # the probe NaN, and NaN fails every budget: loud, not silent.
+        probe = (None if regime in TAIL
+                 else bench.evaluate_elevated_rate(det, regime, seeds, **params))
+    except (ValueError, NotImplementedError) as e:
+        # A detector refusing a COMBINATION of settings is a fact about the detector, not a
+        # crash: `loco` refuses a guard under the symmetric null, and an hour of search must
+        # not die on one such pair. Recorded and reported, never retried and never silent —
+        # `Evaluator.run` prints each distinct refusal once, and the candidate is
+        # inadmissible rather than missing.
+        return (det, items, regime), dict(refused=f"{type(e).__name__}: {e}")
+    r = bench.pool_scores(scores, detector=det, regime=regime, seeds=tuple(seeds), probe=probe)
     return (det, items, regime), dict(f1=r.f1, recall=r.recall, precision=r.precision,
-                                      probe_per_min=r.hot_fa_per_min, n_hit=r.n_hit,
+                                      probe_per_min=r.hot_fa_per_min,
+                                      elevated_out_per_hour=r.elevated_out_per_hour,
+                                      n_hit=r.n_hit,
                                       n_planted=r.n_planted,
+                                      merged_calls=r.n_merged_calls,
+                                      under_floor=bench.under_floor_report(r),
                                       per_seed=scores if keep else None)
+
+
+ELEVATED = "elevated_"
+"""Prefix of the elevated-rate recording's kind in :func:`warm_floors`, one per regime."""
+
+
+def _warm(args):
+    """Compute one recording's ADR-0008 floor into the shared cache (``bench.FLOOR_CACHE_ENV``)."""
+    kind, seed = args
+    bench = _load_bench()
+    if kind == NULL:
+        rec, gt = bench.make_null_recording(seed)
+    elif kind in TAIL:
+        rec, gt = bench.make_tail_recording("baseline_" + kind.split("_", 1)[1], seed)
+    elif kind.startswith(ELEVATED):
+        rec, gt = bench.make_elevated_rate_recording(kind[len(ELEVATED):], seed)
+    else:
+        rec, gt = bench.make_recording(kind, seed)
+    f = gt.params.get("event_floor")
+    return kind, seed, None if f is None else int(f)
+
+
+def warm_floors(pool, sel, ho, log=print) -> dict:
+    """Every recording's floor once, in parallel, before anything is scored — so no worker
+    recomputes one another worker already has. Returns ``{kind: {seed: floor}}``."""
+    jobs = [(k, s) for k in (*REGIMES, NULL) for s in (*sel, *ho)]
+    if not realistic():                                    # ADR-0010 part 4
+        jobs += [(k, s) for k in TAIL for s in (*list(sel)[:N_TAIL], *list(ho)[:N_TAIL])]
+    if hasattr(_load_bench(), "make_elevated_rate_recording"):     # ADR-0009 decision 1
+        jobs += [(ELEVATED + k, s) for k in REGIMES for s in (*sel, *ho)]
+    t0 = time.time()
+    out: dict = {}
+    for kind, seed, f in pool.imap_unordered(_warm, jobs, chunksize=1):
+        out.setdefault(kind, {})[seed] = f
+    log(f"  floors: {len(jobs)} recordings in {time.time() - t0:.0f} s")
+    return out
+
+
+def bracketing(det: str, params: dict, grids: dict, declared: dict,
+               max_extensions: int) -> dict:
+    """Is this candidate an interior optimum on every axis it could move along?
+
+    An axis is unbracketed when the chosen value sits at an end of the final grid. ``reason``
+    says why it stayed there: ``cap`` (the axis used up :data:`MAX_EXTENSIONS`), ``limit`` (the
+    grid cannot go further, e.g. a guard of 0), or ``edge`` (extension stopped for another
+    reason). The runbook's rule is that any of the three makes the candidate not adoptable;
+    ``only_at_limits`` says when every one of them is a ``limit``, for the reader.
+    """
+    axes = {}
+    for k, values in grids.items():
+        numeric = all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in values)
+        if not (numeric and len(values) > 1) or not _bench.setting_applies(det, k, params):
+            continue
+        v = params.get(k)
+        if v is None or (isinstance(v, float) and math.isnan(v)):
+            continue
+        if v not in (min(values), max(values)):
+            continue
+        low = v == min(values)
+        used = len(values) - len(declared.get(k, values))
+        can = extend(k, list(values), low_end=low) is not None
+        reason = "limit" if not can else "cap" if used >= max_extensions else "edge"
+        if realistic() and k == "alpha" and low and v <= ALPHA_CAP * (1 + 1e-9):
+            reason = "cap"                  # ruling 6's value cap, not a hard limit
+        elif realistic() and k in CONTEXT_SETTINGS and not can:
+            reason = "grid_floor" if low else "grid_ceiling"   # ruling 7 / ADR-0009 decision 5
+        axes[k] = dict(side="low" if low else "high", value=v, extensions_used=max(used, 0),
+                       reason=reason)
+    out = dict(bracketed=not axes, unbracketed_axes=axes,
+               only_at_limits=bool(axes) and all(a["reason"] == "limit" for a in axes.values()))
+    if realistic():
+        # RULING 5 (ADR-0010): a best value at a setting's off-limit, or at a cap, is a finding
+        # and is never adoptable. Recorded per setting; `only_at_limits` no longer rescues one,
+        # and a NaN merge gap ("do not merge"), which the grid ends never see, counts too.
+        findings = []
+        for k, v in params.items():
+            if k in grids and not _bench.setting_applies(det, k, params):
+                continue
+            if is_off_limit(k, v):
+                findings.append(dict(setting=k, value=v, kind="off_limit"))
+        for k, a in axes.items():
+            if a["reason"] == "cap" and not any(f["setting"] == k for f in findings):
+                findings.append(dict(setting=k, value=a["value"], kind="cap"))
+        out.update(findings=findings, adoptable_blocked=bool(findings),
+                   bracketed=out["bracketed"] and not findings,
+                   only_at_limits=False if findings else out["only_at_limits"])
+    return out
+
+
+def _calls_of(res) -> list:
+    """A detector result's calls as rounded (onset, width) pairs, whatever shape it came in."""
+    import numpy as np
+
+    if not hasattr(res, "onset_sec") and hasattr(res, "streams"):
+        res = next(iter(res.streams.values()))
+    on = np.asarray(getattr(res, "onset_sec", getattr(res, "locs", [])), float).ravel()
+    wd = np.asarray(getattr(res, "width_sec", getattr(res, "widths", np.zeros(on.size))),
+                    float).ravel()
+    if wd.size != on.size:
+        wd = np.zeros(on.size)
+    return sorted((round(float(a), 6), round(float(b), 6) if np.isfinite(b) else None)
+                  for a, b in zip(on, wd) if np.isfinite(a))
+
+
+def _calls_job(args):
+    """Calls of two settings of one detector on one recording: are they the same calls?"""
+    det, a_items, b_items, regime, seed = args
+    bench = _load_bench()
+    rec, _ = bench.make_recording(regime, seed)
+    try:
+        ca = _calls_of(bench.run_detector(det, rec, **dict(a_items)))
+        cb = _calls_of(bench.run_detector(det, rec, **dict(b_items)))
+    except (ValueError, NotImplementedError) as e:
+        return dict(refused=f"{type(e).__name__}: {e}")
+    return dict(n_a=len(ca), n_b=len(cb), same=ca == cb)
+
+
+def step_off(setting: str, value, grid: list):
+    """The grid value one step off ``value``, inward, or None. A NaN merge gap ("do not merge")
+    steps to the smallest merge gap the grid holds that is not itself an off-limit.
+
+    Never an off-limit: ruling 5 asks whether the calls change once the setting is switched
+    on, and a step from one off-limit to another compares "off" with "off". Binned SCE's grid
+    holds both NaN and 0 s, which are both no merge, and the 2026-09-25 night reported "no
+    change in 0 of 16 recordings" for exactly that pair. With nothing on-limit in the step's
+    direction, None: no comparison rather than a vacuous one."""
+    finite = sorted(v for v in grid if isinstance(v, (int, float)) and not isinstance(v, bool)
+                    and math.isfinite(v))
+    on = [v for v in finite if not is_off_limit(setting, v)]
+    if isinstance(value, float) and math.isnan(value):
+        return on[0] if on else None
+    if value not in finite or len(finite) < 2:
+        return None
+    i = finite.index(value)
+    # Inward: down from the top of the grid (a cap), up from anywhere else (an off-limit).
+    inward = reversed(finite[:i]) if i == len(finite) - 1 else finite[i + 1:]
+    return next((v for v in inward if not is_off_limit(setting, v)), None)
+
+
+def ruling_5_checks(pool, det: str, params: dict, findings: list, grids: dict, seeds,
+                    log=print) -> list:
+    """Ruling 5: for each setting a candidate holds at its off-limit or at a cap, do the calls
+    change one grid step off it? Same recordings, both backgrounds, calls compared exactly.
+    ``changed`` False means the setting did nothing there, a finding with a cause to name."""
+    out = []
+    for f in findings:
+        k = f["setting"]
+        other = step_off(k, params.get(k), grids.get(k, []))
+        if other is None:
+            out.append(dict(f, step_value=None, note="no grid value one step off"))
+            continue
+        moved = {**params, k: other}
+        if not valid(det, moved):
+            out.append(dict(f, step_value=other, changed=None,
+                            note="one step off is not a valid combination with the rest"))
+            log(f"    ruling 5: {det}.{k} one step off ({_fmt(other)}) is not a valid "
+                f"combination; not compared")
+            continue
+        jobs = [(det, tuple(sorted(params.items())), tuple(sorted(moved.items())), r, s)
+                for r in REGIMES for s in list(seeds)[:N_STEP_OFF_SEEDS]]
+        got = list(pool.imap_unordered(_calls_job, jobs, chunksize=1))
+        refused = [g["refused"] for g in got if g.get("refused")]
+        ok = [g for g in got if not g.get("refused")]
+        # Nothing compared is not "no change": `changed` stays None and the refusal is named.
+        row = dict(f, step_value=other, recordings=len(jobs), recordings_compared=len(ok),
+                   recordings_changed=sum(not g["same"] for g in ok),
+                   calls_at_limit=sum(g["n_a"] for g in ok),
+                   calls_one_step_off=sum(g["n_b"] for g in ok),
+                   changed=any(not g["same"] for g in ok) if ok else None,
+                   refused=refused[:1] or None)
+        verdict = ("not compared: " + refused[0] if not ok else
+                   f"calls {'CHANGE' if row['changed'] else 'do not change'} on "
+                   f"{row['recordings_changed']} of {len(ok)} recordings")
+        log(f"    ruling 5: {det}.{k} at {_fmt(params.get(k))} -> {_fmt(other)}: {verdict}")
+        out.append(row)
+    return out
 
 
 class Evaluator:
@@ -186,9 +573,18 @@ class Evaluator:
         self.pool, self.seeds, self.log = pool, list(seeds), log
         self.cache: dict = {}
         self.n_points = 0
+        self.refusals: dict = {}      # message -> the detector that refused, logged once each
+        self.crowded = False          # set True to score the crowded recordings per candidate
 
     def run(self, points):
-        """``points``: iterable of (det, params). Fills the cache for all three recordings."""
+        """``points``: iterable of (det, params). Fills the cache for every recording kind.
+
+        The crowded recordings are scored here, for EVERY candidate, because they are a veto
+        now and a veto has to be in front of the choice. Scoring them only for the survivors
+        is what let the 2026-09-17 search propose four settings that lose 0.25 to 0.32 mean
+        F1 there (`bench.MAX_CROWDED_DROP`). They cost about a quarter more per candidate:
+        12 recordings per background against 48.
+        """
         todo = []
         for det, params in points:
             k = _key(det, params)
@@ -196,34 +592,86 @@ class Evaluator:
             for regime in (*REGIMES, NULL):
                 if (k[0], k[1], regime) not in self.cache:
                     todo.append((det, k[1], real, regime, self.seeds, False))
+            if self.crowded:
+                for regime in TAIL:
+                    if (k[0], k[1], regime) not in self.cache:
+                        todo.append((det, k[1], real, regime, self.seeds[:N_TAIL], False))
         if not todo:
             return
         t0 = time.time()
         for key, val in self.pool.imap_unordered(_job, todo, chunksize=1):
             self.cache[key] = val
+            why = val.get("refused")
+            if why and why not in self.refusals:
+                self.refusals[why] = key[0]
+                self.log(f"    {key[0]}: a combination is refused — {why}")
         self.n_points += len(todo) // 3
         self.log(f"    {len(todo)} evaluations in {time.time() - t0:.0f} s")
 
     def summary(self, det, params):
         k = _key(det, params)
         q, b, n = (self.cache[(k[0], k[1], r)] for r in (*REGIMES, NULL))
-        return dict(f1_quiet=q["f1"], f1_busy=b["f1"],
-                    mean_f1=(q["f1"] + b["f1"]) / 2,
-                    precision_quiet=q["precision"], precision_busy=b["precision"],
-                    probe_quiet=q["probe_per_min"], probe_busy=b["probe_per_min"],
-                    null_per_hour=n["null_per_hour"])
+        if any(r.get("refused") for r in (q, b, n)):
+            # Scored nowhere, so it cannot win: admissibility reads mean_f1 and every budget
+            # here, and NaN fails all of them.
+            nan = float("nan")
+            return dict(f1_quiet=nan, f1_busy=nan, mean_f1=nan,
+                        precision_quiet=nan, precision_busy=nan,
+                        probe_quiet=nan, probe_busy=nan, null_per_hour=nan,
+                        elevated_out_quiet=nan, elevated_out_busy=nan,
+                        refused=next(r["refused"] for r in (q, b, n) if r.get("refused")))
+        out = dict(f1_quiet=q["f1"], f1_busy=b["f1"],
+                   mean_f1=(q["f1"] + b["f1"]) / 2,
+                   precision_quiet=q["precision"], precision_busy=b["precision"],
+                   probe_quiet=q["probe_per_min"], probe_busy=b["probe_per_min"],
+                   null_per_hour=n["null_per_hour"],
+                   elevated_out_quiet=q["elevated_out_per_hour"],
+                   elevated_out_busy=b["elevated_out_per_hour"])
+        if self.crowded:
+            tq, tb = (self.cache.get((k[0], k[1], r)) for r in TAIL)
+            if tq and tb and not (tq.get("refused") or tb.get("refused")):
+                out["crowded_mean_f1"] = (tq["f1"] + tb["f1"]) / 2
+        return out
 
 
-def admissible(det: str, s: dict) -> bool:
-    """Under all three budgets bench.py holds: the probe on both backgrounds, the empty
-    recording, and the precision swing between the backgrounds."""
-    from bugarach import bench
-    ceiling = bench.MAX_PROBE_PER_MIN[det]
-    swing = abs(s["precision_quiet"] - s["precision_busy"])
-    return (math.isfinite(s["f1_quiet"]) and math.isfinite(s["f1_busy"])
-            and s["probe_quiet"] <= ceiling and s["probe_busy"] <= ceiling
-            and s["null_per_hour"] <= bench.MAX_FALSE_POSITIVES_PER_HOUR[det]
-            and math.isfinite(swing) and swing <= bench.MAX_PRECISION_DROP[det])
+def make_admissible(reference_crowded=None):
+    """The admissibility rule, with the crowded-recording veto bound to a reference.
+
+    ``reference_crowded`` maps a detector to the crowded mean F1 of the setting a candidate
+    would replace — the shipped one. Without it the rule is the three budgets alone, which
+    is what every search before 2026-09-17 applied and what let the merge-gap artifact
+    through.
+    """
+    bench = _load_bench()
+
+    def admissible(det: str, s: dict) -> bool:
+        ceiling = bench.MAX_PROBE_PER_MIN[det]
+        swing = abs(s["precision_quiet"] - s["precision_busy"])
+        ok = (math.isfinite(s["f1_quiet"]) and math.isfinite(s["f1_busy"])
+              and s["probe_quiet"] <= ceiling and s["probe_busy"] <= ceiling
+              and s["null_per_hour"] <= bench.MAX_FALSE_POSITIVES_PER_HOUR[det]
+              # ADR-0009: outside its stretch the elevated-rate recording is a recording with
+              # nothing planted, held to the same budget. At the quiet background only, the one
+              # that budget was measured on; the busy figure is reported beside it, not gated.
+              and s["elevated_out_quiet"] <= bench.MAX_FALSE_POSITIVES_PER_HOUR[det]
+              and math.isfinite(swing) and swing <= bench.MAX_PRECISION_DROP[det])
+        if not ok or reference_crowded is None:
+            return ok
+        ref = reference_crowded.get(det)
+        got = s.get("crowded_mean_f1")
+        if ref is None:
+            return ok
+        # Not scored there = not admissible. A candidate whose crowded score is missing is a
+        # candidate nobody checked, and this budget exists because an unchecked one won.
+        if got is None or not math.isfinite(got):
+            return False
+        return got >= ref - bench.MAX_CROWDED_DROP
+
+    return admissible
+
+
+#: The three-budget rule, for callers that have no crowded reference (and for tests).
+admissible = make_admissible()
 
 
 # ------------------------------------------------------------------ the search
@@ -295,7 +743,9 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
                                   for v in grid)
                     at_edge = (numeric and len(grid) > 1
                                and best_v in (min(grid), max(grid)))
-                    if at_edge and extensions[(d, setting)] < max_extensions:
+                    # Ruling 6: alpha's reach is set by its value cap, not by the count.
+                    uncounted = realistic() and setting == "alpha" and max_extensions > 0
+                    if at_edge and (uncounted or extensions[(d, setting)] < max_extensions):
                         new = extend(setting, grid, low_end=(best_v == min(grid)))
                         if new is not None:
                             grid.append(new)
@@ -305,15 +755,25 @@ def coordinate_rounds(dets, start, space, evaluate, summarize, is_admissible,
                             log(f"  {d}.{setting}: best at the edge {best_v:g}; adding {new:g}")
                             continue
                     current = summarize(d, state[d])
-                    if best_v != state[d][setting] and \
-                            best_s["mean_f1"] > current["mean_f1"] + min_gain:
+                    # WHEN THE STARTING POINT IS ITSELF INADMISSIBLE, any admissible setting
+                    # beats it and the F1 comparison is the wrong question. Without this the
+                    # search reports "nothing moved" and leaves a point that breaks a budget:
+                    # sliding LoCo at its binned threshold fires 4.0 calls an hour on an empty
+                    # recording against a limit of 3, scores a high F1 for that reason, and no
+                    # admissible candidate could beat that F1. Found 2026-09-17 by the first
+                    # search whose starting point was out of budget.
+                    rescue = not is_admissible(d, current)
+                    if best_v != state[d][setting] and (
+                            rescue or best_s["mean_f1"] > current["mean_f1"] + min_gain):
+                        why = " (the starting point breaks a budget)" if rescue else ""
                         log(f"  round {rnd} {d}.{setting}: {_fmt(state[d][setting])} -> "
                             f"{_fmt(best_v)} (mean F1 {current['mean_f1']:.3f} -> "
-                            f"{best_s['mean_f1']:.3f})")
+                            f"{best_s['mean_f1']:.3f}){why}")
                         history[d].append(dict(round=rnd, setting=setting,
                                                old=state[d][setting], new=best_v,
                                                old_f1=current["mean_f1"],
-                                               new_f1=best_s["mean_f1"]))
+                                               new_f1=best_s["mean_f1"],
+                                               rescued_from_inadmissible=rescue))
                         state[d][setting] = best_v
                         moved.add(d)
                 pending = nxt
@@ -474,17 +934,20 @@ def pair_grids(dets, start, space, pairs, evaluate, summarize, is_admissible,
 def held_out(pool, candidates, seeds, log=print):
     """Stage 3: every candidate on recordings nothing was chosen on, with a bootstrap."""
     import numpy as np
-    from bugarach import bench
+    bench = _load_bench()
 
     jobs = []
     tail_seeds = list(seeds)[:N_TAIL]
+    # ADR-0010 part 4 retires the close-events recording on the realistic bench: the scored
+    # recordings hold close events themselves.
+    tails = () if realistic() else TAIL
     for d, cands in candidates.items():
         for name, p in cands.items():
             k = _key(d, p)
             real = tuple(sorted(p.items()))
             for regime in (*REGIMES, NULL):
                 jobs.append((d, k[1], real, regime, list(seeds), True))
-            for regime in TAIL:
+            for regime in tails:
                 jobs.append((d, k[1], real, regime, tail_seeds, False))
     t0 = time.time()
     res = {key: val for key, val in pool.imap_unordered(_job, jobs, chunksize=1)}
@@ -510,22 +973,31 @@ def held_out(pool, candidates, seeds, log=print):
         base = [mean_f1("shipped", idx) for idx in idx_draws]
 
         def tail_f1(name):
+            if not tails:
+                return None
             k = _key(d, cands[name])
-            return sum(res[(d, k[1], r)]["f1"] for r in TAIL) / len(TAIL)
+            return sum(res[(d, k[1], r)]["f1"] for r in tails) / len(tails)
 
         out[d] = {}
         for name, p in cands.items():
             q, b, n = (per[name][r] for r in (*REGIMES, NULL))
             gains = [mean_f1(name, idx) - bb for idx, bb in zip(idx_draws, base)]
             gains = [g for g in gains if math.isfinite(g)]
+            under_floor = {r: bench.under_floor_report(bench.pool_scores(
+                per[name][r]["per_seed"], detector=d, regime=r)) for r in REGIMES}
             out[d][name] = dict(
-                params=p, f1_quiet=q["f1"], f1_busy=b["f1"],
+                params=p, under_floor=under_floor, f1_quiet=q["f1"], f1_busy=b["f1"],
                 mean_f1=mean_f1(name, full),
                 probe_quiet_per_hour=60 * q["probe_per_min"],
                 probe_busy_per_hour=60 * b["probe_per_min"],
                 null_per_hour=n["null_per_hour"],
+                elevated_out_quiet_per_hour=q["elevated_out_per_hour"],
+                elevated_out_busy_per_hour=b["elevated_out_per_hour"],
                 crowded_mean_f1=tail_f1(name),
-                crowded_gain_vs_shipped=tail_f1(name) - tail_f1("shipped"),
+                crowded_gain_vs_shipped=(None if not tails
+                                         else tail_f1(name) - tail_f1("shipped")),
+                **({"merged_calls": {r: per[name][r].get("merged_calls") for r in REGIMES}}
+                   if realistic() else {}),
                 gain_vs_shipped=dict(
                     mid=float(np.median(gains)) if gains else None,
                     lo=float(np.percentile(gains, 2.5)) if gains else None,
@@ -552,8 +1024,9 @@ def full_grid(ev, det, space, is_valid, top=5):
 # ------------------------------------------------------------------ figure
 
 NAMES = {"coact": "CoactDetect", "loco": "LoCo", "rate": "rate+context",
-         "sce": "binned SCE", "cicada": "locust", "sync": "SPIKE-synch"}
-ORDER = ["coact", "loco", "rate", "sce", "cicada", "sync"]
+         "sce": "binned SCE", "cicada": "locust", "sync": "SPIKE-synch",
+         "count": "count (binned)", "count_sliding": "count (sliding)"}
+ORDER = ["coact", "loco", "rate", "sce", "cicada", "sync", "count", "count_sliding"]
 
 
 def _fmt(v):
@@ -577,9 +1050,12 @@ def render(rep: dict, dest: Path) -> list[Path]:
             gain = ("" if name == "shipped" or g["mid"] is None else
                     f"{g['mid']:+.3f} ({g['lo']:+.3f} to {g['hi']:+.3f})")
             sel = rep["selection"].get(d, {}).get(name)
-            crowd = f"{c['crowded_mean_f1']:.3f}"
-            if name != "shipped":
-                crowd += f" ({c['crowded_gain_vs_shipped']:+.3f})"
+            if c.get("crowded_mean_f1") is None:
+                crowd = "retired (ADR-0010 part 4)"
+            else:
+                crowd = f"{c['crowded_mean_f1']:.3f}"
+                if name != "shipped":
+                    crowd += f" ({c['crowded_gain_vs_shipped']:+.3f})"
             rows.append(
                 f"<tr class='{'ship' if name == 'shipped' else ''}'><td>{NAMES[d]}</td>"
                 f"<td>{name}</td><td>{changed}</td>"
@@ -698,16 +1174,63 @@ def main(argv=None) -> int:
 
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--seeds", type=int, default=48,
-                    help="recordings per point for selection; held-out uses as many more")
+    ap.add_argument("--seeds", type=int, default=None,
+                    help="recordings per point for selection; held-out uses as many more "
+                         "(default 48, doubled on fast under a realistic --spacing, ADR-0010 "
+                         "ruling 2)")
+    ap.add_argument("--spacing", choices=("bench", "realistic", "orx"), default=None,
+                    help="how the bench spaces its planted events (bench.SPACINGS): 'bench', "
+                         "the old >= 120 s (the default, unchanged); 'realistic', gaps and "
+                         "event counts from the measured real intervals, searched under "
+                         "ADR-0010's rulings; 'orx', spaced like ORX, under the same rulings")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--full", nargs="*", default=[], choices=list(SPACE),
                     help="also search every combination for these detectors")
     ap.add_argument("--only", nargs="*", default=None, choices=list(SPACE))
     ap.add_argument("--smoke", action="store_true", help="2 recordings, 2 values per setting")
+    ap.add_argument("--sliding", action="store_true",
+                    help="search LoCo and CoactDetect in their SLIDING window mode: the mode "
+                         "is fixed, everything else is searched. Their shipped points are "
+                         "binned because no calibrated sliding value exists yet, and this is "
+                         "what produces one")
+    ap.add_argument("--no-crowded-veto", action="store_true",
+                    help="do NOT refuse a candidate that loses on the crowded recordings. The "
+                         "2026-09-17 search ran this way by default and proposed four settings "
+                         "that lose 0.25 to 0.32 mean F1 there (bench.MAX_CROWDED_DROP)")
+    ap.add_argument("--bench", choices=sorted(BENCHES), default="fast",
+                    help="which stream's bench to search: bugarach.bench (fast, the default) "
+                         "or bugarach.bench_slow. Every stage and every worker reads the one "
+                         "chosen here (docs/handoffs/2026-09-21-slow-bench.md)")
+    ap.add_argument("--max-extensions", type=int, default=MAX_EXTENSIONS,
+                    help=f"extensions per axis past a grid edge (default {MAX_EXTENSIONS})")
+    ap.add_argument("--realistic", action="store_true",
+                    help="the same as --spacing realistic: realistic recordings, searched under "
+                         "ADR-0010's rulings (alpha down to ~8 SD, 6e-16; contexts inside "
+                         "[20 s, 120 s]; LoCo's threshold held at shipped; the guard cap; the "
+                         "close-events recording retired; every value at an off-limit or a cap "
+                         "recorded as a finding, ruling 5), fast's seeds doubled. Refused with "
+                         "--spacing bench")
     ap.add_argument("--out", type=Path, default=None,
-                    help="destination (default: <darkroom>/<date>-full-search)")
+                    help="destination (default: <darkroom>/<date>-full-search, with -slow "
+                         "appended for --bench slow, so a fast and a slow search on the same "
+                         "day never write one folder)")
     a = ap.parse_args(argv)
+    from bugarach import bench as _b
+    try:
+        a.spacing = _b.spacing_from_args(a.spacing, a.realistic)
+    except ValueError as e:
+        ap.error(str(e))
+    use_bench(a.bench)
+    # Always set by `main`, before the pool starts, like the bench: every worker plants at the
+    # same spacing and searches under the same rules, and a value left in the shell cannot switch
+    # a run's rulings silently. `realistic()` reads it.
+    _b.use_spacing(a.spacing)
+    if a.seeds is None:
+        a.seeds = 48 * _b.seed_factor(a.bench)       # the one place: 96 on fast, realistic
+    if realistic() and not a.no_crowded_veto:
+        # ADR-0010 part 4: the close-events recording and its allowance are retired on the
+        # realistic bench, whose scored recordings carry close events themselves.
+        a.no_crowded_veto = True
 
     if a.out:
         dest = a.out.expanduser()
@@ -716,7 +1239,8 @@ def main(argv=None) -> int:
         if root is None:
             print(unresolved_message(), file=sys.stderr)
             return 2
-        dest = root / f"{datetime.date.today().isoformat()}-full-search"
+        suffix = "" if a.bench == "fast" else f"-{a.bench}"
+        dest = root / f"{datetime.date.today().isoformat()}-full-search{suffix}"
     dest.mkdir(parents=True, exist_ok=True)
 
     def log(msg):
@@ -724,6 +1248,10 @@ def main(argv=None) -> int:
 
     dets = a.only or list(SPACE)
     space = {d: {k: list(v) for k, v in SPACE[d].items()} for d in dets}
+    pairs_used = PAIRS
+    if realistic():
+        space = realistic_space(space)
+        pairs_used = realistic_pairs(PAIRS, space)
     n = a.seeds
     if a.smoke:
         n = 2
@@ -732,14 +1260,73 @@ def main(argv=None) -> int:
                 sv = shipped_value(d, k)
                 space[d][k] = sorted({sv, v[0] if v[0] != sv else v[-1]})
     shipped = {d: {k: shipped_value(d, k) for k in space[d]} for d in dets}
+    if realistic():
+        # Ruling 7: held at the shipped value, carried in every candidate, never searched.
+        for d in dets:
+            for k in HELD_AT_SHIPPED.get(d, ()):
+                shipped[d][k] = shipped_value(d, k)
+    if a.sliding:
+        # The mode is FIXED, not searched: sliding is chosen because calls should not move
+        # with the grid, which F1 on this bench cannot see (`bench.NOT_SEARCHED`). What is
+        # searched is every other setting, in that mode.
+        for d in ("loco", "coact"):
+            if d in shipped:
+                shipped[d]["window_mode"] = "sliding"
+                shipped[d]["detection_mode"] = "threshold"
+                space[d].pop("detection_mode", None)
+                space[d].pop("peak_prominence", None)
+                space[d].pop("peak_min_distance_sec", None)
     for d in dets:
         for k in space[d]:
             if shipped[d][k] not in space[d][k]:
-                space[d][k] = sorted(space[d][k] + [shipped[d][k]])
+                space[d][k] = sorted(space[d][k] + [shipped[d][k]],
+                                     key=lambda v: (isinstance(v, str), v))
+    # THE STARTING POINT HAS TO BE ONE THIS BENCH CAN MEASURE. A shipped point the validity
+    # rules refuse is never evaluated, so the first thing that asks for its score gets a
+    # cache miss — which is how this failed on 2026-09-17, a KeyError several hundred lines
+    # from the cause. Say it instead.
+    bad = {d: shipped[d] for d in dets if not valid(d, shipped[d])}
+    if bad:
+        for d, p in bad.items():
+            context = p.get("context_win_sec", p.get("context_win"))
+            print(f"{NAMES[d]}: the shipped operating point is not measurable on this bench "
+                  f"— context {context} s against planted events "
+                  f"{_bench.BENCH_RECORDING['min_sep_sec']:.0f} s apart"
+                  if not realistic() and not _bench.context_fits_the_null(
+                      p, _bench.BENCH_RECORDING["min_sep_sec"])
+                  else f"{NAMES[d]}: the shipped operating point is not a valid combination",
+                  file=sys.stderr)
+        print("Nothing was searched. Fix the operating point, or search a detector that has "
+              "a measurable one with --only.", file=sys.stderr)
+        return 2
+
     sel, ho = list(range(1, n + 1)), list(range(n + 1, 2 * n + 1))
     rep = dict(started=datetime.datetime.now().isoformat(timespec="seconds"),
+               bench=_bench.__name__,
+               spacing=_b.spacing(),
+               crowded_veto=not a.no_crowded_veto,
+               floor=(_bench.FLOOR_LABEL if _bench.floor_enabled()
+                      else f"pre-ADR-0008 ({_bench.FLOOR_SWITCH_ENV}=off)"),
+               # The floor-at-window experiment (bench.FLOOR_AT_WINDOW_ENV), off by default.
+               floor_at_window=(dict(_b.FLOOR_AT_OWN_WINDOW) if _b.floor_at_window() else None),
+               max_extensions=a.max_extensions,
                selection_seeds=sel, held_out_seeds=ho, space=space, shipped=shipped,
                stage="started", selection={})
+    if realistic():
+        rep["adr_0010"] = dict(
+            realistic=True, alpha_cap=ALPHA_CAP, context_range_sec=[CONTEXT_MIN_SEC,
+                                                                   CONTEXT_MAX_SEC],
+            held_at_shipped={d: {k: shipped[d][k] for k in ks}
+                             for d, ks in HELD_AT_SHIPPED.items() if d in shipped},
+            off_limits={k: (None if isinstance(v, float) and math.isnan(v) else v)
+                        for k, v in OFF_LIMITS.items()},
+            guard_cap="bench.settings_are_valid (a guard at most a quarter of its context)",
+            close_events_recording="retired (part 4)", pairs=pairs_used)
+    # Set before the pool starts: workers spawned on Windows inherit it, and each recording's
+    # floor is then computed once between all of them (`warm_floors`), not once per worker.
+    # A cache already named in the environment wins: an --out in the Dropbox darkroom would
+    # otherwise sync hundreds of small files, and a machine-local cache is shared across runs.
+    os.environ.setdefault(_bench.FLOOR_CACHE_ENV, str(dest / "floor_cache"))
 
     def save():
         (dest / "search.json").write_text(json.dumps(rep, indent=1, default=str))
@@ -748,14 +1335,46 @@ def main(argv=None) -> int:
     t_start = time.time()
     with Pool(a.workers) as pool:
         ev = Evaluator(pool, sel, log)
+        ev.crowded = not a.no_crowded_veto and not realistic()      # ADR-0010 part 4
+        log("floors: each recording's ADR-0008 floor, once")
+        floors = warm_floors(pool, sel, ho, log)
+        rep["recording_floors"] = {k: {str(s): f for s, f in sorted(v.items())}
+                                   for k, v in floors.items()}
+        save()
+        gate = admissible
+        if ev.crowded:
+            # The reference is what the setting a candidate would REPLACE scores on the
+            # crowded recordings — and under `--sliding` that is the point the detector
+            # actually ships at, not the sliding-forced starting point.
+            #
+            # Getting this wrong cost a run on 2026-09-17. Anchoring to sliding-at-binned-
+            # values held every candidate to the crowded score of a point that ships
+            # NOWHERE and is itself over budget, and sliding LoCo came out with no
+            # admissible setting at all. Against what LoCo really ships, the same candidate
+            # is an improvement on both axes. A veto is only as honest as its reference.
+            reference_points = {d: dict(_bench.OPERATING_POINTS[d].params) for d in dets}
+            log("crowded reference: scoring the SHIPPED operating points on the crowded "
+                "recordings — what a candidate would replace")
+            ev.run([(d, reference_points[d]) for d in dets])
+            reference = {d: ev.summary(d, reference_points[d]).get("crowded_mean_f1")
+                         for d in dets}
+            rep["crowded_reference_points"] = reference_points
+            for d in dets:
+                log(f"  {NAMES[d]:14s} crowded mean F1 {reference[d]:.3f}  "
+                    f"(a candidate may not fall below {reference[d] - _bench.MAX_CROWDED_DROP:.3f})")
+            rep["crowded_reference"] = reference
+            gate = make_admissible(reference)
+            save()
+
         log("stage 1: coordinate rounds")
         state, history, grown = coordinate_rounds(
-            dets, shipped, space, ev.run, ev.summary, admissible, valid, log)
+            dets, shipped, space, ev.run, ev.summary, gate, valid, log,
+            max_extensions=a.max_extensions)
         rep.update(stage="rounds done", rounds=dict(state=state, history=history, grids=grown))
         save()
 
         log("stage 2: two-setting grids")
-        pairs = pair_grids(dets, shipped, grown, PAIRS, ev.run, ev.summary, admissible, valid)
+        pairs = pair_grids(dets, shipped, grown, pairs_used, ev.run, ev.summary, gate, valid)
         rep.update(stage="pairs done", pairs=pairs)
         save()
 
@@ -768,6 +1387,19 @@ def main(argv=None) -> int:
                 c["pair"] = pairs[d]["best"]
             candidates[d] = c
             rep["selection"][d] = {name: ev.summary(d, p)["mean_f1"] for name, p in c.items()}
+            rep.setdefault("bracketing", {})[d] = {
+                name: bracketing(d, p, grown[d], space[d], a.max_extensions)
+                for name, p in c.items()}
+            for name, br in rep["bracketing"][d].items():
+                if name != "shipped" and not br["bracketed"]:
+                    log(f"  {NAMES[d]} {name}: UNBRACKETED on "
+                        + ", ".join(f"{k} ({v['side']} {v['reason']})"
+                                    for k, v in br["unbracketed_axes"].items()))
+                if realistic() and name != "shipped" and br.get("findings"):
+                    # Ruling 5: does moving it one grid step off change any calls?
+                    rep.setdefault("ruling_5", {}).setdefault(d, {})[name] = ruling_5_checks(
+                        pool, d, candidates[d][name], br["findings"], grown[d], sel, log)
+            save()
 
         log("stage 3: held-out confirmation")
         rep["held_out"] = held_out(pool, candidates, ho, log)

@@ -50,11 +50,139 @@ def test_the_pointer_exists_and_parses():
 
 def test_it_declares_the_default_and_the_pensub_pair():
     roles = dataset.declared_exports()
-    assert "default" in roles, f"declared: {sorted(roles)}"
+    assert dataset.default_role() in roles, f"declared: {sorted(roles)}"
     assert "pensub" in roles, f"declared: {sorted(roles)}"
     for role, table in roles.items():
         assert table["name"], f"{role} has no name"
         assert table["name"].strip() == table["name"], f"{role} name has whitespace"
+
+
+def test_every_table_says_what_it_is_for_and_exactly_one_input_is_the_default():
+    """Tony, 2026-09-21: one default data folder. Every other table is an eval corpus
+    read on purpose or an archive kept for reproduction, and says which."""
+    roles = dataset.declared_exports()
+    for role, table in roles.items():
+        assert table.get("use") in dataset.USES, f"{role}: use = {table.get('use')!r}"
+        parent = table.get("parent")
+        assert parent is None or parent in roles, f"{role}: unknown parent {parent!r}"
+    assert roles[dataset.default_role()]["use"] == "input"
+    assert dataset.current_name("default") == roles[dataset.default_role()]["name"]
+
+
+def test_a_subset_inherits_its_parents_contamination():
+    """`ttx` and `senktide` hold all four pinned recordings of `steps_excluded` and
+    passed the contamination stop until 2026-09-21, because their own notes did not
+    repeat their parent's."""
+    roles = dataset.declared_exports()
+    for role, table in roles.items():
+        parent = table.get("parent")
+        if parent and dataset.contamination_note(parent):
+            assert dataset.contamination_note(role), (
+                f"{role} is a subset of {parent}, which declares a contamination, "
+                f"but {role} passes the stop")
+
+
+def test_an_archive_folder_does_not_open_without_saying_why(monkeypatch):
+    archives = [r for r, t in dataset.declared_exports().items() if t["use"] == "archive"]
+    assert archives, "nothing is archived — the old default went somewhere"
+    monkeypatch.delenv(dataset.REPRODUCE_ENV, raising=False)
+    for role in archives:
+        with pytest.raises(dataset.DataError, match="archive"):
+            dataset.current(role)
+
+
+# ------------------------------------------------ the per-session confirmation
+
+@pytest.fixture
+def in_a_session(monkeypatch, tmp_path):
+    monkeypatch.setenv("BUGARACH_STATE_DIR", str(tmp_path))
+    monkeypatch.setattr(dataset, "_session_id", lambda: "session-under-test")
+    return tmp_path
+
+
+def test_the_default_refuses_until_the_person_confirms_it(in_a_session):
+    with pytest.raises(dataset.UnconfirmedDefault) as exc:
+        dataset.require_confirmed()
+    assert dataset.current_name("default") in str(exc.value), "the stop must NAME it"
+    assert "python -m bugarach.dataset confirm" in str(exc.value)
+    assert dataset.confirm() == dataset.current_name("default")
+    dataset.require_confirmed()                                   # now passes
+
+
+def test_a_confirmation_is_of_a_folder_so_a_moved_default_asks_again(in_a_session):
+    (in_a_session / "confirmed").mkdir()
+    (in_a_session / "confirmed" / "session-under-test").write_text("an-older-folder\n")
+    with pytest.raises(dataset.UnconfirmedDefault, match="has moved"):
+        dataset.require_confirmed()
+
+
+def test_a_confirmation_belongs_to_one_session(in_a_session, monkeypatch):
+    dataset.confirm()
+    monkeypatch.setattr(dataset, "_session_id", lambda: "another-session")
+    with pytest.raises(dataset.UnconfirmedDefault):
+        dataset.require_confirmed()
+
+
+def test_no_session_means_no_gate(monkeypatch):
+    """A person at a terminal is their own confirmation, and the suite is a check."""
+    monkeypatch.setattr(dataset, "_session_id", lambda: None)
+    dataset.require_confirmed()
+
+
+#: Code that may still name a non-eval role, each with the reason. Keep it short.
+#:
+#: Empty since 2026-09-22. Both entries were the bench and its re-measure tool naming
+#: `steps_excluded`, held open while Tony had the re-bench paused; `bench.MEASURED_ROLE`
+#: is now `"default"`, so nothing in code picks an input folder by name.
+ROLE_LITERAL_ALLOWED: set[tuple[str, str]] = set()
+
+
+def test_no_tool_picks_an_input_folder_by_role_name():
+    """Tony, 2026-09-21: one default dataset, changed in one place. A tool that names
+    `steps_excluded` or `steps_and_pins_excluded` itself is a second place — which is how,
+    on main that morning, the tools were spread across three folders. Tools call
+    `dataset.default()` (or `dataset.default_role()` where they need the table name); only
+    an `eval` corpus is read by name.
+
+    Checked where a role is actually chosen: a `current("...")` call, a `--role` default,
+    and a module constant ending in ROLE (or `LAB`) assigned a string.
+    """
+    roles = dataset.declared_exports()
+    named = {r for r, t in roles.items() if t.get("use") != "eval"}
+    pats = (re.compile(r"""current\(\s*["']([A-Za-z0-9_]+)["']\s*\)"""),
+            re.compile(r"""add_argument\(\s*["']--role["'][^)]*default\s*=\s*["']([A-Za-z0-9_]+)["']"""),
+            re.compile(r"""^\s*[A-Z_]*(?:ROLE|LAB)\s*=\s*["']([A-Za-z0-9_]+)["']""", re.M),
+            re.compile(r"""setdefault\(\s*["']LOOK_ROLE["']\s*,\s*["']([A-Za-z0-9_]+)["']"""))
+    found = []
+    for path in sorted([*REPO.glob("tools/*.py"), *REPO.glob("src/bugarach/**/*.py")]):
+        rel = path.relative_to(REPO).as_posix()
+        text = path.read_text(encoding="utf-8")
+        for pat in pats:
+            for m in pat.finditer(text):
+                if m.group(1) in named and (rel, m.group(1)) not in ROLE_LITERAL_ALLOWED:
+                    line = text.count("\n", 0, m.start()) + 1
+                    found.append(f"{rel}:{line} names {m.group(1)!r}")
+    assert not found, ("these pick an input folder by name instead of dataset.default():\n  "
+                       + "\n  ".join(found))
+
+
+def test_a_declared_folder_passed_by_name_gets_the_same_gates(monkeypatch, tmp_path):
+    """`--dataset <declared name>` used to walk past the archive refusal and the
+    contamination stop, because `require()` only resolved and checked the shape."""
+    monkeypatch.delenv(dataset.REPRODUCE_ENV, raising=False)
+    archived = next(t["name"] for t in dataset.declared_exports().values()
+                    if t.get("use") == "archive")
+    fake = tmp_path / archived
+    fake.mkdir()
+    (fake / "a.csv").write_text("roi,time_sec\n1,0.5\n")
+    with pytest.raises(dataset.DataError, match="archive"):
+        dataset.require(fake, want="export_folder")
+
+
+def test_a_result_can_say_what_it_was_scored_on():
+    s = dataset.stamp()
+    assert s["name"] == dataset.current_name("default")
+    assert s["role"] == dataset.default_role() and s["use"] == "input"
 
 
 def test_the_export_directories_are_searched_before_the_bare_root():
@@ -97,13 +225,13 @@ def test_the_name_is_available_without_the_data_being_mounted():
 def test_an_unknown_role_names_the_ones_that_exist():
     with pytest.raises(dataset.DataError) as exc:
         dataset.current_name("no-such-role")
-    assert "default" in str(exc.value) and "pensub" in str(exc.value)
+    assert dataset.default_role() in str(exc.value) and "pensub" in str(exc.value)
 
 
 def test_it_carries_no_absolute_path():
     """Names only. A path here would carry a person's name into a public repo, and
     would be wrong on every other machine — `resolve()` is what knows this one."""
-    text = POINTER.read_text()
+    text = POINTER.read_text(encoding="utf-8")
     for line in text.splitlines():
         if line.lstrip().startswith("name"):
             assert "/" not in line and "\\" not in line, line
@@ -126,7 +254,10 @@ def test_the_pointer_is_the_only_declaration_in_code():
     offenders = []
     for base in ("src", "tools"):
         for p in sorted((REPO / base).rglob("*.py")):
-            for n, line in enumerate(p.read_text().splitlines(), 1):
+            # encoding="utf-8" is load-bearing on Windows: this walks the repo's own
+            # source, which carries em-dashes and names like Grün, and the locale
+            # codepage cannot decode them (the same fix check_quotes.py made in #535).
+            for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
                 if folder_name.search(line) and not line.lstrip().startswith(("#", "``", '"', "*")):
                     offenders.append(f"{p.relative_to(REPO)}:{n}: {line.strip()}")
     # In tests the rule is narrower, and precisely so: a test may `resolve()` a
@@ -138,7 +269,7 @@ def test_the_pointer_is_the_only_declaration_in_code():
     for p in sorted((REPO / "tests").rglob("*.py")):
         if p.name == Path(__file__).name:
             continue
-        for n, line in enumerate(p.read_text().splitlines(), 1):
+        for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
             if "resolve(" in line and any(d in line for d in declared):
                 offenders.append(f"{p.relative_to(REPO)}:{n}: {line.strip()}")
     assert not offenders, (
@@ -281,7 +412,7 @@ def test_the_search_gate_outranks_the_read_only_verb_exemption():
     store branch and is exactly what hid this one for a day. If a future edit moves
     the search check below it, every test above still passes and the gate goes quiet.
     """
-    body = GATE.read_text()
+    body = GATE.read_text(encoding="utf-8")
     search = body.index("is this command SEARCHING FOR THE DATA")
     exemption = body.index("(git|grep|rg|ag|find|ls|wc|diff|gh)")
     assert search < exemption, (
@@ -296,8 +427,8 @@ def test_the_named_folder_tracks_the_pointer(tmp_path, monkeypatch):
     Otherwise the next export makes the gate itself the stale fifth declaration —
     which is the bug, wearing the uniform of the fix.
     """
-    assert "current_export.toml" in GATE.read_text()
-    body = GATE.read_text()
+    assert "current_export.toml" in GATE.read_text(encoding="utf-8")
+    body = GATE.read_text(encoding="utf-8")
     assert dataset.current_name() not in body, (
         "the gate hardcodes the folder name; it must read current_export.toml")
 
@@ -317,7 +448,7 @@ def test_it_does_not_fail_open_without_python():
 def test_the_gate_is_wired_into_settings():
     """Working and installed are different properties, and only one of them was ever
     checked here before `test_hooks_installed.py` made the point."""
-    hooks = json.loads(SETTINGS.read_text())["hooks"]["PreToolUse"]
+    hooks = json.loads(SETTINGS.read_text(encoding="utf-8"))["hooks"]["PreToolUse"]
     wired = [h["command"] for m in hooks if m.get("matcher") == "Bash"
              for h in m["hooks"]]
     assert any(GATE.name in c for c in wired), (

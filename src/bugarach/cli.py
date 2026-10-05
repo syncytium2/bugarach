@@ -219,7 +219,7 @@ def main(argv: list[str] | None = None) -> None:
                      help="overwrite an existing regions.csv. It records what a "
                           "person did to the tissue, so this is never the default")
 
-    from bugarach.detect_folder import DETECTORS
+    from bugarach.detect_folder import AVAILABLE, DETECTORS
 
     det = sub.add_parser(
         "detect", help="run the detectors over a folder and write detections.csv")
@@ -238,8 +238,8 @@ def main(argv: list[str] | None = None) -> None:
                           "declaration order, so dropping one would move the "
                           "numbers of the rest")
     det.add_argument("--detectors", default=None,
-                     help=f"comma-separated subset of {','.join(DETECTORS)}; "
-                          f"default is all six")
+                     help=f"comma-separated subset of {','.join(AVAILABLE)}; "
+                          f"default is the six ({','.join(DETECTORS)})")
     det.add_argument("--frame-interval", type=float, default=None,
                      help="the acquisition interval in seconds, for a folder "
                           "whose slices.csv does not carry it. There is no "
@@ -312,10 +312,10 @@ def main(argv: list[str] | None = None) -> None:
         folder = _folder_or_exit(args.folder)
         names = (DETECTORS if args.detectors is None
                  else tuple(x.strip() for x in args.detectors.split(",") if x.strip()))
-        bad = [d for d in names if d not in DETECTORS]
+        bad = [d for d in names if d not in AVAILABLE]
         if bad:
             sys.exit(f"bugarach: unknown detector(s) {', '.join(bad)} — have "
-                     f"{', '.join(DETECTORS)}")
+                     f"{', '.join(AVAILABLE)}")
 
         out = args.out
         if out is None:

@@ -75,6 +75,12 @@ shift's dropped onsets never enter):
   rate multiplied by one shared log-normal multiplier wandering on a 20 s, 5-minute or 1-minute
   timescale, no events; the last at a depth near the lab fast stream's shoulder.
 
+**By group, with leave-one-out** (``group_influence``, since 2026-09-23): per group and arm, the
+pooled 1-minute ratio with each recording dropped in turn, the most influential recording, and for
+each group pair whether the gap is wider than both groups' leave-one-out ranges. The ratio is read
+off pooled variances, so one recording can carry a group; the first run on the de-pinned export
+found exactly that, by hand.
+
 Baseline windows only: the lab folder is refused anything but its declared baseline region. The
 Cossart folder declares no regions and is read whole, from the first onset of any ROI (many of its
 recordings open with tens of seconds in which no ROI has an onset). Every random key carries
@@ -102,7 +108,7 @@ from bugarach import surrogates as sg  # noqa: E402
 from tube_self_supervised import rigid_frames  # noqa: E402
 
 TAG = "slow-comodulation-2026-09-17"
-FOLDER = "2026-09-17-slow-comodulation"
+FOLDER = "2026-09-17-slow-comodulation-pins-excluded"
 J_SEC = (1.6, 10.0, 20.0)
 TRIM_SEC = max(J_SEC)
 BLOCK_SEC = 120.0
@@ -116,10 +122,27 @@ N_SINGLE = 3
 """Single circular draws per recording, each scored against the 8-draw circular mean: how often a
 per-recording ratio from one surrogate realization exceeds 1 by chance. ``circular_ref8`` is a
 second 8-draw mean, the matching reference for arms that are themselves means of 8 draws."""
-FOLDERS = (("steps_excluded", "fast"), ("steps_excluded", "slow"), ("cossart", "events"))
+from bugarach import dataset as _dataset  # noqa: E402
 
-COACT_NOTE = ("CoactDetect runs at detect_folder.detector_params('coact', ...) on both streams: "
-              "the project's calibrated point, as bugarach detect runs it.")
+LAB_ROLE = _dataset.default_role()
+"""The lab folder this analysis reads: the declared default (Tony, 2026-09-21), resolved to its
+table name so the result keys (``<role>/<stream>``) record which folder was measured.
+
+It moved on 2026-09-17, from ``steps_excluded`` to the producer's folder that also removes the
+moco floor-pinned windows, and since 2026-09-21 it follows ``current_export.toml``'s ``default``
+rather than naming a role here. The earlier folder declared a contamination nothing in the data
+marked, and ``dataset.current`` refuses it outright.
+The branches below test against this constant because the lab folder is the one with two streams,
+baseline windows and a CoactDetect removal arm; the Dard et al. folder has none of those.
+"""
+LAB_STREAMS = ("fast", "slow", "combined")
+"""The lab folder's streams. ``combined`` is every fast and slow onset of a ROI as one train
+(:mod:`bugarach.combined`), built here from the two the folder carries (Tony, 2026-09-23)."""
+FOLDERS = tuple((LAB_ROLE, s) for s in LAB_STREAMS) + (("cossart", "events"),)
+
+COACT_NOTE = ("CoactDetect runs at detect_folder.detector_params('coact', ...) on every lab "
+              "stream: the project's calibrated point, as bugarach detect runs it, and the same "
+              "settings on all three so the removal arm is comparable across them.")
 
 SPEC_PATH = ROOT / "docs" / "learned" / "generator_spec.json"
 N_SYN = 24
@@ -327,7 +350,7 @@ def arms_for(trains_full, L_full: int, dt: float, key, draws: int, stream: str |
                                                 rng(*key, "rigid", J, d)), L_full, trim)[0],
             "rigid")
     extra = {}
-    if stream in ("fast", "slow"):
+    if stream in LAB_STREAMS:
         removed, episodes, extra = coact_removed(trains_full, L_full, dt, stream)
         rt = trimmed(removed, L_full, trim)[0]
 
@@ -350,20 +373,37 @@ def arms_for(trains_full, L_full: int, dt: float, key, draws: int, stream: str |
 # -- real recordings --------------------------------------------------------------------------
 
 def load(role: str, stream: str, limit: int | None):
-    """The lab folder is refused anything but its declared baseline (as ``tools/look_rigid_shift.py``
-    refuses it)."""
+    """Recordings, and whether this folder declares treatment regions.
+
+    A folder that declares regions is refused anything but its declared baseline, as
+    ``tools/look_rigid_shift.py`` refuses it.
+
+    ⚠ **The guard asks the folder, not the role name.** It used to read
+    ``role == "steps_excluded"``, which meant that renaming the role — which happened the day
+    the producer shipped the de-pinned export — would have switched the guard off without a
+    word, leaving treatment windows in a baseline-only analysis. The session next door hit
+    exactly that: three name comparisons, two of which crashed loudly and one of which was this
+    guard, failing silently. A property of the data cannot go stale the way a name can.
+    """
     from bugarach import dataset
     from bugarach.io import load_folder
     slices = load_folder(dataset.current(role))
     if limit:
         slices = slices[:limit]
+    if stream == "combined":
+        from dataclasses import replace
+
+        from bugarach.combined import has_sources, stream_of
+        slices = [replace(s, streams={**s.streams, "combined": stream_of(s, "combined")})
+                  if has_sources(s) else s for s in slices]
     recs, skipped = ss.recordings_from_slices(slices, stream)
-    if role == "steps_excluded":
+    declares_regions = any(getattr(s, "regions", None) for s in slices)
+    if declares_regions:
         refused = [r.recording_id for r in recs
                    if not r.window_source.startswith("baseline region")]
         if refused:
             raise SystemExit(f"refusing non-baseline windows in {stream}: {refused}")
-    return recs, skipped
+    return recs, skipped, declares_regions
 
 
 def active_and_correlation(trains_full, L_full: int, dt: float) -> dict:
@@ -403,17 +443,21 @@ def minute_counts(trains_full, L_full: int, dt: float, key) -> dict:
 
 
 def real_task(args):
-    role, stream, rec, draws = args
+    role, stream, rec, draws, declares_regions = args
     a, b = rec.window
     lead_in = 0
-    if role != "steps_excluded":
+    if not declares_regions:
+        # No regions means the window is the whole recording, and several of those open with
+        # tens of seconds in which no ROI fires; start at the first onset instead.
         firsts = [int(t[0]) for t in rec.trains if len(t)]
         if firsts:
             lead_in = min(firsts) - a
             a = min(firsts)
     trains = [np.asarray(t, np.int64) - a for t in rec.trains]
+    # arms_for builds the CoactDetect removal arms only for a stream it has an operating point
+    # for, so the stream goes through as it is rather than being gated on the folder's name.
     arms, extra, used_sec = arms_for(trains, b - a, rec.dt, (role, stream, rec.recording_id),
-                                     draws, stream if role == "steps_excluded" else None)
+                                     draws, stream)
     extra["counts_per_minute"] = minute_counts(trains, b - a, rec.dt,
                                                (role, stream, rec.recording_id))
     extra.update(active_and_correlation(trains, b - a, rec.dt))
@@ -708,7 +752,7 @@ def flagged_sensitivity(rows, ids) -> dict:
         return sum(unpack(r["arms"][arm])["var"][-1] - unpack(r["arms"][null_of(arm)])["var"][-1]
                    for r in rs)
 
-    groups = sorted({r["group"] for r in flagged if r.get("group")})
+    groups = groups_of(flagged)
 
     def ratios(rs):
         return {arm: _var_ratio(rs, arm).tolist() for arm in arms}
@@ -724,11 +768,18 @@ def flagged_sensitivity(rows, ids) -> dict:
                   for g in groups})
 
 
+def groups_of(rows) -> list[str]:
+    """The groups these rows name, in display order (``bugarach.groups``). Every random key
+    carries the group's name rather than its position, so the order moves no number."""
+    from bugarach.groups import in_group_order
+    return in_group_order(r["group"] for r in rows if r.get("group"))
+
+
 def group_checks(rows, n_boot: int, key) -> dict:
     """Per group: the per-recording count-variance medians and the pooled ratios, so no pooled
     headline stands without its breakdown (FOUNDATIONS §9)."""
     out = {}
-    for g in sorted({r["group"] for r in rows if r.get("group")}):
+    for g in groups_of(rows):
         rs = [r for r in rows if r["group"] == g]
         c = checks(rs, max(50, n_boot // 5), (*key, g))
         out[g] = dict(per_recording=c["per_recording"],
@@ -736,6 +787,62 @@ def group_checks(rows, n_boot: int, key) -> dict:
                                         for arm in ("real", "minus_coact_block_120")
                                         if arm in rs[0]["arms"]})
     return out
+
+
+INFLUENCE_ARMS = ("real", "minus_coact_block_120")
+"""The two arms a group comparison is read on: as recorded, and with CoactDetect's episodes
+removed and the 120 s block control applied."""
+
+
+def group_influence(rows) -> dict:
+    """Per group and arm, the pooled 1-minute count-variance ratio with each recording dropped in
+    turn (:func:`bugarach.influence.leave_one_out`), whether each pair's gap is wider than both
+    groups' leave-one-out ranges, and every group with the single most influential recording gone.
+
+    Before 2026-09-23 this was done by hand in a run record: the ratio is read off variances
+    **pooled** over a group's recordings, so one recording can carry the group, and on the de-pinned
+    export dropping one recording halved a group in three stream-by-group cells. A group
+    difference this check does not survive is a difference about one recording. Identifiers kept:
+    the most influential recording is what the check is for.
+    """
+    from bugarach import influence
+    groups = groups_of(rows)
+    by = {g: [r for r in rows if r.get("group") == g] for g in groups}
+    out = dict(bin_sec=VAR_BIN_SEC[-1], groups=groups,
+               recordings={g: len(by[g]) for g in groups},
+               mice={g: len({r["mouse"] for r in by[g]}) for g in groups}, arms={})
+
+    def ident(r):
+        return r["recording_id"]
+
+    for arm in INFLUENCE_ARMS:
+        if not rows or arm not in rows[0]["arms"]:
+            continue
+
+        def stat(rs, arm=arm):
+            return float(_var_ratio(rs, arm)[-1]) if rs else float("nan")
+
+        loo = {g: influence.leave_one_out(by[g], stat, ident) for g in groups}
+        out["arms"][arm] = dict(
+            leave_one_out=loo, pairwise=influence.pairwise(loo, groups),
+            without_most_influential=influence.without_most_influential(by, stat, ident, loo))
+    return out
+
+
+def print_group_influence(name: str, G: dict) -> None:
+    for arm, A in G["arms"].items():
+        print(f"  [{name}] {arm}, pooled {G['bin_sec']:g} s count-variance ratio by group "
+              f"(leave-one-out range; most influential recording):", flush=True)
+        for g in G["groups"]:
+            loo = A["leave_one_out"][g]
+            if loo:
+                print(f"    {g:5s} {G['recordings'][g]:2d} recordings / {G['mice'][g]:2d} mice: "
+                      f"{loo['value']:.2f} [{loo['lo']:.2f}, {loo['hi']:.2f}]; "
+                      f"{loo['most_influential']} -> {loo['without']:.2f}", flush=True)
+        for pair, p in A["pairwise"].items():
+            print(f"      {pair}: gap {p['gap']:+.2f}, "
+                  f"{'OUTLIVES' if p['outlives'] else 'does not outlive'} leave-one-out",
+                  flush=True)
 
 
 def summary_only(R) -> dict:
@@ -747,6 +854,7 @@ def summary_only(R) -> dict:
         rows = F["rows"]
         entry = dict(summary=F["summary"], by_group=F["by_group"], checks=F.get("checks"),
                      checks_by_group=F.get("checks_by_group"),
+                     group_influence=F.get("group_influence"),
                      flagged_contaminant=F.get("flagged_contaminant"),
                      analysed_hours=sum(r["analysed_sec"] for r in rows) / 3600.0,
                      window_min_range=[min(r["analysed_sec"] + 2 * TRIM_SEC for r in rows) / 60,
@@ -796,9 +904,11 @@ def main(argv=None):
             F["summary"] = summarise(rows, a.boot, (role, stream))
             F["by_group"] = {g: summarise([r for r in rows if r["group"] == g], a.boot,
                                           (role, stream, g))
-                             for g in sorted({r["group"] for r in rows if r["group"]})}
+                             for g in groups_of(rows)}
             F["checks"] = checks(rows, a.boot, (role, stream))
             F["checks_by_group"] = group_checks(rows, a.boot, (role, stream))
+            F["group_influence"] = group_influence(rows)
+            print_group_influence(name, F["group_influence"])
             F["flagged_contaminant"] = flagged_sensitivity(rows, flagged_contaminant_ids())
         (a.out / "results.json").write_text(json.dumps(R))
         (a.out / "summary.json").write_text(json.dumps(summary_only(R), indent=1))
@@ -812,16 +922,19 @@ def main(argv=None):
     with mp.Pool(a.jobs) as pool:
         if not a.no_real:
             for role, stream in FOLDERS:
-                recs, skipped = load(role, stream, a.limit)
-                rows = pool.map(real_task, [(role, stream, r, a.draws) for r in recs])
+                recs, skipped, declares_regions = load(role, stream, a.limit)
+                rows = pool.map(real_task,
+                                [(role, stream, r, a.draws, declares_regions) for r in recs])
                 name = f"{role}/{stream}"
                 R["folders"][name] = dict(
                     rows=rows, skipped=skipped, summary=summarise(rows, a.boot, (role, stream)),
                     by_group={g: summarise([r for r in rows if r["group"] == g], a.boot,
                                            (role, stream, g))
-                              for g in sorted({r["group"] for r in rows if r["group"]})})
+                              for g in groups_of(rows)})
                 R["folders"][name]["checks"] = checks(rows, a.boot, (role, stream))
                 R["folders"][name]["checks_by_group"] = group_checks(rows, a.boot, (role, stream))
+                R["folders"][name]["group_influence"] = group_influence(rows)
+                print_group_influence(name, R["folders"][name]["group_influence"])
                 R["folders"][name]["flagged_contaminant"] = flagged_sensitivity(
                     rows, flagged_contaminant_ids())
                 print(f"{name}: {len(rows)} recordings, {time.time() - t0:.0f} s", flush=True)

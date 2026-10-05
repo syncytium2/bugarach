@@ -444,7 +444,8 @@ def _declared_default_name() -> str:
     import tomllib
 
     with (ROOT / "current_export.toml").open("rb") as fh:
-        return str(tomllib.load(fh)["default"]["name"])
+        doc = tomllib.load(fh)
+    return str(doc[doc["default"]]["name"])     # `default` names the table
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,13 @@
+detector,stream,parameter,value
+sce,events,bin_width_sec,2.0
+sce,events,detection_mode,threshold
+sce,events,fitted_config_key,cbd12b872702a339
+sce,events,fitted_on,"simulated recordings ['quiet:1000', 'busy:1000', 'quiet:1001', 'busy:1001', 'quiet:1002', 'busy:1002', 'quiet:1003', 'busy:1003', 'quiet:1004', 'busy:1004', 'quiet:1005', 'busy:1005', 'quiet:1006', 'busy:1006', 'quiet:1007', 'busy:1007', 'quiet:1008', 'busy:1008', 'quiet:1009', 'busy:1009', 'quiet:1010', 'busy:1010', 'quiet:1011', 'busy:1011', 'quiet:1012', 'busy:1012', 'quiet:1013', 'busy:1013', 'quiet:1014', 'busy:1014', 'quiet:1015', 'busy:1015', 'quiet:1016', 'busy:1016', 'quiet:1017', 'busy:1017', 'quiet:1018', 'busy:1018', 'quiet:1019', 'busy:1019', 'quiet:1020', 'busy:1020', 'quiet:1021', 'busy:1021', 'quiet:1022', 'busy:1022', 'quiet:1023', 'busy:1023', 'quiet:1024', 'busy:1024', 'quiet:1025', 'busy:1025', 'quiet:1026', 'busy:1026', 'quiet:1027', 'busy:1027', 'quiet:1028', 'busy:1028', 'quiet:1029', 'busy:1029', 'quiet:1030', 'busy:1030', 'quiet:1031', 'busy:1031', 'quiet:1032', 'busy:1032', 'quiet:1033', 'busy:1033', 'quiet:1034', 'busy:1034', 'quiet:1035', 'busy:1035']"
+sce,events,fitted_outer_fold,3
+sce,events,fitted_selection,ungated
+sce,events,merge_gap_sec,30.0
+sce,events,min_rois,3
+sce,events,n_surrogates,200
+sce,events,peak_min_distance_sec,0.0
+sce,events,peak_prominence,0.0
+sce,events,threshold_pctile,70.0

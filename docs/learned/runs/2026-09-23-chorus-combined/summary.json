@@ -1,0 +1,87 @@
+{
+ "bench": "bugarach.bench_combined",
+ "model": "chorus_gain_norm",
+ "config": {
+  "roi_width": 4,
+  "roi_depth": 4,
+  "head_width": 8,
+  "head_depth": 8,
+  "top_m": 4,
+  "norm": true,
+  "vote_gain": 8
+ },
+ "fit_seeds": [
+  1000,
+  1023
+ ],
+ "test_seeds": [
+  4000,
+  4023
+ ],
+ "null_budget_per_hour": 10.0,
+ "best_within_budget": true,
+ "best": "chorus_gain_norm_combined_seed2.json",
+ "rows": [
+  {
+   "seed": 0,
+   "path": "chorus_gain_norm_combined_seed0.json",
+   "threshold": 0.8,
+   "f1": [
+    0.830057803468208,
+    0.7358288770053475
+   ],
+   "mean": 0.7829433402367778,
+   "null_per_hour": 6.222222222222222,
+   "sec": 365
+  },
+  {
+   "seed": 1,
+   "path": "chorus_gain_norm_combined_seed1.json",
+   "threshold": 0.9715809801839131,
+   "f1": [
+    0.8086642599277978,
+    0.7640186915887851
+   ],
+   "mean": 0.7863414757582914,
+   "null_per_hour": 0.3333333333333333,
+   "sec": 390
+  },
+  {
+   "seed": 2,
+   "path": "chorus_gain_norm_combined_seed2.json",
+   "threshold": 0.9970340388579247,
+   "f1": [
+    0.8218527315914489,
+    0.7820823244552058
+   ],
+   "mean": 0.8019675280233274,
+   "null_per_hour": 0.4444444444444444,
+   "sec": 347
+  },
+  {
+   "seed": 3,
+   "path": "chorus_gain_norm_combined_seed3.json",
+   "threshold": 0.9947817321616484,
+   "f1": [
+    0.8254716981132075,
+    0.7609427609427609
+   ],
+   "mean": 0.7932072295279842,
+   "null_per_hour": 1.3333333333333333,
+   "sec": 391
+  },
+  {
+   "seed": 4,
+   "path": "chorus_gain_norm_combined_seed4.json",
+   "threshold": 0.9908190573212562,
+   "f1": [
+    0.8152562574493445,
+    0.773955773955774
+   ],
+   "mean": 0.7946060157025592,
+   "null_per_hour": 0.4444444444444444,
+   "sec": 347
+  }
+ ],
+ "caveat": "best is chosen on the held-out seeds; its F1 is a selection score"
+}

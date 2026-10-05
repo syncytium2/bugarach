@@ -127,25 +127,46 @@ def build(args):
             + "\n  ".join(f"{k}: {v}" for k, v in failed.items()))
 
     stream = sl.streams[args.stream]
+    # The detectors have already run on the whole recording above; this only crops what the
+    # panels SHOW. Both panels take the same extent, so the lane stays over its own raster.
+    drawn = ext
+    if getattr(args, "window", "all") == "baseline":
+        base = [w for w in windows if (w.label or "").lower() == "baseline"]
+        if not base:
+            raise SystemExit(
+                f"{sl.slice_id} has no window labelled 'baseline' — it carries "
+                f"{', '.join((w.label or 'unnamed') for w in windows) or 'none'}. Region labels "
+                f"are the lab's own strings and bugarach does not translate them.")
+        drawn = (float(base[0].win_start), float(base[0].win_end))
     # gt=None throughout: nothing was planted, so there is no row to judge these
     # against and no marker in this figure means "wrong".
-    lane = lane_panel(lanes, ext=ext, width=args.width)
-    raster = raster_panel(stream, ext=ext, name=args.stream, width=args.width,
+    lane = lane_panel(lanes, ext=drawn, width=args.width)
+    raster = raster_panel(stream, ext=drawn, name=args.stream, width=args.width,
                           height=RASTER_PX, mark_px=args.mark_px)
     fig = (lane + raster).cols(1).opts(
         hv.opts.Layout(shared_axes=True, toolbar="above"))
 
     n_roi = stream.n_rois
-    n_ev = sum(int(np.sum(np.isfinite(np.asarray(v, dtype=float))))
-               for v in stream.t50rise)
-    span = float(ext[1] - ext[0])
+    # Counts describe WHAT IS DRAWN. Reporting the whole recording's events over a cropped panel
+    # would put a rate in the header that no part of the picture shows.
+    def _in(lo, hi):
+        return sum(int(np.sum((v >= lo) & (v < hi)))
+                   for v in (np.asarray(x, dtype=float) for x in stream.t50rise)
+                   if v.size)
+
+    n_ev = _in(*drawn)
+    span = float(drawn[1] - drawn[0])
     regions = ", ".join(f"{w.label or 'unnamed'} {w.win_start:g}–{w.win_end:g}s"
                         for w in windows)
+    shown = ("the whole recording" if drawn == ext
+             else f"the baseline analysis window only, {drawn[0]:g}–{drawn[1]:g}s "
+                  f"of {float(ext[1]):g}s")
 
     header = [
         f"{sl.slice_id} — real recording, {args.stream} stream",
-        f"{n_roi} ROI · {span:g}s · {n_ev} events · "
+        f"{n_roi} ROI · {span:g}s drawn · {n_ev} events in it · "
         f"{n_ev / max(n_roi, 1) / max(span, 1e-9):.4f} Hz per ROI · dt {dt:g}s",
+        f"drawn: {shown}",
         f"windows, taken from the folder verbatim: {regions}",
     ]
     body = ["", "detections (onsets):"]
@@ -174,6 +195,11 @@ def main(argv=None):
     p.add_argument("--slice", dest="slice_id", default=DEFAULT_SLICE,
                    help=f"recording id (default {DEFAULT_SLICE})")
     p.add_argument("--stream", default="fast")
+    p.add_argument("--window", choices=("all", "baseline"), default="all",
+                   help="which part of the recording the panels SHOW. 'baseline' crops the drawn "
+                        "x-range to the baseline analysis window — the window every baseline-only "
+                        "measurement here reads (FOUNDATIONS §9). The detectors still run on the "
+                        "whole recording, so nothing they claim changes with this flag")
     p.add_argument("--detectors", nargs="+", default=["sce", "loco"])
     p.add_argument("--width", type=int, default=1000)
     p.add_argument("--mark-px", type=float, default=2.0,

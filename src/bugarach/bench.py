@@ -35,12 +35,15 @@ scores a correct detector at zero.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
 from bugarach.detectors.cicada import cicada_detect
 from bugarach.detectors.coact import coact_detect
+from bugarach.detectors.count import count_detect, count_sliding_detect
 from bugarach.detectors.loco import loco_detect
 from bugarach.detectors.rate import (
     rate_detect,
@@ -54,6 +57,174 @@ from bugarach.simulate import simulate_coordination
 
 STREAM = "events"
 """The single-stream slice the generator emits (FOUNDATIONS §3)."""
+
+FLOORED_SETTING = {"coact": "min_rois", "loco": "min_rois", "sce": "min_rois", "sync": "min_n",
+                   "count": "min_rois", "count_sliding": "min_rois"}
+"""The setting each detector's participation minimum lives in, which ADR-0008 sets and no search
+does (ADR-0008 decision 6; ADR-0009 decision 3 for SPIKE-synch's ``min_n``). rate+context and
+locust have no participation minimum, so the floor reaches them only through the scorer. count's
+threshold is this floor plus its own ``k_offset``, which a search does tune (``count.py``)."""
+
+FLOOR_LABEL = "ADR-0008 per-window floor, bench per ADR-0009"
+"""What every run record scored under this module's floor says about it."""
+
+FLOOR_CACHE_ENV = "BUGARACH_FLOOR_CACHE"
+"""A folder where :func:`recording_floor` keeps each recording's floor, keyed by its events. A
+search sets it so its workers compute each floor once between them, not once each."""
+
+FLOOR_SWITCH_ENV = "BUGARACH_BENCH_FLOOR"
+"""Set to ``off`` to build and score this bench pre-ADR-0008: no floor recorded on a recording,
+none injected into a detector. For tests that pin a measurement made before 2026-09-25 or that
+exercise detector mechanics the floor has nothing to do with, and for reproducing earlier runs.
+Anything run this way is pre-ADR-0008 and says so."""
+
+_FLOORS: dict = {}
+
+
+def floor_enabled() -> bool:
+    """Is ADR-0008's floor on for this bench (the default)? Read at every call."""
+    import os
+
+    return os.environ.get(FLOOR_SWITCH_ENV, "on").strip().lower() not in ("off", "0", "false")
+
+
+def _floor_key(s, stream: str):
+    import hashlib
+
+    ext = recording_extent(s)
+    trains = stream_trains(s.streams[stream], ext)
+    dt = s.require_dt()
+    h = hashlib.sha256(repr((stream, float(dt), float(ext[0]), float(ext[1]))).encode())
+    for t in trains:
+        h.update(np.asarray(t, dtype=np.float64).tobytes())
+        h.update(b"|")
+    return h.hexdigest()[:32], trains, ext, dt
+
+
+def recording_floor(s, stream: str = STREAM, window_sec: float | None = None):
+    """ADR-0008's floor for one simulated recording, from that recording's own events.
+
+    ADR-0008 decision 5: every bench recording gets its floor from its own null, exactly as a real
+    window does. ADR-0009 decision 1: nothing is left out of it, the elevated-rate stretch
+    included. The null is seeded by a digest of the recording's events, so the same recording
+    always gets the same floor, in any process. Returns a
+    :class:`bugarach.event_floor.Floor`.
+
+    ``window_sec`` is the co-activity window the floor is counted in. ``None`` is ADR-0008's own,
+    ``event_floor.WINDOW_SEC`` (2 s), and is what every default path uses. Any other value is the
+    floor-at-window experiment (:data:`FLOOR_AT_WINDOW_ENV`): it draws the same rigid-shift
+    offsets as the default, so floors at different windows differ only by the window, and it is
+    cached under its own key, so the default's cache entries are untouched.
+    """
+    import json
+    import math
+    import os
+    from pathlib import Path
+
+    from bugarach import event_floor as ef
+
+    key, trains, ext, dt = _floor_key(s, stream)
+    seed_key = key
+    if window_sec is not None and not math.isclose(window_sec, ef.WINDOW_SEC):
+        key = f"{key}-w{window_sec:g}"
+    else:
+        window_sec = ef.WINDOW_SEC
+    if key in _FLOORS:
+        return _FLOORS[key]
+    cache = os.environ.get(FLOOR_CACHE_ENV)
+    path = Path(cache) / f"{key}.json" if cache else None
+    if path is not None and path.exists():
+        try:
+            f = ef.Floor(**{k: v for k, v in json.loads(path.read_text()).items()
+                            if k != "stable"})
+            _FLOORS[key] = f
+            return f
+        except (OSError, ValueError, TypeError):
+            pass                              # a half-written file: compute it again
+    frames = [np.unique(np.floor((np.asarray(t, float) - ext[0]) / dt + 1e-9).astype(np.int64))
+              for t in trains]
+    n_frames = int(round((ext[1] - ext[0]) / dt))
+    f = ef.window_floor(frames, n_frames, dt, key=("bench", stream, seed_key),
+                        window_sec=window_sec)
+    _FLOORS[key] = f
+    if path is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(f.as_dict()))
+        try:
+            os.replace(tmp, path)
+        except PermissionError:
+            # Windows refuses a replace while another process holds the target — which happens
+            # when two workers compute the same recording's floor at once. The floor is a
+            # function of the recording, so the file already there holds the same number.
+            # Seen in phase 3 of 2026-09-25 (score_bench_candidates.py, 44 workers).
+            tmp.unlink(missing_ok=True)
+            if not path.exists():
+                raise
+    return f
+
+
+def with_floor(pair, stream: str = STREAM):
+    """``(slice, ground_truth)`` with the recording's floor recorded in ``gt.params``, where
+    :func:`bugarach.score.score_detections` reads it (ADR-0009 decision 2)."""
+    s, gt = pair
+    if not floor_enabled():
+        return s, gt
+    f = recording_floor(s, stream)
+    gt.params["event_floor"] = f.floor
+    gt.params["event_floor_detail"] = f.as_dict()
+    return s, gt
+
+
+def floored_params(name: str, s, op_params: dict, overrides: dict, stream: str,
+                   floor: bool | None) -> dict:
+    """The operating point's ``op_params`` with ``overrides`` applied and the detector's
+    participation minimum set to the recording's floor.
+
+    An override of that setting to anything but the operating point's own value is refused while
+    the floor is on: ADR-0008 sets it, and a caller who wants the pre-ADR-0008 behaviour says so
+    with ``floor=False``. Passing the operating point's parameters through unchanged, as the
+    search's crowded reference does, is not an override and is allowed.
+    """
+    params = {**op_params, **overrides}
+    setting = FLOORED_SETTING.get(name)
+    if floor is None:
+        floor = floor_enabled()
+    if not floor or setting is None:
+        return params
+    if setting in overrides and overrides[setting] != op_params.get(setting):
+        raise ValueError(f"{name}.{setting} is set by ADR-0008's per-recording floor, not by a "
+                         f"caller; pass floor=False to run at {setting}={overrides[setting]!r}")
+    window = None
+    if name in FLOOR_AT_OWN_WINDOW and floor_at_window():
+        window = float(params[FLOOR_AT_OWN_WINDOW[name]])
+    return {**params, setting: int(recording_floor(s, stream, window_sec=window).floor)}
+
+
+FLOOR_AT_WINDOW_ENV = "BUGARACH_FLOOR_AT_WINDOW"
+"""**An experiment, OFF by default.** Set to ``on`` and each detector in
+:data:`FLOOR_AT_OWN_WINDOW` gets its floor counted in its OWN co-activity window rather than
+ADR-0008's 2 s (``event_floor.WINDOW_SEC``). Nothing that ships reads it: ``WINDOW_SEC`` and
+ADR-0008 are unchanged, and the scorer's floor (which planted events are "don't care", ADR-0009
+decision 2) stays at 2 s so every candidate is scored on the same events.
+
+Why (orchestrator's brief, 2026-09-27): Tony leans toward count (sliding) as the one primary
+detector, and its threshold is the floor, measured at 2 s while the rule counts over its own
+``win_sec``. At a 0.5 s window a 2 s floor asks for more cells than chance needs, which may be why
+the night's only fast sliding winner needed k 2 and then failed the precision-swing budget.
+Results: ``<darkroom>/bugarach/2026-09-27-floor-at-window/``."""
+
+FLOOR_AT_OWN_WINDOW = {"count_sliding": "win_sec"}
+"""Under :data:`FLOOR_AT_WINDOW_ENV`, the detectors whose floor follows their own window, and
+the setting that is that window."""
+
+
+def floor_at_window() -> bool:
+    """Is the floor-at-window experiment on? Off unless :data:`FLOOR_AT_WINDOW_ENV` says ``on``."""
+    import os
+
+    return os.environ.get(FLOOR_AT_WINDOW_ENV, "off").strip().lower() in ("on", "1", "true")
+
 
 MEASURED_PROVENANCE = (
     "constellation/coordination_timescale_summary.csv — flavour 'all-baseline', "
@@ -79,9 +250,9 @@ taken from; :data:`MEASURED_RECORD` is where they were last *checked*, and
 stop agreeing.
 """
 
-MEASURED_ROLE = "steps_excluded"
+MEASURED_ROLE = "default"
 """The ``current_export.toml`` role every measured value in this module is checked
-against.
+against — **the default dataset**, resolved through ``dataset.default_role()``.
 
 Tony, 2026-09-17: *"you should only work from the steps excluded folder. it is
 terrifying that you might use other data."* The same day it turned out that the
@@ -91,6 +262,14 @@ provenance string is prose. A role name is not prose: ``tools/remeasure_bench.py
 resolves it, writes the folder it actually read into :data:`MEASURED_RECORD`, and
 the test compares that folder with what the pointer declares today. A new export
 under this role turns the suite red until the bench is re-measured on it.
+
+**It was the literal ``"steps_excluded"`` until 2026-09-22**, which outlived the folder:
+that role became an ``archive`` on 2026-09-21 and declares a contamination, so the bench
+was pinned to a folder no analysis may read, and ``tools/check_scored_dataset.py`` flagged
+it at every session start. Naming ``"default"`` puts the bench on the one folder the person
+confirms each session, and leaves ``current_export.toml`` as the only place that choice is
+written down — which is why the two entries this module and its tool held in
+``ROLE_LITERAL_ALLOWED`` (``tests/test_where_the_data_are.py``) came out with the move.
 
 A role, not a folder name, because folder names are declared in
 ``current_export.toml`` and nowhere else in code
@@ -128,20 +307,25 @@ Not to be confused with ``region_min_sec`` in the detectors' own signatures, whi
 MATLAB windowing rule for store input (FOUNDATIONS §4) and happens to carry the same 900 s.
 """
 
-MEASURED_OUTSIDE_INTERVAL: dict[str, str] = {
-    "participation": (
-        "2026-09-17, awaiting Tony. The bench holds 0.18; steps_excluded measures 0.1905 "
-        "(6 median participants over 31.5 median ROIs) with a 95% interval whose lower "
-        "end is 0.1818, which is 6/33: the ratio BENCH_RECORDING's docstring derives "
-        "and then rounds to 0.18. A rounding, not a moved measurement, but moving it "
-        "moves every bench number, so it is not moved here."),
-}
+MEASURED_OUTSIDE_INTERVAL: dict[str, str] = {}
 """Measured constants knowingly left outside their interval, each with the reason and
 who decides. The test fails for any constant outside its interval that is not listed
-here, and for any entry here whose constant has come back inside."""
+here, and for any entry here whose constant has come back inside.
 
-MEASURED_RATE_SHAPE = 0.275
+Empty since 2026-09-22. It held ``participation`` from 2026-09-17, where the bench's
+0.18 sat just under a 95% interval starting at 0.1818 — a rounding of 6/33 rather than a
+moved measurement, but moving it moves every number the bench produces, so it waited for
+Tony. The meeting approved 0.19 and it was adopted with the jitter in the same pass."""
+
+MEASURED_RATE_SHAPE = 0.291
 """Gamma shape of the per-ROI background rate in real baseline windows.
+
+**Re-measured 2026-09-23 on the default folder's 66 recordings**, over the
+63 baseline windows that clear the shape fit's floors: 0.291 [0.226, 0.404], from
+0.275 on the 84-recording folder. Every measured constant in this module moved in the
+same pass, on Tony's instruction to retune the bench on the data set it scores
+(`docs/learned/bench_measured.json`). The counts quoted below describe the
+84-recording fit.
 
 Fitted, not chosen: within a window the ROI rate is modelled as
 ``Gamma(shape, mean/shape)`` and the observed count as Poisson over that rate —
@@ -171,8 +355,12 @@ the bench is changed."* Numbers published before that date were measured on a
 flat field and are not comparable to numbers after it.
 """
 
-MEASURED_BURST_SHAPE = (1.547, 1.388)
+MEASURED_BURST_SHAPE = (1.770, 1.439)
 """Gamma shapes of the per-bin rate multiplier, for `MEASURED_BURST_BINS`.
+
+**Re-measured 2026-09-23 on the 66 recordings**: 1.770 [1.320, 2.282] at 300 s and
+1.439 [1.062, 1.957] at 60 s, from (1.547, 1.388). The fit description below is the
+original one.
 
 The temporal partner of `MEASURED_RATE_SHAPE`, and the same estimator turned
 ninety degrees. There, ROIs differed from one another. Here **one ROI is followed
@@ -212,13 +400,23 @@ what switching them cost and who decided to spend it.
 MEASURED_BURST_BINS = (300.0, 60.0)
 """Bin widths (s) the shapes in `MEASURED_BURST_SHAPE` were fitted at."""
 
+CONTEXT_GRID_SEC = (20.0, 30.0, 45.0, 60.0, 90.0, 120.0)
+"""The context windows searched for CoactDetect, LoCo and rate+context (ADR-0009 decision 5): none
+longer than 120 s, the bench's own cap (:func:`context_fits_the_null`), and short ones so a search
+can find a short context where one works."""
+
+GUARD_MAX_CONTEXT_FRACTION = 0.25
+"""A guard may cover at most this fraction of the context it sits in (the final-parameters
+runbook, 2026-09-24). It binds wherever a guard grid reaches past a quarter of a short
+context: slow and combined's 8 s guard at 20 s and 30 s, fast LoCo's 2 and 4 s guards at 5 s;
+:func:`settings_are_valid` enforces it."""
+
 FULL_GRIDS: dict[str, dict[str, tuple]] = {
     "loco": {
         "threshold_pctile": (97.0, 98.0, 99.0, 99.5, 99.9, 99.99),
         "bin_width_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
-        "context_win_sec": (30.0, 60.0, 120.0, 240.0, 480.0),
+        "context_win_sec": CONTEXT_GRID_SEC,
         "merge_gap_sec": (0.5, 1.0, 2.0, 4.0, 8.0),
-        "min_rois": (2, 3, 4, 5, 6, 8),
         "null_context_mode": ("maxlt", "symmetric"),
         "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
         "detection_mode": ("threshold", "peak"),
@@ -230,7 +428,6 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
         "C_min": (0.02, 0.05, 0.1, 0.15, 0.2),
         "tau_max": (0.1, 0.25, 0.5, 1.0, 2.0),
         "max_gap": (0.1, 0.25, 0.5, 1.0, 2.0),
-        "min_n": (2, 3, 4, 5, 6, 8),
         "tau_mode": ("isi_adaptive", "fixed"),
         # The profile's own bin width, NOT the recording's frame interval (FOUNDATIONS §6).
         "dt": (0.05, 0.1, 0.2, 0.5),
@@ -241,8 +438,7 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
     "coact": {
         "alpha": (1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6),
         "int_win_sec": (0.5, 1.0, 2.0, 3.0, 5.0),
-        "context_win_sec": (20.0, 30.0, 60.0, 120.0, 240.0),
-        "min_rois": (2, 3, 4, 5, 6, 8),
+        "context_win_sec": CONTEXT_GRID_SEC,
         "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
         "guard_sec": (0.0, 0.5, 1.0, 2.0, 4.0),
         "guard_norm": ("compact", "exposure"),
@@ -252,7 +448,7 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
     },
     "rate": {
         "excess_threshold_hz": (3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0),
-        "context_win": (20.0, 30.0, 60.0, 120.0, 240.0),
+        "context_win": CONTEXT_GRID_SEC,
         "rate_win": (0.5, 1.0, 2.0, 3.0, 5.0),
         # ⚠ Starts at 0.1 s, not 0: at and below 0.001 s this detector returns NO calls at
         # all, which is a defect rather than a setting —
@@ -268,10 +464,6 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
     "sce": {
         "threshold_pctile": (70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5),
         "bin_width_sec": (2.0, 5.0, 10.0, 15.0, 20.0, 30.0),
-        # This floor does NOTHING below about 8 here: 2, 4 and 6 give byte-identical output,
-        # because these episodes already recruit more cells than that. It starts binding at
-        # 10 and empties the output at 25, so the grid is where it can bite.
-        "min_rois": (3, 6, 8, 10, 12, 16),
         # Shipped is NaN, which means "do not merge". NaN is not a grid value: the search
         # carries it as the starting state, and this grid is what it may move to.
         "merge_gap_sec": (0.0, 5.0, 10.0, 15.0, 20.0, 30.0),
@@ -284,6 +476,22 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
         "n_synchronous_frames": (1, 2, 3, 5, 10),
         "sce_min_distance_frames": (1, 2, 4, 8, 16),
         "threshold_scope": ("global", "regional"),
+    },
+    "count": {
+        # One frame (0.1 s, the generator's grid) to 10 s. The search does not extend below
+        # one frame: a bin narrower than the frame interval counts nothing more
+        # (`tools/search_all_settings.FLOAT_FLOOR`).
+        "bin_sec": (0.1, 0.5, 1.0, 2.0, 5.0, 10.0),
+        # Cells above the recording's floor. 0 is the floor itself; below it is chance
+        # (ADR-0008), so the grid cannot extend down.
+        "k_offset": (0, 1, 2, 3),
+        "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
+    },
+    "count_sliding": {
+        # v1's grids, the window width under its own name: a window that slides is not a bin.
+        "win_sec": (0.1, 0.5, 1.0, 2.0, 5.0, 10.0),
+        "k_offset": (0, 1, 2, 3),
+        "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
     },
 }
 """The values each detector's settings are searched over — **one declaration, both
@@ -304,7 +512,8 @@ a grid is how the two machines came to tune different things on 2026-09-16.
 
 **Every knob the bench can see, since 2026-09-17** (goal 1 step 3). Widened from the four
 declared settings per detector to every parameter a detector takes bar the data's own —
-``min_rois``, the merge gaps, the guards, the peak-mode group and the categorical axes.
+the merge gaps, the guards, the peak-mode group and the categorical axes. ``min_rois`` was one
+of them until 2026-09-25, when ADR-0008's floor took it (and SPIKE-synch's ``min_n``) out.
 What is deliberately NOT here is in :data:`NOT_SEARCHED`, each with the reason, because a
 parameter left out silently is a parameter nobody knows was left out.
 
@@ -327,16 +536,20 @@ NOT_SEARCHED: dict[str, dict[str, str]] = {
     "coact": {
         "window_mode": "a decision, not a score: sliding is chosen because calls should not "
                        "move with the grid (forks.md §14), which F1 on this bench cannot see",
+        "min_rois": "set per recording by ADR-0008's floor (decision 6), in run_detector",
     },
     "loco": {
         "window_mode": "as coact",
+        "min_rois": "as coact",
     },
     "sce": {
+        "min_rois": "as coact",
         "analysis_mode": "measured inert: 'whole' and 'regional' give identical output on "
                          "bench recordings, which carry one implicit window",
         "surrogate_model": "only 'circular_shift' is implemented; 'jitter' raises",
     },
     "sync": {
+        "min_n": "a participation minimum, so set by ADR-0008's floor (ADR-0009 decision 3)",
         "synchrony_statistic": "measured inert: it aggregates ROIs sharing an EXACT "
                                "timestamp, and the generator draws times continuously so "
                                "ties never happen. Live on real data, which is frame-"
@@ -353,6 +566,12 @@ NOT_SEARCHED: dict[str, dict[str, str]] = {
                                 "width column. 'If you find yourself asking which duration "
                                 "locust should use, the answer is the column'",
         "active_duration_sec": "as active_duration_mode",
+    },
+    "count": {
+        "min_rois": "as coact: the floor. count's own offset above it, k_offset, is searched",
+    },
+    "count_sliding": {
+        "min_rois": "as count",
     },
 }
 """Parameters deliberately left out of :data:`FULL_GRIDS`, and why.
@@ -398,6 +617,43 @@ ridges this project has met. Optional for a caller: goal 2 leaves them off insid
 because a pair is a product and it pays for one per fold."""
 
 
+def context_fits_the_null(p: dict, min_sep_sec: float) -> bool:
+    """Is this setting's context window narrow enough for the null to be background only?
+
+    A detector estimates its threshold over a context window. If planted events are spaced
+    more tightly than that window, the window holds OTHER events, and the null the threshold
+    comes from is contaminated with the very thing being detected — the trap that made the
+    first upstream benchmark unusable and cost two weeks of tuning against it
+    (:data:`BENCH_RECORDING`, ``min_sep_sec``).
+
+    **It also flatters the setting that breaks it**, which is why a search needs this rule
+    and not only a test. A contaminated null sits too high, so the detector calls less,
+    precision rises and F1 with it. On 2026-09-17 the sliding search chose a 240 s context
+    for both LoCo and CoactDetect on a bench that plants events 120 s apart, under all four
+    budgets; ``tests/test_bench.py::test_the_bench_recording_keeps_the_null_clean`` refused
+    the result. The guard worked and the run was already spent.
+
+    ``min_sep_sec`` is the SCORED recordings' spacing, so a caller scoring something other
+    than :data:`BENCH_RECORDING` passes its own — goal 2's home spec plants at 171 s, and its
+    per-fold search binds this rule with that number.
+
+    **Retired under a realistic** :func:`spacing` (ADR-0010 part 4): there a neighbouring event
+    inside the context is realistic and part of what the bench measures, so every context passes.
+    ADR-0009 decision 5's cap of 120 s on contexts stands; it lives in the search grids.
+    """
+    if spacing() != "bench":
+        return True
+    context = p.get("context_win_sec", p.get("context_win"))
+    return context is None or context <= min_sep_sec
+
+
+def guard_fits_the_context(p: dict) -> bool:
+    """A guard of at most :data:`GUARD_MAX_CONTEXT_FRACTION` of its context window."""
+    context = p.get("context_win_sec", p.get("context_win"))
+    guard = float(p.get("guard_sec", 0.0) or 0.0)
+    return context is None or guard <= GUARD_MAX_CONTEXT_FRACTION * float(context)
+
+
 def settings_are_valid(det: str, p: dict) -> bool:
     """Do these settings make sense together?
 
@@ -405,7 +661,24 @@ def settings_are_valid(det: str, p: dict) -> bool:
     threshold. It lives here rather than in the search so that a caller walking
     :data:`FULL_GRIDS` rejects the same combinations this project's own search does.
     """
+    # Sliding supports threshold detection only, in both detectors that have the mode: a
+    # sliding window has no bins to find a peak across (`loco.py`, `coact.py`). Encoded so a
+    # search in sliding mode does not spend evaluations on a pair the detector will refuse.
+    if p.get("window_mode") == "sliding" and p.get("detection_mode", "threshold") != "threshold":
+        return False
+    # Before any detector's own branch: until 2026-09-25 this sat after LoCo's early return, so
+    # the guard cap never reached LoCo: on the final-parameters night fast LoCo's search, at a 5 s
+    # context, could try guards of 2 and 4 s against a 1.25 s cap (murderboard roles 1 and 7).
+    if not guard_fits_the_context(p):
+        return False
     if det == "loco":
+        # The detector's own refusal, encoded here so a search does not spend an evaluation
+        # discovering it: a guard is supported only with the one-sided 'maxlt' null, because
+        # under 'symmetric' the guard would hole the middle of the window and the wrap would
+        # cross the hole (`loco.py`). Found by the 2026-09-17 every-knob search, the first
+        # thing ever to cross those two axes.
+        if p.get("guard_sec", 0.0) and p.get("null_context_mode", "maxlt") != "maxlt":
+            return False
         return (p["bin_width_sec"] * 4 <= p["context_win_sec"]
                 and p["merge_gap_sec"] < p["context_win_sec"])
     if det == "coact":
@@ -472,29 +745,46 @@ class OperatingPoint:
 # averaged over the two backgrounds — and a stored value moved ONLY where the gain's
 # 95% bootstrap interval excludes zero. Three moved (sce, loco, rate); three were
 # already best or within noise (coact, sync, cicada). Figure and numbers:
-# <darkroom>/bugarach/2026-09-16-best-parameters/. Only the one swept knob per
+# <darkroom>/bugarach/archive/2026-09/2026-09-16-best-parameters/. Only the one swept knob per
 # detector was searched; every other parameter below is as it was.
 RETUNE = ("tools/retune_operating_points.py 2026-09-16 (48 recordings per point, both "
           "backgrounds, both false-alarm budgets, mean F1, moved only if the 95% "
           "bootstrap gain interval excludes zero)")
+SLIDING_SEARCH = (
+    "tools/search_all_settings.py --sliding, 2026-09-17 "
+    "(<darkroom>/bugarach/archive/2026-09/2026-09-17-full-search/sliding5/): every parameter this bench can "
+    "see, one at a time in rounds, chosen on 48 recordings per background and scored on 48 "
+    "the search never saw, under FOUR budgets — the two false-alarm limits, the precision "
+    "swing, and MAX_CROWDED_DROP against what the detector ships at today — and refusing any "
+    "context window wider than the planted spacing (context_fits_the_null)")
 OPERATING_POINTS: dict[str, OperatingPoint] = {
     "loco": OperatingPoint(
-        # ⚠ STILL BINNED, and the sliding mode is built and waiting for a value.
-        # `detectors/sliding.py` gives this detector a window that slides: a sub-second
-        # shift of a real recording keeps 64% of the binned calls and 100% of the sliding
-        # ones (`tools/probe_sliding_vs_binned.py`), and on the 84 real baseline windows
-        # sliding is a superset of binned (`tools/compare_sliding_vs_binned.py`). What it
-        # is NOT yet is calibrated: at the threshold below, tuned binned, sliding fires
-        # 4.0 calls/hour on the empty recording against a limit of 3 and swings precision
-        # past `MAX_PRECISION_DROP`. The switch lands with the value goal 1 step 3 chooses,
-        # not before — a shipped operating point is a calibrated one.
+        # SLIDING since 2026-09-17, and calibrated IN that mode rather than inheriting the
+        # binned values. A window that slides: a sub-second shift of a real recording keeps
+        # 64% of the binned calls and 100% of the sliding ones
+        # (`tools/probe_sliding_vs_binned.py`), and on the 84 real baseline windows sliding
+        # is a superset of binned (`tools/compare_sliding_vs_binned.py`). `thr_step_sec` and
+        # `n_surrogates` do not apply in this mode and are kept for the binned path, which
+        # stays as the MATLAB port with its parity tests.
+        # ⚠ STILL BINNED HERE. The sliding values below are measured and chosen; they are
+        # NOT switched on in this change, because switching them moves the viewer's
+        # calibrated defaults while the browser still runs both detectors binned, and moves
+        # the calls a slow-comodulation analysis is pinned to. Both are consequences of
+        # shipping sliding rather than defects in the values. The switch, with those two
+        # handled, is on branch `opt-every-knob-run` and in HANDOFF-coded-detectors.md.
         params=dict(bin_width_sec=1.0, context_win_sec=120.0, thr_step_sec=15.0,
                     merge_gap_sec=2.0, threshold_pctile=99.5, n_surrogates=100),
         source=f"{RETUNE}: 99.9 -> 99.5, mean F1 0.669 -> 0.686, gain +0.017 "
                "(interval +0.005 to +0.029); 0.16 firings/min in the empty stretch on "
                "both backgrounds (limit 1), 1.7 calls/hour on the empty recording "
                "(limit 3). Was the measured-regime F1 optimum of 2026-08-13 "
-               "(loco_detect docstring), found on an older bench.",
+               "(loco_detect docstring), found on an older bench. "
+               f"⚠ NOT YET SWITCHED TO SLIDING. {SLIDING_SEARCH} chose, for the sliding "
+               "mode: threshold 99.9, merge gap 8 s, symmetric null, context unchanged at "
+               "120 s — held-out mean F1 0.737 against this point's 0.699, 1.7 calls/hour "
+               "on the empty recording (limit 3) where sliding at THIS point fires 4.0 and "
+               "is over, crowded-recording mean F1 0.827 against this point's 0.816. The "
+               "switch waits on the browser port and one analysis; see the comment above.",
         knob="threshold_pctile", grid=(97.0, 98.0, 99.0, 99.5, 99.9, 99.99, 99.999,
                                        99.9999)),
     "cicada": OperatingPoint(
@@ -539,17 +829,18 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         knob="threshold_pctile", grid=(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 75.0,
                                        80.0, 85.0, 90.0, 95.0, 98.0, 99.0, 99.5, 99.9)),
     "coact": OperatingPoint(
-        # ⚠ STILL BINNED, for the reason on `loco` above. Sliding is built
-        # (`detectors/sliding.py`), with the null computed rather than drawn: binned, a
-        # sub-second shift keeps 0% of this detector's calls at a 0.05 s match, and the
-        # loss grew with the shift because every candidate bin re-used one random stream.
-        # At the alpha below, tuned binned, sliding fires 7.7 calls/hour on the empty
-        # recording against a limit of 7. The switch lands with goal 1 step 3's value.
+        # ⚠ STILL BINNED HERE, for the reason on `loco` above: the sliding values are
+        # measured and chosen and are not switched on in this change.
         params=dict(int_win_sec=2.0, context_win_sec=60.0, alpha=1e-4,
                     n_surrogates=100),
         source="explore_sce viewer FAST point — NOT the coact_detect signature "
                f"default of alpha=0.01, which scores F1 0.72 here. Confirmed by {RETUNE}: "
-               "already the best value within both budgets (mean F1 0.700).",
+               "already the best value within both budgets (mean F1 0.700). "
+               f"⚠ NOT YET SWITCHED TO SLIDING. {SLIDING_SEARCH} chose, for the sliding "
+               "mode: alpha 1e-5, context 120 s, merge gap 8 s, guard 1 s — held-out mean "
+               "F1 0.746 against this point's 0.702, 5.8 calls/hour on the empty recording "
+               "(limit 7) where sliding at THIS point fires 7.7 and is over, "
+               "crowded-recording mean F1 0.818 against this point's 0.808.",
         knob="alpha", grid=(1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 1e-6,
                             1e-7)),
     "rate": OperatingPoint(
@@ -572,21 +863,74 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
         knob="C_threshold", grid=(0.005, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16,
                                   0.2, 0.3),
         takes_rng=False),
+    "count": OperatingPoint(
+        # The simple rule at the floor itself (k_offset 0), in CoactDetect's 2 s bins with its
+        # 3 s merge gap: the starting point the orchestrator set on 2026-09-26, not a tuned one.
+        params=dict(bin_sec=2.0, k_offset=0, merge_gap_sec=3.0),
+        source="not tuned: the starting point set 2026-09-26 (Tony: 'have we tried to optimize "
+               "the simple rule: a bin and a count?'). Bins and merge gap as CoactDetect's "
+               "binned FAST point; threshold the ADR-0008 floor with no offset.",
+        # The bin width, because k_offset's only honest grid starts at the operating point
+        # (0 is the floor) and a sweep has to bracket what it sweeps.
+        knob="bin_sec", grid=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0),
+        takes_rng=False),
+    "count_sliding": OperatingPoint(
+        # v2 at v1's starting point, the window sliding (Tony, 2026-09-26: "Simple rule v2
+        # should be sliding").
+        params=dict(win_sec=2.0, k_offset=0, merge_gap_sec=3.0),
+        source="not tuned: v1's starting point with the window sliding, set 2026-09-26. "
+               "CoactDetect's sliding form without its null.",
+        knob="win_sec", grid=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0),
+        takes_rng=False),
 }
 
 DETECTORS = tuple(OPERATING_POINTS)
 
 
 REGIMES: dict[str, dict] = {
-    "baseline_quiet": dict(bg_rate_hz=0.0052),
-    "baseline_busy": dict(bg_rate_hz=0.0190),
+    "baseline_quiet": dict(bg_rate_hz=0.0049),
+    "baseline_busy": dict(bg_rate_hz=0.0169),
 }
 """The difficulty axis, and **every value on it comes from untreated recordings.**
 
+**Re-measured 2026-09-23 on the default folder's 66 recordings**: quiet 0.0049 Hz
+(0.004948) and busy 0.0169 Hz (0.016895), background rates by the same route as below,
+over the 63 recordings that clear the shape floors;
+`docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/`. They were 0.0042 and
+0.0165 Hz on the 84-recording folder, which the rest of this docstring describes.
+
 Both endpoints are the interquartile spread of slice-mean per-ROI rate across
-baseline windows, fast stream: 0.0052 Hz at p25 and 0.0190 Hz at p75, around a
-median of 0.0102. Untreated slices vary 3.7-fold among themselves, and that
-variation is the axis an operating point has to survive.
+baseline windows, fast stream, **with the coordinated share subtracted**: 0.0042 Hz
+at p25 and 0.0165 Hz at p75. Untreated slices vary about 3.9-fold among themselves,
+and that variation is the axis an operating point has to survive.
+
+**These are BACKGROUND rates as of 2026-09-22, not total rates** (Tony, ~21:45 EDT:
+*background, end to end*). A recording's total per-cell rate contains firing that
+belongs to moments shared with other cells; what this axis wants is the rate the
+*background* generator should produce, and planting coordinated events on top of a
+total rate counts the shared part twice. The coordinated share is measured without
+deciding which onsets form an event — factorial cumulants of the population count,
+against per-cell circular-shift surrogates — by
+`tools/measure_coordination_rates.py`, recorded in
+`docs/learned/runs/2026-09-23-coordination-rates/`.
+
+**The raw rates did not move; only the subtraction is new.** On the same recording
+set the raw p25/p75 read 0.00505 and 0.01904, against the 0.0052 and 0.0190 that
+stood here before — agreement within 3%, which is what makes the subtraction the
+whole of the change. Quiet falls 16.5%, busy 13.6%.
+
+**The recording set is `fit_background_shape`'s, not every recording.** 80 of the
+default export's 84 baseline windows clear its floors (≥ 300 s, ≥ 20 events,
+≥ 5 ROIs), and those are the ones `tools/remeasure_bench.py` has always used for
+this axis. Measuring over all 84 instead makes quiet read 30% low while busy agrees
+to 2% — the floors cut short, sparse and few-ROI windows, which are the quiet tail.
+That mistake was made and caught on 2026-09-22, before anything adopted it.
+
+⚠ **The estimator behind the subtraction is calibrated at the 1 s counting window
+and, on the fast stream, at no other**: its error on the recovered coordinated share
+runs +0.06 at 1 s, +0.46 at 2 s and +1.00 at 4 s. These values are the 1 s ones.
+Slow's estimator clears every window; fast's does not, so a re-measure must keep the
+window or re-check the calibration first.
 
 **Re-derived 2026-08-20 from the export folder, which is what the lab
 approved.** The previous endpoints — 0.0038 and 0.0175, a 4.6-fold span — were
@@ -645,11 +989,16 @@ of a coordination property. If a senktide evaluation is wanted it is a separate,
 explicit decision, not a default of this module.
 """
 
-NULL_RECORDING = dict(bg_rate_hz=0.0052, n_per_level=(0, 0, 0),
-                      hot_window=None, hot_rate_hz=0.0, ramp_sec=0.0,
-                      n_distractors=0)
+NULL_RECORDING = dict(bg_rate_hz=REGIMES["baseline_quiet"]["bg_rate_hz"],
+                      n_per_level=(0, 0, 0), hot_window=None, hot_rate_hz=0.0,
+                      ramp_sec=0.0, n_distractors=0)
 """A **synthetic** recording with no planted coordination — Poisson background at
 the quiet end of baseline, and nothing else.
+
+**The rate is read from** :data:`REGIMES` **rather than written here.** Until 2026-09-23 it was a
+literal 0.0052 Hz, so when #756 moved the quiet background to 0.0042 Hz this recording stayed
+behind, 24% busier than the quiet end it stands for, and the calls-per-hour budgets were measured
+on it (Tony, 2026-09-23: *"fix the no coordination problem"*).
 
 Its only claim is about construction: this generator planted no events, so a
 detector reporting one is reporting structure that was not put there. That is a
@@ -673,10 +1022,10 @@ quiet. Report it with its rate attached, and do not read it as a ranking.
 # Measured off baseline slices only — see MEASURED_PROVENANCE.
 BENCH_RECORDING = dict(
     duration_sec=2700.0,
-    n_roi=33,
-    participation=(0.30, 0.18, 0.10),
+    n_roi=32,
+    participation=(0.30, 0.203, 0.10),
     n_per_level=(5, 5, 5),
-    jitter_sec=0.36,
+    jitter_sec=0.105,
     min_sep_sec=120.0,
     # THE BACKGROUND IS NOT FLAT, and as of 2026-08-28 this bench stops pretending
     # it is. Both shapes are fitted, not chosen — see `MEASURED_RATE_SHAPE` (81
@@ -693,14 +1042,34 @@ BENCH_RECORDING = dict(
     bg_rate_shape=MEASURED_RATE_SHAPE,
     bg_burst_shape=MEASURED_BURST_SHAPE,
     bg_burst_bin_sec=MEASURED_BURST_BINS,
-    hot_window=(1200.0, 1500.0),
-    hot_rate_hz=0.06,
-    ramp_sec=30.0,
+    # ADR-0009 decision 1: no elevated-rate stretch on a recording with planted events. The span
+    # 1200-1500 s carries ordinary background; the stretch lives in ELEVATED_RATE_RECORDING.
+    hot_window=None,
+    hot_rate_hz=0.0,
+    ramp_sec=0.0,
     n_distractors=6,
     distractor_frac=0.18,
     distractor_window=(120.0, 1100.0),
 )
 """The recording every bench run is scored on.
+
+**Re-measured 2026-09-23 on the default folder's 66 recordings**, on Tony's instruction
+to retune the bench on the data set it scores:
+
+===================  ================  =========================================
+knob                 84 recordings     66 recordings (95% interval)
+===================  ================  =========================================
+``n_roi``            33 ROIs           32 ROIs (27.5–34 ROIs)
+``participation``    0.19              0.203 (0.182–0.233), the middle level
+``jitter_sec``       0.106 s           0.105 s (0.090–0.124 s)
+``hot_rate_hz``      0.1271 Hz         0.1334 Hz, background 99th percentile
+===================  ================  =========================================
+
+The outer participation levels (0.30, 0.10) and ``distractor_frac`` are chosen, not
+measured, and did not move. Records: `docs/learned/bench_measured.json`,
+`docs/learned/runs/2026-09-23-jitter-correlogram-senktide-ttx/` (jitter) and
+`docs/learned/runs/2026-09-23-coordination-rates-senktide-ttx/` (the probe). The
+history below is the 84-recording measurement's.
 
 Its structural values are **measured off real recordings**, not invented. Until
 2026-08-13 they were guesses, and every one of them made coordination easier
@@ -711,26 +1080,60 @@ knob                 was         measured                       effect
 ===================  ==========  =============================  ==============
 ``n_roi``            30          ~33                            (was right)
 ``bg_rate_hz``       0.05 Hz     0.0096 Hz/ROI                  5× too busy
-``jitter_sec``       0.05 s      0.36 s                         7× too tight
-``participation``    50–100%     6 of ~33 ROI = 18%             3–6× too many
+``jitter_sec``       0.05 s      0.106 s                        2× too tight
+``participation``    50–100%     6 of ~33 ROI = 19%             3–5× too many
 ===================  ==========  =============================  ==============
 
 The consequence was not subtle. On the invented values every detector scored
 F1 ≈ 0.9–1.0 and the bench could not tell them apart; on the measured ones they
 range 0.20–0.75 and separate sharply, because a real coordinated event recruits
-about **six ROIs with a third of a second of spread** — which sits just above
+about **six ROIs within about a tenth of a second** — which sits just above
 the ``min_rois`` floor the detectors ship with. That is the regime the
 instruments were designed for, and it is where they differ.
 
-``participation`` keeps a spread (30 / 18 / 10%) around the measured median
+**``jitter_sec`` was 0.36 s until 2026-09-22, and that value measured the
+instrument rather than the recordings.** It came from ``assess_coactivity``'s
+within-cluster onset spread, which tracks the coincidence bin ÷ √12 from 0.5 s
+to 5 s on both streams — so the 2026-09-17 re-measure "confirmed" it with the
+same instrument at the same bin. ``tools/measure_jitter_correlogram.py`` measures
+the width of the cross-ROI correlogram's peak instead, calibrated against
+simulations of this bench at a grid of planted jitters, and gives **0.106 s
+[0.091, 0.120]** on the default folder's fast stream. Tony ruled on 2026-09-22
+to adopt it. The scale of the correction is the point: the bench was planting
+events about **three times looser** than the recordings it is fitted to.
+
+``participation`` keeps a spread (30 / 19 / 10%) around the measured median
 rather than collapsing to it, so recall still resolves a participant floor. The
-10% level is ~3 ROIs, at the floor itself.
+10% level is ~3 ROIs, at the floor itself. The middle level moved 0.18 → 0.19 on
+2026-09-22, the meeting having approved it: 0.18 was this docstring's own
+rounding of 6/33, and the folder measures 0.1905. Unlike the jitter, this
+constant was **swept across five coincidence bins and held** (0.19 at every bin),
+so the recruitment number survived the test the timing number failed.
 
 ``hot_rate_hz`` moved with them. At 0.30 it was 6x the invented background and
 **31x the measured one** — a probe that severe stops asking whether a detector
-keys on rate and starts asking whether it survives an impossible surge. 0.06 is
-6x measured baseline and 1.6x senktide: busier than any real condition in the
-table, which is the point, without leaving the physical world.
+keys on rate and starts asking whether it survives an impossible surge. 0.06
+replaced it: 6x measured baseline and 1.6x senktide, busier than any real
+condition in the table without leaving the physical world.
+
+**Since 2026-09-22 it is 0.1271 Hz, and it is now measured rather than chosen**
+(Tony, ~21:45 EDT). 0.06 was a multiple of the median picked to be plausible; this
+is the **99th percentile of the per-cell background rate over every 300-second
+stretch of every baseline window** — 2,582 stretches — so the methods section's
+"99th percentile of the baseline frequency" is true of the bench rather than
+approximately true of it. Same measurement, same recording set and same
+coordinated-share subtraction as ``REGIMES`` above: background end to end, which is
+what makes the probe comparable with the two endpoints instead of being a different
+quantity at the top of the same axis.
+
+**It roughly doubles, and the doubling is a change of definition, not a
+correction.** The coordinated share at the probe is only 0.6% of the raw rate on
+this stream — fast's busiest stretches are not its coordinated ones — so almost the
+whole move from 0.06 to 0.1271 is the percentile replacing the multiple. For scale:
+0.06 sat at the **96.2nd** percentile of the same distribution, so the old value
+was not wild, and this is a deliberate step up the same curve rather than a
+repudiation of it. ``tools/measure_coordination_rates.py``,
+`docs/learned/runs/2026-09-23-coordination-rates/`.
 
 ``min_sep_sec`` is 120 s and not the generator's 15 s default on purpose. The
 detectors estimate their null over context windows up to 120 s wide, so events
@@ -752,11 +1155,120 @@ would hand a model the clock as a shortcut (the plan's warning that regularity
 is a cue). Shortening this recording is therefore not the free win it looks
 like.
 
-The hot window is dense-but-random with no planted events (a rate-fooled
-detector fires there) and the distractors are correlated bursts that are real
-coincidence but not coordination. Both are negatives with no recall value; they
-exist so the bench can fail a detector for firing on them.
+The distractors are correlated bursts that are real coincidence but not
+coordination: negatives with no recall value, there so the bench can fail a
+detector for calling on them.
+
+**It carries no elevated-rate stretch since 2026-09-25** (ADR-0009 decision 1).
+Until then 1200–1500 s held one — every ROI's rate raised together, nothing
+planted — and under ADR-0008 that shared rate change lifted the whole
+recording's floor above every planted event (16–20 co-active ROIs on fast,
+`tools/probe_bench_floor.py`). The stretch moved to a recording of its own,
+:data:`ELEVATED_RATE_RECORDING`, and the span here carries ordinary background.
+Placement no longer skips it, so the realized spacing changes; the floor
+``min_sep_sec`` and ``duration_sec`` do not. ``hot_rate_hz`` 0.1334 Hz and its
+history above now describe that recording's stretch.
 """
+
+
+# --- the spacing of planted events (ADR-0010 part 2, rulings 1 and 2) ------------------------------
+
+SPACING_ENV = "BUGARACH_BENCH_SPACING"
+"""Which spacing the benches plant events at. Set by a tool's ``--spacing`` before its pool starts,
+so every worker reads the same one, as ``BUGARACH_BENCH`` does for the stream. Unset is
+``"bench"``."""
+
+SPACINGS = ("bench", "realistic", "orx")
+"""``"bench"``: the old spacing, at least 120 s (every recording byte-identical to before).
+``"realistic"``: every planted gap drawn from the measured baseline gaps of the stream, pooled over
+the four groups, and as many events as the stream's measured events per hour give a 45-minute
+recording (ADR-0010 ruling 2: replace, not mix). ``"orx"``: the same, with gaps from ORX's
+recordings alone, for scoring only (ruling 1: check the rankings hold where ORX's spacing differs,
+slow above all)."""
+
+INTERVALS_RUN = (Path(__file__).resolve().parents[2]
+                 / "docs" / "learned" / "runs" / "2026-09-25-real-intervals")
+"""The committed measurement (``tools/measure_real_intervals.py``), so a run reproduces from a
+clone rather than from a darkroom copy."""
+
+
+def spacing() -> str:
+    """The spacing in force (:data:`SPACING_ENV`), refused if it is not one of :data:`SPACINGS`."""
+    import os
+
+    s = os.environ.get(SPACING_ENV, "bench").strip() or "bench"
+    if s not in SPACINGS:
+        raise ValueError(f"{SPACING_ENV}={s!r} is not one of {SPACINGS}")
+    return s
+
+
+def use_spacing(name: str) -> str:
+    """Set :data:`SPACING_ENV` for this process and every worker it starts."""
+    import os
+
+    if name not in SPACINGS:
+        raise ValueError(f"spacing {name!r} is not one of {SPACINGS}")
+    os.environ[SPACING_ENV] = name
+    return name
+
+
+def realistic_counts(stream: str, n_levels: int, duration_sec: float) -> tuple[int, ...]:
+    """Events per participation level for a recording of ``duration_sec`` at the stream's
+    measured events per hour (baseline windows, all groups), rounded; split as evenly as possible,
+    the middle (measured) level first, then the highest. Fast: 9.7 per hour, 7 events."""
+    rec = json.loads((INTERVALS_RUN / "summary.json").read_text(encoding="utf-8"))
+    total = int(round(rec["summary"][stream]["all"]["events_per_hour"] * duration_sec / 3600.0))
+    base, rem = divmod(total, n_levels)
+    counts = [base] * n_levels
+    for i in ((n_levels // 2, 0, n_levels - 1) if n_levels >= 3 else range(n_levels))[:rem]:
+        counts[i] += 1
+    return tuple(counts)
+
+
+def spacing_overrides(stream: str, recording: dict) -> dict:
+    """What a planted recording's maker adds under :func:`spacing`: nothing for ``"bench"``."""
+    from bugarach.real_intervals import load_gaps
+
+    s = spacing()
+    if s == "bench":
+        return {}
+    pool = "pooled" if s == "realistic" else "ORX"
+    return dict(gap_source=load_gaps(stream, pool=pool,
+                                     path=INTERVALS_RUN / "gaps_for_generator.json"),
+                gap_mix=0.0,
+                n_per_level=realistic_counts(stream, len(recording["n_per_level"]),
+                                             recording["duration_sec"]))
+
+
+def seed_factor(stream: str, spacing_name: str | None = None) -> int:
+    """Seed-count multiplier under the realistic spacings: 2 on fast, 1 elsewhere. Real fast
+    events are sparser (9.7 per hour), so a 45-minute fast recording plants about 7 events
+    instead of 15, and doubling fast's selection, held-out and fresh seeds holds the number of
+    scored events (ADR-0010 ruling 2).
+
+    **The one place this is decided.** The search (selection and held-out seeds), the training
+    tool (fit, test and no-coordination seeds) and the fresh-seed scorer (fresh and null seeds)
+    all read it, so fast's seeds are doubled exactly once. ``spacing_name`` defaults to the
+    spacing in force (:func:`spacing`)."""
+    s = spacing() if spacing_name is None else spacing_name
+    if s not in SPACINGS:
+        raise ValueError(f"spacing {s!r} is not one of {SPACINGS}")
+    return 2 if stream == "fast" and s != "bench" else 1
+
+
+def spacing_from_args(spacing_arg: str | None, realistic_flag: bool) -> str:
+    """Resolve a tool's ``--spacing`` and its ``--realistic`` alias into one spacing name.
+
+    ``--realistic`` means ``--spacing realistic``; given together with ``--spacing bench`` the
+    two contradict each other and are refused. Neither given is ``"bench"``. Every tool that takes
+    the flags resolves them here, so one flag, in either spelling, names the whole realistic
+    setup: the recordings (:func:`spacing_overrides`), the search's ADR-0010 rulings, boundary
+    planting in training, and fast's doubled seeds (:func:`seed_factor`)."""
+    if realistic_flag:
+        if spacing_arg == "bench":
+            raise ValueError("--realistic and --spacing bench contradict each other")
+        return spacing_arg or "realistic"
+    return spacing_arg or "bench"
 
 
 def make_recording(regime: str, seed: int, **overrides):
@@ -766,11 +1278,15 @@ def make_recording(regime: str, seed: int, **overrides):
     treatment regime to accept. See :data:`REGIMES`. Like every simulated
     recording it carries per-event widths for locust — see
     :data:`bugarach.simulate.MEASURED_WIDTH_QUANTILES`.
+
+    Under a realistic :func:`spacing` the planted gaps and the event count come from the real
+    data (:func:`spacing_overrides`); unset, the recording is exactly what it always was.
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
-        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime], **overrides})
+    return with_floor(simulate_coordination(
+        seed=seed, **{**BENCH_RECORDING, **REGIMES[regime],
+                      **spacing_overrides("fast", BENCH_RECORDING), **overrides}))
 
 
 CROWDED_RECORDING = dict(BENCH_RECORDING, min_sep_sec=14.0, duration_sec=10800.0,
@@ -917,8 +1433,8 @@ def make_tail_recording(regime: str, seed: int, **overrides):
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
-        seed=seed, **{**TAIL_RECORDING, **REGIMES[regime], **overrides})
+    return with_floor(simulate_coordination(
+        seed=seed, **{**TAIL_RECORDING, **REGIMES[regime], **overrides}))
 
 
 CROWDING_GAP_SEC = 30.0
@@ -980,8 +1496,8 @@ def make_crowded_recording(regime: str, seed: int, **overrides):
     """
     if regime not in REGIMES:
         raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
-    return simulate_coordination(
-        seed=seed, **{**CROWDED_RECORDING, **REGIMES[regime], **overrides})
+    return with_floor(simulate_coordination(
+        seed=seed, **{**CROWDED_RECORDING, **REGIMES[regime], **overrides}))
 
 
 def make_null_recording(seed: int, **overrides):
@@ -992,8 +1508,8 @@ def make_null_recording(seed: int, **overrides):
     there is none: every detection is a false positive *of this construction*.
     See :data:`NULL_RECORDING` for what that does and does not license.
     """
-    return simulate_coordination(
-        seed=seed, **{**BENCH_RECORDING, **NULL_RECORDING, **overrides})
+    return with_floor(simulate_coordination(
+        seed=seed, **{**BENCH_RECORDING, **NULL_RECORDING, **overrides}))
 
 
 def false_positives_per_hour(name: str, seeds=(1, 2, 3), **overrides) -> float:
@@ -1020,17 +1536,126 @@ def false_positives_per_hour(name: str, seeds=(1, 2, 3), **overrides) -> float:
     return total / hours if hours else float("nan")
 
 
-def run_detector(name: str, s, *, rng_seed: int = 20260706, **overrides):
+NULL_SEED_OFFSET = 50_000
+"""What the scoring tools add to a bench seed to draw the no-coordination recording, so it never
+shares a simulator seed with a recording that has planted events (``tools/score_bench_candidates.py``:
+fresh seeds 6000–6011 read the null on 56000–56011)."""
+
+ELEVATED_SEED_OFFSET = 60_000
+"""What :func:`make_elevated_rate_recording` adds to the seed it is given, beside
+:data:`NULL_SEED_OFFSET`. Fixed on 2026-09-25 (the final-parameters night): a search on bench seeds
+1–96 reads the elevated-rate recording on 60001–60096, and fresh-seed scoring on 6000–6011 reads it
+on 66000–66011, clear of 1–96, 6000–6023 and the null's 56000–56011. The offset is applied inside
+the maker rather than by each caller, so no caller can forget it."""
+
+ELEVATED_RATE_RECORDING = dict(
+    n_per_level=(0, 0, 0),
+    n_distractors=0,
+    hot_window=(1200.0, 1500.0),
+    hot_rate_hz=0.1334,
+    ramp_sec=30.0,
+)
+"""The elevated-rate test's recording (ADR-0009 decision 1): the stretch and nothing planted.
+
+Laid over :data:`BENCH_RECORDING` and a regime, so its length, ROI count and background are the
+bench's; only the stretch is added and the planted events and decoys are taken away. The stretch
+is the one :data:`BENCH_RECORDING` carried until 2026-09-25: 1200–1500 s, every ROI at
+``hot_rate_hz`` 0.1334 Hz (the background 99th percentile of 300 s baseline stretches, measured —
+see :data:`BENCH_RECORDING`), with 30 s ramps.
+
+**Scored only for calls**, against the budgets that already exist: calls per minute inside the
+stretch against :data:`MAX_PROBE_PER_MIN`, and calls per hour outside it against
+:data:`MAX_FALSE_POSITIVES_PER_HOUR`, where it is a recording with nothing planted. No decoys, so
+that outside part is comparable with :data:`NULL_RECORDING`, which carries none either.
+
+**Its floor is its own** (ADR-0008 decision 5, ADR-0009 decision 1): computed from its own null
+over the whole recording, stretch included, with nothing left out. The stretch lifts it, as a real
+stretch lifts a real window's floor, so a detector that honours the floor calls little there by
+construction; the test still separates detectors by what they call above it.
+"""
+
+
+def make_elevated_rate_recording(regime: str, seed: int, **overrides):
+    """The elevated-rate recording at ``regime``'s background, simulated on
+    ``seed +`` :data:`ELEVATED_SEED_OFFSET`. See :data:`ELEVATED_RATE_RECORDING`."""
+    if regime not in REGIMES:
+        raise ValueError(f"unknown regime {regime!r} — have {sorted(REGIMES)}")
+    # Its own ADR-0008 floor, over the whole recording, stretch included (ADR-0009 decision 1).
+    return with_floor(simulate_coordination(
+        seed=seed + ELEVATED_SEED_OFFSET,
+        **{**BENCH_RECORDING, **REGIMES[regime], **ELEVATED_RATE_RECORDING, **overrides}))
+
+
+@dataclass
+class ProbeResult:
+    """One detector's calls on the elevated-rate recording, pooled over seeds.
+
+    Every call there is a false one, since nothing is planted, so the two counts are the whole
+    score: calls inside the stretch (the *probe*) and calls outside it. A call overlapping the
+    stretch counts inside, as :func:`bugarach.score.score_stream` counts ``hot_fa``.
+    """
+
+    calls_in: int = 0
+    calls_out: int = 0
+    minutes_in: float = 0.0
+    hours_out: float = 0.0
+    seeds: tuple = ()
+
+    @property
+    def per_min_in(self) -> float:
+        """Calls per minute inside the stretch, the number :data:`MAX_PROBE_PER_MIN` gates."""
+        return self.calls_in / self.minutes_in if self.minutes_in else float("nan")
+
+    @property
+    def per_hour_out(self) -> float:
+        """Calls per hour outside the stretch, the number :data:`MAX_FALSE_POSITIVES_PER_HOUR` gates."""
+        return self.calls_out / self.hours_out if self.hours_out else float("nan")
+
+
+def probe_counts(make, run, name: str, regime: str, seeds, *, tol_sec: float = TOL_SEC,
+                 **overrides) -> ProbeResult:
+    """Pool one detector's calls over elevated-rate recordings built by ``make`` and run by ``run``.
+
+    Takes the maker and the runner rather than reading them, so the slow and combined benches
+    share it without scoring a fast recording under their own label (the trap
+    :mod:`bugarach.bench_slow` is laid out to avoid)."""
+    out = ProbeResult(seeds=tuple(seeds))
+    for seed in seeds:
+        s, gt = make(regime, seed)
+        sc = score_stream(gt, run(name, s, **overrides), tol_sec=tol_sec)
+        h0, h1 = gt.params["hot_window"]
+        span = h1 - h0
+        out.calls_in += sc.hot_fa
+        out.calls_out += sc.n_detected - sc.hot_fa
+        out.minutes_in += span / 60.0
+        out.hours_out += (gt.params["duration_sec"] - span) / 3600.0
+    return out
+
+
+def evaluate_elevated_rate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
+                           **overrides) -> ProbeResult:
+    """One detector's calls on the elevated-rate recording, inside and outside the stretch."""
+    return probe_counts(make_elevated_rate_recording, run_detector, name, regime, seeds,
+                        tol_sec=tol_sec, **overrides)
+
+
+def run_detector(name: str, s, *, rng_seed: int = 20260706, floor: bool | None = None,
+                 **overrides):
     """Run one detector on a slice at its declared operating point.
 
     Absorbs the two call shapes — three detectors take a ``Slice`` and run every
     stream, three take one stream's trains plus the extent — so callers work in
     detector names rather than signatures.
+
+    ``floor`` (on unless :data:`FLOOR_SWITCH_ENV` says ``off``): the detector's participation
+    minimum (:data:`FLOORED_SETTING`) is the recording's own ADR-0008 floor
+    (:func:`recording_floor`), whatever the operating point says. ``floor=False`` runs the
+    operating point as declared, which is pre-ADR-0008 and is labelled so wherever it is used.
     """
     if name not in OPERATING_POINTS:
         raise ValueError(f"unknown detector {name!r} — have {sorted(OPERATING_POINTS)}")
     op = OPERATING_POINTS[name]
-    params = {**op.params, **overrides}
+    params = floored_params(name, s, op.params, overrides, STREAM, floor)
     if op.takes_rng:
         params["rng_seed"] = rng_seed
 
@@ -1040,7 +1665,8 @@ def run_detector(name: str, s, *, rng_seed: int = 20260706, **overrides):
 
     ext = recording_extent(s)
     trains = stream_trains(s.streams[STREAM], ext)
-    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect}[name]
+    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[name]
     return fn(trains, ext, **params)
 
 
@@ -1062,8 +1688,20 @@ class BenchResult:
     n_fa: int = 0
     hot_fa: int = 0
     distractor_hits: int = 0
+    decoy_calls: int = 0
+    """Calls outside the probe that match no planted event and land on a decoy (ADR-0006)."""
     by_frac: dict = field(default_factory=dict)
+    dont_care_by_frac: dict = field(default_factory=dict)
+    """``{participation_fraction: (n_under_floor, n_calls_matched_to_them)}``, pooled: planted
+    events under their recording's floor and the calls on them, both out of the score (ADR-0009
+    decision 2) and reported beside it."""
+    floors: tuple = ()
+    """Each pooled recording's ADR-0008 floor, in pooling order; empty when none was applied."""
     seeds: tuple = ()
+    probe: ProbeResult | None = None
+    """The same detector's calls on the elevated-rate recording (ADR-0009 decision 1), on the same
+    seeds shifted by :data:`ELEVATED_SEED_OFFSET`. ``None`` when it was not run, and then
+    :attr:`hot_fa_per_min` is NaN rather than zero: a probe nobody ran has not been passed."""
     tol_sec: float | None = None
     """The match tolerance every pooled score was measured at.
 
@@ -1075,6 +1713,10 @@ class BenchResult:
     not. ``None`` where nothing was pooled — a result assembled by hand has no
     tolerance to claim.
     """
+    n_merged_calls: int = 0
+    """Calls whose span contains two or more scored planted events, pooled
+    (:attr:`bugarach.score.Score.n_merged_calls`; ADR-0010, Proposed, part 3). Reported
+    beside the score and used by nothing: no budget until a run has measured it."""
 
     @property
     def n_scored(self) -> int:
@@ -1114,6 +1756,22 @@ class BenchResult:
             return float("nan")
         return 2 * r * p / (r + p)
 
+    @property
+    def precision_without_decoys(self) -> float:
+        """Precision with calls on decoys left out of the denominator (ADR-0006: a decoy is
+        coordination by construction, so a call on one is not a false alarm). Reported beside
+        :attr:`precision` until the objective's ADR decides what becomes of the decoys; nothing
+        selects on it."""
+        n = self.n_scored - self.decoy_calls
+        return self.n_hit / n if n else float("nan")
+
+    @property
+    def f1_without_decoys(self) -> float:
+        r, p = self.recall, self.precision_without_decoys
+        if not np.isfinite(r) or not np.isfinite(p) or (r + p) == 0:
+            return float("nan")
+        return 2 * r * p / (r + p)
+
     def recall_at(self, frac: float) -> float:
         """Recall at one participation level — the participant-floor axis."""
         n, h = self.by_frac.get(frac, (0, 0))
@@ -1121,11 +1779,19 @@ class BenchResult:
 
     @property
     def hot_fa_per_min(self) -> float:
-        """The promiscuity probe's own number: firings per minute inside the
-        dense-but-random block, where by construction there is nothing to find."""
-        span = BENCH_RECORDING["hot_window"]
-        minutes = (span[1] - span[0]) / 60.0 * max(1, len(self.seeds))
-        return self.hot_fa / minutes if minutes else float("nan")
+        """The promiscuity probe's own number: calls per minute inside the elevated-rate
+        stretch, where by construction there is nothing to find.
+
+        Read from :attr:`probe`, the elevated-rate recording, since 2026-09-25 (ADR-0009). It used
+        to read ``BENCH_RECORDING["hot_window"]`` and divide :attr:`hot_fa`, when the stretch sat
+        inside the scored recording; with the stretch gone from there that would read zero for
+        every detector and pass every gate in silence."""
+        return self.probe.per_min_in if self.probe is not None else float("nan")
+
+    @property
+    def elevated_out_per_hour(self) -> float:
+        """Calls per hour on the elevated-rate recording outside its stretch, NaN if not run."""
+        return self.probe.per_hour_out if self.probe is not None else float("nan")
 
     def summary(self) -> str:
         knob = "" if self.knob_value is None else f" @{self.knob_value:g}"
@@ -1137,7 +1803,7 @@ class BenchResult:
         return (f"{self.detector:6}/{self.regime:6}{knob}  recall {self.recall:.2f}  "
                 f"precision {self.precision:.2f}  F1 {self.f1:.2f}{tol}  "
                 f"FA {self.n_fa - self.hot_fa}  |  probe {self.hot_fa_per_min:5.1f}/min  "
-                f"distractor {self.distractor_hits}   [{by}]")
+                f"distractor {self.distractor_hits}  merged {self.n_merged_calls}   [{by}]")
 
 
 @dataclass(frozen=True)
@@ -1205,7 +1871,7 @@ def fold_split(*, n_folds: int = 4, seeds_per_fold: int = 3,
 
 
 def pool_scores(scores, *, detector: str, regime: str, seeds=(),
-                knob_value=None) -> BenchResult:
+                knob_value=None, probe: ProbeResult | None = None) -> BenchResult:
     """Pool per-seed :class:`~bugarach.score.Score` objects into one result.
 
     **Anything scored against this bench pools through here** — including
@@ -1227,7 +1893,7 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
     would be invisible, since counts add whatever they were counted against.
     """
     out = BenchResult(detector=detector, regime=regime, knob_value=knob_value,
-                      seeds=tuple(seeds))
+                      seeds=tuple(seeds), probe=probe)
     tols = {float(sc.tol_sec) for sc in scores if sc.tol_sec is not None}
     if len(tols) > 1:
         raise ValueError(
@@ -1242,14 +1908,35 @@ def pool_scores(scores, *, detector: str, regime: str, seeds=(),
         out.n_fa += sc.n_fa
         out.hot_fa += sc.hot_fa
         out.distractor_hits += sc.distractor_hits
+        out.decoy_calls += getattr(sc, "decoy_calls", 0)
+        out.n_merged_calls += getattr(sc, "n_merged_calls", 0)
         for frac, (n, h) in sc.by_frac.items():
             pn, ph = out.by_frac.get(frac, (0, 0))
             out.by_frac[frac] = (pn + n, ph + h)
+        for frac, (n, c) in (getattr(sc, "dont_care_by_frac", None) or {}).items():
+            pn, pc = out.dont_care_by_frac.get(frac, (0, 0))
+            out.dont_care_by_frac[frac] = (pn + n, pc + c)
+        if getattr(sc, "floor", None) is not None:
+            out.floors += (int(sc.floor),)
     return out
 
 
+def under_floor_report(r: BenchResult) -> dict:
+    """The counts ADR-0009 decision 2 says go with every score, by participation level: planted
+    events scored, planted events under the floor, and calls on those, plus the floors."""
+    levels = sorted(set(r.by_frac) | set(r.dont_care_by_frac), reverse=True)
+    return dict(
+        floor=FLOOR_LABEL if r.floors else "none",
+        floors=dict(min=min(r.floors), median=float(np.median(r.floors)), max=max(r.floors))
+        if r.floors else None,
+        by_participation={f"{f:g}": dict(scored=r.by_frac.get(f, (0, 0))[0],
+                                         under_floor=r.dont_care_by_frac.get(f, (0, 0))[0],
+                                         calls_on_under_floor=r.dont_care_by_frac.get(f, (0, 0))[1])
+                          for f in levels})
+
+
 def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SEC,
-             gen: dict | None = None, **overrides) -> BenchResult:
+             gen: dict | None = None, probe: bool = True, **overrides) -> BenchResult:
     """Run one detector over several seeds and pool the outcome.
 
     ``gen`` passes generator settings through to :func:`make_recording`, so a
@@ -1258,14 +1945,26 @@ def evaluate(name: str, regime: str, seeds=(1, 2, 3), *, tol_sec: float = TOL_SE
     ``docs/learned/generator_spec.json``, say, instead of the bench's flat one.
     Separate from ``**overrides``, which are the *detector's* knobs: the two used
     to be impossible to tell apart because only one of them existed.
+
+    ``probe`` also runs the detector on the elevated-rate recording for the same seeds
+    (:func:`evaluate_elevated_rate`), which is where :attr:`BenchResult.hot_fa_per_min` comes from
+    since ADR-0009. It doubles the cost; ``probe=False`` leaves that number NaN, which the probe
+    gates read as not passed.
     """
+    gen = gen or {}
     scores = []
     for seed in seeds:
-        s, gt = make_recording(regime, seed, **(gen or {}))
+        s, gt = make_recording(regime, seed, **gen)
         det = run_detector(name, s, **overrides)
         scores.append(score_stream(gt, det, tol_sec=tol_sec))
+    pr = None
+    if probe:
+        # The background settings travel; what makes it the elevated-rate recording does not.
+        g = {k: v for k, v in gen.items() if k not in ELEVATED_RATE_RECORDING}
+        pr = probe_counts(lambda r, sd: make_elevated_rate_recording(r, sd, **g), run_detector,
+                          name, regime, seeds, tol_sec=tol_sec, **overrides)
     return pool_scores(scores, detector=name, regime=regime, seeds=seeds,
-                       knob_value=overrides.get(OPERATING_POINTS[name].knob))
+                       knob_value=overrides.get(OPERATING_POINTS[name].knob), probe=pr)
 
 
 TOLERANCE_GRID = (0.1, 0.15, 0.25, 0.4, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0)
@@ -1347,8 +2046,19 @@ def describe_curve(curve: dict[float, BenchResult]) -> str:
     return f"F1 {best:.3f}, flat from {flat:g}s"
 
 
-BACKGROUND_GRID = (0.0026, 0.0052, 0.0080, 0.0120, 0.0190, 0.0280, 0.0400)
+BACKGROUND_GRID = (0.0018, 0.0032, 0.0049, 0.0074, 0.0112, 0.0169, 0.0250, 0.0370)
 """Per-ROI background rates to score across — the SECOND hidden constant.
+
+**Re-anchored 2026-09-23 on the 66 recordings, and widened to the groups.** Quiet
+(0.0049 Hz) and busy (0.0169 Hz) are on it, two interior points step about 1.51x
+between them, and two points above busy step about 1.48x. Below quiet it now reaches
+**0.0018 Hz**, one point further than the old half-of-quiet, because the bench's two
+regimes turned out to be the spread *between* groups rather than within one: ORX's
+lower interquartile background is 0.00185 Hz and DI's upper is 0.0277 Hz
+(`docs/learned/runs/2026-09-23-groups-rates-comod-66/`). The grid covers every group's
+interquartile range, and ``tests/test_background_curve.py`` checks that against the
+record. It was ``(0.0021, 0.0042, 0.0065, 0.0100, 0.0165, 0.0250, 0.0360)``. This is a
+reporting axis only: operating points are still tuned at quiet and busy.
 
 :data:`TOLERANCE_GRID` above dissolved the first one: how much timing slack a
 score was granted became a visible axis instead of an inherited number. **The
@@ -1359,11 +2069,21 @@ endpoint and **0.560** at the busy one — 0.26 of recall across a 3.7-fold rate
 change that is only the interquartile spread of *untreated* slices
 (``docs/RESET.md`` §6).
 
-The grid brackets :data:`REGIMES` rather than reproducing it: p25 (0.0052) and
-p75 (0.0190) are both on it, with a point below the quiet endpoint and two above
+The grid brackets :data:`REGIMES` rather than reproducing it: p25 (0.0042) and
+p75 (0.0165) are both on it, with a point below the quiet endpoint and two above
 the busy one, because a curve that stops at the endpoints cannot show whether it
 was about to fall off one. **``REGIMES`` is not changed by this** — moving the
 axis is a recalibration; this reports across the axis that already exists.
+``tests/test_background_curve.py`` enforces both endpoints being on the grid, so
+the two cannot drift apart silently.
+
+**It moved with ``REGIMES`` on 2026-09-22**, from
+``(0.0026, 0.0052, 0.0080, 0.0120, 0.0190, 0.0280, 0.0400)``, when the endpoints
+became background rates. The spacing is the old grid's, carried over: the point
+below quiet is half of it, the two above busy step by about 1.5x, and the
+interior keeps ratios near 1.55. Only the anchors moved; the shape of the axis
+is unchanged, so curves either side of the change are comparable in form even
+though they are measured at different rates.
 
 **Why this matters more than the tolerance did.** Five of six detectors turned
 out flat across the tolerance grid (six, once binned SCE was scored over its own
@@ -1393,18 +2113,32 @@ def evaluate_background_curve(name: str, regime: str, seeds=(1, 2, 3), *,
     and sweep its level. ``bg_rate_hz`` from either is overridden per point, which
     is the whole operation.
     """
+    return background_curve(make_recording, run_detector, OPERATING_POINTS, name,
+                            regime, seeds, rates=rates, tol_sec=tol_sec, gen=gen,
+                            **overrides)
+
+
+def background_curve(make, run, operating_points, name: str, regime: str,
+                     seeds=(1, 2, 3), *, rates, tol_sec: float = TOL_SEC,
+                     gen: dict | None = None, **overrides) -> dict[float, BenchResult]:
+    """The loop behind every bench's ``evaluate_background_curve``.
+
+    ``make`` and ``run`` are that bench's ``make_recording`` and ``run_detector``, so
+    the slow and combined benches score across their own grids with this code rather
+    than a copy of it.
+    """
     out: dict[float, BenchResult] = {}
     for rate in rates:
         g = dict(gen or {})
         g["bg_rate_hz"] = float(rate)
         scores = []
         for seed in seeds:
-            s, gt = make_recording(regime, seed, **g)
-            det = run_detector(name, s, **overrides)
+            s, gt = make(regime, seed, **g)
+            det = run(name, s, **overrides)
             scores.append(score_stream(gt, det, tol_sec=float(tol_sec)))
         out[float(rate)] = pool_scores(
             scores, detector=name, regime=regime, seeds=seeds,
-            knob_value=overrides.get(OPERATING_POINTS[name].knob))
+            knob_value=overrides.get(operating_points[name].knob))
     return out
 
 
@@ -1471,18 +2205,72 @@ class EdgeOfRange(ValueError):
 
 
 MAX_PROBE_PER_MIN = {
-    "coact": 1.0,      # measured: 0.0
-    "loco": 1.0,       # measured: 0.1
-    "sync": 1.0,       # measured: 0.2
-    "rate": 2.0,       # measured: 0.6
-    "sce": 9.0,        # measured: 5.6
-    "cicada": 25.0,    # measured: 17.3 — still the most rate-fooled of the six
+    "coact": 1.0,      # measured: 0.08 — unmoved by the harder probe
+    "loco": 1.0,       # measured: 0.21 — unmoved
+    "sync": 9.0,       # measured: 5.54, was 0.2 at the old probe
+    # HAND-SET from the separation window, not from the 1.6x rule, which would give 7.0
+    # and disable the gate at the doubled probe: rate's F1-optimum fires 4.98/min and the
+    # gate exists to refuse it. 4.5 is the midpoint of 3.83 (shipped, seeds 1-48) and 4.98
+    # (that optimum), and it separates them on the test's own seed too (3.00 / 4.80).
+    "rate": 4.5,       # measured: 3.83 shipped, 4.98 at the setting the gate refuses
+    "sce": 9.0,        # measured: 5.92, was 5.6 — barely moved
+    "cicada": 48.0,    # measured: 29.66, was 17.3 — still the most rate-fooled of the six
+    # 2026-09-26, seeds 1-48, by bench_slow_budgets.json's rule (tools/measure_slow_budgets.py
+    # --only count, which measures this bench beside the slow one).
+    "count": 1.0,      # measured: 0.02
+    "count_sliding": 1.0,  # measured: 0.10
 }
 """Firings per minute each detector may make inside a block containing nothing.
 
 **Measured baselines, not aspirations** — the convention the regime-shift budgets
 use. A detector that improves past its ceiling should have the ceiling tightened
 in the commit that improves it.
+
+⚠ **Three ceilings rose on 2026-09-22 because the PROBE rose, not because any
+detector got worse.** ``hot_rate_hz`` went 0.06 → 0.1271 Hz when the probe became
+the measured 99th percentile of baseline stretches, so the dense-but-random block
+is twice as dense and a detector that keys on rate fires more inside it. Measured
+at ``OPERATING_POINTS`` on seeds 1–48 by ``tools/measure_slow_budgets.py`` — the
+same code path the search's admissibility test reads — and moved by that tool's own
+``ceiling_rate``, ``max(1, ceil(1.6 x measured))``, **only where the old ceiling no
+longer held**. ``coact``, ``loco`` and ``sce`` kept theirs.
+
+**What the harder probe exposed, and the gentle one could not.** At 0.06 Hz five of
+six looked quiet. At a realistic elevated stretch they separate:
+
+=========  ==========  ==========  ========
+detector   old probe   new probe   factor
+=========  ==========  ==========  ========
+coact         0.0         0.08     flat
+loco          0.1         0.21     flat
+sce           5.6         5.92     1.1x
+rate          1.1         4.14     3.8x
+cicada       17.3        29.66     1.7x
+sync          0.2         5.54     **28x**
+=========  ==========  ==========  ========
+
+**CoactDetect and LoCo do not key on rate at all.** SPIKE-synch does, and was
+passing a 1.0 ceiling only because the probe was too gentle to ask.
+
+⚠ **``rate`` is hand-set because the rule collided with the gate, and that collision
+is itself the finding.** ``ceiling_rate`` gives 1.6x headroom over the shipped rate;
+at the doubled probe that is 7.0, and rate's own F1-optimum fires **4.98/min** — so
+the rule would have put the ceiling *above* the setting
+:func:`pick_operating_point` exists to refuse, and a re-calibration would have
+selected it and called it an operating point (``test_rates_own_f1_optimum_is_over
+_its_probe_budget`` is that case). **At this probe rate+context's shipped setting
+sits within about 10% of the setting its gate refuses** — 3.83 against 4.98 — so
+there is no longer room for 1.6x headroom. 4.5 is the midpoint, checked to separate
+on seeds 1–48 *and* on the test's own seed. A budget's job is to sit between an
+acceptable setting and a promiscuous one; where a headroom rule cannot, the window
+wins.
+
+⚠ It sits beside the other thing measured that day: SPIKE-synch is also the
+detector that stays flat across the background axis and takes the top at its busy
+end (``tests/test_background_curve.py``). Flatness that reads as robustness on one
+axis and as rate-keying on the other is **one observation, not two**, and which it
+is has not been decided here. Raising this ceiling records a measurement; it does
+not bless the setting.
 
 **These lived in `tests/test_bench.py` until 2026-08-22, and that was the defect.**
 The test caught a regression at the *shipped* operating point, but
@@ -1506,6 +2294,8 @@ MAX_PRECISION_DROP = {
     "sync": 0.10,      # measured: 0.01
     "cicada": 0.20,    # measured: 0.10
     "sce": 0.50,       # measured: 0.46 — a real degradation, recorded not excused
+    "count": 0.10,     # measured: 0.030 (2026-09-26, as MAX_PROBE_PER_MIN's count row)
+    "count_sliding": 0.10,  # measured: 0.032
 }
 """How far precision may differ between the quiet and busy backgrounds at one setting.
 
@@ -1518,6 +2308,35 @@ Switching LoCo and CoactDetect to a sliding window broke it at their binned sett
 now refuses such a setting instead of proposing it.
 """
 
+MAX_CROWDED_DROP = 0.02
+"""How much mean F1 a candidate setting may lose on the CROWDED recordings, against the
+setting it is proposed in place of.
+
+**The fourth budget, and the first one a search could not have been stopped without.** On
+2026-09-17 the every-knob search found large held-out gains for four of the six detectors —
+binned SCE +0.305 mean F1, rate+context +0.134, CoactDetect +0.122, LoCo +0.113 — and every
+one of them got there by running its **merge gap out to about a minute**. On a bench that
+plants events at least 120 s apart, merging within 60 s costs nothing and tidies away
+duplicate calls; on `make_tail_recording`, where planted events sit as little as 6 s apart,
+it fuses real events. The same four settings lose **0.251 to 0.318** mean F1 there.
+
+**The other three budgets cannot see it, and it is worth understanding why.** Merging makes
+a detector call LESS, so a merge-happy setting looks *cleaner* on every false-alarm measure:
+LoCo's empty-recording rate went 1.4 to 1.9 calls per hour against a limit of 3, well inside.
+A budget counting false alarms cannot catch a setting whose flaw is that it answers a
+different question — "was there coordination in the last minute" instead of "was there
+coordination here".
+
+**So the crowded recordings stop being only a report.** `bench.py` still forbids CALIBRATING
+on them — nothing is chosen for scoring well there — but a candidate that scores worse there
+than what it would replace is refused, in the search, before it can be proposed. Report and
+veto are different powers, and this is the second.
+
+⚠ **0.02 is a judgement, not a measurement.** It is meant to allow noise and refuse the
+artifact, which on the numbers above is a gap of more than ten to one. Tony has not signed
+it, and a detector genuinely better in both regimes will pass it easily.
+"""
+
 MAX_FALSE_POSITIVES_PER_HOUR = {
     "rate": 1.0,       # measured: 0.0
     "sync": 1.0,       # measured: 0.0
@@ -1525,6 +2344,8 @@ MAX_FALSE_POSITIVES_PER_HOUR = {
     "cicada": 6.0,     # measured: 3.1
     "sce": 6.0,        # measured: 3.1
     "coact": 7.0,      # measured: 4.4
+    "count": 1.0,      # measured: 0.11 (2026-09-26, as MAX_PROBE_PER_MIN's count row)
+    "count_sliding": 1.0,  # measured: 0.31
 }
 """Calls per hour each detector may report on :func:`make_null_recording`, where
 nothing was planted at all (:func:`false_positives_per_hour`).

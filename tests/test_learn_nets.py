@@ -139,8 +139,10 @@ def test_every_architecture_runs_at_any_cell_count(name):
     """Space invariance is a registry-wide contract, not a `tube` detail: a
     model that only works at 33 cells cannot be handed to another lab."""
     m = ARCHITECTURES[name].make()
+    # A model that reads the recording's floor (ADR-0010 part 5) refuses to run without one.
+    kw = {"floor": 4} if getattr(m, "reads_floor", False) else {}
     for n_cells in (5, 33, 61):
-        out = m(torch.zeros(1, n_cells, 512))
+        out = m(torch.zeros(1, n_cells, 512), **kw)
         assert out.shape == (1, 512)
 
 

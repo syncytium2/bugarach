@@ -293,6 +293,12 @@ shown, because it belongs to the *output* contract further down. It is reserved
 anyway, so that shipping it alongside the input does not read as a recording called
 "metric_dictionary".
 
+**Result files are skipped too**: `detections.csv` and `detector_settings.csv` (the
+output contract below), and `calls.csv` and `windows.csv` (what
+`tools/detect_with_floors.py` writes). A run's output saved beside the recordings is
+not a recording. The browser viewer reads a `detections.csv` it finds there as
+results, and draws its calls above the raster (2026-09-26).
+
 The file's name is the recording's id — no column declares it and nothing parses
 the name further. A folder of recording files and nothing else is a valid input;
 each input table buys exactly one thing.
@@ -680,6 +686,11 @@ adapts to read this; it does not get a private dialect.
 | `n_roi` | how many cells took part |
 | `strength` · `strength_unit` | how strong, and **in what units** — because the six detectors do not measure strength in the same thing, the unit travels in the row rather than in a lookup table |
 | *identity columns* | every column from `slices.csv`, carried through unchanged |
+
+**It opens again in the browser viewer**, beside the folder it was run on: one lane per
+detector above the raster, split by a carried `variant` column where the file has one,
+joined to each recording on `slice_id`. Any other carried column is shown when the
+pointer rests on a call. A column this table does not list is carried, never required.
 
 ### `detector_settings.csv` — one row per parameter
 

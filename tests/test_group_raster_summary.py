@@ -269,3 +269,109 @@ def test_a_recording_with_no_baseline_is_skipped_not_drawn_at_zero(tmp_path):
     pages, _, skipped = mod.measure(d, ("TTX",))
     assert pages == {} or ("MALE", "TTX") not in pages
     assert any("no baseline region" in s for s in skipped)
+
+
+def test_the_combined_page_draws_fast_in_the_raster_ink_and_slow_in_the_second(tmp_path):
+    """Tony, 2026-09-22: combined rasters "two color". The second ink is the producer's own
+    fast/slow partition there, and every onset of both streams is drawn once."""
+    from bugarach.ui.diagnostic import RASTER_INK
+
+    pages, _, _ = mod.measure(_folder(tmp_path, manifest=None), ("TTX",), steps_excluded=True,
+                              combined=True)
+    assert ("MALE", "TTX", "combined") in pages
+    spec = pages[("MALE", "TTX", "combined")]
+    blocks, red = mod.build_page(spec["members"], ext=spec["ext"], manifest={}, width=600,
+                                 stream="combined")
+    assert red == 0                                   # no field-step marks on this page
+    raster = blocks[0][1][-1]
+    by_ink = {}
+    for el in raster.values():
+        color = el.opts.get("style").kwargs.get("color")
+        if color in (RASTER_INK, mod.SLOW_INK):
+            by_ink[color] = by_ink.get(color, 0) + len(el)
+    # s1's fixture: three fast onsets and two slow ones, each drawn once in its own ink.
+    assert by_ink == {RASTER_INK: 3, mod.SLOW_INK: 2}
+
+
+def test_without_combined_there_is_no_combined_page(tmp_path):
+    pages, _, _ = mod.measure(_folder(tmp_path), ("TTX",))
+    assert not any(k[2] == "combined" for k in pages)
+
+
+def test_a_variant_lane_takes_its_detectors_colour_and_plus_one_is_lighter():
+    base = mod.LANE_COLORS["coact"]
+    assert mod.lane_color("coact · floor") == base
+    plus = mod.lane_color("coact · floor+1")
+    assert plus != base and plus.startswith("#") and len(plus) == 7
+    assert sum(int(plus[i:i + 2], 16) for i in (1, 3, 5)) > sum(
+        int(base[i:i + 2], 16) for i in (1, 3, 5))                  # lighter
+    assert mod.lane_color("chorus_norm · floor") == mod.LANE_COLORS["chorus_norm"]
+    assert mod.lane_color("coact") == base
+
+
+def test_the_floors_come_from_detect_with_floors_results(tmp_path):
+    import json
+
+    p = tmp_path / "results.json"
+    p.write_text(json.dumps({"floors": {"s1": {"1|fast": {"floor": 7}, "2|fast": {"floor": 9},
+                                               "2|slow": None}}}))
+    got = mod.read_floors(p)
+    assert got[("s1", "1", "fast")] == 7 and got[("s1", "2", "fast")] == 9
+    assert got[("s1", "2", "slow")] is None
+
+
+# --- ADR-0010 part 6: every call drawn, its participants and floors in the lane's hover -------
+
+def _calls_csv(tmp_path):
+    import csv
+
+    rows = [
+        # CoactDetect ran at each floor: only the run at own_floor is drawn.
+        dict(slice_id="r1", stream="combined", detector="coact", variant="own_floor",
+             onset_sec=10, width_sec=2, participants=12, own_floor=10, baseline_floor=8),
+        dict(slice_id="r1", stream="combined", detector="coact", variant="baseline_floor",
+             onset_sec=11, width_sec=2, participants=9, own_floor=10, baseline_floor=8),
+        # Chorus ran once: every call is drawn, the one under the floor too.
+        dict(slice_id="r1", stream="combined", detector="chorus_norm", variant="unfloored",
+             onset_sec=30, width_sec=4, participants=15, own_floor=10, baseline_floor=8),
+        dict(slice_id="r1", stream="combined", detector="chorus_norm", variant="unfloored",
+             onset_sec=60, width_sec=4, participants=4, own_floor=10, baseline_floor=""),
+    ]
+    p = tmp_path / "calls.csv"
+    with p.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    return p
+
+
+def test_call_lanes_draw_every_unfloored_call_and_one_floored_run(tmp_path):
+    lanes = mod.call_lanes(_calls_csv(tmp_path))
+    per = lanes[("r1", "combined")]
+    on, wd, info = per["coact"]
+    assert on.tolist() == [10.0] and len(info) == 1
+    on, wd, info = per["chorus_norm"]
+    assert on.tolist() == [30.0, 60.0], "a call under the floor is drawn, not removed"
+    assert info[0] == "15 participants · own floor 10 · baseline floor 8 (co-active ROIs)"
+    assert "baseline floor —" in info[1]
+    assert mod.call_lanes(_calls_csv(tmp_path), "baseline_floor")[("r1", "combined")][
+        "coact"][0].tolist() == [11.0]
+
+
+def test_a_lane_with_hover_lines_puts_them_on_the_lane_only():
+    """The number goes in the lane's hover, never on the raster: the lane's bars carry a
+    `call` value per call and a hover tool; a lane without lines renders as before."""
+    import holoviews as hv
+
+    from bugarach.ui.diagnostic import lane_panel
+
+    hv.extension("bokeh")
+    with_info = lane_panel({"chorus_norm": (np.array([30.0, 60.0]), np.array([4.0, 4.0]),
+                                            ["15 participants", "4 participants"])},
+                           ext=(0.0, 100.0))
+    plain = lane_panel({"chorus_norm": (np.array([30.0, 60.0]), np.array([4.0, 4.0]))},
+                       ext=(0.0, 100.0))
+    rects = [el for el in with_info if isinstance(el, hv.Rectangles)]
+    assert rects and rects[0].dimension_values("call").tolist() == ["15 participants",
+                                                                   "4 participants"]
+    assert not [el for el in plain if isinstance(el, hv.Rectangles) and el.vdims]

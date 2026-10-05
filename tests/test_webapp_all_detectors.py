@@ -141,6 +141,9 @@ def test_the_lane_colours_are_the_ones_the_diagnostic_figure_uses():
           / "src/bugarach/ui/app.py").read_text(encoding="utf-8")
     block = py[py.index("COLORS = {"):py.index("}", py.index("COLORS = {"))]
     want = dict(re.findall(r'"(\w+)":\s*"(#[0-9a-fA-F]{6})"', block))
+    # Benched and not offered by the page (test_registries_do_not_drift.NOT_IN_THE_BROWSER).
+    for bench_only in ("count", "count_sliding"):
+        want.pop(bench_only, None)
     html = VIEWER.read_text(encoding="utf-8")
     jsblock = html[html.index("const DET_COLORS = {"):
                    html.index("};", html.index("const DET_COLORS = {"))]

@@ -1,0 +1,94 @@
+{
+ "bench": "bugarach.bench",
+ "model": "chorus_norm",
+ "config": {
+  "roi_width": 4,
+  "roi_depth": 4,
+  "top_m": 4
+ },
+ "fit_seeds": [
+  1000,
+  1023
+ ],
+ "test_seeds": [
+  4000,
+  4023
+ ],
+ "null_budget_per_hour": 7.0,
+ "best_within_budget": true,
+ "best": "chorus_norm_fast_seed1.json",
+ "rows": [
+  {
+   "seed": 0,
+   "path": "chorus_norm_fast_seed0.json",
+   "threshold": 0.9000000000000001,
+   "f1": [
+    0.8240740740740741,
+    0.6966067864271458
+   ],
+   "mean": 0.7603404302506099,
+   "null_per_hour": 2.2222222222222223,
+   "sec": 16,
+   "null_per_hour_before_761": 4.333333333333333
+  },
+  {
+   "seed": 1,
+   "path": "chorus_norm_fast_seed1.json",
+   "threshold": 0.9715809801839131,
+   "f1": [
+    0.8300117233294255,
+    0.7887323943661972
+   ],
+   "mean": 0.8093720588478114,
+   "null_per_hour": 1.3333333333333333,
+   "sec": 12,
+   "null_per_hour_before_761": 2.6666666666666665
+  },
+  {
+   "seed": 2,
+   "path": "chorus_norm_fast_seed2.json",
+   "threshold": 0.9715809801839131,
+   "f1": [
+    0.8242280285035629,
+    0.7630922693266834
+   ],
+   "mean": 0.7936601489151232,
+   "null_per_hour": 0.3333333333333333,
+   "sec": 12,
+   "null_per_hour_before_761": 1.0
+  },
+  {
+   "seed": 3,
+   "path": "chorus_norm_fast_seed3.json",
+   "threshold": 0.8500000000000001,
+   "f1": [
+    0.8040540540540541,
+    0.7699316628701595
+   ],
+   "mean": 0.7869928584621068,
+   "null_per_hour": 7.555555555555555,
+   "sec": 12,
+   "null_per_hour_before_761": 9.444444444444445
+  },
+  {
+   "seed": 4,
+   "path": "chorus_norm_fast_seed4.json",
+   "threshold": 0.95,
+   "f1": [
+    0.8137142857142857,
+    0.7088082901554404
+   ],
+   "mean": 0.761261287934863,
+   "null_per_hour": 2.888888888888889,
+   "sec": 12,
+   "null_per_hour_before_761": 4.777777777777778
+  }
+ ],
+ "caveat": "best is chosen on the held-out seeds; its F1 is a selection score",
+ "rescored_on_corrected_null": {
+  "why": "#761 made bench.NULL_RECORDING follow REGIMES quiet; the fits are untouched",
+  "null_bg_rate_hz": 0.0042,
+  "best_before": "chorus_norm_fast_seed1.json",
+  "best_changed": false
+ }
+}

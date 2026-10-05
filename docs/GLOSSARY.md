@@ -56,8 +56,8 @@ message naming the two candidates.
 
 - **ISI-adaptive** — the coincidence window in SPIKE-synch. τ for a spike pair is
   the minimum of the four surrounding half-ISIs, capped at `tau_max`, so a dense
-  stretch **tightens its own window** and the measure does not reward firing
-  faster. This is core SPIKE-synchronization (Kreuz 2015), not an option on it,
+  stretch **tightens its own window** and the measure does not reward a
+  higher event rate. This is core SPIKE-synchronization (Kreuz 2015), not an option on it,
   and it is what `adaptive_profile` computes by default. Its opposite here is
   `tau_mode="fixed"` — the cap for every spike, ordinary fixed-window coincidence
   detection, which makes the measure rate-dependent again.
@@ -193,7 +193,7 @@ recordings is a **simulated data set**; the real recordings the lab approved are
   number produced without anybody having looked at the recording is not a weaker
   result of the same kind — it is not a result.
   In code: `bugarach.annotate.MAHICE`.
-- **K** — the coactivity floor: how many ROIs firing together make one coordinated
+- **K** — the coactivity floor: how many ROIs active together make one coordinated
   event. **Set by the person during MAHICE, and expressed as a PERCENTAGE of that
   recording's ROI population** (Tony, 2026-09-03). One percentage per review, never
   a different one per slice — the absolute count then follows each field size on
@@ -308,7 +308,43 @@ describes.
 - **clean-room primary / adversary** — the two independent implementers in
   `docs/clean_room/WORKFLOW.md`; they never see each other's code.
 - **sapper** — the mechanized rule gate (`tools/sapper.py`); a rule must
-  prove it can fire (self-test fixtures) to exist.
+  prove it can trigger (self-test fixtures) to exist.
+
+## Tuning the learned nets
+
+Terms from goal 2's comparison of coded detectors against learned nets. They were added on
+2026-09-19, when the chorus-collapse diagnosis (`docs/learned/chorus_collapse/`) used them.
+
+- **configuration** — one setting of a net's size and training: encoder width and depth, top m,
+  learning rate, step count and, for chorus_gain_norm, the vote gain's starting value. Each has
+  a hash name (`2736f584…`).
+- **inner fit** — one configuration trained at one training seed on 2 of a draw's 4 folds and
+  scored on the other 2. That gives 6 pairs of folds × 3 seeds per configuration. Tuning picks a
+  configuration from these; an inner fit is shared by every outer fold it did not use. Also
+  called a tuning fit.
+- **refit** — for each fold held out in turn, the configuration tuning picked, trained afresh on
+  the other 3 folds and scored on the held-out one. There is one pick per selection rule: on F1
+  alone, and under the false-alarm budget. The untuned default is also refit in every fold.
+- **training seed** — it sets a fit's starting weights and the order of its training crops. It
+  also sets which recordings of its folds the fit trains on, so it is not only a starting point.
+- **twin** (configurations) — two configurations identical except for step count. The learning
+  rate is constant and training is deterministic, so the shorter twin's fit is the longer twin's
+  fit stopped early: one trajectory, not two samples.
+- **census** — the chorus-collapse diagnosis's run of every second-draw chorus fit on one fresh
+  simulated recording that no fit trained on (quiet background, seed 9000).
+- **draw** — one complete run of the comparison on its own simulated recordings. There are two
+  so far.
+- **collapse** (of a fit) — exactly one call on every recording the fit was scored on, at its
+  own threshold. The whole recording becomes one event, and F1 is 0.125 against 15 planted
+  events.
+- **silent layer** — a layer none of whose units' outputs varies over a recording or training
+  crop: the standard deviation over its frames is under 0.001. It is measured with 400 frames
+  trimmed from each end, because zero padding makes even a constant layer wiggle there.
+  - This is **not** the ReLU sense of "dead", which means a unit whose output is exactly zero.
+    GELU's negative dip carries signal without ever going positive, so a test of the sign counts
+    layers that still transmit.
+  - It is not Sokar et al.'s "dormant" unit either, which is a threshold on the unit's mean
+    absolute activation, relative to its layer's.
 
 ## Bench and simulation
 
@@ -327,17 +363,136 @@ load-bearing terms with no glossary entry.
   defaults, which are not all calibrated. The general sense — a *chosen* detector
   setting that carries where the choice came from, benched or freshly fitted — is
   under **Parameter vocabulary** above, with the three terms it is confused with.
-- **promiscuity probe** — a stretch of the synthetic recording with elevated
-  background and *no* planted events, used to see whether a detector keys on
-  rate rather than on coordination. Its firings are reported separately and kept
-  out of headline precision.
+- **elevated-rate test** (formerly *promiscuity probe*, *probe*; code: `hot_window`,
+  `probe_per_hour`, `MAX_PROBE_PER_MIN`) — a 5-minute stretch (20:00–25:00, easing in over
+  30 s) where each cell's independent event rate is elevated to the background's 99th
+  percentile, with *no* planted events. **Since ADR-0009 (2026-09-24) it lives in a recording
+  of its own, the elevated-rate recording**, with nothing planted anywhere; before that it
+  sat inside every bench recording (at 0.06 per second on fast, about 12× the quiet
+  background). It is scored for calls inside the stretch and, against the no-coordination
+  budget, outside it. It asks
+  whether a detector keys on rate rather than on coordination: a call there means more
+  events fooled it. Its calls are reported separately and kept out of headline precision.
+  Named on 2026-09-21 (Tony): "probe" said nothing, and "surge" and "firing" were
+  rejected — the first reads as a fault, the second implies spikes, which calcium events
+  are not.
 - **distractor** — a planted correlated burst: real cross-ROI coincidence that is
-  not a coordinated event. A negative that is meant to be confusable.
+  not a coordinated event. A negative that is meant to be confusable. On the bench it
+  is built exactly as an 18% planted event is built and differs only in its label, so
+  whether a call on one should count against a detector is an open question
+  (`score.py`); today it counts as a false alarm, for every detector alike. *Decoy* is
+  an accepted alias in prose (the 2026-09-25 final-parameters report uses it).
+- **merge gap** — how close two calls may be before a detector merges them into one.
+  Tuned for the coded detectors (`merge_gap_sec`, `merge_gap_s`); the learned models decode
+  at `pick_threshold`'s default of 20 frames, which is what the fair comparison ran, and it
+  is **tuned for them too since 2026-09-19** — chosen on the inner fits after the fact and
+  without retraining (`tools/tune_net_merge_gap.py`). Matched by name is not matched by
+  operation, which is why the three rules below matter. On the bench, where planted events are at
+  least 120 s apart, a wider gap rarely costs recall, so bench F1 rises with it for a
+  detector whose calls come in short bursts; that is why the close-events test
+  exists. Merging chains, so a detector that calls almost continuously can lose events
+  to it even here (the fair comparison's `line_length` and `tube`, 2026-09-19). Three
+  rules share the name: a net merges runs of frames above threshold; sliding
+  CoactDetect and LoCo merge window positions; binned SCE merges by onset times.
+- **call** — a detector's claim that a coordinated event happened, over a span of time.
+  Scored one to one against planted events (`score.score_detections`).
+- **width of a coordinated event** — the earliest to the last onset among the calcium events
+  in it (`core_span_sec`, `bugarach.call_measure`), the same rule for every detector. Not a
+  detector's own `width_sec`, which is six different rules (locust's is a window floor: every
+  2026-09-09 senktide call read 0.3 s). Which events are *in* it: consecutive onsets no more
+  than 0.5 s apart (fast; 2.5 s slow), the group with the most cells. Tony, 2026-09-21.
+- **amplitude of a coordinated event** — cells taking part divided by its width, in cells
+  per second (`amplitude`), so a reader can check it from the two columns beside it (Tony,
+  2026-09-21). The width is floored at the frame interval; one cell has no amplitude. It
+  measures packing, not size — the cell count is its own column. **Not** the calcium events'
+  own `amp`, which travels separately as `member_amp_median`.
+- **firing / fire / fires / fired** — **RETIRED** (Tony, 2026-09-23: *"these are calcium
+  events. we don't know what they 'mean' to the cell"*). The word imports spikes and a
+  neuron's output, and with them a way of reasoning — rate codes, refractoriness, the
+  spike-train literature's priors — that the data do not license. A calcium event is an
+  observed transient; what it is to the cell is open. Say instead: for a cell, **event**,
+  **onset**, **active**, **has an event**, **event rate**; for a detector or model,
+  **call** ("calls in the elevated-rate stretch"), **flags**; for a gate or check,
+  **triggers**. Code identifiers keep their names (`fire_trigger`, `hot_rate_hz`) —
+  sapper SAP017 reads prose words, not identifiers. A method borrowed from the
+  spike-train literature keeps its own terms inside its description (SPIKE-synch's
+  "spike pair"), and its assumptions have to be argued for calcium events, not inherited.
+- **background** — the steady random event rate a bench recording is simulated at:
+  *quiet* (0.0052 per second per ROI) or *busy* (0.019), the 25th and 75th percentiles
+  of real baseline rates. The code's word is *regime*. Not the elevated-rate test.
+  Every test below runs at one background or both; the tests are never named *quiet*
+  or *busy* themselves, so that "the quiet background" always means this.
+- **no-coordination test** (formerly *empty recording*, *null recording*; code:
+  `make_null_recording`, `null_quiet`, `quiet_per_hour`) — a whole bench recording whose
+  cells produce events independently at the background rate, with nothing coordinated
+  planted, one per seed at each background. Every call is a false alarm, counted per
+  hour. Not "empty": the cells are active throughout (at quiet, about 10 events a minute
+  across 33 cells); only coordination is absent. Named 2026-09-21 (Tony).
+- **refit** — one training of a chosen net configuration on the outer training folds,
+  at one training seed; five per choice in goal 2's comparison.
+- **failed-training signature** — a refit that calls one long stretch per recording, so
+  it finds an event or two at perfect precision and almost no recall (F1 0.125 on the
+  bench). Recorded per refit as `failed_training_signature`.
+- **close-events test** (formerly *crowded-recording check*, *crowded veto*; code:
+  `bench.MAX_CROWDED_DROP`, `make_tail_recording`, `crowded_mean_f1`) — a 3-hour bench
+  recording with 180 planted events, some as little as 6 s apart (spacing fitted to the
+  most crowded real recordings). A setting may not score more than 0.02 mean F1 below the
+  setting it replaces there. It catches a merge gap wide enough to fuse separate events,
+  which every false-alarm count misses because merging makes a detector call *less*.
+  Goal 1's fourth budget. For a net the setting it replaces is its own 2 s decoding, so a
+  pass count reads 4 of 4 by construction; compare F1 on the recording instead. Named
+  2026-09-21 (Tony).
+- **shared false-alarm budget** — goal 2's second selection: a candidate may call at
+  most a declared margin (1.6) times as often as the reference CoactDetect, in the
+  elevated-rate test at each background and in the no-coordination test at the quiet
+  background, on the training folds (the busy-background no-coordination recordings are
+  reported, not gated). In a document for readers: *"false alarms held to CoactDetect's
+  level"*.
+  A result is **admissible** if it was chosen within the budget and passes the
+  close-events test.
 - **contaminated null** — a surrogate null estimated over a context window that
   contains real coordinated events, which inflates the threshold. Avoided by
   spacing events wider than the widest context window.
+- **The three inputs a simulated recording is built from** (Tony, 2026-09-28). Use these
+  names, and only these, for them; "spacing" and "timing" were used for the first two in
+  conversation and are retired.
+  - **intervals** (code: `real_intervals`, `gap_source`) — the times **between coordinated
+    events**, from one to the next. The bench draws them, with replacement, from the intervals
+    measured in real baseline windows
+    (`docs/learned/runs/2026-09-25-real-intervals/`): medians of 41.3 s fast, 25.1 s slow and
+    24.8 s combined. **Frequency** is the same quantity as a rate (9.7, 22.0 and 25.3
+    coordinated events per hour), but the two are not interchangeable: the bench draws whole
+    intervals, so quote the median interval and say where a frequency came from. Not a
+    **within-ROI interval** (one ROI's onset to its next), which the surrogate vocabulary's
+    dead time and provisional floor below are about; say "within-ROI" when you mean that one.
+  - **jitter** (code: `jitter_sec`) — the spread of calcium event onsets across the ROIs
+    **within one coordinated event**. Measured as the half-width of the cross-ROI onset
+    correlogram's peak (`tools/measure_jitter_correlogram.py`): 0.105 s fast, 0.131 s slow,
+    0.150 s combined. Not ***J***, the surrogate's jitter radius below (± 20 s for the event
+    floor's null), which is how far a surrogate moves an onset, not a property of the data.
+  - **participation** — the share of a recording's ROIs that take part in one coordinated
+    event (0.20 fast, 0.38 slow, 0.25 combined at the bench's middle level).
 - **participant floor** — the recruitment level below which a detector stops
   finding events. Reported as recall broken down by participation fraction.
+- **event floor** (ADR-0008; code: `bugarach.event_floor`, `bench.recording_floor`) — a
+  window's minimum participation: the larger of 3 ROIs and the smallest number of co-active
+  ROIs the window's own rigid-shift null (*J* = 20 s, 2 s co-activity window, 1,000 draws)
+  reaches at most once per hour. It sets the detectors' `min_rois` and SPIKE-synch's `min_n`.
+  Pages that mean this one say "event floor" or "the floor (ADR-0008)"; it is neither the
+  **participant floor** above nor the **provisional floor *f*** below.
+- **don't care** (ADR-0009 decision 2) — a planted event with fewer participants than its
+  recording's event floor. It leaves recall, and a call matched to it leaves precision; both
+  are counted and reported with every score.
+- **bracketed** — a tuned setting sits strictly inside the grid the search walked, on every
+  axis it could move. An open axis is **cap** (the search's extension allowance was used up),
+  **edge** (at an end for another reason) or **limit** (the value cannot go further: 0, or one
+  frame). Whether a limit counts as a bracket is open (the 2026-09-25 final-parameters report).
+- **fresh seeds** — bench seeds nothing chose on (6000–6023 per background; 56000–56011 for
+  the no-coordination recording; 66000–66011 for the elevated-rate recording). Distinct from
+  the search's held-out seeds 49–96, on which the proposal is picked among the search's final
+  candidates.
+- **precision swing** (code: `MAX_PRECISION_DROP`) — the absolute difference in precision
+  between the quiet and busy backgrounds; a budget.
 
 ## Surrogate vocabulary
 
@@ -403,11 +558,11 @@ Added 2026-09-10, when that plan's review found them used undefined.
   the ROIs stay aligned, so a classifier that separates real from a shared offset is
   reading a per-ROI or edge artifact rather than removed coordination.
 - **label-free threshold** — an operating point set from a recording's own surrogate:
-  scanning thresholds downward from the top, the last one before the model fires more
+  scanning thresholds downward from the top, the last one before the model calls more
   than a stated number of events per 10 minutes on any of three rigid shifts of that
   recording. Reads no labels. Scanned downward because the event count is not monotone:
   low enough, the whole recording merges into one detection. ⚠ It caps the rate on the
-  shifts, not on the recording, so a model can fire well above the stated rate on the
+  shifts, not on the recording, so a model can call well above the stated rate on the
   recording itself; and where no threshold ever exceeds the rate the scan falls to the
   grid's lowest value, which the tool records. The idea is closer to a surrogate
   threshold than to CFAR's (see **adaptive-threshold vocabulary**): Dard et al. 2022 set
@@ -429,7 +584,7 @@ Added 2026-09-10, when that plan's review found them used undefined.
   background or a producer question is an open decision.
 - **excess coincidence** — onset pairs between distinct ROIs at a given lag *ℓ* (not τ,
   which is the dead time above), pooled over
-  ROI pairs and recordings, divided by the count expected if each pair fired
+  ROI pairs and recordings, divided by the count expected if each pair's onsets fell
   independently at its observed totals, minus one. 0 means no more than chance at the
   window's average rates; summed over every lag to the window's length it is zero by
   construction. The **population cross-correlogram** is excess coincidence against lag
@@ -454,9 +609,10 @@ Added 2026-09-10, when that plan's review found them used undefined.
   shared change in block counts **from any source, events included**. In the code,
   `surrogates.window_circular_shift`, registered as a known-bad control. A variant of
   interval jitter, which re-places onsets independently inside fixed windows.
-- **promiscuity probe** — the benchmark generator's whole-field dense block
-  (`hot_window` in `generator_spec.json`, 1,200–1,500 s): every ROI's rate raised at
-  once, so it is also shared drift.
+- **elevated-rate test** (formerly *promiscuity probe*; see its main entry above) — in
+  this section's sense, the benchmark generator's whole-field dense block (`hot_window`
+  in `generator_spec.json`, 1,200–1,500 s): every ROI's rate raised at once, so it is
+  also shared drift.
 - **lit** — an ROI with at least one onset in the bin being counted. "Share of ROIs lit"
   is a count of ROIs, never of onsets.
 - **mask-matched null** — the null for an arm with stretches of time cut out of it.

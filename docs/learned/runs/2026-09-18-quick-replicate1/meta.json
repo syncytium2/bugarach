@@ -1,0 +1,1218 @@
+{
+ "declaration": {
+  "simulation": "bench",
+  "decisions": "docs/goals/learned-model-family.md, 'How the next comparison runs on the bench' (Tony, 2026-09-17)",
+  "bench_recording": {
+   "duration_sec": 2700.0,
+   "n_roi": 33,
+   "participation": [
+    0.3,
+    0.18,
+    0.1
+   ],
+   "n_per_level": [
+    5,
+    5,
+    5
+   ],
+   "jitter_sec": 0.36,
+   "min_sep_sec": 120.0,
+   "bg_rate_shape": 0.275,
+   "bg_burst_shape": [
+    1.547,
+    1.388
+   ],
+   "bg_burst_bin_sec": [
+    300.0,
+    60.0
+   ],
+   "hot_window": [
+    1200.0,
+    1500.0
+   ],
+   "hot_rate_hz": 0.06,
+   "ramp_sec": 30.0,
+   "n_distractors": 6,
+   "distractor_frac": 0.18,
+   "distractor_window": [
+    120.0,
+    1100.0
+   ]
+  },
+  "backgrounds": {
+   "quiet": {
+    "regime": "baseline_quiet",
+    "bg_rate_hz": 0.0052
+   },
+   "busy": {
+    "regime": "baseline_busy",
+    "bg_rate_hz": 0.019
+   }
+  },
+  "recording_names": "'<background>:<seed>', every seed at every background",
+  "score": "each background's pooled F1, averaged over backgrounds (goal 1's rule)",
+  "training_mix": "the training folds' recordings alternate backgrounds; fold_maker's threshold block is the last two (one of each), and train fits on a contiguous run of the rest (half of each)",
+  "probe": "the bench's hot window, counted per background; admissible only if within budget at every background",
+  "empty_recordings": {
+   "null_quiet": {
+    "builder": "bench.make_null_recording",
+    "seed": "seed + 100000",
+    "bg_rate_hz": 0.0052
+   },
+   "null_busy": {
+    "builder": "bench.make_null_recording",
+    "seed": "seed + 100000",
+    "bg_rate_hz": 0.019
+   }
+  },
+  "null_recording": {
+   "bg_rate_hz": 0.0052,
+   "n_per_level": [
+    0,
+    0,
+    0
+   ],
+   "hot_window": null,
+   "hot_rate_hz": 0.0,
+   "ramp_sec": 0.0,
+   "n_distractors": 0
+  },
+  "gate_empty_recording": "null_quiet",
+  "reported_only_empty_recordings": [
+   "null_busy"
+  ],
+  "measured_record": "docs/learned/bench_measured.json",
+  "measured_outside_interval": {
+   "participation": "2026-09-17, awaiting Tony. The bench holds 0.18; steps_excluded measures 0.1905 (6 median participants over 31.5 median ROIs) with a 95% interval whose lower end is 0.1818, which is 6/33: the ratio BENCH_RECORDING's docstring derives and then rounds to 0.18. A rounding, not a moved measurement, but moving it moves every bench number, so it is not moved here."
+  },
+  "replicate": 1,
+  "quick": true,
+  "folds": 3,
+  "seeds_per_fold": 2,
+  "recording_seeds": [
+   2000,
+   2001,
+   2002,
+   2003,
+   2004,
+   2005
+  ],
+  "tune_seeds": [
+   0
+  ],
+  "refit_seeds": [
+   0,
+   1
+  ],
+  "models": [
+   "chorus_norm",
+   "tube",
+   "chorus_gain_norm",
+   "line_length"
+  ],
+  "learned_axes": {
+   "chorus_norm": [
+    [
+     "lr",
+     [
+      0.003,
+      0.01,
+      0.03
+     ]
+    ],
+    [
+     "steps",
+     [
+      900,
+      1800,
+      3600
+     ]
+    ],
+    [
+     "roi_width",
+     [
+      4,
+      8
+     ]
+    ],
+    [
+     "roi_depth",
+     [
+      4,
+      6
+     ]
+    ],
+    [
+     "top_m",
+     [
+      2,
+      4,
+      8
+     ]
+    ]
+   ],
+   "tube": [
+    [
+     "lr",
+     [
+      0.003,
+      0.01,
+      0.03
+     ]
+    ],
+    [
+     "steps",
+     [
+      900,
+      1800,
+      3600
+     ]
+    ],
+    [
+     "n_scales",
+     [
+      3,
+      4,
+      6
+     ]
+    ],
+    [
+     "width",
+     [
+      8,
+      16
+     ]
+    ],
+    [
+     "max_ratio",
+     [
+      40,
+      80
+     ]
+    ]
+   ],
+   "chorus_gain_norm": [
+    [
+     "lr",
+     [
+      0.003,
+      0.01,
+      0.03
+     ]
+    ],
+    [
+     "steps",
+     [
+      900,
+      1800,
+      3600
+     ]
+    ],
+    [
+     "roi_width",
+     [
+      4,
+      8
+     ]
+    ],
+    [
+     "roi_depth",
+     [
+      4,
+      6
+     ]
+    ],
+    [
+     "top_m",
+     [
+      2,
+      4,
+      8
+     ]
+    ],
+    [
+     "vote_gain",
+     [
+      4,
+      8,
+      16
+     ]
+    ]
+   ],
+   "line_length": [
+    [
+     "lr",
+     [
+      0.003,
+      0.01,
+      0.03
+     ]
+    ],
+    [
+     "steps",
+     [
+      900,
+      1800,
+      3600
+     ]
+    ],
+    [
+     "n_scales",
+     [
+      3,
+      4,
+      6
+     ]
+    ],
+    [
+     "width",
+     [
+      8,
+      16
+     ]
+    ],
+    [
+     "vote_gain",
+     [
+      4,
+      8,
+      16
+     ]
+    ]
+   ]
+  },
+  "untuned": {
+   "chorus_norm": {
+    "lr": 0.01,
+    "steps": 900,
+    "roi_width": 4,
+    "roi_depth": 4,
+    "top_m": 4
+   },
+   "tube": {
+    "lr": 0.01,
+    "steps": 900,
+    "n_scales": 4,
+    "width": 8,
+    "max_ratio": 40
+   },
+   "chorus_gain_norm": {
+    "lr": 0.01,
+    "steps": 900,
+    "roi_width": 4,
+    "roi_depth": 4,
+    "top_m": 4,
+    "vote_gain": 8
+   },
+   "line_length": {
+    "lr": 0.01,
+    "steps": 900,
+    "n_scales": 4,
+    "width": 8,
+    "vote_gain": 8
+   }
+  },
+  "draw_seed": 20260916,
+  "configurations": {
+   "chorus_norm": [
+    "757bb805bdb4b6ce",
+    "b971dc32fbe2accb"
+   ],
+   "tube": [
+    "0c0f4ca21a015982",
+    "b30c08cd87a39df3"
+   ],
+   "chorus_gain_norm": [
+    "1c40d2fff40a7f2b",
+    "1cb6b0ac45c322a5"
+   ],
+   "line_length": [
+    "06fcb890a37725e6",
+    "03954b936550db1f"
+   ]
+  },
+  "detectors": [
+   "coact",
+   "loco",
+   "rate",
+   "sce",
+   "sync",
+   "cicada"
+  ],
+  "hand_axes": {
+   "coact": [
+    [
+     "alpha",
+     [
+      0.01,
+      0.003,
+      0.001,
+      0.0003,
+      0.0001,
+      3e-05,
+      1e-05,
+      1e-06
+     ]
+    ],
+    [
+     "int_win_sec",
+     [
+      0.5,
+      1.0,
+      2.0,
+      3.0,
+      5.0
+     ]
+    ],
+    [
+     "context_win_sec",
+     [
+      20.0,
+      30.0,
+      60.0,
+      120.0,
+      240.0
+     ]
+    ],
+    [
+     "min_rois",
+     [
+      2,
+      3,
+      4,
+      5,
+      6,
+      8
+     ]
+    ],
+    [
+     "merge_gap_sec",
+     [
+      0.0,
+      1.0,
+      2.0,
+      3.0,
+      5.0,
+      8.0
+     ]
+    ],
+    [
+     "guard_sec",
+     [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+     ]
+    ],
+    [
+     "guard_norm",
+     [
+      "compact",
+      "exposure"
+     ]
+    ],
+    [
+     "detection_mode",
+     [
+      "threshold",
+      "peak"
+     ]
+    ],
+    [
+     "peak_prominence",
+     [
+      0.0,
+      0.25,
+      0.5,
+      1.0,
+      2.0
+     ]
+    ],
+    [
+     "peak_min_distance_sec",
+     [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      5.0
+     ]
+    ]
+   ],
+   "loco": [
+    [
+     "threshold_pctile",
+     [
+      97.0,
+      98.0,
+      99.0,
+      99.5,
+      99.9,
+      99.99
+     ]
+    ],
+    [
+     "bin_width_sec",
+     [
+      0.5,
+      1.0,
+      2.0,
+      3.0,
+      5.0
+     ]
+    ],
+    [
+     "context_win_sec",
+     [
+      30.0,
+      60.0,
+      120.0,
+      240.0,
+      480.0
+     ]
+    ],
+    [
+     "merge_gap_sec",
+     [
+      0.5,
+      1.0,
+      2.0,
+      4.0,
+      8.0
+     ]
+    ],
+    [
+     "min_rois",
+     [
+      2,
+      3,
+      4,
+      5,
+      6,
+      8
+     ]
+    ],
+    [
+     "null_context_mode",
+     [
+      "maxlt",
+      "symmetric"
+     ]
+    ],
+    [
+     "guard_sec",
+     [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+     ]
+    ],
+    [
+     "detection_mode",
+     [
+      "threshold",
+      "peak"
+     ]
+    ],
+    [
+     "peak_prominence",
+     [
+      0.0,
+      0.25,
+      0.5,
+      1.0,
+      2.0
+     ]
+    ],
+    [
+     "peak_min_distance_sec",
+     [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      5.0
+     ]
+    ]
+   ],
+   "rate": [
+    [
+     "excess_threshold_hz",
+     [
+      3.0,
+      3.5,
+      4.0,
+      4.5,
+      5.0,
+      6.0,
+      8.0
+     ]
+    ],
+    [
+     "context_win",
+     [
+      20.0,
+      30.0,
+      60.0,
+      120.0,
+      240.0
+     ]
+    ],
+    [
+     "rate_win",
+     [
+      0.5,
+      1.0,
+      2.0,
+      3.0,
+      5.0
+     ]
+    ],
+    [
+     "merge_gap_s",
+     [
+      0.1,
+      0.5,
+      1.0,
+      2.0,
+      3.0,
+      5.0,
+      8.0
+     ]
+    ],
+    [
+     "guard_sec",
+     [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+     ]
+    ],
+    [
+     "threshold_mode",
+     [
+      "additive",
+      "multiplicative"
+     ]
+    ],
+    [
+     "threshold_alpha",
+     [
+      1.5,
+      2.0,
+      3.0,
+      4.0
+     ]
+    ],
+    [
+     "detection_mode",
+     [
+      "threshold",
+      "peak"
+     ]
+    ],
+    [
+     "peak_prominence",
+     [
+      0.0,
+      0.25,
+      0.5,
+      1.0,
+      2.0
+     ]
+    ],
+    [
+     "peak_min_distance_sec",
+     [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      5.0
+     ]
+    ]
+   ],
+   "sce": [
+    [
+     "threshold_pctile",
+     [
+      70.0,
+      75.0,
+      80.0,
+      85.0,
+      90.0,
+      95.0,
+      98.0,
+      99.0,
+      99.5
+     ]
+    ],
+    [
+     "bin_width_sec",
+     [
+      2.0,
+      5.0,
+      10.0,
+      15.0,
+      20.0,
+      30.0
+     ]
+    ],
+    [
+     "min_rois",
+     [
+      3,
+      6,
+      8,
+      10,
+      12,
+      16
+     ]
+    ],
+    [
+     "merge_gap_sec",
+     [
+      0.0,
+      5.0,
+      10.0,
+      15.0,
+      20.0,
+      30.0
+     ]
+    ],
+    [
+     "detection_mode",
+     [
+      "threshold",
+      "peak"
+     ]
+    ],
+    [
+     "peak_prominence",
+     [
+      0.0,
+      0.25,
+      0.5,
+      1.0,
+      2.0
+     ]
+    ],
+    [
+     "peak_min_distance_sec",
+     [
+      0.0,
+      1.0,
+      2.0,
+      5.0,
+      10.0
+     ]
+    ]
+   ],
+   "sync": [
+    [
+     "C_threshold",
+     [
+      0.02,
+      0.04,
+      0.06,
+      0.08,
+      0.1,
+      0.12,
+      0.16
+     ]
+    ],
+    [
+     "C_min",
+     [
+      0.02,
+      0.05,
+      0.1,
+      0.15,
+      0.2
+     ]
+    ],
+    [
+     "tau_max",
+     [
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.0
+     ]
+    ],
+    [
+     "max_gap",
+     [
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.0
+     ]
+    ],
+    [
+     "min_n",
+     [
+      2,
+      3,
+      4,
+      5,
+      6,
+      8
+     ]
+    ],
+    [
+     "tau_mode",
+     [
+      "isi_adaptive",
+      "fixed"
+     ]
+    ],
+    [
+     "dt",
+     [
+      0.05,
+      0.1,
+      0.2,
+      0.5
+     ]
+    ],
+    [
+     "detection_mode",
+     [
+      "threshold",
+      "peak"
+     ]
+    ],
+    [
+     "peak_prominence",
+     [
+      0.0,
+      0.01,
+      0.02,
+      0.05,
+      0.1
+     ]
+    ],
+    [
+     "peak_min_distance_sec",
+     [
+      0.0,
+      0.5,
+      1.0,
+      2.0,
+      5.0
+     ]
+    ]
+   ],
+   "cicada": [
+    [
+     "sce_percentile",
+     [
+      99.9,
+      99.95,
+      99.99,
+      99.995,
+      99.999,
+      99.9995,
+      99.9999
+     ]
+    ],
+    [
+     "n_synchronous_frames",
+     [
+      1,
+      2,
+      3,
+      5,
+      10
+     ]
+    ],
+    [
+     "sce_min_distance_frames",
+     [
+      1,
+      2,
+      4,
+      8,
+      16
+     ]
+    ],
+    [
+     "threshold_scope",
+     [
+      "global",
+      "regional"
+     ]
+    ]
+   ]
+  },
+  "hand_grid_source": {
+   "coact": "bench.FULL_GRIDS",
+   "loco": "bench.FULL_GRIDS",
+   "rate": "bench.FULL_GRIDS",
+   "sce": "bench.FULL_GRIDS",
+   "sync": "bench.FULL_GRIDS",
+   "cicada": "bench.FULL_GRIDS"
+  },
+  "hand_mode": {
+   "coact": "search",
+   "loco": "search",
+   "rate": "search",
+   "sce": "search",
+   "sync": "search",
+   "cicada": "search"
+  },
+  "hand_search": {
+   "how": "search_all_settings.choose_settings per detector and outer fold, once per selection, on that fold's training recordings only (option A, decided with WSMIP065 on 2026-09-17)",
+   "min_gain": 0.002,
+   "extend_ranges": false,
+   "pairs": false,
+   "is_valid": "bench.settings_are_valid AND context_fits_the_null(params, min_sep_sec)",
+   "min_sep_sec": 120.0,
+   "context_rule": "a context window wider than the planted spacing estimates its threshold from a window holding other planted events, so the setting wins by breaking the measurement (WSMIP065, 2026-09-17; test_the_bench_recording_keeps_the_null_clean)",
+   "hand_refused_by_validity": {},
+   "note": "the grids are goal 1's, per axis and never a product; an axis whose chosen value sits at an end is reported, not refused"
+  },
+  "hand_configurations": {
+   "coact": [],
+   "loco": [],
+   "rate": [],
+   "sce": [],
+   "sync": [],
+   "cicada": []
+  },
+  "reference": {
+   "config_key": "83b8fc0fe1771b81",
+   "params": {
+    "int_win_sec": 2.0,
+    "context_win_sec": 120.0,
+    "alpha": 1e-05,
+    "n_surrogates": 100,
+    "merge_gap_sec": 8.0,
+    "guard_sec": 1.0,
+    "window_mode": "sliding"
+   },
+   "note": "CoactDetect at goal 1's every-knob sliding values (goal 2 decision 4), laid over bench.OPERATING_POINTS: see coded_base. The parameters above are the ones the budget was measured with"
+  },
+  "coded_base": {
+   "values": {
+    "coact": {
+     "int_win_sec": 2.0,
+     "context_win_sec": 120.0,
+     "alpha": 1e-05,
+     "merge_gap_sec": 8.0,
+     "guard_sec": 1.0,
+     "n_surrogates": 100,
+     "window_mode": "sliding"
+    },
+    "loco": {
+     "bin_width_sec": 1.0,
+     "context_win_sec": 120.0,
+     "thr_step_sec": 15.0,
+     "merge_gap_sec": 8.0,
+     "threshold_pctile": 99.9,
+     "n_surrogates": 100,
+     "null_context_mode": "symmetric",
+     "window_mode": "sliding"
+    }
+   },
+   "source": "goal 1's every-knob sliding values, WSMIP065, branch opt-every-knob-run @ 6fe09ab (HANDOFF-coded-detectors.md, status of 2026-09-17 23:50); held off bench.OPERATING_POINTS by 8525be3 for the viewer's sake, not for the values'",
+   "rule": "every coded setting this run scores is OPERATING_POINTS, then these values, then what the search chose; the search starts from them"
+  },
+  "coded_window_mode": {
+   "coact": "sliding",
+   "loco": "sliding",
+   "rate": "no such knob",
+   "sce": "no such knob",
+   "sync": "no such knob",
+   "cicada": "no such knob"
+  },
+  "fold_check": {
+   "distinct": true,
+   "problems": [],
+   "rule": "training seeds dealt round-robin across the training folds, starting after the held-out one; the threshold pair is the last seed dealt",
+   "todo": "docs/todo/2026-09-17-two-bake-off-folds-train-the-same-model.md",
+   "fixed": "2026-09-18, before the fair-comparison run (Tony)"
+  },
+  "budget_margin": 1.6,
+  "busy_window_sec": 300.0,
+  "threshold_grid": [
+   0.0001,
+   0.00017593850992600728,
+   0.00030954359274983735,
+   0.0005446063846554921,
+   0.0009581723581247715,
+   0.0016857941694076093,
+   0.0029659611420752587,
+   0.0052182678383515925,
+   0.009180942678743854,
+   0.016152813746142795,
+   0.02841901981608691,
+   0.05,
+   0.1,
+   0.15000000000000002,
+   0.2,
+   0.25,
+   0.3,
+   0.35000000000000003,
+   0.4,
+   0.45,
+   0.5,
+   0.55,
+   0.6000000000000001,
+   0.6500000000000001,
+   0.7000000000000001,
+   0.7500000000000001,
+   0.8,
+   0.8500000000000001,
+   0.9000000000000001,
+   0.95,
+   0.9715809801839131,
+   0.9838471862538573,
+   0.9908190573212562,
+   0.9947817321616484,
+   0.9970340388579247,
+   0.9983142058305924,
+   0.9990418276418752,
+   0.9994553936153445,
+   0.9996904564072502,
+   0.999824061490074,
+   0.9999
+  ],
+  "tie_rules": {
+   "learned_ungated": "highest pooled F1; then fewer parameters; then fewer training steps; then earlier in the draw",
+   "learned_gated": "highest pooled F1 among admissible; then fewer parameters; then fewer training steps; then the higher threshold; then earlier in the draw",
+   "hand": "highest pooled F1 (among admissible, when gated); then earlier in grid order",
+   "nan_f1": "a NaN pooled F1 counts as 0, in selection and in comparisons"
+  },
+  "registered": [
+   "chorus",
+   "chorus_gain",
+   "chorus_gain_norm",
+   "chorus_line",
+   "chorus_norm",
+   "gauge",
+   "line",
+   "line_bound",
+   "line_length",
+   "tiny",
+   "trace",
+   "tube",
+   "tube_guard",
+   "tube_no_bypass",
+   "tube_ratio",
+   "tube_ratio_guard"
+  ],
+  "registered_but_not_run": [
+   "chorus",
+   "chorus_gain",
+   "chorus_line",
+   "gauge",
+   "line",
+   "line_bound",
+   "tiny",
+   "trace",
+   "tube_guard",
+   "tube_no_bypass",
+   "tube_ratio",
+   "tube_ratio_guard"
+  ],
+  "device": {
+   "learned": "cuda",
+   "hand": "cpu",
+   "note": "GPU and CPU arithmetic differ, so every learned fit in one run comes from one device; on CUDA, train.deterministic_cuda makes a rerun fit identical"
+  }
+ },
+ "started": {
+  "at": "2026-09-18T17:24:23-0400",
+  "git": {
+   "commit": "7a95e8af11a0933ff7c3ed4f082b17b86cd548a6",
+   "dirty": false
+  },
+  "machine": {
+   "hostname": "WSMIP065",
+   "os": "Windows-11-10.0.22631-SP0",
+   "kernel": "11",
+   "wsl": false,
+   "cpus_logical": 48,
+   "cpus_physical": null,
+   "ram_gb": null,
+   "python": "3.14.7",
+   "torch": "2.14.0+cu126",
+   "numpy": "2.5.3",
+   "gpu": {
+    "name": "NVIDIA RTX A4000",
+    "driver": "582.78",
+    "cuda": "12.6",
+    "memory_gb": 16.0
+   }
+  },
+  "jobs": 12,
+  "argv": [
+   "tools/tune_learned_vs_coact.py",
+   "--out",
+   "C:\\Users\\defazio/runs/quick-replicate1",
+   "--quick",
+   "--replicate",
+   "1",
+   "--device",
+   "cuda",
+   "--gpu-jobs",
+   "1",
+   "--jobs",
+   "12",
+   "--detectors",
+   "coact,loco,rate,sce,sync,cicada"
+  ]
+ },
+ "estimate": {
+  "training_device_hours_floor": 0.02688888888888889,
+  "jobs": 12,
+  "gpu_jobs": 1,
+  "training_wall_hours_floor": 0.02688888888888889,
+  "lone_fit_sec": {
+   "tube": 4.2,
+   "chorus_norm": 10.6,
+   "chorus_gain_norm": 10.6,
+   "line_length": 10.9
+  },
+  "basis": "lone untuned fit times on this machine's GPU, scaled by each drawn configuration's steps; ignores the larger configurations' cost per step, contention between concurrent fits, scoring and the hand-written grids. A floor, and not a gate (decision 8)."
+ },
+ "gate1_reproduction": [
+  "tube at 7fc052d differs from the Mac per fold by -0.0034, -0.0212, -0.0053 and +0.0069 F1, and is deterministic on this machine",
+  "the committed training code is identical between 239f176 and 7fc052d",
+  "the Mac recorded neither its torch version nor its uncommitted changes, so CPU float differences cannot be separated from those changes",
+  "step 3, training seed 0, this machine minus the Mac's seed 0 per fold: chorus_norm -0.0124, -0.0065, +0.0231, -0.0014; chorus_gain_norm -0.0553, -0.0571, -0.0421, +0.0101 (at seed 1 here, every fold within 0.03 of a Mac seed); line_length -0.0023, +0.0000, +0.0213, -0.0061",
+  "record: docs/learned/tuned_vs_coact/gate1/README.md"
+ ],
+ "sliding_branch": "sliding-loco-coact 005ae98",
+ "checkpoint_format_branch": {
+  "branch": "learn-checkpoint-records-what-it-built",
+  "commit": "36dc5ab",
+  "pr": 602,
+  "note": "merged before #602 reached main, at the Mac unsupervised session's request; a checkpoint written here is that commit's format"
+ },
+ "storage_rule": "Tony, 2026-09-16, via the Mac unsupervised session: tuned parameters stored persistently, rationally and separably",
+ "event_spacing": {
+  "min_sep_sec": 120.0,
+  "note": "planted events are at least this far apart; a chosen context longer than this spans more than one spacing and is flagged in the readout"
+ },
+ "budgets": {
+  "0": {
+   "reference_config_key": "83b8fc0fe1771b81",
+   "recording_seeds": [
+    2002,
+    2003,
+    2004,
+    2005
+   ],
+   "recordings": [
+    "quiet:2002",
+    "busy:2002",
+    "quiet:2003",
+    "busy:2003",
+    "quiet:2004",
+    "busy:2004",
+    "quiet:2005",
+    "busy:2005"
+   ],
+   "twin_seeds": [
+    102002,
+    102003,
+    102004,
+    102005
+   ],
+   "gate_empty_recording": "null_quiet",
+   "reference_probe_per_hour": {
+    "quiet": 12.0,
+    "busy": 6.0
+   },
+   "reference_quiet_per_hour": 6.333333333333333,
+   "probe_per_hour": {
+    "quiet": 19.200000000000003,
+    "busy": 9.600000000000001
+   },
+   "quiet_per_hour": 10.133333333333333
+  },
+  "1": {
+   "reference_config_key": "83b8fc0fe1771b81",
+   "recording_seeds": [
+    2000,
+    2001,
+    2004,
+    2005
+   ],
+   "recordings": [
+    "quiet:2000",
+    "busy:2000",
+    "quiet:2001",
+    "busy:2001",
+    "quiet:2004",
+    "busy:2004",
+    "quiet:2005",
+    "busy:2005"
+   ],
+   "twin_seeds": [
+    102000,
+    102001,
+    102004,
+    102005
+   ],
+   "gate_empty_recording": "null_quiet",
+   "reference_probe_per_hour": {
+    "quiet": 12.0,
+    "busy": 9.0
+   },
+   "reference_quiet_per_hour": 5.333333333333333,
+   "probe_per_hour": {
+    "quiet": 19.200000000000003,
+    "busy": 14.4
+   },
+   "quiet_per_hour": 8.533333333333333
+  },
+  "2": {
+   "reference_config_key": "83b8fc0fe1771b81",
+   "recording_seeds": [
+    2000,
+    2001,
+    2002,
+    2003
+   ],
+   "recordings": [
+    "quiet:2000",
+    "busy:2000",
+    "quiet:2001",
+    "busy:2001",
+    "quiet:2002",
+    "busy:2002",
+    "quiet:2003",
+    "busy:2003"
+   ],
+   "twin_seeds": [
+    102000,
+    102001,
+    102002,
+    102003
+   ],
+   "gate_empty_recording": "null_quiet",
+   "reference_probe_per_hour": {
+    "quiet": 0.0,
+    "busy": 9.0
+   },
+   "reference_quiet_per_hour": 5.666666666666667,
+   "probe_per_hour": {
+    "quiet": 3.0,
+    "busy": 14.4
+   },
+   "quiet_per_hour": 9.066666666666668
+  }
+ }
+}

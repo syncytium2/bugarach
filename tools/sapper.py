@@ -451,6 +451,33 @@ RULES = [
         fixture_bad="run `python3 tools/show.py docs/site/fig.png` and give the path it prints",
         fixture_good="run `python3 tools/show.py docs/site/fig.png --project bugarach`",
     ),
+    Rule(
+        id="SAP017", level="WARN",
+        # Tony, 2026-09-23: the word imports spikes and the reasoning that comes with
+        # them, and these are calcium events. A WARN on added lines, not a BLOCK: the
+        # tree held about 1,400 uses when this was written, many in dated records
+        # that stay as they were. \b keeps it off identifiers: `fire_trigger`,
+        # `firing_rate` and `fireflies` all continue into a word character.
+        pattern=r"(?i)\b(fire|fires|fired|firing)\b",
+        include=["*.md", "*.py", "*.html", "*.sh", "*.js", "*.txt"],
+        # This file; the glossary and writing conventions, where the word is shown
+        # AS retired; vendored copies and the producer's delivery notes, which are
+        # not ours to reword; the built viewer, whose template is already scanned.
+        exclude=["tools/sapper.py", "docs/GLOSSARY.md", "docs/writing_conventions.md",
+                 ".claude/agents/murderboard/*", ".claude/skills/murderboard/*",
+                 "docs/session_protocol.md", ".claude/hooks/session-start.sh",
+                 "tools/murderboard_freshness.sh", "docs/exports/*",
+                 "docs/site/raster_viewer.html"],
+        message="\"FIRING\" IS RETIRED (Tony, 2026-09-23): these are calcium events, and "
+                "what they mean to the cell is open; the word imports spikes and the "
+                "reasoning that comes with them. For a cell: event, onset, active, has "
+                "an event, event rate. For a detector or model: call, flags. For a gate "
+                "or check: triggers. Inside someone else's quoted words, leave them. "
+                "docs/GLOSSARY.md, firing.",
+        fixture_bad="in the elevated-rate stretch every ROI fires faster",
+        fixture_good="in the elevated-rate stretch every ROI has events more often; "
+                     "fire_trigger and firing_rate are identifiers",
+    ),
 ]
 
 
@@ -556,7 +583,30 @@ def report(findings) -> int:
     return 1 if blocked else 0
 
 
+def printable_output() -> None:
+    """Make stdout survive a line this repository is full of.
+
+    A gate that refuses a commit because it could not PRINT is worse than no
+    gate: what crashed is the message the person needs. On native Windows the
+    console encoding is cp1252, so echoing a staged line containing an arrow, a
+    warning sign, an em dash or a multiplication sign — all ordinary here —
+    raised UnicodeEncodeError and took `--staged` down with it, which is the
+    pre-commit hook. `--all` died mid-report the same way, part-way through the
+    tree, which reads as a broken tool rather than as a scan that found things.
+
+    Found on 2026-09-22, blocking a merge commit on `→`. Switching the streams
+    to UTF-8 with ``errors="replace"`` makes the worst case a substituted
+    character in one echoed line, never a lost gate.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass                        # a stream that cannot be reconfigured
+
+
 def main() -> int:
+    printable_output()
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--selftest", action="store_true")

@@ -104,13 +104,51 @@ class Score:
     distractor_hits: int = 0
     """Distractors that a detection landed on. Counted, not penalized."""
     tol_sec: float = TOL_SEC
+    decoy_calls: int = 0
+    """False alarms that land on a decoy (``gt.distractors``) and outside the promiscuity probe.
+
+    ADR-0006: a decoy is a planted event with only its label changed, so a call on one is a call on
+    coordination, not a false alarm. Until the objective's ADR settles what becomes of the decoys,
+    every result is reported both ways; this is what the second way leaves out of precision."""
+    care: np.ndarray | None = None
+    """Boolean, per planted event in ``gt.events`` order: counts toward recall. ``None`` when no
+    floor was applied, which means every event does. ADR-0009 decision 2: a planted event with
+    fewer participants than its recording's floor is "don't care"."""
+    floor: int | None = None
+    """The recording's ADR-0008 floor this score was taken under; ``None`` for none."""
+    dont_care_by_frac: dict = field(default_factory=dict)
+    """``{participation_fraction: (n_under_floor, n_calls_matched_to_them)}``. Both leave the
+    score: the events leave recall, the calls leave precision. Reported with every score."""
+    n_merged_calls: int = 0
+    """Calls whose span contains two or more scored planted events: a **merge** (ADR-0010,
+    Proposed, part 3). Reporting only; nothing is computed from it, and it has no budget.
+
+    A call's span is the one it is matched over, ``[onset, onset + width]`` (or its declared
+    extent), both ends included and no tolerance added. *Scored* means counted toward recall, so a
+    "don't care" event under the floor (ADR-0009 decision 2) does not make a call a merge. Matching
+    stays one to one, so a merge already costs a miss; this counts how often that happens. A
+    zero-width call can contain two events only if they share a time."""
+
+    @property
+    def n_dont_care_calls(self) -> int:
+        """Calls matched to a planted event under the floor, left out of :attr:`n_detected`."""
+        return int(sum(c for _, c in self.dont_care_by_frac.values()))
+
+    @property
+    def n_under_floor(self) -> int:
+        """Planted events under the floor, left out of :attr:`n_planted`."""
+        return int(sum(n for n, _ in self.dont_care_by_frac.values()))
 
     @property
     def n_hit(self) -> int:
+        if self.care is not None:
+            return int((self.hits & self.care).sum())
         return int(self.hits.sum())
 
     @property
     def n_miss(self) -> int:
+        if self.care is not None:
+            return int((~self.hits & self.care).sum())
         return int((~self.hits).sum())
 
     @property
@@ -163,7 +201,9 @@ class Score:
             parts.append(f"hot-window FA {self.hot_fa}")
         if self.distractor_hits:
             parts.append(f"on distractors {self.distractor_hits}")
-        by = " ".join(f"{int(f * 100)}%:{self.recall_at(f):.2f}"
+        if self.n_merged_calls:
+            parts.append(f"merged calls {self.n_merged_calls}")
+        by =" ".join(f"{int(f * 100)}%:{self.recall_at(f):.2f}"
                       for f in sorted(self.by_frac, reverse=True))
         return "  ".join(parts) + (f"   [{by}]" if by else "")
 
@@ -198,7 +238,8 @@ def _gap(planted, lo, hi):
     return np.maximum(0.0, np.maximum(lo - planted, planted - hi))
 
 
-def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC) -> Score:
+def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC,
+                     floor=None) -> Score:
     """Match detections against ``gt.events`` and report the breakdown.
 
     gt: a :class:`bugarach.simulate.GroundTruth`.
@@ -211,7 +252,15 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC) -> Sc
     tol_sec: match tolerance, applied to the gap between the planted time and the
       detection's span. A detection whose span contains the planted event matches
       at any tolerance.
+    floor: the recording's ADR-0008 event floor. Omitted, it is read from
+      ``gt.params["event_floor"]``, where every bench recording carries it
+      (``bench.with_floor``); a ground truth without one is scored as before. A planted
+      event with fewer participants than the floor is "don't care" (ADR-0009 decision 2):
+      it is matched like any other, so a call on it is absorbed rather than counted as a
+      false alarm, and then both leave the score. Counts are in ``dont_care_by_frac``.
     """
+    if floor is None:
+        floor = (getattr(gt, "params", None) or {}).get("event_floor")
     planted = np.asarray(gt.times, dtype=float)
     lo, hi = _spans(onsets, widths)
     nP, nD = planted.size, lo.size
@@ -251,10 +300,26 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC) -> Sc
     else:
         dup_times = np.zeros(0)
 
+    care = None
+    dont_care: dict = {}
+    if floor is not None:
+        care = np.array([int(e.n_part) >= int(floor) for e in gt.events], dtype=bool)
     by_frac: dict = {}
-    for e, hit in zip(gt.events, hits):
+    for i, (e, hit) in enumerate(zip(gt.events, hits)):
+        if care is not None and not care[i]:
+            n, c = dont_care.get(e.frac, (0, 0))
+            dont_care[e.frac] = (n + 1, c + int(hit))
+            continue
         n, h = by_frac.get(e.frac, (0, 0))
         by_frac[e.frac] = (n + 1, h + int(hit))
+    n_absorbed = sum(c for _, c in dont_care.values())
+
+    # ADR-0010 part 3, reporting only: calls whose span holds two or more scored events.
+    scored = planted if care is None else planted[care]
+    n_merged = 0
+    if nD and scored.size >= 2:
+        inside = (scored[None, :] >= lo[:, None]) & (scored[None, :] <= hi[:, None])
+        n_merged = int(np.sum(inside.sum(axis=1) >= 2))
 
     # The probe counts a false alarm that *overlaps* the window, not one whose
     # left edge happens to land in it — a span straddling the boundary was still
@@ -265,15 +330,27 @@ def score_detections(gt, onsets, *, widths=None, tol_sec: float = TOL_SEC) -> Sc
         hot_fa = int(np.sum((fa_ends >= hot[0]) & (fa_times <= hot[1])))
 
     distractor_hits = 0
+    decoy_calls = 0
     if gt.distractors and nD:
         dt = np.array([d.time for d in gt.distractors], dtype=float)
         distractor_hits = int(np.sum(
             [np.any(_gap(t, lo, hi) <= tol_sec) for t in dt]))
+        if fa_times.size:
+            # A false alarm within tolerance of a decoy, counted once whatever the number of decoys
+            # near it, and never one the probe already took out of precision.
+            on_decoy = np.array([np.min(_gap(dt, a, b)) <= tol_sec
+                                 for a, b in zip(fa_times, fa_ends)])
+            in_hot = ((fa_ends >= hot[0]) & (fa_times <= hot[1]) if hot is not None
+                      else np.zeros(fa_times.size, bool))
+            decoy_calls = int(np.sum(on_decoy & ~in_hot))
 
-    return Score(n_planted=nP, n_detected=nD, hits=hits, matched=matched,
+    n_care = nP if care is None else int(care.sum())
+    return Score(n_planted=n_care, n_detected=nD - n_absorbed, hits=hits, matched=matched,
                  fa_times=fa_times, dup_times=dup_times, by_frac=by_frac,
                  hot_fa=hot_fa, distractor_hits=distractor_hits,
-                 tol_sec=tol_sec)
+                 tol_sec=tol_sec, decoy_calls=decoy_calls, care=care,
+                 floor=None if floor is None else int(floor), dont_care_by_frac=dont_care,
+                 n_merged_calls=n_merged)
 
 
 _ONSET_FIELDS = (("onset_sec", "width_sec"), ("locs", "widths"))
@@ -293,7 +370,7 @@ width exactly as before. Ruling: Tony, 2026-09-16,
 """
 
 
-def score_stream(gt, det, *, tol_sec: float = TOL_SEC) -> Score:
+def score_stream(gt, det, *, tol_sec: float = TOL_SEC, floor=None) -> Score:
     """Score a detector's own result object, spans included.
 
     Prefer this to :func:`score_detections` whenever you have a detection object
@@ -315,7 +392,7 @@ def score_stream(gt, det, *, tol_sec: float = TOL_SEC) -> Score:
             if widths is None:
                 widths = getattr(det, width_field, None)
             return score_detections(gt, getattr(det, onset_field),
-                                    widths=widths, tol_sec=tol_sec)
+                                    widths=widths, tol_sec=tol_sec, floor=floor)
     raise TypeError(
         f"{type(det).__name__} carries no detection times — expected one of "
         f"{[f[0] for f in _ONSET_FIELDS]}. Pass the arrays to score_detections "

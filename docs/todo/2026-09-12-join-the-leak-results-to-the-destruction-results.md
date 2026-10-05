@@ -12,7 +12,7 @@ answers are right.
 
 ## What the leak detector already says
 
-From `run_summary.json` in `<darkroom>/bugarach/2026-09-11-surrogate-screen/`, read 2026-09-12. The
+From `run_summary.json` in `<darkroom>/bugarach/archive/2026-09/2026-09-11-surrogate-screen/`, read 2026-09-12. The
 candidates showing **no** per-ROI leak:
 
 | stream | no leak detected |

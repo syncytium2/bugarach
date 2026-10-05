@@ -1,0 +1,91 @@
+{
+ "at": "2026-09-19T05:58:24-0400",
+ "commit": "e8764aae835daa77d0dc546ee7e7ea7a5710da1b",
+ "torch": "2.14.0+cu126",
+ "stages": {
+  "hand:coact": {
+   "total": 1,
+   "done": 1,
+   "errors": 0
+  },
+  "search:coact": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:loco": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:rate": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:sce": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:sync": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "search:cicada": {
+   "total": 4,
+   "done": 4,
+   "errors": 0
+  },
+  "inner:chorus_norm": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:chorus_norm": {
+   "total": 40,
+   "done": 40,
+   "errors": 0
+  },
+  "inner:tube": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:tube": {
+   "total": 55,
+   "done": 55,
+   "errors": 0
+  },
+  "inner:chorus_gain_norm": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:chorus_gain_norm": {
+   "total": 60,
+   "done": 60,
+   "errors": 0
+  },
+  "inner:line_length": {
+   "total": 432,
+   "done": 432,
+   "errors": 0
+  },
+  "outer:line_length": {
+   "total": 55,
+   "done": 55,
+   "errors": 0
+  }
+ },
+ "errors": [],
+ "fits_last_hour": 141,
+ "running": 0,
+ "queued": 0,
+ "remaining_fits_known": 0,
+ "projected_finish": "2026-09-19T05:58:24-0400",
+ "note": "remaining_fits_known excludes outer refits not yet queued: a model's are queued when its selections are made",
+ "mirror_every_sec": 60,
+ "mirror": "<darkroom>/bugarach\\2026-09-18-fair-comparison-run"
+}

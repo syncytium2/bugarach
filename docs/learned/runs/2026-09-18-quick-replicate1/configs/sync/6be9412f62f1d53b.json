@@ -1,0 +1,21 @@
+{
+ "detector": "sync",
+ "params": {
+  "tau_max": 0.5,
+  "max_gap": 0.5,
+  "C_threshold": 0.1,
+  "C_min": 0.02,
+  "min_n": 3,
+  "tau_mode": "isi_adaptive",
+  "dt": 0.1,
+  "detection_mode": "threshold",
+  "peak_prominence": 0.0,
+  "peak_min_distance_sec": 0.0
+ },
+ "config_key": "6be9412f62f1d53b",
+ "grid_index": null,
+ "is_shipped": null,
+ "chosen_by": "search_all_settings.choose_settings",
+ "outer_fold": 0,
+ "selection": "ungated"
+}

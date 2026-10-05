@@ -1,0 +1,422 @@
+{
+ "started": "2026-09-23T00:03:43",
+ "bench": "bugarach.bench_combined",
+ "selection_seeds": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34,
+  35,
+  36,
+  37,
+  38,
+  39,
+  40,
+  41,
+  42,
+  43,
+  44,
+  45,
+  46,
+  47,
+  48
+ ],
+ "held_out_seeds": [
+  49,
+  50,
+  51,
+  52,
+  53,
+  54,
+  55,
+  56,
+  57,
+  58,
+  59,
+  60,
+  61,
+  62,
+  63,
+  64,
+  65,
+  66,
+  67,
+  68,
+  69,
+  70,
+  71,
+  72,
+  73,
+  74,
+  75,
+  76,
+  77,
+  78,
+  79,
+  80,
+  81,
+  82,
+  83,
+  84,
+  85,
+  86,
+  87,
+  88,
+  89,
+  90,
+  91,
+  92,
+  93,
+  94,
+  95,
+  96
+ ],
+ "space": {
+  "sync": {
+   "C_threshold": [
+    0.02,
+    0.04,
+    0.06,
+    0.08,
+    0.1,
+    0.12,
+    0.16
+   ],
+   "C_min": [
+    0.02,
+    0.05,
+    0.1,
+    0.15,
+    0.2
+   ],
+   "tau_max": [
+    0.1,
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0,
+    8.0
+   ],
+   "max_gap": [
+    0.1,
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0,
+    8.0
+   ],
+   "min_n": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    8
+   ],
+   "tau_mode": [
+    "fixed",
+    "isi_adaptive"
+   ],
+   "dt": [
+    0.05,
+    0.1,
+    0.2,
+    0.5,
+    1.0
+   ],
+   "detection_mode": [
+    "peak",
+    "threshold"
+   ],
+   "peak_prominence": [
+    0.0,
+    0.01,
+    0.02,
+    0.05,
+    0.1
+   ],
+   "peak_min_distance_sec": [
+    0.0,
+    0.5,
+    1.0,
+    2.0,
+    5.0,
+    10.0
+   ]
+  }
+ },
+ "shipped": {
+  "sync": {
+   "C_threshold": 0.1,
+   "C_min": 0.1,
+   "tau_max": 0.25,
+   "max_gap": 0.5,
+   "min_n": 3,
+   "tau_mode": "isi_adaptive",
+   "dt": 0.1,
+   "detection_mode": "threshold",
+   "peak_prominence": 0.0,
+   "peak_min_distance_sec": 0.0
+  }
+ },
+ "stage": "finished",
+ "selection": {
+  "sync": {
+   "shipped": 0.6647861787719347,
+   "rounds": 0.8045935270132518
+  }
+ },
+ "crowded_reference_points": {
+  "sync": {
+   "tau_max": 0.25,
+   "max_gap": 0.5,
+   "C_threshold": 0.1,
+   "C_min": 0.1
+  }
+ },
+ "crowded_reference": {
+  "sync": 0.8115728176919718
+ },
+ "rounds": {
+  "state": {
+   "sync": {
+    "C_threshold": 0.08,
+    "C_min": 0.0025,
+    "tau_max": 0.25,
+    "max_gap": 8.0,
+    "min_n": 2,
+    "tau_mode": "isi_adaptive",
+    "dt": 0.00625,
+    "detection_mode": "threshold",
+    "peak_prominence": 0.0,
+    "peak_min_distance_sec": 0.0
+   }
+  },
+  "history": {
+   "sync": [
+    {
+     "round": 1,
+     "setting": "C_min",
+     "old": 0.1,
+     "new": 0.0025,
+     "old_f1": 0.6647861787719347,
+     "new_f1": 0.6739640609942746,
+     "rescued_from_inadmissible": false
+    },
+    {
+     "round": 1,
+     "setting": "max_gap",
+     "old": 0.5,
+     "new": 8.0,
+     "old_f1": 0.6739640609942746,
+     "new_f1": 0.7094391634268935,
+     "rescued_from_inadmissible": false
+    },
+    {
+     "round": 1,
+     "setting": "dt",
+     "old": 0.1,
+     "new": 0.00625,
+     "old_f1": 0.7094391634268935,
+     "new_f1": 0.7125550214354706,
+     "rescued_from_inadmissible": false
+    },
+    {
+     "round": 2,
+     "setting": "C_threshold",
+     "old": 0.1,
+     "new": 0.08,
+     "old_f1": 0.7125550214354706,
+     "new_f1": 0.7962659789190403,
+     "rescued_from_inadmissible": false
+    },
+    {
+     "round": 2,
+     "setting": "min_n",
+     "old": 3,
+     "new": 2,
+     "old_f1": 0.7962659789190403,
+     "new_f1": 0.8045935270132518,
+     "rescued_from_inadmissible": false
+    }
+   ]
+  },
+  "grids": {
+   "sync": {
+    "C_threshold": [
+     0.02,
+     0.04,
+     0.06,
+     0.08,
+     0.1,
+     0.12,
+     0.16
+    ],
+    "C_min": [
+     0.0025,
+     0.005,
+     0.01,
+     0.02,
+     0.05,
+     0.1,
+     0.15,
+     0.2
+    ],
+    "tau_max": [
+     0.1,
+     0.25,
+     0.5,
+     1.0,
+     2.0,
+     4.0,
+     8.0
+    ],
+    "max_gap": [
+     0.1,
+     0.25,
+     0.5,
+     1.0,
+     2.0,
+     4.0,
+     8.0,
+     16.0
+    ],
+    "min_n": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     8
+    ],
+    "tau_mode": [
+     "fixed",
+     "isi_adaptive"
+    ],
+    "dt": [
+     0.00625,
+     0.0125,
+     0.025,
+     0.05,
+     0.1,
+     0.2,
+     0.5,
+     1.0
+    ],
+    "detection_mode": [
+     "peak",
+     "threshold"
+    ],
+    "peak_prominence": [
+     0.0,
+     0.01,
+     0.02,
+     0.05,
+     0.1
+    ],
+    "peak_min_distance_sec": [
+     0.0,
+     0.5,
+     1.0,
+     2.0,
+     5.0,
+     10.0
+    ]
+   }
+  }
+ },
+ "pairs": {},
+ "held_out": {
+  "sync": {
+   "shipped": {
+    "params": {
+     "C_threshold": 0.1,
+     "C_min": 0.1,
+     "tau_max": 0.25,
+     "max_gap": 0.5,
+     "min_n": 3,
+     "tau_mode": "isi_adaptive",
+     "dt": 0.1,
+     "detection_mode": "threshold",
+     "peak_prominence": 0.0,
+     "peak_min_distance_sec": 0.0
+    },
+    "f1_quiet": 0.6590141796083727,
+    "f1_busy": 0.6723684210526316,
+    "mean_f1": 0.6656913003305022,
+    "probe_quiet_per_hour": 391.5,
+    "probe_busy_per_hour": 526.0,
+    "null_per_hour": 0.0,
+    "crowded_mean_f1": 0.8162108393893184,
+    "crowded_gain_vs_shipped": 0.0,
+    "gain_vs_shipped": {
+     "mid": 0.0,
+     "lo": 0.0,
+     "hi": 0.0
+    }
+   },
+   "rounds": {
+    "params": {
+     "C_threshold": 0.08,
+     "C_min": 0.0025,
+     "tau_max": 0.25,
+     "max_gap": 8.0,
+     "min_n": 2,
+     "tau_mode": "isi_adaptive",
+     "dt": 0.00625,
+     "detection_mode": "threshold",
+     "peak_prominence": 0.0,
+     "peak_min_distance_sec": 0.0
+    },
+    "f1_quiet": 0.8130783466995681,
+    "f1_busy": 0.7802071346375145,
+    "mean_f1": 0.7966427406685412,
+    "probe_quiet_per_hour": 12.0,
+    "probe_busy_per_hour": 12.25,
+    "null_per_hour": 0.1111111111111111,
+    "crowded_mean_f1": 0.8926026395492184,
+    "crowded_gain_vs_shipped": 0.07639180015989999,
+    "gain_vs_shipped": {
+     "mid": 0.13136201155033977,
+     "lo": 0.11942690154612559,
+     "hi": 0.1411967860201989
+    }
+   }
+  }
+ },
+ "finished": "2026-09-23T00:18:49",
+ "elapsed_min": 15.1,
+ "evaluations": 147
+}

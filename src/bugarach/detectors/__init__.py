@@ -14,6 +14,12 @@ parity test):
             broken since 0.8.0 (fix filed upstream as PySpike#89),
             so it is a test-suite cross-check only,
             in the uncapped regime)
+  count     count                              -- not a port: the simple rule
+            (a bin and a count against the ADR-0008 floor), written here
+            on 2026-09-26 as the baseline the others are measured against
+            (see count.py)
+  count_sliding  count (sliding)                -- the same rule in a window that
+            slides: CoactDetect's sliding form without its null (count.py)
 
 **Only the fifth row has a key that is not its name.** ``cicada`` is the
 identifier — module, ``cicada_detect``, and the value in ``detections.csv``'s
@@ -30,7 +36,31 @@ The shared peak-gating kernel (if2_peak_gate + findpeaksTD half-prominence
 extents) is ported in peaks.py.
 """
 
-from bugarach.detectors.cicada import (
+DISPLAY_NAMES = {
+    "rate": "rate+context",
+    "coact": "CoactDetect",
+    "loco": "LoCo",
+    "sce": "binned SCE",
+    "cicada": "locust",
+    "sync": "SPIKE-synch",
+    "count": "count (binned)",
+    "count_sliding": "count (sliding)",
+}
+"""The name a person sees, by code key — the table above, as data.
+
+Anything a person reads prints these, never the key: the key ``cicada`` on a page
+reads as the Cossart lab's CICADA, which locust is a modified partial port of and
+whose results locust's are not (FOUNDATIONS §7; Tony, 2026-09-21, on the
+leaderboard printing it)."""
+
+
+def display_name(key: str) -> str:
+    """``DISPLAY_NAMES[key]``, or the key itself for anything not a coded detector
+    (a net's name is already its display name)."""
+    return DISPLAY_NAMES.get(key, key)
+
+
+from bugarach.detectors.cicada import (  # noqa: E402
     CicadaDetection,
     CicadaStream,
     DurationIsNotOursToDerive,
@@ -38,6 +68,7 @@ from bugarach.detectors.cicada import (
     rise_durations,
 )
 from bugarach.detectors.coact import CoactDetection, coact_detect
+from bugarach.detectors.count import CountDetection, count_detect, count_sliding_detect
 from bugarach.detectors.loco import (
     LocoDetection,
     LocoStream,
@@ -82,6 +113,9 @@ __all__ = [
     "cicada_detect",
     "DurationIsNotOursToDerive",
     "coact_detect",
+    "CountDetection",
+    "count_detect",
+    "count_sliding_detect",
     "event_rate",
     "loco_detect",
     "region_windows",

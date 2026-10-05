@@ -14,13 +14,29 @@ disagrees with this section is out of date. Fix it in the same change as whateve
 | 1 | **Full tuning of the coded detectors: every knob**, all six | [`coded-detector-optimization.md`](coded-detector-optimization.md) | WSMIP065 |
 | 2 | **A fair comparison of the coded detectors against the nets** | [`learned-model-family.md`](learned-model-family.md) | WSMIP064 |
 | 3 | **"Final" supervised-learning results on the current best simulation** | [`learned-model-family.md`](learned-model-family.md) | WSMIP064 |
+| 4 | **One stream for coordination**, fast and slow together, with each call naming the events it recruited from each — **added 2026-09-22, not started, no machine** | [`combined-stream-coordination.md`](combined-stream-coordination.md) | — |
+
+**Goals 2 and 3 have their first result** (2026-09-19). Both runs finished with no errors on
+disjoint draws, and each report was murderboarded in three blind rounds. **Under the shared
+false-alarm budget CoactDetect is ahead of every net in every fold of both draws.** Chosen on F1
+alone the two are nearly tied and the sign is not settled: the merge gap was tuned for the coded side
+only, and margins are at the limit of what the scoring resolves — the replicate measured the
+between-draw move at 0.010 F1 for the nets. The numbers, what the rounds changed and where the
+reports live are in [`learned-model-family.md`](learned-model-family.md), *The weekend's two runs*.
 
 Goal 2 depends on goal 1. A comparison against coded detectors that were tuned on a few knobs is
 not fair, and that was the objection to the untuned bake-off in the first place.
 
 **The five decisions (Tony, 2026-09-17):**
 
-1. **One folder of real data: `dataset.current("steps_excluded")`**
+1. **Superseded 2026-09-21 — the folder is now `dataset.default()`**, which is
+   `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED` (84 recordings) and is confirmed by the
+   person at the start of every session. Tony, 2026-09-21: one default data folder, confirmed each
+   session; `steps_and_pins_excluded` is it. `steps_excluded` is now an **archive** role — it
+   declares a contamination and `dataset.current()` refuses it. The bench is still measured on it
+   (`bench.MEASURED_ROLE`), and `tools/check_scored_dataset.py` flags that at session start until
+   the bench is re-measured. The ruling as it stood on 2026-09-17, kept for the record:
+   **One folder of real data: `dataset.current("steps_excluded")`**
    (`2026-09-03_revised_2v_long_STEPS_EXCLUDED`, 84 recordings). Tony: *"you should only work from
    the steps excluded folder. it is terrifying that you might use other data."* The senktide and
    TTX recordings are **inside** that folder. The separately declared roles `senktide` and `ttx`,
@@ -64,11 +80,26 @@ not fair, and that was the objection to the untuned bake-off in the first place.
    the parameters whose status is still an open reading, are in the goal 1 handoff
    [`HANDOFF-coded-detectors.md`](../../HANDOFF-coded-detectors.md).
 
-**Division of labour.** WSMIP065 owns goal 1. It lands sliding LoCo and CoactDetect, re-derives the
-bench from the folder, and supplies the every-knob reference grids. WSMIP064 owns goals 2 and 3: the
-nested tuning (a GPU shakedown on the home spec since 12:42 on 2026-09-17; the real run waits on goal 1) and the fair comparison. WSMIP065 runs no net fits. The machines
+**Division of labour.** WSMIP065 owns goal 1: it lands sliding LoCo and CoactDetect, re-derives the
+bench from the folder, and supplies the every-knob reference grids. WSMIP064 owns goals 2 and 3. The machines
 share nothing but `origin`, so **everything one needs from the other goes through `main`**: this
 section, the goal pages, and the handoff files at the root.
+
+**Both GPUs are running goal 2's comparison this weekend, and that is deliberate** (Tony, 2026-09-18).
+This paragraph used to say WSMIP064's tuning was a shakedown waiting on goal 1, and that **WSMIP065
+runs no net fits**. Both were true when they were written and neither is now. The shakedown finished at
+02:35 on 2026-09-18 and the real comparison launched the same afternoon at 16:14 on WSMIP064. WSMIP065
+then launched **the same comparison on a disjoint draw of recordings** — `--replicate 1`, seeds
+2000–2047 against WSMIP064's 1000–1047, sharing no recording — because once both sides are tuned the
+shakedown's margin was +0.011 F1 and **variance binds**. The 24 configurations, the training seeds and
+the grids are held fixed, so a difference between the two runs is a difference between draws of data.
+`--replicate 0` declares byte for byte what WSMIP064 is already running, so that run stays resumable.
+
+Both runs write a `progress.json` mirrored about once a minute into the darkroom —
+`bugarach/archive/2026-09/2026-09-18-fair-comparison-run/` and `bugarach/archive/2026-09/2026-09-18-replicate-run-status/`. **An `at`
+more than a few minutes old means the run has stopped**, and `STATUS.txt` beside it says the age in
+words, so the answer is readable from any machine rather than from the one the run is on
+(`tools/mirror_run_status.py`).
 
 **Not among the three.** [`unsupervised-learning.md`](unsupervised-learning.md) and
 [`detector-review-document.md`](detector-review-document.md) are not stopped by this section, and

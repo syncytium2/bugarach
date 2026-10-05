@@ -1,0 +1,129 @@
+{
+ "detector": "coact",
+ "outer_fold": 1,
+ "selection": "ungated",
+ "config_key": "e8e5e06c1bfc94d4",
+ "config": "configs/coact/e8e5e06c1bfc94d4.json",
+ "budget": "meta.json budgets[1]",
+ "searched_by": "search_all_settings.choose_settings (goal 1's grids, per fold)",
+ "grids": {
+  "alpha": [
+   0.01,
+   0.003,
+   0.001,
+   0.0003,
+   0.0001,
+   3e-05,
+   1e-05,
+   1e-06
+  ],
+  "int_win_sec": [
+   0.5,
+   1.0,
+   2.0,
+   3.0,
+   5.0
+  ],
+  "context_win_sec": [
+   20.0,
+   30.0,
+   60.0,
+   120.0,
+   240.0
+  ],
+  "min_rois": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   8
+  ],
+  "merge_gap_sec": [
+   0.0,
+   1.0,
+   2.0,
+   3.0,
+   5.0,
+   8.0
+  ],
+  "guard_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   4.0
+  ],
+  "guard_norm": [
+   "compact",
+   "exposure"
+  ],
+  "detection_mode": [
+   "threshold",
+   "peak"
+  ],
+  "peak_prominence": [
+   0.0,
+   0.25,
+   0.5,
+   1.0,
+   2.0
+  ],
+  "peak_min_distance_sec": [
+   0.0,
+   0.5,
+   1.0,
+   2.0,
+   5.0
+  ]
+ },
+ "min_gain": 0.002,
+ "max_rounds": 2,
+ "inner_f1": 0.7720066193348637,
+ "moves": [
+  {
+   "round": 1,
+   "setting": "alpha",
+   "old": 1e-05,
+   "new": 3e-05,
+   "old_f1": 0.7685959507042253,
+   "new_f1": 0.7720066193348637,
+   "rescued_from_inadmissible": false
+  }
+ ],
+ "edge_flags": {
+  "merge_gap_sec": "high"
+ },
+ "n_scored": 30,
+ "n_refused": 0,
+ "inner_probe_per_hour": {
+  "quiet": 18.0,
+  "busy": 18.0
+ },
+ "inner_quiet_per_hour": 6.666666666666667,
+ "pooled": {
+  "recordings": [
+   "quiet:2000",
+   "busy:2000",
+   "quiet:2001",
+   "busy:2001",
+   "quiet:2004",
+   "busy:2004",
+   "quiet:2005",
+   "busy:2005"
+  ],
+  "recording_seeds": [
+   2000,
+   2001,
+   2004,
+   2005
+  ],
+  "twin_seeds": [
+   102000,
+   102001,
+   102004,
+   102005
+  ]
+ },
+ "seconds": 112.70198160002474
+}

@@ -196,8 +196,26 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
     for key, ev in lanes.items():
         y = ypos[key]
         colour = (colors or {}).get(key) or COLORS.get(key, "#555555")
+        info = ev[2] if len(ev) > 2 else None
         sp = _spans(ev[0], ev[1] if len(ev) > 1 else None, ext, tol_sec)
-        if sp:
+        if sp and info is not None:
+            # A LANE THAT CARRIES A LINE PER CALL shows it on hover, and only there: a number
+            # about a call (its participants, its window's floor) belongs in the lane's hover
+            # or label, never on the raster (CLAUDE.md; ADR-0010 part 6). Spans are rebuilt
+            # call by call so each keeps its own line; the ink is the same as below.
+            from bokeh.models import HoverTool
+
+            o = np.asarray(ev[0], dtype=float).ravel()
+            w = (np.asarray(ev[1], dtype=float).ravel() if len(ev) > 1 and ev[1] is not None
+                 else np.zeros_like(o))
+            rows_ = []
+            for a, b, text in zip(o, w if w.size == o.size else np.zeros_like(o), info):
+                for s0, s1 in _spans([a], [b], ext, tol_sec):
+                    rows_.append((s0, y - 0.30, s1, y + 0.30, str(text)))
+            items.append(hv.Rectangles(rows_, vdims=["call"]).opts(
+                color=colour, line_color=None, line_alpha=0, alpha=0.9,
+                tools=[HoverTool(tooltips=[(str(key), "@call")])]))
+        elif sp:
             # No stroke. A 1 px outline on a bar whose fill is under a pixel
             # wide is most of the ink, and it is ink that stands for nothing —
             # it made every detection look about 3 px of time across whatever
@@ -306,7 +324,8 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
 def raster_panel(stream, *, ext, gt=None, name="events",
                  width: int = 1000, height: int | None = None,
                  mark_px: float = 2.0, marked=None, marked_ink=None,
-                 ydim: str = "roi", ticks: str = "auto", sort: str = "freq"):
+                 ydim: str = "roi", ticks: str = "auto", sort: str = "freq",
+                 marked_px: float | None = None):
     """ROI raster, quietest ROI at the bottom, every onset drawn identically.
 
     Takes no detection spans on purpose. Inking the onsets inside a detected
@@ -425,8 +444,12 @@ def raster_panel(stream, *, ext, gt=None, name="events",
         # pixel, because the moment it stands for is two seconds wide on a page
         # that is an hour across. The mark keeps its own time and its own ROI —
         # only the ink and the stroke change.
+        # ``marked_px`` for a partition that is half the events rather than a rare
+        # flag — the combined stream's slow onsets — where the larger stroke would
+        # make one population outweigh the other.
         items.append(hv.Scatter((mt, my), kdims=["t"], vdims=[ydim]).opts(
-            marker="dash", angle=90, size=max(mark_px * 2.5, 5.0),
+            marker="dash", angle=90,
+            size=max(mark_px * 2.5, 5.0) if marked_px is None else marked_px,
             color=marked_ink or MARKED_INK, alpha=1.0))
 
     if height is None:

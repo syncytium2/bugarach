@@ -1,0 +1,1941 @@
+{
+ "dataset": {
+  "role": "senktide_ttx",
+  "name": "2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED",
+  "recordings": 66,
+  "use": "input"
+ },
+ "dt": 0.1,
+ "windows_sec": [
+  1.0,
+  2.0,
+  4.0
+ ],
+ "primary_window_sec": 1.0,
+ "surrogate": "per-cell circular offsets, all pairs >= 2 windows apart",
+ "surrogates": 20,
+ "stretch_sec": 300.0,
+ "probe_percentile": 99.0,
+ "cal_tolerance": 0.25,
+ "streams": {
+  "fast": {
+   "by_window": {
+    "1.0": {
+     "recordings": 66,
+     "window_sec": 1.0,
+     "stretches": 2024,
+     "recordings_shape_usable": 63,
+     "quiet_raw_hz": 0.005157828282828283,
+     "busy_raw_hz": 0.019166666666666665,
+     "quiet_raw_hz_all_recordings": 0.004347060606767251,
+     "busy_raw_hz_all_recordings": 0.01912280701754386,
+     "probe_raw_hz": 0.13439333333333334,
+     "bench_probe_hz": 0.1271,
+     "bench_probe_percentile_raw": 98.66600790513834,
+     "fixed": {
+      "participants_per_moment": 9.583044080651078,
+      "participation": 0.2994701275203462,
+      "shared_moments_per_min": 0.06761552856890492,
+      "coordinated_share_hz": 0.0002900052095618083,
+      "coordinated_share_of_rate": 0.03769876475503037,
+      "quiet_background_hz": 0.004948135344814574,
+      "busy_background_hz": 0.016894573004534202,
+      "quiet_background_hz_all_recordings": 0.0041427031048243655,
+      "busy_background_hz_all_recordings": 0.016433191775255068,
+      "probe_background_hz": 0.13344647350763406
+     },
+     "binomial": {
+      "participants_per_moment": 6.797401886476519,
+      "participation": 0.2124188089523912,
+      "shared_moments_per_min": 0.13489836016350804,
+      "coordinated_share_hz": 0.0004775824832593846,
+      "coordinated_share_of_rate": 0.054430354966683525,
+      "quiet_background_hz": 0.004940304889819232,
+      "busy_background_hz": 0.016876936497771312,
+      "quiet_background_hz_all_recordings": 0.004024743073267005,
+      "busy_background_hz_all_recordings": 0.01632443825102713,
+      "probe_background_hz": 0.13166054479092
+     }
+    },
+    "2.0": {
+     "recordings": 66,
+     "window_sec": 2.0,
+     "stretches": 2024,
+     "recordings_shape_usable": 63,
+     "quiet_raw_hz": 0.005157828282828283,
+     "busy_raw_hz": 0.019166666666666665,
+     "quiet_raw_hz_all_recordings": 0.004347060606767251,
+     "busy_raw_hz_all_recordings": 0.01912280701754386,
+     "probe_raw_hz": 0.13439333333333334,
+     "bench_probe_hz": 0.1271,
+     "bench_probe_percentile_raw": 98.66600790513834,
+     "fixed": {
+      "participants_per_moment": 11.106476070947231,
+      "participation": 0.34707737721710097,
+      "shared_moments_per_min": 0.041568489303281574,
+      "coordinated_share_hz": 0.00023043093191336584,
+      "coordinated_share_of_rate": 0.026858794392734763,
+      "quiet_background_hz": 0.004950231545185519,
+      "busy_background_hz": 0.016915369216128566,
+      "quiet_background_hz_all_recordings": 0.004202168873109166,
+      "busy_background_hz_all_recordings": 0.016487297754032175,
+      "probe_background_hz": 0.13389154935649167
+     },
+     "binomial": {
+      "participants_per_moment": 7.975718933748339,
+      "participation": 0.24924121667963559,
+      "shared_moments_per_min": 0.08238260077631099,
+      "coordinated_share_hz": 0.000342218994178674,
+      "coordinated_share_of_rate": 0.037104549062604436,
+      "quiet_background_hz": 0.004943627182473468,
+      "busy_background_hz": 0.016921105665150222,
+      "quiet_background_hz_all_recordings": 0.004090666649622199,
+      "busy_background_hz_all_recordings": 0.01634867899320471,
+      "probe_background_hz": 0.13293998859413597
+     }
+    },
+    "4.0": {
+     "recordings": 66,
+     "window_sec": 4.0,
+     "stretches": 2024,
+     "recordings_shape_usable": 63,
+     "quiet_raw_hz": 0.005157828282828283,
+     "busy_raw_hz": 0.019166666666666665,
+     "quiet_raw_hz_all_recordings": 0.004347060606767251,
+     "busy_raw_hz_all_recordings": 0.01912280701754386,
+     "probe_raw_hz": 0.13439333333333334,
+     "bench_probe_hz": 0.1271,
+     "bench_probe_percentile_raw": 98.66600790513834,
+     "fixed": {
+      "participants_per_moment": 13.041312852216889,
+      "participation": 0.40754102663177777,
+      "shared_moments_per_min": 0.030253525347213393,
+      "coordinated_share_hz": 0.0001876989545715902,
+      "coordinated_share_of_rate": 0.024661224440969014,
+      "quiet_background_hz": 0.004959505701276302,
+      "busy_background_hz": 0.016824191140838024,
+      "quiet_background_hz_all_recordings": 0.004234044213275936,
+      "busy_background_hz_all_recordings": 0.01631189371704535,
+      "probe_background_hz": 0.13382532077288234
+     },
+     "binomial": {
+      "participants_per_moment": 9.630675878676824,
+      "participation": 0.30095862120865075,
+      "shared_moments_per_min": 0.07389386110881176,
+      "coordinated_share_hz": 0.0003706499092515255,
+      "coordinated_share_of_rate": 0.03437811711503773,
+      "quiet_background_hz": 0.004955063592379497,
+      "busy_background_hz": 0.01676364000262663,
+      "quiet_background_hz_all_recordings": 0.004135856293456514,
+      "busy_background_hz_all_recordings": 0.016268396246591852,
+      "probe_background_hz": 0.1327700401859443
+     }
+    }
+   },
+   "adopted": {
+    "window_sec": 1.0,
+    "model": "fixed"
+   },
+   "per_recording": [
+    {
+     "slice_id": "20240813b42",
+     "N": 37,
+     "rate_hz": 0.012387387387387387,
+     "shape_usable": true,
+     "share_hz": 0.00014062488910500137
+    },
+    {
+     "slice_id": "20240814a47",
+     "N": 17,
+     "rate_hz": 0.017254901960784316,
+     "shape_usable": true,
+     "share_hz": -1.0055907486757599e-05
+    },
+    {
+     "slice_id": "20240814b49",
+     "N": 43,
+     "rate_hz": 0.009786821705426356,
+     "shape_usable": true,
+     "share_hz": 1.607731011350379e-05
+    },
+    {
+     "slice_id": "20240827a55",
+     "N": 29,
+     "rate_hz": 0.0026436781609195403,
+     "shape_usable": true,
+     "share_hz": 3.5639487839326175e-05
+    },
+    {
+     "slice_id": "20240827b57",
+     "N": 36,
+     "rate_hz": 0.014791666666666667,
+     "shape_usable": true,
+     "share_hz": 0.00011138828194273084
+    },
+    {
+     "slice_id": "20240930_65",
+     "N": 53,
+     "rate_hz": 0.006053459119496856,
+     "shape_usable": true,
+     "share_hz": 0.00048546989061318193
+    },
+    {
+     "slice_id": "20240930_69",
+     "N": 19,
+     "rate_hz": 0.01899122807017544,
+     "shape_usable": true,
+     "share_hz": 0.003955333468978979
+    },
+    {
+     "slice_id": "20241002_72",
+     "N": 19,
+     "rate_hz": 0.00017543859649122806,
+     "shape_usable": false,
+     "share_hz": 1.0388081667886562e-23
+    },
+    {
+     "slice_id": "20241122b_110",
+     "N": 25,
+     "rate_hz": 0.0030333333333333336,
+     "shape_usable": true,
+     "share_hz": 2.468434331884191e-06
+    },
+    {
+     "slice_id": "20241211_127",
+     "N": 45,
+     "rate_hz": 0.007055555555555555,
+     "shape_usable": true,
+     "share_hz": 0.0012779913749085365
+    },
+    {
+     "slice_id": "20241212_131",
+     "N": 33,
+     "rate_hz": 0.005176767676767676,
+     "shape_usable": true,
+     "share_hz": 7.167953395200307e-05
+    },
+    {
+     "slice_id": "20250731_151",
+     "N": 38,
+     "rate_hz": 0.023640350877192982,
+     "shape_usable": true,
+     "share_hz": 0.0014820537908756218
+    },
+    {
+     "slice_id": "20250806_174",
+     "N": 36,
+     "rate_hz": 0.005138888888888889,
+     "shape_usable": true,
+     "share_hz": 0.0010179624392299528
+    },
+    {
+     "slice_id": "20250806_176",
+     "N": 19,
+     "rate_hz": 0.011359649122807017,
+     "shape_usable": true,
+     "share_hz": -3.631034727037046e-05
+    },
+    {
+     "slice_id": "20250807_178",
+     "N": 46,
+     "rate_hz": 0.0067210144927536235,
+     "shape_usable": true,
+     "share_hz": 0.00021310563976337208
+    },
+    {
+     "slice_id": "20250807_181",
+     "N": 32,
+     "rate_hz": 0.029895833333333333,
+     "shape_usable": true,
+     "share_hz": 0.001276842878687786
+    },
+    {
+     "slice_id": "20250808_183",
+     "N": 61,
+     "rate_hz": 0.004207650273224044,
+     "shape_usable": true,
+     "share_hz": -3.8279709661033643e-07
+    },
+    {
+     "slice_id": "20250808_186",
+     "N": 35,
+     "rate_hz": 0.011166666666666667,
+     "shape_usable": true,
+     "share_hz": -1.6203047502349895e-07
+    },
+    {
+     "slice_id": "20250826_190",
+     "N": 15,
+     "rate_hz": 0.0012418300653594771,
+     "shape_usable": false,
+     "share_hz": 0.00020949394978379173
+    },
+    {
+     "slice_id": "20250826_192",
+     "N": 30,
+     "rate_hz": 0.006491228070175439,
+     "shape_usable": true,
+     "share_hz": 0.0007579616929568239
+    },
+    {
+     "slice_id": "20250827_196",
+     "N": 27,
+     "rate_hz": 0.009444444444444445,
+     "shape_usable": true,
+     "share_hz": 0.0004717838807550991
+    },
+    {
+     "slice_id": "20250827_199",
+     "N": 48,
+     "rate_hz": 0.012378472222222221,
+     "shape_usable": true,
+     "share_hz": 0.006664584556490231
+    },
+    {
+     "slice_id": "20250829_204",
+     "N": 32,
+     "rate_hz": 0.019166666666666665,
+     "shape_usable": true,
+     "share_hz": 0.0050324811981193405
+    },
+    {
+     "slice_id": "20250829_207",
+     "N": 53,
+     "rate_hz": 0.029940417080436942,
+     "shape_usable": true,
+     "share_hz": 0.0006132375558622785
+    },
+    {
+     "slice_id": "20250904_209",
+     "N": 23,
+     "rate_hz": 0.07261632341723875,
+     "shape_usable": true,
+     "share_hz": 0.0026537689147936093
+    },
+    {
+     "slice_id": "20250904_211",
+     "N": 45,
+     "rate_hz": 0.0033888888888888888,
+     "shape_usable": true,
+     "share_hz": 1.2156231156466922e-07
+    },
+    {
+     "slice_id": "20250911_214",
+     "N": 20,
+     "rate_hz": 0.0018333333333333335,
+     "shape_usable": true,
+     "share_hz": 0.00015224556226986315
+    },
+    {
+     "slice_id": "20250911_217",
+     "N": 32,
+     "rate_hz": 0.0036979166666666666,
+     "shape_usable": true,
+     "share_hz": 2.5195919613931573e-05
+    },
+    {
+     "slice_id": "20250911_222",
+     "N": 34,
+     "rate_hz": 0.005808823529411765,
+     "shape_usable": true,
+     "share_hz": 0.0002523467080690938
+    },
+    {
+     "slice_id": "20250912_225",
+     "N": 45,
+     "rate_hz": 0.0022222222222222222,
+     "shape_usable": true,
+     "share_hz": 9.587852506040922e-06
+    },
+    {
+     "slice_id": "20250912_227",
+     "N": 17,
+     "rate_hz": 0.0011764705882352942,
+     "shape_usable": true,
+     "share_hz": 0.00023882809113208597
+    },
+    {
+     "slice_id": "20250912_229",
+     "N": 55,
+     "rate_hz": 0.015964912280701755,
+     "shape_usable": true,
+     "share_hz": 0.00011745476969234707
+    },
+    {
+     "slice_id": "20250925_231",
+     "N": 20,
+     "rate_hz": 0.076375,
+     "shape_usable": true,
+     "share_hz": 0.010200893766972079
+    },
+    {
+     "slice_id": "20250925_233",
+     "N": 27,
+     "rate_hz": 0.05657407407407407,
+     "shape_usable": true,
+     "share_hz": 0.007224106918467142
+    },
+    {
+     "slice_id": "20250926_235",
+     "N": 23,
+     "rate_hz": 0.019166666666666665,
+     "shape_usable": true,
+     "share_hz": 0.0008303758934806899
+    },
+    {
+     "slice_id": "20250926_237",
+     "N": 39,
+     "rate_hz": 0.03224358974358974,
+     "shape_usable": true,
+     "share_hz": 0.0026395666036436735
+    },
+    {
+     "slice_id": "20260115_240",
+     "N": 32,
+     "rate_hz": 0.009429824561403509,
+     "shape_usable": true,
+     "share_hz": 1.923135011295963e-06
+    },
+    {
+     "slice_id": "20260115_243",
+     "N": 43,
+     "rate_hz": 0.021236230110159116,
+     "shape_usable": true,
+     "share_hz": 0.0007102436387529175
+    },
+    {
+     "slice_id": "20260120_248",
+     "N": 31,
+     "rate_hz": 0.006048387096774193,
+     "shape_usable": true,
+     "share_hz": 2.3432157515029227e-05
+    },
+    {
+     "slice_id": "20260121_250",
+     "N": 34,
+     "rate_hz": 0.0025980392156862747,
+     "shape_usable": true,
+     "share_hz": -2.0216909435424657e-06
+    },
+    {
+     "slice_id": "20260121_252",
+     "N": 27,
+     "rate_hz": 0.002067901234567901,
+     "shape_usable": true,
+     "share_hz": 1.6340028921844448e-05
+    },
+    {
+     "slice_id": "20260122_256",
+     "N": 36,
+     "rate_hz": 0.01685185185185185,
+     "shape_usable": true,
+     "share_hz": 0.00032766371105452283
+    },
+    {
+     "slice_id": "20260122_259",
+     "N": 37,
+     "rate_hz": 0.00476529160739687,
+     "shape_usable": true,
+     "share_hz": -2.5890939416603058e-05
+    },
+    {
+     "slice_id": "20260130_270",
+     "N": 48,
+     "rate_hz": 0.009357638888888888,
+     "shape_usable": true,
+     "share_hz": 0.0011465605977630086
+    },
+    {
+     "slice_id": "20260130_272",
+     "N": 28,
+     "rate_hz": 0.030148809523809526,
+     "shape_usable": true,
+     "share_hz": 0.00042436636672565827
+    },
+    {
+     "slice_id": "20260225_275",
+     "N": 29,
+     "rate_hz": 0.0008333333333333334,
+     "shape_usable": true,
+     "share_hz": 2.51194240080489e-06
+    },
+    {
+     "slice_id": "20260225_277",
+     "N": 26,
+     "rate_hz": 0.0009615384615384615,
+     "shape_usable": true,
+     "share_hz": 0.001242576728492486
+    },
+    {
+     "slice_id": "20260225_280",
+     "N": 15,
+     "rate_hz": 0.0003333333333333334,
+     "shape_usable": false,
+     "share_hz": 1.2950818494619611e-05
+    },
+    {
+     "slice_id": "20260226_282",
+     "N": 16,
+     "rate_hz": 0.032916666666666664,
+     "shape_usable": true,
+     "share_hz": 0.00017769029484312156
+    },
+    {
+     "slice_id": "20260226_285",
+     "N": 27,
+     "rate_hz": 0.0030539311241065624,
+     "shape_usable": true,
+     "share_hz": -1.529966498603248e-06
+    },
+    {
+     "slice_id": "20260226_287",
+     "N": 15,
+     "rate_hz": 0.13433333333333333,
+     "shape_usable": true,
+     "share_hz": 0.0009468598256992878
+    },
+    {
+     "slice_id": "20260303_290",
+     "N": 33,
+     "rate_hz": 0.017222222222222222,
+     "shape_usable": true,
+     "share_hz": 0.0035061267612476674
+    },
+    {
+     "slice_id": "20260303_296",
+     "N": 51,
+     "rate_hz": 0.022107843137254904,
+     "shape_usable": true,
+     "share_hz": 0.01448270266234616
+    },
+    {
+     "slice_id": "20260303_301",
+     "N": 24,
+     "rate_hz": 0.018472222222222223,
+     "shape_usable": true,
+     "share_hz": 0.0023120195435939405
+    },
+    {
+     "slice_id": "20260629_309",
+     "N": 21,
+     "rate_hz": 0.015436507936507938,
+     "shape_usable": true,
+     "share_hz": 0.0006098834849163295
+    },
+    {
+     "slice_id": "20260629_312",
+     "N": 21,
+     "rate_hz": 0.016309523809523812,
+     "shape_usable": true,
+     "share_hz": 0.002791947614160721
+    },
+    {
+     "slice_id": "20260629_314",
+     "N": 14,
+     "rate_hz": 0.021785714285714287,
+     "shape_usable": true,
+     "share_hz": 0.001006276950248996
+    },
+    {
+     "slice_id": "20260630_316",
+     "N": 34,
+     "rate_hz": 0.011936274509803921,
+     "shape_usable": true,
+     "share_hz": 0.0037110164936255303
+    },
+    {
+     "slice_id": "20260630_325",
+     "N": 19,
+     "rate_hz": 0.03271929824561404,
+     "shape_usable": true,
+     "share_hz": 0.0050643291616810525
+    },
+    {
+     "slice_id": "20260701_328",
+     "N": 25,
+     "rate_hz": 0.0054333333333333326,
+     "shape_usable": true,
+     "share_hz": 6.282113936086816e-06
+    },
+    {
+     "slice_id": "20260701_331",
+     "N": 26,
+     "rate_hz": 0.014134615384615383,
+     "shape_usable": true,
+     "share_hz": -1.7037145620207204e-05
+    },
+    {
+     "slice_id": "20260702_334",
+     "N": 36,
+     "rate_hz": 0.016967592592592593,
+     "shape_usable": true,
+     "share_hz": 0.0013507724276912913
+    },
+    {
+     "slice_id": "20260702_338",
+     "N": 46,
+     "rate_hz": 0.006449275362318841,
+     "shape_usable": true,
+     "share_hz": -4.002169429086803e-05
+    },
+    {
+     "slice_id": "20260706_341",
+     "N": 33,
+     "rate_hz": 0.01106060606060606,
+     "shape_usable": true,
+     "share_hz": 0.0038846509990334245
+    },
+    {
+     "slice_id": "20260706_343",
+     "N": 44,
+     "rate_hz": 0.0425,
+     "shape_usable": true,
+     "share_hz": 0.0046238997406315326
+    },
+    {
+     "slice_id": "20260707_348",
+     "N": 30,
+     "rate_hz": 0.002111111111111111,
+     "shape_usable": true,
+     "share_hz": 0.00020991335346323315
+    }
+   ]
+  },
+  "slow": {
+   "by_window": {
+    "1.0": {
+     "recordings": 66,
+     "window_sec": 1.0,
+     "stretches": 2024,
+     "recordings_shape_usable": 59,
+     "quiet_raw_hz": 0.0030187331989247313,
+     "busy_raw_hz": 0.011940586419753086,
+     "quiet_raw_hz_all_recordings": 0.00232484311074128,
+     "busy_raw_hz_all_recordings": 0.011768518518518518,
+     "probe_raw_hz": 0.046310825163398676,
+     "bench_probe_hz": 0.0291,
+     "bench_probe_percentile_raw": 93.03359683794467,
+     "fixed": {
+      "participants_per_moment": 25.592622952615226,
+      "participation": 0.7997694672692258,
+      "shared_moments_per_min": 0.0065233360837142025,
+      "coordinated_share_hz": 9.560842598283802e-05,
+      "coordinated_share_of_rate": 0.016252112209751656,
+      "quiet_background_hz": 0.002389364082552417,
+      "busy_background_hz": 0.009320410576190652,
+      "quiet_background_hz_all_recordings": 0.0018585285518933174,
+      "busy_background_hz_all_recordings": 0.008971812891632314,
+      "probe_background_hz": 0.03206136459877006
+     },
+     "binomial": {
+      "participants_per_moment": 18.62191922221729,
+      "participation": 0.5819349756942903,
+      "shared_moments_per_min": 0.01593497649300693,
+      "coordinated_share_hz": 0.00015455200263578462,
+      "coordinated_share_of_rate": 0.03237617258563309,
+      "quiet_background_hz": 0.0024676215488207494,
+      "busy_background_hz": 0.008042677737924253,
+      "quiet_background_hz_all_recordings": 0.0018612293488698833,
+      "busy_background_hz_all_recordings": 0.007715929479381258,
+      "probe_background_hz": 0.025420069053828417
+     }
+    },
+    "2.0": {
+     "recordings": 66,
+     "window_sec": 2.0,
+     "stretches": 2024,
+     "recordings_shape_usable": 59,
+     "quiet_raw_hz": 0.0030187331989247313,
+     "busy_raw_hz": 0.011940586419753086,
+     "quiet_raw_hz_all_recordings": 0.00232484311074128,
+     "busy_raw_hz_all_recordings": 0.011768518518518518,
+     "probe_raw_hz": 0.046310825163398676,
+     "bench_probe_hz": 0.0291,
+     "bench_probe_percentile_raw": 93.03359683794467,
+     "fixed": {
+      "participants_per_moment": 26.035361582839084,
+      "participation": 0.8136050494637214,
+      "shared_moments_per_min": 0.007889484759228023,
+      "coordinated_share_hz": 0.00011022722820604683,
+      "coordinated_share_of_rate": 0.02131552745428326,
+      "quiet_background_hz": 0.002348850973420942,
+      "busy_background_hz": 0.008602407836248709,
+      "quiet_background_hz_all_recordings": 0.0016467642857056033,
+      "busy_background_hz_all_recordings": 0.008128684949528356,
+      "probe_background_hz": 0.031129692992103587
+     },
+     "binomial": {
+      "participants_per_moment": 19.090293513218757,
+      "participation": 0.5965716722880862,
+      "shared_moments_per_min": 0.017303447261433784,
+      "coordinated_share_hz": 0.00017204577448503764,
+      "coordinated_share_of_rate": 0.030861724665886606,
+      "quiet_background_hz": 0.002246050438166461,
+      "busy_background_hz": 0.007803923588483599,
+      "quiet_background_hz_all_recordings": 0.0015760027628457102,
+      "busy_background_hz_all_recordings": 0.0074438928857784945,
+      "probe_background_hz": 0.02358168539089301
+     }
+    },
+    "4.0": {
+     "recordings": 66,
+     "window_sec": 4.0,
+     "stretches": 2024,
+     "recordings_shape_usable": 59,
+     "quiet_raw_hz": 0.0030187331989247313,
+     "busy_raw_hz": 0.011940586419753086,
+     "quiet_raw_hz_all_recordings": 0.00232484311074128,
+     "busy_raw_hz_all_recordings": 0.011768518518518518,
+     "probe_raw_hz": 0.046310825163398676,
+     "bench_probe_hz": 0.0291,
+     "bench_probe_percentile_raw": 93.03359683794467,
+     "fixed": {
+      "participants_per_moment": 24.004793424166195,
+      "participation": 0.7501497945051936,
+      "shared_moments_per_min": 0.010069592738162776,
+      "coordinated_share_hz": 0.00013635292709406104,
+      "coordinated_share_of_rate": 0.031361185432509965,
+      "quiet_background_hz": 0.0022041378157473673,
+      "busy_background_hz": 0.008322517039545878,
+      "quiet_background_hz_all_recordings": 0.001510925702919846,
+      "busy_background_hz_all_recordings": 0.007995221567528335,
+      "probe_background_hz": 0.030076616177587872
+     },
+     "binomial": {
+      "participants_per_moment": 17.49758222101735,
+      "participation": 0.5467994444067922,
+      "shared_moments_per_min": 0.02155440860823906,
+      "coordinated_share_hz": 0.00019643231085836828,
+      "coordinated_share_of_rate": 0.04338343075074548,
+      "quiet_background_hz": 0.002086715229575251,
+      "busy_background_hz": 0.007534651878423308,
+      "quiet_background_hz_all_recordings": 0.001390902967010776,
+      "busy_background_hz_all_recordings": 0.007137563793945508,
+      "probe_background_hz": 0.02291303764605155
+     }
+    }
+   },
+   "adopted": {
+    "window_sec": 1.0,
+    "model": "fixed"
+   },
+   "per_recording": [
+    {
+     "slice_id": "20240813b42",
+     "N": 37,
+     "rate_hz": 0.00518018018018018,
+     "shape_usable": true,
+     "share_hz": -1.7554303609101625e-06
+    },
+    {
+     "slice_id": "20240814a47",
+     "N": 17,
+     "rate_hz": 0.0062254901960784315,
+     "shape_usable": true,
+     "share_hz": 1.6838797380950212e-05
+    },
+    {
+     "slice_id": "20240814b49",
+     "N": 43,
+     "rate_hz": 0.0046317829457364346,
+     "shape_usable": true,
+     "share_hz": 6.770989402525009e-07
+    },
+    {
+     "slice_id": "20240827a55",
+     "N": 29,
+     "rate_hz": 0.0014080459770114942,
+     "shape_usable": true,
+     "share_hz": 2.0805751780407476e-05
+    },
+    {
+     "slice_id": "20240827b57",
+     "N": 36,
+     "rate_hz": 0.0035416666666666665,
+     "shape_usable": true,
+     "share_hz": -2.6057027166178216e-06
+    },
+    {
+     "slice_id": "20240930_65",
+     "N": 53,
+     "rate_hz": 0.009528301886792453,
+     "shape_usable": true,
+     "share_hz": 0.00860937545757207
+    },
+    {
+     "slice_id": "20240930_69",
+     "N": 19,
+     "rate_hz": 0.031885964912280705,
+     "shape_usable": true,
+     "share_hz": 0.0069107814035132215
+    },
+    {
+     "slice_id": "20241002_72",
+     "N": 19,
+     "rate_hz": 4.3859649122807014e-05,
+     "shape_usable": false,
+     "share_hz": 2.265958043614054e-25
+    },
+    {
+     "slice_id": "20241122b_110",
+     "N": 25,
+     "rate_hz": 0.0006,
+     "shape_usable": false,
+     "share_hz": -1.3559852428186476e-07
+    },
+    {
+     "slice_id": "20241211_127",
+     "N": 45,
+     "rate_hz": 0.01338888888888889,
+     "shape_usable": true,
+     "share_hz": 0.007724358986944473
+    },
+    {
+     "slice_id": "20241212_131",
+     "N": 33,
+     "rate_hz": 0.004242424242424242,
+     "shape_usable": true,
+     "share_hz": 4.758829074506287e-05
+    },
+    {
+     "slice_id": "20250731_151",
+     "N": 38,
+     "rate_hz": 0.007631578947368421,
+     "shape_usable": true,
+     "share_hz": 0.0012691985073636609
+    },
+    {
+     "slice_id": "20250806_174",
+     "N": 36,
+     "rate_hz": 0.006898148148148149,
+     "shape_usable": true,
+     "share_hz": 0.003968288530676356
+    },
+    {
+     "slice_id": "20250806_176",
+     "N": 19,
+     "rate_hz": 0.004385964912280702,
+     "shape_usable": true,
+     "share_hz": 1.695985579366206e-06
+    },
+    {
+     "slice_id": "20250807_178",
+     "N": 46,
+     "rate_hz": 0.0010326086956521738,
+     "shape_usable": true,
+     "share_hz": 0.00012034494688351058
+    },
+    {
+     "slice_id": "20250807_181",
+     "N": 32,
+     "rate_hz": 0.011875,
+     "shape_usable": true,
+     "share_hz": 0.0004920798503442525
+    },
+    {
+     "slice_id": "20250808_183",
+     "N": 61,
+     "rate_hz": 0.0032240437158469943,
+     "shape_usable": true,
+     "share_hz": 2.1845097291252885e-06
+    },
+    {
+     "slice_id": "20250808_186",
+     "N": 35,
+     "rate_hz": 0.0013571428571428571,
+     "shape_usable": true,
+     "share_hz": 1.675600052136708e-05
+    },
+    {
+     "slice_id": "20250826_190",
+     "N": 15,
+     "rate_hz": 0.0008496732026143792,
+     "shape_usable": false,
+     "share_hz": 4.2546454000452774e-05
+    },
+    {
+     "slice_id": "20250826_192",
+     "N": 30,
+     "rate_hz": 0.009064327485380117,
+     "shape_usable": true,
+     "share_hz": 0.000932925966888983
+    },
+    {
+     "slice_id": "20250827_196",
+     "N": 27,
+     "rate_hz": 0.011574074074074075,
+     "shape_usable": true,
+     "share_hz": 0.0024864845271529244
+    },
+    {
+     "slice_id": "20250827_199",
+     "N": 48,
+     "rate_hz": 0.03652777777777778,
+     "shape_usable": true,
+     "share_hz": 0.025752370241002603
+    },
+    {
+     "slice_id": "20250829_204",
+     "N": 32,
+     "rate_hz": 0.02828125,
+     "shape_usable": true,
+     "share_hz": 0.011974899735478457
+    },
+    {
+     "slice_id": "20250829_207",
+     "N": 53,
+     "rate_hz": 0.006454816285998014,
+     "shape_usable": true,
+     "share_hz": 4.4016132045446754e-05
+    },
+    {
+     "slice_id": "20250904_209",
+     "N": 23,
+     "rate_hz": 0.021700991609458428,
+     "shape_usable": true,
+     "share_hz": 0.0003847128916125463
+    },
+    {
+     "slice_id": "20250904_211",
+     "N": 45,
+     "rate_hz": 0.0009814814814814816,
+     "shape_usable": true,
+     "share_hz": -9.43290678418863e-07
+    },
+    {
+     "slice_id": "20250911_214",
+     "N": 20,
+     "rate_hz": 0.00275,
+     "shape_usable": true,
+     "share_hz": 0.0006751333303013893
+    },
+    {
+     "slice_id": "20250911_217",
+     "N": 32,
+     "rate_hz": 0.0028385416666666667,
+     "shape_usable": true,
+     "share_hz": -1.1740953603032342e-06
+    },
+    {
+     "slice_id": "20250911_222",
+     "N": 34,
+     "rate_hz": 0.005122549019607844,
+     "shape_usable": true,
+     "share_hz": 2.5840304254575134e-05
+    },
+    {
+     "slice_id": "20250912_225",
+     "N": 45,
+     "rate_hz": 0.0028148148148148147,
+     "shape_usable": true,
+     "share_hz": -9.07621018056728e-07
+    },
+    {
+     "slice_id": "20250912_227",
+     "N": 17,
+     "rate_hz": 0.0008333333333333334,
+     "shape_usable": false,
+     "share_hz": 7.578395811873927e-05
+    },
+    {
+     "slice_id": "20250912_229",
+     "N": 55,
+     "rate_hz": 0.0022966507177033493,
+     "shape_usable": true,
+     "share_hz": -1.6622330899289258e-06
+    },
+    {
+     "slice_id": "20250925_231",
+     "N": 20,
+     "rate_hz": 0.011833333333333333,
+     "shape_usable": true,
+     "share_hz": 0.0023358574922075588
+    },
+    {
+     "slice_id": "20250925_233",
+     "N": 27,
+     "rate_hz": 0.012006172839506172,
+     "shape_usable": true,
+     "share_hz": 0.0006315264330548561
+    },
+    {
+     "slice_id": "20250926_235",
+     "N": 23,
+     "rate_hz": 0.01105072463768116,
+     "shape_usable": true,
+     "share_hz": 0.00020630439628478543
+    },
+    {
+     "slice_id": "20250926_237",
+     "N": 39,
+     "rate_hz": 0.005598290598290598,
+     "shape_usable": true,
+     "share_hz": 0.0004915443067497469
+    },
+    {
+     "slice_id": "20260115_240",
+     "N": 32,
+     "rate_hz": 0.007730263157894737,
+     "shape_usable": true,
+     "share_hz": 7.79959806454133e-06
+    },
+    {
+     "slice_id": "20260115_243",
+     "N": 43,
+     "rate_hz": 0.01434108527131783,
+     "shape_usable": true,
+     "share_hz": 0.00020625579152033202
+    },
+    {
+     "slice_id": "20260120_248",
+     "N": 31,
+     "rate_hz": 0.003198924731182796,
+     "shape_usable": true,
+     "share_hz": 0.0006477414091306244
+    },
+    {
+     "slice_id": "20260121_250",
+     "N": 34,
+     "rate_hz": 0.0020833333333333333,
+     "shape_usable": true,
+     "share_hz": -2.4966334954998888e-06
+    },
+    {
+     "slice_id": "20260121_252",
+     "N": 27,
+     "rate_hz": 0.0005246913580246914,
+     "shape_usable": false,
+     "share_hz": 2.448280520396474e-06
+    },
+    {
+     "slice_id": "20260122_256",
+     "N": 36,
+     "rate_hz": 0.007453703703703704,
+     "shape_usable": true,
+     "share_hz": 2.990179612099145e-05
+    },
+    {
+     "slice_id": "20260122_259",
+     "N": 37,
+     "rate_hz": 0.002750118539592224,
+     "shape_usable": true,
+     "share_hz": 2.4831062778559096e-06
+    },
+    {
+     "slice_id": "20260130_270",
+     "N": 48,
+     "rate_hz": 0.007152777777777778,
+     "shape_usable": true,
+     "share_hz": 0.00491921131956108
+    },
+    {
+     "slice_id": "20260130_272",
+     "N": 28,
+     "rate_hz": 0.008333333333333333,
+     "shape_usable": true,
+     "share_hz": 0.00011543289384693676
+    },
+    {
+     "slice_id": "20260225_275",
+     "N": 29,
+     "rate_hz": 0.0004597701149425287,
+     "shape_usable": false,
+     "share_hz": 3.273555094185881e-06
+    },
+    {
+     "slice_id": "20260225_277",
+     "N": 26,
+     "rate_hz": 0.0008653846153846154,
+     "shape_usable": true,
+     "share_hz": 4.498899638873649e-06
+    },
+    {
+     "slice_id": "20260225_280",
+     "N": 15,
+     "rate_hz": 0.0004444444444444444,
+     "shape_usable": false,
+     "share_hz": 4.519950809395491e-06
+    },
+    {
+     "slice_id": "20260226_282",
+     "N": 16,
+     "rate_hz": 0.0059375,
+     "shape_usable": true,
+     "share_hz": 7.187960589150601e-07
+    },
+    {
+     "slice_id": "20260226_285",
+     "N": 27,
+     "rate_hz": 0.0017868745938921379,
+     "shape_usable": true,
+     "share_hz": 4.587479339182376e-07
+    },
+    {
+     "slice_id": "20260226_287",
+     "N": 15,
+     "rate_hz": 0.01711111111111111,
+     "shape_usable": true,
+     "share_hz": 3.045894958850625e-05
+    },
+    {
+     "slice_id": "20260303_290",
+     "N": 33,
+     "rate_hz": 0.0226010101010101,
+     "shape_usable": true,
+     "share_hz": 0.0068606547105028335
+    },
+    {
+     "slice_id": "20260303_296",
+     "N": 51,
+     "rate_hz": 0.03651960784313725,
+     "shape_usable": true,
+     "share_hz": 0.03478476236126733
+    },
+    {
+     "slice_id": "20260303_301",
+     "N": 24,
+     "rate_hz": 0.007013888888888888,
+     "shape_usable": true,
+     "share_hz": 0.0013243185814225875
+    },
+    {
+     "slice_id": "20260629_309",
+     "N": 21,
+     "rate_hz": 0.009246031746031745,
+     "shape_usable": true,
+     "share_hz": 0.000621548820265943
+    },
+    {
+     "slice_id": "20260629_312",
+     "N": 21,
+     "rate_hz": 0.027063492063492064,
+     "shape_usable": true,
+     "share_hz": 0.00701370305552105
+    },
+    {
+     "slice_id": "20260629_314",
+     "N": 14,
+     "rate_hz": 0.005714285714285714,
+     "shape_usable": true,
+     "share_hz": 0.000295162513198393
+    },
+    {
+     "slice_id": "20260630_316",
+     "N": 34,
+     "rate_hz": 0.025808823529411763,
+     "shape_usable": true,
+     "share_hz": 0.007478044952946211
+    },
+    {
+     "slice_id": "20260630_325",
+     "N": 19,
+     "rate_hz": 0.03302631578947368,
+     "shape_usable": true,
+     "share_hz": 0.01033704017491659
+    },
+    {
+     "slice_id": "20260701_328",
+     "N": 25,
+     "rate_hz": 0.0013333333333333335,
+     "shape_usable": true,
+     "share_hz": -9.492461929093944e-07
+    },
+    {
+     "slice_id": "20260701_331",
+     "N": 26,
+     "rate_hz": 0.0014423076923076924,
+     "shape_usable": true,
+     "share_hz": -1.5741718455832946e-06
+    },
+    {
+     "slice_id": "20260702_334",
+     "N": 36,
+     "rate_hz": 0.005439814814814815,
+     "shape_usable": true,
+     "share_hz": 0.0015905085343958256
+    },
+    {
+     "slice_id": "20260702_338",
+     "N": 46,
+     "rate_hz": 0.0024094202898550725,
+     "shape_usable": true,
+     "share_hz": 6.060393789799372e-06
+    },
+    {
+     "slice_id": "20260706_341",
+     "N": 33,
+     "rate_hz": 0.0173989898989899,
+     "shape_usable": true,
+     "share_hz": 0.00825564458773437
+    },
+    {
+     "slice_id": "20260706_343",
+     "N": 44,
+     "rate_hz": 0.018143939393939393,
+     "shape_usable": true,
+     "share_hz": 0.0011333857481826035
+    },
+    {
+     "slice_id": "20260707_348",
+     "N": 30,
+     "rate_hz": 0.0037777777777777775,
+     "shape_usable": true,
+     "share_hz": 0.0014024095087382163
+    }
+   ]
+  },
+  "combined": {
+   "by_window": {
+    "1.0": {
+     "recordings": 66,
+     "window_sec": 1.0,
+     "stretches": 2024,
+     "recordings_shape_usable": 64,
+     "quiet_raw_hz": 0.007480819905323789,
+     "busy_raw_hz": 0.0374668489190548,
+     "quiet_raw_hz_all_recordings": 0.0069192622950819665,
+     "busy_raw_hz_all_recordings": 0.03710293265767081,
+     "probe_raw_hz": 0.1532822222222222,
+     "bench_probe_hz": 0.1464,
+     "bench_probe_percentile_raw": 98.66600790513834,
+     "fixed": {
+      "participants_per_moment": 26.47684141525337,
+      "participation": 0.8274012942266679,
+      "shared_moments_per_min": 0.027879382278954496,
+      "coordinated_share_hz": 0.0003677859137410861,
+      "coordinated_share_of_rate": 0.020099601002364686,
+      "quiet_background_hz": 0.007080306444169232,
+      "busy_background_hz": 0.02916357447714065,
+      "quiet_background_hz_all_recordings": 0.006536460957913505,
+      "busy_background_hz_all_recordings": 0.029019933642535738,
+      "probe_background_hz": 0.15285793185061144
+     },
+     "binomial": {
+      "participants_per_moment": 19.64930481282167,
+      "participation": 0.6140407754006771,
+      "shared_moments_per_min": 0.06272740048454309,
+      "coordinated_share_hz": 0.0006419530272066275,
+      "coordinated_share_of_rate": 0.035132635709349484,
+      "quiet_background_hz": 0.00722275076220014,
+      "busy_background_hz": 0.024634721131538966,
+      "quiet_background_hz_all_recordings": 0.006530072477276188,
+      "busy_background_hz_all_recordings": 0.024130075507210393,
+      "probe_background_hz": 0.15202479310390196
+     }
+    },
+    "2.0": {
+     "recordings": 66,
+     "window_sec": 2.0,
+     "stretches": 2024,
+     "recordings_shape_usable": 64,
+     "quiet_raw_hz": 0.007480819905323789,
+     "busy_raw_hz": 0.0374668489190548,
+     "quiet_raw_hz_all_recordings": 0.0069192622950819665,
+     "busy_raw_hz_all_recordings": 0.03710293265767081,
+     "probe_raw_hz": 0.1532822222222222,
+     "bench_probe_hz": 0.1464,
+     "bench_probe_percentile_raw": 98.66600790513834,
+     "fixed": {
+      "participants_per_moment": 28.6322803914363,
+      "participation": 0.8947587622323844,
+      "shared_moments_per_min": 0.02669402941816064,
+      "coordinated_share_hz": 0.0003254944088749227,
+      "coordinated_share_of_rate": 0.02344804345579298,
+      "quiet_background_hz": 0.006642119656742658,
+      "busy_background_hz": 0.027165842367973564,
+      "quiet_background_hz_all_recordings": 0.005377804749911713,
+      "busy_background_hz_all_recordings": 0.026546719786167388,
+      "probe_background_hz": 0.15302889694671076
+     },
+     "binomial": {
+      "participants_per_moment": 21.423037757147,
+      "participation": 0.6694699299108438,
+      "shared_moments_per_min": 0.06106627683464523,
+      "coordinated_share_hz": 0.0006813672678734352,
+      "coordinated_share_of_rate": 0.03424156083444457,
+      "quiet_background_hz": 0.006901667609247616,
+      "busy_background_hz": 0.02387430077300243,
+      "quiet_background_hz_all_recordings": 0.006538263099496348,
+      "busy_background_hz_all_recordings": 0.023711269598221858,
+      "probe_background_hz": 0.15253536748467716
+     }
+    },
+    "4.0": {
+     "recordings": 66,
+     "window_sec": 4.0,
+     "stretches": 2024,
+     "recordings_shape_usable": 64,
+     "quiet_raw_hz": 0.007480819905323789,
+     "busy_raw_hz": 0.0374668489190548,
+     "quiet_raw_hz_all_recordings": 0.0069192622950819665,
+     "busy_raw_hz_all_recordings": 0.03710293265767081,
+     "probe_raw_hz": 0.1532822222222222,
+     "bench_probe_hz": 0.1464,
+     "bench_probe_percentile_raw": 98.66600790513834,
+     "fixed": {
+      "participants_per_moment": 27.746512273939068,
+      "participation": 0.8670785085605959,
+      "shared_moments_per_min": 0.02632734243521892,
+      "coordinated_share_hz": 0.00042202900671708753,
+      "coordinated_share_of_rate": 0.02662561635807348,
+      "quiet_background_hz": 0.006320551472838763,
+      "busy_background_hz": 0.026576051607386072,
+      "quiet_background_hz_all_recordings": 0.0052562968018222585,
+      "busy_background_hz_all_recordings": 0.025483572869735675,
+      "probe_background_hz": 0.15311424679160537
+     },
+     "binomial": {
+      "participants_per_moment": 20.722684667917243,
+      "participation": 0.6475838958724138,
+      "shared_moments_per_min": 0.05811375047267676,
+      "coordinated_share_hz": 0.0006272254822475558,
+      "coordinated_share_of_rate": 0.034951581151313575,
+      "quiet_background_hz": 0.006680596254532894,
+      "busy_background_hz": 0.023282717821114532,
+      "quiet_background_hz_all_recordings": 0.0063566940725115345,
+      "busy_background_hz_all_recordings": 0.02303821147796619,
+      "probe_background_hz": 0.1527866706645289
+     }
+    }
+   },
+   "adopted": {
+    "window_sec": 1.0,
+    "model": "fixed"
+   },
+   "per_recording": [
+    {
+     "slice_id": "20240813b42",
+     "N": 37,
+     "rate_hz": 0.0175,
+     "shape_usable": true,
+     "share_hz": 4.9583981493543364e-05
+    },
+    {
+     "slice_id": "20240814a47",
+     "N": 17,
+     "rate_hz": 0.023284313725490197,
+     "shape_usable": true,
+     "share_hz": -1.3418497867049787e-06
+    },
+    {
+     "slice_id": "20240814b49",
+     "N": 43,
+     "rate_hz": 0.014341085271317828,
+     "shape_usable": true,
+     "share_hz": 3.7264333524970875e-06
+    },
+    {
+     "slice_id": "20240827a55",
+     "N": 29,
+     "rate_hz": 0.003965517241379311,
+     "shape_usable": true,
+     "share_hz": 5.8040773843103664e-05
+    },
+    {
+     "slice_id": "20240827b57",
+     "N": 36,
+     "rate_hz": 0.018333333333333333,
+     "shape_usable": true,
+     "share_hz": 2.16981318878808e-05
+    },
+    {
+     "slice_id": "20240930_65",
+     "N": 53,
+     "rate_hz": 0.015440251572327044,
+     "shape_usable": true,
+     "share_hz": 0.009677266359864595
+    },
+    {
+     "slice_id": "20240930_69",
+     "N": 19,
+     "rate_hz": 0.05048245614035088,
+     "shape_usable": true,
+     "share_hz": 0.009714842640455745
+    },
+    {
+     "slice_id": "20241002_72",
+     "N": 19,
+     "rate_hz": 0.00017543859649122806,
+     "shape_usable": false,
+     "share_hz": 3.499702393071829e-24
+    },
+    {
+     "slice_id": "20241122b_110",
+     "N": 25,
+     "rate_hz": 0.0036333333333333335,
+     "shape_usable": true,
+     "share_hz": -7.052529960855457e-08
+    },
+    {
+     "slice_id": "20241211_127",
+     "N": 45,
+     "rate_hz": 0.020277777777777777,
+     "shape_usable": true,
+     "share_hz": 0.009812295141176933
+    },
+    {
+     "slice_id": "20241212_131",
+     "N": 33,
+     "rate_hz": 0.009368686868686868,
+     "shape_usable": true,
+     "share_hz": 8.632606541472628e-05
+    },
+    {
+     "slice_id": "20250731_151",
+     "N": 38,
+     "rate_hz": 0.03111842105263158,
+     "shape_usable": true,
+     "share_hz": 0.0022021447101368418
+    },
+    {
+     "slice_id": "20250806_174",
+     "N": 36,
+     "rate_hz": 0.012037037037037037,
+     "shape_usable": true,
+     "share_hz": 0.004851731602426601
+    },
+    {
+     "slice_id": "20250806_176",
+     "N": 19,
+     "rate_hz": 0.015657894736842107,
+     "shape_usable": true,
+     "share_hz": -4.382657230863216e-06
+    },
+    {
+     "slice_id": "20250807_178",
+     "N": 46,
+     "rate_hz": 0.007753623188405797,
+     "shape_usable": true,
+     "share_hz": 0.00031128145587140205
+    },
+    {
+     "slice_id": "20250807_181",
+     "N": 32,
+     "rate_hz": 0.041588541666666666,
+     "shape_usable": true,
+     "share_hz": 0.0012245177680049969
+    },
+    {
+     "slice_id": "20250808_183",
+     "N": 61,
+     "rate_hz": 0.007377049180327869,
+     "shape_usable": true,
+     "share_hz": 2.1522451656502318e-06
+    },
+    {
+     "slice_id": "20250808_186",
+     "N": 35,
+     "rate_hz": 0.0125,
+     "shape_usable": true,
+     "share_hz": 1.6074250913345425e-05
+    },
+    {
+     "slice_id": "20250826_190",
+     "N": 15,
+     "rate_hz": 0.0018954248366013073,
+     "shape_usable": true,
+     "share_hz": 0.00010677563524184394
+    },
+    {
+     "slice_id": "20250826_192",
+     "N": 30,
+     "rate_hz": 0.015233918128654971,
+     "shape_usable": true,
+     "share_hz": 0.0014877539300777317
+    },
+    {
+     "slice_id": "20250827_196",
+     "N": 27,
+     "rate_hz": 0.020586419753086418,
+     "shape_usable": true,
+     "share_hz": 0.0029978920762124767
+    },
+    {
+     "slice_id": "20250827_199",
+     "N": 48,
+     "rate_hz": 0.04847222222222222,
+     "shape_usable": true,
+     "share_hz": 0.03436255718127846
+    },
+    {
+     "slice_id": "20250829_204",
+     "N": 32,
+     "rate_hz": 0.04708333333333333,
+     "shape_usable": true,
+     "share_hz": 0.017429885575839427
+    },
+    {
+     "slice_id": "20250829_207",
+     "N": 53,
+     "rate_hz": 0.03627937768950679,
+     "shape_usable": true,
+     "share_hz": 0.0002933146009311425
+    },
+    {
+     "slice_id": "20250904_209",
+     "N": 23,
+     "rate_hz": 0.09393592677345537,
+     "shape_usable": true,
+     "share_hz": 0.0014741673028189374
+    },
+    {
+     "slice_id": "20250904_211",
+     "N": 45,
+     "rate_hz": 0.0043518518518518515,
+     "shape_usable": true,
+     "share_hz": 6.27763616247239e-07
+    },
+    {
+     "slice_id": "20250911_214",
+     "N": 20,
+     "rate_hz": 0.004583333333333333,
+     "shape_usable": true,
+     "share_hz": 0.0009613522654260151
+    },
+    {
+     "slice_id": "20250911_217",
+     "N": 32,
+     "rate_hz": 0.006484375,
+     "shape_usable": true,
+     "share_hz": 2.4196880397200482e-05
+    },
+    {
+     "slice_id": "20250911_222",
+     "N": 34,
+     "rate_hz": 0.010906862745098039,
+     "shape_usable": true,
+     "share_hz": 0.00017597074292757456
+    },
+    {
+     "slice_id": "20250912_225",
+     "N": 45,
+     "rate_hz": 0.0050185185185185185,
+     "shape_usable": true,
+     "share_hz": 8.689156592902605e-06
+    },
+    {
+     "slice_id": "20250912_227",
+     "N": 17,
+     "rate_hz": 0.00196078431372549,
+     "shape_usable": true,
+     "share_hz": 0.0002612233408144539
+    },
+    {
+     "slice_id": "20250912_229",
+     "N": 55,
+     "rate_hz": 0.01818181818181818,
+     "shape_usable": true,
+     "share_hz": 4.766326594356497e-05
+    },
+    {
+     "slice_id": "20250925_231",
+     "N": 20,
+     "rate_hz": 0.08795833333333333,
+     "shape_usable": true,
+     "share_hz": 0.006184697567986223
+    },
+    {
+     "slice_id": "20250925_233",
+     "N": 27,
+     "rate_hz": 0.06833333333333333,
+     "shape_usable": true,
+     "share_hz": 0.0033613354087546126
+    },
+    {
+     "slice_id": "20250926_235",
+     "N": 23,
+     "rate_hz": 0.030181159420289858,
+     "shape_usable": true,
+     "share_hz": 0.0006903197393754605
+    },
+    {
+     "slice_id": "20250926_237",
+     "N": 39,
+     "rate_hz": 0.03773504273504274,
+     "shape_usable": true,
+     "share_hz": 0.001494917737804484
+    },
+    {
+     "slice_id": "20260115_240",
+     "N": 32,
+     "rate_hz": 0.016831140350877193,
+     "shape_usable": true,
+     "share_hz": 2.087522737795089e-05
+    },
+    {
+     "slice_id": "20260115_243",
+     "N": 43,
+     "rate_hz": 0.03543451652386781,
+     "shape_usable": true,
+     "share_hz": 0.0006139619342115845
+    },
+    {
+     "slice_id": "20260120_248",
+     "N": 31,
+     "rate_hz": 0.009220430107526881,
+     "shape_usable": true,
+     "share_hz": 0.00079116917235764
+    },
+    {
+     "slice_id": "20260121_250",
+     "N": 34,
+     "rate_hz": 0.004681372549019607,
+     "shape_usable": true,
+     "share_hz": -1.408895455467185e-06
+    },
+    {
+     "slice_id": "20260121_252",
+     "N": 27,
+     "rate_hz": 0.0025925925925925925,
+     "shape_usable": true,
+     "share_hz": 6.961245399704693e-06
+    },
+    {
+     "slice_id": "20260122_256",
+     "N": 36,
+     "rate_hz": 0.024166666666666666,
+     "shape_usable": true,
+     "share_hz": 0.00017267731280710822
+    },
+    {
+     "slice_id": "20260122_259",
+     "N": 37,
+     "rate_hz": 0.0075154101469890955,
+     "shape_usable": true,
+     "share_hz": -3.6472415881905587e-07
+    },
+    {
+     "slice_id": "20260130_270",
+     "N": 48,
+     "rate_hz": 0.016371527777777777,
+     "shape_usable": true,
+     "share_hz": 0.005936667193768061
+    },
+    {
+     "slice_id": "20260130_272",
+     "N": 28,
+     "rate_hz": 0.03827380952380952,
+     "shape_usable": true,
+     "share_hz": 0.00027580308318736994
+    },
+    {
+     "slice_id": "20260225_275",
+     "N": 29,
+     "rate_hz": 0.001293103448275862,
+     "shape_usable": true,
+     "share_hz": 3.949996332632672e-06
+    },
+    {
+     "slice_id": "20260225_277",
+     "N": 26,
+     "rate_hz": 0.0018269230769230771,
+     "shape_usable": true,
+     "share_hz": 0.00042742873168207944
+    },
+    {
+     "slice_id": "20260225_280",
+     "N": 15,
+     "rate_hz": 0.0007777777777777778,
+     "shape_usable": false,
+     "share_hz": 8.726155978918145e-06
+    },
+    {
+     "slice_id": "20260226_282",
+     "N": 16,
+     "rate_hz": 0.03875,
+     "shape_usable": true,
+     "share_hz": 5.161172558031477e-05
+    },
+    {
+     "slice_id": "20260226_285",
+     "N": 27,
+     "rate_hz": 0.004808317089018844,
+     "shape_usable": true,
+     "share_hz": -1.1582032909047704e-06
+    },
+    {
+     "slice_id": "20260226_287",
+     "N": 15,
+     "rate_hz": 0.15138888888888888,
+     "shape_usable": true,
+     "share_hz": 0.0004242903716107701
+    },
+    {
+     "slice_id": "20260303_290",
+     "N": 33,
+     "rate_hz": 0.03941919191919192,
+     "shape_usable": true,
+     "share_hz": 0.010364705843309188
+    },
+    {
+     "slice_id": "20260303_296",
+     "N": 51,
+     "rate_hz": 0.05813725490196078,
+     "shape_usable": true,
+     "share_hz": 0.04947100292808599
+    },
+    {
+     "slice_id": "20260303_301",
+     "N": 24,
+     "rate_hz": 0.025416666666666667,
+     "shape_usable": true,
+     "share_hz": 0.002633727125273722
+    },
+    {
+     "slice_id": "20260629_309",
+     "N": 21,
+     "rate_hz": 0.024523809523809524,
+     "shape_usable": true,
+     "share_hz": 0.0008941582321767787
+    },
+    {
+     "slice_id": "20260629_312",
+     "N": 21,
+     "rate_hz": 0.043095238095238096,
+     "shape_usable": true,
+     "share_hz": 0.009598345829169465
+    },
+    {
+     "slice_id": "20260629_314",
+     "N": 14,
+     "rate_hz": 0.02726190476190476,
+     "shape_usable": true,
+     "share_hz": 0.0009637227920073365
+    },
+    {
+     "slice_id": "20260630_316",
+     "N": 34,
+     "rate_hz": 0.037377450980392156,
+     "shape_usable": true,
+     "share_hz": 0.011240232647922324
+    },
+    {
+     "slice_id": "20260630_325",
+     "N": 19,
+     "rate_hz": 0.06517543859649123,
+     "shape_usable": true,
+     "share_hz": 0.014136673259465023
+    },
+    {
+     "slice_id": "20260701_328",
+     "N": 25,
+     "rate_hz": 0.006766666666666666,
+     "shape_usable": true,
+     "share_hz": 1.3571938210443157e-06
+    },
+    {
+     "slice_id": "20260701_331",
+     "N": 26,
+     "rate_hz": 0.015544871794871795,
+     "shape_usable": true,
+     "share_hz": -9.793481737451392e-06
+    },
+    {
+     "slice_id": "20260702_334",
+     "N": 36,
+     "rate_hz": 0.022337962962962966,
+     "shape_usable": true,
+     "share_hz": 0.0021612567611583814
+    },
+    {
+     "slice_id": "20260702_338",
+     "N": 46,
+     "rate_hz": 0.008768115942028986,
+     "shape_usable": true,
+     "share_hz": -1.0394572537870394e-05
+    },
+    {
+     "slice_id": "20260706_341",
+     "N": 33,
+     "rate_hz": 0.028181818181818183,
+     "shape_usable": true,
+     "share_hz": 0.012110759959657305
+    },
+    {
+     "slice_id": "20260706_343",
+     "N": 44,
+     "rate_hz": 0.06017045454545455,
+     "shape_usable": true,
+     "share_hz": 0.0031927213013272183
+    },
+    {
+     "slice_id": "20260707_348",
+     "N": 30,
+     "rate_hz": 0.005888888888888889,
+     "shape_usable": true,
+     "share_hz": 0.00163017427473742
+    }
+   ]
+  }
+ },
+ "calibration": {
+  "fast": {
+   "fixed@1.0": {
+    "window_sec": 1.0,
+    "model": "fixed",
+    "recordings": 48,
+    "share_rel_error_median": -0.16549063456718804,
+    "participants_rel_error_median": 0.21664250350885506,
+    "rate_rel_error_median": -0.3140882691291426,
+    "passed": true
+   },
+   "binomial@1.0": {
+    "window_sec": 1.0,
+    "model": "binomial",
+    "recordings": 48,
+    "share_rel_error_median": -0.046936017558922294,
+    "participants_rel_error_median": -0.04615967922462938,
+    "rate_rel_error_median": -0.0008139080697091017,
+    "passed": true
+   },
+   "fixed@2.0": {
+    "window_sec": 2.0,
+    "model": "fixed",
+    "recordings": 48,
+    "share_rel_error_median": -0.13945633229428273,
+    "participants_rel_error_median": 0.24769351638550208,
+    "rate_rel_error_median": -0.3102924264616971,
+    "passed": true
+   },
+   "binomial@2.0": {
+    "window_sec": 2.0,
+    "model": "binomial",
+    "recordings": 48,
+    "share_rel_error_median": -0.022198506605037915,
+    "participants_rel_error_median": -0.013105375194650382,
+    "rate_rel_error_median": -0.009213882801500595,
+    "passed": true
+   },
+   "fixed@4.0": {
+    "window_sec": 4.0,
+    "model": "fixed",
+    "recordings": 48,
+    "share_rel_error_median": -0.1153701690452325,
+    "participants_rel_error_median": 0.24620862081904882,
+    "rate_rel_error_median": -0.2901430657947462,
+    "passed": true
+   },
+   "binomial@4.0": {
+    "window_sec": 4.0,
+    "model": "binomial",
+    "recordings": 48,
+    "share_rel_error_median": 0.00540736710727141,
+    "participants_rel_error_median": -0.014686070475068203,
+    "rate_rel_error_median": 0.02039292958339456,
+    "passed": true
+   }
+  },
+  "slow": {
+   "fixed@1.0": {
+    "window_sec": 1.0,
+    "model": "fixed",
+    "recordings": 48,
+    "share_rel_error_median": -0.1710085015324237,
+    "participants_rel_error_median": 0.14226085416627932,
+    "rate_rel_error_median": -0.2742537788597806,
+    "passed": true
+   },
+   "binomial@1.0": {
+    "window_sec": 1.0,
+    "model": "binomial",
+    "recordings": 48,
+    "share_rel_error_median": -0.1336882079487942,
+    "participants_rel_error_median": 0.05062131560507943,
+    "rate_rel_error_median": -0.17542907307922356,
+    "passed": true
+   },
+   "fixed@2.0": {
+    "window_sec": 2.0,
+    "model": "fixed",
+    "recordings": 48,
+    "share_rel_error_median": -0.13170779694940116,
+    "participants_rel_error_median": 0.18519008043851892,
+    "rate_rel_error_median": -0.26738147966161535,
+    "passed": true
+   },
+   "binomial@2.0": {
+    "window_sec": 2.0,
+    "model": "binomial",
+    "recordings": 48,
+    "share_rel_error_median": -0.09542058781768459,
+    "participants_rel_error_median": 0.09641249029546906,
+    "rate_rel_error_median": -0.17496433122670563,
+    "passed": true
+   },
+   "fixed@4.0": {
+    "window_sec": 4.0,
+    "model": "fixed",
+    "recordings": 48,
+    "share_rel_error_median": -0.11368438282287024,
+    "participants_rel_error_median": 0.1997834556051079,
+    "rate_rel_error_median": -0.261270345880775,
+    "passed": true
+   },
+   "binomial@4.0": {
+    "window_sec": 4.0,
+    "model": "binomial",
+    "recordings": 48,
+    "share_rel_error_median": -0.07756270159336814,
+    "participants_rel_error_median": 0.1119787571398303,
+    "rate_rel_error_median": -0.1704542083346326,
+    "passed": true
+   }
+  },
+  "combined": {
+   "fixed@1.0": {
+    "window_sec": 1.0,
+    "model": "fixed",
+    "recordings": 48,
+    "share_rel_error_median": -0.18519941985461702,
+    "participants_rel_error_median": 0.17316845549714466,
+    "rate_rel_error_median": -0.30547009141999026,
+    "passed": true
+   },
+   "binomial@1.0": {
+    "window_sec": 1.0,
+    "model": "binomial",
+    "recordings": 48,
+    "share_rel_error_median": -0.10860656026781501,
+    "participants_rel_error_median": -0.0075798517086330675,
+    "rate_rel_error_median": -0.10179832476508849,
+    "passed": true
+   },
+   "fixed@2.0": {
+    "window_sec": 2.0,
+    "model": "fixed",
+    "recordings": 48,
+    "share_rel_error_median": -0.152834695361718,
+    "participants_rel_error_median": 0.2403023278465266,
+    "rate_rel_error_median": -0.31696870543718825,
+    "passed": true
+   },
+   "binomial@2.0": {
+    "window_sec": 2.0,
+    "model": "binomial",
+    "recordings": 48,
+    "share_rel_error_median": -0.0803981331645448,
+    "participants_rel_error_median": 0.06402961213070757,
+    "rate_rel_error_median": -0.13573658444151504,
+    "passed": true
+   },
+   "fixed@4.0": {
+    "window_sec": 4.0,
+    "model": "fixed",
+    "recordings": 48,
+    "share_rel_error_median": -0.13853888988483665,
+    "participants_rel_error_median": 0.2532238692237849,
+    "rate_rel_error_median": -0.31260397182769056,
+    "passed": true
+   },
+   "binomial@4.0": {
+    "window_sec": 4.0,
+    "model": "binomial",
+    "recordings": 48,
+    "share_rel_error_median": -0.06617727842929483,
+    "participants_rel_error_median": 0.07781258959978254,
+    "rate_rel_error_median": -0.13359453157115575,
+    "passed": true
+   }
+  }
+ }
+}

@@ -1,11 +1,11 @@
 ---
-status: waiting-on-tony
+status: open
 filed: 2026-08-31
 ---
 
 # Run-record naming: four decisions, and a prior-art pass nobody ran
 
-waiting: Rule the four items in `docs/run_records.md` — they amend ADR-0005 and land in a contract two other teams read.
+not ready: 2026-09-25, moved from waiting-on-tony to open (Tony approved). The prior-art pass below comes first; the four items go back to Tony once it has run.
 
 **Read [`docs/run_records.md`](../run_records.md).** This file is the queue entry; that
 one is the content.

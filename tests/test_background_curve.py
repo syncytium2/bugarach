@@ -8,16 +8,42 @@ the interquartile spread of *untreated* slices.
 This is the same move `TOLERANCE_GRID` made for the matching tolerance, and it
 lands in the opposite place. **Five of six detectors were flat across the
 tolerance grid**, so that inherited constant was granting slack nobody used and
-no comparison rested on it — reassuring, and cheap. **Nothing is flat across the
-background grid.**
+no comparison rested on it — reassuring, and cheap. **Five of six are *not* flat
+across the background grid**, which is the claim that matters, and it was *six of
+six* until 2026-09-22: adopting the measured jitter (0.36 → 0.106 s) put
+SPIKE-synch flat at F1 0.657, spread 0.026. See `BACKGROUND_FLAT` below for the
+mechanism and for what is still open about it.
+
+⚠ **Re-measured 2026-09-22, when `REGIMES` became BACKGROUND rates** (Tony: *background,
+end to end*) and the axis moved from 5.2–19 mHz to 4.2–16.5 mHz, the grid with it. Two
+claims below reversed, and they are restated as measured rather than re-baselined — no
+tolerance was loosened and no test skipped:
+
+* **No detector is a steady leader across the whole axis any more.** Three now win
+  somewhere on the grid: CoactDetect at the quiet end, LoCo through the middle,
+  SPIKE-synch at the busy end. The leader *does* still hold between the two named
+  `REGIMES` endpoints, which is where the project reports.
+* **The fitted/flat contrast this file is named for is gone.** Both fields now show the
+  same flat set, the same three winners and the same largest rank change (four places,
+  SPIKE-synch, *rising*). What still separates them is magnitude: mean own-range 0.126
+  fitted against 0.171 flat, so the fitted axis is about a quarter shorter and has not
+  gone dead.
+
+Both follow from one thing already ruled a result rather than a defect (#738): SPIKE-synch
+went flat when the measured jitter was adopted, and **a flat detector on a declining axis
+eventually overtakes the ones that decline**. Nothing collapses down the table; the mover
+is the detector that does not move.
 
 What these tests pin
 --------------------
-1. Every one of the six refuses a bare F1 (`describe_background`).
-2. The axis still discriminates on the fitted field — every detector moves across
-   it, and they stay apart at any given rate — and **one winner holds across it**,
-   at both named `REGIMES` endpoints and everywhere between.
-3. **The reordering the first version of this file pinned was the flat field's.**
+1. Every detector outside `BACKGROUND_FLAT` refuses a bare F1 (`describe_background`),
+   and the flat set is exactly what was last measured — it fails in both directions.
+2. The axis still discriminates on the fitted field — every detector moves across it, and
+   they stay apart at any given rate — and the leader holds **between the two named
+   `REGIMES` endpoints**, though no longer across the whole grid.
+3. **The reordering the first version of this file pinned was the flat field's** — and as
+   of 2026-09-22 the fitted field reorders the same way, so only the magnitude contrast
+   is asserted.
    That version asserted three winners along the axis and one detector moving four
    places, and it was measured before `BENCH_RECORDING` carried the fitted
    background. The paired measurement below runs the same seeds on the same grid
@@ -70,12 +96,32 @@ exists, which is what makes it checkable rather than a new opinion.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
+from bugarach import bench, bench_combined, bench_slow, dataset, groups
 from bugarach.bench import (BACKGROUND_GRID, BACKGROUND_TOLERABLE_SPREAD,
                             DETECTORS, REGIMES, background_spread,
                             describe_background, evaluate,
                             evaluate_background_curve)
+
+# THE SIX THESE MEASUREMENTS WERE TAKEN ON. The rankings pinned below (who wins, who moves
+# most) were measured on 2026-09-23 over six detectors; a seventh competitor changes the field
+# they describe, which is a re-measurement and not a line added here. `count` (2026-09-26) is
+# left out for a second reason too: this file runs with the floor OFF, and count's threshold
+# IS the floor, so without it count falls back to a fixed minimum of 3 cells, which is not the
+# rule being measured.
+DETECTORS = tuple(d for d in DETECTORS if d not in ("count", "count_sliding"))
+
+# Pre-ADR-0008 by construction: these pin measurements taken before the floor, or exercise detector
+# mechanics it has nothing to do with. The floor's own tests are tests/test_bench_floor.py.
+# And pre-ADR-0009: measured with the elevated-rate stretch inside the planted recording, so due
+# for re-measurement without it, not for re-baselining
+# (docs/todo/2026-09-25-pinned-bench-measurements-predate-adr-0009.md).
+pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench", "pre_adr_0009_bench")
+
 
 SEEDS = tuple(range(1, 13))
 REGIME = "baseline_quiet"
@@ -100,15 +146,58 @@ def flat_curves():
             for n in DETECTORS}
 
 
-def test_both_regime_endpoints_are_on_the_grid():
+BENCHES = {"fast": bench, "slow": bench_slow, "combined": bench_combined}
+
+GROUP_RECORD = (Path(__file__).resolve().parents[1] / "docs" / "learned" / "runs"
+                / "2026-09-23-groups-rates-comod-66" / "coordination_rates.json")
+
+
+@pytest.mark.parametrize("stream", list(BENCHES))
+def test_both_regime_endpoints_are_on_the_grid(stream):
     """The grid has to contain the axis it is reporting across, or the curve and
-    the shipped numbers are measured at different places and cannot be compared."""
-    assert QUIET_HZ in BACKGROUND_GRID, (QUIET_HZ, BACKGROUND_GRID)
-    assert BUSY_HZ in BACKGROUND_GRID, (BUSY_HZ, BACKGROUND_GRID)
-    assert min(BACKGROUND_GRID) < QUIET_HZ, (
+    the shipped numbers are measured at different places and cannot be compared.
+    Each bench carries its own grid since 2026-09-23."""
+    b = BENCHES[stream]
+    quiet = b.REGIMES["baseline_quiet"]["bg_rate_hz"]
+    busy = b.REGIMES["baseline_busy"]["bg_rate_hz"]
+    assert quiet in b.BACKGROUND_GRID, (quiet, b.BACKGROUND_GRID)
+    assert busy in b.BACKGROUND_GRID, (busy, b.BACKGROUND_GRID)
+    assert min(b.BACKGROUND_GRID) < quiet, (
         "the grid stops at the quiet endpoint, so it cannot show whether a "
         "detector was about to fall off it")
-    assert max(BACKGROUND_GRID) > BUSY_HZ, "same, at the busy end"
+    assert sum(r > busy for r in b.BACKGROUND_GRID) >= 2, "two points above busy"
+    assert list(b.BACKGROUND_GRID) == sorted(b.BACKGROUND_GRID)
+
+
+@pytest.mark.parametrize("stream", list(BENCHES))
+def test_the_grid_covers_every_groups_interquartile_background(stream):
+    """The regimes turned out to be the spread between groups (2026-09-23), so a grid that
+    stops at them leaves ORX below it and DI above it. Checked against the group record
+    itself, and against the folder that record was measured on, so a grid that drifts
+    or a record that goes stale fails here rather than in a figure."""
+    rec = json.loads(GROUP_RECORD.read_text(encoding="utf-8"))
+    assert rec["dataset"]["name"] == dataset.current_name("default"), (
+        "the group record was measured on another folder: re-run it before trusting "
+        "this coverage check")
+    stats = rec["by_group"][stream]["stats"]
+    grid = BENCHES[stream].BACKGROUND_GRID
+    for g in groups.GROUP_ORDER:
+        lo = stats["background_q25_hz"]["groups"][g]["value"]
+        hi = stats["background_q75_hz"]["groups"][g]["value"]
+        assert min(grid) <= lo, f"{stream}: {g} lower quartile {lo:.5f} Hz is below the grid"
+        assert max(grid) >= hi, f"{stream}: {g} upper quartile {hi:.5f} Hz is above the grid"
+
+
+@pytest.mark.parametrize("stream", ["slow", "combined"])
+def test_the_slow_and_combined_curves_agree_with_the_point_estimate(stream):
+    """The same identity as the fast test below, on the benches that gained a grid."""
+    b = BENCHES[stream]
+    name = b.DETECTORS[0]
+    quiet = b.REGIMES["baseline_quiet"]["bg_rate_hz"]
+    seeds = (1, 2)
+    curve = b.evaluate_background_curve(name, "baseline_quiet", seeds, rates=(quiet,))
+    point = b.evaluate(name, "baseline_quiet", seeds)
+    assert curve[quiet].f1 == pytest.approx(point.f1)
 
 
 def test_the_curve_agrees_with_the_point_estimate_at_the_regime(curves):
@@ -124,27 +213,72 @@ def test_the_curve_agrees_with_the_point_estimate_at_the_regime(curves):
         assert curves[n][QUIET_HZ].n_hit == point.n_hit, n
 
 
-# ------------------------------------------------- nothing is flat
+# ------------------------------------------------- five of six are not flat
 
-def test_every_detector_refuses_a_bare_f1(curves):
+#: The detectors measured flat across the background axis on the CURRENT bench.
+#:
+#: Empty until 2026-09-22, and the section above this line used to be called "nothing is
+#: flat". Adopting the measured jitter (0.36 -> 0.106 s, Tony's ruling that evening) put
+#: SPIKE-synch at F1 0.657 with a spread of 0.026 across the whole grid, under
+#: `BACKGROUND_TOLERABLE_SPREAD`. The other five still spread 0.081 to 0.178.
+#:
+#: The mechanism is not mysterious: `sync` is the one detector keying on coincidence
+#: TIMING rather than on counts or rate, so sharpening planted jitter by about 3.4x
+#: sharpened exactly what it reads, and it stopped degrading as the field fills up. The
+#: bench got easier for one detector in particular. It is NOT a quantisation artefact of
+#: planting 0.106 s on a 0.1 s grid -- the correlogram's calibration resolves 0.05 from
+#: 0.10 from 0.15 s cleanly.
+#:
+#: ⚠ This records a MEASUREMENT, not a decision. Whether the difficulty axis should be
+#: re-derived around the corrected jitter, or the MILESTONES row that says "nothing is
+#: flat across it" corrected to match, is Tony's and is open:
+#: `docs/todo/2026-09-22-the-corrected-jitter-flattens-spike-synch-across-the-axis.md`.
+#: The tolerance was NOT loosened to absorb this, and the test below fails if the set
+#: changes in either direction.
+BACKGROUND_FLAT = {"sync"}
+
+
+def test_the_flat_set_is_exactly_what_was_measured(curves):
+    """The guard that keeps `BACKGROUND_FLAT` honest.
+
+    It fails if another detector goes flat — the axis losing its power to
+    discriminate is the thing worth knowing early — and equally if `sync` stops being
+    flat, because then the exception above is stale and should come out rather than sit
+    there excusing a detector that no longer needs it.
+    """
+    spreads = {n: background_spread(curves[n]) for n in DETECTORS}
+    flat = {n for n, s in spreads.items() if s <= BACKGROUND_TOLERABLE_SPREAD}
+    assert flat == BACKGROUND_FLAT, (
+        f"the set of background-flat detectors moved: measured {sorted(flat)}, "
+        f"BACKGROUND_FLAT holds {sorted(BACKGROUND_FLAT)}. Spreads: "
+        + ", ".join(f"{n} {s:.3f}" for n, s in sorted(spreads.items(), key=lambda kv: kv[1]))
+        + f" against a tolerance of {BACKGROUND_TOLERABLE_SPREAD}.")
+
+
+def test_every_detector_but_the_known_flat_one_refuses_a_bare_f1(curves):
     """The headline, and the contrast with the tolerance curve.
 
-    `describe_curve` settles for five of six. `describe_background` settles for
-    none of them: every detector's score moves more across the background axis
-    than the threshold allows, so a single F1 for any of them is a number that
-    hides where it was measured.
+    `describe_curve` settles for five of six on the tolerance axis. On the background
+    axis `describe_background` settled for none of them until 2026-09-22 and now settles
+    for one: five detectors' scores still move more across the axis than the threshold
+    allows, so a single F1 for any of those five hides where it was measured.
     """
     said = {n: describe_background(curves[n]) for n in DETECTORS}
     for n, s in said.items():
+        if n in BACKGROUND_FLAT:
+            assert "flat across" in s, f"{n} is in BACKGROUND_FLAT but reported: {s}"
+            continue
         assert "NOT one number" in s, f"{n} reported a bare F1: {s}"
         assert "depends on the background rate" in s, (n, s)
 
 
 def test_the_spreads_dwarf_the_differences_the_bakeoff_asks_about(curves):
-    """0.017 separates the top two rows of the published table. Every detector
-    here moves several times that with the background alone, which is what makes
-    a bare F1 uncomparable rather than merely imprecise."""
-    spreads = {n: background_spread(curves[n]) for n in DETECTORS}
+    """0.017 separates the top two rows of the published table. Every detector outside
+    `BACKGROUND_FLAT` moves several times that with the background alone, which is what
+    makes a bare F1 uncomparable rather than merely imprecise."""
+    spreads = {n: background_spread(curves[n]) for n in DETECTORS
+               if n not in BACKGROUND_FLAT}
+    assert spreads, "every detector went flat — the axis has stopped discriminating"
     assert min(spreads.values()) > BACKGROUND_TOLERABLE_SPREAD, spreads
     # the published gap between the tube and CoactDetect
     assert min(spreads.values()) > 3 * 0.017, spreads
@@ -158,6 +292,17 @@ def _order(curves, rate):
 
 def _winners(curves):
     return {_order(curves, r)[0] for r in BACKGROUND_GRID}
+
+
+def _worst_rank_change_with_name(curves):
+    """The largest rank change and who made it — the name matters since 2026-09-22,
+    when the mover became the detector that RISES rather than one that falls."""
+    worst, who = 0, None
+    for n in DETECTORS:
+        ranks = [_order(curves, r).index(n) for r in BACKGROUND_GRID]
+        if max(ranks) - min(ranks) > worst:
+            worst, who = max(ranks) - min(ranks), n
+    return worst, who
 
 
 def _worst_rank_change(curves):
@@ -186,22 +331,44 @@ def _steady_leaders(curves, rates=BACKGROUND_GRID):
                    for r in rates)}
 
 
-def test_one_winner_holds_across_the_axis(curves):
-    """The first version of this test asserted the opposite — more than one
-    detector best somewhere on the grid — and that was true of the flat field.
-    On the fitted one the top of the table does not move: some detector is within
-    ``TIE_F1`` of the best at every rate on the grid. Pinned as *a steady leader*
-    rather than as its name, so the test says something true if the detectors
-    change and a different one comes to lead.
+def test_no_winner_holds_across_the_whole_axis_since_the_regimes_became_background(curves):
+    """**Reversed 2026-09-22, re-measured rather than re-baselined.**
 
-    Was *exactly one raw winner* until 2026-09-16; see ``TIE_F1`` for why that
-    stopped measuring anything once LoCo was retuned to within 0.003 of CoactDetect."""
-    leaders = _steady_leaders(curves)
-    assert leaders, (
-        f"no detector stays within {TIE_F1} F1 of the top across the axis; at twelve "
-        "seeds on the fitted field CoactDetect did (largest deficit 0.003), and the "
-        "reordering that used to be here was measured to be the flat field's — see "
-        "the module docstring before re-baselining this")
+    This test asserted the opposite — that some detector stays within ``TIE_F1`` of the
+    best at every rate — and that held while the axis ran 5.2 to 19 mHz. Adopting the
+    **background** regimes moved it to 4.2 to 16.5 mHz, and the grid with it, and at
+    twelve seeds on the fitted field **no detector is a steady leader any more**.
+
+    The mechanism is one #738 already ruled on. SPIKE-synch went flat when the measured
+    jitter was adopted, and a flat detector on a declining axis eventually overtakes:
+    every other detector falls with rate and sync does not, so sync is **top at 25 mHz**
+    (0.665 against LoCo 0.657 and CoactDetect 0.633) having been fourth at 2.1 mHz.
+    Three detectors now win somewhere on the grid — CoactDetect at the quiet end, LoCo
+    through the middle, SPIKE-synch at the busy end.
+
+    **The leader still holds where the project reports**, between the two named
+    ``REGIMES`` endpoints: that is the test below, and it still passes, LoCo being
+    within the tie margin at both. What ended is the stronger claim across the whole
+    grid, including the two points beyond the busy endpoint.
+
+    Asserted as the mechanism and not merely as an absence, so it cannot pass for an
+    unrelated reason. ``TIE_F1`` is untouched.
+
+    **Re-measured 2026-09-23 on the bench retuned to the 66-recording default**, grid
+    1.8–37 mHz, twelve seeds. Still no steady leader, and SPIKE-synch is still flat
+    (spread 0.021) and still rises, from fifth at 1.8 mHz to **second** at 25 mHz (0.654
+    against LoCo 0.665). It no longer takes the top anywhere, so the winners are two,
+    CoactDetect and LoCo, alternating through the quiet half and LoCo from 16.9 mHz up."""
+    assert not _steady_leaders(curves), (
+        "a steady leader is back across the whole axis; that is a real change from the "
+        "2026-09-23 measurement and the docstring above is now wrong")
+    assert _winners(curves) == {"coact", "loco"}, _winners(curves)
+    assert _order(curves, 0.0250).index("sync") == 1, (
+        "SPIKE-synch is no longer second at 25 mHz, so the rise this test explains has "
+        "changed shape")
+    assert background_spread(curves["sync"]) <= BACKGROUND_TOLERABLE_SPREAD, (
+        "SPIKE-synch is no longer flat, so the overtaking has a different cause and "
+        "the explanation must be re-measured")
 
 
 def test_the_winner_holds_between_the_two_named_endpoints(curves):
@@ -216,17 +383,37 @@ def test_the_winner_holds_between_the_two_named_endpoints(curves):
         "not to do")
 
 
-def test_no_detector_falls_most_of_the_way_down_the_table(curves):
-    """CoactDetect went from first to fifth across the grid on the flat field.
-    On the fitted field the largest rank change was two places until 2026-09-16 and
-    is **three** since: rate+context at its retuned 4.5 Hz falls from third to
-    last at 40 mHz — beyond the busy endpoint, inside a cluster whose F1 spans 0.49
-    to 0.53 — and nothing crosses the whole table."""
-    worst = _worst_rank_change(curves)
-    assert worst <= 3, (
-        f"the largest rank change across the axis is {worst} places; the fitted "
-        "field was measured at three, and a detector crossing the whole table is "
-        "the flat field's signature, not this one's")
+def test_the_largest_rank_change_is_spike_synch_rising(curves):
+    """**Restated 2026-09-22**, and the direction is the point.
+
+    This asserted no detector moved more than three places, the fitted field having
+    measured two and then three (rate+context falling into a 0.49–0.53 cluster). On the
+    background axis the largest change is **four places, and it is a rise, not a fall**:
+    SPIKE-synch goes from fourth at 2.1 mHz to first at 25 mHz.
+
+    That is the same flatness as the test above, counted a second way, and it is worth
+    counting separately because the old claim's *worry* was a detector collapsing down
+    the table — the flat field's signature. Nothing collapses here: the mover is the one
+    detector that does not decline, overtaking four that do. The rank change is
+    therefore not evidence that the fitted field has started behaving like the flat one,
+    and the paired test below is where that comparison is actually made.
+
+    Pinned exactly, with the mover and its direction named, so that a detector
+    genuinely crossing the table downwards still fails this.
+
+    **Three places since 2026-09-23**, on the bench retuned to the 66-recording default:
+    SPIKE-synch goes from fifth at 1.8 mHz to second at 25 and 37 mHz. Same mover, same
+    direction, one place shorter, because it no longer overtakes LoCo at the busy end."""
+    worst, who = _worst_rank_change_with_name(curves)
+    assert (worst, who) == (3, "sync"), (
+        f"the largest rank change is {worst} places by {who}; 2026-09-23 measured three "
+        "by SPIKE-synch, rising. A different mover, or a larger change, is a new "
+        "finding and needs measuring rather than re-baselining")
+    quiet_rank = _order(curves, BACKGROUND_GRID[0]).index("sync")
+    best_rank = min(_order(curves, r).index("sync") for r in BACKGROUND_GRID)
+    assert best_rank < quiet_rank, (
+        "SPIKE-synch's largest rank change is downward, which would be the flat "
+        "field's signature rather than the flatness this test describes")
 
 
 def test_the_reordering_was_the_flat_fields(curves, flat_curves):
@@ -242,10 +429,30 @@ def test_the_reordering_was_the_flat_fields(curves, flat_curves):
         "the flat field used to have three winners along the axis; if it now has "
         "one, the comparison this test rests on has changed and the docstring "
         "is wrong")
-    assert _steady_leaders(curves) and not _steady_leaders(flat_curves), (
-        "the fitted field must be the more stable of the two — a steady leader there "
-        "and none on the flat field — or the explanation in the module docstring is "
-        "false")
+    # ⚠ REVERSED 2026-09-22 — for Tony. This asserted the contrast the whole file is
+    # named for: a steady leader on the fitted field and none on the flat one. On the
+    # background axis **neither field has one**, and the two now agree on every
+    # structural measure — same flat set {sync}, same three winners
+    # {coact, loco, sync}, same largest rank change of four, both by SPIKE-synch.
+    # The ordering contrast is gone, so it is not asserted; what survives is the
+    # magnitude contrast below, and it is the reading the 2026-08-28 handoff called
+    # (a). Kept as a measured equality rather than deleted, so that the fields
+    # SEPARATING again is itself a failure worth seeing.
+    #
+    # ⚠ SEPARATED AGAIN 2026-09-23, on the bench retuned to the 66-recording default and
+    # its 1.8–37 mHz grid — the failure the comment above asked to see. Neither field has
+    # a steady leader, but the fitted field now has two winners {coact, loco} and a
+    # largest rank change of three, while the flat field keeps three {loco, rate, sync}
+    # and four. So the ordering contrast is back, in the direction the file is named for:
+    # the flat field reorders more.
+    assert not _steady_leaders(curves) and not _steady_leaders(flat_curves), (
+        "the two fields no longer agree about steady leaders; on 2026-09-23 neither "
+        "had one, and a difference reopening here is a finding, not a regression")
+    assert _winners(curves) == {"coact", "loco"}, _winners(curves)
+    assert _winners(flat_curves) == {"loco", "rate", "sync"}, _winners(flat_curves)
+    assert _worst_rank_change(curves) < _worst_rank_change(flat_curves), (
+        "the fitted field reorders as much as the flat one again; on 2026-09-23 it "
+        "measured three places against four")
     # Rank change no longer separates the fields. It was `>= 3` flat and strictly
     # less fitted; after locust went per-event both measured two, and after the
     # retune of the same day fitted measures three and flat two — the move being

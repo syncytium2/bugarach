@@ -1,0 +1,23 @@
+{
+ "detector": "coact",
+ "params": {
+  "int_win_sec": 2.0,
+  "context_win_sec": 120.0,
+  "alpha": 1e-05,
+  "n_surrogates": 100,
+  "merge_gap_sec": 8.0,
+  "guard_sec": 0.0,
+  "window_mode": "sliding",
+  "min_rois": 3,
+  "guard_norm": "compact",
+  "detection_mode": "threshold",
+  "peak_prominence": 0.0,
+  "peak_min_distance_sec": 0.0
+ },
+ "config_key": "39f222d2c3b2c64c",
+ "grid_index": null,
+ "is_shipped": null,
+ "chosen_by": "search_all_settings.choose_settings",
+ "outer_fold": 1,
+ "selection": "gated"
+}

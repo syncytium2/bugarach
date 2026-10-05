@@ -1,0 +1,211 @@
+{
+ "measured_on": "2026-09-23",
+ "merged": [
+  {
+   "detectors": [
+    "count"
+   ],
+   "measured_on": "2026-09-26",
+   "note": "rows merged with --only; every other row is as first measured"
+  },
+  {
+   "detectors": [
+    "count_sliding"
+   ],
+   "measured_on": "2026-09-26",
+   "note": "rows merged with --only; every other row is as first measured"
+  }
+ ],
+ "rows": {
+  "bugarach.bench": {
+   "cicada": {
+    "ceiling_null": 2.0,
+    "ceiling_probe": 48.0,
+    "ceiling_swing": 0.15,
+    "declared_null": 6.0,
+    "declared_probe": 25.0,
+    "declared_swing": 0.2,
+    "f1_busy": 0.5636363636363636,
+    "f1_quiet": 0.643908969210174,
+    "null_per_hour": 1.0555555555555556,
+    "precision_swing": 0.07447133892316615,
+    "probe_per_min": 29.6625
+   },
+   "coact": {
+    "ceiling_null": 5.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.15,
+    "declared_null": 7.0,
+    "declared_probe": 1.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6754883427851293,
+    "f1_quiet": 0.7983343248066628,
+    "null_per_hour": 2.9166666666666665,
+    "precision_swing": 0.08000724927297231,
+    "probe_per_min": 0.07916666666666666
+   },
+   "count": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8021390374331551,
+    "f1_quiet": 0.7811447811447813,
+    "null_per_hour": 0.1111111111111111,
+    "precision_swing": 0.029564275210896995,
+    "probe_per_min": 0.016666666666666666
+   },
+   "count_sliding": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.757020757020757,
+    "f1_quiet": 0.7811228641171684,
+    "null_per_hour": 0.3055555555555556,
+    "precision_swing": 0.031817144535871034,
+    "probe_per_min": 0.09583333333333334
+   },
+   "loco": {
+    "ceiling_null": 3.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.15,
+    "declared_null": 3.0,
+    "declared_probe": 1.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6901669758812617,
+    "f1_quiet": 0.807185628742515,
+    "null_per_hour": 1.6666666666666667,
+    "precision_swing": 0.08740010561520861,
+    "probe_per_min": 0.2125
+   },
+   "rate": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 7.0,
+    "ceiling_swing": 0.15,
+    "declared_null": 1.0,
+    "declared_probe": 2.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6364217252396166,
+    "f1_quiet": 0.6653061224489796,
+    "null_per_hour": 0.08333333333333333,
+    "precision_swing": 0.06265088757396453,
+    "probe_per_min": 4.141666666666667
+   },
+   "sce": {
+    "ceiling_null": 6.0,
+    "ceiling_probe": 10.0,
+    "ceiling_swing": 0.1,
+    "declared_null": 6.0,
+    "declared_probe": 9.0,
+    "declared_swing": 0.5,
+    "f1_busy": 0.4608967674661106,
+    "f1_quiet": 0.5295887662988966,
+    "null_per_hour": 3.388888888888889,
+    "precision_swing": 0.02838239958914246,
+    "probe_per_min": 5.916666666666667
+   },
+   "sync": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 9.0,
+    "ceiling_swing": 0.1,
+    "declared_null": 1.0,
+    "declared_probe": 1.0,
+    "declared_swing": 0.1,
+    "f1_busy": 0.6509695290858725,
+    "f1_quiet": 0.6393328700486449,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.009393802011695151,
+    "probe_per_min": 5.5375
+   }
+  },
+  "bugarach.bench_slow": {
+   "cicada": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 4.0,
+    "ceiling_swing": 0.15,
+    "f1_busy": 0.7178423236514523,
+    "f1_quiet": 0.7791644058600108,
+    "null_per_hour": 0.6111111111111112,
+    "precision_swing": 0.06651117807669849,
+    "probe_per_min": 1.9291666666666667
+   },
+   "coact": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8602150537634409,
+    "f1_quiet": 0.8622754491017963,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.0031777557100297615,
+    "probe_per_min": 0.21666666666666667
+   },
+   "count": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8072289156626506,
+    "f1_quiet": 0.8226190476190477,
+    "null_per_hour": 0.08333333333333333,
+    "precision_swing": 0.02187500000000009,
+    "probe_per_min": 0.020833333333333332
+   },
+   "count_sliding": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8276315789473685,
+    "f1_quiet": 0.8419203747072599,
+    "null_per_hour": 0.3333333333333333,
+    "precision_swing": 0.02099122048855928,
+    "probe_per_min": 0.09583333333333334
+   },
+   "loco": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8475573866980576,
+    "f1_quiet": 0.846380223660977,
+    "null_per_hour": 0.08333333333333333,
+    "precision_swing": 0.0010214504596526286,
+    "probe_per_min": 0.008333333333333333
+   },
+   "rate": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8435852372583479,
+    "f1_quiet": 0.8455666470933646,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.002968395860324602,
+    "probe_per_min": 0.26666666666666666
+   },
+   "sce": {
+    "ceiling_null": 5.0,
+    "ceiling_probe": 7.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.7741530740276035,
+    "f1_quiet": 0.8399291199054932,
+    "null_per_hour": 3.0833333333333335,
+    "precision_swing": 0.02478004520215149,
+    "probe_per_min": 4.3
+   },
+   "sync": {
+    "ceiling_null": 1.0,
+    "ceiling_probe": 1.0,
+    "ceiling_swing": 0.1,
+    "f1_busy": 0.8458823529411764,
+    "f1_quiet": 0.8453850676072898,
+    "null_per_hour": 0.0,
+    "precision_swing": 0.0007478832511598199,
+    "probe_per_min": 0.38333333333333336
+   }
+  }
+ },
+ "rule_rate": "max(1, ceil(1.6 x measured))",
+ "rule_swing": "max(0.10, ceil((measured + 0.05) / 0.05) x 0.05)",
+ "seeds": [
+  1,
+  48
+ ],
+ "slow_measured_on": "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED",
+ "tool": "tools/measure_slow_budgets.py"
+}

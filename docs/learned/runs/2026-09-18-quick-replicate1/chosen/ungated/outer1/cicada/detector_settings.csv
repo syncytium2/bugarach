@@ -1,0 +1,12 @@
+detector,stream,parameter,value
+cicada,events,active_duration_mode,per_event
+cicada,events,duration_field,width
+cicada,events,fitted_config_key,655795c115da3676
+cicada,events,fitted_on,"simulated recordings ['quiet:2000', 'busy:2000', 'quiet:2001', 'busy:2001', 'quiet:2004', 'busy:2004', 'quiet:2005', 'busy:2005']"
+cicada,events,fitted_outer_fold,1
+cicada,events,fitted_selection,ungated
+cicada,events,n_surrogates,100
+cicada,events,n_synchronous_frames,3
+cicada,events,sce_min_distance_frames,16
+cicada,events,sce_percentile,99.9
+cicada,events,threshold_scope,global
