@@ -120,7 +120,7 @@ item on exactly this: `docs/todo/2026-08-16-assessment-needs-a-human-in-the-loop
 ## What the literature survey changed for you — read before writing copy
 
 Added 2026-08-17, after twelve papers went onto the shelf at
-`<darkroom>/bugarach/lit/coordination/`. Four things bear on the app.
+`<darkroom>/bugarach/archive/2026-08/lit/coordination/`. Four things bear on the app.
 
 1. **"A new kind of detector" is not available, and neither is "the first".** Three
    groups already train networks that emit population events with times — DOSED
@@ -166,7 +166,7 @@ UI is built.
 
 ## The published result, for checking against
 
-`<darkroom>/bugarach/2026-08-17-coordination-report/coordination_report.html` — the
+`<darkroom>/bugarach/archive/2026-08/2026-08-17-coordination-report/coordination_report.html` — the
 whole pipeline, both architectures drawn from their fitted parameters, the comparison
 against the six, and the transfer test. Its review record is beside it. Read section 6
 ("what this does not establish") before writing any user-facing copy.

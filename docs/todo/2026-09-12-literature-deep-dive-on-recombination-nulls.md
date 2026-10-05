@@ -75,7 +75,7 @@ without reading:
 ⚠ **Every seed marked *verify* is cited from memory or from a search snippet and has not been checked.**
 Resolve the DOI and read the paper before using it; never paste a seed into a document.
 
-**Check the shelf first** — `<darkroom>/bugarach/lit/`. Several shelved papers were never read for
+**Check the shelf first** — `<darkroom>/bugarach/archive/2026-08/lit/`. Several shelved papers were never read for
 this question:
 
 - `coordination/molter_2018_assembly_benchmark.pdf`, `coordination/russo_2017_cad_multiscale_assemblies.pdf`,

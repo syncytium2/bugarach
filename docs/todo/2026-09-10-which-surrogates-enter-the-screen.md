@@ -42,7 +42,7 @@ measured rather than argued about.
 | interval / window jitter | per-window counts | conditional inference on fixed windows | Date, Bienenstock & Geman 1998; reviewed in Amarasingham et al. 2012 |
 | operational-time dither | the rate profile under drift | aimed at the drift problem | Louis, Gerstein, Grün & Diesmann 2010 |
 
-The shelf at `<darkroom>/bugarach/lit/surrogates/` holds all of these but Gerstein 2004 and Pipa 2008,
+The shelf at `<darkroom>/bugarach/archive/2026-08/lit/surrogates/` holds all of these but Gerstein 2004 and Pipa 2008,
 both of which are open access ([`lit_needed.md`](../lit_needed.md)).
 
 **Stella's surrogate implementations ship in Elephant** (BSD-3). Its surrogate module dates from 2015;

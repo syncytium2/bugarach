@@ -43,6 +43,7 @@ import numpy as np
 
 from bugarach.detectors.cicada import cicada_detect
 from bugarach.detectors.coact import coact_detect
+from bugarach.detectors.count import count_detect, count_sliding_detect
 from bugarach.detectors.loco import loco_detect
 from bugarach.detectors.rate import (
     rate_detect,
@@ -57,10 +58,12 @@ from bugarach.simulate import simulate_coordination
 STREAM = "events"
 """The single-stream slice the generator emits (FOUNDATIONS §3)."""
 
-FLOORED_SETTING = {"coact": "min_rois", "loco": "min_rois", "sce": "min_rois", "sync": "min_n"}
+FLOORED_SETTING = {"coact": "min_rois", "loco": "min_rois", "sce": "min_rois", "sync": "min_n",
+                   "count": "min_rois", "count_sliding": "min_rois"}
 """The setting each detector's participation minimum lives in, which ADR-0008 sets and no search
 does (ADR-0008 decision 6; ADR-0009 decision 3 for SPIKE-synch's ``min_n``). rate+context and
-locust have no participation minimum, so the floor reaches them only through the scorer."""
+locust have no participation minimum, so the floor reaches them only through the scorer. count's
+threshold is this floor plus its own ``k_offset``, which a search does tune (``count.py``)."""
 
 FLOOR_LABEL = "ADR-0008 per-window floor, bench per ADR-0009"
 """What every run record scored under this module's floor says about it."""
@@ -98,7 +101,7 @@ def _floor_key(s, stream: str):
     return h.hexdigest()[:32], trains, ext, dt
 
 
-def recording_floor(s, stream: str = STREAM):
+def recording_floor(s, stream: str = STREAM, window_sec: float | None = None):
     """ADR-0008's floor for one simulated recording, from that recording's own events.
 
     ADR-0008 decision 5: every bench recording gets its floor from its own null, exactly as a real
@@ -106,14 +109,26 @@ def recording_floor(s, stream: str = STREAM):
     included. The null is seeded by a digest of the recording's events, so the same recording
     always gets the same floor, in any process. Returns a
     :class:`bugarach.event_floor.Floor`.
+
+    ``window_sec`` is the co-activity window the floor is counted in. ``None`` is ADR-0008's own,
+    ``event_floor.WINDOW_SEC`` (2 s), and is what every default path uses. Any other value is the
+    floor-at-window experiment (:data:`FLOOR_AT_WINDOW_ENV`): it draws the same rigid-shift
+    offsets as the default, so floors at different windows differ only by the window, and it is
+    cached under its own key, so the default's cache entries are untouched.
     """
     import json
+    import math
     import os
     from pathlib import Path
 
     from bugarach import event_floor as ef
 
     key, trains, ext, dt = _floor_key(s, stream)
+    seed_key = key
+    if window_sec is not None and not math.isclose(window_sec, ef.WINDOW_SEC):
+        key = f"{key}-w{window_sec:g}"
+    else:
+        window_sec = ef.WINDOW_SEC
     if key in _FLOORS:
         return _FLOORS[key]
     cache = os.environ.get(FLOOR_CACHE_ENV)
@@ -129,7 +144,8 @@ def recording_floor(s, stream: str = STREAM):
     frames = [np.unique(np.floor((np.asarray(t, float) - ext[0]) / dt + 1e-9).astype(np.int64))
               for t in trains]
     n_frames = int(round((ext[1] - ext[0]) / dt))
-    f = ef.window_floor(frames, n_frames, dt, key=("bench", stream, key))
+    f = ef.window_floor(frames, n_frames, dt, key=("bench", stream, seed_key),
+                        window_sec=window_sec)
     _FLOORS[key] = f
     if path is not None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -179,7 +195,35 @@ def floored_params(name: str, s, op_params: dict, overrides: dict, stream: str,
     if setting in overrides and overrides[setting] != op_params.get(setting):
         raise ValueError(f"{name}.{setting} is set by ADR-0008's per-recording floor, not by a "
                          f"caller; pass floor=False to run at {setting}={overrides[setting]!r}")
-    return {**params, setting: int(recording_floor(s, stream).floor)}
+    window = None
+    if name in FLOOR_AT_OWN_WINDOW and floor_at_window():
+        window = float(params[FLOOR_AT_OWN_WINDOW[name]])
+    return {**params, setting: int(recording_floor(s, stream, window_sec=window).floor)}
+
+
+FLOOR_AT_WINDOW_ENV = "BUGARACH_FLOOR_AT_WINDOW"
+"""**An experiment, OFF by default.** Set to ``on`` and each detector in
+:data:`FLOOR_AT_OWN_WINDOW` gets its floor counted in its OWN co-activity window rather than
+ADR-0008's 2 s (``event_floor.WINDOW_SEC``). Nothing that ships reads it: ``WINDOW_SEC`` and
+ADR-0008 are unchanged, and the scorer's floor (which planted events are "don't care", ADR-0009
+decision 2) stays at 2 s so every candidate is scored on the same events.
+
+Why (orchestrator's brief, 2026-09-27): Tony leans toward count (sliding) as the one primary
+detector, and its threshold is the floor, measured at 2 s while the rule counts over its own
+``win_sec``. At a 0.5 s window a 2 s floor asks for more cells than chance needs, which may be why
+the night's only fast sliding winner needed k 2 and then failed the precision-swing budget.
+Results: ``<darkroom>/bugarach/2026-09-27-floor-at-window/``."""
+
+FLOOR_AT_OWN_WINDOW = {"count_sliding": "win_sec"}
+"""Under :data:`FLOOR_AT_WINDOW_ENV`, the detectors whose floor follows their own window, and
+the setting that is that window."""
+
+
+def floor_at_window() -> bool:
+    """Is the floor-at-window experiment on? Off unless :data:`FLOOR_AT_WINDOW_ENV` says ``on``."""
+    import os
+
+    return os.environ.get(FLOOR_AT_WINDOW_ENV, "off").strip().lower() in ("on", "1", "true")
 
 
 MEASURED_PROVENANCE = (
@@ -433,6 +477,22 @@ FULL_GRIDS: dict[str, dict[str, tuple]] = {
         "sce_min_distance_frames": (1, 2, 4, 8, 16),
         "threshold_scope": ("global", "regional"),
     },
+    "count": {
+        # One frame (0.1 s, the generator's grid) to 10 s. The search does not extend below
+        # one frame: a bin narrower than the frame interval counts nothing more
+        # (`tools/search_all_settings.FLOAT_FLOOR`).
+        "bin_sec": (0.1, 0.5, 1.0, 2.0, 5.0, 10.0),
+        # Cells above the recording's floor. 0 is the floor itself; below it is chance
+        # (ADR-0008), so the grid cannot extend down.
+        "k_offset": (0, 1, 2, 3),
+        "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
+    },
+    "count_sliding": {
+        # v1's grids, the window width under its own name: a window that slides is not a bin.
+        "win_sec": (0.1, 0.5, 1.0, 2.0, 5.0, 10.0),
+        "k_offset": (0, 1, 2, 3),
+        "merge_gap_sec": (0.0, 1.0, 2.0, 3.0, 5.0, 8.0),
+    },
 }
 """The values each detector's settings are searched over — **one declaration, both
 machines**.
@@ -506,6 +566,12 @@ NOT_SEARCHED: dict[str, dict[str, str]] = {
                                 "width column. 'If you find yourself asking which duration "
                                 "locust should use, the answer is the column'",
         "active_duration_sec": "as active_duration_mode",
+    },
+    "count": {
+        "min_rois": "as coact: the floor. count's own offset above it, k_offset, is searched",
+    },
+    "count_sliding": {
+        "min_rois": "as count",
     },
 }
 """Parameters deliberately left out of :data:`FULL_GRIDS`, and why.
@@ -679,14 +745,14 @@ class OperatingPoint:
 # averaged over the two backgrounds — and a stored value moved ONLY where the gain's
 # 95% bootstrap interval excludes zero. Three moved (sce, loco, rate); three were
 # already best or within noise (coact, sync, cicada). Figure and numbers:
-# <darkroom>/bugarach/2026-09-16-best-parameters/. Only the one swept knob per
+# <darkroom>/bugarach/archive/2026-09/2026-09-16-best-parameters/. Only the one swept knob per
 # detector was searched; every other parameter below is as it was.
 RETUNE = ("tools/retune_operating_points.py 2026-09-16 (48 recordings per point, both "
           "backgrounds, both false-alarm budgets, mean F1, moved only if the 95% "
           "bootstrap gain interval excludes zero)")
 SLIDING_SEARCH = (
     "tools/search_all_settings.py --sliding, 2026-09-17 "
-    "(<darkroom>/bugarach/2026-09-17-full-search/sliding5/): every parameter this bench can "
+    "(<darkroom>/bugarach/archive/2026-09/2026-09-17-full-search/sliding5/): every parameter this bench can "
     "see, one at a time in rounds, chosen on 48 recordings per background and scored on 48 "
     "the search never saw, under FOUR budgets — the two false-alarm limits, the precision "
     "swing, and MAX_CROWDED_DROP against what the detector ships at today — and refusing any "
@@ -796,6 +862,25 @@ OPERATING_POINTS: dict[str, OperatingPoint] = {
                "empty stretch, and 0.12 ties it (mean F1 0.449).",
         knob="C_threshold", grid=(0.005, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.16,
                                   0.2, 0.3),
+        takes_rng=False),
+    "count": OperatingPoint(
+        # The simple rule at the floor itself (k_offset 0), in CoactDetect's 2 s bins with its
+        # 3 s merge gap: the starting point the orchestrator set on 2026-09-26, not a tuned one.
+        params=dict(bin_sec=2.0, k_offset=0, merge_gap_sec=3.0),
+        source="not tuned: the starting point set 2026-09-26 (Tony: 'have we tried to optimize "
+               "the simple rule: a bin and a count?'). Bins and merge gap as CoactDetect's "
+               "binned FAST point; threshold the ADR-0008 floor with no offset.",
+        # The bin width, because k_offset's only honest grid starts at the operating point
+        # (0 is the floor) and a sweep has to bracket what it sweeps.
+        knob="bin_sec", grid=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0),
+        takes_rng=False),
+    "count_sliding": OperatingPoint(
+        # v2 at v1's starting point, the window sliding (Tony, 2026-09-26: "Simple rule v2
+        # should be sliding").
+        params=dict(win_sec=2.0, k_offset=0, merge_gap_sec=3.0),
+        source="not tuned: v1's starting point with the window sliding, set 2026-09-26. "
+               "CoactDetect's sliding form without its null.",
+        knob="win_sec", grid=(0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0),
         takes_rng=False),
 }
 
@@ -1580,7 +1665,8 @@ def run_detector(name: str, s, *, rng_seed: int = 20260706, floor: bool | None =
 
     ext = recording_extent(s)
     trains = stream_trains(s.streams[STREAM], ext)
-    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect}[name]
+    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[name]
     return fn(trains, ext, **params)
 
 
@@ -2129,6 +2215,10 @@ MAX_PROBE_PER_MIN = {
     "rate": 4.5,       # measured: 3.83 shipped, 4.98 at the setting the gate refuses
     "sce": 9.0,        # measured: 5.92, was 5.6 — barely moved
     "cicada": 48.0,    # measured: 29.66, was 17.3 — still the most rate-fooled of the six
+    # 2026-09-26, seeds 1-48, by bench_slow_budgets.json's rule (tools/measure_slow_budgets.py
+    # --only count, which measures this bench beside the slow one).
+    "count": 1.0,      # measured: 0.02
+    "count_sliding": 1.0,  # measured: 0.10
 }
 """Firings per minute each detector may make inside a block containing nothing.
 
@@ -2204,6 +2294,8 @@ MAX_PRECISION_DROP = {
     "sync": 0.10,      # measured: 0.01
     "cicada": 0.20,    # measured: 0.10
     "sce": 0.50,       # measured: 0.46 — a real degradation, recorded not excused
+    "count": 0.10,     # measured: 0.030 (2026-09-26, as MAX_PROBE_PER_MIN's count row)
+    "count_sliding": 0.10,  # measured: 0.032
 }
 """How far precision may differ between the quiet and busy backgrounds at one setting.
 
@@ -2252,6 +2344,8 @@ MAX_FALSE_POSITIVES_PER_HOUR = {
     "cicada": 6.0,     # measured: 3.1
     "sce": 6.0,        # measured: 3.1
     "coact": 7.0,      # measured: 4.4
+    "count": 1.0,      # measured: 0.11 (2026-09-26, as MAX_PROBE_PER_MIN's count row)
+    "count_sliding": 1.0,  # measured: 0.31
 }
 """Calls per hour each detector may report on :func:`make_null_recording`, where
 nothing was planted at all (:func:`false_positives_per_hour`).

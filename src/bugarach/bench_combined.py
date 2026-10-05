@@ -66,6 +66,7 @@ from bugarach.bench import (  # noqa: F401  (shared: none reads a stream constan
 # key stays `cicada` because it is the detections.csv contract value (detectors/cicada.py).
 from bugarach.detectors.cicada import cicada_detect
 from bugarach.detectors.coact import coact_detect
+from bugarach.detectors.count import count_detect, count_sliding_detect
 from bugarach.detectors.loco import loco_detect
 from bugarach.detectors.rate import rate_detect, recording_extent, stream_trains
 from bugarach.detectors.sce import sce_detect
@@ -315,12 +316,18 @@ BUDGETS_RECORD = "docs/learned/bench_combined_budgets.json"
 
 MAX_PROBE_PER_MIN: dict[str, float] = {
     "loco": 1.0, "cicada": 68.0, "sce": 10.0, "coact": 1.0, "rate": 8.0, "sync": 16.0,
+    "count": 1.0,     # measured: 0.02 (2026-09-26, merged with --only count)
+    "count_sliding": 1.0,  # measured: 0.09
 }
 MAX_FALSE_POSITIVES_PER_HOUR: dict[str, float] = {
     "loco": 5.0, "cicada": 2.0, "sce": 7.0, "coact": 10.0, "rate": 1.0, "sync": 1.0,
+    "count": 1.0,     # measured: 0.06
+    "count_sliding": 1.0,  # measured: 0.28
 }
 MAX_PRECISION_DROP: dict[str, float] = {
     "loco": 0.1, "cicada": 0.1, "sce": 0.15, "coact": 0.1, "rate": 0.15, "sync": 0.1,
+    "count": 0.1,     # measured: 0.022
+    "count_sliding": 0.15,  # measured: 0.060
 }
 """Measured ceilings from :data:`BUDGETS_RECORD`, seeds 1–48, at the settings this module
 started from. **Budgets record what each detector does today so a change is visible** — they are
@@ -416,7 +423,8 @@ def run_detector(name: str, s, *, rng_seed: int = 20260706, floor: bool | None =
         return fn(s, **params).streams[STREAM]
     ext = recording_extent(s)
     trains = stream_trains(s.streams[STREAM], ext)
-    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect}[name]
+    fn = {"coact": coact_detect, "rate": rate_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[name]
     return fn(trains, ext, **params)
 
 

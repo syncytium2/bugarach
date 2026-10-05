@@ -103,7 +103,8 @@ def test_passing_the_operating_point_through_unchanged_is_not_an_override(record
 
 
 def test_detectors_without_a_participation_minimum_are_not_touched():
-    assert set(bench.FLOORED_SETTING) == {"coact", "loco", "sce", "sync"}
+    assert set(bench.FLOORED_SETTING) == {"coact", "loco", "sce", "sync",
+                                          "count", "count_sliding"}
     assert dwf.FLOORED is bench.FLOORED_SETTING
 
 

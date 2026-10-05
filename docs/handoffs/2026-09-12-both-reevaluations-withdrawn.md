@@ -169,7 +169,7 @@ Tony chose "stop here", so **none of these were started.**
 
 ### Literature — fixed this session, and what remains
 
-Shelved at `6c74f84` under `<darkroom>/bugarach/lit/surrogates/`:
+Shelved at `6c74f84` under `<darkroom>/bugarach/archive/2026-08/lit/surrogates/`:
 
 - **Gerstein 2004**, *Acta Neurobiol Exp* 64(2):203–207 (ane.pl, CC-BY)
 - **Grün et al. 2010**, *BMC Neurosci* 11(Suppl 1):O15 (biomedcentral)
@@ -203,7 +203,7 @@ the only legitimate operator. On 2026-09-12 one blind round paid for the same do
 
 - **`test_index_resolves.py` treats a backticked span containing `/` as a repo path.** Writing
   `` `surrogates/` `` in an INDEX row turned the suite red (2 failed). Spans with a `<...>`
-  placeholder are skipped, which is why `` `<darkroom>/bugarach/lit/surrogates/` `` passes. Use the
+  placeholder are skipped, which is why `` `<darkroom>/bugarach/archive/2026-08/lit/surrogates/` `` passes. Use the
   full placeholder form.
 - **`murderboard_agents.py verify` captures the tool list with `([^\n|]*)`** — it stops at a pipe,
   so a table row is fine, but a **closing backtick inside the cell is captured as part of the last

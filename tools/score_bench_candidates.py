@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """Score tuned CoactDetect settings and trained chorus checkpoints on bench seeds nothing chose on.
 
-    python tools/score_bench_candidates.py --phase2 <folder> --out <folder> [--workers 20]
+    python tools/score_bench_candidates.py --phase2 <folder> [--phase2 <folder> ...] --out <folder>
+
+``--phase2`` repeats: the full-panel night (ADR-0010) searched and trained on two machines, each
+into its own folder, and the scorer reads both in place rather than from a copy. Each search and
+each training log is taken from the one root that holds it; two roots holding the same one is an
+error, never a silent choice. Every model the training tool trains (its ``MODELS``) is scored
+when its log is there.
 
 **Why.** The overnight run of 2026-09-24 tuned CoactDetect (``tools/search_all_settings.py``) and
 trained two chorus nets (``tools/train_learned_on_bench.py``) on each of the fast, slow and combined
@@ -47,7 +53,8 @@ BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
 REG = ("baseline_quiet", "baseline_busy")
 SEEDS = tuple(range(6000, 6024))
 NULLS = tuple(range(6000, 6012))
-MODELS = ("chorus_norm", "chorus_gain_norm")
+sys.path.insert(0, str(REPO / "tools"))
+from train_learned_on_bench import MODELS  # noqa: E402  the panel the training tool trains
 _MODEL_CACHE: dict = {}
 BOOTSTRAP = 2000
 BOOTSTRAP_SEED = 20260925
@@ -99,11 +106,25 @@ def proposal(search: dict, det: str = "coact") -> tuple[str, dict, dict]:
     return best[0], dict(best[1]["params"]), best[1]
 
 
-def load_search(phase2: Path, pattern: str, bench: str, det: str) -> dict:
+def the_one_root(roots, rel: str) -> Path | None:
+    """The single root under which ``rel`` exists; None when none does. Two roots holding it is
+    an error: which machine's run gets scored is not the scorer's to choose."""
+    roots = [roots] if isinstance(roots, (str, Path)) else list(roots)
+    hits = [Path(r) for r in roots if (Path(r) / rel).exists()]
+    if len(hits) > 1:
+        raise ValueError(f"{rel} is in more than one --phase2 root: {', '.join(map(str, hits))}")
+    return hits[0] if hits else None
+
+
+def load_search(phase2, pattern: str, bench: str, det: str) -> dict:
     """The search record that holds ``det`` on ``bench``: one folder per bench, or, when the
-    pattern names ``{det}``, one folder per detector (a search run with ``--only``)."""
-    return json.loads((phase2 / pattern.format(bench=bench, det=det) / "search.json")
-                      .read_text(encoding="utf-8"))
+    pattern names ``{det}``, one folder per detector (a search run with ``--only``). ``phase2``
+    is one root or several; the record must be under exactly one."""
+    rel = f"{pattern.format(bench=bench, det=det)}/search.json"
+    root = the_one_root(phase2, rel)
+    if root is None:
+        raise FileNotFoundError(f"no {rel} under {phase2}")
+    return json.loads((root / rel).read_text(encoding="utf-8"))
 
 
 def bracketing_of(search: dict, det: str, name: str) -> dict:
@@ -124,19 +145,30 @@ def adoptable_on_the_search(name: str, row: dict, br: dict) -> bool:
 
 
 def train_rows(log: Path) -> list[dict]:
-    rows = []
-    for line in log.read_text(encoding="utf-8").splitlines():
+    """Every seed row the training tool printed. ``utf-8-sig``: a log redirected by Windows
+    PowerShell opens with a byte-order mark, which hid the first row, seed 0, from every one of
+    the full-panel night's 24 logs (2026-09-26). The log's own ``best:`` line must name a row
+    read here, so a row lost some other way is an error rather than a silent gap."""
+    rows, best = [], None
+    for line in log.read_text(encoding="utf-8-sig").splitlines():
+        line = line.strip()
         if line.startswith("{") and '"seed"' in line:
             rows.append(json.loads(line))
+        elif line.startswith("best: "):
+            best = line.split()[1]
+    if best is not None and best not in {r["path"] for r in rows}:
+        raise ValueError(f"{log}: its best seed {best} is not among the rows read")
     return rows
 
 
 def picked(rows: list[dict], budget: float) -> dict | None:
-    ok = [r for r in rows if r["null_per_hour"] <= budget] or rows
+    """The training rule's pick: the best held-out mean among seeds within the empty-recording
+    budget. None when no seed is within it: that run is scored as a comparator, never picked."""
+    ok = [r for r in rows if r["null_per_hour"] <= budget]
     return max(ok, key=lambda r: r["mean"]) if ok else None
 
 
-CODED = ("coact", "loco", "sce", "rate", "sync", "cicada")
+CODED = ("coact", "loco", "sce", "rate", "sync", "cicada", "count", "count_sliding")
 
 
 def b_under_floor(bench: str, r) -> dict:
@@ -183,7 +215,9 @@ def job(args):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--phase2", type=Path, required=True)
+    ap.add_argument("--phase2", type=Path, required=True, action="append",
+                    help="a folder holding searches and training (train-<model>-<bench>.log, "
+                         "models-<bench>/); repeat to read several, each in place")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--detectors", nargs="+", default=["coact"], choices=CODED,
@@ -235,16 +269,20 @@ def main(argv=None) -> int:
             if pname != "shipped":
                 cands.append((bench, det, "proposal", pparams))
         for m in MODELS:
-            log = a.phase2 / f"train-{m}-{bench}.log"
-            if not log.exists():
+            root = the_one_root(a.phase2, f"train-{m}-{bench}.log")
+            if root is None:
                 continue
-            rows = train_rows(log)
+            rows = train_rows(root / f"train-{m}-{bench}.log")
             pick = picked(rows, budget)
-            meta[bench]["chorus"][m] = dict(train_rows=rows,
-                                            picked=pick["path"] if pick else None)
+            best = max(rows, key=lambda r: r["mean"]) if rows else None
+            meta[bench]["chorus"][m] = dict(
+                train_rows=rows, models_root=str(root), picked=pick["path"] if pick else None,
+                out_of_budget=None if pick or not best else dict(
+                    best=best["path"], note="no seed within the empty-recording budget; scored "
+                                            "as a comparator, never a pick"))
             for r in rows:
                 cands.append((bench, "chorus", r["path"],
-                              str(a.phase2 / f"models-{bench}" / r["path"])))
+                              str(root / f"models-{bench}" / r["path"])))
 
     jobs = [(bench, kind, name, spec, reg, s) for bench, kind, name, spec in cands
             for reg in REG for s in S[bench]]
@@ -317,6 +355,8 @@ def main(argv=None) -> int:
                elevated_rate_seeds=[NULLS[0] + ELEVATED_SEED_OFFSET,
                                     NULLS[-1] + ELEVATED_SEED_OFFSET],
                benches=meta, results=results, floor=FLOOR_LABEL,
+               # The floor-at-window experiment (bench.FLOOR_AT_WINDOW_ENV), off by default.
+               floor_at_window=(dict(_b.FLOOR_AT_OWN_WINDOW) if _b.floor_at_window() else None),
                note="coded detectors run at each recording's ADR-0008 floor (min_rois, and "
                     "SPIKE-synch's min_n); planted events under it are don't-care in every "
                     "score (ADR-0009 decision 2), counted in under_floor. chorus has no "

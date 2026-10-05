@@ -39,6 +39,7 @@ two never disagree, and cross-reference them.
 | [0008](0008-the-event-floor-is-set-per-window-from-its-own-null.md) | The event floor is set per window from its own null, and never below 3 ROIs | Accepted |
 | [0009](0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md) | The bench keeps its elevated-rate test in a recording of its own, and ADR-0008's floor applies unchanged | Accepted |
 | [0010](0010-tune-train-and-review-against-the-data-as-they-are.md) | Tune, train and review against the data as they are | Accepted |
+| [0011](0011-bugarach-supports-the-python-its-machines-run.md) | bugarach supports the Python its machines run, and no older one | Accepted |
 
 **The habit lapsed for 25 days and restarted on 2026-09-23.** After ADR-0005 on 2026-08-29
 no ADR was written, and nothing decided to stop. Rulings went instead into bench-constant

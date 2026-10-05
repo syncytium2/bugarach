@@ -80,6 +80,7 @@ import datetime
 import itertools
 import json
 import math
+import os
 import sys
 import time
 from multiprocessing import Pool
@@ -152,15 +153,20 @@ def use_bench(which: str):
 
 
 PERCENTILE = {"threshold_pctile", "sce_percentile"}
-INTEGER = {"n_synchronous_frames", "sce_min_distance_frames", "min_rois", "min_n"}
+INTEGER = {"n_synchronous_frames", "sce_min_distance_frames", "min_rois", "min_n", "k_offset"}
 #: A count is extended as a count. Until 2026-09-23 only the first two were listed, so
 #: `min_rois` and `min_n` fell through to halving: the slow search walked `sce.min_rois`
 #: 3 → 1.5 → 0.75 → 0.375, and the combined search returned SPIKE-synch at `min_n` 0.25 with
 #: its largest gain of the six, which could not be installed (PR #754). An all-integer grid
 #: is treated the same way even when its name is missing here.
-COUNT_FLOOR = {"min_rois": 3, "min_n": 2}
+COUNT_FLOOR = {"min_rois": 3, "min_n": 2, "k_offset": 0}
 """The smallest value a count may be extended to, for a caller that still searches one: since
-2026-09-25 neither ``min_rois`` nor ``min_n`` is in ``FULL_GRIDS`` (ADR-0008's floor sets both)."""
+2026-09-25 neither ``min_rois`` nor ``min_n`` is in ``FULL_GRIDS`` (ADR-0008's floor sets both).
+count's ``k_offset`` is cells above that floor and stops at 0, the floor itself."""
+FLOAT_FLOOR = {"bin_sec": 0.1, "win_sec": 0.1}
+"""The smallest value a continuous setting may be extended to. count's bins and count_sliding's
+window stop at one frame (0.1 s, the generator's grid): narrower holds no more than one frame's
+onsets."""
 FRACTION = {"C_threshold", "C_min"}
 
 # ------------------------------------------------------------------ ADR-0010's search rulings
@@ -244,13 +250,15 @@ def shipped_value(det: str, setting: str):
     import inspect
 
     bench = _load_bench()
-    from bugarach.detectors import (cicada_detect, coact_detect, loco_detect,
-                                    rate_detect, sce_detect, sync_detect)
+    from bugarach.detectors import (cicada_detect, coact_detect, count_detect,
+                                    count_sliding_detect, loco_detect, rate_detect,
+                                    sce_detect, sync_detect)
     params = bench.OPERATING_POINTS[det].params
     if setting in params:
         return params[setting]
     fn = {"loco": loco_detect, "sce": sce_detect, "cicada": cicada_detect,
-          "coact": coact_detect, "rate": rate_detect, "sync": sync_detect}[det]
+          "coact": coact_detect, "rate": rate_detect, "sync": sync_detect,
+          "count": count_detect, "count_sliding": count_sliding_detect}[det]
     return inspect.signature(fn).parameters[setting].default
 
 
@@ -308,6 +316,10 @@ def extend(setting: str, grid: list, low_end: bool):
         new = edge / 2 if low_end else min(1.0, edge * 1.5)
     else:
         new = edge / 2 if low_end else edge * 2
+    if low_end and setting in FLOAT_FLOOR:
+        if edge <= FLOAT_FLOOR[setting] * (1 + 1e-9):
+            return None
+        new = max(FLOAT_FLOOR[setting], new)
     if any(math.isclose(new, g, rel_tol=1e-12, abs_tol=1e-15) for g in grid):
         return None
     return new
@@ -495,20 +507,24 @@ def _calls_job(args):
 
 def step_off(setting: str, value, grid: list):
     """The grid value one step off ``value``, inward, or None. A NaN merge gap ("do not merge")
-    steps to the smallest merge gap the grid holds."""
+    steps to the smallest merge gap the grid holds that is not itself an off-limit.
+
+    Never an off-limit: ruling 5 asks whether the calls change once the setting is switched
+    on, and a step from one off-limit to another compares "off" with "off". Binned SCE's grid
+    holds both NaN and 0 s, which are both no merge, and the 2026-09-25 night reported "no
+    change in 0 of 16 recordings" for exactly that pair. With nothing on-limit in the step's
+    direction, None: no comparison rather than a vacuous one."""
     finite = sorted(v for v in grid if isinstance(v, (int, float)) and not isinstance(v, bool)
                     and math.isfinite(v))
-    if not finite:
-        return None
+    on = [v for v in finite if not is_off_limit(setting, v)]
     if isinstance(value, float) and math.isnan(value):
-        return finite[0]
-    if value not in finite:
+        return on[0] if on else None
+    if value not in finite or len(finite) < 2:
         return None
     i = finite.index(value)
-    if len(finite) < 2:
-        return None
     # Inward: down from the top of the grid (a cap), up from anywhere else (an off-limit).
-    return finite[i - 1] if i == len(finite) - 1 else finite[i + 1]
+    inward = reversed(finite[:i]) if i == len(finite) - 1 else finite[i + 1:]
+    return next((v for v in inward if not is_off_limit(setting, v)), None)
 
 
 def ruling_5_checks(pool, det: str, params: dict, findings: list, grids: dict, seeds,
@@ -1008,8 +1024,9 @@ def full_grid(ev, det, space, is_valid, top=5):
 # ------------------------------------------------------------------ figure
 
 NAMES = {"coact": "CoactDetect", "loco": "LoCo", "rate": "rate+context",
-         "sce": "binned SCE", "cicada": "locust", "sync": "SPIKE-synch"}
-ORDER = ["coact", "loco", "rate", "sce", "cicada", "sync"]
+         "sce": "binned SCE", "cicada": "locust", "sync": "SPIKE-synch",
+         "count": "count (binned)", "count_sliding": "count (sliding)"}
+ORDER = ["coact", "loco", "rate", "sce", "cicada", "sync", "count", "count_sliding"]
 
 
 def _fmt(v):
@@ -1290,6 +1307,8 @@ def main(argv=None) -> int:
                crowded_veto=not a.no_crowded_veto,
                floor=(_bench.FLOOR_LABEL if _bench.floor_enabled()
                       else f"pre-ADR-0008 ({_bench.FLOOR_SWITCH_ENV}=off)"),
+               # The floor-at-window experiment (bench.FLOOR_AT_WINDOW_ENV), off by default.
+               floor_at_window=(dict(_b.FLOOR_AT_OWN_WINDOW) if _b.floor_at_window() else None),
                max_extensions=a.max_extensions,
                selection_seeds=sel, held_out_seeds=ho, space=space, shipped=shipped,
                stage="started", selection={})

@@ -10,6 +10,33 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP064/detector-table — DARKROOM claim: `bugarach/2026-09-28-detector-table/` (NEW)
+- **Status:** claimed 2026-09-28 by WSMIP064 on Tony's brief: one table of every detector (nine
+  coded, eight learned) with fresh-seed F1 on fast, slow and combined, shipped and retuned or
+  trained, read from the full-panel night's records; a second table from the one-function bench,
+  labelled a candidate bench, not adopted. Read only, no compute; working material, not
+  murderboarded. Released by the merge of the PR that carries this block.
+- **Touches:** that folder only (`README.md`).
+
+### WSMIP064/floor-at-window — DARKROOM claim: `bugarach/2026-09-27-floor-at-window/` (NEW)
+- **Status:** claimed 2026-09-27 ~1:20 PM EDT by WSMIP064 on the orchestrator's brief (Tony leans
+  toward count (sliding) as the one primary detector; its threshold is the ADR-0008 floor, measured
+  at a 2 s co-activity window while the rule counts over its own W). Floors at W = 0.5, 1 and 2 s,
+  and an opt-in experimental search and scoring with each recording's floor at the candidate's own
+  W. An experiment, not a change to what ships: `WINDOW_SEC` and ADR-0008 stay as they are.
+  Working material, not murderboarded. Released by the merge of the PR that carries this block.
+- **Touches:** that folder only (floor tables, figures, search and scorer runs, `README.md`).
+
+### orchestrator/darkroom-archive — DARKROOM claim: `bugarach/` top level and `bugarach/archive/` (NEW)
+- **Status:** claimed 2026-09-26 ~21:10 UTC by the orchestrator, on Tony's instruction ("the
+  bugarach darkroom folder is extremely crowded. Time to archive some stuff"). It moves the 135
+  top-level items last modified before 2026-09-19 into `archive/<YYYY-MM>/`, writes
+  `archive/INDEX.md` (old path → new path), and repoints the repo's links. It keeps `runs/`,
+  `detector_history*`, `leaderboard.html` and `README.md`, which tools write to by name. No live
+  claim covers a moved item. Released by the merge of this PR.
+- **Touches:** the darkroom's `bugarach/` top level (moves only, no deletes), `bugarach/archive/`,
+  and repo docs that name a moved path.
+
 ### 065/night-bench-adr-0010 — DARKROOM claim: `bugarach/2026-09-25-realistic-bench/` (NEW)
 - **Status:** claimed 2026-09-25 ~17:50 UTC by WSMIP065 for ADR-0010 parts 2-4: the realistic
   bench's re-measured floors (`bench-floor-realistic/`, `bench-floor-orx/`) and the call_measure
@@ -31,6 +58,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   carries the summary.
 - **Touches:** that folder only.
 
+### WSMIP065/simple-vs-coact-real — DARKROOM claim: `bugarach/2026-09-27-simple-vs-coact-real/` (NEW)
+- **Status:** claimed 2026-09-27 ~8:00 AM EDT by WSMIP065 on the orchestrator's brief (Tony's
+  question: does the simple count rule tie CoactDetect only because the bench was built in its
+  image?). `tools/detect_with_floors.py` on every window of the default dataset: count and count
+  (sliding) at 064's settings, CoactDetect proposed and shipped, then the agreement between them.
+  Working material, not murderboarded; a detector-agreement result, not a treatment-effect claim.
+  Released by the merge of the PR that carries this block and the analysis tool.
+- **Touches:** that folder only (run folders, `detections.csv`, `README.md`, figures).
+
 ### WSMIP064/full-panel — DARKROOM claim: `bugarach/2026-09-26-full-panel/064/`
 - **Status:** ACTIVE 2026-09-25 19:40 UTC (3:40 PM EDT) — the full-panel night, WSMIP064's half, on
   the orchestrator's go: the six fast searches on the CPU and the eight learned models × three
@@ -46,6 +82,14 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   adds its own block here for it. Released by the merge that brings the morning report to `main`.
 - **Touches:** this block; the night's run records under `docs/learned/runs/`; the goal pages the
   result updates.
+
+### WSMIP065/full-panel-065 — DARKROOM claim: `bugarach/2026-09-26-full-panel/065/` (NEW)
+- **Status:** claimed 2026-09-25 by WSMIP065, inside the orchestrator's claim above. Step A (slow
+  and combined searches, `search-<bench>/<det>/`), step C (`fresh-realistic/`, `fresh-orx/`),
+  step D (`review/`), step E (`README.md`, `RUN_A.md`). The first launch of step A died at startup
+  on #829's missing `import os` (fixed by #832); its logs stay beside the rerun's.
+  Released with the orchestrator's block.
+- **Touches:** that folder only. The floor cache is machine-local, outside the darkroom.
 
 ### orchestrator/overnight-final-parameters — DARKROOM claim: `bugarach/2026-09-25-final-parameters/` (NEW)
 - **Status:** claimed 2026-09-25 01:50 UTC, before any session writes, by the orchestrator of the

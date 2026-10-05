@@ -206,7 +206,11 @@ def test_parses_at_the_declared_floor(path: Path):
     rel = path.relative_to(ROOT)
     src = path.read_text(encoding="utf-8")
 
-    for line, why in pep701_offences(src):
+    # PEP 701's forms are legal from 3.12 on, so they are offences only below that floor.
+    # ADR-0011 raised the floor to 3.14, so today this scan never fails a file; it
+    # stays so that lowering the floor brings it back without anyone remembering it.
+    offences = pep701_offences(src) if floor < (3, 12) else []
+    for line, why in offences:
         pytest.fail(
             f"{rel}:{line} does not parse on Python {floor[0]}.{floor[1]}: {why}.\n"
             f"Hoist the expression into a named local above the f-string.")
