@@ -26,9 +26,18 @@ from the measured jitter (``8137da71``), so a detector that rewards onsets as ti
 plants them is rewarded by construction. The swell half does not have that problem.
 
 Simulated recordings only. Nothing here opens an export folder.
+
+⚠ **Retired with the first form of stack, 2026-10-07.** This tool measured stack's first form:
+a recording-wide null, calibrated against count (sliding) on rigid shifts. That form was replaced
+the same day by the self-contained ``bugarach.detectors.stack``, which uses LoCo's local
+context-window null and has none of the settings this tool passes. ``main`` refuses. To reproduce
+``docs/learned/runs/2026-10-07-stack/``, check out ``8646eb4`` and run it there.
 """
 
 from __future__ import annotations
+
+RETIRED = ("tools/measure_stack.py measured stack's first form, retired on 2026-10-07. "
+           "Reproduce docs/learned/runs/2026-10-07-stack/ from commit 8646eb4.")
 
 import argparse
 import json
@@ -421,6 +430,7 @@ def figures(R, out: Path) -> list[Path]:
 
 
 def main(argv=None):
+    raise SystemExit(RETIRED)
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", type=Path, default=None,
                     help=f"output folder (default: <darkroom>/{FOLDER})")
