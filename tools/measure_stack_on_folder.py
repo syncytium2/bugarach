@@ -195,6 +195,7 @@ def summary_figure(rows, out: Path) -> Path:
         ax.set_xlabel(f"window width that won the call · {stream}", fontsize=8)
         ax.set_ylabel("number of stack's calls", fontsize=8)
         ax.yaxis.get_major_locator().set_params(integer=True)
+        ax.set_ylim(0, ax.get_ylim()[1] * 1.4)      # room for the legend above the bars
         ax.legend(frameon=False, fontsize=7,
                   title="stack's calls, by whether count (sliding) also made them",
                   title_fontsize=7)
