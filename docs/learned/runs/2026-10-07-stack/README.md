@@ -1,14 +1,27 @@
-# stack against count (sliding): the three benches, and recordings whose rates swell together
+# stack: against count (sliding), and against the best detectors on record
 
-**2026-10-07. Simulated recordings only; no export folder was read.** A working record of one
+**2026-10-07. Everything on this page is from simulated recordings.** A working record of one
 measurement, **not murderboarded**: if any of it reaches an outside reader, review that artifact
 first. Nothing ships from it and no operating point changes.
+
+Words used on this page, once:
+
+- **ROI**: region of interest, one cell. **Call**: a detector's claim that a coordinated event
+  happened. **Floor**: the smallest number of ROIs active together that counts as an event in
+  that recording (ADR-0008); it ran from 5 to 11 ROIs here.
+- **F1**: the harmonic mean of recall (the share of scored planted events found) and precision
+  (the share of calls that land on a planted event).
+- **Decoy**: planted coordination that the bench labels as *not* an event. A call on one counts
+  against precision. ADR-0006 says a decoy cannot really be a negative, and what becomes of them
+  is still open.
+- **Rigid shift**: the same recording with each ROI's train moved by its own random offset
+  within ±20 s. It is what "chance" means here (ADR-0006).
 
 ## The idea, and what was built
 
 Tony's "stacking blocks" (2026-10-07): at each sliding window, stack the onsets that fall inside
-it. The tower's **height** is the number of distinct ROIs (regions of interest, the cells). Its
-**stability** is how tightly their onsets sit in time. Both are judged against the shift null.
+it. The tower's **height** is the number of distinct ROIs. Its **stability** is how tightly their
+onsets sit in time. Both are judged against the shift null.
 
 `stack` (`bugarach.detectors.count.stack_detect`) is `count_sliding` run at four window widths at
 once: 0.25, 0.5, 1 and 2 s. Stability needs no statistic of its own, because a tight tower is a
@@ -20,82 +33,163 @@ high count in a narrow window.
 - A moment is called when the smallest of the four tail probabilities is small enough. Each call
   reports the width that won, in seconds, as its stability.
 - "Small enough" is **not a setting**. It is the largest tail probability at which `stack` calls
-  no more often than `count_sliding` does at the ADR-0008 floor, on 200 rigid shifts of the same
-  recording (each ROI's train moved by its own offset within ±20 s; ADR-0006's null). So looking
-  at four widths is paid for in the counts each width needs, not in extra false alarms.
+  no more often than `count_sliding` does at the floor, on 200 rigid shifts of the same
+  recording. So looking at four widths is paid for in the counts each width needs, not in extra
+  false alarms.
 - **One width alone is `count_sliding`, call for call** (`tests/test_stack.py`). Every difference
-  below is therefore what the three narrower windows add.
+  between those two below is therefore what the three narrower windows add.
 
 **Frame interval.** Every simulated recording here has a 0.1 s frame interval, so all four widths
-are kept; a width under the frame interval is dropped, since it resolves nothing. ⚠ The default
-export folder's frame interval was **not read**: the folder waits on Tony's confirmation. The
-only figure in the repository is a comment in `tools/measure_slow_comodulation.py`, "at most
-0.119 s", under which 0.25 s is still the narrowest width that holds two frames.
+are kept; a width under the frame interval is dropped, since it resolves nothing.
 
-## What was measured
+## What was measured, and against what
 
-`tools/measure_stack.py`, 217 s on one laptop. Numbers are in [`summary.json`](summary.json).
+`tools/measure_stack.py`, 239 s on one laptop. Numbers are in [`summary.json`](summary.json).
 
-- **Benches**: fast, slow and combined, each at the quiet and the busy background, 24 recordings
-  of 45 minutes each per cell, at `count_sliding`'s own operating point (2 s window, 3 s merge
-  gap, the recording's ADR-0008 floor, which ran from 5 to 11 ROIs). Scored by the bench's scorer
-  at its 2.5 s tolerance and pooled by `bench.pool_scores`. Also 24 no-coordination recordings
-  and 24 elevated-rate recordings per cell.
-- **Swells**: the synthetic worlds of `tools/measure_slow_comodulation.py`, 192 recordings each,
-  with **no planted event**: a flat background (188 hours), and every ROI's rate multiplied by
-  one shared multiplier that wanders on a 20 s, a 1-minute or a 5-minute timescale (64 hours
-  each). Every call there is a call on rates that change together.
+**Five detectors.** `stack` and `count_sliding`, and the three the record puts at or near the top
+on every stream (the 2026-09-28 detector table in the darkroom, and
+[the 3 × 3 cross-stream run](../2026-09-24-cross-stream-3x3/README.md)):
 
-## Result 1: on the benches the two rules find the same planted events
+| detector | run at | tuned? |
+|---|---|---|
+| CoactDetect | its shipped operating point on each bench | yes, by search |
+| LoCo | its shipped operating point on each bench | yes, by search |
+| chorus_norm (a learned model) | its picked training run per stream: seed 3 fast, seed 4 slow, seed 1 combined | yes, trained on that bench |
+| count (sliding) | its untuned starting point: 2 s window, 3 s merge gap, at the floor | no |
+| stack | count (sliding)'s point, plus the three narrower windows | **no. It has no search** |
+
+**The bench is the current reference**: realistic spacing (ADR-0010), the fresh seeds 6000 and up
+that no search and no training run saw, scored by the bench's scorer at its 2.5 s tolerance. That
+is 48 recordings per background on fast and 24 on slow and combined, 45 minutes each, plus half
+as many elevated-rate and no-coordination recordings. **The check that this is the same
+measurement as the record:** mean F1 for CoactDetect, LoCo, chorus_norm and count (sliding)
+comes out at exactly the detector table's values on all three streams.
+
+⚠ An earlier version of this page used the older bench (events at least 120 s apart, seeds 1 to
+24) and only the two count rules. Its conclusions about those two rules are unchanged; its
+numbers are replaced by the ones below.
+
+## Result 1: stack does not beat the best detectors on the bench
 
 ![Figure 1](fig1_bench.png)
 
-**Figure 1. The benches.** Left to right: F1 (the harmonic mean of recall and precision);
-precision as the bench scores it; precision with calls on decoys left out; calls per minute
-inside the elevated-rate stretch; calls per hour on the no-coordination recording. Grey is count
-(sliding), orange is stack.
+**Figure 1. The five detectors on the fast, slow and combined benches, quiet and busy
+backgrounds.** Left to right: F1; precision as the bench scores it; precision with calls on
+decoys left out; calls per minute inside the elevated-rate stretch; calls per hour on the
+no-coordination recording. Blue CoactDetect, purple LoCo, green chorus_norm, grey count
+(sliding), orange stack. **Stack was not tuned and the first three were.**
 
-| bench | background | F1, count (sliding) | F1, stack | calls on decoys, count (sliding) | calls on decoys, stack |
+Mean F1 over the two backgrounds:
+
+| stream | CoactDetect | LoCo | chorus_norm | count (sliding) | stack |
 |---|---|---|---|---|---|
-| fast | quiet | 0.787 | 0.786 | 130 calls | 131 calls |
-| fast | busy | 0.766 | 0.704 | 100 calls | 136 calls |
-| slow | quiet | 0.843 | 0.844 | 133 calls | 133 calls |
-| slow | busy | 0.838 | 0.840 | 126 calls | 126 calls |
-| combined | quiet | 0.788 | 0.788 | 129 calls | 129 calls |
-| combined | busy | 0.745 | 0.732 | 122 calls | 130 calls |
+| fast | 0.608 | **0.645** | 0.621 | 0.579 | 0.556 |
+| slow | 0.786 | **0.823** | 0.817 | 0.821 | 0.821 |
+| combined | 0.767 | **0.813** | 0.778 | 0.793 | 0.783 |
 
-- **Recall is 1.000 for stack in every cell** and 0.997 to 1.000 for count (sliding). There is
-  no recall for stability to add: the scored planted events are already found.
-- **Nearly every false alarm, for both rules, is a call on a decoy.** A decoy is planted
-  coordination that the bench labels negative (ADR-0006 says it cannot be a true negative, and
-  its fate is still open). With decoy calls left out, precision is 0.98 to 1.00 for both.
-- **Stack's one clear loss, fast busy (0.704 against 0.766), is 36 more decoy calls.** Decoys are
-  as tight as planted events, so a rule that rewards tightness finds more of them.
-- **Stack calls more of the planted events that sit under the floor.** Those are out of the score
-  (ADR-0009), so F1 cannot see it: on fast busy, 74 of 75 under-floor events at 20% participation
-  against 51 of 75; on combined quiet, 49 of 120 at 13% against 8 of 120.
-- In the elevated-rate stretch stack calls less often on slow (0.03 against 0.07 to 0.09 calls
-  per minute) and about the same elsewhere. On the no-coordination recordings both are near
-  zero: 2, 0 and 2 calls for stack against 3, 1 and 6 in 18 hours each.
+- **LoCo has the highest F1 on all three streams.** Stack is last on fast, level with count
+  (sliding) and LoCo on slow (within 0.002), and mid-table on combined.
+- **Against count (sliding), its ablation, stack finds the same scored events.** Recall is equal
+  to three decimals in five of six cells. Where stack's F1 is lower (fast busy, 0.497 against
+  0.543; combined busy, 0.746 against 0.767) the whole difference is more calls on decoys: 276
+  against 230, and 131 against 117.
+- **With decoy calls left out, precision is 0.97 to 1.00 for every detector.** On this bench
+  F1 mostly measures how many decoys a detector calls. chorus_norm calls the fewest on fast
+  (52 on busy) and finds the fewest planted events there (recall 0.64).
+
+### What stack does differently, which F1 does not score
+
+**It calls the planted events that sit under the floor.** Those have fewer ROIs than the floor,
+so the score leaves them out for every detector (ADR-0009).
+
+| bench, background, participation | under-floor planted events | called by CoactDetect | LoCo | chorus_norm | count (sliding) | stack |
+|---|---|---|---|---|---|---|
+| slow, quiet, 21% of ROIs | 70 | 15 | 8 | 69 | 16 | 69 |
+| slow, busy, 21% | 110 | 34 | 16 | 109 | 36 | 106 |
+| fast, busy, 20% | 93 | 41 | 19 | 18 | 67 | 91 |
+| combined, busy, 25% | 112 | 83 | 13 | 49 | 92 | 109 |
+| combined, quiet, 13% | 144 | 1 | 0 | 0 | 1 | 31 |
+
+Only chorus_norm matches it, and only on slow.
+
+**It makes fewer calls where there is nothing to find**, though the best detectors make fewer
+still:
+
+| | CoactDetect | LoCo | chorus_norm | count (sliding) | stack |
+|---|---|---|---|---|---|
+| elevated-rate stretch, slow quiet (calls per minute) | 0.07 | 0.00 | 1.98 | 0.07 | 0.03 |
+| elevated-rate stretch, slow busy | 0.03 | 0.00 | 2.43 | 0.03 | 0.02 |
+| elevated-rate stretch, fast busy | 0.00 | 0.00 | 0.00 | 0.05 | 0.03 |
+| elevated-rate stretch, combined busy | 0.03 | 0.00 | 0.78 | 0.12 | 0.08 |
+| no-coordination recording, fast (calls per hour, 18 hours) | 0.17 | 0.00 | 0.00 | 0.56 | 0.17 |
+| no-coordination recording, slow (9 hours) | 0.11 | 0.00 | 0.00 | 0.11 | 0.11 |
+| no-coordination recording, combined (9 hours) | 0.22 | 0.00 | 0.00 | 0.22 | 0.00 |
+
+- Stack is at or below count (sliding) in every row. On the no-coordination recordings these
+  are counts of 0 to 10 calls, so read the direction and not the size.
+- **LoCo makes no call at all** in any elevated-rate stretch or no-coordination recording.
+- chorus_norm calls two a minute inside the slow elevated-rate stretch, over the budget of one,
+  as the detector table already marks.
 
 ![Figure 2](fig2_winning_width.png)
 
-**Figure 2. Which width wins.** For each bench, the share of stack's calls won by each window
-width, split into calls on a planted event (green) and false alarms (red).
+**Figure 2. Which window width won each of stack's calls**, on each bench: calls on a planted
+event (green) against false alarms (red), as a share of each.
 
-The winning width does **not** separate the two. Calls on planted events and false alarms are won
-by the same widths in the same proportions, mostly 0.25 and 0.5 s. That follows from the bullet
-above: the false alarms are decoys, built like planted events.
+The winning width does **not** separate the two. Both are won mostly by the 0.25 and 0.5 s
+windows, because the false alarms are decoys and decoys are built like planted events.
 
 ⚠ **The bench is partly circular for stability.** Its planted jitter was copied from the measured
 jitter (`8137da71`), so a rule that rewards onsets as tight as the bench plants them is rewarded
-by construction. The narrow widths winning in Figure 2 says the bench plants tight events; it is
-not evidence that real coordinated events are that tight.
+by construction. The narrow widths winning in Figure 2 says the bench plants tight events.
 
-## Result 2: the swell hypothesis is not supported
+## Result 2: the rasters
+
+Each page is `bugarach.ui.diagnostic`'s lane panel over its raster panel. The raster is the
+simulated recording, one row per ROI, one mark per onset, and nothing is drawn on it. Each lane
+above it is one detector and each bar is one call. A red cross above a bar is a false alarm. The
+top lane is what was planted: a triangle pointing down for each planted event (green if any
+detector on the page found it, red if none did) and an open grey triangle for each decoy. The
+recordings were picked by `tools/make_stack_rasters.py` as the largest difference of each kind.
+
+![Figure 5](fig05_raster_decoys.png)
+
+**Figure 5. A fast, busy recording where stack calls more decoys than count (sliding).** Look at
+the open grey triangles: stack has a bar under more of them, each with a red cross.
+
+![Figure 6](fig06_raster_decoys_closeup.png)
+
+**Figure 6. One minute of Figure 5, around a decoy only stack calls.** Look at the raster under
+the stack bar: a few onsets in one tight column, too few for the 2 s floor.
+
+![Figure 7](fig07_raster_under_floor.png)
+
+**Figure 7. The slow, quiet recording where stack calls the most under-floor planted events that
+count (sliding) misses.** Look for green triangles with a stack bar and a chorus_norm bar under
+them and nothing in the three lanes between.
+
+![Figure 8](fig08_raster_under_floor_closeup.png)
+
+**Figure 8. One minute of Figure 7 with two planted events.** The right one has enough ROIs and
+all five detectors call it. The left one is under the floor: only chorus_norm and stack call it.
+
+![Figure 9](fig09_raster_elevated.png)
+
+**Figure 9. A fast, busy elevated-rate recording.** Every ROI's rate is raised between 20 and 25
+minutes (shaded) and nothing is planted. Look inside the shading: count (sliding) makes two
+false calls and the other four detectors make none.
+
+![Figure 10](fig10_raster_elevated_closeup.png)
+
+**Figure 10. One minute of Figure 9 around the first of those two calls.**
+
+## Result 3: the swell hypothesis is not supported
 
 The hypothesis was that stack calls fewer minute-scale swells than count (sliding) at the same
-false-alarm rate.
+false-alarm rate. Tested on the two count rules only, on the synthetic worlds of
+`tools/measure_slow_comodulation.py`: 192 recordings each with **no planted event**, a flat
+background (188 hours) and every ROI's rate multiplied by one shared multiplier that wanders on
+a 20 s, a 1-minute or a 5-minute timescale (64 hours each).
 
 ![Figure 3](fig3_swells.png)
 
@@ -112,59 +206,53 @@ recording exactly as often as its rigid shifts.
 | shared swell, 5 minutes, 64 hours | 26 calls | 19 calls | 0.96 | 0.99 |
 
 - **Stack does make fewer calls in every world, and that is not the hypothesis holding.** It
-  makes fewer on the flat background too, by the largest margin. Counts are whole numbers, so
-  stack cannot land exactly on count (sliding)'s rigid-shift rate; it lands under it, at about
-  0.3 calls per hour against 0.45. The two rules were not at the same false-alarm rate, and the
-  left panel mostly shows that.
+  makes fewer on the flat background too. Counts are whole numbers, so stack cannot land exactly
+  on count (sliding)'s rigid-shift rate; it lands under it, at about 0.3 calls per hour against
+  0.45. The two rules were not at the same false-alarm rate.
 - **Against its own rigid-shift rate, each rule responds to swells the same way** (right panel).
-  The 20 s swell makes both call about five times as often as on their rigid shifts, 5.28 and
-  5.09. Stack does not see through it; 61 of its 106 calls there were won by the 2 s window.
+  The 20 s swell makes both call about five times as often as on their rigid shifts.
 - **Neither rule calls 1-minute or 5-minute swells above its rigid-shift rate at all.** The
-  ratios sit at 1. The rigid shift keeps swells that slow, so the ADR-0008 floor has already
-  absorbed them, for count (sliding) as much as for stack. There was nothing at the minute scale
-  left for stability to remove.
+  rigid shift keeps swells that slow, so the floor has already absorbed them.
 
 ![Figure 4](fig4_swell_examples.png)
 
-**Figure 4. One recording from each world.** Each lower panel is the number of ROIs with an onset
-in a 2 s sliding window, with the recording's floor as the dotted line. The lane above it marks
-each rule's calls with a triangle pointing down at the trace. Each panel is its own recording
-with its own time axis; the flat one is 45 minutes and the others 20.
+**Figure 4. One recording from each swell world.** Each lower panel is the number of ROIs with an
+onset in a 2 s sliding window, with the recording's floor as the dotted line. The lane above it
+marks each rule's calls with a triangle pointing down at the trace. Each panel is its own
+recording with its own time axis; the flat one is 45 minutes and the others 20.
 
 ## What this does and does not say
 
-- **Says:** stack is a correct, tested generalisation of count (sliding); on these benches it
-  finds the same scored events; it is more sensitive to tight coordination under the floor; and
-  it is no better than count (sliding) at ignoring shared rate change.
-- **Does not say** anything about real recordings. Whether real coordinated events are tight
-  enough for the narrow windows to matter is the open question, and the bench cannot answer it
-  because its tightness was copied in.
-- **Limits.** The swell worlds are illustrative and fitted to nothing (their tool says so), at
-  one depth each. The tail probabilities take each ROI's rate as constant over the recording.
-  Stack runs at about 70% of count (sliding)'s rigid-shift rate, not at the same rate, so any
-  raw count comparison flatters it. No intervals are given: these are pooled counts.
+- **Says:** on the reference bench stack is not better than LoCo, CoactDetect or chorus_norm by
+  F1, and is no better than count (sliding) at ignoring shared rate change. What it adds over
+  count (sliding) is sensitivity to tight groups of onsets with fewer ROIs than the floor:
+  planted events the score leaves out, and decoys the score counts against it.
+- **Does not say** whether that sensitivity is wanted. That turns on what a decoy and an
+  under-floor event are, which is the open scoring question, not a property of stack.
+- **Limits.** Stack is untuned and three of its comparators are tuned. The checkpoints for
+  chorus_norm live in the darkroom, not the repository. The swell worlds are illustrative and
+  fitted to nothing. No intervals are given: these are pooled counts.
 
 ## Real recordings: in the darkroom, not here
 
-On Tony's instruction (2026-10-07) both rules were then run on the baseline windows of the six
-September 2026 APV+CNQX-then-gabazine pilot recordings, from interface2's two eval folders, with
+On Tony's instruction (2026-10-07) the five detectors were also run on the baseline windows of
+the six September 2026 APV+CNQX-then-gabazine pilot recordings, with
 `tools/measure_stack_on_folder.py`. Frame interval 0.1 s, so all four widths were kept. The
-numbers, four numbered figures per folder and the folder's own caveats (an eval folder, field
-steps never scanned) are in `<darkroom>/bugarach/2026-10-07-stack/README.md` and its
-`sept-pilot-4x/` and `sept-pilot-3x/` subfolders. Nothing derived from those recordings is in
-this repository (FOUNDATIONS §5). That page changes what the simulated result above is worth, so
-read it before quoting this one.
+numbers, the raster pages and the folder's own caveats (an eval folder, field steps never
+scanned) are in `<darkroom>/bugarach/2026-10-07-stack/README.md` and its `sept-pilot-4x/` and
+`sept-pilot-3x/` subfolders. Nothing derived from those recordings is in this repository
+(FOUNDATIONS §5). Read that page before quoting this one: on real baselines stack does not
+behave as it does on the bench.
 
 ## Not done
 
-- **The default folder.** `dataset.default()` is unconfirmed this session, and the relayed brief
-  says the default folder was stopped by #858. Neither is this session's to clear.
-- Nobody has looked at the calls only stack makes on a raster. That needs a person.
+- **The default folder.** `dataset.default()` is unconfirmed this session, and the default
+  folder was stopped by #858. Neither is this session's to clear.
 - `stack` is **not** in `bench.OPERATING_POINTS`, the search, the folder run or either viewer.
-  Registering it there is 20-odd files and three budget records; this run does not argue for it.
 
 ## Reproduce
 
     python tools/measure_stack.py --also docs/learned/runs/2026-10-07-stack
+    python tools/make_stack_rasters.py --also docs/learned/runs/2026-10-07-stack
 
 The darkroom copy is `bugarach/2026-10-07-stack/`.

@@ -46,6 +46,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 FOLDER = "2026-10-07-stack"
 TAG = "stack-2026-10-07"
+FRESH_SEED = 6000
+"""First of the fresh bench seeds (``tools/score_bench_candidates.py``'s ``SEEDS``)."""
 FRACTIONS = (0.125, 0.25, 0.5, 1.0)
 """Window widths as fractions of the reference window: 0.25, 0.5, 1 and 2 s at a 2 s reference."""
 STREAMS = ("fast", "slow", "combined")
@@ -53,7 +55,38 @@ WORLDS = ("sim_background", "shared_20s", "shallow_1min", "drift_5min")
 WORLD_LABEL = {"sim_background": "flat background", "shared_20s": "shared swell, 20 s",
                "shallow_1min": "shared swell, 1 min (shallow)",
                "drift_5min": "shared swell, 5 min"}
-DETECTORS = ("count_sliding", "stack")
+PAIR = ("count_sliding", "stack")
+"""The ablation: ``stack`` at one width is ``count_sliding``."""
+BEST = ("coact", "loco", "chorus_norm")
+"""The detectors the record puts at or near the top on every stream, for comparison: CoactDetect
+(the reference every table is paired against), LoCo, and the learned ``chorus_norm`` at its
+picked training seed. From ``<darkroom>/2026-09-28-detector-table/README.md`` and
+``docs/learned/runs/2026-09-24-cross-stream-3x3/``."""
+DETECTORS = BEST + PAIR
+CHORUS_PICK = {"fast": 3, "slow": 4, "combined": 1}
+"""``chorus_norm``'s picked training seed per stream (``2026-09-26-full-panel/064/README.md``,
+section B: best held-out F1 within CoactDetect's no-coordination budget)."""
+_MODELS: dict = {}
+
+
+def chorus_path(stream: str) -> Path:
+    """The picked ``chorus_norm`` checkpoint for ``stream``. It lives in the darkroom, where the
+    full-panel night left it; nothing here trains one."""
+    from bugarach.paths import darkroom
+
+    root = darkroom("2026-09-26-full-panel", "064", f"models-{stream}")
+    p = None if root is None else root / f"chorus_norm_{stream}_seed{CHORUS_PICK[stream]}.json"
+    if p is None or not p.exists():
+        raise SystemExit(f"chorus_norm's picked checkpoint for {stream} is not in the darkroom "
+                         f"({p}); the comparison needs it")
+    return p
+
+
+def chorus(stream: str):
+    if stream not in _MODELS:
+        from bugarach.learn.checkpoint import load
+        _MODELS[stream] = load(chorus_path(stream))
+    return _MODELS[stream]
 
 
 def bench_module(stream: str):
@@ -72,14 +105,18 @@ def stack_params(op: dict) -> dict:
 
 
 def run(stream: str, name: str, s):
-    """One of the two detectors on a bench slice, at the recording's own floor."""
+    """One detector on a bench slice. The coded ones run at the bench's shipped operating point
+    and the recording's own floor; ``chorus_norm`` runs as saved; ``stack`` takes
+    ``count_sliding``'s point and is tuned on nothing."""
     from bugarach import bench
     from bugarach.detectors.count import stack_detect
     from bugarach.detectors.rate import recording_extent, stream_trains
 
     mod = bench_module(stream)
-    if name == "count_sliding":
-        return mod.run_detector("count_sliding", s)
+    if name == "chorus_norm":
+        return chorus(stream).predict(s)[0]
+    if name != "stack":
+        return mod.run_detector(name, s)
     op = mod.OPERATING_POINTS["count_sliding"].params
     floored = bench.floored_params("count_sliding", s, op, {}, mod.STREAM, None)
     ext = recording_extent(s)
@@ -114,7 +151,7 @@ def bench_task(args):
     for name in DETECTORS:
         det = run(stream, name, s)
         sc = score_stream(gt, det, tol_sec=mod.TOL_SEC)
-        d = dict(score=sc, n_calls=int(det.n_events))
+        d = dict(score=sc, n_calls=int(sc.n_detected))
         if kind == "elevated":
             h0, h1 = gt.params["hot_window"]
             d.update(calls_in=int(sc.hot_fa), minutes_in=(h1 - h0) / 60.0)
@@ -199,6 +236,17 @@ def summarise(bench_rows, swell_rows) -> dict:
                         stack=sum(n["stack_calls"] for n in nul) / hrs)
                 entry[name] = d
             entry["floors"] = sorted(r["floor"] for r in pick if r["kind"] == "planted")
+            # Per recording, what a raster page is picked on (tools/make_stack_rasters.py).
+            entry["per_recording"] = [
+                dict(kind=r["kind"], seed=r["seed"], floor=r["floor"],
+                     **{n: dict(calls=r["det"][n]["n_calls"],
+                                decoy_calls=int(r["det"][n]["score"].decoy_calls),
+                                under_floor_calls=int(sum(
+                                    c for _, c in (r["det"][n]["score"].dont_care_by_frac
+                                                   or {}).values())),
+                                calls_in_stretch=r["det"][n].get("calls_in"))
+                        for n in DETECTORS})
+                for r in pick]
             R["bench"][stream][regime] = entry
         nulls = [r for r in bench_rows if r["stream"] == stream and r["kind"] == "null"]
         hours = sum(r["hours"] for r in nulls)
@@ -210,18 +258,18 @@ def summarise(bench_rows, swell_rows) -> dict:
         rows = [r for r in swell_rows if r["world"] == world]
         hours = sum(r["hours"] for r in rows)
         null_hours = sum(r["null"]["hours"] for r in rows)
-        per = {n: [r["calls"][n] / r["hours"] for r in rows] for n in DETECTORS}
+        per = {n: [r["calls"][n] / r["hours"] for r in rows] for n in PAIR}
         R["swells"][world] = dict(
             n_recordings=len(rows), hours=hours,
-            calls={n: sum(r["calls"][n] for r in rows) for n in DETECTORS},
-            calls_per_hour={n: sum(r["calls"][n] for r in rows) / hours for n in DETECTORS},
+            calls={n: sum(r["calls"][n] for r in rows) for n in PAIR},
+            calls_per_hour={n: sum(r["calls"][n] for r in rows) / hours for n in PAIR},
             calls_per_hour_by_recording=per,
             # stack lands at or under count (sliding)'s rigid-shift rate, never exactly on it
             # (counts are whole numbers), so the fair reading is each rule against its own.
             times_its_rigid_shift_rate={
                 n: (sum(r["calls"][n] for r in rows) / hours)
                 / max(sum(r["null"]["ref_calls" if n == "count_sliding" else "stack_calls"]
-                          for r in rows) / null_hours, 1e-12) for n in DETECTORS},
+                          for r in rows) / null_hours, 1e-12) for n in PAIR},
             recordings_where_stack_calls_fewer=sum(
                 r["calls"]["stack"] < r["calls"]["count_sliding"] for r in rows),
             recordings_where_stack_calls_more=sum(
@@ -237,8 +285,11 @@ def summarise(bench_rows, swell_rows) -> dict:
 
 # -- figures ----------------------------------------------------------------------------------
 
-INK = {"count_sliding": "#555555", "stack": "#c8501e"}
-NAME = {"count_sliding": "count (sliding)", "stack": "stack"}
+INK = {"coact": "#3b6fb6", "loco": "#7a4fa3", "chorus_norm": "#2a8f7a",
+       "count_sliding": "#555555", "stack": "#c8501e"}
+NAME = {"coact": "CoactDetect", "loco": "LoCo", "chorus_norm": "chorus_norm (learned)",
+        "count_sliding": "count (sliding)", "stack": "stack"}
+BAR = 0.8 / len(DETECTORS)
 BG = {"baseline_quiet": "quiet", "baseline_busy": "busy"}
 
 
@@ -264,14 +315,15 @@ def figures(R, out: Path) -> list[Path]:
     for ax, (key, lab) in zip(axes, panels):
         for j, name in enumerate(DETECTORS):
             v = [R["bench"][s][g][name][key] for s, g in groups]
-            ax.bar(x + (j - 0.5) * 0.38, v, 0.38, color=INK[name], label=NAME[name])
+            ax.bar(x + (j - (len(DETECTORS) - 1) / 2) * BAR, v, BAR, color=INK[name],
+                   label=NAME[name])
         ax.set_xticks(x, labels, fontsize=8)
         ax.set_ylabel(lab, fontsize=8)
     ax = axes[4]
     xs = np.arange(len(STREAMS))
     for j, name in enumerate(DETECTORS):
         v = [R["bench"][s]["no_coordination"]["calls_per_hour"][name] for s in STREAMS]
-        ax.bar(xs + (j - 0.5) * 0.38, v, 0.38, color=INK[name])
+        ax.bar(xs + (j - (len(DETECTORS) - 1) / 2) * BAR, v, BAR, color=INK[name])
     ax.set_xticks(xs, STREAMS, fontsize=8)
     ax.set_ylabel("no-coordination recording (calls per hour)", fontsize=8)
     for ax in axes[:3]:
@@ -279,7 +331,8 @@ def figures(R, out: Path) -> list[Path]:
     for ax in axes[:4]:
         ax.tick_params(axis="x", labelsize=6.5)
     handles, names = axes[0].get_legend_handles_labels()
-    fig.legend(handles, names, frameon=False, fontsize=8, ncol=2, loc="upper center")
+    fig.legend(handles, names, frameon=False, fontsize=8, ncol=len(DETECTORS),
+               loc="upper center")
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     made.append(out / "fig1_bench.png")
     fig.savefig(made[-1], dpi=150)
@@ -317,7 +370,7 @@ def figures(R, out: Path) -> list[Path]:
                           "calls per hour on the recording's rigid shifts"),
                          (axes[2], "times_its_rigid_shift_rate",
                           "calls on the recording ÷ calls on its rigid shifts")):
-        for j, name in enumerate(DETECTORS):
+        for j, name in enumerate(PAIR):
             v = [R["swells"][w][key][name] for w in WORLDS]
             ax.bar(xs + (j - 0.5) * 0.38, v, 0.38, color=INK[name], label=NAME[name])
             if key == "calls_per_hour":
@@ -344,11 +397,11 @@ def figures(R, out: Path) -> list[Path]:
         ex = R["swells"][w]["example"]
         lane = fig.add_subplot(gs[2 * r])
         trace = fig.add_subplot(gs[2 * r + 1], sharex=lane)
-        for j, name in enumerate(DETECTORS):
+        for j, name in enumerate(PAIR):
             on = ex["onsets"][name]
             lane.plot(on, np.full(len(on), j), "v", color=INK[name], ms=6)
         lane.set_yticks([0, 1], [f"{NAME[n]} ({len(ex['onsets'][n])} calls)"
-                                 for n in DETECTORS], fontsize=7)
+                                 for n in PAIR], fontsize=7)
         lane.set_ylim(-0.6, 1.6)
         lane.tick_params(labelbottom=False, length=0)
         for side in ("top", "right", "bottom"):
@@ -373,7 +426,11 @@ def main(argv=None):
                     help=f"output folder (default: <darkroom>/{FOLDER})")
     ap.add_argument("--also", type=Path, default=None,
                     help="a second folder for the summary and figures, e.g. the run record")
-    ap.add_argument("--seeds", type=int, default=24, help="bench recordings per background")
+    ap.add_argument("--seeds", type=int, default=24,
+                    help="bench recordings per background (doubled on fast when realistic); "
+                         "half as many no-coordination and elevated-rate recordings")
+    ap.add_argument("--spacing", default="realistic", choices=("realistic", "bench"),
+                    help="planted-event spacing: realistic is the reference since ADR-0010")
     ap.add_argument("--swells", type=int, default=192, help="recordings per swell world")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     ap.add_argument("--redraw", action="store_true",
@@ -396,10 +453,21 @@ def main(argv=None):
         print(*made, sep="\n")
         return
 
-    seeds = range(1, a.seeds + 1)
-    tasks = [(s, kind, g, sd) for s in STREAMS for g in bench_module(s).REGIMES
-             for kind in ("planted", "elevated") for sd in seeds]
-    tasks += [(s, "null", "baseline_quiet", sd) for s in STREAMS for sd in seeds]
+    # The spacing travels to every worker in the environment (bench.use_spacing). Seeds are the
+    # fresh ones of tools/score_bench_candidates.py, which no search and no training run saw,
+    # doubled on fast under a realistic spacing (bench.seed_factor; ADR-0010 ruling 2).
+    from bugarach import bench
+    bench.use_spacing(a.spacing)
+    for s in STREAMS:
+        chorus_path(s)                      # fail before the pool starts, not inside it
+    tasks = []
+    for s in STREAMS:
+        f = bench.seed_factor(s)
+        seeds = range(FRESH_SEED, FRESH_SEED + a.seeds * f)
+        nulls = range(FRESH_SEED, FRESH_SEED + max(1, a.seeds // 2) * f)
+        tasks += [(s, "planted", g, sd) for g in bench_module(s).REGIMES for sd in seeds]
+        tasks += [(s, "elevated", g, sd) for g in bench_module(s).REGIMES for sd in nulls]
+        tasks += [(s, "null", "baseline_quiet", sd) for sd in nulls]
     swells = [(w, i) for w in WORLDS for i in range(a.swells)]
     t0 = time.time()
     with mp.get_context("spawn").Pool(a.jobs) as pool:
@@ -408,6 +476,10 @@ def main(argv=None):
     R = summarise(bench_rows, swell_rows)
     R["settings"] = dict(
         tag=TAG, seeds=a.seeds, swells=a.swells, fractions=list(FRACTIONS),
+        spacing=a.spacing, first_seed=FRESH_SEED,
+        chorus_norm_checkpoints={s: chorus_path(s).name for s in STREAMS},
+        shipped_points={s: {n: bench_module(s).OPERATING_POINTS[n].params
+                            for n in ("coact", "loco")} for s in STREAMS},
         operating_points={s: bench_module(s).OPERATING_POINTS["count_sliding"].params
                           for s in STREAMS},
         frame_interval_sec=sorted({r["dt"] for r in bench_rows} | {r["dt"] for r in swell_rows}),
