@@ -175,7 +175,7 @@ def measure(s, rec, stream: str, label: str) -> dict:
     hours = L * dt / 3600.0
     nh = b.null["hours"] or float("nan")
     # What the interactive viewer is given (write_viewer): LoCo, the best chorus variant and
-    # stack, each call with its participants by detect_with_floors.py's one rule.
+    # stack, each call measured by the unified rule below.
     t0 = a0 * dt
     try:
         d = ms.chorus(stream, ms.BEST_CHORUS).predict(s, stream=stream, extent=(t0, t0 + ext[1]))[0]
