@@ -55,11 +55,36 @@ MATCH_SEC = 2.5
 match tolerance."""
 RNG_SEED = 20260706
 """The surrogate seed the bench and the folder run give CoactDetect and LoCo."""
-PARTICIPANT_PAD_SEC = 1.0
-"""A call's participants are the ROIs with an onset within this many seconds of its span:
-``tools/detect_with_floors.py``'s rule (ADR-0010 part 6), so the viewer's hover reads the same
-way for these calls as for every other run's."""
 VIEWER_STREAMS = ("fast", "slow")
+UNIFIED_LABEL = ("Bar width is the UNIFIED event width, the same rule for every detector, not "
+                 "the detector's own reported width: from the first to the last onset of the "
+                 "call's core group of onsets")
+"""What every page and file drawn from this tool says about its bars."""
+
+
+def unified_rule(stream: str) -> str:
+    """The rule's name and its one setting for ``stream``, as written into ``width_def``."""
+    from bugarach import call_measure as cm
+
+    gap, half = cm.defaults_for(stream)
+    return (f"unified width: bugarach.call_measure core span, onsets no more than {gap:g} s "
+            f"apart, looked for within {half:g} s of the call")
+
+
+def unified_width(stream_obj, onset_sec: float, width_sec: float, stream: str, dt: float):
+    """``(first onset, width, ROIs)`` of one call by the project's one rule for every detector
+    (``bugarach.call_measure``, GLOSSARY "width of a coordinated event"): the detector says
+    WHERE the event is, and the recording's own onsets say how wide. A call with no onset near
+    it keeps the detector's own onset and width, with no ROIs."""
+    from bugarach import call_measure as cm
+
+    gap, half = cm.defaults_for(stream)
+    m = cm.measure_call(stream_obj, cm.call_center(onset_sec, width_sec), gap_sec=gap,
+                        half_aperture_sec=half, min_interval_sec=dt,
+                        window=(onset_sec, onset_sec + width_sec))
+    if not np.isfinite(m.core_span_sec):
+        return float(onset_sec), float(width_sec), 0
+    return float(m.core_first_sec), float(m.core_span_sec), int(m.core_n_roi)
 ONLY = "stack_only"
 LANE_NAME = {**ms.NAME, "stack": "stack (every call)",
              ONLY: "only stack (count (sliding) did not call)"}
@@ -151,7 +176,7 @@ def measure(s, rec, stream: str, label: str) -> dict:
     hours = L * dt / 3600.0
     nh = b.null["hours"] or float("nan")
     # What the interactive viewer is given (write_viewer): LoCo, the best chorus variant and
-    # stack, each call with its participants by detect_with_floors.py's one rule.
+    # stack, each call measured by the unified rule below.
     t0 = a0 * dt
     try:
         d = ms.chorus(stream, ms.BEST_CHORUS).predict(s, stream=stream, extent=(t0, t0 + ext[1]))[0]
@@ -159,18 +184,29 @@ def measure(s, rec, stream: str, label: str) -> dict:
     except Exception as e:                                  # noqa: BLE001
         failed[ms.BEST_CHORUS] = f"{type(e).__name__}: {e}"
         best_chorus = None
+    # EVERY CALL IS DRAWN AT THE UNIFIED WIDTH, not the detector's own (Tony, 2026-10-07: "use
+    # the unified width and label it as such"). Counts and the overlap above were taken on the
+    # calls as the detectors made them; only where a bar starts and how wide it is changes.
+    st_obj = s.streams[stream]
+
+    def as_unified(lane):
+        got = [unified_width(st_obj, float(o) + t0, float(w), stream, dt) for o, w in zip(*lane)]
+        return (np.array([g[0] - t0 for g in got]), np.array([g[1] for g in got]),
+                [g[2] for g in got])
+
     viewer = []
     for name, lane, extra in (("loco", lanes.get("loco"), None),
                               (ms.BEST_CHORUS, best_chorus, None),
                               ("stack", lanes["stack"], b.stability_sec)):
         if lane is None:
             continue
+        first, span, n_core = as_unified(lane)
         for i, (o, w) in enumerate(zip(*lane)):
-            lo, hi = o - PARTICIPANT_PAD_SEC, o + w + PARTICIPANT_PAD_SEC
             viewer.append(dict(
-                detector=name, onset_sec=float(o) + t0, width_sec=float(w),
-                n_roi=int(sum(bool(np.any((v >= lo) & (v <= hi))) for v in trains)),
+                detector=name, onset_sec=float(first[i]) + t0, width_sec=float(span[i]),
+                n_roi=n_core[i], detector_onset_sec=float(o) + t0, detector_width_sec=float(w),
                 winning_width_sec=None if extra is None else float(extra[i])))
+    lanes = {k: as_unified(v)[:2] for k, v in lanes.items()}
     return dict(
         _viewer=viewer,
         recording_id=rec.recording_id, mouse=rec.mouse, group=rec.group, stream=stream, dt=dt,
@@ -250,19 +286,24 @@ def write_viewer(rows, out: Path) -> tuple[Path, Path]:
 
     events = []
     for r in rows:
-        if r["stream"] not in VIEWER_STREAMS:
-            continue
         for c in r["_viewer"]:
             events.append(DetectedEvent(
                 slice_id=r["recording_id"], stream=r["stream"], detector=c["detector"],
                 mode="threshold" if c["detector"] != ms.BEST_CHORUS else None,
                 onset_sec=c["onset_sec"], width_sec=c["width_sec"], strength=None,
-                strength_unit=None, width_def=None, region_idx=1, region_label="baseline",
-                n_roi=c["n_roi"],
+                strength_unit=None, width_def=unified_rule(r["stream"]), region_idx=1,
+                region_label="baseline", n_roi=c["n_roi"],
                 identity=dict(group_id=r["group"], window_kind="baseline", variant="own_floor",
                               own_floor=r["floor"], baseline_floor=r["floor"],
+                              detector_onset_sec=c["detector_onset_sec"],
+                              detector_width_sec=c["detector_width_sec"],
                               winning_width_sec=c["winning_width_sec"])))
-    det = write_detections(events, out / "detections.csv")
+    det = write_detections([e for e in events if e.stream in VIEWER_STREAMS],
+                           out / "detections.csv")
+    # Every stream, combined included, for tools/make_group_raster_summary.py --detections,
+    # which derives the combined stream itself. The browser viewer cannot, so it gets the
+    # file above.
+    write_detections(events, out / "detections_all_streams.csv")
     page = out / "viewer.html"
     shutil.copy2(ROOT / "docs" / "site" / "raster_viewer.html", page)
     return det, page
@@ -315,7 +356,8 @@ def main(argv=None):
                          f"{counts}. The raster is the recording's baseline window, one row "
                          "per ROI (region of interest, a cell), one black mark per "
                          "calcium-event onset; nothing is drawn on it. Each lane above it "
-                         "is one detector and each bar is one call. The bottom lane repeats "
+                         "is one detector and each bar is one call. "
+                         f"{UNIFIED_LABEL} ({unified_rule(r['stream'])}). The bottom lane repeats "
                          "the calls only stack made, so they can be found by eye. There is "
                          "no planted truth here: a bar is a call, not a confirmed event."),
                 png=png, not_run=tuple(r["did_not_run"]), names=LANE_NAME, colors=LANE_INK)
