@@ -58,6 +58,11 @@ MATCH_SEC = 2.5
 match tolerance."""
 RNG_SEED = 20260706
 """The surrogate seed the bench and the folder run give CoactDetect and LoCo."""
+PARTICIPANT_PAD_SEC = 1.0
+"""A call's participants are the ROIs with an onset within this many seconds of its span:
+``tools/detect_with_floors.py``'s rule (ADR-0010 part 6), so the viewer's hover reads the same
+way for these calls as for every other run's."""
+VIEWER_STREAMS = ("fast", "slow")
 ONLY = "stack_only"
 LANE_NAME = {**ms.NAME, "stack": "stack (every call)",
              ONLY: "only stack (count (sliding) did not call)"}
@@ -147,7 +152,29 @@ def measure(s, rec, stream: str, label: str) -> dict:
              ONLY: (b.onset_sec[~b_in_a], b.width_sec[~b_in_a])}
     hours = L * dt / 3600.0
     nh = b.null["hours"] or float("nan")
+    # What the interactive viewer is given (write_viewer): LoCo, the best chorus variant and
+    # stack, each call with its participants by detect_with_floors.py's one rule.
+    t0 = a0 * dt
+    try:
+        d = ms.chorus(stream, ms.BEST_CHORUS).predict(s, stream=stream, extent=(t0, t0 + ext[1]))[0]
+        best_chorus = (np.asarray(d.onset_sec, float) - t0, np.asarray(d.width_sec, float))
+    except Exception as e:                                  # noqa: BLE001
+        failed[ms.BEST_CHORUS] = f"{type(e).__name__}: {e}"
+        best_chorus = None
+    viewer = []
+    for name, lane, extra in (("loco", lanes.get("loco"), None),
+                              (ms.BEST_CHORUS, best_chorus, None),
+                              ("stack", lanes["stack"], b.stability_sec)):
+        if lane is None:
+            continue
+        for i, (o, w) in enumerate(zip(*lane)):
+            lo, hi = o - PARTICIPANT_PAD_SEC, o + w + PARTICIPANT_PAD_SEC
+            viewer.append(dict(
+                detector=name, onset_sec=float(o) + t0, width_sec=float(w),
+                n_roi=int(sum(bool(np.any((v >= lo) & (v <= hi))) for v in trains)),
+                winning_width_sec=None if extra is None else float(extra[i])))
     return dict(
+        _viewer=viewer,
         recording_id=rec.recording_id, mouse=rec.mouse, group=rec.group, stream=stream, dt=dt,
         window_sec=L * dt, window_start_sec=a0 * dt, n_roi=len(frames),
         n_onsets=int(sum(len(f) for f in frames)), floor=floor.floor,
@@ -209,6 +236,40 @@ def summary_figure(rows, out: Path) -> Path:
     return p
 
 
+def write_viewer(rows, out: Path) -> tuple[Path, Path]:
+    """What the repository's interactive viewer needs to show these calls, as earlier runs left it
+    (``tools/make_briefing.py``): ``detections.csv`` in the output contract
+    (``bugarach.emit.COLUMNS``) and ``viewer.html``, a copy of the site's viewer
+    (``docs/site/raster_viewer.html``). Nothing here draws anything; the viewer does.
+
+    One lane per detector in the viewer: LoCo, the best chorus variant and stack. Fast and slow
+    only, because the viewer builds its streams from the export folder's own and the combined
+    stream is derived, never stored. Baseline windows only, as everything else this tool does.
+    """
+    import shutil
+
+    from bugarach.emit import DetectedEvent, write_detections
+
+    events = []
+    for r in rows:
+        if r["stream"] not in VIEWER_STREAMS:
+            continue
+        for c in r["_viewer"]:
+            events.append(DetectedEvent(
+                slice_id=r["recording_id"], stream=r["stream"], detector=c["detector"],
+                mode="threshold" if c["detector"] != ms.BEST_CHORUS else None,
+                onset_sec=c["onset_sec"], width_sec=c["width_sec"], strength=None,
+                strength_unit=None, width_def=None, region_idx=1, region_label="baseline",
+                n_roi=c["n_roi"],
+                identity=dict(group_id=r["group"], window_kind="baseline", variant="own_floor",
+                              own_floor=r["floor"], baseline_floor=r["floor"],
+                              winning_width_sec=c["winning_width_sec"])))
+    det = write_detections(events, out / "detections.csv")
+    page = out / "viewer.html"
+    shutil.copy2(ROOT / "docs" / "site" / "raster_viewer.html", page)
+    return det, page
+
+
 def main(argv=None):
     raise SystemExit(ms.RETIRED)
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
@@ -266,6 +327,7 @@ def main(argv=None):
             r["raster"] = dict(figure=n, file=png.name)
             made.append(png)
 
+    made += list(write_viewer(rows, out))
     slim = [{k: v for k, v in r.items() if not k.startswith("_")} for r in rows]
     (out / "summary.json").write_text(json.dumps(
         dict(folder=folder.name, label=a.label, tag=TAG, match_sec=MATCH_SEC, skipped=skipped,

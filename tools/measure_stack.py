@@ -75,27 +75,34 @@ DETECTORS = BEST + PAIR
 CHORUS_PICK = {"fast": 3, "slow": 4, "combined": 1}
 """``chorus_norm``'s picked training seed per stream (``2026-09-26-full-panel/064/README.md``,
 section B: best held-out F1 within CoactDetect's no-coordination budget)."""
+PICKS = {"chorus_norm": CHORUS_PICK,
+         "chorus_norm_part": {"fast": 3, "slow": 2, "combined": 0}}
+"""Picked training seed per learned model and stream, from the same section B.
+``chorus_norm_part`` is the chorus variant with the best fresh-seed F1 that also has a valid
+pick on all three streams (0.650, 0.818 and 0.822 in the 2026-09-28 detector table;
+``chorus_gain_norm_part`` is 0.007 higher on combined and has no pick on slow)."""
+BEST_CHORUS = "chorus_norm_part"
 _MODELS: dict = {}
 
 
-def chorus_path(stream: str) -> Path:
-    """The picked ``chorus_norm`` checkpoint for ``stream``. It lives in the darkroom, where the
+def chorus_path(stream: str, arch: str = "chorus_norm") -> Path:
+    """The picked checkpoint of ``arch`` for ``stream``. It lives in the darkroom, where the
     full-panel night left it; nothing here trains one."""
     from bugarach.paths import darkroom
 
     root = darkroom("2026-09-26-full-panel", "064", f"models-{stream}")
-    p = None if root is None else root / f"chorus_norm_{stream}_seed{CHORUS_PICK[stream]}.json"
+    p = None if root is None else root / f"{arch}_{stream}_seed{PICKS[arch][stream]}.json"
     if p is None or not p.exists():
-        raise SystemExit(f"chorus_norm's picked checkpoint for {stream} is not in the darkroom "
+        raise SystemExit(f"{arch}'s picked checkpoint for {stream} is not in the darkroom "
                          f"({p}); the comparison needs it")
     return p
 
 
-def chorus(stream: str):
-    if stream not in _MODELS:
+def chorus(stream: str, arch: str = "chorus_norm"):
+    if (stream, arch) not in _MODELS:
         from bugarach.learn.checkpoint import load
-        _MODELS[stream] = load(chorus_path(stream))
-    return _MODELS[stream]
+        _MODELS[stream, arch] = load(chorus_path(stream, arch))
+    return _MODELS[stream, arch]
 
 
 def bench_module(stream: str):
