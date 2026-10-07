@@ -144,10 +144,22 @@ with its own time axis; the flat one is 45 minutes and the others 20.
   Stack runs at about 70% of count (sliding)'s rigid-shift rate, not at the same rate, so any
   raw count comparison flatters it. No intervals are given: these are pooled counts.
 
+## Real recordings: in the darkroom, not here
+
+On Tony's instruction (2026-10-07) both rules were then run on the baseline windows of the six
+September 2026 APV+CNQX-then-gabazine pilot recordings, from interface2's two eval folders, with
+`tools/measure_stack_on_folder.py`. Frame interval 0.1 s, so all four widths were kept. The
+numbers, four numbered figures per folder and the folder's own caveats (an eval folder, field
+steps never scanned) are in `<darkroom>/bugarach/2026-10-07-stack/README.md` and its
+`sept-pilot-4x/` and `sept-pilot-3x/` subfolders. Nothing derived from those recordings is in
+this repository (FOUNDATIONS §5). That page changes what the simulated result above is worth, so
+read it before quoting this one.
+
 ## Not done
 
-- **Real baseline recordings.** `dataset.default()` is unconfirmed this session, and the
-  relayed brief says the default folder was stopped by #858. Neither is this session's to clear.
+- **The default folder.** `dataset.default()` is unconfirmed this session, and the relayed brief
+  says the default folder was stopped by #858. Neither is this session's to clear.
+- Nobody has looked at the calls only stack makes on a raster. That needs a person.
 - `stack` is **not** in `bench.OPERATING_POINTS`, the search, the folder run or either viewer.
   Registering it there is 20-odd files and three budget records; this run does not argue for it.
 

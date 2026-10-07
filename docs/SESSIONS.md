@@ -3289,4 +3289,7 @@ session's work is not a sweep.
   `fig3_swells.png`, `fig4_swell_examples.png`) from `tools/measure_stack.py` on branch
   `stack-detector`. Simulated recordings only; no export folder is read. The same files are in the
   repo at `docs/learned/runs/2026-10-07-stack/`. Measure-only: nothing ships from it.
+  Also, on Tony's instruction the same day: `README.md`, and `sept-pilot-4x/` and `sept-pilot-3x/`
+  (`summary.json` and four figures each) from `tools/measure_stack_on_folder.py` on the baseline
+  windows of the six September 2026 pilot recordings. Those are darkroom-only.
 - **Released:** 2026-10-07, at write. Holds nothing.
