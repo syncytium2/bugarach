@@ -32,33 +32,43 @@ def test_spans_clip_to_the_extent():
     assert sp[1][1] == 100.0, "must not draw past the recording"
 
 
-def test_zero_width_events_still_draw():
-    """A zero-width detection that vanished would read as 'found nothing here'."""
-    sp = _spans([50.0], [0.0], (0.0, 100.0))
-    assert len(sp) == 1 and sp[0][1] > sp[0][0]
-
-
-def test_non_finite_width_still_draws():
-    sp = _spans([50.0], [np.nan], (0.0, 100.0))
-    assert len(sp) == 1 and sp[0][1] > sp[0][0]
-
-
-def test_a_bar_is_never_drawn_wider_than_the_tolerance_it_is_judged_by():
-    """The floor used to be 0.2% of the record with no reference to `tol_sec`.
-
-    On a 30-minute figure that is 3.6 s, and five of the six detectors report
-    windows under 2.1 s — so every bar was drawn more than twice as wide as the
-    window the scorer matches in, and a detection could visibly cover a planted
-    event the same figure marked a false alarm. Tony reported it twice.
-    """
-    ext = (0.0, 1800.0)
-    (t0, t1), = _spans([500.0], [0.4], ext, tol_sec=1.5)
-    assert t1 - t0 <= 1.5 + 1e-9, (
-        f"a 0.4 s detection is drawn {t1 - t0:.2f} s wide against a 1.5 s "
-        "tolerance — the bar claims more than the scorer allows")
-    # a detector that really does claim ten seconds still gets to say so
-    (w0, w1), = _spans([500.0], [9.7], ext, tol_sec=1.5)
+def test_a_bar_is_exactly_as_wide_as_the_call_it_draws():
+    """Every bar used to be padded to a minimum in seconds: 0.2% of the record, then that
+    capped at the matching tolerance. On an 80-minute page a 0.4 s call was drawn 2.5 s wide,
+    and zooming in did not shrink it, so the bar covered six times the onsets it stood for.
+    Tony reported a bar wider than its call three times; the third, 2026-10-07, on real
+    recordings: "coordinated event width is wrong for all detectors"."""
+    for ext in ((0.0, 1800.0), (0.0, 4800.0)):
+        (t0, t1), = _spans([500.0], [0.4], ext)
+        assert t1 - t0 == pytest.approx(0.4), (
+            f"a 0.4 s call is drawn {t1 - t0:.2f} s wide on a {ext[1]:.0f} s page")
+    (w0, w1), = _spans([500.0], [9.7], (0.0, 1800.0))
     assert w1 - w0 == pytest.approx(9.7)
+    # no width, or a non-finite one, is a call with no extent: kept, and not given one
+    for w in (0.0, np.nan):
+        (z0, z1), = _spans([50.0], [w], (0.0, 100.0))
+        assert z0 == z1 == 50.0
+
+
+def test_a_call_with_no_width_still_draws_and_claims_no_time():
+    """A call that vanished would read as 'found nothing here'. What keeps it on the page is a
+    tick sized in screen pixels, which is visible at any zoom and covers no span of data."""
+    import holoviews as hv
+
+    from bugarach.ui.diagnostic import TICK_PX
+
+    lanes = {"coact": (np.array([50.0, 60.0]), np.array([0.0, np.nan]))}
+    panel = lane_panel(lanes, ext=(0.0, 100.0))
+    ticks = [el for el in panel if isinstance(el, hv.Scatter)
+             and el.opts.get("style").kwargs.get("marker") == "dash"]
+    assert len(ticks) == 1
+    assert ticks[0].dimension_values(0).tolist() == [50.0, 60.0]
+    style = ticks[0].opts.get("style").kwargs
+    assert style["line_width"] == TICK_PX and style["angle"] == 90
+    for el in panel:
+        if isinstance(el, hv.Rectangles):
+            x0, x1 = el.dimension_values(0), el.dimension_values(2)
+            assert np.all(x1 == x0), "a call with no width was drawn with one"
 
 
 def test_every_raster_onset_is_drawn_identically(sim):
