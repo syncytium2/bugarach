@@ -1,10 +1,12 @@
 # stack: against count (sliding), and against the best detectors on record
 
-> ⚠ **This page measured stack's first form**, which was replaced the same day. The first form
-> used one null for the whole recording, calibrated against count (sliding) on rigid shifts. The
-> current `stack` (`src/bugarach/detectors/stack.py`) is self-contained and uses LoCo's local
-> context-window null; none of the numbers below apply to it. To reproduce this page, check out
-> `8646eb4`.
+> ⚠ **"stack" on this page is stack's first form, now kept as `stack_global`**
+> (`src/bugarach/detectors/stack_global.py`, display name "stack (global)"). It uses one null for
+> the whole recording, calibrated against count (sliding) on rigid shifts. It is preserved
+> unchanged, at Tony's request, after he looked at its calls on real recordings; a test pins it to
+> `8646eb4`'s output exactly, and this page's tools run it. The key `stack` now names a different
+> rule, with LoCo's local context-window null (`src/bugarach/detectors/stack.py`), and none of the
+> numbers below apply to it.
 
 **2026-10-07. Everything on this page is from simulated recordings.** A working record of one
 measurement, **not murderboarded**: if any of it reaches an outside reader, review that artifact

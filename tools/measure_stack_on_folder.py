@@ -31,9 +31,6 @@ The folder is named on the command line and resolved by ``bugarach.dataset.requi
 folder ``current_export.toml`` declares passes the same archive, contamination and confirmation
 gates it would by role. A folder that declares regions is read on its baseline window or not at
 all; treatment windows are never read (FOUNDATIONS §9).
-
-⚠ **Retired with the first form of stack, 2026-10-07**, for the reason in
-``tools/measure_stack.py``. ``main`` refuses; the September pilot result was made at ``8646eb4``.
 """
 
 from __future__ import annotations
@@ -131,7 +128,8 @@ def best_detectors(s, stream: str, trains, ext, t0: float, floor: int) -> tuple[
 
 def measure(s, rec, stream: str, label: str) -> dict:
     from bugarach import event_floor as ef
-    from bugarach.detectors.count import count_sliding_detect, stack_detect
+    from bugarach.detectors.count import count_sliding_detect
+    from bugarach.detectors.stack_global import stack_global_detect as stack_detect
 
     a0, a1 = rec.window
     L, dt = a1 - a0, float(rec.dt)
@@ -271,7 +269,6 @@ def write_viewer(rows, out: Path) -> tuple[Path, Path]:
 
 
 def main(argv=None):
-    raise SystemExit(ms.RETIRED)
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--folder", required=True, help="an export folder, by name or path")
     ap.add_argument("--label", required=True,
