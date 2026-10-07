@@ -162,4 +162,14 @@ bash "$GATE" $VERBOSE $ARMORY_CLONE \
   --file .claude/hooks/send-goes-nowhere.py \
   || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
 
+# --- family 5: armory, the output filename scheme --------------------------------
+# tools/naming/ — artifact_name.py, codes.json, cases.json, vendored together. Only the .py
+# can carry a stamp, so it stands for all three: re-vendor them as one, or the builder and
+# its codes disagree. Its own family, not family 4's: the two are versioned independently.
+bash "$GATE" $VERBOSE $ARMORY_CLONE \
+  --label armory-naming \
+  --slug syncytium2/armory \
+  --file tools/naming/artifact_name.py \
+  || { [ $? -eq 1 ] && rc=1 || { [ "$rc" -eq 0 ] && rc=2; }; }
+
 exit $rc
