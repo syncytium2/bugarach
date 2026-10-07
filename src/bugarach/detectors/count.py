@@ -163,6 +163,39 @@ def _split_at_dips(S: np.ndarray, idx: np.ndarray, K: int, ratio: float) -> list
     return out
 
 
+LOCAL_MINIMUM = 3
+"""The local-rate threshold's minimum: a pair never counts as a coordinated event (ADR-0008,
+decision 1, kept for the local-rate variant)."""
+
+
+def local_thresholds(ev, starts, S, w: float, t_range, context_sec: float, pctiles,
+                     minimum: int = LOCAL_MINIMUM) -> dict:
+    """``{pctile: K}``, one threshold per sliding piece, from each ROI's own local event rate.
+
+    For each piece whose count reaches ``minimum`` (the others cannot be called at any level, so
+    their K is left at infinity), the window's centre ``c = start - w / 2`` gets a context
+    ``[c - context_sec, c + context_sec]`` clipped to the range, each ROI's probability of an onset
+    in a random width-``w`` window of it (:meth:`bugarach.detectors.sliding.EventIndex.
+    catch_probabilities`, CoactDetect's sliding null), and the Poisson-binomial of the count.
+    ``K = max(minimum, q + 1)``, ``q`` the ``pctile`` quantile: the smallest count whose chance
+    probability of being reached is at most ``1 - pctile / 100``. Several levels in one pass, for
+    calibration.
+    """
+    from bugarach.detectors import sliding as sl
+
+    t0, t1 = t_range
+    idx = sl.EventIndex(ev)
+    out = {p: np.full(S.size, np.inf) for p in pctiles}
+    for i in np.flatnonzero(S >= minimum):
+        c = starts[i] - w / 2
+        p = idx.catch_probabilities(max(t0, c - context_sec), min(t1, c + context_sec), w)
+        cdf = np.cumsum(sl.poisson_binomial(p)) if p.size else np.ones(1)
+        for pc in pctiles:
+            q = float(np.searchsorted(cdf, pc / 100.0 - 1e-12, side="left"))
+            out[pc][i] = max(minimum, q + 1)
+    return out
+
+
 def count_sliding_detect(
     trains: list[np.ndarray],
     t_range: tuple[float, float],
@@ -172,6 +205,8 @@ def count_sliding_detect(
     k_offset: int = 0,
     merge_gap_sec: float = 3.0,
     split_dip: float | None = None,
+    local_rate_sec: float | None = None,
+    local_pctile: float = 99.99,
 ) -> CountDetection:
     """v2, the sliding form (Tony, 2026-09-26: *"Simple rule v2 should be sliding"*).
 
@@ -184,6 +219,19 @@ def count_sliding_detect(
     senktide raster page (2026-09-28, 20260130_270 near 2.5 min, 20260130_272 near 4.5
     min): *"we need to fix the merge"*. A split is taken at the valley, so a ragged single
     event whose count wobbles without falling far stays one call.
+
+    **``local_rate_sec``** (off by default, an experiment) replaces the fixed threshold with a
+    local-rate one (Tony, 2026-09-28: "go for it"). At each moment the threshold is the count
+    that chance, given each ROI's own event rate within ``±local_rate_sec`` of that moment,
+    reaches with probability at most ``1 - local_pctile / 100``, never below
+    :data:`LOCAL_MINIMUM` (3), plus ``k_offset`` (:func:`local_thresholds`). **In this mode
+    ``min_rois`` is not used**: the recording's ADR-0008 floor, which a bench or
+    ``detect_with_floors`` passes as ``min_rois``, is replaced rather than combined, and the
+    call's record says so. ``local_pctile`` is calibrated on baseline windows under rigid-shift
+    shuffles to about one chance call per hour (``<darkroom>/bugarach/2026-09-28-senktide-rasters/
+    local-rate-floor/``). It exists because the senktide surge raises every ROI's rate together
+    for minutes, which ADR-0008's rigid shift cannot break, so the per-window floor rises until
+    a small recording cannot be called at all (20240814a47).
 
     At every instant t, the distinct ROIs with an onset in ``(t - win_sec, t]``; a call while
     that count is at least ``min_rois + k_offset``, and called runs joined when their gap is at
@@ -214,12 +262,22 @@ def count_sliding_detect(
         raise ValueError("merge_gap_sec must be >= 0")
     if split_dip is not None and not 0.0 < split_dip < 1.0:
         raise ValueError("split_dip must be None or strictly between 0 and 1")
+    if local_rate_sec is not None and not local_rate_sec > 0:
+        raise ValueError("local_rate_sec must be None or positive")
+    if not 0.0 < local_pctile < 100.0:
+        raise ValueError("local_pctile must be strictly between 0 and 100")
     t0, t1 = t_range
     w = float(win_sec)
-    K = max(1, int(min_rois) + int(k_offset))
     ev = clip_sorted(trains, t0, t1)
     starts, ends, S = sl.pieces(ev, w, t0, t1)
-    sig = np.flatnonzero(S >= K)
+    if local_rate_sec is None:
+        K = max(1, int(min_rois) + int(k_offset))
+        Kt = np.full(S.size, float(K))
+    else:
+        Kt = local_thresholds(ev, starts, S, w, t_range, float(local_rate_sec),
+                              (local_pctile,))[local_pctile] + int(k_offset)
+        K = LOCAL_MINIMUM + int(k_offset)          # the least any moment asks for
+    sig = np.flatnonzero(S >= Kt)
     runs = sl.merge_runs(starts[sig], ends[sig], merge_gap_sec)
     calls = []                          # arrays of piece indices at or above K, one per call
     for a, b in runs:
@@ -235,11 +293,16 @@ def count_sliding_detect(
         onset[j], width[j] = tfirst, tlast - tfirst
         nrois[j] = S[idx].max()
     opts = dict(win_sec=win_sec, min_rois=min_rois, k_offset=k_offset,
-                merge_gap_sec=merge_gap_sec, split_dip=split_dip, window_mode="sliding")
+                merge_gap_sec=merge_gap_sec, split_dip=split_dip, window_mode="sliding",
+                local_rate_sec=local_rate_sec,
+                local_pctile=local_pctile if local_rate_sec is not None else None,
+                threshold_rule=("local rate: max(3, chance quantile + 1) + k_offset; min_rois "
+                                "(the floor) not used" if local_rate_sec is not None
+                                else "min_rois + k_offset"))
     return CountDetection(
         onset_sec=onset, width_sec=width, strength=nrois.copy(), nrois=nrois,
         width_kind="tightness", ctr=starts, obs=S, threshold=K,
-        signal=DetectorSignal(t=starts, y=S, ref=np.full(S.size, float(K)), threshold=None,
+        signal=DetectorSignal(t=starts, y=S, ref=Kt.astype(float), threshold=None,
                               hilite=np.empty((0, 2)), name="count (sliding) / floor + k",
                               kind="count"),
         ext=t_range, opts=opts,
