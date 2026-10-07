@@ -5,7 +5,8 @@
     python tools/make_group_raster_summary.py --treatments TTX senktide high\\ K+
     python tools/make_group_raster_summary.py --folder <a flagged review copy>
 
-One page per (group, treatment) — `MALE_TTX`, `ORX_senktide`, and so on. Each
+One page per (group, treatment, stream), named under the estate filename scheme
+(`tools/naming/`) — `raster_roi_fast_ttx_male_win20min_20261007.html` and so on. Each
 page carries the recordings in that group whose FIRST treatment, the period right
 after baseline, was that treatment — a later period never adds a recording — one
 above the next, **all re-zeroed at the end of their own baseline** so the moment
@@ -73,7 +74,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from bugarach import paths  # noqa: E402
-from bugarach.groups import group_key  # noqa: E402
+from bugarach.groups import group_key, in_group_order  # noqa: E402
 from bugarach.io import load_folder  # noqa: E402
 
 MANIFEST = "field_steps_flagged.tsv"
@@ -301,6 +302,59 @@ ALL_GROUPS = "ALL"
 
 def group_of(sl) -> str:
     return sl.meta.get("group_id") or "UNGROUPED"
+
+
+#: The facts a page's filename states that the recordings cannot: which signal the export
+#: carries, which analysis window it was cut with, and whether it is a pilot. They belong to
+#: the EXPORT, so they are declared once beside its name in ``current_export.toml`` (keys
+#: ``signal``, ``win`` and, for a pilot, ``source``) and a flag only overrides that.
+NAME_FACTS = ("signal", "win", "source")
+
+
+def naming_facts(folder: Path, given: dict) -> dict:
+    """``signal``, ``win`` and ``source`` for this folder's page names, or refuse.
+
+    A folder declared in ``current_export.toml`` answers from its table, where a table with
+    no ``source`` is the main imaging series. A folder that is not declared (a pilot passed
+    with ``--folder``) has nothing to answer from, so all three must be given, ``--source
+    none`` included: a name that silently claimed the main series for a pilot is exactly the
+    kind of name this scheme exists to stop (``ALL_APV+CNQX+GZ_combined.html``, 2026-10-06).
+    """
+    from bugarach import dataset
+
+    table = next((t for t in dataset.declared_exports().values()
+                  if t.get("name") == folder.name), None)
+    facts = {}
+    for key in NAME_FACTS:
+        val = given.get(key)
+        if val is None and table is not None:
+            val = table.get(key, "none" if key == "source" else None)
+        if val is None:
+            where = (f"its table in current_export.toml has no `{key}`" if table is not None
+                     else "it is not declared in current_export.toml")
+            raise SystemExit(
+                f"cannot name the pages: {folder.name} does not say its {key}, and {where}.\n"
+                f"Pass --{key} (see --help), or declare `{key}` in the folder's table.")
+        facts[key] = None if val == "none" else val
+    return facts
+
+
+def page_filename(facts: dict, group: str, treatment: str, stream: str, members,
+                  *, ext: str = "html", date: str | None = None) -> str:
+    """The page's name under the estate filename scheme (vendored ``tools/naming``).
+
+    An all-groups page names the groups actually on it, in display order and side by side
+    (``di-ovx-male-orx``), never ``ALL``: the rows are separate recordings, not pooled.
+    Raises ``naming.artifact_name.NameError_`` when a value has no registered code.
+    """
+    from naming import artifact_name
+
+    groups = (in_group_order(group_of(sl) for sl, _ in members)
+              if group == ALL_GROUPS else [group])
+    return artifact_name.build(
+        artifact_name.load_codes(), type="raster", ext=ext, date=date,
+        source=facts["source"], signal=facts["signal"], stream=stream,
+        treatment=treatment, groups="-".join(groups), win=facts["win"])
 
 
 def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = False,
@@ -867,6 +921,15 @@ def main(argv=None) -> int:
                          "each with its participants and its window's floors in the lane's "
                          "hover (ADR-0010 part 6). Replaces --detections for the detectors it "
                          "contains")
+    ap.add_argument("--signal", default=None, choices=("roi", "pensub"),
+                    help="the export's signal, for the page names (default: the folder's "
+                         "`signal` in current_export.toml)")
+    ap.add_argument("--win", default=None,
+                    help="the export's analysis window, e.g. win20min or long_window_20 "
+                         "(default: the folder's `win` in current_export.toml)")
+    ap.add_argument("--source", default=None,
+                    help="pilot-YYYYMMDD for a pilot cohort, or none for the main series "
+                         "(default: the folder's `source` in current_export.toml)")
     ap.add_argument("--calls-variant", default="own_floor",
                     help="which run to draw for detectors that take the floor as their own "
                          "minimum (default own_floor); the rest ran once and are all drawn")
@@ -882,6 +945,7 @@ def main(argv=None) -> int:
     folder = resolve_folder(a.folder, unscanned=a.unscanned,
                             steps_excluded=a.steps_excluded)
     removed = read_removed(folder) if a.steps_excluded else None
+    facts = naming_facts(folder, {k: getattr(a, k) for k in NAME_FACTS})
     if a.out:
         dest = Path(a.out).expanduser()
     else:
@@ -907,6 +971,19 @@ def main(argv=None) -> int:
     if not pages:
         print("no (group, treatment) page has any recording", file=sys.stderr)
         return 1
+    # EVERY NAME BEFORE ANY PAGE. A group or treatment with no registered code would
+    # otherwise stop the run halfway, with some pages written and the rest not.
+    from naming.artifact_name import NameError_
+    names, unnamed = {}, []
+    for key, spec in pages.items():
+        try:
+            names[key] = page_filename(facts, *key, spec["members"])
+        except NameError_ as exc:
+            unnamed.append(f"  {key[0]} / {key[1]} / {key[2]}: {exc}")
+    if unnamed:
+        print("cannot name these pages under the filename scheme (tools/naming/), so none "
+              "were drawn:\n" + "\n".join(unnamed), file=sys.stderr)
+        return 2
 
     lanes = detector_lanes(*a.detections) if a.detections else {}
     if a.calls:
@@ -931,7 +1008,7 @@ def main(argv=None) -> int:
                                  lanes=lanes, not_run=not_run, lane_px=a.lane_px,
                                  roi_px=a.roi_px)
         total_red += red
-        html = dest / f"{group}_{treatment.replace(' ', '')}_{stream}.html"
+        html = dest / names[(group, treatment, stream)]
 
         items = [pn.pane.HTML(header_html(group, treatment, spec["members"],
                                           spec["ext"], folder, stream=stream,

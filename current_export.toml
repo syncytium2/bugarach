@@ -54,10 +54,16 @@
 
 default = "senktide_ttx"
 
+# FILENAME FACTS. Optional per table: `signal` ("roi" or "pensub"), `win` (the analysis window,
+# e.g. "win20min") and `source` ("pilot-YYYYMMDD"; absent = the main imaging series). Figure
+# tools put them into output filenames (tools/naming/, the estate scheme) and refuse to name
+# pages for a folder that does not declare them. Declare only what the folder is known to be.
+
 [senktide_ttx]
 use = "input"
 # The producer's 2026-09-23 export. THE DEFAULT (see `default` above) since 2026-09-23.
 name = "2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED"
+win = "win20min"       # the note: analysis_start_sec / analysis_end_sec under long_window_20
 recordings = 66
 note = """
 The folder Tony shared on 2026-09-23 as the input, and the work continues on the recordings
@@ -253,6 +259,7 @@ to tune away.
 use = "eval"
 # The penumbra-subtracted pair, for the crosstalk control ONLY.
 name = "2026-08-20_pensub_revised_2v"
+signal = "pensub"
 recordings = 84
 note = """
 The same 84 recordings as `periods_2026_08_18`, penumbra-subtracted — verified file-for-file,
