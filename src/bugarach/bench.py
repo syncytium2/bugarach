@@ -1176,9 +1176,18 @@ history above now describe that recording's stretch.
 SPACING_ENV = "BUGARACH_BENCH_SPACING"
 """Which spacing the benches plant events at. Set by a tool's ``--spacing`` before its pool starts,
 so every worker reads the same one, as ``BUGARACH_BENCH`` does for the stream. Unset is
-``"bench"``."""
+``"realistic"`` since 2026-10-07 (ADR-0010 ruling 2; Tony: *"switch now"*). The old spacing stays
+available by name, ``"bench"``, so past results reproduce.
+
+⚠ The realistic gaps were measured with events less than 2 s apart merged first
+(``docs/learned/runs/2026-09-25-real-intervals/``), so the closest real events, combined's
+under-3-s pairs among them, are not planted. Re-measuring waits on the producer's new export
+(``docs/todo/2026-10-05-the-pinning-census-undercounts-on-the-default-folder.md``)."""
 
 SPACINGS = ("bench", "realistic", "orx")
+DEFAULT_SPACING = "realistic"
+"""The spacing when none is named: the one place it is decided (:func:`spacing`,
+:func:`spacing_from_args`, and the tools' ``--spacing`` defaults read it)."""
 """``"bench"``: the old spacing, at least 120 s (every recording byte-identical to before).
 ``"realistic"``: every planted gap drawn from the measured baseline gaps of the stream, pooled over
 the four groups, and as many events as the stream's measured events per hour give a 45-minute
@@ -1196,7 +1205,7 @@ def spacing() -> str:
     """The spacing in force (:data:`SPACING_ENV`), refused if it is not one of :data:`SPACINGS`."""
     import os
 
-    s = os.environ.get(SPACING_ENV, "bench").strip() or "bench"
+    s = os.environ.get(SPACING_ENV, DEFAULT_SPACING).strip() or DEFAULT_SPACING
     if s not in SPACINGS:
         raise ValueError(f"{SPACING_ENV}={s!r} is not one of {SPACINGS}")
     return s
@@ -1260,7 +1269,8 @@ def spacing_from_args(spacing_arg: str | None, realistic_flag: bool) -> str:
     """Resolve a tool's ``--spacing`` and its ``--realistic`` alias into one spacing name.
 
     ``--realistic`` means ``--spacing realistic``; given together with ``--spacing bench`` the
-    two contradict each other and are refused. Neither given is ``"bench"``. Every tool that takes
+    two contradict each other and are refused. Neither given is :data:`DEFAULT_SPACING`
+    (``"realistic"`` since 2026-10-07). Every tool that takes
     the flags resolves them here, so one flag, in either spelling, names the whole realistic
     setup: the recordings (:func:`spacing_overrides`), the search's ADR-0010 rulings, boundary
     planting in training, and fast's doubled seeds (:func:`seed_factor`)."""
@@ -1268,7 +1278,7 @@ def spacing_from_args(spacing_arg: str | None, realistic_flag: bool) -> str:
         if spacing_arg == "bench":
             raise ValueError("--realistic and --spacing bench contradict each other")
         return spacing_arg or "realistic"
-    return spacing_arg or "bench"
+    return spacing_arg or DEFAULT_SPACING
 
 
 def make_recording(regime: str, seed: int, **overrides):

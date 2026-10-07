@@ -130,3 +130,29 @@ def pre_adr_0009_bench_here():
     with pytest.MonkeyPatch.context() as mp:
         _restore_the_stretch(mp)
         yield
+
+
+@pytest.fixture(scope="module")
+def pre_adr_0010_bench():
+    """The bench spacing as it was the default until 2026-10-07: planted events at least 120 s
+    apart (``bench.SPACINGS``' ``"bench"``), and the search's pre-ADR-0010 bracketing.
+
+    The realistic spacing became the default that day (ADR-0010 ruling 2; Tony: *"switch now"*).
+    A test that pins the old bench's recordings, or a rule ADR-0010 replaced, names it with this
+    rather than being re-baselined (``docs/todo/2026-09-25-make-the-realistic-bench-the-default.md``).
+    Module scope, like ``pre_adr_0008_bench``; ``pre_adr_0010_bench_here`` for one test."""
+    from bugarach import bench
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv(bench.SPACING_ENV, "bench")
+        yield
+
+
+@pytest.fixture
+def pre_adr_0010_bench_here():
+    """``pre_adr_0010_bench`` for a single test."""
+    from bugarach import bench
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv(bench.SPACING_ENV, "bench")
+        yield

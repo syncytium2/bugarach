@@ -1,9 +1,9 @@
-"""The realistic bench (ADR-0010 part 2, rulings 1 and 2): off unless named, byte-identical
-otherwise, planted gaps and counts from the committed measurement, fast's seeds doubled, floors on
-every recording, and the close-events rules retired only there.
+"""The realistic bench (ADR-0010 part 2, rulings 1 and 2): the default since 2026-10-07, the old
+spacing still available by name, planted gaps and counts from the committed measurement, fast's
+seeds doubled, floors on every recording, and the close-events rules retired only there.
 
 The old benches' byte-identity is pinned by ``tests/test_real_intervals_off_by_default.py``
-(60 recording hashes); the tests here check that nothing in this change turns the spacing on.
+(60 recording hashes), under ``pre_adr_0010_bench``.
 """
 from __future__ import annotations
 
@@ -29,7 +29,15 @@ def spacing(monkeypatch):
     return use
 
 
-def test_the_spacing_is_the_old_one_unless_named(spacing):
+def test_the_spacing_is_realistic_unless_named(spacing):
+    """Tony, 2026-10-07: switch the default now (ADR-0010 ruling 2)."""
+    assert bench.DEFAULT_SPACING == "realistic"
+    assert bench.spacing() == "realistic"
+    assert bench.spacing_from_args(None, False) == "realistic"
+
+
+def test_the_old_spacing_is_there_by_name(spacing):
+    spacing("bench")
     assert bench.spacing() == "bench"
     for b, s in BENCHES:
         assert bench.spacing_overrides(s, b.BENCH_RECORDING) == {}
@@ -84,6 +92,7 @@ def test_every_realistic_recording_carries_its_floor(spacing, b, stream):
 def test_seeds_are_doubled_on_fast_only_and_only_under_a_realistic_spacing(spacing):
     import score_bench_candidates as sbc
 
+    spacing("bench")
     assert [bench.seed_factor(s) for s in ("fast", "slow", "combined")] == [1, 1, 1]
     assert len(sbc.seeds_for("fast")) == 24 and len(sbc.nulls_for("fast")) == 12
     for name in ("realistic", "orx"):
@@ -94,9 +103,11 @@ def test_seeds_are_doubled_on_fast_only_and_only_under_a_realistic_spacing(spaci
         assert sbc.seeds_for("slow") == tuple(range(6000, 6024))
 
 
-SPELLINGS = [([], "bench"), (["--realistic"], "realistic"),
+SPELLINGS = [([], "realistic"), (["--realistic"], "realistic"),
              (["--spacing", "realistic"], "realistic"), (["--realistic", "--spacing", "orx"], "orx"),
-             (["--spacing", "orx"], "orx")]
+             (["--spacing", "orx"], "orx"), (["--spacing", "bench"], "bench")]
+"""Nothing named is the realistic spacing since 2026-10-07; the old one is there by name."""
+SPELLING_IDS = ["none", "--realistic", "--spacing-realistic", "both-orx", "orx", "--spacing-bench"]
 
 
 def _search_until_after_its_arguments(monkeypatch, argv, tmp_path):
@@ -125,8 +136,7 @@ def _search_until_after_its_arguments(monkeypatch, argv, tmp_path):
 
 
 @pytest.mark.parametrize("bench_name", ["fast", "slow"])
-@pytest.mark.parametrize("flags,expected", SPELLINGS,
-                         ids=["none", "--realistic", "--spacing-realistic", "both-orx", "orx"])
+@pytest.mark.parametrize("flags,expected", SPELLINGS, ids=SPELLING_IDS)
 def test_one_flag_in_either_spelling_names_the_whole_realistic_search(spacing, monkeypatch,
                                                                       tmp_path, bench_name,
                                                                       flags, expected):
@@ -157,8 +167,8 @@ def test_realistic_with_spacing_bench_is_refused(spacing, monkeypatch, tmp_path)
         bench.spacing_from_args("bench", True)
 
 
-@pytest.mark.parametrize("flags,expected", SPELLINGS[:3],
-                         ids=["none", "--realistic", "--spacing-realistic"])
+@pytest.mark.parametrize("flags,expected", SPELLINGS[:3] + SPELLINGS[-1:],
+                         ids=SPELLING_IDS[:3] + SPELLING_IDS[-1:])
 def test_one_flag_names_realistic_training_with_boundary_planting_and_fast_seeds_once(
         spacing, monkeypatch, tmp_path, flags, expected):
     import bugarach.learn.train as lt
@@ -185,6 +195,7 @@ def test_one_flag_names_realistic_training_with_boundary_planting_and_fast_seeds
 
 def test_the_context_rule_is_retired_only_under_a_realistic_spacing(spacing):
     wide = {"context_win_sec": 240.0}
+    spacing("bench")
     assert not bench.context_fits_the_null(wide, 120.0)
     spacing("realistic")
     assert bench.context_fits_the_null(wide, 120.0)

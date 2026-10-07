@@ -36,6 +36,7 @@ def test_no_recording_with_planted_events_carries_the_stretch(b, which):
     assert spec["n_per_level"] != (0, 0, 0), which
 
 
+@pytest.mark.usefixtures("pre_adr_0010_bench_here")
 @pytest.mark.parametrize("b", BENCHES, ids=IDS)
 def test_the_planted_recordings_keep_their_length_and_spacing(b):
     assert b.BENCH_RECORDING["duration_sec"] == 2700.0

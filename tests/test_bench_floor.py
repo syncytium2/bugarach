@@ -208,6 +208,7 @@ def test_more_extensions_than_the_three_that_left_spike_synch_unbracketed():
     assert S.MAX_EXTENSIONS > 3
 
 
+@pytest.mark.usefixtures("pre_adr_0010_bench_here")
 def test_an_interior_optimum_is_bracketed():
     grids = {"alpha": [1e-4, 1e-3, 1e-2], "context_win_sec": [20.0, 60.0, 120.0]}
     br = S.bracketing("coact", {"alpha": 1e-3, "context_win_sec": 60.0}, grids, grids, 6)
@@ -223,6 +224,7 @@ def test_an_optimum_on_an_edge_or_at_the_cap_is_unbracketed():
     assert br["unbracketed_axes"]["int_win_sec"]["reason"] == "edge"
 
 
+@pytest.mark.usefixtures("pre_adr_0010_bench_here")
 def test_a_value_at_a_hard_limit_is_unbracketed_and_said_to_be_a_limit():
     grids = {"guard_sec": [0.0, 0.5, 1.0]}
     p = dict(guard_sec=0.0)

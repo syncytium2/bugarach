@@ -214,6 +214,8 @@ def job(args):
 
 
 def main(argv=None) -> int:
+    from bugarach import bench as _b
+
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--phase2", type=Path, required=True, action="append",
                     help="a folder holding searches and training (train-<model>-<bench>.log, "
@@ -227,14 +229,13 @@ def main(argv=None) -> int:
                          "in it, one search per detector (search_all_settings.py --only)")
     ap.add_argument("--benches", nargs="+", default=list(BENCHES), choices=list(BENCHES),
                     help="which benches to score (default all three)")
-    ap.add_argument("--spacing", choices=("bench", "realistic", "orx"), default="bench",
+    ap.add_argument("--spacing", choices=_b.SPACINGS, default=_b.DEFAULT_SPACING,
                     help="how the bench spaces its planted events (bench.SPACINGS; default "
-                         "'bench', unchanged). Under 'realistic' and 'orx' fast's fresh and null "
-                         "seeds are doubled (ADR-0010 ruling 2)")
+                         "bench.DEFAULT_SPACING, 'realistic' since 2026-10-07). Under 'realistic' "
+                         "and 'orx' fast's fresh and null seeds are doubled (ADR-0010 ruling 2)")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
 
-    from bugarach import bench as _b
     from bugarach.bench import pool_scores
 
     _b.use_spacing(a.spacing)            # before the pool: every worker plants at this spacing

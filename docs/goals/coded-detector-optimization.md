@@ -39,6 +39,16 @@ recordings and re-scored on a set the search never saw.
 
 ## Where it stands
 
+**2026-10-07: the realistic bench is the default** (ADR-0010 ruling 2; Tony: *"switch now"*). Every
+search, training and scoring tool plants events at the measured real gaps unless told
+`--spacing bench`, which keeps the old ≥120 s bench for reproducing past results. ⚠ Those gaps were
+measured with events under 2 s apart merged first, so the closest real events are not planted. On
+combined, Tony's rasters of the September pilot recordings show distinct events a few seconds apart
+joined into one call by the current merge gaps (8 s for LoCo, CoactDetect and rate+context on
+combined; 3 s for count (sliding)). Re-measuring the gaps, and per-stream merge gaps, wait on the
+producer's new export
+([todo](../todo/2026-10-05-the-pinning-census-undercounts-on-the-default-folder.md)).
+
 **2026-09-25, morning: the final-parameters night ran, under ADR-0008's floor and ADR-0009's bench**
 ([report](../learned/runs/2026-09-25-final-parameters/README.md)). Every detector was searched on all
 three benches, and chorus was retrained, with each recording's own floor setting the participation
