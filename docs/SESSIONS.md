@@ -3289,4 +3289,4 @@ session's work is not a sweep.
   `fig3_swells.png`, `fig4_swell_examples.png`) from `tools/measure_stack.py` on branch
   `stack-detector`. Simulated recordings only; no export folder is read. The same files are in the
   repo at `docs/learned/runs/2026-10-07-stack/`. Measure-only: nothing ships from it.
-- **Released:** at write; see the run record.
+- **Released:** 2026-10-07, at write. Holds nothing.
