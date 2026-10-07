@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# vendored from syncytium2/armory @ d5d3efe (tools/naming/). This file is a COPY, and so are
+# vendored from syncytium2/armory @ a88bf03 (tools/naming/). This file is a COPY, and so are
 # codes.json and cases.json beside it: edits here are overwritten whenever they are
 # re-vendored. Change a code in armory's codes.json and re-vendor all three together.
 # instrument: naming
