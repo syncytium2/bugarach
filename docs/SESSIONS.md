@@ -3282,3 +3282,11 @@ session's work is not a sweep.
   (`tools/search_all_settings.py --bench slow --sliding`). The same five files are in the repo
   at `docs/learned/runs/2026-09-21-full-search-slow/`. Measure-only: nothing ships from it.
 - **Released:** 2026-09-21. Nothing further is written there.
+
+### darkroom/bugarach/2026-10-07-stack/ — stack against count (sliding): the three benches and the swell worlds (bugarach-shallow-gravel)
+- **Claimed:** 2026-10-07, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `summary.json` and four figures (`fig1_bench.png`, `fig2_winning_width.png`,
+  `fig3_swells.png`, `fig4_swell_examples.png`) from `tools/measure_stack.py` on branch
+  `stack-detector`. Simulated recordings only; no export folder is read. The same files are in the
+  repo at `docs/learned/runs/2026-10-07-stack/`. Measure-only: nothing ships from it.
+- **Released:** at write; see the run record.
