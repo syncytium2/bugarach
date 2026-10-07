@@ -249,8 +249,6 @@ def write_viewer(rows, out: Path) -> tuple[Path, Path]:
 
     events = []
     for r in rows:
-        if r["stream"] not in VIEWER_STREAMS:
-            continue
         for c in r["_viewer"]:
             events.append(DetectedEvent(
                 slice_id=r["recording_id"], stream=r["stream"], detector=c["detector"],
@@ -261,7 +259,12 @@ def write_viewer(rows, out: Path) -> tuple[Path, Path]:
                 identity=dict(group_id=r["group"], window_kind="baseline", variant="own_floor",
                               own_floor=r["floor"], baseline_floor=r["floor"],
                               winning_width_sec=c["winning_width_sec"])))
-    det = write_detections(events, out / "detections.csv")
+    det = write_detections([e for e in events if e.stream in VIEWER_STREAMS],
+                           out / "detections.csv")
+    # Every stream, combined included, for tools/make_group_raster_summary.py --detections,
+    # which derives the combined stream itself. The browser viewer cannot, so it gets the
+    # file above.
+    write_detections(events, out / "detections_all_streams.csv")
     page = out / "viewer.html"
     shutil.copy2(ROOT / "docs" / "site" / "raster_viewer.html", page)
     return det, page
