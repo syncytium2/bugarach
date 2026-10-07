@@ -97,21 +97,20 @@ REGION_FILL = {
 SEPARABLE_PX = 5.0
 
 
-def _spans(onsets, widths, ext, tol_sec: float = TOL_SEC):
-    """(onset, width) -> [(t0, t1)] clipped to the extent.
+def _spans(onsets, widths, ext):
+    """(onset, width) -> [(t0, t1)] clipped to the extent: **the width the call reports and
+    nothing more**. A zero or non-finite width is a zero-length span, still returned.
 
-    A zero or non-finite width becomes a small visible sliver rather than
-    nothing: a detection drawn as zero pixels reads as "the detector found
-    nothing here", which is the opposite of the truth.
+    **This used to pad every span to a minimum, in seconds, and that was the defect.** First
+    0.2% of the record (3.6 s on a 30-minute figure), then that capped at the matching
+    tolerance, 2.5 s. Either way a 0.4 s call was drawn 2.5 s wide, and the padding was fixed
+    in seconds when the figure was built: zoom in on the interactive page and the bar still
+    covered 2.5 s of raster beside a column of onsets 0.4 s wide (Tony, 2026-10-07: "coordinated
+    event width is wrong for all detectors", his third report of a bar wider than its call).
 
-    **The sliver is capped at the matching tolerance, and the cap is the point.**
-    The floor was 0.2% of the record and nothing else — 3.6 s on a 30-minute
-    figure, against the shipped `score.TOL_SEC`. Five of the six report windows
-    of 0.3–2.1 s, so every one of their bars was drawn *wider than the window it
-    is judged in*: a reader saw a bar covering a planted event while the scorer
-    called that same detection a false alarm for missing by 2 s. The picture
-    contradicted its own verdict. A bar still runs wide when the detector
-    genuinely claims that much — SCE bins at 10 s and its bars say so.
+    What the padding was for is real: a call drawn as zero pixels reads as "the detector found
+    nothing here". That job now belongs to :func:`_ticks`, a mark whose size is in screen pixels,
+    so it is visible at any zoom and claims no time at all.
     """
     if onsets is None or np.size(onsets) == 0:
         return []
@@ -120,15 +119,38 @@ def _spans(onsets, widths, ext, tol_sec: float = TOL_SEC):
         else np.zeros_like(o)
     if w.size != o.size:
         w = np.zeros_like(o)
-    span = float(ext[1] - ext[0])
-    floor = min(max(span * 0.002, 1e-9), max(float(tol_sec), 1e-9))
     out = []
     for a, b in zip(o, w):
         if not np.isfinite(a):
             continue
         ww = b if np.isfinite(b) and b > 0 else 0.0
-        out.append((max(a, ext[0]), min(a + max(ww, floor), ext[1])))
+        out.append((max(a, ext[0]), min(a + ww, ext[1])))
     return out
+
+
+#: Stroke of the per-call tick, in screen pixels. Thin enough that a bar wider than this
+#: swallows it, so the tick only shows where the bar alone would vanish.
+TICK_PX = 1.5
+
+
+def _ticks(onsets, y: float, ext, *, colour, row_px: int, info=None, label: str = ""):
+    """One vertical tick per call at its onset, as tall as the lane's bars and :data:`TICK_PX`
+    wide **in screen pixels**: what keeps a short call visible on a long page without drawing
+    it wider than it is. With ``info``, the tick carries the call's line on hover."""
+    o = np.asarray(onsets, dtype=float).ravel()
+    keep = np.isfinite(o) & (o >= ext[0]) & (o <= ext[1])
+    if not keep.any():
+        return None
+    opts = dict(marker="dash", angle=90, size=max(4.0, 0.6 * row_px), color=colour,
+                line_width=TICK_PX, alpha=0.9)
+    if info is None:
+        return hv.Scatter((o[keep], np.full(int(keep.sum()), float(y)))).opts(**opts)
+    from bokeh.models import HoverTool
+
+    text = [str(t) for t, k in zip(info, keep) if k]
+    return hv.Scatter((o[keep], np.full(int(keep.sum()), float(y)), text),
+                      vdims=["lane_y", "call"]).opts(
+        tools=[HoverTool(tooltips=[(label, "@call")])], **opts)
 
 
 def _base(ext, ydim: str):
@@ -197,7 +219,10 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
         y = ypos[key]
         colour = (colors or {}).get(key) or COLORS.get(key, "#555555")
         info = ev[2] if len(ev) > 2 else None
-        sp = _spans(ev[0], ev[1] if len(ev) > 1 else None, ext, tol_sec)
+        sp = _spans(ev[0], ev[1] if len(ev) > 1 else None, ext)
+        tick = _ticks(ev[0], y, ext, colour=colour, row_px=row_px, info=info, label=str(key))
+        if tick is not None:
+            items.append(tick)
         if sp and info is not None:
             # A LANE THAT CARRIES A LINE PER CALL shows it on hover, and only there: a number
             # about a call (its participants, its window's floor) belongs in the lane's hover
@@ -210,7 +235,7 @@ def lane_panel(lanes: dict, *, ext, gt=None, tol_sec: float = TOL_SEC,
                  else np.zeros_like(o))
             rows_ = []
             for a, b, text in zip(o, w if w.size == o.size else np.zeros_like(o), info):
-                for s0, s1 in _spans([a], [b], ext, tol_sec):
+                for s0, s1 in _spans([a], [b], ext):
                     rows_.append((s0, y - 0.30, s1, y + 0.30, str(text)))
             items.append(hv.Rectangles(rows_, vdims=["call"]).opts(
                 color=colour, line_color=None, line_alpha=0, alpha=0.9,
