@@ -120,7 +120,8 @@ DETECTORS = tuple(d for d in DETECTORS if d not in ("count", "count_sliding"))
 # And pre-ADR-0009: measured with the elevated-rate stretch inside the planted recording, so due
 # for re-measurement without it, not for re-baselining
 # (docs/todo/2026-09-25-pinned-bench-measurements-predate-adr-0009.md).
-pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench", "pre_adr_0009_bench")
+pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench", "pre_adr_0009_bench",
+                                      "pre_adr_0010_bench")
 
 
 SEEDS = tuple(range(1, 13))

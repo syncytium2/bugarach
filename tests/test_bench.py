@@ -613,6 +613,7 @@ def test_the_signature_default_is_not_assumed_to_be_calibrated():
     assert OPERATING_POINTS["coact"].params["alpha"] != signature_default
 
 
+@pytest.mark.usefixtures("pre_adr_0010_bench_here")
 def test_the_bench_recording_keeps_the_null_clean():
     """The contaminated null, mechanized: events spaced more tightly than the
     widest context window put real coordination inside the null the threshold is

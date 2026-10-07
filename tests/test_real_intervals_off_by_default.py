@@ -24,6 +24,9 @@ import pytest
 from bugarach import bench, bench_combined, bench_slow
 from bugarach.simulate import simulate_coordination
 
+# The hashes pin the old spacing's recordings, which stopped being the default on 2026-10-07.
+pytestmark = pytest.mark.usefixtures("pre_adr_0010_bench")
+
 MODULES = {"fast": bench, "slow": bench_slow, "combined": bench_combined}
 SEEDS = (1, 7)
 

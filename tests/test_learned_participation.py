@@ -92,6 +92,7 @@ def _recording_hash(s, gt, stream="events"):
     return h.hexdigest()[:24]
 
 
+@pytest.mark.usefixtures("pre_adr_0010_bench_here")   # hashed on the old spacing
 @pytest.mark.parametrize("key", ["bench:baseline_quiet:1", "bench:baseline_quiet:1000"])
 def test_scoring_and_training_recordings_are_the_ones_main_built(key):
     """Seed 1 is a scored recording and seed 1000 a training one; both hashes were taken on

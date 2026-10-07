@@ -20,8 +20,9 @@ import train_learned_on_bench as T  # noqa: E402
 
 @pytest.fixture
 def off(monkeypatch):
+    """The old spacing, named: it stopped being the default on 2026-10-07."""
     from bugarach import bench
-    monkeypatch.delenv(bench.SPACING_ENV, raising=False)
+    monkeypatch.setenv(bench.SPACING_ENV, "bench")
     assert not S.realistic()
 
 
@@ -59,12 +60,14 @@ def test_the_spacing_is_the_one_switch(monkeypatch):
     """#828's BUGARACH_REALISTIC and a bench module's REALISTIC attribute are retired: the spacing
     alone names the rulings, and the ORX spacing runs under them too."""
     from bugarach import bench
-    monkeypatch.delenv(bench.SPACING_ENV, raising=False)
+    monkeypatch.setenv(bench.SPACING_ENV, "bench")      # the old spacing, named
     monkeypatch.setenv("BUGARACH_REALISTIC", "1")
     monkeypatch.setattr(S._bench, "REALISTIC", True, raising=False)
-    assert not S.realistic()
+    assert not S.realistic(), "a retired switch must not turn the rulings on"
     monkeypatch.setenv(bench.SPACING_ENV, "orx")
     assert S.realistic()
+    monkeypatch.delenv(bench.SPACING_ENV)
+    assert S.realistic(), "nothing named is the realistic spacing since 2026-10-07"
 
 
 # ------------------------------------------------------------------ ruling 7: contexts, LoCo
