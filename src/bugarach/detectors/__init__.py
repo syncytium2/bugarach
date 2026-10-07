@@ -20,6 +20,9 @@ parity test):
             (see count.py)
   count_sliding  count (sliding)                -- the same rule in a window that
             slides: CoactDetect's sliding form without its null (count.py)
+  stack     stack                              -- count (sliding) at several
+            widths at once, each against its exact shift null, the least
+            likely winning; one width alone is count (sliding) (count.py)
 
 **Only the fifth row has a key that is not its name.** ``cicada`` is the
 identifier — module, ``cicada_detect``, and the value in ``detections.csv``'s
@@ -45,6 +48,7 @@ DISPLAY_NAMES = {
     "sync": "SPIKE-synch",
     "count": "count (binned)",
     "count_sliding": "count (sliding)",
+    "stack": "stack",
 }
 """The name a person sees, by code key — the table above, as data.
 
@@ -68,7 +72,13 @@ from bugarach.detectors.cicada import (  # noqa: E402
     rise_durations,
 )
 from bugarach.detectors.coact import CoactDetection, coact_detect
-from bugarach.detectors.count import CountDetection, count_detect, count_sliding_detect
+from bugarach.detectors.count import (
+    CountDetection,
+    StackDetection,
+    count_detect,
+    count_sliding_detect,
+    stack_detect,
+)
 from bugarach.detectors.loco import (
     LocoDetection,
     LocoStream,
@@ -116,6 +126,8 @@ __all__ = [
     "CountDetection",
     "count_detect",
     "count_sliding_detect",
+    "StackDetection",
+    "stack_detect",
     "event_rate",
     "loco_detect",
     "region_windows",
