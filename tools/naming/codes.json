@@ -87,6 +87,13 @@
     {
       "code": "report",
       "name": "multi-section report"
+    },
+    {
+      "code": "explainer",
+      "name": "an explainer: a document about an idea or method, not about a dataset",
+      "fields": [
+        "topic"
+      ]
     }
   ],
   "signals": [

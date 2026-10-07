@@ -11,7 +11,9 @@
     "pilot-20260811_raster_roi_combined_apv+cnqx+gz_di-ovx-male-orx_win20min_20261006.html",
     "lmm_roi_fast_senktide_di-ovx-male-orx_win5min_20261007_v2.docx",
     "patch_timecourse_senktide_ovx_20261007.pdf",
-    "raster_pensub_fast_senktide_ovx_win5min_20261007.png"
+    "raster_pensub_fast_senktide_ovx_win5min_20261007.png",
+    "explainer_optimization-history_20261007.html",
+    "explainer_why-the-window-is-20-minutes_20261007_v2.pdf"
   ],
   "invalid": [
     {
@@ -109,6 +111,30 @@
     {
       "name": "raster_neuropil_combined_senktide_di_win20min_20261007.html",
       "why": "unregistered signal"
+    },
+    {
+      "name": "optim_history.html",
+      "why": "Today's explainer name: no type, no date"
+    },
+    {
+      "name": "explainer_20261007.html",
+      "why": "an explainer with no topic"
+    },
+    {
+      "name": "explainer_optimization_history_20261007.html",
+      "why": "topic words joined with _ instead of -"
+    },
+    {
+      "name": "explainer_a-b-c-d-e-f-g_20261007.html",
+      "why": "topic over six words"
+    },
+    {
+      "name": "explainer_roi_fast_senktide_di_win20min_20261007.html",
+      "why": "dataset fields on an explainer"
+    },
+    {
+      "name": "explainer_full-story_20261007.html",
+      "why": "banned word in a topic"
     }
   ],
   "build": [
@@ -177,6 +203,15 @@
         "source": "patch"
       },
       "expect": "patch_timecourse_senktide_ovx_20261007.pdf"
+    },
+    {
+      "args": {
+        "type": "explainer",
+        "topic": "Optimization History",
+        "date": "20261007",
+        "ext": "html"
+      },
+      "expect": "explainer_optimization-history_20261007.html"
     }
   ],
   "build_refused": [
@@ -255,6 +290,38 @@
         "source": "patch"
       },
       "why": "patch has no signal field"
+    },
+    {
+      "args": {
+        "type": "explainer",
+        "topic": "history",
+        "signal": "roi",
+        "date": "20261007",
+        "ext": "html"
+      },
+      "why": "dataset field on an explainer"
+    },
+    {
+      "args": {
+        "type": "explainer",
+        "date": "20261007",
+        "ext": "html"
+      },
+      "why": "no topic"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "topic": "history",
+        "signal": "roi",
+        "stream": "fast",
+        "treatment": "ttx",
+        "groups": "di",
+        "win": "win20min",
+        "date": "20261007",
+        "ext": "html"
+      },
+      "why": "a topic on a dataset name"
     }
   ]
 }

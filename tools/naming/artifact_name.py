@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# vendored from syncytium2/armory @ a88bf03 (tools/naming/). This file is a COPY, and so are
+# vendored from syncytium2/armory @ 1fbf4c0 (tools/naming/). This file is a COPY, and so are
 # codes.json and cases.json beside it: edits here are overwritten whenever they are
 # re-vendored. Change a code in armory's codes.json and re-vendor all three together.
-# instrument: naming
+# instrument: retrieval
 """artifact_name — build, check and audit output filenames against the estate scheme.
 
     [<source>_]<type>_<signal>_<stream>_<treatment>_<groups>_<win>_<date>[_v<N>].<ext>
@@ -53,7 +53,10 @@ CASES = HERE / "cases.json"
 MAX_LEN = 100
 LIST_FIELDS = ("stream", "treatment", "groups")
 # every field between type and date, in the order a name writes them
-FIELD_ORDER = ("signal", "stream", "treatment", "groups", "win")
+FIELD_ORDER = ("topic", "signal", "stream", "treatment", "groups", "win")
+# A topic is free words, not a registered code: an explainer is about an idea, and ideas are
+# not a closed list. Lowercase words joined by hyphens, at most this many.
+TOPIC_WORDS = 6
 SINGLE = {"signal": "signals", "win": "windows"}     # one registered code, no operators
 # which separators each list field may use. `-` keeps things separate (side by side), `+`
 # pools them into one, `-then-` is a sequence of treatment stages and means nothing elsewhere.
@@ -63,6 +66,13 @@ LIST_CODE_RE = re.compile(r"^[a-z0-9]+$")   # no hyphen: in a list field every `
 DATE_RE = re.compile(r"^\d{8}$")
 VERSION_RE = re.compile(r"^v([2-9]|[1-9]\d+)$")
 EXT_RE = re.compile(r"^[a-z0-9]+$")
+# What a person is handed: rendered pages, figures and documents. Data tables (csv, json),
+# fixed contract files and sidecars are inputs to the next tool, not deliverables, and a
+# check that counted them reported 4,485 failures where far fewer were fixable (2026-10-07).
+DELIVERABLES = ("html", "png", "pdf", "svg", "pptx", "docx", "xlsx", "tif", "tiff", "eps")
+# Folders whose contents are not ours to name: other people's papers (`lit`), and work moved
+# out of the way unchanged (`archive`), which is renamed when it next goes out, not before.
+SKIP_DIRS = ("archive", "lit")
 
 
 class NameError_(ValueError):
@@ -74,7 +84,7 @@ class NameError_(ValueError):
 def load_codes(path=CODES):
     raw = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
     reg = {"banned": set(raw["banned"]), "reserved": set(raw["reserved"]),
-           "sources": {}, "default_fields": raw["default_fields"]}
+           "sources": {}, "default_fields": raw["default_fields"], "type_fields": {}}
     problems = []
     for kind in ("types", "signals", "streams", "treatments", "groups", "windows"):
         entries, alias, compound = [], {}, {}
@@ -86,6 +96,9 @@ def load_codes(path=CODES):
             if code in reg["banned"] or code in reg["reserved"]:
                 problems.append(f"{kind}: {code!r} is a banned or reserved word")
             entries.append(code)
+            if kind == "types" and "fields" in e:
+                # a deliverable that is not about a dataset (an explainer) has its own layout
+                reg["type_fields"][code] = e["fields"]
             for a in [code, *e.get("aliases", [])]:
                 key = a.lower().replace(" ", "")
                 if alias.get(key, code) != code:
@@ -187,8 +200,15 @@ def canonical_list(reg, field, value):
 
 # ----------------------------------------------------------------------------- build / parse
 
-def build(reg, *, type, ext, source=None, signal=None, stream=None, treatment=None,
-          groups=None, win=None, date=None, version=None):
+def _topic(val):
+    words = val.split("-")
+    if not CODE_RE.match(val) or len(words) > TOPIC_WORDS:
+        raise NameError_(f"topic {val!r} must be 1-{TOPIC_WORDS} lowercase words joined by '-'")
+    return val
+
+
+def build(reg, *, type, ext, source=None, topic=None, signal=None, stream=None,
+          treatment=None, groups=None, win=None, date=None, version=None):
     parts = []
     spec_fields = reg["default_fields"]
     if source:
@@ -201,16 +221,20 @@ def build(reg, *, type, ext, source=None, signal=None, stream=None, treatment=No
     if t is None:
         raise NameError_(f"type {type!r} is not registered (known: {', '.join(reg['types'])})")
     parts.append(t)
-    given = {"signal": signal, "stream": stream, "treatment": treatment, "groups": groups,
-             "win": win}
+    if t in reg["type_fields"]:
+        spec_fields = reg["type_fields"][t]
+    given = {"topic": topic, "signal": signal, "stream": stream, "treatment": treatment,
+             "groups": groups, "win": win}
     for f in FIELD_ORDER:
         if f not in spec_fields:
             if given[f]:
-                raise NameError_(f"this source has no {f} field, but one was given")
+                raise NameError_(f"a {t} name has no {f} field, but one was given")
             continue
         if not given[f]:
-            raise NameError_(f"{f} is required for this source")
-        if f in SINGLE:
+            raise NameError_(f"{f} is required for a {t} name")
+        if f == "topic":
+            parts.append(_topic(re.sub(r"[\s_]+", "-", given[f].strip().lower())))
+        elif f in SINGLE:
             kind = SINGLE[f]
             w = reg[kind + "_alias"].get(given[f].lower().replace(" ", ""))
             if w is None:
@@ -255,6 +279,8 @@ def parse(reg, name):
         want = spec["fields"]
     else:
         want = reg["default_fields"]
+    if fields and fields[0] in reg["type_fields"]:
+        want = reg["type_fields"][fields[0]]
     if fields and VERSION_RE.match(fields[-1]):
         out["version"] = fields.pop()
     elif fields and re.fullmatch(r"v\d+", fields[-1]):
@@ -271,6 +297,8 @@ def parse(reg, name):
                 raise NameError_(f"{f} {val!r} is not registered")
         elif f == "date":
             _date(val)
+        elif f == "topic":
+            _topic(val)
         else:
             canon = canonical_list(reg, f, val)
             if canon != val:
@@ -286,12 +314,14 @@ def check(reg, name):
 
 # ----------------------------------------------------------------------------- audit
 
-def audit(reg, root, days=None, exts=("html", "png", "pdf", "svg", "csv", "xlsx", "docx", "pptx", "tif", "tiff", "eps")):
-    """Every deliverable-looking file under root that fails, with why. Hidden paths are skipped."""
+def audit(reg, root, days=None, exts=DELIVERABLES, skip=SKIP_DIRS):
+    """Every deliverable under root that fails, with why. Hidden paths and SKIP_DIRS are skipped."""
     cutoff = None if days is None else dt.datetime.now().timestamp() - days * 86400
     bad, good = [], 0
     for p in sorted(pathlib.Path(root).rglob("*")):
-        if not p.is_file() or any(part.startswith(".") for part in p.relative_to(root).parts):
+        parts = p.relative_to(root).parts
+        if not p.is_file() or any(q.startswith(".") or q in skip for q in parts[:-1]) \
+                or parts[-1].startswith("."):
             continue
         if p.suffix.lower().lstrip(".") not in exts:
             continue
@@ -359,6 +389,9 @@ def selftest():
         pathlib.Path(d, "ALL_APV+CNQX+GZ_combined.html").write_text("x")
         pathlib.Path(d, cases["valid"][0]).write_text("x")
         pathlib.Path(d, "notes.txt").write_text("x")
+        pathlib.Path(d, "table.csv").write_text("x")           # data, not a deliverable
+        pathlib.Path(d, "lit").mkdir()
+        pathlib.Path(d, "lit", "Abney_2015.pdf").write_text("x")  # someone else's paper
         good, bad = audit(reg, d)
         if (good, len(bad)) != (1, 1):
             fails.append(f"audit counted good={good} bad={len(bad)}, expected 1 and 1")
@@ -380,7 +413,8 @@ def main(argv=None):
     b = sub.add_parser("build", help="print the name for these fields, or refuse with why")
     for f in ("type", "ext"):
         b.add_argument("--" + f, required=True)
-    for f in ("source", "signal", "stream", "treatment", "groups", "win", "date", "version"):
+    for f in ("source", "topic", "signal", "stream", "treatment", "groups", "win", "date",
+              "version"):
         b.add_argument("--" + f)
     c = sub.add_parser("check", help="exit 1 if any name breaks the scheme")
     c.add_argument("names", nargs="+")
