@@ -78,20 +78,22 @@ the producer's answer wins and this section is rewritten. Until then, it has thr
 1. **The combined stream does not double-count.** fast plus slow is custard's event set, with
    each matched event represented once, by its slow onset. Question 2 is answered no, and
    question 3 does not arise.
-2. **The gap figure below becomes a check of the rule rather than an open question.** The rule
-   predicts a **hole**, not a peak, in the gap from each slow onset to the nearest fast onset on
-   the same ROI, out to about 2 s. The hole need not be empty, because only one custard event is
-   removed per slow event. A peak near zero would mean the rule is wrong.
-   `combined.near_coincident(fast, slow, 2.0)` counts the slow onsets with a fast onset within 2 s.
-3. **The fast stream has holes wherever a ROI had a slow event.** Fast-only analyses never see a
-   cell's activity while it is in a slow event. The combined stream does. Two things follow:
-   - A fast-versus-slow comparison of participation compares populations that exclude each
-     other near slow events.
-   - Rigid and circular shifts of fast onsets can move them into those holes, which real fast
-     data cannot occupy. The fast null is therefore slightly off. This is unmeasured, and
-     probably small where slow events are rare.
+2. **The gap figure below cannot test the rule.** Each slow event takes exactly one custard
+   event (Tony, 2026-10-07), so any other custard event within 2 s of it, or during it, stays in
+   fast. A fast onset sitting next to a slow onset is therefore allowed by the rule, and no gap
+   distribution contradicts it. What the figure measures is how often fast events occur alongside
+   slow ones on the same ROI. That is a property of the data, not a check on the export.
+   (A first draft of this section predicted a hole near zero. That was wrong for this reason.)
+3. **Fast loses one event per slow event, and only that one.** In each ROI, fast's event count
+   is custard's minus slow's. Fast-only analyses are missing the custard event matched to each
+   slow event, and nothing else. Whether that thinning matters for fast's rates or its shift null
+   is unmeasured; it should be small where slow events are rare.
 
 ## What we can measure here first, without waiting
+
+⚠ **Superseded as a test by the working rule above** (consequence 2). The figure below still
+shows how often fast and slow events sit together on a ROI, but it cannot decide whether the
+streams share events. The reasoning is kept as written in 2026-09.
 
 **One figure answers whether the pool is shared, on the default export folder, today.** Per
 ROI, take every slow onset and find the nearest fast onset in the same ROI; plot the
@@ -140,7 +142,7 @@ coordination calls in the lane above, pointing down. What does not exist yet:
 
 1. **Producer:** the three membership questions above. **Answered provisionally by Tony on
    2026-10-07**, in the working rule above. Work proceeds under that rule. The producer's own
-   statement is still owed, and the gap figure is the check on it.
+   statement is still owed, and nothing measured here can check it.
 2. **Tony:** does this start before or after the jitter ruling and the slow stream's last
    step? Both of those move benches this goal would inherit.
 3. **Tony:** does a combined stream **replace** the two passes or sit beside them? Three
