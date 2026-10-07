@@ -4,10 +4,11 @@
     python tools/measure_stack.py                       # into the darkroom
     python tools/measure_stack.py --out <folder> --seeds 2 --swells 2   # smoke
 
-**What is compared.** ``count_sliding`` at each bench's own operating point, and ``stack``
-(:func:`bugarach.detectors.count.stack_detect`) with the same reference window, merge gap and
+**What is compared.** ``count_sliding`` at each bench's own operating point, and ``stack`` in its
+first form, kept since 2026-10-07 as ``stack_global``
+(:func:`bugarach.detectors.stack_global.stack_global_detect`), with the same reference window, merge gap and
 ADR-0008 floor, looking as well at windows 1/8, 1/4 and 1/2 as wide. ``stack`` at the reference
-width alone *is* ``count_sliding`` (``tests/test_stack.py``), so every difference below is what
+width alone *is* ``count_sliding`` (``tests/test_stack_global.py``), so every difference below is what
 the narrower windows add. ``stack`` sets its own tail probability so that it calls no more often
 than ``count_sliding`` on rigid shifts of the same recording.
 
@@ -116,7 +117,7 @@ def run(stream: str, name: str, s):
     and the recording's own floor; ``chorus_norm`` runs as saved; ``stack`` takes
     ``count_sliding``'s point and is tuned on nothing."""
     from bugarach import bench
-    from bugarach.detectors.count import stack_detect
+    from bugarach.detectors.stack_global import stack_global_detect as stack_detect
     from bugarach.detectors.rate import recording_extent, stream_trains
 
     mod = bench_module(stream)
@@ -175,7 +176,8 @@ def swell_task(args):
 
     from bugarach import bench, event_floor as ef
     from bugarach.detectors import sliding as sl
-    from bugarach.detectors.count import count_sliding_detect, stack_detect
+    from bugarach.detectors.count import count_sliding_detect
+    from bugarach.detectors.stack_global import stack_global_detect as stack_detect
 
     frames, L, dt = msc.synthetic_recording(world, i)
     floor = ef.window_floor(frames, L, dt, key=(TAG, world, i))

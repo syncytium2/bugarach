@@ -128,7 +128,8 @@ def best_detectors(s, stream: str, trains, ext, t0: float, floor: int) -> tuple[
 
 def measure(s, rec, stream: str, label: str) -> dict:
     from bugarach import event_floor as ef
-    from bugarach.detectors.count import count_sliding_detect, stack_detect
+    from bugarach.detectors.count import count_sliding_detect
+    from bugarach.detectors.stack_global import stack_global_detect as stack_detect
 
     a0, a1 = rec.window
     L, dt = a1 - a0, float(rec.dt)
