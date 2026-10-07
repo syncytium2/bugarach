@@ -74,7 +74,8 @@ edge; that repaired the *scoring* of a grid-dependent call and left the call its
    twelve seeds and publish a "kept at the worst shift" column beside F1, the way the
    tolerance and background curves sit beside it. A detector's score should carry its
    grid dependence the way it now carries its tolerance.
-2. **LoCo and CoactDetect: count in a moving window.** `turboMarks` in the viewer
+2. ✅ **Done in #795** (`src/bugarach/detectors/sliding.py`, with the null computed exactly
+   rather than sampled). **LoCo and CoactDetect: count in a moving window.** `turboMarks` in the viewer
    (#489) is the reference: per-ROI merged start-intervals and one sweep, O(n log n),
    no step. For CoactDetect the surrogates go through the same sweep so the null stays
    rate-matched under the same rule — measured on 38 TTX baselines at 1000 surrogates,
