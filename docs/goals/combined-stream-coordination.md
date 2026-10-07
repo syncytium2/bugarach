@@ -64,6 +64,33 @@ producer's to state rather than ours to re-derive. Three parts:
 3. If it can, is there a key — an event id, a source index — that would let a consumer pair
    them, or is pairing ours to infer?
 
+### The working rule until the producer says otherwise (Tony, 2026-10-07)
+
+Tony's answer to all three, given as the rule to work under *"for now"*:
+- **custard** (the producer's event detection) finds every event, and a slow pass finds the slow
+  ones.
+- **fast is custard minus the custard event within 2 s of each slow event.** So no event appears
+  in both streams.
+
+This is an **assumption, not yet the producer's statement**. If the producer's answer differs,
+the producer's answer wins and this section is rewritten. Until then, it has three consequences:
+
+1. **The combined stream does not double-count.** fast plus slow is custard's event set, with
+   each matched event represented once, by its slow onset. Question 2 is answered no, and
+   question 3 does not arise.
+2. **The gap figure below becomes a check of the rule rather than an open question.** The rule
+   predicts a **hole**, not a peak, in the gap from each slow onset to the nearest fast onset on
+   the same ROI, out to about 2 s. The hole need not be empty, because only one custard event is
+   removed per slow event. A peak near zero would mean the rule is wrong.
+   `combined.near_coincident(fast, slow, 2.0)` counts the slow onsets with a fast onset within 2 s.
+3. **The fast stream has holes wherever a ROI had a slow event.** Fast-only analyses never see a
+   cell's activity while it is in a slow event. The combined stream does. Two things follow:
+   - A fast-versus-slow comparison of participation compares populations that exclude each
+     other near slow events.
+   - Rigid and circular shifts of fast onsets can move them into those holes, which real fast
+     data cannot occupy. The fast null is therefore slightly off. This is unmeasured, and
+     probably small where slow events are rare.
+
 ## What we can measure here first, without waiting
 
 **One figure answers whether the pool is shared, on the default export folder, today.** Per
@@ -111,8 +138,9 @@ coordination calls in the lane above, pointing down. What does not exist yet:
 
 ## Open questions
 
-1. **Producer:** the three membership questions above. Nothing downstream is worth building
-   until they are answered, except the gap figure, which helps ask them.
+1. **Producer:** the three membership questions above. **Answered provisionally by Tony on
+   2026-10-07**, in the working rule above. Work proceeds under that rule. The producer's own
+   statement is still owed, and the gap figure is the check on it.
 2. **Tony:** does this start before or after the jitter ruling and the slow stream's last
    step? Both of those move benches this goal would inherit.
 3. **Tony:** does a combined stream **replace** the two passes or sit beside them? Three
