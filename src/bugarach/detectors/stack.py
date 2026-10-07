@@ -77,6 +77,11 @@ MERGE_GAP_SEC = {"fast": 0.5, "slow": 2.5, "combined": 2.5}
 """Per stream, the gap at which called pieces join into one call: ``call_measure``'s per-stream
 gap, the spacing that defines one event's onsets on that stream."""
 
+MINIMUM_ROIS = 3
+"""The fewest ROIs any width may call on. ADR-0008, decision 1: a pair never counts as a
+coordinated event. Copied here because this module imports nothing from the package;
+``tests/test_stack.py`` checks it against ``bugarach.event_floor.MINIMUM_ROIS`` from outside."""
+
 WIDTHS_SEC = (0.3, 0.5, 1.0, 2.0)
 """3, 5, 10 and 20 frames at the 0.1 s frame interval."""
 
@@ -310,16 +315,20 @@ def stack_detect(
     frame_interval_sec: float | None = None,
     null_draws: int = 200,
     j_sec: float = 20.0,
-    min_rois_narrow: int = 2,
+    min_rois_narrow: int = MINIMUM_ROIS,
 ) -> StackDetection:
     """Run stack on one stream's onsets (``trains``: one array of onset times per ROI, seconds)
     over ``t_range``. See the module docstring for the rule and where each setting comes from.
 
     ``min_rois`` (the window's ADR-0008 floor, measured at a 2 s window) applies at
-    ``ref_win_sec``. A narrower width needs only ``min_rois_narrow`` ROIs and is judged by its
+    ``ref_win_sec``. A narrower width needs ``min_rois_narrow`` ROIs and is judged by its
     tail probability: the floor counts co-activity at 2 s, and a tight group of fewer cells
     than that is what the narrow widths are for. Gating every width at the 2 s floor would make
     stack a subset of count (sliding).
+
+    **Neither may be under** :data:`MINIMUM_ROIS`. This used to let the narrow widths call on
+    2 ROIs. Tony, 2026-10-07: *"2 rois do not make a coordinated event under any
+    circumstances."*
 
     ``merge_gap_sec`` overrides the stream's :data:`MERGE_GAP_SEC`. ``alpha`` skips the
     calibration. ``guard_sec`` pulls each ``maxlt`` half away from the window by ``guard_sec / 2``,
@@ -340,8 +349,9 @@ def stack_detect(
             raise ValueError(f"every width is under the frame interval {frame_interval_sec:g} s")
     if float(ref_win_sec) not in widths:
         raise ValueError(f"ref_win_sec={ref_win_sec} must be one of the widths kept: {widths}")
-    if min_rois_narrow < 2:
-        raise ValueError("min_rois_narrow must be >= 2: one cell is not coordination")
+    if min_rois < MINIMUM_ROIS or min_rois_narrow < MINIMUM_ROIS:
+        raise ValueError(f"min_rois and min_rois_narrow must be >= {MINIMUM_ROIS}: a pair is "
+                         f"never a coordinated event (ADR-0008, decision 1)")
     if alpha is not None and not 0 < alpha < 1:
         raise ValueError("alpha must lie in (0, 1)")
     if context_sec <= 0 or guard_sec < 0:

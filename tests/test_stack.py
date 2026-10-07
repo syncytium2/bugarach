@@ -70,7 +70,7 @@ def test_the_module_imports_nothing_from_the_package():
 @pytest.mark.parametrize("w, ctx, gap, K, pctile, mode, guard", [
     (1.0, 120.0, 2.0, 3, 99.5, "maxlt", 0.0),
     (2.0, 60.0, 8.0, 3, 99.9, "symmetric", 0.0),
-    (0.5, 120.0, 3.0, 2, 99.0, "maxlt", 4.0),
+    (0.5, 120.0, 3.0, 3, 99.0, "maxlt", 4.0),
 ])
 def test_one_width_with_a_fixed_alpha_is_loco_sliding(seed, w, ctx, gap, K, pctile, mode, guard):
     trains, dur = _background(seed, rate_hz=0.02)
@@ -244,7 +244,7 @@ def test_the_null_follows_the_local_rate():
                             r.uniform(900, dur, r.poisson(0.05 * 900))]) for _ in range(n)]
     planted = _plant(_plant(trains, 450.0, range(6), 0.4, seed=1), 1350.0, range(6), 0.4, seed=1)
     b = stack_detect(planted, (0.0, dur), stream="fast", widths_sec=(1.0,), ref_win_sec=1.0,
-                     min_rois=1, alpha=1e-4)
+                     min_rois=3, alpha=1e-4)
     t, S, p = b.signal.t, b.signal.y, b.signal.ref     # every piece's count and local tail
 
     def at(c):
@@ -274,9 +274,28 @@ def test_refusals():
     with pytest.raises(ValueError, match="alpha"):
         stack_detect(trains, (0.0, dur), alpha=0.0, **kw)
     with pytest.raises(ValueError, match="min_rois_narrow"):
-        stack_detect(trains, (0.0, dur), min_rois_narrow=1, **kw)
+        stack_detect(trains, (0.0, dur), min_rois_narrow=2, **kw)
+    with pytest.raises(ValueError, match="a pair is never"):
+        stack_detect(trains, (0.0, dur), stream="fast", min_rois=2)
     with pytest.raises(ValueError, match="too short"):
         stack_detect(trains, (0.0, 30.0), **kw)
+
+
+def test_no_width_ever_calls_on_a_pair():
+    """Tony, 2026-10-07: "2 rois do not make a coordinated event under any circumstances."
+    The narrow widths used to need only 2. The minimum is ADR-0008's, copied into stack.py
+    because that module imports nothing from the package, so it is checked from here."""
+    from bugarach import event_floor
+    from bugarach.detectors import stack as stack_module
+
+    assert stack_module.MINIMUM_ROIS == event_floor.MINIMUM_ROIS == 3
+    # Pairs planted as tightly as onsets can sit, on a quiet background, at every width's
+    # most favourable setting: a fixed, lenient alpha and the lowest floor allowed.
+    trains, dur = _background(21, rate_hz=0.002)
+    for k, t in enumerate(np.arange(100.0, dur - 100.0, 60.0)):
+        trains = _plant(trains, float(t), (k % 28, k % 28 + 1), 0.05, seed=k)
+    det = stack_detect(trains, (0.0, dur), stream="fast", min_rois=3, alpha=0.5)
+    assert np.all(det.nrois >= 3), f"a call on {det.nrois.min():.0f} ROIs"
 
 
 def test_it_has_a_name_a_person_reads():
