@@ -144,10 +144,12 @@ wording of the acknowledgment, and ran it himself. Measurement only, baseline wi
 ships from it. Every number was also computed without the four DI recordings the stop names;
 no share below moves by more than 0.01, and those rows are in the darkroom file.
 
-`tools/measure_real_intervals.py --window-sec` at 1 s and 0.5 s, on the 66 recordings of
-`2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED`. The 2 s rows are the
-2026-09-25 measurement, which is what the realistic bench plants from. The floor is counted in
-the same window as the events.
+`tools/measure_real_intervals.py --window-sec` at 2 s, 1 s and 0.5 s, on the 66 recordings of
+`2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED`. The 2 s window is what the
+realistic bench plants from. The floor is counted in the same window as the events.
+
+**The new option changes nothing at the default.** This run's 2 s `gaps.csv` is byte-identical
+to the 2026-09-25 measurement's.
 
 | stream | window | floor, median | events per hour | gaps | shortest gap | under 2 s | under 5 s | under 10 s |
 |---|---|---|---|---|---|---|---|---|
@@ -170,7 +172,8 @@ the same window as the events.
 - **So the window changes what counts as an event, not only how close two can sit.** A bench
   built from the 0.5 s measurement would plant nearly twice as many fast events, at a lower
   floor. That is a bigger revision than adding short gaps, and it touches ADR-0008's 2 s window.
-- The 2 s folder of this run came back empty; the 2 s rows above are the earlier measurement.
+- The 2 s run wrote nothing on its first attempt and ran clean on its second, with the same
+  command. The first attempt's output was not kept, so why is not known.
 
 The figure and every row, with and without the four named recordings, are in the darkroom only
 (`<darkroom>/bugarach/2026-10-08-stack-ceiling/real-gaps/`), built by
