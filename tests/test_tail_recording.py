@@ -37,6 +37,7 @@ def _stats(maker):
     return (float(np.mean(crowded)), float(np.mean(cv)), float(np.mean(min_gap)))
 
 
+@pytest.mark.usefixtures("pre_adr_0010_bench_here")
 def test_the_bench_cannot_crowd_and_the_tail_can():
     """The premise of the whole exercise, asserted rather than remembered.
 

@@ -1,0 +1,327 @@
+{
+  "_comment": "Names the scheme must accept, names it must refuse, and builder calls with their expected output. artifact_name.py --selftest runs all of them. Add a case whenever a real name surprises someone.",
+  "valid": [
+    "raster_roi_combined_senktide-ttx_di_win20min_20261007.html",
+    "raster_roi_combined_senktide-ttx_di_win5min_20261007.html",
+    "raster_roi_fast-slow-combined_ttx_ovx-orx_win20min_20261007.png",
+    "assembly-power_roi_fast-slow-combined_ttx_ovx-orx_win20min_20261007.html",
+    "raster_roi_combined_apv+cnqx+gz_di+ovx_win20min_20261006.html",
+    "pilot-20260811_raster_roi_combined_apv+cnqx+gz_male_win20min_20261006.html",
+    "pilot-20260917_raster_roi_combined_apv+cnqx-then-gz-then-hik_di_win20min_20261006.html",
+    "pilot-20260811_raster_roi_combined_apv+cnqx+gz_di-ovx-male-orx_win20min_20261006.html",
+    "lmm_roi_fast_senktide_di-ovx-male-orx_win5min_20261007_v2.docx",
+    "patch_timecourse_senktide_ovx_20261007.pdf",
+    "raster_pensub_fast_senktide_ovx_win5min_20261007.png",
+    "explainer_optimization-history_20261007.html",
+    "explainer_why-the-window-is-20-minutes_20261007_v2.pdf"
+  ],
+  "invalid": [
+    {
+      "name": "ALL_APV+CNQX+GZ_combined.html",
+      "why": "Tuesday's file: capitals, 'all', no type, wrong field count, no date"
+    },
+    {
+      "name": "raster_roi_combined_senktide-ttx_all_win20min_20261007.html",
+      "why": "'all' as a group"
+    },
+    {
+      "name": "raster_roi_combined_senktide-ttx_di_20261007.html",
+      "why": "missing the window"
+    },
+    {
+      "name": "raster_roi_combined_senktide-ttx_di_win20min.html",
+      "why": "missing the date"
+    },
+    {
+      "name": "raster_roi_combined_senktide-ttx_di_win20min_20261332.html",
+      "why": "not a real date"
+    },
+    {
+      "name": "raster_roi_combined_senktide-ttx_di_win20min_2026-10-07.html",
+      "why": "dashed date"
+    },
+    {
+      "name": "raster_roi_combined_ttx-senktide_di_win20min_20261007.html",
+      "why": "side-by-side order not canonical"
+    },
+    {
+      "name": "raster_roi_combined_senktide-ttx_orx-di_win20min_20261007.html",
+      "why": "group order not canonical (di, ovx, male, orx)"
+    },
+    {
+      "name": "raster_roi_combined_cnqx+apv+gz_di_win20min_20261007.html",
+      "why": "pooled order not canonical"
+    },
+    {
+      "name": "raster_roi_combined_senktide_di-then-ovx_win20min_20261007.html",
+      "why": "-then- outside the treatment field"
+    },
+    {
+      "name": "raster_roi_fast+slow_senktide_di_win20min_20261007.html",
+      "why": "streams do not pool; combined is its own stream"
+    },
+    {
+      "name": "raster_roi_combined_senktide_diestrus_win20min_20261007.html",
+      "why": "alias where the code belongs"
+    },
+    {
+      "name": "raster_roi_combined_senktide_di_long_20261007.html",
+      "why": "window written as a lab word"
+    },
+    {
+      "name": "raster_roi_combined_senktide_di_win20min_20261007_v1.html",
+      "why": "versions start at v2"
+    },
+    {
+      "name": "Raster_roi_combined_senktide_di_win20min_20261007.html",
+      "why": "capital letter"
+    },
+    {
+      "name": "raster_roi_combined_senktide_di_win20min_20261007.final.html",
+      "why": "two dots"
+    },
+    {
+      "name": "raster_roi_combined_senktide_di di_win20min_20261007.html",
+      "why": "space"
+    },
+    {
+      "name": "summary_roi_combined_senktide_di_win20min_20261007.html",
+      "why": "unregistered type"
+    },
+    {
+      "name": "raster_roi_combined_senktide-senktide_di_win20min_20261007.html",
+      "why": "same treatment twice"
+    },
+    {
+      "name": "pilot-20261332_raster_roi_combined_senktide_di_win20min_20261007.html",
+      "why": "pilot start date not a real date"
+    },
+    {
+      "name": "patch_timecourse_senktide_ovx_win20min_20261007.pdf",
+      "why": "patch has no window field"
+    },
+    {
+      "name": "pilot-20260811_raster_roi_combined_apv+cnqx+gz_di-ovx-male-orx_win20min_20261006_v2_with_an_extremely_long_tail.html",
+      "why": "over 100 characters and extra fields"
+    },
+    {
+      "name": "raster_combined_senktide-ttx_di_win20min_20261007.html",
+      "why": "missing the signal (roi or pensub)"
+    },
+    {
+      "name": "raster_neuropil_combined_senktide_di_win20min_20261007.html",
+      "why": "unregistered signal"
+    },
+    {
+      "name": "optim_history.html",
+      "why": "Today's explainer name: no type, no date"
+    },
+    {
+      "name": "explainer_20261007.html",
+      "why": "an explainer with no topic"
+    },
+    {
+      "name": "explainer_optimization_history_20261007.html",
+      "why": "topic words joined with _ instead of -"
+    },
+    {
+      "name": "explainer_a-b-c-d-e-f-g_20261007.html",
+      "why": "topic over six words"
+    },
+    {
+      "name": "explainer_roi_fast_senktide_di_win20min_20261007.html",
+      "why": "dataset fields on an explainer"
+    },
+    {
+      "name": "explainer_full-story_20261007.html",
+      "why": "banned word in a topic"
+    }
+  ],
+  "build": [
+    {
+      "args": {
+        "type": "raster",
+        "stream": "combined",
+        "treatment": "APV+CNQX+GZ",
+        "groups": "MALE",
+        "win": "long_window_20",
+        "date": "20261006",
+        "ext": "html",
+        "source": "pilot-20260811",
+        "signal": "ROI"
+      },
+      "expect": "pilot-20260811_raster_roi_combined_apv+cnqx+gz_male_win20min_20261006.html"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "stream": "combined",
+        "treatment": "APV+CNQX-then-gabazine-then-high K+",
+        "groups": "DI",
+        "win": "20min",
+        "date": "20261006",
+        "ext": "html",
+        "source": "pilot-20260917",
+        "signal": "roi"
+      },
+      "expect": "pilot-20260917_raster_roi_combined_apv+cnqx-then-gz-then-hik_di_win20min_20261006.html"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "stream": "slow-fast",
+        "treatment": "TTX-senktide",
+        "groups": "ORX-DiIVF-OVX",
+        "win": "short",
+        "date": "20261007",
+        "ext": ".PNG",
+        "signal": "pensub"
+      },
+      "expect": "raster_pensub_fast-slow_senktide-ttx_di-ovx-orx_win5min_20261007.png"
+    },
+    {
+      "args": {
+        "type": "ba",
+        "stream": "CMS",
+        "treatment": "senktide",
+        "groups": "diestrus+ovx",
+        "win": "win5min",
+        "date": "20261007",
+        "ext": "pdf",
+        "version": 3,
+        "signal": "roi"
+      },
+      "expect": "before-after_roi_fast_senktide_di+ovx_win5min_20261007_v3.pdf"
+    },
+    {
+      "args": {
+        "type": "timecourse",
+        "treatment": "senktide",
+        "groups": "ovx",
+        "date": "20261007",
+        "ext": "pdf",
+        "source": "patch"
+      },
+      "expect": "patch_timecourse_senktide_ovx_20261007.pdf"
+    },
+    {
+      "args": {
+        "type": "explainer",
+        "topic": "Optimization History",
+        "date": "20261007",
+        "ext": "html"
+      },
+      "expect": "explainer_optimization-history_20261007.html"
+    }
+  ],
+  "build_refused": [
+    {
+      "args": {
+        "type": "raster",
+        "stream": "combined",
+        "treatment": "senktide",
+        "groups": "all",
+        "win": "win20min",
+        "date": "20261007",
+        "ext": "html",
+        "signal": "roi"
+      },
+      "why": "all"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "stream": "combined",
+        "treatment": "senktide",
+        "groups": "di",
+        "date": "20261007",
+        "ext": "html",
+        "signal": "roi"
+      },
+      "why": "no window"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "stream": "combined",
+        "treatment": "aspirin",
+        "groups": "di",
+        "win": "win20min",
+        "date": "20261007",
+        "ext": "html",
+        "signal": "roi"
+      },
+      "why": "unregistered treatment"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "stream": "combined",
+        "treatment": "senktide",
+        "groups": "di",
+        "win": "win20min",
+        "date": "20261007",
+        "ext": "html",
+        "source": "imaging",
+        "signal": "roi"
+      },
+      "why": "unregistered source"
+    },
+    {
+      "args": {
+        "type": "timecourse",
+        "treatment": "senktide",
+        "groups": "ovx",
+        "win": "win20min",
+        "date": "20261007",
+        "ext": "pdf",
+        "source": "patch"
+      },
+      "why": "patch has no window"
+    },
+    {
+      "args": {
+        "type": "timecourse",
+        "signal": "roi",
+        "treatment": "senktide",
+        "groups": "ovx",
+        "date": "20261007",
+        "ext": "pdf",
+        "source": "patch"
+      },
+      "why": "patch has no signal field"
+    },
+    {
+      "args": {
+        "type": "explainer",
+        "topic": "history",
+        "signal": "roi",
+        "date": "20261007",
+        "ext": "html"
+      },
+      "why": "dataset field on an explainer"
+    },
+    {
+      "args": {
+        "type": "explainer",
+        "date": "20261007",
+        "ext": "html"
+      },
+      "why": "no topic"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "topic": "history",
+        "signal": "roi",
+        "stream": "fast",
+        "treatment": "ttx",
+        "groups": "di",
+        "win": "win20min",
+        "date": "20261007",
+        "ext": "html"
+      },
+      "why": "a topic on a dataset name"
+    }
+  ]
+}

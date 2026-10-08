@@ -1,0 +1,248 @@
+{
+  "_comment": "Every code a filename may contain. List order IS canonical order. Aliases are the spellings producers already use; the builder accepts them and writes the code. Edit here, never in a producer. See README.md.",
+  "default_fields": [
+    "signal",
+    "stream",
+    "treatment",
+    "groups",
+    "win"
+  ],
+  "sources": [
+    {
+      "code": "pilot",
+      "name": "an independent pilot cohort, written pilot-YYYYMMDD (its first recording day); each pilot is its own cohort",
+      "fields": [
+        "signal",
+        "stream",
+        "treatment",
+        "groups",
+        "win"
+      ]
+    },
+    {
+      "code": "patch",
+      "name": "patch-clamp electrophysiology (fields provisional)",
+      "fields": [
+        "treatment",
+        "groups"
+      ]
+    }
+  ],
+  "types": [
+    {
+      "code": "raster",
+      "name": "event raster"
+    },
+    {
+      "code": "psth",
+      "name": "peri-stimulus time histogram"
+    },
+    {
+      "code": "heatmap",
+      "name": "heatmap"
+    },
+    {
+      "code": "timecourse",
+      "name": "time course"
+    },
+    {
+      "code": "swarm",
+      "name": "per-ROI or per-slice swarm plot"
+    },
+    {
+      "code": "before-after",
+      "name": "before/after treatment plot",
+      "aliases": [
+        "ba"
+      ]
+    },
+    {
+      "code": "baseline-by-group",
+      "name": "baseline compared across groups"
+    },
+    {
+      "code": "lmm",
+      "name": "linear mixed model results"
+    },
+    {
+      "code": "stats-table",
+      "name": "statistics table"
+    },
+    {
+      "code": "detector-table",
+      "name": "detector comparison table"
+    },
+    {
+      "code": "assembly-power",
+      "name": "assembly power analysis"
+    },
+    {
+      "code": "assembly-membership",
+      "name": "assembly membership"
+    },
+    {
+      "code": "kernel",
+      "name": "recovered calcium kernel"
+    },
+    {
+      "code": "report",
+      "name": "multi-section report"
+    },
+    {
+      "code": "explainer",
+      "name": "an explainer: a document about an idea or method, not about a dataset",
+      "fields": [
+        "topic"
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "code": "roi",
+      "name": "straight ROI fluorescence, no penumbra subtraction"
+    },
+    {
+      "code": "pensub",
+      "name": "penumbra-subtracted ROI fluorescence (interface2 docs/GLOSSARY.md)"
+    }
+  ],
+  "streams": [
+    {
+      "code": "fast",
+      "name": "fast stream (FAST = CMS, custard minus slow)",
+      "aliases": [
+        "cms"
+      ]
+    },
+    {
+      "code": "slow",
+      "name": "slow stream"
+    },
+    {
+      "code": "combined",
+      "name": "every fast and slow onset per ROI, merged, nothing dropped (bugarach src/bugarach/combined.py)"
+    },
+    {
+      "code": "custard",
+      "name": "raw fast-channel detector, approximately fast + slow; NOT an alias of either"
+    },
+    {
+      "code": "mlspike",
+      "name": "MLspike detector"
+    }
+  ],
+  "treatments": [
+    {
+      "code": "baseline",
+      "name": "baseline (no drug)"
+    },
+    {
+      "code": "senktide",
+      "name": "senktide"
+    },
+    {
+      "code": "ttx",
+      "name": "tetrodotoxin"
+    },
+    {
+      "code": "sb222200",
+      "name": "SB222200"
+    },
+    {
+      "code": "apv",
+      "name": "APV"
+    },
+    {
+      "code": "cnqx",
+      "name": "CNQX"
+    },
+    {
+      "code": "gz",
+      "name": "gabazine",
+      "aliases": [
+        "gabazine"
+      ]
+    },
+    {
+      "code": "cadmium",
+      "name": "cadmium"
+    },
+    {
+      "code": "hik",
+      "name": "high K+",
+      "aliases": [
+        "high k+",
+        "highk"
+      ]
+    },
+    {
+      "code": "wash",
+      "name": "washout"
+    }
+  ],
+  "groups": [
+    {
+      "code": "di",
+      "name": "diestrous intact female",
+      "aliases": [
+        "diestrus",
+        "diestrous",
+        "diivf"
+      ]
+    },
+    {
+      "code": "ovx",
+      "name": "ovariectomized female"
+    },
+    {
+      "code": "male",
+      "name": "intact male"
+    },
+    {
+      "code": "orx",
+      "name": "orchidectomized male"
+    }
+  ],
+  "windows": [
+    {
+      "code": "win5min",
+      "name": "5-minute analysis window (the published senktide analysis)",
+      "aliases": [
+        "short",
+        "short5",
+        "short_window_5",
+        "5min"
+      ]
+    },
+    {
+      "code": "win20min",
+      "name": "20-minute analysis window, 15-minute floor (second paper)",
+      "aliases": [
+        "long",
+        "long20",
+        "long_window_20",
+        "20min"
+      ]
+    }
+  ],
+  "reserved": [
+    "then",
+    "vs"
+  ],
+  "banned": [
+    "all",
+    "merged",
+    "pooled",
+    "final",
+    "new",
+    "old",
+    "latest",
+    "misc",
+    "tmp",
+    "temp",
+    "test",
+    "copy",
+    "fixed",
+    "full"
+  ]
+}

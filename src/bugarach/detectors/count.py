@@ -28,6 +28,9 @@ bin's left edge, width to the last called bin's right edge.
 **Two forms, two detector keys**: ``count`` (v1, :func:`count_detect`, fixed bins) and
 ``count_sliding`` (v2, :func:`count_sliding_detect`, a window that slides). Neither is a flag
 on the other, so no result can be read as one when it was the other.
+
+``stack`` was written here on 2026-10-07 and moved the same day to its own self-contained
+module, :mod:`bugarach.detectors.stack`, with a local context-window null.
 """
 
 from __future__ import annotations

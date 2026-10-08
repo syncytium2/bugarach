@@ -1,0 +1,152 @@
+[
+ {
+  "figure": 5,
+  "file": "fig05_raster_decoys.png",
+  "what": "decoys",
+  "stream": "fast",
+  "regime": "baseline_busy",
+  "seed": 6019,
+  "kind": "planted",
+  "floor": 7,
+  "closeup": false,
+  "window_sec": [
+   3.5,
+   2697.8
+  ],
+  "calls": {
+   "coact": 4,
+   "loco": 4,
+   "chorus_norm": 4,
+   "count_sliding": 6,
+   "stack": 10
+  },
+  "stack_only": 4,
+  "count_sliding_only": 0,
+  "look": "Look at the open grey triangles (decoys) in the top lane: stack has a bar under more of them than count (sliding) does, each with a red cross."
+ },
+ {
+  "figure": 6,
+  "file": "fig06_raster_decoys_closeup.png",
+  "what": "decoys",
+  "stream": "fast",
+  "regime": "baseline_busy",
+  "seed": 6019,
+  "kind": "planted",
+  "floor": 7,
+  "closeup": true,
+  "window_sec": [
+   154.0,
+   214.0
+  ],
+  "calls": {
+   "coact": 4,
+   "loco": 4,
+   "chorus_norm": 4,
+   "count_sliding": 6,
+   "stack": 10
+  },
+  "stack_only": 4,
+  "count_sliding_only": 0,
+  "look": "Look at the open grey triangles (decoys) in the top lane: stack has a bar under more of them than count (sliding) does, each with a red cross."
+ },
+ {
+  "figure": 7,
+  "file": "fig07_raster_under_floor.png",
+  "what": "under_floor",
+  "stream": "slow",
+  "regime": "baseline_quiet",
+  "seed": 6010,
+  "kind": "planted",
+  "floor": 8,
+  "closeup": false,
+  "window_sec": [
+   10.5,
+   2660.5
+  ],
+  "calls": {
+   "coact": 18,
+   "loco": 18,
+   "chorus_norm": 23,
+   "count_sliding": 18,
+   "stack": 23
+  },
+  "stack_only": 5,
+  "count_sliding_only": 0,
+  "look": "Look for planted triangles with a stack bar under them and no count (sliding) bar: events with fewer ROIs than the floor, which the score leaves out for every detector."
+ },
+ {
+  "figure": 8,
+  "file": "fig08_raster_under_floor_closeup.png",
+  "what": "under_floor",
+  "stream": "slow",
+  "regime": "baseline_quiet",
+  "seed": 6010,
+  "kind": "planted",
+  "floor": 8,
+  "closeup": true,
+  "window_sec": [
+   2091.6,
+   2151.6
+  ],
+  "calls": {
+   "coact": 18,
+   "loco": 18,
+   "chorus_norm": 23,
+   "count_sliding": 18,
+   "stack": 23
+  },
+  "stack_only": 5,
+  "count_sliding_only": 0,
+  "look": "Look for planted triangles with a stack bar under them and no count (sliding) bar: events with fewer ROIs than the floor, which the score leaves out for every detector."
+ },
+ {
+  "figure": 9,
+  "file": "fig09_raster_elevated.png",
+  "what": "elevated",
+  "stream": "fast",
+  "regime": "baseline_busy",
+  "seed": 6005,
+  "kind": "elevated",
+  "floor": 17,
+  "closeup": false,
+  "window_sec": [
+   0.5,
+   2699.9
+  ],
+  "calls": {
+   "coact": 0,
+   "loco": 0,
+   "chorus_norm": 0,
+   "count_sliding": 2,
+   "stack": 0
+  },
+  "stack_only": 0,
+  "count_sliding_only": 2,
+  "look": "Look inside the shaded stretch: every bar there is a false alarm, and count (sliding) has more of them than stack."
+ },
+ {
+  "figure": 10,
+  "file": "fig10_raster_elevated_closeup.png",
+  "what": "elevated",
+  "stream": "fast",
+  "regime": "baseline_busy",
+  "seed": 6005,
+  "kind": "elevated",
+  "floor": 17,
+  "closeup": true,
+  "window_sec": [
+   1204.9,
+   1264.9
+  ],
+  "calls": {
+   "coact": 0,
+   "loco": 0,
+   "chorus_norm": 0,
+   "count_sliding": 2,
+   "stack": 0
+  },
+  "stack_only": 0,
+  "count_sliding_only": 2,
+  "look": "Look inside the shaded stretch: every bar there is a false alarm, and count (sliding) has more of them than stack."
+ }
+]

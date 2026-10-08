@@ -20,6 +20,14 @@ parity test):
             (see count.py)
   count_sliding  count (sliding)                -- the same rule in a window that
             slides: CoactDetect's sliding form without its null (count.py)
+  stack     stack                              -- the sliding count at several
+            widths at once, each against LoCo's local context-window null, the
+            least likely winning; one width alone is LoCo (sliding). Self-
+            contained: imports nothing from the package (stack.py)
+  stack_global  stack (global)                 -- stack's first form, kept as it
+            was: one null for the whole range, calibrated on rigid shifts to
+            call no more often than count (sliding); one width alone is count
+            (sliding). Self-contained, pinned to 8646eb4 (stack_global.py)
 
 **Only the fifth row has a key that is not its name.** ``cicada`` is the
 identifier — module, ``cicada_detect``, and the value in ``detections.csv``'s
@@ -45,6 +53,8 @@ DISPLAY_NAMES = {
     "sync": "SPIKE-synch",
     "count": "count (binned)",
     "count_sliding": "count (sliding)",
+    "stack": "stack",
+    "stack_global": "stack (global)",
 }
 """The name a person sees, by code key — the table above, as data.
 
@@ -68,7 +78,13 @@ from bugarach.detectors.cicada import (  # noqa: E402
     rise_durations,
 )
 from bugarach.detectors.coact import CoactDetection, coact_detect
-from bugarach.detectors.count import CountDetection, count_detect, count_sliding_detect
+from bugarach.detectors.count import (
+    CountDetection,
+    count_detect,
+    count_sliding_detect,
+)
+from bugarach.detectors.stack import StackDetection, stack_detect
+from bugarach.detectors.stack_global import StackGlobalDetection, stack_global_detect
 from bugarach.detectors.loco import (
     LocoDetection,
     LocoStream,
@@ -116,6 +132,10 @@ __all__ = [
     "CountDetection",
     "count_detect",
     "count_sliding_detect",
+    "StackDetection",
+    "stack_detect",
+    "StackGlobalDetection",
+    "stack_global_detect",
     "event_rate",
     "loco_detect",
     "region_windows",

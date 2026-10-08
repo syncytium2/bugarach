@@ -118,17 +118,18 @@ def summarize(rows):
 
 
 def main(argv=None) -> int:
+    from bugarach import bench as _b
+
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--seeds", type=int, default=8)
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 2))
-    ap.add_argument("--spacing", choices=("bench", "realistic", "orx"), default="bench",
+    ap.add_argument("--spacing", choices=_b.SPACINGS, default=_b.DEFAULT_SPACING,
                     help="how the bench spaces its planted events (bench.SPACINGS). ADR-0009's "
                          "expected ranges, and so its stop rule, describe the 'bench' spacing "
                          "only; under the others the floors are measured and reported")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
-    from bugarach import bench as _b
     _b.use_spacing(a.spacing)                 # before the pool: every worker reads it
     jobs = [(n, r, s) for n in BENCHES for r in REGIMES for s in range(1, a.seeds + 1)]
     with mp.Pool(a.jobs) as pool:

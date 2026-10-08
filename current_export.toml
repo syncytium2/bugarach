@@ -54,10 +54,17 @@
 
 default = "senktide_ttx"
 
+# FILENAME FACTS. Optional per table: `signal` ("roi" or "pensub"), `win` (the analysis window,
+# e.g. "win20min") and `source` ("pilot-YYYYMMDD"; absent = the main imaging series). Figure
+# tools put them into output filenames (tools/naming/, the estate scheme) and refuse to name
+# pages for a folder that does not declare them. Declare only what the folder is known to be.
+
 [senktide_ttx]
 use = "input"
 # The producer's 2026-09-23 export. THE DEFAULT (see `default` above) since 2026-09-23.
 name = "2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED"
+signal = "roi"         # Tony, 2026-10-07: every export that is not pensub is roi
+win = "win20min"       # the note: analysis_start_sec / analysis_end_sec under long_window_20
 recordings = 66
 note = """
 The folder Tony shared on 2026-09-23 as the input, and the work continues on the recordings
@@ -95,6 +102,7 @@ does not clear it. Request and status:
 # The default until 2026-09-21. Kept so the runs and parity fixtures made on it reproduce.
 use = "archive"
 name = "2026-08-18_revised_2v_periods"
+signal = "roi"         # Tony, 2026-10-07: every export that is not pensub is roi
 recordings = 84
 note = """
 The standard export until 2026-09-21. Two streams, region labels, and the full per-event
@@ -110,6 +118,7 @@ use = "archive"
 # `steps_excluded` below is kept so runs made before it reproduce, and it still stops an
 # analysis by itself — see its note.
 name = "2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED"
+signal = "roi"         # Tony, 2026-10-07: every export that is not pensub is roi
 recordings = 84
 note = """
 Answers the question this repository should have asked a week earlier. Non-rigid motion
@@ -189,6 +198,7 @@ is declared on `senktide_ttx`, the default, and this archive role is already ref
 use = "archive"
 # The producer's 2026-09-03 export with field-step artifacts REMOVED.
 name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED"
+signal = "roi"         # Tony, 2026-10-07: every export that is not pensub is roi
 recordings = 84
 note = """
 Whole-field brightness steps GENERATE detections — onsets lock to the step, 74% (fast)
@@ -221,6 +231,7 @@ use = "archive"
 parent = "steps_excluded"
 # First-treatment subset of `steps_excluded`. A view, not a re-export.
 name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED_SENKTIDE"
+signal = "roi"         # Tony, 2026-10-07: every export that is not pensub is roi
 recordings = 29
 note = """
 Every recording in `steps_excluded` whose first non-baseline region is `senktide`, carried
@@ -237,6 +248,7 @@ use = "archive"
 parent = "steps_excluded"
 # First-treatment subset of `steps_excluded`. A view, not a re-export.
 name = "2026-09-03_revised_2v_long_STEPS_EXCLUDED_TTX"
+signal = "roi"         # Tony, 2026-10-07: every export that is not pensub is roi
 recordings = 38
 note = """
 Same construction as `senktide`, on a first treatment of `TTX`. Groups: DI 11, MALE 9,
@@ -253,6 +265,7 @@ to tune away.
 use = "eval"
 # The penumbra-subtracted pair, for the crosstalk control ONLY.
 name = "2026-08-20_pensub_revised_2v"
+signal = "pensub"
 recordings = 84
 note = """
 The same 84 recordings as `periods_2026_08_18`, penumbra-subtracted — verified file-for-file,

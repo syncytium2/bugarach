@@ -76,6 +76,7 @@ def test_the_loader_refuses_what_it_cannot_read(tmp_path):
 
 # ---- the generator --------------------------------------------------------------------------
 
+@pytest.mark.usefixtures("pre_adr_0010_bench_here")
 @pytest.mark.parametrize("mod", [bench, bench_slow, bench_combined])
 def test_mix_one_is_the_old_recording(mod):
     old = mod.make_recording("baseline_busy", 3)
