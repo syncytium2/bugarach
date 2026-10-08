@@ -214,6 +214,7 @@ def check_and_shoot(html: Path, png: Path, want: list[dict], shift_sec: float) -
                 if not np.isclose(gs["half"], ws["half"], atol=1e-9):
                     raise SystemExit(f"recording {i}: half-ceiling shift differs")
         page.evaluate(f"window.__set(0, {shift_sec})")
+        page.evaluate("document.body.classList.add('still')")   # the tool row in its place
         page.screenshot(path=str(png), full_page=True)
         browser.close()
 

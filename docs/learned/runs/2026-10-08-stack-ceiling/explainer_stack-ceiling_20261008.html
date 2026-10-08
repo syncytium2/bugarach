@@ -27,38 +27,88 @@
   .key { display: inline-block; width: 11px; height: 11px; vertical-align: -1px;
          margin: 0 3px 0 10px; border: 1px solid #111; }
   .note { color: #555; font-size: 13px; }
+  .line { display: inline-block; width: 22px; height: 0; vertical-align: 4px; margin: 0 4px 0 10px; }
+  .tri { margin: 0 3px 0 10px; }
+  .hash { display: inline-block; width: 22px; height: 11px; vertical-align: -1px; margin: 0 4px 0 10px;
+          background: repeating-linear-gradient(90deg, #444 0 1px, transparent 1px 5px); }
+  /* The tool row follows the figures in the page and stays in view while they are on screen. */
+  .tools { position: sticky; bottom: 0; z-index: 2; background: #f4f4f2; margin: 16px 0 10px;
+           padding: 4px 0; border-top: 1px solid #ccc; border-radius: 6px; }
+  .tools .controls { margin: 0; padding: 5px 12px; background: none; }
+  body.still .tools { position: static; }
 </style>
 </head>
 <body>
 <main>
 <h1>The tallest stack that shifting can build, and how much of it already stands</h1>
-<p class="how">A simulated recording, one row per ROI (region of interest, a cell) and one black
-mark per calcium-event onset. Pick a moment and a <b>window</b> of width <i>w</i> around it. The
-<b>height</b> is the number of ROIs with an onset in the window. Now take the <b>period</b>
-<i>p</i> around the same moment and let each ROI's onsets slide around it, wrapping at the ends
-(a circular shift), each ROI by its own amount. Every ROI with an onset anywhere in the period
-can be slid into the window, so the tallest stack shifting can build is the number of ROIs with
-an onset in the period: the <b>ceiling</b>. The <b>fill</b> is the height divided by the
-ceiling. No probability is computed anywhere on this page.</p>
+<figure>
+  <figcaption><b>Figure 1. The period, as recorded and as it shifts.</b>
+  <span class="key" style="background:#1f5fbf;border-color:#1f5fbf"></span>the window
+  <span class="key" style="background:#111"></span>ROI in the window as recorded
+  <span class="key" style="background:#6b9bd1;border-color:#6b9bd1"></span>brought in by shifting
+  <span class="key" style="background:#fff;border-color:#999"></span>has an onset in the period, not in yet
+  <span class="key" style="background:#fff;border:1px dotted #bbb"></span>no onset in the period
+  <span class="line" style="border-top:1px dashed #111"></span>ceiling
+  </figcaption>
+  <canvas id="fig1"></canvas>
+</figure>
 
-<div class="controls" id="scenes"><label>Moment:</label></div>
-<div class="controls">
-  <label>window <i>w</i> <select id="w"></select></label>
-  <label>period <i>p</i> <select id="p"></select></label>
-  <button class="play" id="play">▶ Shift the ROIs</button>
-  <button id="reset">As recorded</button>
-  <label>shift allowed per ROI <input type="range" id="s" min="0" max="60" step="0.1" value="0">
-    <span id="sval"></span></label>
+<figure>
+  <figcaption><b>Figure 2. The growth curve at this moment.</b>
+  <span class="line" style="border-top:1px solid #111"></span>tower height
+  <span class="line" style="border-top:3px solid #1f5fbf"></span>traced by the shift so far
+  <span class="line" style="border-top:2px solid #888"></span>mean if every ROI were shifted at random
+  <span class="line" style="border-top:1px dashed #111"></span>ceiling
+  <span class="tri" style="color:#1f5fbf">▼</span>shift so far
+  <span class="tri">▽</span>shift to rebuild this tower elsewhere
+  </figcaption>
+  <canvas id="fig2"></canvas>
+</figure>
+
+<figure>
+  <figcaption><b>Figure 3. The whole simulated recording, and the calls.</b>
+  <span class="tri" style="color:#1a7f37">▼</span>planted event, found by a call
+  <span class="tri" style="color:#c62828">▼</span>planted event, missed
+  <span class="key" style="background:#111"></span>call on a planted event
+  <span class="key" style="background:#c62828;border-color:#c62828"></span>call where nothing is planted
+  <span class="hash"></span>raised-rate stretch
+  <span class="line" style="border-top:3px solid #1f5fbf"></span>the period shown in Figure 1
+  <span class="line" style="border-top:1px dotted #c62828"></span>the setting
+  </figcaption>
+  <canvas id="fig3"></canvas>
+</figure>
+
+<div class="tools">
+  <div class="controls" id="scenes"><label>Moment:</label></div>
+  <div class="controls">
+    <label>window <i>w</i> <select id="w"></select></label>
+    <label>period <i>p</i> <select id="p"></select></label>
+    <button class="play" id="play">▶ Shift the ROIs</button>
+    <button id="reset">As recorded</button>
+    <label>shift allowed per ROI <input type="range" id="s" min="0" max="60" step="0.1" value="0">
+      <span id="sval"></span></label>
+  </div>
+  <div class="controls">
+    <label>Call a moment when <select id="score">
+      <option value="rebuild">the cost to rebuild its tower elsewhere</option>
+      <option value="fill">its fill</option></select></label>
+    <label>is at least <input type="range" id="th" style="width:220px"> <span id="thval"></span></label>
+    <span>and at least 3 ROIs stand</span>
+  </div>
 </div>
-<div class="controls">
-  <label>Call a moment when <select id="score">
-    <option value="rebuild">the cost to rebuild its tower elsewhere</option>
-    <option value="fill">its fill</option></select></label>
-  <label>is at least <input type="range" id="th" style="width:220px"> <span id="thval"></span></label>
-  <span>and at least 3 ROIs stand</span>
-</div>
+
 <p class="readout" id="readout"></p>
 <p class="readout" id="verdict"></p>
+
+<p class="how"><b>What is being measured.</b> A simulated recording, one row per ROI (region of
+interest, a cell) and one black mark per calcium-event onset. Pick a moment and a <b>window</b>
+of width <i>w</i> around it. The <b>height</b> is the number of ROIs with an onset in the window.
+Now take the <b>period</b> <i>p</i> around the same moment and let each ROI's onsets slide around
+it, wrapping at the ends (a circular shift), each ROI by its own amount. Every ROI with an onset
+anywhere in the period can be slid into the window, so the tallest stack shifting can build is
+the number of ROIs with an onset in the period: the <b>ceiling</b>. The <b>fill</b> is the
+height divided by the ceiling. No probability is computed anywhere on this page.</p>
+
 <p class="how"><b>The call rule.</b> A tower at a moment stands without any shift. At another
 moment of the same period, a tower that tall has to be built, and that takes some shift per ROI.
 The <b>cost to rebuild elsewhere</b> is the median of that shift over the other moments of the
@@ -68,39 +118,21 @@ called when the cost reaches the setting and at least 3 ROIs stand; called momen
 apart are one call. Fill is offered as the plainer rule to compare. Neither setting has been
 tuned: move it and watch the calls.</p>
 
-<figure>
-  <figcaption><b>Figure 1. The period, as recorded and as it shifts.</b> The raster is the period
-  <i>p</i> around the chosen moment. The lane above it marks the window. Press <i>Shift the
-  ROIs</i>: every ROI slides its nearest onset toward the window at the same speed, so the ROIs
-  that sit closest arrive first. The column beside the raster shows, row by row, which ROIs are
-  in the window; the tower on the right stacks them.
-  <span class="key" style="background:#111"></span>in the window as recorded
-  <span class="key" style="background:#6b9bd1;border-color:#6b9bd1"></span>brought in by shifting
-  <span class="key" style="background:#fff;border-color:#999"></span>has an onset in the period, not in yet
-  <span class="key" style="background:#fff;border:1px dotted #bbb"></span>no onset in the period
-  </figcaption>
-  <canvas id="fig1"></canvas>
-</figure>
+<p class="how"><b>Figure 1, the period as it shifts.</b> The raster is the period <i>p</i> around
+the chosen moment, and the lane above it marks the window. Press <i>Shift the ROIs</i>: every
+ROI slides its nearest onset toward the window at the same speed, so the ROIs that sit closest
+arrive first. The column beside the raster shows, row by row, which ROIs are in the window; the
+tower on the right stacks them.</p>
 
-<figure>
-  <figcaption><b>Figure 2. The growth curve at this moment.</b> The tower's height against the
-  shift each ROI is allowed: the animation in Figure 1, the period as it shifts, traces this
-  curve from left to right. It starts at the height and ends at the ceiling (dashed). The grey
-  curve is the mean height if every ROI were shifted at random around the period, for comparison
-  only. The lane above marks the shift allowed so far.</figcaption>
-  <canvas id="fig2"></canvas>
-</figure>
+<p class="how"><b>Figure 2, the growth curve.</b> The tower's height against the shift each ROI
+is allowed. The animation in Figure 1, the period as it shifts, traces this curve from left to
+right. It starts at the height and ends at the ceiling. The grey curve is for comparison only.</p>
 
-<figure>
-  <figcaption><b>Figure 3. The whole simulated recording, and the calls.</b>
-  <span id="fig3what"></span> The <i>calls</i> lane holds one bar per call: black on a planted
-  event, red where nothing is planted. A planted event's triangle is green when a call found it
-  and red when none did. Below the lanes: the cost to rebuild elsewhere, the fill, the height in
-  the window <i>w</i>, the ceiling over the period <i>p</i>, and the raster. The dotted line is
-  the setting, on the trace it applies to. Click anywhere to move the chosen moment; Figures 1
-  and 2, the period and its growth curve, follow.</figcaption>
-  <canvas id="fig3"></canvas>
-</figure>
+<p class="how"><b>Figure 3, the whole recording and the calls.</b> <span id="fig3what"></span>
+The <i>calls</i> lane holds one bar per call. Below the lanes: the cost to rebuild elsewhere, the
+fill, the height in the window <i>w</i>, the ceiling over the period <i>p</i>, and the raster.
+The setting is drawn on the trace it applies to. Click anywhere in the figure to move the chosen
+moment; Figures 1 and 2, the period and its growth curve, follow.</p>
 
 <p class="note" id="foot"></p>
 </main>
