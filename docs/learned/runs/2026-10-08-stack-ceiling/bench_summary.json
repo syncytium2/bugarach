@@ -1,0 +1,4387 @@
+{
+ "fast": {
+  "regimes": [
+   "baseline_quiet",
+   "baseline_busy"
+  ],
+  "limit_calls_per_hour": 1.0,
+  "limit_stretch_calls_per_min": 1.0,
+  "picked_threshold_sec": 10.0,
+  "thresholds_inside_limits_sec": [
+   2.0,
+   3.0,
+   4.0,
+   5.0,
+   6.0,
+   8.0,
+   10.0,
+   12.0,
+   15.0,
+   20.0,
+   25.0
+  ],
+  "window_sec": 2.0,
+  "merge_gap_sec": 3.0,
+  "floors": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   16,
+   17,
+   18
+  ],
+  "median_seconds_per_recording": 0.1180199384689331,
+  "pick_half": {
+   "2": {
+    "baseline_quiet": {
+     "f1": 0.6259946949602121,
+     "recall": 0.9833333333333333,
+     "precision": 0.4591439688715953,
+     "n_scored": 514,
+     "n_hit": 236,
+     "n_false_alarm": 278,
+     "n_calls": 514,
+     "n_recordings": 48,
+     "calls_on_decoys": 278,
+     "f1_without_decoys": 0.9915966386554621,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       142
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.03333333333333333
+    },
+    "baseline_busy": {
+     "f1": 0.5443548387096774,
+     "recall": 0.9782608695652174,
+     "precision": 0.3770949720670391,
+     "n_scored": 358,
+     "n_hit": 135,
+     "n_false_alarm": 223,
+     "n_calls": 358,
+     "n_recordings": 48,
+     "calls_on_decoys": 218,
+     "f1_without_decoys": 0.9712230215827338,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       41
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.025
+    },
+    "mean_f1": 0.5851747668349447,
+    "worst_stretch_calls_per_min": 0.03333333333333333,
+    "no_coordination_calls_per_hour": 0.2777777777777778,
+    "no_coordination_hours": 18.0
+   },
+   "3": {
+    "baseline_quiet": {
+     "f1": 0.6259946949602121,
+     "recall": 0.9833333333333333,
+     "precision": 0.4591439688715953,
+     "n_scored": 514,
+     "n_hit": 236,
+     "n_false_alarm": 278,
+     "n_calls": 514,
+     "n_recordings": 48,
+     "calls_on_decoys": 278,
+     "f1_without_decoys": 0.9915966386554621,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       142
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5443548387096774,
+     "recall": 0.9782608695652174,
+     "precision": 0.3770949720670391,
+     "n_scored": 358,
+     "n_hit": 135,
+     "n_false_alarm": 223,
+     "n_calls": 358,
+     "n_recordings": 48,
+     "calls_on_decoys": 218,
+     "f1_without_decoys": 0.9712230215827338,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       41
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.5851747668349447,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2777777777777778,
+    "no_coordination_hours": 18.0
+   },
+   "4": {
+    "baseline_quiet": {
+     "f1": 0.6259946949602121,
+     "recall": 0.9833333333333333,
+     "precision": 0.4591439688715953,
+     "n_scored": 514,
+     "n_hit": 236,
+     "n_false_alarm": 278,
+     "n_calls": 514,
+     "n_recordings": 48,
+     "calls_on_decoys": 278,
+     "f1_without_decoys": 0.9915966386554621,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       142
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5443548387096774,
+     "recall": 0.9782608695652174,
+     "precision": 0.3770949720670391,
+     "n_scored": 358,
+     "n_hit": 135,
+     "n_false_alarm": 223,
+     "n_calls": 358,
+     "n_recordings": 48,
+     "calls_on_decoys": 218,
+     "f1_without_decoys": 0.9712230215827338,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       41
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.5851747668349447,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2777777777777778,
+    "no_coordination_hours": 18.0
+   },
+   "5": {
+    "baseline_quiet": {
+     "f1": 0.6259946949602121,
+     "recall": 0.9833333333333333,
+     "precision": 0.4591439688715953,
+     "n_scored": 514,
+     "n_hit": 236,
+     "n_false_alarm": 278,
+     "n_calls": 514,
+     "n_recordings": 48,
+     "calls_on_decoys": 278,
+     "f1_without_decoys": 0.9915966386554621,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       142
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5443548387096774,
+     "recall": 0.9782608695652174,
+     "precision": 0.3770949720670391,
+     "n_scored": 358,
+     "n_hit": 135,
+     "n_false_alarm": 223,
+     "n_calls": 358,
+     "n_recordings": 48,
+     "calls_on_decoys": 218,
+     "f1_without_decoys": 0.9712230215827338,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       41
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.5851747668349447,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2777777777777778,
+    "no_coordination_hours": 18.0
+   },
+   "6": {
+    "baseline_quiet": {
+     "f1": 0.6259946949602121,
+     "recall": 0.9833333333333333,
+     "precision": 0.4591439688715953,
+     "n_scored": 514,
+     "n_hit": 236,
+     "n_false_alarm": 278,
+     "n_calls": 514,
+     "n_recordings": 48,
+     "calls_on_decoys": 278,
+     "f1_without_decoys": 0.9915966386554621,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       142
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5510204081632653,
+     "recall": 0.9782608695652174,
+     "precision": 0.3835227272727273,
+     "n_scored": 352,
+     "n_hit": 135,
+     "n_false_alarm": 217,
+     "n_calls": 352,
+     "n_recordings": 48,
+     "calls_on_decoys": 212,
+     "f1_without_decoys": 0.9712230215827338,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       41
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.5885075515617386,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2777777777777778,
+    "no_coordination_hours": 18.0
+   },
+   "8": {
+    "baseline_quiet": {
+     "f1": 0.6108108108108109,
+     "recall": 0.9416666666666667,
+     "precision": 0.452,
+     "n_scored": 500,
+     "n_hit": 226,
+     "n_false_alarm": 274,
+     "n_calls": 500,
+     "n_recordings": 48,
+     "calls_on_decoys": 274,
+     "f1_without_decoys": 0.9699570815450643,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       132
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5739130434782609,
+     "recall": 0.9565217391304348,
+     "precision": 0.40993788819875776,
+     "n_scored": 322,
+     "n_hit": 132,
+     "n_false_alarm": 190,
+     "n_calls": 322,
+     "n_recordings": 48,
+     "calls_on_decoys": 187,
+     "f1_without_decoys": 0.967032967032967,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       40
+      ],
+      "0.3": [
+       96,
+       92
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.592361927144536,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2777777777777778,
+    "no_coordination_hours": 18.0
+   },
+   "10": {
+    "baseline_quiet": {
+     "f1": 0.594059405940594,
+     "recall": 0.875,
+     "precision": 0.44967880085653106,
+     "n_scored": 467,
+     "n_hit": 210,
+     "n_false_alarm": 257,
+     "n_calls": 467,
+     "n_recordings": 48,
+     "calls_on_decoys": 257,
+     "f1_without_decoys": 0.9333333333333333,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       116
+      ],
+      "0.3": [
+       96,
+       94
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5964912280701754,
+     "recall": 0.8623188405797102,
+     "precision": 0.4559386973180077,
+     "n_scored": 261,
+     "n_hit": 119,
+     "n_false_alarm": 142,
+     "n_calls": 261,
+     "n_recordings": 48,
+     "calls_on_decoys": 142,
+     "f1_without_decoys": 0.9260700389105059,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       29
+      ],
+      "0.3": [
+       96,
+       90
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.5952753170053847,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2222222222222222,
+    "no_coordination_hours": 18.0
+   },
+   "12": {
+    "baseline_quiet": {
+     "f1": 0.5617647058823529,
+     "recall": 0.7958333333333333,
+     "precision": 0.4340909090909091,
+     "n_scored": 440,
+     "n_hit": 191,
+     "n_false_alarm": 249,
+     "n_calls": 440,
+     "n_recordings": 48,
+     "calls_on_decoys": 249,
+     "f1_without_decoys": 0.8863109048723897,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       101
+      ],
+      "0.3": [
+       96,
+       90
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.611764705882353,
+     "recall": 0.7536231884057971,
+     "precision": 0.5148514851485149,
+     "n_scored": 202,
+     "n_hit": 104,
+     "n_false_alarm": 98,
+     "n_calls": 202,
+     "n_recordings": 48,
+     "calls_on_decoys": 98,
+     "f1_without_decoys": 0.859504132231405,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       21
+      ],
+      "0.3": [
+       96,
+       83
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.586764705882353,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2222222222222222,
+    "no_coordination_hours": 18.0
+   },
+   "15": {
+    "baseline_quiet": {
+     "f1": 0.5008635578583766,
+     "recall": 0.6041666666666666,
+     "precision": 0.4277286135693215,
+     "n_scored": 339,
+     "n_hit": 145,
+     "n_false_alarm": 194,
+     "n_calls": 339,
+     "n_recordings": 48,
+     "calls_on_decoys": 194,
+     "f1_without_decoys": 0.7532467532467533,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       67
+      ],
+      "0.3": [
+       96,
+       78
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5454545454545454,
+     "recall": 0.5434782608695652,
+     "precision": 0.5474452554744526,
+     "n_scored": 137,
+     "n_hit": 75,
+     "n_false_alarm": 62,
+     "n_calls": 137,
+     "n_recordings": 48,
+     "calls_on_decoys": 62,
+     "f1_without_decoys": 0.704225352112676,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       13
+      ],
+      "0.3": [
+       96,
+       62
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.523159051656461,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 18.0
+   },
+   "20": {
+    "baseline_quiet": {
+     "f1": 0.4064665127020785,
+     "recall": 0.36666666666666664,
+     "precision": 0.45595854922279794,
+     "n_scored": 193,
+     "n_hit": 88,
+     "n_false_alarm": 105,
+     "n_calls": 193,
+     "n_recordings": 48,
+     "calls_on_decoys": 105,
+     "f1_without_decoys": 0.5365853658536585,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       32
+      ],
+      "0.3": [
+       96,
+       56
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.3743315508021391,
+     "recall": 0.2536231884057971,
+     "precision": 0.7142857142857143,
+     "n_scored": 49,
+     "n_hit": 35,
+     "n_false_alarm": 14,
+     "n_calls": 49,
+     "n_recordings": 48,
+     "calls_on_decoys": 14,
+     "f1_without_decoys": 0.4046242774566474,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       4
+      ],
+      "0.3": [
+       96,
+       31
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.39039903175210877,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.05555555555555555,
+    "no_coordination_hours": 18.0
+   },
+   "25": {
+    "baseline_quiet": {
+     "f1": 0.31999999999999995,
+     "recall": 0.23333333333333334,
+     "precision": 0.509090909090909,
+     "n_scored": 110,
+     "n_hit": 56,
+     "n_false_alarm": 54,
+     "n_calls": 110,
+     "n_recordings": 48,
+     "calls_on_decoys": 54,
+     "f1_without_decoys": 0.37837837837837834,
+     "recall_by_participation": {
+      "0.203": [
+       144,
+       14
+      ],
+      "0.3": [
+       96,
+       42
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.18987341772151897,
+     "recall": 0.10869565217391304,
+     "precision": 0.75,
+     "n_scored": 20,
+     "n_hit": 15,
+     "n_false_alarm": 5,
+     "n_calls": 20,
+     "n_recordings": 48,
+     "calls_on_decoys": 5,
+     "f1_without_decoys": 0.19607843137254902,
+     "recall_by_participation": {
+      "0.203": [
+       42,
+       2
+      ],
+      "0.3": [
+       96,
+       13
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.2549367088607595,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.0,
+    "no_coordination_hours": 18.0
+   }
+  },
+  "report_half": {
+   "ceiling": {
+    "2": {
+     "baseline_quiet": {
+      "f1": 0.6180371352785146,
+      "recall": 0.9708333333333333,
+      "precision": 0.45330739299610895,
+      "n_scored": 514,
+      "n_hit": 233,
+      "n_false_alarm": 281,
+      "n_calls": 514,
+      "n_recordings": 48,
+      "calls_on_decoys": 280,
+      "f1_without_decoys": 0.9831223628691983,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        138
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.05
+     },
+     "baseline_busy": {
+      "f1": 0.5633270321361058,
+      "recall": 0.9738562091503268,
+      "precision": 0.3962765957446808,
+      "n_scored": 376,
+      "n_hit": 149,
+      "n_false_alarm": 227,
+      "n_calls": 376,
+      "n_recordings": 48,
+      "calls_on_decoys": 227,
+      "f1_without_decoys": 0.9867549668874172,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        54
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5906820837073101,
+     "worst_stretch_calls_per_min": 0.05,
+     "no_coordination_calls_per_hour": 0.6111111111111112,
+     "no_coordination_hours": 18.0
+    },
+    "3": {
+     "baseline_quiet": {
+      "f1": 0.6180371352785146,
+      "recall": 0.9708333333333333,
+      "precision": 0.45330739299610895,
+      "n_scored": 514,
+      "n_hit": 233,
+      "n_false_alarm": 281,
+      "n_calls": 514,
+      "n_recordings": 48,
+      "calls_on_decoys": 280,
+      "f1_without_decoys": 0.9831223628691983,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        138
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.5633270321361058,
+      "recall": 0.9738562091503268,
+      "precision": 0.3962765957446808,
+      "n_scored": 376,
+      "n_hit": 149,
+      "n_false_alarm": 227,
+      "n_calls": 376,
+      "n_recordings": 48,
+      "calls_on_decoys": 227,
+      "f1_without_decoys": 0.9867549668874172,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        54
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5906820837073101,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.6111111111111112,
+     "no_coordination_hours": 18.0
+    },
+    "4": {
+     "baseline_quiet": {
+      "f1": 0.6180371352785146,
+      "recall": 0.9708333333333333,
+      "precision": 0.45330739299610895,
+      "n_scored": 514,
+      "n_hit": 233,
+      "n_false_alarm": 281,
+      "n_calls": 514,
+      "n_recordings": 48,
+      "calls_on_decoys": 280,
+      "f1_without_decoys": 0.9831223628691983,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        138
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.5633270321361058,
+      "recall": 0.9738562091503268,
+      "precision": 0.3962765957446808,
+      "n_scored": 376,
+      "n_hit": 149,
+      "n_false_alarm": 227,
+      "n_calls": 376,
+      "n_recordings": 48,
+      "calls_on_decoys": 227,
+      "f1_without_decoys": 0.9867549668874172,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        54
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5906820837073101,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.6111111111111112,
+     "no_coordination_hours": 18.0
+    },
+    "5": {
+     "baseline_quiet": {
+      "f1": 0.6180371352785146,
+      "recall": 0.9708333333333333,
+      "precision": 0.45330739299610895,
+      "n_scored": 514,
+      "n_hit": 233,
+      "n_false_alarm": 281,
+      "n_calls": 514,
+      "n_recordings": 48,
+      "calls_on_decoys": 280,
+      "f1_without_decoys": 0.9831223628691983,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        138
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.5654648956356736,
+      "recall": 0.9738562091503268,
+      "precision": 0.3983957219251337,
+      "n_scored": 374,
+      "n_hit": 149,
+      "n_false_alarm": 225,
+      "n_calls": 374,
+      "n_recordings": 48,
+      "calls_on_decoys": 225,
+      "f1_without_decoys": 0.9867549668874172,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        54
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5917510154570941,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.6111111111111112,
+     "no_coordination_hours": 18.0
+    },
+    "6": {
+     "baseline_quiet": {
+      "f1": 0.6180371352785146,
+      "recall": 0.9708333333333333,
+      "precision": 0.45330739299610895,
+      "n_scored": 514,
+      "n_hit": 233,
+      "n_false_alarm": 281,
+      "n_calls": 514,
+      "n_recordings": 48,
+      "calls_on_decoys": 280,
+      "f1_without_decoys": 0.9831223628691983,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        138
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.5692307692307692,
+      "recall": 0.9673202614379085,
+      "precision": 0.4032697547683924,
+      "n_scored": 367,
+      "n_hit": 148,
+      "n_false_alarm": 219,
+      "n_calls": 367,
+      "n_recordings": 48,
+      "calls_on_decoys": 219,
+      "f1_without_decoys": 0.9833887043189369,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        53
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5936339522546419,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.5555555555555556,
+     "no_coordination_hours": 18.0
+    },
+    "8": {
+     "baseline_quiet": {
+      "f1": 0.61455525606469,
+      "recall": 0.95,
+      "precision": 0.4541832669322709,
+      "n_scored": 502,
+      "n_hit": 228,
+      "n_false_alarm": 274,
+      "n_calls": 502,
+      "n_recordings": 48,
+      "calls_on_decoys": 273,
+      "f1_without_decoys": 0.9722814498933903,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        133
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.5760649087221095,
+      "recall": 0.9281045751633987,
+      "precision": 0.4176470588235294,
+      "n_scored": 340,
+      "n_hit": 142,
+      "n_false_alarm": 198,
+      "n_calls": 340,
+      "n_recordings": 48,
+      "calls_on_decoys": 198,
+      "f1_without_decoys": 0.9627118644067797,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        49
+       ],
+       "0.3": [
+        96,
+        93
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5953100823933997,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.5,
+     "no_coordination_hours": 18.0
+    },
+    "10": {
+     "baseline_quiet": {
+      "f1": 0.6022408963585434,
+      "recall": 0.8958333333333334,
+      "precision": 0.45358649789029537,
+      "n_scored": 474,
+      "n_hit": 215,
+      "n_false_alarm": 259,
+      "n_calls": 474,
+      "n_recordings": 48,
+      "calls_on_decoys": 258,
+      "f1_without_decoys": 0.9429824561403509,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        120
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.5879732739420935,
+      "recall": 0.8627450980392157,
+      "precision": 0.44594594594594594,
+      "n_scored": 296,
+      "n_hit": 132,
+      "n_false_alarm": 164,
+      "n_calls": 296,
+      "n_recordings": 48,
+      "calls_on_decoys": 164,
+      "f1_without_decoys": 0.9263157894736842,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        42
+       ],
+       "0.3": [
+        96,
+        90
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5951070851503184,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.5,
+     "no_coordination_hours": 18.0
+    },
+    "12": {
+     "baseline_quiet": {
+      "f1": 0.5663716814159292,
+      "recall": 0.8,
+      "precision": 0.4383561643835616,
+      "n_scored": 438,
+      "n_hit": 192,
+      "n_false_alarm": 246,
+      "n_calls": 438,
+      "n_recordings": 48,
+      "calls_on_decoys": 245,
+      "f1_without_decoys": 0.8868360277136259,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        99
+       ],
+       "0.3": [
+        96,
+        93
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.5839793281653747,
+      "recall": 0.738562091503268,
+      "precision": 0.4829059829059829,
+      "n_scored": 234,
+      "n_hit": 113,
+      "n_false_alarm": 121,
+      "n_calls": 234,
+      "n_recordings": 48,
+      "calls_on_decoys": 121,
+      "f1_without_decoys": 0.849624060150376,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        35
+       ],
+       "0.3": [
+        96,
+        78
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5751755047906519,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.3333333333333333,
+     "no_coordination_hours": 18.0
+    },
+    "15": {
+     "baseline_quiet": {
+      "f1": 0.492091388400703,
+      "recall": 0.5833333333333334,
+      "precision": 0.425531914893617,
+      "n_scored": 329,
+      "n_hit": 140,
+      "n_false_alarm": 189,
+      "n_calls": 329,
+      "n_recordings": 48,
+      "calls_on_decoys": 188,
+      "f1_without_decoys": 0.7349081364829397,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        61
+       ],
+       "0.3": [
+        96,
+        79
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.5382059800664452,
+      "recall": 0.5294117647058824,
+      "precision": 0.5472972972972973,
+      "n_scored": 148,
+      "n_hit": 81,
+      "n_false_alarm": 67,
+      "n_calls": 148,
+      "n_recordings": 48,
+      "calls_on_decoys": 67,
+      "f1_without_decoys": 0.6923076923076924,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        22
+       ],
+       "0.3": [
+        96,
+        59
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5151486842335741,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.1111111111111111,
+     "no_coordination_hours": 18.0
+    },
+    "20": {
+     "baseline_quiet": {
+      "f1": 0.41214750542299355,
+      "recall": 0.3958333333333333,
+      "precision": 0.4298642533936652,
+      "n_scored": 221,
+      "n_hit": 95,
+      "n_false_alarm": 126,
+      "n_calls": 221,
+      "n_recordings": 48,
+      "calls_on_decoys": 125,
+      "f1_without_decoys": 0.5654761904761905,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        33
+       ],
+       "0.3": [
+        96,
+        62
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.3524229074889868,
+      "recall": 0.26143790849673204,
+      "precision": 0.5405405405405406,
+      "n_scored": 74,
+      "n_hit": 40,
+      "n_false_alarm": 34,
+      "n_calls": 74,
+      "n_recordings": 48,
+      "calls_on_decoys": 34,
+      "f1_without_decoys": 0.4145077720207254,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        8
+       ],
+       "0.3": [
+        96,
+        32
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.3822852064559902,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.05555555555555555,
+     "no_coordination_hours": 18.0
+    },
+    "25": {
+     "baseline_quiet": {
+      "f1": 0.2978723404255319,
+      "recall": 0.23333333333333334,
+      "precision": 0.4117647058823529,
+      "n_scored": 136,
+      "n_hit": 56,
+      "n_false_alarm": 80,
+      "n_calls": 136,
+      "n_recordings": 48,
+      "calls_on_decoys": 79,
+      "f1_without_decoys": 0.37710437710437705,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        14
+       ],
+       "0.3": [
+        96,
+        42
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.2021276595744681,
+      "recall": 0.12418300653594772,
+      "precision": 0.5428571428571428,
+      "n_scored": 35,
+      "n_hit": 19,
+      "n_false_alarm": 16,
+      "n_calls": 35,
+      "n_recordings": 48,
+      "calls_on_decoys": 16,
+      "f1_without_decoys": 0.22093023255813954,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        2
+       ],
+       "0.3": [
+        96,
+        17
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.25,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 18.0
+    }
+   },
+   "references": {
+    "coact": {
+     "baseline_quiet": {
+      "f1": 0.6189821182943605,
+      "recall": 0.9375,
+      "precision": 0.4620123203285421,
+      "n_scored": 487,
+      "n_hit": 225,
+      "n_false_alarm": 262,
+      "n_calls": 487,
+      "n_recordings": 48,
+      "calls_on_decoys": 262,
+      "f1_without_decoys": 0.967741935483871,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        132
+       ],
+       "0.3": [
+        96,
+        93
+       ]
+      },
+      "stretch_calls_per_min": 0.016666666666666666
+     },
+     "baseline_busy": {
+      "f1": 0.6088794926004228,
+      "recall": 0.9411764705882353,
+      "precision": 0.45,
+      "n_scored": 320,
+      "n_hit": 144,
+      "n_false_alarm": 176,
+      "n_calls": 320,
+      "n_recordings": 48,
+      "calls_on_decoys": 176,
+      "f1_without_decoys": 0.9696969696969697,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        50
+       ],
+       "0.3": [
+        96,
+        94
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.6139308054473916,
+     "worst_stretch_calls_per_min": 0.016666666666666666,
+     "no_coordination_calls_per_hour": 0.1111111111111111,
+     "no_coordination_hours": 18.0
+    },
+    "loco": {
+     "baseline_quiet": {
+      "f1": 0.6225352112676057,
+      "recall": 0.9208333333333333,
+      "precision": 0.4702127659574468,
+      "n_scored": 470,
+      "n_hit": 221,
+      "n_false_alarm": 249,
+      "n_calls": 470,
+      "n_recordings": 48,
+      "calls_on_decoys": 249,
+      "f1_without_decoys": 0.9587852494577006,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        126
+       ],
+       "0.3": [
+        96,
+        95
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.656934306569343,
+      "recall": 0.8823529411764706,
+      "precision": 0.5232558139534884,
+      "n_scored": 258,
+      "n_hit": 135,
+      "n_false_alarm": 123,
+      "n_calls": 258,
+      "n_recordings": 48,
+      "calls_on_decoys": 123,
+      "f1_without_decoys": 0.9375,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        44
+       ],
+       "0.3": [
+        96,
+        91
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.6397347589184743,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 18.0
+    },
+    "count_sliding": {
+     "baseline_quiet": {
+      "f1": 0.6188579017264276,
+      "recall": 0.9708333333333333,
+      "precision": 0.45419103313840153,
+      "n_scored": 513,
+      "n_hit": 233,
+      "n_false_alarm": 280,
+      "n_calls": 513,
+      "n_recordings": 48,
+      "calls_on_decoys": 279,
+      "f1_without_decoys": 0.9831223628691983,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        139
+       ],
+       "0.3": [
+        96,
+        94
+       ]
+      },
+      "stretch_calls_per_min": 0.08333333333333333
+     },
+     "baseline_busy": {
+      "f1": 0.5606060606060606,
+      "recall": 0.9673202614379085,
+      "precision": 0.39466666666666667,
+      "n_scored": 375,
+      "n_hit": 148,
+      "n_false_alarm": 227,
+      "n_calls": 375,
+      "n_recordings": 48,
+      "calls_on_decoys": 227,
+      "f1_without_decoys": 0.9833887043189369,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        54
+       ],
+       "0.3": [
+        96,
+        94
+       ]
+      },
+      "stretch_calls_per_min": 0.05
+     },
+     "mean_f1": 0.589731981166244,
+     "worst_stretch_calls_per_min": 0.08333333333333333,
+     "no_coordination_calls_per_hour": 0.6111111111111112,
+     "no_coordination_hours": 18.0
+    },
+    "stack": {
+     "baseline_quiet": {
+      "f1": 0.6188579017264276,
+      "recall": 0.9708333333333333,
+      "precision": 0.45419103313840153,
+      "n_scored": 513,
+      "n_hit": 233,
+      "n_false_alarm": 280,
+      "n_calls": 513,
+      "n_recordings": 48,
+      "calls_on_decoys": 279,
+      "f1_without_decoys": 0.9831223628691983,
+      "recall_by_participation": {
+       "0.203": [
+        144,
+        139
+       ],
+       "0.3": [
+        96,
+        94
+       ]
+      },
+      "stretch_calls_per_min": 0.08333333333333333
+     },
+     "baseline_busy": {
+      "f1": 0.5112262521588946,
+      "recall": 0.9673202614379085,
+      "precision": 0.3474178403755869,
+      "n_scored": 426,
+      "n_hit": 148,
+      "n_false_alarm": 278,
+      "n_calls": 426,
+      "n_recordings": 48,
+      "calls_on_decoys": 277,
+      "f1_without_decoys": 0.9801324503311258,
+      "recall_by_participation": {
+       "0.203": [
+        57,
+        54
+       ],
+       "0.3": [
+        96,
+        94
+       ]
+      },
+      "stretch_calls_per_min": 0.025
+     },
+     "mean_f1": 0.5650420769426612,
+     "worst_stretch_calls_per_min": 0.08333333333333333,
+     "no_coordination_calls_per_hour": 0.1111111111111111,
+     "no_coordination_hours": 18.0
+    }
+   }
+  },
+  "n_recordings": {
+   "pick": 168,
+   "report": 168
+  }
+ },
+ "slow": {
+  "regimes": [
+   "baseline_quiet",
+   "baseline_busy"
+  ],
+  "limit_calls_per_hour": 1.0,
+  "limit_stretch_calls_per_min": 1.0,
+  "picked_threshold_sec": 2.0,
+  "thresholds_inside_limits_sec": [
+   2.0,
+   3.0,
+   4.0,
+   5.0,
+   6.0,
+   8.0,
+   10.0,
+   12.0,
+   15.0,
+   20.0,
+   25.0
+  ],
+  "window_sec": 2.0,
+  "merge_gap_sec": 3.0,
+  "floors": [
+   3,
+   4,
+   7,
+   8,
+   9,
+   10,
+   11
+  ],
+  "median_seconds_per_recording": 0.08035850524902344,
+  "pick_half": {
+   "2": {
+    "baseline_quiet": {
+     "f1": 0.8241082410824108,
+     "recall": 0.9911242603550295,
+     "precision": 0.7052631578947368,
+     "n_scored": 475,
+     "n_hit": 335,
+     "n_false_alarm": 140,
+     "n_calls": 475,
+     "n_recordings": 24,
+     "calls_on_decoys": 140,
+     "f1_without_decoys": 0.9955423476968795,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       48
+      ],
+      "0.375": [
+       144,
+       143
+      ],
+      "0.63": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.06666666666666667
+    },
+    "baseline_busy": {
+     "f1": 0.8085106382978724,
+     "recall": 0.9895833333333334,
+     "precision": 0.6834532374100719,
+     "n_scored": 417,
+     "n_hit": 285,
+     "n_false_alarm": 132,
+     "n_calls": 417,
+     "n_recordings": 24,
+     "calls_on_decoys": 132,
+     "f1_without_decoys": 0.9947643979057591,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       141
+      ],
+      "0.63": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.06666666666666667
+    },
+    "mean_f1": 0.8163094396901416,
+    "worst_stretch_calls_per_min": 0.06666666666666667,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 9.0
+   },
+   "3": {
+    "baseline_quiet": {
+     "f1": 0.8241082410824108,
+     "recall": 0.9911242603550295,
+     "precision": 0.7052631578947368,
+     "n_scored": 475,
+     "n_hit": 335,
+     "n_false_alarm": 140,
+     "n_calls": 475,
+     "n_recordings": 24,
+     "calls_on_decoys": 140,
+     "f1_without_decoys": 0.9955423476968795,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       48
+      ],
+      "0.375": [
+       144,
+       143
+      ],
+      "0.63": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.06666666666666667
+    },
+    "baseline_busy": {
+     "f1": 0.8085106382978724,
+     "recall": 0.9895833333333334,
+     "precision": 0.6834532374100719,
+     "n_scored": 417,
+     "n_hit": 285,
+     "n_false_alarm": 132,
+     "n_calls": 417,
+     "n_recordings": 24,
+     "calls_on_decoys": 132,
+     "f1_without_decoys": 0.9947643979057591,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       141
+      ],
+      "0.63": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.03333333333333333
+    },
+    "mean_f1": 0.8163094396901416,
+    "worst_stretch_calls_per_min": 0.06666666666666667,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 9.0
+   },
+   "4": {
+    "baseline_quiet": {
+     "f1": 0.8212083847102344,
+     "recall": 0.985207100591716,
+     "precision": 0.7040169133192389,
+     "n_scored": 473,
+     "n_hit": 333,
+     "n_false_alarm": 140,
+     "n_calls": 473,
+     "n_recordings": 24,
+     "calls_on_decoys": 140,
+     "f1_without_decoys": 0.992548435171386,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       46
+      ],
+      "0.375": [
+       144,
+       143
+      ],
+      "0.63": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.05
+    },
+    "baseline_busy": {
+     "f1": 0.8085106382978724,
+     "recall": 0.9895833333333334,
+     "precision": 0.6834532374100719,
+     "n_scored": 417,
+     "n_hit": 285,
+     "n_false_alarm": 132,
+     "n_calls": 417,
+     "n_recordings": 24,
+     "calls_on_decoys": 132,
+     "f1_without_decoys": 0.9947643979057591,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       141
+      ],
+      "0.63": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.8148595115040533,
+    "worst_stretch_calls_per_min": 0.05,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 9.0
+   },
+   "5": {
+    "baseline_quiet": {
+     "f1": 0.8079800498753117,
+     "recall": 0.9585798816568047,
+     "precision": 0.6982758620689655,
+     "n_scored": 464,
+     "n_hit": 324,
+     "n_false_alarm": 140,
+     "n_calls": 464,
+     "n_recordings": 24,
+     "calls_on_decoys": 140,
+     "f1_without_decoys": 0.9788519637462235,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       40
+      ],
+      "0.375": [
+       144,
+       140
+      ],
+      "0.63": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.016666666666666666
+    },
+    "baseline_busy": {
+     "f1": 0.8096590909090909,
+     "recall": 0.9895833333333334,
+     "precision": 0.6850961538461539,
+     "n_scored": 416,
+     "n_hit": 285,
+     "n_false_alarm": 131,
+     "n_calls": 416,
+     "n_recordings": 24,
+     "calls_on_decoys": 131,
+     "f1_without_decoys": 0.9947643979057591,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       141
+      ],
+      "0.63": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.8088195703922013,
+    "worst_stretch_calls_per_min": 0.016666666666666666,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 9.0
+   },
+   "6": {
+    "baseline_quiet": {
+     "f1": 0.7806122448979591,
+     "recall": 0.9053254437869822,
+     "precision": 0.6860986547085202,
+     "n_scored": 446,
+     "n_hit": 306,
+     "n_false_alarm": 140,
+     "n_calls": 446,
+     "n_recordings": 24,
+     "calls_on_decoys": 140,
+     "f1_without_decoys": 0.9503105590062112,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       35
+      ],
+      "0.375": [
+       144,
+       129
+      ],
+      "0.63": [
+       144,
+       142
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.7942446043165468,
+     "recall": 0.9583333333333334,
+     "precision": 0.6781326781326781,
+     "n_scored": 407,
+     "n_hit": 276,
+     "n_false_alarm": 131,
+     "n_calls": 407,
+     "n_recordings": 24,
+     "calls_on_decoys": 131,
+     "f1_without_decoys": 0.9787234042553191,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       134
+      ],
+      "0.63": [
+       144,
+       142
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.7874284246072529,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 9.0
+   },
+   "8": {
+    "baseline_quiet": {
+     "f1": 0.7343124165554072,
+     "recall": 0.8136094674556213,
+     "precision": 0.6690997566909975,
+     "n_scored": 411,
+     "n_hit": 275,
+     "n_false_alarm": 136,
+     "n_calls": 411,
+     "n_recordings": 24,
+     "calls_on_decoys": 136,
+     "f1_without_decoys": 0.8972267536704731,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       24
+      ],
+      "0.375": [
+       144,
+       111
+      ],
+      "0.63": [
+       144,
+       140
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.7556221889055472,
+     "recall": 0.875,
+     "precision": 0.6649076517150396,
+     "n_scored": 379,
+     "n_hit": 252,
+     "n_false_alarm": 127,
+     "n_calls": 379,
+     "n_recordings": 24,
+     "calls_on_decoys": 127,
+     "f1_without_decoys": 0.9333333333333333,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       111
+      ],
+      "0.63": [
+       144,
+       141
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.7449673027304773,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 9.0
+   },
+   "10": {
+    "baseline_quiet": {
+     "f1": 0.692090395480226,
+     "recall": 0.7248520710059172,
+     "precision": 0.6621621621621622,
+     "n_scored": 370,
+     "n_hit": 245,
+     "n_false_alarm": 125,
+     "n_calls": 370,
+     "n_recordings": 24,
+     "calls_on_decoys": 125,
+     "f1_without_decoys": 0.8404802744425386,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       19
+      ],
+      "0.375": [
+       144,
+       96
+      ],
+      "0.63": [
+       144,
+       130
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.684887459807074,
+     "recall": 0.7395833333333334,
+     "precision": 0.6377245508982036,
+     "n_scored": 334,
+     "n_hit": 213,
+     "n_false_alarm": 121,
+     "n_calls": 334,
+     "n_recordings": 24,
+     "calls_on_decoys": 121,
+     "f1_without_decoys": 0.8502994011976047,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       82
+      ],
+      "0.63": [
+       144,
+       131
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.68848892764365,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 9.0
+   },
+   "12": {
+    "baseline_quiet": {
+     "f1": 0.6417910447761194,
+     "recall": 0.636094674556213,
+     "precision": 0.6475903614457831,
+     "n_scored": 332,
+     "n_hit": 215,
+     "n_false_alarm": 117,
+     "n_calls": 332,
+     "n_recordings": 24,
+     "calls_on_decoys": 117,
+     "f1_without_decoys": 0.7775768535262206,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       14
+      ],
+      "0.375": [
+       144,
+       79
+      ],
+      "0.63": [
+       144,
+       122
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5985915492957746,
+     "recall": 0.5902777777777778,
+     "precision": 0.6071428571428571,
+     "n_scored": 280,
+     "n_hit": 170,
+     "n_false_alarm": 110,
+     "n_calls": 280,
+     "n_recordings": 24,
+     "calls_on_decoys": 110,
+     "f1_without_decoys": 0.7423580786026202,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       58
+      ],
+      "0.63": [
+       144,
+       112
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.620191297035947,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 9.0
+   },
+   "15": {
+    "baseline_quiet": {
+     "f1": 0.5136986301369864,
+     "recall": 0.4437869822485207,
+     "precision": 0.6097560975609756,
+     "n_scored": 246,
+     "n_hit": 150,
+     "n_false_alarm": 96,
+     "n_calls": 246,
+     "n_recordings": 24,
+     "calls_on_decoys": 96,
+     "f1_without_decoys": 0.6147540983606558,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       1
+      ],
+      "0.375": [
+       144,
+       51
+      ],
+      "0.63": [
+       144,
+       98
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5,
+     "recall": 0.4270833333333333,
+     "precision": 0.6029411764705882,
+     "n_scored": 204,
+     "n_hit": 123,
+     "n_false_alarm": 81,
+     "n_calls": 204,
+     "n_recordings": 24,
+     "calls_on_decoys": 81,
+     "f1_without_decoys": 0.5985401459854015,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       36
+      ],
+      "0.63": [
+       144,
+       87
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.5068493150684932,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.0,
+    "no_coordination_hours": 9.0
+   },
+   "20": {
+    "baseline_quiet": {
+     "f1": 0.32727272727272727,
+     "recall": 0.23964497041420119,
+     "precision": 0.5159235668789809,
+     "n_scored": 157,
+     "n_hit": 81,
+     "n_false_alarm": 76,
+     "n_calls": 157,
+     "n_recordings": 24,
+     "calls_on_decoys": 76,
+     "f1_without_decoys": 0.38663484486873506,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       1
+      ],
+      "0.375": [
+       144,
+       23
+      ],
+      "0.63": [
+       144,
+       57
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.3095823095823096,
+     "recall": 0.21875,
+     "precision": 0.5294117647058824,
+     "n_scored": 119,
+     "n_hit": 63,
+     "n_false_alarm": 56,
+     "n_calls": 119,
+     "n_recordings": 24,
+     "calls_on_decoys": 56,
+     "f1_without_decoys": 0.358974358974359,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       11
+      ],
+      "0.63": [
+       144,
+       52
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.31842751842751843,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.0,
+    "no_coordination_hours": 9.0
+   },
+   "25": {
+    "baseline_quiet": {
+     "f1": 0.2059496567505721,
+     "recall": 0.13313609467455623,
+     "precision": 0.45454545454545453,
+     "n_scored": 99,
+     "n_hit": 45,
+     "n_false_alarm": 54,
+     "n_calls": 99,
+     "n_recordings": 24,
+     "calls_on_decoys": 54,
+     "f1_without_decoys": 0.23498694516971283,
+     "recall_by_participation": {
+      "0.21": [
+       50,
+       1
+      ],
+      "0.375": [
+       144,
+       13
+      ],
+      "0.63": [
+       144,
+       31
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.1391304347826087,
+     "recall": 0.08333333333333333,
+     "precision": 0.42105263157894735,
+     "n_scored": 57,
+     "n_hit": 24,
+     "n_false_alarm": 33,
+     "n_calls": 57,
+     "n_recordings": 24,
+     "calls_on_decoys": 33,
+     "f1_without_decoys": 0.15384615384615385,
+     "recall_by_participation": {
+      "0.375": [
+       144,
+       3
+      ],
+      "0.63": [
+       144,
+       21
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.1725400457665904,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.0,
+    "no_coordination_hours": 9.0
+   }
+  },
+  "report_half": {
+   "ceiling": {
+    "2": {
+     "baseline_quiet": {
+      "f1": 0.834158415841584,
+      "recall": 0.9970414201183432,
+      "precision": 0.7170212765957447,
+      "n_scored": 470,
+      "n_hit": 337,
+      "n_false_alarm": 133,
+      "n_calls": 470,
+      "n_recordings": 24,
+      "calls_on_decoys": 133,
+      "f1_without_decoys": 0.9985185185185186,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        49
+       ],
+       "0.375": [
+        144,
+        144
+       ],
+       "0.63": [
+        144,
+        144
+       ]
+      },
+      "stretch_calls_per_min": 0.03333333333333333
+     },
+     "baseline_busy": {
+      "f1": 0.8162162162162161,
+      "recall": 0.9966996699669967,
+      "precision": 0.6910755148741419,
+      "n_scored": 437,
+      "n_hit": 302,
+      "n_false_alarm": 135,
+      "n_calls": 437,
+      "n_recordings": 24,
+      "calls_on_decoys": 135,
+      "f1_without_decoys": 0.9983471074380166,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        15
+       ],
+       "0.375": [
+        144,
+        144
+       ],
+       "0.63": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.05
+     },
+     "mean_f1": 0.8251873160289,
+     "worst_stretch_calls_per_min": 0.05,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "3": {
+     "baseline_quiet": {
+      "f1": 0.834158415841584,
+      "recall": 0.9970414201183432,
+      "precision": 0.7170212765957447,
+      "n_scored": 470,
+      "n_hit": 337,
+      "n_false_alarm": 133,
+      "n_calls": 470,
+      "n_recordings": 24,
+      "calls_on_decoys": 133,
+      "f1_without_decoys": 0.9985185185185186,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        49
+       ],
+       "0.375": [
+        144,
+        144
+       ],
+       "0.63": [
+        144,
+        144
+       ]
+      },
+      "stretch_calls_per_min": 0.016666666666666666
+     },
+     "baseline_busy": {
+      "f1": 0.8146143437077131,
+      "recall": 0.9933993399339934,
+      "precision": 0.6903669724770642,
+      "n_scored": 436,
+      "n_hit": 301,
+      "n_false_alarm": 135,
+      "n_calls": 436,
+      "n_recordings": 24,
+      "calls_on_decoys": 135,
+      "f1_without_decoys": 0.9966887417218543,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        15
+       ],
+       "0.375": [
+        144,
+        143
+       ],
+       "0.63": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.016666666666666666
+     },
+     "mean_f1": 0.8243863797746486,
+     "worst_stretch_calls_per_min": 0.016666666666666666,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "4": {
+     "baseline_quiet": {
+      "f1": 0.834158415841584,
+      "recall": 0.9970414201183432,
+      "precision": 0.7170212765957447,
+      "n_scored": 470,
+      "n_hit": 337,
+      "n_false_alarm": 133,
+      "n_calls": 470,
+      "n_recordings": 24,
+      "calls_on_decoys": 133,
+      "f1_without_decoys": 0.9985185185185186,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        49
+       ],
+       "0.375": [
+        144,
+        144
+       ],
+       "0.63": [
+        144,
+        144
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.8163265306122449,
+      "recall": 0.9900990099009901,
+      "precision": 0.6944444444444444,
+      "n_scored": 432,
+      "n_hit": 300,
+      "n_false_alarm": 132,
+      "n_calls": 432,
+      "n_recordings": 24,
+      "calls_on_decoys": 132,
+      "f1_without_decoys": 0.9950248756218906,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        15
+       ],
+       "0.375": [
+        144,
+        142
+       ],
+       "0.63": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.016666666666666666
+     },
+     "mean_f1": 0.8252424732269145,
+     "worst_stretch_calls_per_min": 0.016666666666666666,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "5": {
+     "baseline_quiet": {
+      "f1": 0.8283582089552238,
+      "recall": 0.985207100591716,
+      "precision": 0.7145922746781116,
+      "n_scored": 466,
+      "n_hit": 333,
+      "n_false_alarm": 133,
+      "n_calls": 466,
+      "n_recordings": 24,
+      "calls_on_decoys": 133,
+      "f1_without_decoys": 0.992548435171386,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        46
+       ],
+       "0.375": [
+        144,
+        143
+       ],
+       "0.63": [
+        144,
+        144
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.815934065934066,
+      "recall": 0.9801980198019802,
+      "precision": 0.6988235294117647,
+      "n_scored": 425,
+      "n_hit": 297,
+      "n_false_alarm": 128,
+      "n_calls": 425,
+      "n_recordings": 24,
+      "calls_on_decoys": 128,
+      "f1_without_decoys": 0.99,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        15
+       ],
+       "0.375": [
+        144,
+        139
+       ],
+       "0.63": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.016666666666666666
+     },
+     "mean_f1": 0.8221461374446449,
+     "worst_stretch_calls_per_min": 0.016666666666666666,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "6": {
+     "baseline_quiet": {
+      "f1": 0.8081321473951716,
+      "recall": 0.9408284023668639,
+      "precision": 0.7082405345211581,
+      "n_scored": 449,
+      "n_hit": 318,
+      "n_false_alarm": 131,
+      "n_calls": 449,
+      "n_recordings": 24,
+      "calls_on_decoys": 131,
+      "f1_without_decoys": 0.9695121951219512,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        43
+       ],
+       "0.375": [
+        144,
+        131
+       ],
+       "0.63": [
+        144,
+        144
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.8016759776536312,
+      "recall": 0.9471947194719472,
+      "precision": 0.6949152542372882,
+      "n_scored": 413,
+      "n_hit": 287,
+      "n_false_alarm": 126,
+      "n_calls": 413,
+      "n_recordings": 24,
+      "calls_on_decoys": 126,
+      "f1_without_decoys": 0.9728813559322034,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        14
+       ],
+       "0.375": [
+        144,
+        130
+       ],
+       "0.63": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.8049040625244014,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "8": {
+     "baseline_quiet": {
+      "f1": 0.746268656716418,
+      "recall": 0.8136094674556213,
+      "precision": 0.6892230576441103,
+      "n_scored": 399,
+      "n_hit": 275,
+      "n_false_alarm": 124,
+      "n_calls": 399,
+      "n_recordings": 24,
+      "calls_on_decoys": 124,
+      "f1_without_decoys": 0.8972267536704731,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        27
+       ],
+       "0.375": [
+        144,
+        110
+       ],
+       "0.63": [
+        144,
+        138
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.7548291233283804,
+      "recall": 0.8382838283828383,
+      "precision": 0.6864864864864865,
+      "n_scored": 370,
+      "n_hit": 254,
+      "n_false_alarm": 116,
+      "n_calls": 370,
+      "n_recordings": 24,
+      "calls_on_decoys": 116,
+      "f1_without_decoys": 0.9120287253141831,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        13
+       ],
+       "0.375": [
+        144,
+        103
+       ],
+       "0.63": [
+        144,
+        138
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.7505488900223991,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "10": {
+     "baseline_quiet": {
+      "f1": 0.6753246753246753,
+      "recall": 0.6923076923076923,
+      "precision": 0.6591549295774648,
+      "n_scored": 355,
+      "n_hit": 234,
+      "n_false_alarm": 121,
+      "n_calls": 355,
+      "n_recordings": 24,
+      "calls_on_decoys": 121,
+      "f1_without_decoys": 0.8181818181818181,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        21
+       ],
+       "0.375": [
+        144,
+        88
+       ],
+       "0.63": [
+        144,
+        125
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.6847133757961784,
+      "recall": 0.7095709570957096,
+      "precision": 0.6615384615384615,
+      "n_scored": 325,
+      "n_hit": 215,
+      "n_false_alarm": 110,
+      "n_calls": 325,
+      "n_recordings": 24,
+      "calls_on_decoys": 110,
+      "f1_without_decoys": 0.8301158301158301,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        9
+       ],
+       "0.375": [
+        144,
+        79
+       ],
+       "0.63": [
+        144,
+        127
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.6800190255604268,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "12": {
+     "baseline_quiet": {
+      "f1": 0.6274509803921569,
+      "recall": 0.6153846153846154,
+      "precision": 0.64,
+      "n_scored": 325,
+      "n_hit": 208,
+      "n_false_alarm": 117,
+      "n_calls": 325,
+      "n_recordings": 24,
+      "calls_on_decoys": 117,
+      "f1_without_decoys": 0.761904761904762,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        17
+       ],
+       "0.375": [
+        144,
+        73
+       ],
+       "0.63": [
+        144,
+        118
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.6192893401015228,
+      "recall": 0.6039603960396039,
+      "precision": 0.6354166666666666,
+      "n_scored": 288,
+      "n_hit": 183,
+      "n_false_alarm": 105,
+      "n_calls": 288,
+      "n_recordings": 24,
+      "calls_on_decoys": 105,
+      "f1_without_decoys": 0.7530864197530863,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        4
+       ],
+       "0.375": [
+        144,
+        64
+       ],
+       "0.63": [
+        144,
+        115
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.6233701602468398,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "15": {
+     "baseline_quiet": {
+      "f1": 0.5333333333333333,
+      "recall": 0.46153846153846156,
+      "precision": 0.631578947368421,
+      "n_scored": 247,
+      "n_hit": 156,
+      "n_false_alarm": 91,
+      "n_calls": 247,
+      "n_recordings": 24,
+      "calls_on_decoys": 91,
+      "f1_without_decoys": 0.631578947368421,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        12
+       ],
+       "0.375": [
+        144,
+        48
+       ],
+       "0.63": [
+        144,
+        96
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.4894837476099426,
+      "recall": 0.42244224422442245,
+      "precision": 0.5818181818181818,
+      "n_scored": 220,
+      "n_hit": 128,
+      "n_false_alarm": 92,
+      "n_calls": 220,
+      "n_recordings": 24,
+      "calls_on_decoys": 92,
+      "f1_without_decoys": 0.5939675174013921,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        1
+       ],
+       "0.375": [
+        144,
+        36
+       ],
+       "0.63": [
+        144,
+        91
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.511408540471638,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "20": {
+     "baseline_quiet": {
+      "f1": 0.3548387096774193,
+      "recall": 0.2603550295857988,
+      "precision": 0.5569620253164557,
+      "n_scored": 158,
+      "n_hit": 88,
+      "n_false_alarm": 70,
+      "n_calls": 158,
+      "n_recordings": 24,
+      "calls_on_decoys": 70,
+      "f1_without_decoys": 0.4131455399061033,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        8
+       ],
+       "0.375": [
+        144,
+        16
+       ],
+       "0.63": [
+        144,
+        64
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.31018518518518523,
+      "recall": 0.22112211221122113,
+      "precision": 0.5193798449612403,
+      "n_scored": 129,
+      "n_hit": 67,
+      "n_false_alarm": 62,
+      "n_calls": 129,
+      "n_recordings": 24,
+      "calls_on_decoys": 62,
+      "f1_without_decoys": 0.36216216216216224,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        0
+       ],
+       "0.375": [
+        144,
+        13
+       ],
+       "0.63": [
+        144,
+        54
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.3325119474313023,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "25": {
+     "baseline_quiet": {
+      "f1": 0.2288329519450801,
+      "recall": 0.14792899408284024,
+      "precision": 0.5050505050505051,
+      "n_scored": 99,
+      "n_hit": 50,
+      "n_false_alarm": 49,
+      "n_calls": 99,
+      "n_recordings": 24,
+      "calls_on_decoys": 49,
+      "f1_without_decoys": 0.25773195876288657,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        3
+       ],
+       "0.375": [
+        144,
+        4
+       ],
+       "0.63": [
+        144,
+        43
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.1942257217847769,
+      "recall": 0.12211221122112212,
+      "precision": 0.47435897435897434,
+      "n_scored": 78,
+      "n_hit": 37,
+      "n_false_alarm": 41,
+      "n_calls": 78,
+      "n_recordings": 24,
+      "calls_on_decoys": 41,
+      "f1_without_decoys": 0.21764705882352942,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        0
+       ],
+       "0.375": [
+        144,
+        3
+       ],
+       "0.63": [
+        144,
+        34
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.2115293368649285,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    }
+   },
+   "references": {
+    "coact": {
+     "baseline_quiet": {
+      "f1": 0.7916666666666667,
+      "recall": 0.8994082840236687,
+      "precision": 0.7069767441860465,
+      "n_scored": 430,
+      "n_hit": 304,
+      "n_false_alarm": 126,
+      "n_calls": 430,
+      "n_recordings": 24,
+      "calls_on_decoys": 126,
+      "f1_without_decoys": 0.9470404984423676,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        43
+       ],
+       "0.375": [
+        144,
+        129
+       ],
+       "0.63": [
+        144,
+        132
+       ]
+      },
+      "stretch_calls_per_min": 0.03333333333333333
+     },
+     "baseline_busy": {
+      "f1": 0.7875354107648725,
+      "recall": 0.9174917491749175,
+      "precision": 0.6898263027295285,
+      "n_scored": 403,
+      "n_hit": 278,
+      "n_false_alarm": 125,
+      "n_calls": 403,
+      "n_recordings": 24,
+      "calls_on_decoys": 125,
+      "f1_without_decoys": 0.9569707401032702,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        14
+       ],
+       "0.375": [
+        144,
+        131
+       ],
+       "0.63": [
+        144,
+        133
+       ]
+      },
+      "stretch_calls_per_min": 0.05
+     },
+     "mean_f1": 0.7896010387157697,
+     "worst_stretch_calls_per_min": 0.05,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "loco": {
+     "baseline_quiet": {
+      "f1": 0.834158415841584,
+      "recall": 0.9970414201183432,
+      "precision": 0.7170212765957447,
+      "n_scored": 470,
+      "n_hit": 337,
+      "n_false_alarm": 133,
+      "n_calls": 470,
+      "n_recordings": 24,
+      "calls_on_decoys": 133,
+      "f1_without_decoys": 0.9985185185185186,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        49
+       ],
+       "0.375": [
+        144,
+        144
+       ],
+       "0.63": [
+        144,
+        144
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.815114709851552,
+      "recall": 0.9966996699669967,
+      "precision": 0.6894977168949772,
+      "n_scored": 438,
+      "n_hit": 302,
+      "n_false_alarm": 136,
+      "n_calls": 438,
+      "n_recordings": 24,
+      "calls_on_decoys": 136,
+      "f1_without_decoys": 0.9983471074380166,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        15
+       ],
+       "0.375": [
+        144,
+        144
+       ],
+       "0.63": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.8246365628465679,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "count_sliding": {
+     "baseline_quiet": {
+      "f1": 0.8351920693928129,
+      "recall": 0.9970414201183432,
+      "precision": 0.7185501066098081,
+      "n_scored": 469,
+      "n_hit": 337,
+      "n_false_alarm": 132,
+      "n_calls": 469,
+      "n_recordings": 24,
+      "calls_on_decoys": 132,
+      "f1_without_decoys": 0.9985185185185186,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        50
+       ],
+       "0.375": [
+        144,
+        144
+       ],
+       "0.63": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.03333333333333333
+     },
+     "baseline_busy": {
+      "f1": 0.8130081300813008,
+      "recall": 0.9900990099009901,
+      "precision": 0.6896551724137931,
+      "n_scored": 435,
+      "n_hit": 300,
+      "n_false_alarm": 135,
+      "n_calls": 435,
+      "n_recordings": 24,
+      "calls_on_decoys": 135,
+      "f1_without_decoys": 0.9950248756218906,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        15
+       ],
+       "0.375": [
+        144,
+        143
+       ],
+       "0.63": [
+        144,
+        142
+       ]
+      },
+      "stretch_calls_per_min": 0.05
+     },
+     "mean_f1": 0.8241000997370569,
+     "worst_stretch_calls_per_min": 0.05,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "stack": {
+     "baseline_quiet": {
+      "f1": 0.834158415841584,
+      "recall": 0.9970414201183432,
+      "precision": 0.7170212765957447,
+      "n_scored": 470,
+      "n_hit": 337,
+      "n_false_alarm": 133,
+      "n_calls": 470,
+      "n_recordings": 24,
+      "calls_on_decoys": 133,
+      "f1_without_decoys": 0.9985185185185186,
+      "recall_by_participation": {
+       "0.21": [
+        50,
+        50
+       ],
+       "0.375": [
+        144,
+        144
+       ],
+       "0.63": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.8135135135135135,
+      "recall": 0.9933993399339934,
+      "precision": 0.6887871853546911,
+      "n_scored": 437,
+      "n_hit": 301,
+      "n_false_alarm": 136,
+      "n_calls": 437,
+      "n_recordings": 24,
+      "calls_on_decoys": 136,
+      "f1_without_decoys": 0.9966887417218543,
+      "recall_by_participation": {
+       "0.21": [
+        15,
+        15
+       ],
+       "0.375": [
+        144,
+        143
+       ],
+       "0.63": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.03333333333333333
+     },
+     "mean_f1": 0.8238359646775488,
+     "worst_stretch_calls_per_min": 0.03333333333333333,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    }
+   }
+  },
+  "n_recordings": {
+   "pick": 84,
+   "report": 84
+  }
+ },
+ "combined": {
+  "regimes": [
+   "baseline_quiet",
+   "baseline_busy"
+  ],
+  "limit_calls_per_hour": 1.0,
+  "limit_stretch_calls_per_min": 1.0,
+  "picked_threshold_sec": 2.0,
+  "thresholds_inside_limits_sec": [
+   2.0,
+   3.0,
+   4.0,
+   5.0,
+   6.0,
+   8.0,
+   10.0,
+   12.0,
+   15.0,
+   20.0,
+   25.0
+  ],
+  "window_sec": 2.0,
+  "merge_gap_sec": 3.0,
+  "floors": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   18,
+   19,
+   20
+  ],
+  "median_seconds_per_recording": 0.1587754487991333,
+  "pick_half": {
+   "2": {
+    "baseline_quiet": {
+     "f1": 0.8211920529801324,
+     "recall": 0.9935897435897436,
+     "precision": 0.6997742663656885,
+     "n_scored": 443,
+     "n_hit": 310,
+     "n_false_alarm": 133,
+     "n_calls": 443,
+     "n_recordings": 24,
+     "calls_on_decoys": 133,
+     "f1_without_decoys": 0.9967845659163987,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       168
+      ],
+      "0.4": [
+       144,
+       142
+      ]
+     },
+     "stretch_calls_per_min": 0.03333333333333333
+    },
+    "baseline_busy": {
+     "f1": 0.7432150313152402,
+     "recall": 0.994413407821229,
+     "precision": 0.5933333333333334,
+     "n_scored": 300,
+     "n_hit": 178,
+     "n_false_alarm": 122,
+     "n_calls": 300,
+     "n_recordings": 24,
+     "calls_on_decoys": 122,
+     "f1_without_decoys": 0.9971988795518207,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       34
+      ],
+      "0.4": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.03333333333333333
+    },
+    "mean_f1": 0.7822035421476863,
+    "worst_stretch_calls_per_min": 0.03333333333333333,
+    "no_coordination_calls_per_hour": 0.2222222222222222,
+    "no_coordination_hours": 9.0
+   },
+   "3": {
+    "baseline_quiet": {
+     "f1": 0.8211920529801324,
+     "recall": 0.9935897435897436,
+     "precision": 0.6997742663656885,
+     "n_scored": 443,
+     "n_hit": 310,
+     "n_false_alarm": 133,
+     "n_calls": 443,
+     "n_recordings": 24,
+     "calls_on_decoys": 133,
+     "f1_without_decoys": 0.9967845659163987,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       168
+      ],
+      "0.4": [
+       144,
+       142
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.7432150313152402,
+     "recall": 0.994413407821229,
+     "precision": 0.5933333333333334,
+     "n_scored": 300,
+     "n_hit": 178,
+     "n_false_alarm": 122,
+     "n_calls": 300,
+     "n_recordings": 24,
+     "calls_on_decoys": 122,
+     "f1_without_decoys": 0.9971988795518207,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       34
+      ],
+      "0.4": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.7822035421476863,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2222222222222222,
+    "no_coordination_hours": 9.0
+   },
+   "4": {
+    "baseline_quiet": {
+     "f1": 0.8211920529801324,
+     "recall": 0.9935897435897436,
+     "precision": 0.6997742663656885,
+     "n_scored": 443,
+     "n_hit": 310,
+     "n_false_alarm": 133,
+     "n_calls": 443,
+     "n_recordings": 24,
+     "calls_on_decoys": 133,
+     "f1_without_decoys": 0.9967845659163987,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       168
+      ],
+      "0.4": [
+       144,
+       142
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.7432150313152402,
+     "recall": 0.994413407821229,
+     "precision": 0.5933333333333334,
+     "n_scored": 300,
+     "n_hit": 178,
+     "n_false_alarm": 122,
+     "n_calls": 300,
+     "n_recordings": 24,
+     "calls_on_decoys": 122,
+     "f1_without_decoys": 0.9971988795518207,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       34
+      ],
+      "0.4": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.7822035421476863,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2222222222222222,
+    "no_coordination_hours": 9.0
+   },
+   "5": {
+    "baseline_quiet": {
+     "f1": 0.8133333333333332,
+     "recall": 0.9775641025641025,
+     "precision": 0.6963470319634704,
+     "n_scored": 438,
+     "n_hit": 305,
+     "n_false_alarm": 133,
+     "n_calls": 438,
+     "n_recordings": 24,
+     "calls_on_decoys": 133,
+     "f1_without_decoys": 0.9886547811993517,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       163
+      ],
+      "0.4": [
+       144,
+       142
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.7478991596638656,
+     "recall": 0.994413407821229,
+     "precision": 0.5993265993265994,
+     "n_scored": 297,
+     "n_hit": 178,
+     "n_false_alarm": 119,
+     "n_calls": 297,
+     "n_recordings": 24,
+     "calls_on_decoys": 119,
+     "f1_without_decoys": 0.9971988795518207,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       34
+      ],
+      "0.4": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.7806162464985994,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2222222222222222,
+    "no_coordination_hours": 9.0
+   },
+   "6": {
+    "baseline_quiet": {
+     "f1": 0.8005390835579514,
+     "recall": 0.9519230769230769,
+     "precision": 0.6906976744186046,
+     "n_scored": 430,
+     "n_hit": 297,
+     "n_false_alarm": 133,
+     "n_calls": 430,
+     "n_recordings": 24,
+     "calls_on_decoys": 133,
+     "f1_without_decoys": 0.9753694581280787,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       155
+      ],
+      "0.4": [
+       144,
+       142
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.7521739130434782,
+     "recall": 0.9664804469273743,
+     "precision": 0.6156583629893239,
+     "n_scored": 281,
+     "n_hit": 173,
+     "n_false_alarm": 108,
+     "n_calls": 281,
+     "n_recordings": 24,
+     "calls_on_decoys": 108,
+     "f1_without_decoys": 0.9829545454545454,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       29
+      ],
+      "0.4": [
+       144,
+       144
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.7763564983007148,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2222222222222222,
+    "no_coordination_hours": 9.0
+   },
+   "8": {
+    "baseline_quiet": {
+     "f1": 0.7356321839080459,
+     "recall": 0.8205128205128205,
+     "precision": 0.6666666666666666,
+     "n_scored": 384,
+     "n_hit": 256,
+     "n_false_alarm": 128,
+     "n_calls": 384,
+     "n_recordings": 24,
+     "calls_on_decoys": 128,
+     "f1_without_decoys": 0.9014084507042254,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       116
+      ],
+      "0.4": [
+       144,
+       140
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.7055837563451777,
+     "recall": 0.776536312849162,
+     "precision": 0.6465116279069767,
+     "n_scored": 215,
+     "n_hit": 139,
+     "n_false_alarm": 76,
+     "n_calls": 215,
+     "n_recordings": 24,
+     "calls_on_decoys": 76,
+     "f1_without_decoys": 0.8742138364779874,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       19
+      ],
+      "0.4": [
+       144,
+       120
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.7206079701266117,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.2222222222222222,
+    "no_coordination_hours": 9.0
+   },
+   "10": {
+    "baseline_quiet": {
+     "f1": 0.6417445482866043,
+     "recall": 0.6602564102564102,
+     "precision": 0.6242424242424243,
+     "n_scored": 330,
+     "n_hit": 206,
+     "n_false_alarm": 124,
+     "n_calls": 330,
+     "n_recordings": 24,
+     "calls_on_decoys": 124,
+     "f1_without_decoys": 0.7953667953667954,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       76
+      ],
+      "0.4": [
+       144,
+       130
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.639240506329114,
+     "recall": 0.5642458100558659,
+     "precision": 0.7372262773722628,
+     "n_scored": 137,
+     "n_hit": 101,
+     "n_false_alarm": 36,
+     "n_calls": 137,
+     "n_recordings": 24,
+     "calls_on_decoys": 36,
+     "f1_without_decoys": 0.7214285714285714,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       11
+      ],
+      "0.4": [
+       144,
+       90
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.6404925273078592,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.1111111111111111,
+    "no_coordination_hours": 9.0
+   },
+   "12": {
+    "baseline_quiet": {
+     "f1": 0.5824915824915826,
+     "recall": 0.5544871794871795,
+     "precision": 0.6134751773049646,
+     "n_scored": 282,
+     "n_hit": 173,
+     "n_false_alarm": 109,
+     "n_calls": 282,
+     "n_recordings": 24,
+     "calls_on_decoys": 109,
+     "f1_without_decoys": 0.7134020618556701,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       54
+      ],
+      "0.4": [
+       144,
+       119
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.5309090909090909,
+     "recall": 0.40782122905027934,
+     "precision": 0.7604166666666666,
+     "n_scored": 96,
+     "n_hit": 73,
+     "n_false_alarm": 23,
+     "n_calls": 96,
+     "n_recordings": 24,
+     "calls_on_decoys": 23,
+     "f1_without_decoys": 0.5793650793650793,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       4
+      ],
+      "0.4": [
+       144,
+       69
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.5567003367003367,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.0,
+    "no_coordination_hours": 9.0
+   },
+   "15": {
+    "baseline_quiet": {
+     "f1": 0.448,
+     "recall": 0.358974358974359,
+     "precision": 0.5957446808510638,
+     "n_scored": 188,
+     "n_hit": 112,
+     "n_false_alarm": 76,
+     "n_calls": 188,
+     "n_recordings": 24,
+     "calls_on_decoys": 76,
+     "f1_without_decoys": 0.5283018867924528,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       22
+      ],
+      "0.4": [
+       144,
+       90
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.2429906542056075,
+     "recall": 0.1452513966480447,
+     "precision": 0.7428571428571429,
+     "n_scored": 35,
+     "n_hit": 26,
+     "n_false_alarm": 9,
+     "n_calls": 35,
+     "n_recordings": 24,
+     "calls_on_decoys": 9,
+     "f1_without_decoys": 0.2536585365853659,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       1
+      ],
+      "0.4": [
+       144,
+       25
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.34549532710280373,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.0,
+    "no_coordination_hours": 9.0
+   },
+   "20": {
+    "baseline_quiet": {
+     "f1": 0.2660332541567696,
+     "recall": 0.1794871794871795,
+     "precision": 0.5137614678899083,
+     "n_scored": 109,
+     "n_hit": 56,
+     "n_false_alarm": 53,
+     "n_calls": 109,
+     "n_recordings": 24,
+     "calls_on_decoys": 53,
+     "f1_without_decoys": 0.30434782608695654,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       8
+      ],
+      "0.4": [
+       144,
+       48
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.11518324607329843,
+     "recall": 0.061452513966480445,
+     "precision": 0.9166666666666666,
+     "n_scored": 12,
+     "n_hit": 11,
+     "n_false_alarm": 1,
+     "n_calls": 12,
+     "n_recordings": 24,
+     "calls_on_decoys": 1,
+     "f1_without_decoys": 0.11578947368421051,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       0
+      ],
+      "0.4": [
+       144,
+       11
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.19060825011503402,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.0,
+    "no_coordination_hours": 9.0
+   },
+   "25": {
+    "baseline_quiet": {
+     "f1": 0.15512465373961218,
+     "recall": 0.08974358974358974,
+     "precision": 0.5714285714285714,
+     "n_scored": 49,
+     "n_hit": 28,
+     "n_false_alarm": 21,
+     "n_calls": 49,
+     "n_recordings": 24,
+     "calls_on_decoys": 21,
+     "f1_without_decoys": 0.1647058823529412,
+     "recall_by_participation": {
+      "0.25": [
+       168,
+       3
+      ],
+      "0.4": [
+       144,
+       25
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "baseline_busy": {
+     "f1": 0.04371584699453552,
+     "recall": 0.0223463687150838,
+     "precision": 1.0,
+     "n_scored": 4,
+     "n_hit": 4,
+     "n_false_alarm": 0,
+     "n_calls": 4,
+     "n_recordings": 24,
+     "calls_on_decoys": 0,
+     "f1_without_decoys": 0.04371584699453552,
+     "recall_by_participation": {
+      "0.25": [
+       35,
+       0
+      ],
+      "0.4": [
+       144,
+       4
+      ]
+     },
+     "stretch_calls_per_min": 0.0
+    },
+    "mean_f1": 0.09942025036707385,
+    "worst_stretch_calls_per_min": 0.0,
+    "no_coordination_calls_per_hour": 0.0,
+    "no_coordination_hours": 9.0
+   }
+  },
+  "report_half": {
+   "ceiling": {
+    "2": {
+     "baseline_quiet": {
+      "f1": 0.8301886792452831,
+      "recall": 0.9871794871794872,
+      "precision": 0.7162790697674418,
+      "n_scored": 430,
+      "n_hit": 308,
+      "n_false_alarm": 122,
+      "n_calls": 430,
+      "n_recordings": 24,
+      "calls_on_decoys": 122,
+      "f1_without_decoys": 0.9935483870967742,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        166
+       ],
+       "0.4": [
+        144,
+        142
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.7680311890838206,
+      "recall": 0.985,
+      "precision": 0.6293929712460063,
+      "n_scored": 313,
+      "n_hit": 197,
+      "n_false_alarm": 116,
+      "n_calls": 313,
+      "n_recordings": 24,
+      "calls_on_decoys": 116,
+      "f1_without_decoys": 0.9924433249370278,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        54
+       ],
+       "0.4": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.016666666666666666
+     },
+     "mean_f1": 0.7991099341645518,
+     "worst_stretch_calls_per_min": 0.016666666666666666,
+     "no_coordination_calls_per_hour": 0.4444444444444444,
+     "no_coordination_hours": 9.0
+    },
+    "3": {
+     "baseline_quiet": {
+      "f1": 0.8301886792452831,
+      "recall": 0.9871794871794872,
+      "precision": 0.7162790697674418,
+      "n_scored": 430,
+      "n_hit": 308,
+      "n_false_alarm": 122,
+      "n_calls": 430,
+      "n_recordings": 24,
+      "calls_on_decoys": 122,
+      "f1_without_decoys": 0.9935483870967742,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        166
+       ],
+       "0.4": [
+        144,
+        142
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.7680311890838206,
+      "recall": 0.985,
+      "precision": 0.6293929712460063,
+      "n_scored": 313,
+      "n_hit": 197,
+      "n_false_alarm": 116,
+      "n_calls": 313,
+      "n_recordings": 24,
+      "calls_on_decoys": 116,
+      "f1_without_decoys": 0.9924433249370278,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        54
+       ],
+       "0.4": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.7991099341645518,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.4444444444444444,
+     "no_coordination_hours": 9.0
+    },
+    "4": {
+     "baseline_quiet": {
+      "f1": 0.8297297297297298,
+      "recall": 0.9839743589743589,
+      "precision": 0.7172897196261683,
+      "n_scored": 428,
+      "n_hit": 307,
+      "n_false_alarm": 121,
+      "n_calls": 428,
+      "n_recordings": 24,
+      "calls_on_decoys": 121,
+      "f1_without_decoys": 0.9919224555735056,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        165
+       ],
+       "0.4": [
+        144,
+        142
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.7680311890838206,
+      "recall": 0.985,
+      "precision": 0.6293929712460063,
+      "n_scored": 313,
+      "n_hit": 197,
+      "n_false_alarm": 116,
+      "n_calls": 313,
+      "n_recordings": 24,
+      "calls_on_decoys": 116,
+      "f1_without_decoys": 0.9924433249370278,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        54
+       ],
+       "0.4": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.7988804594067752,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.4444444444444444,
+     "no_coordination_hours": 9.0
+    },
+    "5": {
+     "baseline_quiet": {
+      "f1": 0.8244897959183672,
+      "recall": 0.9711538461538461,
+      "precision": 0.7163120567375887,
+      "n_scored": 423,
+      "n_hit": 303,
+      "n_false_alarm": 120,
+      "n_calls": 423,
+      "n_recordings": 24,
+      "calls_on_decoys": 120,
+      "f1_without_decoys": 0.9853658536585366,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        161
+       ],
+       "0.4": [
+        144,
+        142
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.7598425196850392,
+      "recall": 0.965,
+      "precision": 0.6266233766233766,
+      "n_scored": 308,
+      "n_hit": 193,
+      "n_false_alarm": 115,
+      "n_calls": 308,
+      "n_recordings": 24,
+      "calls_on_decoys": 115,
+      "f1_without_decoys": 0.9821882951653944,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        50
+       ],
+       "0.4": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.7921661578017032,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.4444444444444444,
+     "no_coordination_hours": 9.0
+    },
+    "6": {
+     "baseline_quiet": {
+      "f1": 0.8077455048409404,
+      "recall": 0.9358974358974359,
+      "precision": 0.7104622871046229,
+      "n_scored": 411,
+      "n_hit": 292,
+      "n_false_alarm": 119,
+      "n_calls": 411,
+      "n_recordings": 24,
+      "calls_on_decoys": 119,
+      "f1_without_decoys": 0.9668874172185431,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        150
+       ],
+       "0.4": [
+        144,
+        142
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.731404958677686,
+      "recall": 0.885,
+      "precision": 0.6232394366197183,
+      "n_scored": 284,
+      "n_hit": 177,
+      "n_false_alarm": 107,
+      "n_calls": 284,
+      "n_recordings": 24,
+      "calls_on_decoys": 107,
+      "f1_without_decoys": 0.9389920424403183,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        36
+       ],
+       "0.4": [
+        144,
+        141
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.7695752317593132,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.4444444444444444,
+     "no_coordination_hours": 9.0
+    },
+    "8": {
+     "baseline_quiet": {
+      "f1": 0.7492625368731564,
+      "recall": 0.8141025641025641,
+      "precision": 0.6939890710382514,
+      "n_scored": 366,
+      "n_hit": 254,
+      "n_false_alarm": 112,
+      "n_calls": 366,
+      "n_recordings": 24,
+      "calls_on_decoys": 112,
+      "f1_without_decoys": 0.8975265017667845,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        116
+       ],
+       "0.4": [
+        144,
+        138
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.6697892271662763,
+      "recall": 0.715,
+      "precision": 0.6299559471365639,
+      "n_scored": 227,
+      "n_hit": 143,
+      "n_false_alarm": 84,
+      "n_calls": 227,
+      "n_recordings": 24,
+      "calls_on_decoys": 84,
+      "f1_without_decoys": 0.8338192419825073,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        26
+       ],
+       "0.4": [
+        144,
+        117
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.7095258820197163,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.3333333333333333,
+     "no_coordination_hours": 9.0
+    },
+    "10": {
+     "baseline_quiet": {
+      "f1": 0.6612641815235007,
+      "recall": 0.6538461538461539,
+      "precision": 0.6688524590163935,
+      "n_scored": 305,
+      "n_hit": 204,
+      "n_false_alarm": 101,
+      "n_calls": 305,
+      "n_recordings": 24,
+      "calls_on_decoys": 101,
+      "f1_without_decoys": 0.7906976744186047,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        76
+       ],
+       "0.4": [
+        144,
+        128
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.5962059620596206,
+      "recall": 0.55,
+      "precision": 0.650887573964497,
+      "n_scored": 169,
+      "n_hit": 110,
+      "n_false_alarm": 59,
+      "n_calls": 169,
+      "n_recordings": 24,
+      "calls_on_decoys": 59,
+      "f1_without_decoys": 0.7096774193548387,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        16
+       ],
+       "0.4": [
+        144,
+        94
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.6287350717915607,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.2222222222222222,
+     "no_coordination_hours": 9.0
+    },
+    "12": {
+     "baseline_quiet": {
+      "f1": 0.5694200351493849,
+      "recall": 0.5192307692307693,
+      "precision": 0.6303501945525292,
+      "n_scored": 257,
+      "n_hit": 162,
+      "n_false_alarm": 95,
+      "n_calls": 257,
+      "n_recordings": 24,
+      "calls_on_decoys": 95,
+      "f1_without_decoys": 0.6835443037974684,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        53
+       ],
+       "0.4": [
+        144,
+        109
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.43137254901960786,
+      "recall": 0.33,
+      "precision": 0.6226415094339622,
+      "n_scored": 106,
+      "n_hit": 66,
+      "n_false_alarm": 40,
+      "n_calls": 106,
+      "n_recordings": 24,
+      "calls_on_decoys": 40,
+      "f1_without_decoys": 0.49624060150375937,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        6
+       ],
+       "0.4": [
+        144,
+        60
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.5003962920844964,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "15": {
+     "baseline_quiet": {
+      "f1": 0.40325865580448067,
+      "recall": 0.3173076923076923,
+      "precision": 0.553072625698324,
+      "n_scored": 179,
+      "n_hit": 99,
+      "n_false_alarm": 80,
+      "n_calls": 179,
+      "n_recordings": 24,
+      "calls_on_decoys": 80,
+      "f1_without_decoys": 0.4817518248175182,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        27
+       ],
+       "0.4": [
+        144,
+        72
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.23809523809523805,
+      "recall": 0.15,
+      "precision": 0.5769230769230769,
+      "n_scored": 52,
+      "n_hit": 30,
+      "n_false_alarm": 22,
+      "n_calls": 52,
+      "n_recordings": 24,
+      "calls_on_decoys": 22,
+      "f1_without_decoys": 0.2608695652173913,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        0
+       ],
+       "0.4": [
+        144,
+        30
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.3206769469498594,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "20": {
+     "baseline_quiet": {
+      "f1": 0.22815533980582522,
+      "recall": 0.15064102564102563,
+      "precision": 0.47,
+      "n_scored": 100,
+      "n_hit": 47,
+      "n_false_alarm": 53,
+      "n_calls": 100,
+      "n_recordings": 24,
+      "calls_on_decoys": 53,
+      "f1_without_decoys": 0.2618384401114206,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        11
+       ],
+       "0.4": [
+        144,
+        36
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.11009174311926605,
+      "recall": 0.06,
+      "precision": 0.6666666666666666,
+      "n_scored": 18,
+      "n_hit": 12,
+      "n_false_alarm": 6,
+      "n_calls": 18,
+      "n_recordings": 24,
+      "calls_on_decoys": 6,
+      "f1_without_decoys": 0.11320754716981131,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        0
+       ],
+       "0.4": [
+        144,
+        12
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.16912354146254563,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "25": {
+     "baseline_quiet": {
+      "f1": 0.11602209944751381,
+      "recall": 0.0673076923076923,
+      "precision": 0.42,
+      "n_scored": 50,
+      "n_hit": 21,
+      "n_false_alarm": 29,
+      "n_calls": 50,
+      "n_recordings": 24,
+      "calls_on_decoys": 29,
+      "f1_without_decoys": 0.12612612612612611,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        2
+       ],
+       "0.4": [
+        144,
+        19
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.009852216748768473,
+      "recall": 0.005,
+      "precision": 0.3333333333333333,
+      "n_scored": 3,
+      "n_hit": 1,
+      "n_false_alarm": 2,
+      "n_calls": 3,
+      "n_recordings": 24,
+      "calls_on_decoys": 2,
+      "f1_without_decoys": 0.009950248756218907,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        0
+       ],
+       "0.4": [
+        144,
+        1
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.06293715809814114,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    }
+   },
+   "references": {
+    "coact": {
+     "baseline_quiet": {
+      "f1": 0.8050847457627119,
+      "recall": 0.9134615384615384,
+      "precision": 0.7196969696969697,
+      "n_scored": 396,
+      "n_hit": 285,
+      "n_false_alarm": 111,
+      "n_calls": 396,
+      "n_recordings": 24,
+      "calls_on_decoys": 111,
+      "f1_without_decoys": 0.9547738693467337,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        154
+       ],
+       "0.4": [
+        144,
+        131
+       ]
+      },
+      "stretch_calls_per_min": 0.016666666666666666
+     },
+     "baseline_busy": {
+      "f1": 0.7346938775510204,
+      "recall": 0.9,
+      "precision": 0.6206896551724138,
+      "n_scored": 290,
+      "n_hit": 180,
+      "n_false_alarm": 110,
+      "n_calls": 290,
+      "n_recordings": 24,
+      "calls_on_decoys": 110,
+      "f1_without_decoys": 0.9473684210526316,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        49
+       ],
+       "0.4": [
+        144,
+        131
+       ]
+      },
+      "stretch_calls_per_min": 0.03333333333333333
+     },
+     "mean_f1": 0.7698893116568661,
+     "worst_stretch_calls_per_min": 0.03333333333333333,
+     "no_coordination_calls_per_hour": 0.4444444444444444,
+     "no_coordination_hours": 9.0
+    },
+    "loco": {
+     "baseline_quiet": {
+      "f1": 0.7971014492753624,
+      "recall": 0.8814102564102564,
+      "precision": 0.7275132275132276,
+      "n_scored": 378,
+      "n_hit": 275,
+      "n_false_alarm": 103,
+      "n_calls": 378,
+      "n_recordings": 24,
+      "calls_on_decoys": 103,
+      "f1_without_decoys": 0.9369676320272572,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        142
+       ],
+       "0.4": [
+        144,
+        133
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "baseline_busy": {
+      "f1": 0.8144578313253013,
+      "recall": 0.845,
+      "precision": 0.786046511627907,
+      "n_scored": 215,
+      "n_hit": 169,
+      "n_false_alarm": 46,
+      "n_calls": 215,
+      "n_recordings": 24,
+      "calls_on_decoys": 46,
+      "f1_without_decoys": 0.9159891598915989,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        29
+       ],
+       "0.4": [
+        144,
+        140
+       ]
+      },
+      "stretch_calls_per_min": 0.0
+     },
+     "mean_f1": 0.8057796403003319,
+     "worst_stretch_calls_per_min": 0.0,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    },
+    "count_sliding": {
+     "baseline_quiet": {
+      "f1": 0.8301886792452831,
+      "recall": 0.9871794871794872,
+      "precision": 0.7162790697674418,
+      "n_scored": 430,
+      "n_hit": 308,
+      "n_false_alarm": 122,
+      "n_calls": 430,
+      "n_recordings": 24,
+      "calls_on_decoys": 122,
+      "f1_without_decoys": 0.9935483870967742,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        167
+       ],
+       "0.4": [
+        144,
+        141
+       ]
+      },
+      "stretch_calls_per_min": 0.06666666666666667
+     },
+     "baseline_busy": {
+      "f1": 0.7665369649805447,
+      "recall": 0.985,
+      "precision": 0.6273885350318471,
+      "n_scored": 314,
+      "n_hit": 197,
+      "n_false_alarm": 117,
+      "n_calls": 314,
+      "n_recordings": 24,
+      "calls_on_decoys": 117,
+      "f1_without_decoys": 0.9924433249370278,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        54
+       ],
+       "0.4": [
+        144,
+        143
+       ]
+      },
+      "stretch_calls_per_min": 0.08333333333333333
+     },
+     "mean_f1": 0.7983628221129139,
+     "worst_stretch_calls_per_min": 0.08333333333333333,
+     "no_coordination_calls_per_hour": 0.4444444444444444,
+     "no_coordination_hours": 9.0
+    },
+    "stack": {
+     "baseline_quiet": {
+      "f1": 0.82907133243607,
+      "recall": 0.9871794871794872,
+      "precision": 0.7146171693735499,
+      "n_scored": 431,
+      "n_hit": 308,
+      "n_false_alarm": 123,
+      "n_calls": 431,
+      "n_recordings": 24,
+      "calls_on_decoys": 123,
+      "f1_without_decoys": 0.9935483870967742,
+      "recall_by_participation": {
+       "0.25": [
+        168,
+        167
+       ],
+       "0.4": [
+        144,
+        141
+       ]
+      },
+      "stretch_calls_per_min": 0.06666666666666667
+     },
+     "baseline_busy": {
+      "f1": 0.7410207939508506,
+      "recall": 0.98,
+      "precision": 0.5957446808510638,
+      "n_scored": 329,
+      "n_hit": 196,
+      "n_false_alarm": 133,
+      "n_calls": 329,
+      "n_recordings": 24,
+      "calls_on_decoys": 132,
+      "f1_without_decoys": 0.9874055415617129,
+      "recall_by_participation": {
+       "0.25": [
+        56,
+        54
+       ],
+       "0.4": [
+        144,
+        142
+       ]
+      },
+      "stretch_calls_per_min": 0.06666666666666667
+     },
+     "mean_f1": 0.7850460631934604,
+     "worst_stretch_calls_per_min": 0.06666666666666667,
+     "no_coordination_calls_per_hour": 0.0,
+     "no_coordination_hours": 9.0
+    }
+   }
+  },
+  "n_recordings": {
+   "pick": 84,
+   "report": 84
+  }
+ },
+ "_": {
+  "period_sec": 120.0,
+  "thresholds_sec": [
+   2.0,
+   3.0,
+   4.0,
+   5.0,
+   6.0,
+   8.0,
+   10.0,
+   12.0,
+   15.0,
+   20.0,
+   25.0
+  ],
+  "spacing": null,
+  "seeds": 48,
+  "n_recordings": 672,
+  "seconds": 182.7,
+  "jobs": 12
+ }
+}

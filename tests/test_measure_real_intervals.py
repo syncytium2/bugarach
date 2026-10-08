@@ -41,3 +41,23 @@ def test_describe_reports_shares_and_rate():
     d = mri.describe(np.array([1.0, 5.0, 50.0, 200.0]), hours=0.5, n_events=5)
     assert d["n_gaps"] == 4 and d["events_per_hour"] == 10.0
     assert d["share_under_10_sec"] == 0.5 and d["share_under_120_sec"] == 0.75
+
+
+def test_a_narrower_window_keeps_events_the_two_second_merge_joins():
+    # Two events 1.2 s apart: one at the 2 s merge, two when the window, and so the merge
+    # distance, is 0.5 s. That is the whole reason for --window-sec.
+    c = np.zeros(1000, int)
+    c[100] = 6
+    c[112] = 9
+    assert len(mri.events_of(c, floor=5, dt=DT, wf=WF, lo=0.0)) == 1
+    ev = mri.events_of(c, floor=5, dt=DT, wf=5, lo=0.0, merge_sec=0.5)
+    assert [k for _, k in ev] == [6, 9]
+    assert ev[1][0] - ev[0][0] == pytest.approx(1.2)
+
+
+def test_the_default_window_keeps_the_first_measurements_floor_key():
+    from bugarach import event_floor as ef
+
+    assert mri.floor_key(ef.WINDOW_SEC, "s", "fast", 1) == (mri.TAG, "s", "fast", 1)
+    assert mri.floor_key(0.5, "s", "fast", 1) != mri.floor_key(1.0, "s", "fast", 1)
+    assert mri.floor_key(0.5, "s", "fast", 1) != mri.floor_key(ef.WINDOW_SEC, "s", "fast", 1)

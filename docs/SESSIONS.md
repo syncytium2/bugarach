@@ -3296,3 +3296,16 @@ session's work is not a sweep.
   (`summary.json` and four figures each) from `tools/measure_stack_on_folder.py` on the baseline
   windows of the six September 2026 pilot recordings. Those are darkroom-only.
 - **Released:** 2026-10-07, at write. Holds nothing.
+
+### darkroom/bugarach/2026-10-08-stack-ceiling/ — the tallest stack circular shifting can build: an animated page on one simulated recording (bugarach-far-pennant)
+- **Claimed:** 2026-10-08, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `explainer_stack-ceiling_20261008.html` and `.png` from
+  `tools/make_stack_ceiling_demo.py` on branch `stack-ceiling`. One simulated recording; no export
+  folder is read. The same files are in the repo at `docs/learned/runs/2026-10-08-stack-ceiling/`.
+  Added the same day, all simulated and all in the repo too: `bench_summary.json`,
+  `search_summary.json`, `close_events_summary.json` and three `explainer_*_20261008.png` figures
+  from `tools/measure_stack_ceiling.py`, `tools/search_stack_ceiling.py` and
+  `tools/measure_close_events.py`. And `real-gaps/`, **darkroom only**: the real gaps at 2 s, 1 s
+  and 0.5 s windows, run by Tony on the stopped default folder under his acknowledgment (#858),
+  with `real_gaps_by_window.json` and its figure from `tools/make_real_gaps_by_window.py`.
+- **Released:** 2026-10-08, at the session's end. Holds nothing.

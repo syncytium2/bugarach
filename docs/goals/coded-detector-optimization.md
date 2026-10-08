@@ -39,6 +39,19 @@ recordings and re-scored on a set the search never saw.
 
 ## Where it stands
 
+**2026-10-08: a new detector idea, the stack ceiling, and what it showed about the bench.** Tony
+asked for a detector independent of the current approaches: the tallest stack circular shifting
+can build in a period is the number of ROIs with an onset in it, and a tower is called when it
+would be costly to rebuild elsewhere in the period. Searched on all three benches, it is about
+level with the tuned sliding forms of LoCo and CoactDetect, and its own idea adds at most 0.008
+F1; the gain is a 0.5 s window. ⚠ The comparison that matters came after: with planted events
+1 s apart the detectors span 0.40 to 0.66 F1 where at 10 s they sit within 0.09, and real
+baselines measured in a 0.5 s window do hold gaps under 2 s (4 to 6% of them) and nearly twice as
+many fast events. **Waiting on Tony:** whether the revised bench only adds short gaps or moves
+the event definition to a narrower window. It is not registered in any bench.
+[Todo](../todo/2026-10-08-the-stack-ceiling-and-the-short-interval-bench.md);
+[record](../learned/runs/2026-10-08-stack-ceiling/README.md).
+
 **2026-10-07: the realistic bench is the default** (ADR-0010 ruling 2; Tony: *"switch now"*). Every
 search, training and scoring tool plants events at the measured real gaps unless told
 `--spacing bench`, which keeps the old ≥120 s bench for reproducing past results. ⚠ Those gaps were

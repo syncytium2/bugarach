@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The tallest stack shifting can build</title>
+<style>
+  body { font: 14px/1.45 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: #111;
+         background: #fff; margin: 0; }
+  main { max-width: 1120px; margin: 0 auto; padding: 18px 20px 60px; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p { margin: 6px 0; max-width: 980px; }
+  .how { color: #333; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+              margin: 14px 0 6px; padding: 10px 12px; background: #f4f4f2; border-radius: 6px; }
+  .controls label { color: #333; }
+  button, select { font: inherit; padding: 4px 10px; border: 1px solid #999; border-radius: 4px;
+                   background: #fff; cursor: pointer; }
+  button.on { background: #111; color: #fff; border-color: #111; }
+  button.play { background: #1f5fbf; color: #fff; border-color: #1f5fbf; min-width: 150px; }
+  input[type=range] { width: 300px; vertical-align: middle; }
+  .readout { font-variant-numeric: tabular-nums; margin: 8px 0 2px; font-size: 15px; }
+  .readout b { font-size: 17px; }
+  figure { margin: 18px 0 0; }
+  figcaption { color: #222; margin: 0 0 6px; max-width: 980px; }
+  canvas { display: block; }
+  .key { display: inline-block; width: 11px; height: 11px; vertical-align: -1px;
+         margin: 0 3px 0 10px; border: 1px solid #111; }
+  .note { color: #555; font-size: 13px; }
+  .line { display: inline-block; width: 22px; height: 0; vertical-align: 4px; margin: 0 4px 0 10px; }
+  .tri { margin: 0 3px 0 10px; }
+  .hash { display: inline-block; width: 22px; height: 11px; vertical-align: -1px; margin: 0 4px 0 10px;
+          background: repeating-linear-gradient(90deg, #444 0 1px, transparent 1px 5px); }
+  /* The tool row follows the figures in the page and stays in view while they are on screen. */
+  .tools { position: sticky; bottom: 0; z-index: 2; background: #f4f4f2; margin: 16px 0 10px;
+           padding: 4px 0; border-top: 1px solid #ccc; border-radius: 6px; }
+  .tools .controls { margin: 0; padding: 5px 12px; background: none; }
+  body.still .tools { position: static; }
+</style>
+</head>
+<body>
+<main>
+<h1>The tallest stack that shifting can build, and how much of it already stands</h1>
+<figure>
+  <figcaption><b>Figure 1. The period, as recorded and as it shifts.</b>
+  <span class="key" style="background:#1f5fbf;border-color:#1f5fbf"></span>the window
+  <span class="key" style="background:#111"></span>ROI in the window as recorded
+  <span class="key" style="background:#6b9bd1;border-color:#6b9bd1"></span>brought in by shifting
+  <span class="key" style="background:#fff;border-color:#999"></span>has an onset in the period, not in yet
+  <span class="key" style="background:#fff;border:1px dotted #bbb"></span>no onset in the period
+  <span class="line" style="border-top:1px dashed #111"></span>ceiling
+  </figcaption>
+  <canvas id="fig1"></canvas>
+</figure>
+
+<figure>
+  <figcaption><b>Figure 2. The growth curve at this moment.</b>
+  <span class="line" style="border-top:1px solid #111"></span>tower height
+  <span class="line" style="border-top:3px solid #1f5fbf"></span>traced by the shift so far
+  <span class="line" style="border-top:2px solid #888"></span>mean if every ROI were shifted at random
+  <span class="line" style="border-top:1px dashed #111"></span>ceiling
+  <span class="tri" style="color:#1f5fbf">▼</span>shift so far
+  <span class="tri">▽</span>shift to rebuild this tower elsewhere
+  </figcaption>
+  <canvas id="fig2"></canvas>
+</figure>
+
+<figure>
+  <figcaption><b>Figure 3. The whole simulated recording, and the calls.</b>
+  <span class="tri" style="color:#1a7f37">▼</span>planted event, found by a call
+  <span class="tri" style="color:#c62828">▼</span>planted event, missed
+  <span class="key" style="background:#111"></span>call on a planted event
+  <span class="key" style="background:#c62828;border-color:#c62828"></span>call where nothing is planted
+  <span class="hash"></span>raised-rate stretch
+  <span class="line" style="border-top:3px solid #1f5fbf"></span>the period shown in Figure 1
+  <span class="line" style="border-top:1px dotted #c62828"></span>the setting
+  </figcaption>
+  <canvas id="fig3"></canvas>
+</figure>
+
+<div class="tools">
+  <div class="controls" id="scenes"><label>Moment:</label></div>
+  <div class="controls">
+    <label>window <i>w</i> <select id="w"></select></label>
+    <label>period <i>p</i> <select id="p"></select></label>
+    <button class="play" id="play">▶ Shift the ROIs</button>
+    <button id="reset">As recorded</button>
+    <label>shift allowed per ROI <input type="range" id="s" min="0" max="60" step="0.1" value="0">
+      <span id="sval"></span></label>
+  </div>
+  <div class="controls">
+    <label>Call a moment when <select id="score">
+      <option value="rebuild">the cost to rebuild its tower elsewhere</option>
+      <option value="fill">its fill</option></select></label>
+    <label>is at least <input type="range" id="th" style="width:220px"> <span id="thval"></span></label>
+    <span>and at least 3 ROIs stand</span>
+  </div>
+</div>
+
+<p class="readout" id="readout"></p>
+<p class="readout" id="verdict"></p>
+
+<p class="how"><b>What is being measured.</b> A simulated recording, one row per ROI (region of
+interest, a cell) and one black mark per calcium-event onset. Pick a moment and a <b>window</b>
+of width <i>w</i> around it. The <b>height</b> is the number of ROIs with an onset in the window.
+Now take the <b>period</b> <i>p</i> around the same moment and let each ROI's onsets slide around
+it, wrapping at the ends (a circular shift), each ROI by its own amount. Every ROI with an onset
+anywhere in the period can be slid into the window, so the tallest stack shifting can build is
+the number of ROIs with an onset in the period: the <b>ceiling</b>. The <b>fill</b> is the
+height divided by the ceiling. No probability is computed anywhere on this page.</p>
+
+<p class="how"><b>The call rule.</b> A tower at a moment stands without any shift. At another
+moment of the same period, a tower that tall has to be built, and that takes some shift per ROI.
+The <b>cost to rebuild elsewhere</b> is the median of that shift over the other moments of the
+period, in seconds. A planted event is costly to rebuild: its ROIs are otherwise far apart. In a
+stretch where every ROI's rate is raised a tall tower is cheap to build anywhere. A moment is
+called when the cost reaches the setting and at least 3 ROIs stand; called moments under 0.5 s
+apart are one call. Fill is offered as the plainer rule to compare. Neither setting has been
+tuned: move it and watch the calls.</p>
+
+<p class="how"><b>Figure 1, the period as it shifts.</b> The raster is the period <i>p</i> around
+the chosen moment, and the lane above it marks the window. Press <i>Shift the ROIs</i>: every
+ROI slides its nearest onset toward the window at the same speed, so the ROIs that sit closest
+arrive first. The column beside the raster shows, row by row, which ROIs are in the window; the
+tower on the right stacks them.</p>
+
+<p class="how"><b>Figure 2, the growth curve.</b> The tower's height against the shift each ROI
+is allowed. The animation in Figure 1, the period as it shifts, traces this curve from left to
+right. It starts at the height and ends at the ceiling. The grey curve is for comparison only.</p>
+
+<p class="how"><b>Figure 3, the whole recording and the calls.</b> <span id="fig3what"></span>
+The <i>calls</i> lane holds one bar per call. Below the lanes: the cost to rebuild elsewhere, the
+fill, the height in the window <i>w</i>, the ceiling over the period <i>p</i>, and the raster.
+The setting is drawn on the trace it applies to. Click anywhere in the figure to move the chosen
+moment; Figures 1 and 2, the period and its growth curve, follow.</p>
+
+<p class="note" id="foot"></p>
+</main>
+
+<script>
+const DATA = /*DATA*/null;
+const INK = "#111", BLUE = "#1f5fbf", ARRIVED = "#6b9bd1", GREY = "#888", PLANT = "#444";
+const FRAME = DATA.frame_interval_sec;
+const STRIDE = DATA.stride, GOOD = "#1a7f37", BAD = "#c62828";
+const S = { rec: 0, t: 0, w: DATA.width_sec, p: DATA.period_sec, s: 0, playing: false, scene: 0,
+            score: "rebuild", th: { rebuild: DATA.thresholds.rebuild, fill: DATA.thresholds.fill } };
+const TH = { rebuild: { max: 30, step: 0.5, f: v => v.toFixed(1) + " s" }, fill: { max: 1, step: 0.01, f: v => v.toFixed(2) } };
+let cur = null, traces = null, calls = [], verdict = null;
+
+// ---- time axis: ticks at 1/2/5/10/15/30 x 60^k s, labelled 45s / 2m / 2m30s -----------------
+function fmt(sec) {
+  const neg = sec < 0; sec = Math.abs(sec);
+  if (sec < 60) return (neg ? "-" : "") + (Math.round(sec * 10) / 10) + "s";
+  const m = Math.floor(sec / 60 + 1e-9), s = Math.round(sec - 60 * m);
+  return (neg ? "-" : "") + m + "m" + (s ? s + "s" : "");
+}
+function ticks(lo, hi, want) {
+  const steps = [];
+  for (let k = 0; k < 3; k++) for (const b of [1, 2, 5, 10, 15, 30]) steps.push(b * 60 ** k);
+  let step = steps[steps.length - 1];
+  for (const c of steps) if ((hi - lo) / c <= want) { step = c; break; }
+  const out = [];
+  for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) out.push(v);
+  return out;
+}
+function unit(n, one) { return n + " " + one + (n === 1 ? "" : "s"); }
+function wlabel(w) { return w < 60 ? w + " s" : fmt(w); }
+
+// ---- the analysis, at one moment ------------------------------------------------------------
+function snap(t) { return (Math.floor(t / FRAME) + 0.5) * FRAME; }   // half a frame off the grid
+function atMoment(rec, t, w, p) {
+  const lo = t - p / 2, hi = t + p / 2, rows = [];
+  for (const train of rec.trains) {
+    const on = train.filter(v => v >= lo && v < hi);
+    let need = Infinity, dir = 0;
+    for (const v of on) {
+      const d = Math.max(Math.abs(v - t) - w / 2, 0);
+      if (d < need) { need = d; dir = v > t ? -1 : 1; }
+    }
+    rows.push({ on, need, dir });
+  }
+  const needs = rows.map(r => r.need).filter(isFinite).sort((a, b) => a - b);
+  const ceiling = needs.length, height = needs.filter(d => d === 0).length;
+  const half = ceiling ? needs[Math.ceil(ceiling / 2) - 1] : NaN;
+  return { rows, needs, ceiling, height, half, lo, hi, fill: ceiling ? height / ceiling : 0 };
+}
+function expected(rows, p, radius) {      // mean height under independent uniform circular shifts
+  let sum = 0;
+  for (const r of rows) {
+    const v = r.on.slice().sort((a, b) => a - b);
+    for (let i = 0; i < v.length; i++) {
+      const gap = (i + 1 < v.length ? v[i + 1] : v[0] + p) - v[i];
+      sum += Math.min(gap, 2 * radius) / p;
+    }
+  }
+  return sum;
+}
+function along(rec, w, p) {               // every half-frame moment of the recording
+  const n = Math.floor(rec.duration_sec / FRAME), R = rec.trains.length;
+  const need = new Float64Array(n * R).fill(Infinity);
+  rec.trains.forEach((train, r) => {
+    if (!train.length) return;
+    let i = 0;
+    for (let k = 0; k < n; k++) {
+      const c = (k + 0.5) * FRAME;
+      while (i + 1 < train.length && train[i + 1] <= c) i++;        // train[i]: last onset <= c
+      let gap = Math.abs(c - train[i]);
+      if (i + 1 < train.length) gap = Math.min(gap, Math.abs(train[i + 1] - c));
+      if (gap <= p / 2) need[k * R + r] = Math.max(gap - w / 2, 0);
+    }
+  });
+  const height = new Int16Array(n), ceiling = new Int16Array(n), fill = new Float64Array(n);
+  const ordered = new Float64Array(n * R), row = new Float64Array(R);
+  for (let k = 0; k < n; k++) {
+    for (let r = 0; r < R; r++) {
+      const d = need[k * R + r]; row[r] = Math.min(d, p / 2);
+      if (d === 0) height[k]++; if (isFinite(d)) ceiling[k]++;
+    }
+    row.sort(); ordered.set(row, k * R);
+    fill[k] = ceiling[k] ? height[k] / ceiling[k] : 0;
+  }
+  // the cost to rebuild each moment's tower at a typical other moment of its period
+  const rebuild = new Float64Array(n), hp = Math.round(p / 2 / FRAME), apart = Math.max(Math.round(w / FRAME), 1);
+  for (let i = 0; i < n; i++) {
+    if (!height[i]) continue;
+    const lo = Math.max(0, i - hp), hi = Math.min(n - 1, i + hp), v = [];
+    for (let j = lo + ((STRIDE - lo % STRIDE) % STRIDE); j <= hi; j += STRIDE)
+      if (Math.abs(j - i) >= apart) v.push(ordered[j * R + height[i] - 1]);
+    if (!v.length) continue;
+    v.sort((a, b) => a - b); const m = v.length >> 1;
+    rebuild[i] = v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+  }
+  return { n, height, ceiling, fill, rebuild };
+}
+function callsOf(tr, score, threshold) {  // runs of called moments, joined across short gaps
+  const out = []; let run = null;
+  for (let k = 0; k < tr.n; k++) {
+    if (!(tr[score][k] >= threshold - 1e-9 && tr.height[k] >= DATA.min_rois)) continue;
+    const c = (k + 0.5) * FRAME;
+    if (run && c - run.end <= DATA.merge_gap_sec + 1e-9) { run.end = c; if (tr.height[k] > run.h) { run.h = tr.height[k]; run.peak = c; } }
+    else { run = { start: c, end: c, peak: c, h: tr.height[k] }; out.push(run); }
+  }
+  return out;
+}
+function verdicts(rec, calls) {           // which planted events a call found, which calls are false
+  const m = DATA.match_sec, on = (c, e) => e.time_sec >= c.start - m && e.time_sec <= c.end + m;
+  const found = rec.events.map(e => calls.some(c => on(c, e)));
+  const falseCall = calls.map(c => !rec.events.some(e => on(c, e)));
+  return { found, falseCall };
+}
+
+// ---- canvas helpers ---------------------------------------------------------------------------
+function setup(id, h) {
+  const c = document.getElementById(id), dpr = window.devicePixelRatio || 1;
+  const wpx = Math.min(1080, document.querySelector("main").clientWidth);
+  c.style.width = wpx + "px"; c.style.height = h + "px";
+  c.width = Math.round(wpx * dpr); c.height = Math.round(h * dpr);
+  const g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, wpx, h);
+  g.font = "12px -apple-system, Helvetica, Arial, sans-serif"; g.lineWidth = 1;
+  return { g, W: wpx, H: h };
+}
+function ylabel(g, text, x, yMid) {
+  g.save(); g.translate(x, yMid); g.rotate(-Math.PI / 2); g.textAlign = "center";
+  g.fillStyle = INK; text.split("\n").forEach((line, i) => g.fillText(line, 0, i * 14)); g.restore();
+}
+function lanelabel(g, text, x, y) { g.fillStyle = INK; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(text, x, y); g.textBaseline = "alphabetic"; }
+function xaxis(g, x0, x1, y, lo, hi, label, want) {
+  g.strokeStyle = INK; g.fillStyle = INK; g.beginPath(); g.moveTo(x0, y + .5); g.lineTo(x1, y + .5); g.stroke();
+  g.textAlign = "center";
+  for (const v of ticks(lo, hi, want || 8)) {
+    const x = x0 + (v - lo) / (hi - lo) * (x1 - x0);
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 4); g.stroke(); g.fillText(fmt(v), x, y + 16);
+  }
+  if (label) g.fillText(label, (x0 + x1) / 2, y + 32);
+}
+function yaxis(g, x, y0, y1, lo, hi, values, f) {
+  g.strokeStyle = INK; g.fillStyle = INK; g.beginPath(); g.moveTo(x + .5, y0); g.lineTo(x + .5, y1); g.stroke();
+  g.textAlign = "right"; g.textBaseline = "middle";
+  for (const v of values) {
+    const y = y1 - (v - lo) / (hi - lo) * (y1 - y0);
+    g.beginPath(); g.moveTo(x - 3, y); g.lineTo(x, y); g.stroke(); g.fillText(f ? f(v) : v, x - 5, y);
+  }
+  g.textBaseline = "alphabetic";
+}
+function down(g, x, y, size, colour, open) {     // a triangle pointing down, tip at (x, y)
+  g.beginPath(); g.moveTo(x, y); g.lineTo(x - size, y - 1.6 * size); g.lineTo(x + size, y - 1.6 * size); g.closePath();
+  if (open) { g.strokeStyle = colour; g.stroke(); } else { g.fillStyle = colour; g.fill(); }
+}
+
+// ---- Figure 1: the period, shifting -----------------------------------------------------------
+function fig1() {
+  const rec = DATA.recordings[S.rec], n = rec.trains.length, rowH = 9;
+  const top = 34, rasterH = n * rowH, { g, W } = setup("fig1", top + rasterH + 44);
+  const x0 = 96, tower = 150, strip = 26, x1 = W - tower - strip - 26;
+  const X = v => x0 + (v - cur.lo) / S.p * (x1 - x0);
+  // the lane above the raster: the window, pointing down at it
+  lanelabel(g, "window · " + wlabel(S.w), x0 - 8, 16);
+  const a = X(S.t - S.w / 2), b = X(S.t + S.w / 2);
+  g.fillStyle = BLUE; g.fillRect(a, 8, Math.max(b - a, 1.5), 8); down(g, X(S.t), top - 4, 5, BLUE);
+  // the raster: black marks, nothing else
+  g.fillStyle = INK;
+  cur.rows.forEach((r, i) => {
+    const move = r.dir * Math.min(S.s, isFinite(r.need) ? r.need : 0);
+    for (const v of r.on) {
+      let u = v + move; u = cur.lo + (((u - cur.lo) % S.p) + S.p) % S.p;
+      g.fillRect(Math.round(X(u)) - 0.75, top + i * rowH + 1, 1.5, rowH - 2);
+    }
+  });
+  g.strokeStyle = "#bbb"; g.strokeRect(x0 + .5, top + .5, x1 - x0, rasterH);
+  ylabel(g, unit(n, "ROI"), 16, top + rasterH / 2);
+  xaxis(g, x0, x1, top + rasterH, cur.lo, cur.hi, "time in the recording, as recorded");
+  // row by row: who is in the window
+  const sx = x1 + 12;
+  cur.rows.forEach((r, i) => {
+    const y = top + i * rowH + 1.5, sz = rowH - 3;
+    if (!isFinite(r.need)) { g.setLineDash([1, 2]); g.strokeStyle = "#bbb"; g.strokeRect(sx + .5, y + .5, sz, sz); g.setLineDash([]); }
+    else if (r.need === 0) { g.fillStyle = INK; g.fillRect(sx, y, sz + 1, sz + 1); }
+    else if (r.need <= S.s) { g.fillStyle = ARRIVED; g.fillRect(sx, y, sz + 1, sz + 1); }
+    else { g.strokeStyle = "#999"; g.strokeRect(sx + .5, y + .5, sz, sz); }
+  });
+  g.fillStyle = INK; g.textAlign = "center"; g.fillText("in", sx + 4, top - 14); g.fillText("window", sx + 4, top - 2);
+  // the tower
+  const tx = x1 + strip + 62, tw = 44, base = top + rasterH, Y = k => base - k * rowH;
+  const reached = cur.needs.filter(d => d <= S.s).length;
+  for (let k = 0; k < cur.ceiling; k++) {
+    if (k < cur.height) { g.fillStyle = INK; g.fillRect(tx, Y(k + 1) + 1, tw, rowH - 1.5); }
+    else if (k < reached) { g.fillStyle = ARRIVED; g.fillRect(tx, Y(k + 1) + 1, tw, rowH - 1.5); }
+  }
+  g.strokeStyle = INK; g.setLineDash([4, 3]); g.beginPath();
+  g.moveTo(tx - 8, Y(cur.ceiling) + .5); g.lineTo(tx + tw + 8, Y(cur.ceiling) + .5); g.stroke(); g.setLineDash([]);
+  g.fillStyle = INK; g.textAlign = "left"; g.textBaseline = "middle";
+  g.fillText("ceiling", tx + tw + 12, Y(cur.ceiling)); g.textBaseline = "alphabetic";
+  const yt = []; for (let v = 0; v <= n; v += 5) yt.push(v);
+  yaxis(g, tx - 10, top, base, 0, n, yt);
+  g.textAlign = "center"; g.fillText("tower · ROIs", tx + tw / 2, base + 16);
+  g.beginPath(); g.moveTo(tx - 10, base + .5); g.lineTo(tx + tw + 10, base + .5); g.stroke();
+}
+
+// ---- Figure 2: the growth curve ----------------------------------------------------------------
+function fig2() {
+  const n = DATA.recordings[S.rec].trains.length, { g, W, H } = setup("fig2", 250);
+  const x0 = 96, x1 = W - 240, lane = 20, y0 = lane + 14, y1 = H - 42, top = Math.max(cur.ceiling, 5) + 1;
+  const X = v => x0 + v / (S.p / 2) * (x1 - x0), Y = v => y1 - v / top * (y1 - y0);
+  lanelabel(g, "shift so far", x0 - 8, lane - 4);
+  down(g, X(Math.min(S.s, S.p / 2)), lane + 8, 5, BLUE);
+  // expected under random circular shifts
+  g.strokeStyle = GREY; g.lineWidth = 1.5; g.beginPath();
+  for (let i = 0; i <= 240; i++) {
+    const s = i / 240 * S.p / 2, y = Y(expected(cur.rows, S.p, s + S.w / 2));
+    i ? g.lineTo(X(s), y) : g.moveTo(X(s), y);
+  }
+  g.stroke();
+  // the growth curve, a step
+  const step = (upto, colour, lw) => {
+    g.strokeStyle = colour; g.lineWidth = lw; g.beginPath(); g.moveTo(X(0), Y(cur.height));
+    let k = cur.height;
+    for (const d of cur.needs) {
+      if (d === 0) continue; if (d > upto) break;
+      g.lineTo(X(d), Y(k)); k++; g.lineTo(X(d), Y(k));
+    }
+    g.lineTo(X(upto), Y(k)); g.stroke();
+  };
+  step(S.p / 2, INK, 1); step(Math.min(S.s, S.p / 2), BLUE, 3); g.lineWidth = 1;
+  g.strokeStyle = INK; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(x0, Y(cur.ceiling) + .5); g.lineTo(x1, Y(cur.ceiling) + .5); g.stroke(); g.setLineDash([]);
+  const yt = []; for (let v = 0; v <= top; v += 5) yt.push(v);
+  yaxis(g, x0, y0, y1, 0, top, yt); ylabel(g, "tower height\nROIs", 14, (y0 + y1) / 2);
+  xaxis(g, x0, x1, y1, 0, S.p / 2, "shift allowed per ROI");
+  g.fillStyle = INK; g.textAlign = "left";
+  const lx = x1 + 18;
+  g.fillText("ceiling · " + unit(cur.ceiling, "ROI"), lx, Y(cur.ceiling) + 4);
+  g.fillText("height as recorded · " + unit(cur.height, "ROI"), lx, Math.min(Y(cur.height) + 4, y1 - 34));
+  g.fillStyle = GREY; g.fillText("grey: shifted at random (mean)", lx, y1 - 14);
+  g.fillStyle = INK;
+  g.fillText(isFinite(cur.half) ? "half the ceiling at " + fmt(cur.half) + " of shift" : "no onset in the period", lx, y1 + 2);
+  const cost = traces.rebuild[Math.floor(S.t / FRAME)];
+  down(g, X(cost), lane + 8, 5, INK, true);
+  g.fillText("open triangle: shift to rebuild this", lx, y1 - 50); g.fillText("tower elsewhere · " + cost.toFixed(1) + " s", lx, y1 - 36);
+}
+
+// ---- Figure 3: the whole recording --------------------------------------------------------------
+const F3 = { x0: 96, x1: 0 };
+function fig3() {
+  const rec = DATA.recordings[S.rec], n = rec.trains.length, rowH = 5;
+  const laneH = 20, lanes = 3, traceH = 62, gap = 10, top = 6;
+  const yTr = top + lanes * laneH + 6, yRas = yTr + 4 * (traceH + gap), rasterH = n * rowH;
+  const { g, W } = setup("fig3", yRas + rasterH + 44);
+  const x0 = F3.x0, x1 = F3.x1 = W - 20, T = rec.duration_sec, X = v => x0 + v / T * (x1 - x0);
+  // lanes
+  if (rec.stretch) {
+    lanelabel(g, "raised rate", x0 - 8, top + laneH / 2);
+    const a = X(rec.stretch[0]), b = X(rec.stretch[1]); g.strokeStyle = PLANT;
+    for (let x = a; x <= b; x += 5) { g.beginPath(); g.moveTo(x, top + 4); g.lineTo(x, top + laneH - 4); g.stroke(); }
+  } else {
+    lanelabel(g, "planted · " + rec.events.length, x0 - 8, top + laneH / 2);
+    rec.events.forEach((e, k) => down(g, X(e.time_sec), top + laneH - 2, 4.5, verdict.found[k] ? GOOD : BAD));
+  }
+  lanelabel(g, "calls · " + calls.length, x0 - 8, top + laneH * 1.5);
+  calls.forEach((c, k) => {
+    const a = X(c.start - S.w / 2), b = X(c.end + S.w / 2);
+    g.fillStyle = verdict.falseCall[k] ? BAD : INK; g.fillRect(a - 1, top + laneH + 5, Math.max(b - a, 1) + 2, laneH - 10);
+  });
+  lanelabel(g, "shown", x0 - 8, top + laneH * 2.5);
+  g.fillStyle = BLUE; g.fillRect(X(Math.max(0, S.t - S.p / 2)), top + 2 * laneH + 3, X(Math.min(T, S.t + S.p / 2)) - X(Math.max(0, S.t - S.p / 2)), 3);
+  down(g, X(S.t), top + 3 * laneH - 1, 4.5, BLUE);
+  // traces
+  const rows = [
+    ["rebuild cost\nseconds", traces.rebuild, S.p / 2, [0, S.p / 4, S.p / 2], "rebuild"],
+    ["fill", traces.fill, 1, [0, 0.5, 1], "fill"],
+    ["height\nROIs in " + wlabel(S.w), traces.height, null, null],
+    ["ceiling\nROIs in " + fmt(S.p), traces.ceiling, null, null]];
+  rows.forEach(([label, v, fixed, yt, key], i) => {
+    const a = yTr + i * (traceH + gap), b = a + traceH;
+    let hi = fixed; if (!hi) { hi = 1; for (let k = 0; k < v.length; k++) if (v[k] > hi) hi = v[k]; }
+    if (!yt) yt = [0, Math.round(hi / 2), hi];
+    yaxis(g, x0, a, b, 0, hi, yt); ylabel(g, label, 12, (a + b) / 2);
+    // one vertical span per pixel column, so a one-frame peak is never lost
+    g.fillStyle = INK; const per = v.length / (x1 - x0);
+    for (let px = 0; px < x1 - x0; px++) {
+      let lo = Infinity, mx = -Infinity;
+      for (let k = Math.floor(px * per); k < Math.min(v.length, Math.ceil((px + 1) * per)); k++) { if (v[k] < lo) lo = v[k]; if (v[k] > mx) mx = v[k]; }
+      const ya = b - mx / hi * traceH, yb = b - lo / hi * traceH;
+      g.fillRect(x0 + px, ya - .5, 1, Math.max(yb - ya, 0) + 1);
+    }
+    if (key === S.score && S.th[key] <= hi) {
+      const y = Math.round(b - S.th[key] / hi * traceH) + .5;
+      g.strokeStyle = BAD; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke(); g.setLineDash([]);
+    }
+  });
+  // raster
+  g.fillStyle = INK;
+  rec.trains.forEach((train, i) => { for (const v of train) g.fillRect(X(v) - 0.5, yRas + i * rowH + .5, 1, rowH - 1); });
+  g.strokeStyle = "#bbb"; g.strokeRect(x0 + .5, yRas + .5, x1 - x0, rasterH);
+  ylabel(g, unit(n, "ROI"), 16, yRas + rasterH / 2);
+  xaxis(g, x0, x1, yRas + rasterH, 0, T, "time in the recording", 12);
+}
+
+// ---- state --------------------------------------------------------------------------------------
+function readout() {
+  const reached = cur.needs.filter(d => d <= S.s).length;
+  document.getElementById("readout").innerHTML =
+    "As recorded: <b>" + unit(cur.height, "ROI") + "</b> in the " + wlabel(S.w) + " window. Ceiling: <b>" +
+    unit(cur.ceiling, "ROI") + "</b> with an onset in the " + fmt(S.p) + " period. Fill <b>" +
+    cur.fill.toFixed(2) + "</b>." + (S.s > 0 ? " With " + S.s.toFixed(1) + " s of shift allowed per ROI the tower holds <b>" +
+    unit(reached, "ROI") + "</b>." : "");
+  document.getElementById("sval").textContent = S.s.toFixed(1) + " s";
+  const k = Math.floor(S.t / FRAME), cost = traces.rebuild[k], rec = DATA.recordings[S.rec];
+  const called = calls.some(c => S.t >= c.start - 1e-9 && S.t <= c.end + 1e-9);
+  const nf = verdict.falseCall.filter(Boolean).length, found = verdict.found.filter(Boolean).length;
+  document.getElementById("verdict").innerHTML =
+    "To rebuild this tower elsewhere in the period: <b>" + cost.toFixed(1) + " s</b> of shift per ROI. This moment is <b>" +
+    (called ? "called" : "not called") + "</b>. In this recording: <b>" + unit(calls.length, "call") + "</b>, " +
+    (rec.events.length ? found + " of " + unit(rec.events.length, "planted event") + " found, " + unit(nf, "false call") + "."
+                       : "all false, because nothing is planted here.");
+}
+function recall() {                        // the calls at the current rule, and their verdicts
+  calls = callsOf(traces, S.score, S.th[S.score]); verdict = verdicts(DATA.recordings[S.rec], calls);
+  const th = document.getElementById("th"), c = TH[S.score];
+  th.max = c.max; th.step = c.step; th.value = S.th[S.score];
+  document.getElementById("thval").textContent = c.f(S.th[S.score]);
+}
+function redraw(all) {
+  const rec = DATA.recordings[S.rec];
+  if (all) {
+    cur = atMoment(rec, S.t, S.w, S.p); traces = along(rec, S.w, S.p); recall();
+    const sl = document.getElementById("s"); sl.max = S.p / 2;
+    document.getElementById("fig3what").textContent = rec.caption;
+    fig3();
+  }
+  document.getElementById("s").value = S.s;
+  readout(); fig1(); fig2();
+}
+function choose(i) {
+  const sc = DATA.scenes[i]; S.scene = i; S.rec = sc.recording; S.t = snap(sc.time_sec); S.s = 0; stop();
+  document.querySelectorAll("#scenes button").forEach((b, k) => b.classList.toggle("on", k === i));
+  redraw(true);
+}
+let raf = 0;
+function stop() { S.playing = false; cancelAnimationFrame(raf); document.getElementById("play").textContent = "▶ Shift the ROIs"; }
+function play() {
+  if (S.playing) return stop();
+  const end = cur.needs.length ? cur.needs[cur.needs.length - 1] : 0;
+  if (S.s >= end) S.s = 0;
+  S.playing = true; document.getElementById("play").textContent = "❚❚ Pause";
+  let last = performance.now();
+  const rate = Math.max(end, 1) / 9;                 // the farthest ROI arrives after 9 s
+  const tick = now => {
+    S.s = Math.min(end, S.s + (now - last) / 1000 * rate); last = now; redraw(false);
+    if (S.s >= end) return stop();
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+}
+function init() {
+  const sc = document.getElementById("scenes");
+  DATA.scenes.forEach((s, i) => { const b = document.createElement("button"); b.textContent = s.label; b.onclick = () => choose(i); sc.appendChild(b); });
+  const fill = (id, values, now, f) => { const el = document.getElementById(id);
+    values.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = f(v); o.selected = v === now; el.appendChild(o); });
+    el.onchange = () => { S[id] = +el.value; S.s = 0; stop(); redraw(true); }; };
+  fill("w", DATA.widths_sec, S.w, wlabel); fill("p", DATA.periods_sec, S.p, fmt);
+  document.getElementById("score").onchange = e => { S.score = e.target.value; recall(); fig3(); readout(); };
+  document.getElementById("th").oninput = e => { S.th[S.score] = +e.target.value; recall(); fig3(); readout(); };
+  document.getElementById("play").onclick = play;
+  document.getElementById("reset").onclick = () => { stop(); S.s = 0; redraw(false); };
+  document.getElementById("s").oninput = e => { stop(); S.s = +e.target.value; redraw(false); };
+  document.getElementById("fig3").onclick = e => {
+    const r = e.target.getBoundingClientRect(), T = DATA.recordings[S.rec].duration_sec;
+    const t = (e.clientX - r.left - F3.x0) / (F3.x1 - F3.x0) * T;
+    if (t < 0 || t > T) return;
+    S.t = snap(t); S.s = 0; stop();
+    document.querySelectorAll("#scenes button").forEach(b => b.classList.remove("on")); redraw(true);
+  };
+  document.getElementById("foot").textContent = DATA.footnote;
+  window.addEventListener("resize", () => redraw(true));
+  choose(0);
+}
+// What the page computes, for the tool that built it to hold against the Python module.
+window.__check = () => DATA.recordings.map((rec, i) => {
+  const a = along(rec, DATA.width_sec, DATA.period_sec);
+  return { height: Array.from(a.height), ceiling: Array.from(a.ceiling), rebuild: Array.from(a.rebuild),
+    calls: Object.fromEntries(["rebuild", "fill"].map(k =>
+      [k, callsOf(a, k, DATA.thresholds[k]).map(c => [c.start, c.end, c.peak])])),
+    scenes: DATA.scenes.filter(s => s.recording === i).map(s => {
+      const m = atMoment(rec, snap(s.time_sec), DATA.width_sec, DATA.period_sec);
+      return { needs: m.needs, half: m.half,
+               expected: DATA.check_radii_sec.map(r => expected(m.rows, DATA.period_sec, r)) }; }) };
+});
+window.__set = (scene, s) => { choose(scene); S.s = s; redraw(false); };
+init();
+</script>
+</body>
+</html>
