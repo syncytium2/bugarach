@@ -75,6 +75,67 @@ bootstrap interval over recordings:
 
 Numbers: [`search_summary.json`](search_summary.json). 672 recordings, 394 s on one laptop.
 
+## Short intervals: a controlled test, and it separates the detectors
+
+![Figure 3](explainer_close-events_20261008.png)
+
+**Figure 3. Planted events at a chosen short gap, fast stream.** Left: F1, mean of the quiet and
+busy backgrounds. Middle: recall of the scored planted events. Right: merged calls per
+recording, a merged call being one whose span holds two or more scored planted events. The
+horizontal axis is the gap between the close planted events. Solid green and black: the sliding
+count in a 0.5 s window with a 1.5 s merge gap, without and with the stack ceiling's rebuild
+cost. Dashed: the same with a 0.2 s merge gap.
+
+Tony, once every tuned detector had landed within a few hundredths of F1 on the fast bench:
+*"i suspect we need the revised bench with short intervals."* The realistic bench cannot show
+this. Its gaps were measured from peaks of a count in a 2 s window, so its shortest fast gap is
+2.1 s.
+
+`tools/measure_close_events.py` is the part that needs no real recording. On the fast bench's
+recording, half the gaps between neighbouring planted events are set to one chosen value and the
+rest keep the old spacing: 48 recordings per gap, 336 planted events, 134 close gaps.
+**It is a controlled test, not a bench.** The gap values are a sweep axis, not a measurement.
+
+| gap between close events | 0.3 s | 0.5 s | 1 s | 1.5 s | 2 s | 3 s | 5 s | 10 s |
+|---|---|---|---|---|---|---|---|---|
+| F1: CoactDetect, shipped | 0.41 | 0.41 | 0.44 | 0.43 | 0.46 | 0.50 | 0.56 | 0.61 |
+| F1: LoCo, shipped | 0.44 | 0.45 | 0.51 | 0.53 | 0.56 | 0.62 | 0.64 | 0.63 |
+| F1: count (sliding), shipped (2 s window, 3 s merge gap) | 0.40 | 0.40 | 0.40 | 0.40 | 0.42 | 0.45 | 0.53 | 0.59 |
+| F1: count, 0.5 s window, 1.5 s merge gap | 0.49 | 0.50 | 0.54 | 0.55 | 0.63 | 0.65 | 0.65 | 0.65 |
+| F1: count, 0.5 s window, 0.2 s merge gap | 0.49 | 0.54 | 0.65 | 0.64 | 0.65 | 0.65 | 0.65 | 0.65 |
+| F1: stack ceiling, 0.5 s window, 0.2 s merge gap | 0.51 | 0.55 | 0.66 | 0.66 | 0.67 | 0.67 | 0.67 | 0.66 |
+| recall: count (sliding), shipped | 0.61 | 0.61 | 0.60 | 0.62 | 0.66 | 0.72 | 0.89 | 1.00 |
+| recall: LoCo, shipped | 0.55 | 0.57 | 0.66 | 0.69 | 0.74 | 0.86 | 0.89 | 0.89 |
+| recall: count, 0.5 s window, 0.2 s merge gap | 0.69 | 0.78 | 1.00 | 0.99 | 1.00 | 1.00 | 1.00 | 1.00 |
+
+- **At a 10 s gap the detectors sit within 0.09 F1 of each other. At 1 s they span 0.40 to
+  0.66.** Short intervals are where they differ.
+- **What decides it is the merge gap, then the window.** A detector cannot separate two events
+  closer than its merge gap. Shipped count (sliding) and CoactDetect merge up to 3 s and lose a
+  third or more of the events until the gap passes 5 s. With a 0.2 s merge gap the 0.5 s window
+  recalls every scored event down to a 1 s gap.
+- **Under 1 s nothing here separates the pair.** At 0.5 s and 0.3 s the best recall is 0.78 and
+  0.69. Two events 0.3 s apart, each with onsets spread over about 0.1 s, overlap in a 0.5 s
+  window.
+- **The stack ceiling's rebuild cost still adds 0.01 to 0.02 F1** over the same count without it,
+  at every gap. It does not separate close events any better.
+- ⚠ **The references are the shipped fast points**, which are binned and tuned on a bench with no
+  close events. The sliding proposals of 2026-09-26 were not run here.
+- ⚠ **The scorer allows 2.5 s** between a call and a planted event, which is longer than most of
+  these gaps. It matches one call to one event, so a merge still costs a miss, but which of two
+  close events a call is credited to is not meaningful below that tolerance.
+- ⚠ A participating ROI can take part in both events of a close pair, with two onsets 0.3 s
+  apart. Whether real ROIs do that is not known here.
+
+**What a real revised bench needs, and what blocks it.** The gaps have to be measured again in a
+window narrower than 2 s, on real baselines. The default folder is stopped for the pinning
+undercount (#858), so that measurement waits on the producer's corrected export, or on Tony's
+word that this measurement is unaffected. The merge gaps in every shipped operating point were
+tuned on recordings with no close events, and would have to be searched again on the revised
+bench.
+
+Numbers: [`close_events_summary.json`](close_events_summary.json). 384 recordings, 104 s.
+
 ## The first run: the threshold alone
 
 ![Figure 2](explainer_stack-ceiling-bench_20261008.png)
@@ -191,4 +252,4 @@ same recordings.
 
 Code: `src/bugarach/detectors/stack_ceiling.py`, `tests/test_stack_ceiling.py`,
 `tools/make_stack_ceiling_demo.py`, `tools/measure_stack_ceiling.py`,
-`tools/search_stack_ceiling.py`.
+`tools/search_stack_ceiling.py`, `tools/measure_close_events.py`.
