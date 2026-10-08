@@ -67,6 +67,25 @@ today.
 5. **The default dataset** was not confirmed this session (Tony: "we'll decide when we need it").
    Nothing here read data.
 
+## The shutdown, as reported back (11:30 to about 12:00 EDT)
+
+Every session that was open replied and closed with nothing running and no claims held:
+`interface2-6b` and `interface2-0a` on WSMIP065, `interface2-dc` and `bugarach-b9` on WSMIP064,
+`interface2-f5` and the bugarach session on the Mac. Their reports leave these open:
+
+- **Eight Mac branches have commits on no remote**, in other worktrees, from earlier sessions:
+  `board/claim-comparison-four-darkroom`, `field-steps-generate-slow-calls`,
+  `full-cohort-senktide-ttx`, `justify-the-roi-swap`, `release-the-site-claim`,
+  `revendor-murderboard-cost-gate`, `surrogate-field-ruled`, `the-conditioned-run`. Each is a single
+  copy on one disk. The rule is to push them; nobody did, because no session owned them.
+- **`aCa3_ROIs.mlapp` (the picking app) is modified and uncommitted** in WSMIP065's interface2
+  primary checkout, older than today's sessions (interface2 todo `2026-10-08-roi_manual-*`). Left
+  untouched; keep or discard is Tony's call.
+- **interface2 `main` gained `5b8e105a`, a ROADMAP cleanup nobody asked for**, pushed directly by
+  the Mac's `interface2-f5` beside its board entry (`60bcfa0d`). Worth reading before it is built on.
+- **WSMIP064's bugarach primary checkout is 23 commits behind `origin/main`.** Harmless; the next
+  session there pulls first.
+
 ## Found today, not fixed
 
 - **interface2's startup briefing really does time out on WSMIP065.** Its "sapper watch" section was
