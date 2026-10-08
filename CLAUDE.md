@@ -124,6 +124,15 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
   `t` dimension.
 - **Scroll wins**: wheel-zoom stays in the toolbar but inactive — the mouse
   wheel scrolls the page; drag pans.
+- **A figure page is figures, then controls, then text** (Tony, 2026-10-08, on the stack ceiling
+  page: *"this architecture (figures at the top, controls stuck to bottom, explainer text at the
+  bottom of the scroll) needs to be standardized for the estate"*;
+  [ADR-0014](docs/adr/0014-a-figure-page-is-figures-then-controls-then-text.md)). Nothing but the
+  title sits above the first figure. Each figure's heading line holds its number, its name and
+  its **legend**, and no explanation. The controls are one block after the figures that sticks to
+  the bottom of the window. What is measured and how to read each figure goes last. Copy
+  `tools/stack_ceiling_demo.template.html`; `tests/test_figure_page_layout.py` checks that page
+  and only that page.
 - **Nothing is ever drawn on the raster** (Tony, 2026-08-26 — *"please, lets never
   draw on the raster. i know i've changed my mind on this"*). The raster is **black
   and white**: one ink, one mark per event, nothing competing with it. Every
