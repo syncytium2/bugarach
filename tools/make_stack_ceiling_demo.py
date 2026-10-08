@@ -36,7 +36,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from bugarach import bench, simulate  # noqa: E402
-from bugarach.detectors.stack_ceiling import expected_height, stack_ceiling  # noqa: E402
+from bugarach.detectors.stack_ceiling import (  # noqa: E402
+    MINIMUM_ROIS, call_moments, expected_height, rebuild_cost, stack_ceiling)
 from bugarach.paths import darkroom  # noqa: E402
 
 TEMPLATE = Path(__file__).with_name("stack_ceiling_demo.template.html")
@@ -51,6 +52,24 @@ STRETCH = (420.0, 660.0)
 CLEAR_OF_EVENTS_SEC = 10.0
 CHECK_RADII_SEC = (0.15, 1.0, 5.0, 20.0, 60.0)
 SEED = 7
+STRIDE = 5
+THRESHOLDS = {"rebuild": 10.0, "fill": 0.4}
+"""Where the page's two settings start. Picked by eye on seeds 7 to 10 of these two recordings,
+so they are a starting point for the sliders and nothing more."""
+MERGE_GAP_SEC = 0.5                             # stack's merge gap on the fast stream
+MATCH_SEC = 2.5                                 # make_stack_rasters.py's matching tolerance
+
+
+def scored(rec, r, score: np.ndarray, threshold: float) -> dict:
+    """The calls at one setting, and the page's own light verdict on them: a planted event is
+    found when a call lies within ``MATCH_SEC`` of it, and a call with no planted event that
+    near is false. This is not the bench's scorer."""
+    calls = call_moments(r, score, threshold, merge_gap_sec=MERGE_GAP_SEC)
+    ev = np.array([e["time_sec"] for e in rec["events"]])
+    near = ((ev[None, :] >= calls[:, :1] - MATCH_SEC) & (ev[None, :] <= calls[:, 1:2] + MATCH_SEC)
+            if ev.size and len(calls) else np.zeros((len(calls), ev.size), bool))
+    return dict(calls=calls, found=int(near.any(axis=0).sum()), planted=int(ev.size),
+                false=int((~near.any(axis=1)).sum()))
 
 
 def recordings():
@@ -117,6 +136,8 @@ def build(recs, scs, dt: float) -> str:
         frame_interval_sec=dt, width_sec=WIDTH_SEC, period_sec=PERIOD_SEC,
         widths_sec=list(WIDTHS_SEC), periods_sec=list(PERIODS_SEC),
         check_radii_sec=list(CHECK_RADII_SEC), scenes=scs,
+        stride=STRIDE, thresholds=THRESHOLDS, min_rois=MINIMUM_ROIS,
+        merge_gap_sec=MERGE_GAP_SEC, match_sec=MATCH_SEC,
         recordings=[dict(caption=r["caption"], duration_sec=r["duration_sec"],
                          trains=[np.round(t, 4).tolist() for t in r["trains"]],
                          events=r["events"], stretch=r["stretch"]) for r in recs],
@@ -151,7 +172,13 @@ def reference(recs, scs, dt: float) -> list[dict]:
                 needs=need[np.isfinite(need)].tolist(), half=float(m.half_shift_sec[0]),
                 expected=expected_height(r["trains"], s["time_sec"], period_sec=PERIOD_SEC,
                                          radii_sec=CHECK_RADII_SEC).tolist()))
-        out.append(dict(height=whole.height.tolist(), ceiling=whole.ceiling.tolist(), scenes=at))
+        cost = rebuild_cost(whole, stride=STRIDE)
+        score = {"rebuild": cost, "fill": whole.fill}
+        out.append(dict(
+            height=whole.height.tolist(), ceiling=whole.ceiling.tolist(), rebuild=cost.tolist(),
+            calls={k: scored(r, whole, score[k], THRESHOLDS[k])["calls"].tolist()
+                   for k in THRESHOLDS},
+            scenes=at, whole=whole, score=score))
     return out
 
 
@@ -173,6 +200,13 @@ def check_and_shoot(html: Path, png: Path, want: list[dict], shift_sec: float) -
                     bad = int(np.flatnonzero(np.asarray(g[key]) != np.asarray(w[key]))[0])
                     raise SystemExit(f"recording {i}: the page's {key} differs from "
                                      f"stack_ceiling at moment {bad}")
+            if not np.allclose(g["rebuild"], w["rebuild"], atol=1e-9):
+                raise SystemExit(f"recording {i}: the page's rebuild cost differs from the module")
+            for key, rows in w["calls"].items():
+                if np.shape(g["calls"][key]) != np.shape(rows) or not np.allclose(
+                        np.asarray(g["calls"][key], float).reshape(-1, 3),
+                        np.asarray(rows, float).reshape(-1, 3), atol=1e-9):
+                    raise SystemExit(f"recording {i}: the page's {key} calls differ from the module")
             for gs, ws in zip(g["scenes"], w["scenes"], strict=True):
                 for key in ("needs", "expected"):
                     if not np.allclose(gs[key], ws[key], atol=1e-9):
@@ -213,12 +247,21 @@ def main(argv=None):
                 shutil.copy2(f, dest / f.name)
                 print(dest / f.name)
 
-    print("\nmoment                                        height  ceiling  fill  half-ceiling shift")
+    c = centres(dt)
+    print("\nmoment                                        height  ceiling  fill  rebuild cost")
     for s in scs:
-        r = recs[s["recording"]]
-        m = stack_ceiling(r["trains"], [s["time_sec"]], width_sec=WIDTH_SEC, period_sec=PERIOD_SEC)
-        print(f"{s['label']:<44}  {int(m.height[0]):>2} ROIs  {int(m.ceiling[0]):>2} ROIs  "
-              f"{m.fill[0]:.2f}  {m.half_shift_sec[0]:.1f} s")
+        w = want[s["recording"]]
+        k = int(np.argmin(np.abs(c - s["time_sec"])))
+        print(f"{s['label']:<44}  {int(w['whole'].height[k]):>2} ROIs  "
+              f"{int(w['whole'].ceiling[k]):>2} ROIs  {w['whole'].fill[k]:.2f}  "
+              f"{w['score']['rebuild'][k]:.1f} s")
+    print("\nrule                      recording  calls  planted found  false calls")
+    for key, label in (("rebuild", f"rebuild cost >= {THRESHOLDS['rebuild']:g} s"),
+                       ("fill", f"fill >= {THRESHOLDS['fill']:g}")):
+        for r, w in zip(recs, want):
+            v = scored(r, w["whole"], w["score"][key], THRESHOLDS[key])
+            print(f"{label:<24}  {r['key']:<9}  {len(v['calls']):>5}  "
+                  f"{v['found']} of {v['planted']:<8}  {v['false']}")
 
 
 if __name__ == "__main__":

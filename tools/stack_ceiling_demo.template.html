@@ -50,7 +50,23 @@ ceiling. No probability is computed anywhere on this page.</p>
   <label>shift allowed per ROI <input type="range" id="s" min="0" max="60" step="0.1" value="0">
     <span id="sval"></span></label>
 </div>
+<div class="controls">
+  <label>Call a moment when <select id="score">
+    <option value="rebuild">the cost to rebuild its tower elsewhere</option>
+    <option value="fill">its fill</option></select></label>
+  <label>is at least <input type="range" id="th" style="width:220px"> <span id="thval"></span></label>
+  <span>and at least 3 ROIs stand</span>
+</div>
 <p class="readout" id="readout"></p>
+<p class="readout" id="verdict"></p>
+<p class="how"><b>The call rule.</b> A tower at a moment stands without any shift. At another
+moment of the same period, a tower that tall has to be built, and that takes some shift per ROI.
+The <b>cost to rebuild elsewhere</b> is the median of that shift over the other moments of the
+period, in seconds. A planted event is costly to rebuild: its ROIs are otherwise far apart. In a
+stretch where every ROI's rate is raised a tall tower is cheap to build anywhere. A moment is
+called when the cost reaches the setting and at least 3 ROIs stand; called moments under 0.5 s
+apart are one call. Fill is offered as the plainer rule to compare. Neither setting has been
+tuned: move it and watch the calls.</p>
 
 <figure>
   <figcaption><b>Figure 1. The period, as recorded and as it shifts.</b> The raster is the period
@@ -76,10 +92,13 @@ ceiling. No probability is computed anywhere on this page.</p>
 </figure>
 
 <figure>
-  <figcaption><b>Figure 3. The whole simulated recording.</b> <span id="fig3what"></span> Below
-  the lanes: the fill, the height in the window <i>w</i>, the ceiling over the period <i>p</i>,
-  and the raster. Click anywhere to move the chosen moment; Figures 1 and 2, the period and its
-  growth curve, follow.</figcaption>
+  <figcaption><b>Figure 3. The whole simulated recording, and the calls.</b>
+  <span id="fig3what"></span> The <i>calls</i> lane holds one bar per call: black on a planted
+  event, red where nothing is planted. A planted event's triangle is green when a call found it
+  and red when none did. Below the lanes: the cost to rebuild elsewhere, the fill, the height in
+  the window <i>w</i>, the ceiling over the period <i>p</i>, and the raster. The dotted line is
+  the setting, on the trace it applies to. Click anywhere to move the chosen moment; Figures 1
+  and 2, the period and its growth curve, follow.</figcaption>
   <canvas id="fig3"></canvas>
 </figure>
 
@@ -90,8 +109,11 @@ ceiling. No probability is computed anywhere on this page.</p>
 const DATA = /*DATA*/null;
 const INK = "#111", BLUE = "#1f5fbf", ARRIVED = "#6b9bd1", GREY = "#888", PLANT = "#444";
 const FRAME = DATA.frame_interval_sec;
-const S = { rec: 0, t: 0, w: DATA.width_sec, p: DATA.period_sec, s: 0, playing: false, scene: 0 };
-let cur = null, traces = null;
+const STRIDE = DATA.stride, GOOD = "#1a7f37", BAD = "#c62828";
+const S = { rec: 0, t: 0, w: DATA.width_sec, p: DATA.period_sec, s: 0, playing: false, scene: 0,
+            score: "rebuild", th: { rebuild: DATA.thresholds.rebuild, fill: DATA.thresholds.fill } };
+const TH = { rebuild: { max: 30, step: 0.5, f: v => v.toFixed(1) + " s" }, fill: { max: 1, step: 0.01, f: v => v.toFixed(2) } };
+let cur = null, traces = null, calls = [], verdict = null;
 
 // ---- time axis: ticks at 1/2/5/10/15/30 x 60^k s, labelled 45s / 2m / 2m30s -----------------
 function fmt(sec) {
@@ -141,26 +163,58 @@ function expected(rows, p, radius) {      // mean height under independent unifo
   }
   return sum;
 }
-function along(rec, w, p) {               // height and ceiling at every half-frame moment
-  const n = Math.floor(rec.duration_sec / FRAME);
-  const count = half => {
-    const total = new Int16Array(n);
-    for (const train of rec.trains) {
-      const diff = new Int16Array(n + 1);
-      for (const v of train) {
-        // moments c_k = (k + 0.5) FRAME with |v - c_k| <= half
-        const a = Math.max(0, Math.ceil((v - half) / FRAME - 0.5 - 1e-9));
-        const b = Math.min(n - 1, Math.floor((v + half) / FRAME - 0.5 + 1e-9));
-        if (b >= a) { diff[a]++; diff[b + 1]--; }
-      }
-      let run = 0;
-      for (let k = 0; k < n; k++) { run += diff[k]; if (run > 0) total[k]++; }
+function along(rec, w, p) {               // every half-frame moment of the recording
+  const n = Math.floor(rec.duration_sec / FRAME), R = rec.trains.length;
+  const need = new Float64Array(n * R).fill(Infinity);
+  rec.trains.forEach((train, r) => {
+    if (!train.length) return;
+    let i = 0;
+    for (let k = 0; k < n; k++) {
+      const c = (k + 0.5) * FRAME;
+      while (i + 1 < train.length && train[i + 1] <= c) i++;        // train[i]: last onset <= c
+      let gap = Math.abs(c - train[i]);
+      if (i + 1 < train.length) gap = Math.min(gap, Math.abs(train[i + 1] - c));
+      if (gap <= p / 2) need[k * R + r] = Math.max(gap - w / 2, 0);
     }
-    return total;
-  };
-  const height = count(w / 2), ceiling = count(p / 2), fill = new Float32Array(n);
-  for (let k = 0; k < n; k++) fill[k] = ceiling[k] ? height[k] / ceiling[k] : 0;
-  return { n, height, ceiling, fill };
+  });
+  const height = new Int16Array(n), ceiling = new Int16Array(n), fill = new Float64Array(n);
+  const ordered = new Float64Array(n * R), row = new Float64Array(R);
+  for (let k = 0; k < n; k++) {
+    for (let r = 0; r < R; r++) {
+      const d = need[k * R + r]; row[r] = Math.min(d, p / 2);
+      if (d === 0) height[k]++; if (isFinite(d)) ceiling[k]++;
+    }
+    row.sort(); ordered.set(row, k * R);
+    fill[k] = ceiling[k] ? height[k] / ceiling[k] : 0;
+  }
+  // the cost to rebuild each moment's tower at a typical other moment of its period
+  const rebuild = new Float64Array(n), hp = Math.round(p / 2 / FRAME), apart = Math.max(Math.round(w / FRAME), 1);
+  for (let i = 0; i < n; i++) {
+    if (!height[i]) continue;
+    const lo = Math.max(0, i - hp), hi = Math.min(n - 1, i + hp), v = [];
+    for (let j = lo + ((STRIDE - lo % STRIDE) % STRIDE); j <= hi; j += STRIDE)
+      if (Math.abs(j - i) >= apart) v.push(ordered[j * R + height[i] - 1]);
+    if (!v.length) continue;
+    v.sort((a, b) => a - b); const m = v.length >> 1;
+    rebuild[i] = v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+  }
+  return { n, height, ceiling, fill, rebuild };
+}
+function callsOf(tr, score, threshold) {  // runs of called moments, joined across short gaps
+  const out = []; let run = null;
+  for (let k = 0; k < tr.n; k++) {
+    if (!(tr[score][k] >= threshold - 1e-9 && tr.height[k] >= DATA.min_rois)) continue;
+    const c = (k + 0.5) * FRAME;
+    if (run && c - run.end <= DATA.merge_gap_sec + 1e-9) { run.end = c; if (tr.height[k] > run.h) { run.h = tr.height[k]; run.peak = c; } }
+    else { run = { start: c, end: c, peak: c, h: tr.height[k] }; out.push(run); }
+  }
+  return out;
+}
+function verdicts(rec, calls) {           // which planted events a call found, which calls are false
+  const m = DATA.match_sec, on = (c, e) => e.time_sec >= c.start - m && e.time_sec <= c.end + m;
+  const found = rec.events.map(e => calls.some(c => on(c, e)));
+  const falseCall = calls.map(c => !rec.events.some(e => on(c, e)));
+  return { found, falseCall };
 }
 
 // ---- canvas helpers ---------------------------------------------------------------------------
@@ -287,14 +341,17 @@ function fig2() {
   g.fillStyle = GREY; g.fillText("grey: shifted at random (mean)", lx, y1 - 14);
   g.fillStyle = INK;
   g.fillText(isFinite(cur.half) ? "half the ceiling at " + fmt(cur.half) + " of shift" : "no onset in the period", lx, y1 + 2);
+  const cost = traces.rebuild[Math.floor(S.t / FRAME)];
+  down(g, X(cost), lane + 8, 5, INK, true);
+  g.fillText("open triangle: shift to rebuild this", lx, y1 - 50); g.fillText("tower elsewhere · " + cost.toFixed(1) + " s", lx, y1 - 36);
 }
 
 // ---- Figure 3: the whole recording --------------------------------------------------------------
 const F3 = { x0: 96, x1: 0 };
 function fig3() {
   const rec = DATA.recordings[S.rec], n = rec.trains.length, rowH = 5;
-  const laneH = 20, lanes = 2, traceH = 62, gap = 10, top = 6;
-  const yTr = top + lanes * laneH + 6, yRas = yTr + 3 * (traceH + gap), rasterH = n * rowH;
+  const laneH = 20, lanes = 3, traceH = 62, gap = 10, top = 6;
+  const yTr = top + lanes * laneH + 6, yRas = yTr + 4 * (traceH + gap), rasterH = n * rowH;
   const { g, W } = setup("fig3", yRas + rasterH + 44);
   const x0 = F3.x0, x1 = F3.x1 = W - 20, T = rec.duration_sec, X = v => x0 + v / T * (x1 - x0);
   // lanes
@@ -303,18 +360,24 @@ function fig3() {
     const a = X(rec.stretch[0]), b = X(rec.stretch[1]); g.strokeStyle = PLANT;
     for (let x = a; x <= b; x += 5) { g.beginPath(); g.moveTo(x, top + 4); g.lineTo(x, top + laneH - 4); g.stroke(); }
   } else {
-    lanelabel(g, "planted", x0 - 8, top + laneH / 2);
-    for (const e of rec.events) down(g, X(e.time_sec), top + laneH - 2, 4.5, PLANT);
+    lanelabel(g, "planted · " + rec.events.length, x0 - 8, top + laneH / 2);
+    rec.events.forEach((e, k) => down(g, X(e.time_sec), top + laneH - 2, 4.5, verdict.found[k] ? GOOD : BAD));
   }
-  lanelabel(g, "shown", x0 - 8, top + laneH * 1.5);
-  g.fillStyle = BLUE; g.fillRect(X(Math.max(0, S.t - S.p / 2)), top + laneH + 3, X(Math.min(T, S.t + S.p / 2)) - X(Math.max(0, S.t - S.p / 2)), 3);
-  down(g, X(S.t), top + 2 * laneH - 1, 4.5, BLUE);
+  lanelabel(g, "calls · " + calls.length, x0 - 8, top + laneH * 1.5);
+  calls.forEach((c, k) => {
+    const a = X(c.start - S.w / 2), b = X(c.end + S.w / 2);
+    g.fillStyle = verdict.falseCall[k] ? BAD : INK; g.fillRect(a - 1, top + laneH + 5, Math.max(b - a, 1) + 2, laneH - 10);
+  });
+  lanelabel(g, "shown", x0 - 8, top + laneH * 2.5);
+  g.fillStyle = BLUE; g.fillRect(X(Math.max(0, S.t - S.p / 2)), top + 2 * laneH + 3, X(Math.min(T, S.t + S.p / 2)) - X(Math.max(0, S.t - S.p / 2)), 3);
+  down(g, X(S.t), top + 3 * laneH - 1, 4.5, BLUE);
   // traces
   const rows = [
-    ["fill", traces.fill, 1, [0, 0.5, 1]],
+    ["rebuild cost\nseconds", traces.rebuild, S.p / 2, [0, S.p / 4, S.p / 2], "rebuild"],
+    ["fill", traces.fill, 1, [0, 0.5, 1], "fill"],
     ["height\nROIs in " + wlabel(S.w), traces.height, null, null],
     ["ceiling\nROIs in " + fmt(S.p), traces.ceiling, null, null]];
-  rows.forEach(([label, v, fixed, yt], i) => {
+  rows.forEach(([label, v, fixed, yt, key], i) => {
     const a = yTr + i * (traceH + gap), b = a + traceH;
     let hi = fixed; if (!hi) { hi = 1; for (let k = 0; k < v.length; k++) if (v[k] > hi) hi = v[k]; }
     if (!yt) yt = [0, Math.round(hi / 2), hi];
@@ -326,6 +389,10 @@ function fig3() {
       for (let k = Math.floor(px * per); k < Math.min(v.length, Math.ceil((px + 1) * per)); k++) { if (v[k] < lo) lo = v[k]; if (v[k] > mx) mx = v[k]; }
       const ya = b - mx / hi * traceH, yb = b - lo / hi * traceH;
       g.fillRect(x0 + px, ya - .5, 1, Math.max(yb - ya, 0) + 1);
+    }
+    if (key === S.score && S.th[key] <= hi) {
+      const y = Math.round(b - S.th[key] / hi * traceH) + .5;
+      g.strokeStyle = BAD; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y); g.stroke(); g.setLineDash([]);
     }
   });
   // raster
@@ -345,11 +412,25 @@ function readout() {
     cur.fill.toFixed(2) + "</b>." + (S.s > 0 ? " With " + S.s.toFixed(1) + " s of shift allowed per ROI the tower holds <b>" +
     unit(reached, "ROI") + "</b>." : "");
   document.getElementById("sval").textContent = S.s.toFixed(1) + " s";
+  const k = Math.floor(S.t / FRAME), cost = traces.rebuild[k], rec = DATA.recordings[S.rec];
+  const called = calls.some(c => S.t >= c.start - 1e-9 && S.t <= c.end + 1e-9);
+  const nf = verdict.falseCall.filter(Boolean).length, found = verdict.found.filter(Boolean).length;
+  document.getElementById("verdict").innerHTML =
+    "To rebuild this tower elsewhere in the period: <b>" + cost.toFixed(1) + " s</b> of shift per ROI. This moment is <b>" +
+    (called ? "called" : "not called") + "</b>. In this recording: <b>" + unit(calls.length, "call") + "</b>, " +
+    (rec.events.length ? found + " of " + unit(rec.events.length, "planted event") + " found, " + unit(nf, "false call") + "."
+                       : "all false, because nothing is planted here.");
+}
+function recall() {                        // the calls at the current rule, and their verdicts
+  calls = callsOf(traces, S.score, S.th[S.score]); verdict = verdicts(DATA.recordings[S.rec], calls);
+  const th = document.getElementById("th"), c = TH[S.score];
+  th.max = c.max; th.step = c.step; th.value = S.th[S.score];
+  document.getElementById("thval").textContent = c.f(S.th[S.score]);
 }
 function redraw(all) {
   const rec = DATA.recordings[S.rec];
   if (all) {
-    cur = atMoment(rec, S.t, S.w, S.p); traces = along(rec, S.w, S.p);
+    cur = atMoment(rec, S.t, S.w, S.p); traces = along(rec, S.w, S.p); recall();
     const sl = document.getElementById("s"); sl.max = S.p / 2;
     document.getElementById("fig3what").textContent = rec.caption;
     fig3();
@@ -385,6 +466,8 @@ function init() {
     values.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = f(v); o.selected = v === now; el.appendChild(o); });
     el.onchange = () => { S[id] = +el.value; S.s = 0; stop(); redraw(true); }; };
   fill("w", DATA.widths_sec, S.w, wlabel); fill("p", DATA.periods_sec, S.p, fmt);
+  document.getElementById("score").onchange = e => { S.score = e.target.value; recall(); fig3(); readout(); };
+  document.getElementById("th").oninput = e => { S.th[S.score] = +e.target.value; recall(); fig3(); readout(); };
   document.getElementById("play").onclick = play;
   document.getElementById("reset").onclick = () => { stop(); S.s = 0; redraw(false); };
   document.getElementById("s").oninput = e => { stop(); S.s = +e.target.value; redraw(false); };
@@ -402,7 +485,9 @@ function init() {
 // What the page computes, for the tool that built it to hold against the Python module.
 window.__check = () => DATA.recordings.map((rec, i) => {
   const a = along(rec, DATA.width_sec, DATA.period_sec);
-  return { height: Array.from(a.height), ceiling: Array.from(a.ceiling),
+  return { height: Array.from(a.height), ceiling: Array.from(a.ceiling), rebuild: Array.from(a.rebuild),
+    calls: Object.fromEntries(["rebuild", "fill"].map(k =>
+      [k, callsOf(a, k, DATA.thresholds[k]).map(c => [c.start, c.end, c.peak])])),
     scenes: DATA.scenes.filter(s => s.recording === i).map(s => {
       const m = atMoment(rec, snap(s.time_sec), DATA.width_sec, DATA.period_sec);
       return { needs: m.needs, half: m.half,

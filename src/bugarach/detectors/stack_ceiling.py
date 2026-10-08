@@ -25,10 +25,17 @@ What does depend on the width is how much of that ceiling the recording holds un
 random around the period, exactly, from the fraction of the circle each ROI's onsets cover. It
 is a mean to draw beside the growth curve, not a threshold.
 
-⚠ **Nothing here is a detector yet.** There is no rule that turns fill into a call, and nothing
-has been run on a bench or on a recording. A shared rise in rate raises the height while the
-ceiling stays put, so fill is not immune to it; and an event of few ROIs in a busy period has a
-small fill however tightly its onsets sit.
+**A call rule to try** (:func:`rebuild_cost`, :func:`call_moments`). A shared rise in rate
+raises the height while the ceiling stays put, so fill alone calls all through a raised-rate
+stretch. The tower at a moment stands with no shift; the **cost to rebuild it elsewhere** is the
+shift per ROI it takes to build one as tall at a typical other moment of the same period, in
+seconds. A tall tower in a raised-rate stretch is cheap to rebuild a few seconds away, and a
+coordinated event is not. A moment is called when that cost reaches a threshold and at least
+:data:`MINIMUM_ROIS` stand.
+
+⚠ **Still a prototype.** The threshold is unchosen, and nothing has been run on a bench or on a
+recording. An event of few ROIs in a busy period is cheap to rebuild however tightly its onsets
+sit, so this rule does not find it.
 
 Self-contained like ``stack``: numpy and the standard library only
 (``tests/test_stack_ceiling.py`` fails on an import from the package).
@@ -104,6 +111,71 @@ def stack_ceiling(trains, centres, *, width_sec: float, period_sec: float) -> St
     return StackCeiling(centres=centres, height=height, ceiling=ceiling, fill=fill,
                         half_shift_sec=half, shift_needed=need, width_sec=float(width_sec),
                         period_sec=float(period_sec))
+
+
+MINIMUM_ROIS = 3
+"""The fewest ROIs a call may stand on. ADR-0008, decision 1: a pair never counts as a
+coordinated event. Copied because this module imports nothing from the package;
+``tests/test_stack_ceiling.py`` checks it against ``bugarach.event_floor.MINIMUM_ROIS``."""
+
+SCORES = ("rebuild", "fill")
+
+
+def rebuild_cost(r: StackCeiling, *, stride: int = 5) -> np.ndarray:
+    """Per moment, the shift per ROI it takes to build a tower as tall as the one standing there
+    at a **typical other moment of the same period**, in seconds. 0 where nothing stands.
+
+    The tower at a moment stands without any shift. Elsewhere in the period a tower of the same
+    height ``H`` has to be built, and the shift that takes at a moment ``u`` is the ``H``-th
+    smallest shift needed there (the growth curve at ``u``, read at ``H``). This is the median of
+    that over the other moments of the period, taking every ``stride``-th moment and leaving out
+    those whose window would overlap the tower. A tower that is as easy to build anywhere, as in a
+    stretch where every ROI's rate is raised, costs little; one whose ROIs are otherwise far
+    apart costs a lot. Where the period cannot reach ``H`` ROIs at ``u`` at all, the cost there
+    is the most a shift can be, half the period.
+
+    ⚠ It saturates. When a tower holds most of the period's ROIs, the nearest onset of each at
+    another moment is the tower itself, so the cost is the typical distance back to it: about a
+    quarter of the period, whatever the tower's height.
+
+    ``r.centres`` must be evenly spaced.
+    """
+    centres = r.centres
+    n = centres.size
+    out = np.zeros(n)
+    if n < 2:
+        return out
+    dt = float(centres[1] - centres[0])
+    half_period = int(round(r.period_sec / 2.0 / dt))
+    apart = max(int(round(r.width_sec / dt)), 1)
+    ordered = np.minimum(np.sort(r.shift_needed, axis=1), r.period_sec / 2.0)
+    for i in np.flatnonzero(r.height > 0):
+        lo = max(0, i - half_period)
+        j = np.arange(lo + (-lo) % stride, min(n - 1, i + half_period) + 1, stride)
+        j = j[np.abs(j - i) >= apart]
+        if j.size:
+            out[i] = np.median(ordered[j, r.height[i] - 1])
+    return out
+
+
+def call_moments(r: StackCeiling, score: np.ndarray, threshold: float, *,
+                 min_rois: int = MINIMUM_ROIS, merge_gap_sec: float = 0.5):
+    """Calls as ``(start_sec, end_sec, peak_sec)`` rows: runs of moments whose ``score`` is at
+    least ``threshold`` and whose height is at least ``min_rois``, joined across gaps of at most
+    ``merge_gap_sec``. ``peak_sec`` is the run's tallest moment (the first, on a tie).
+
+    A prototype rule: the threshold is a setting nobody has chosen.
+    """
+    on = np.flatnonzero((score >= threshold - 1e-9) & (r.height >= min_rois))
+    if not on.size:
+        return np.empty((0, 3))
+    t = r.centres[on]
+    breaks = np.flatnonzero(np.diff(t) > merge_gap_sec + 1e-9) + 1
+    rows = []
+    for run in np.split(on, breaks):
+        peak = run[np.argmax(r.height[run])]
+        rows.append((r.centres[run[0]], r.centres[run[-1]], r.centres[peak]))
+    return np.asarray(rows, float)
 
 
 def expected_height(trains, centre: float, *, period_sec: float, radii_sec) -> np.ndarray:

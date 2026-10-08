@@ -89,3 +89,45 @@ def test_expected_height_matches_random_circular_shifts():
     got /= draws
     assert np.allclose(got, want, atol=0.08)
     assert want[-1] == pytest.approx(7.0)       # the whole period: every ROI with an onset
+
+
+def test_the_minimum_is_the_event_floors():
+    from bugarach import event_floor
+
+    assert sc.MINIMUM_ROIS == event_floor.MINIMUM_ROIS
+
+
+CENTRES = (np.arange(3000) + 0.5) * 0.1          # 5 minutes, half a frame off a 0.1 s grid
+
+
+def test_a_lone_tower_is_costly_to_rebuild_and_is_the_one_call():
+    # Four ROIs with one onset each, together at 150 s. Anywhere else in the period the tower
+    # has to be carried back from 150 s, so the cost is the typical distance to it: about a
+    # quarter of the period, less half the window.
+    trains = [[150.0], [150.1], [149.9], [150.0]]
+    r = sc.stack_ceiling(trains, CENTRES, width_sec=2.0, period_sec=120.0)
+    cost = sc.rebuild_cost(r)
+    at = int(np.argmin(np.abs(CENTRES - 150.05)))
+    assert r.height[at] == 4
+    assert cost[at] == pytest.approx(30.0, abs=1.5)
+    assert (cost[r.height == 0] == 0).all()
+    calls = sc.call_moments(r, cost, 10.0)
+    assert calls.shape == (1, 3)
+    start, end, peak = calls[0]
+    assert 148.9 < start < 149.2 and 150.9 < end < 151.2 and start <= peak <= end
+
+
+def test_a_pair_is_never_called():
+    r = sc.stack_ceiling([[150.0], [150.0]], CENTRES, width_sec=2.0, period_sec=120.0)
+    assert sc.call_moments(r, sc.rebuild_cost(r), 0.0).shape == (0, 3)
+
+
+def test_towers_in_a_busy_stretch_are_cheap_to_rebuild():
+    # 30 independent ROIs at 0.15 Hz: tall towers everywhere, none of them special.
+    rng = np.random.default_rng(2)
+    trains = [np.sort(rng.uniform(0, 300, rng.poisson(45))) for _ in range(30)]
+    r = sc.stack_ceiling(trains, CENTRES, width_sec=2.0, period_sec=120.0)
+    inner = (CENTRES > 60) & (CENTRES < 240)
+    assert r.height[inner].max() >= 10
+    assert sc.rebuild_cost(r)[inner].max() < 6.0
+    assert r.fill[inner].max() > 0.4             # where fill alone would call
