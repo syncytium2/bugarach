@@ -5,6 +5,8 @@ filed: 2026-10-08
 
 # The stack ceiling detector, and the bench with short intervals it led to
 
+waiting: Rule what the revised bench is: add short gaps between 2 s events, or define events in a narrower window.
+
 **Where this stands.** Session `bugarach-far-pennant` (Mac), 2026-10-08, ended at Tony's word:
 *"make sure this detector does not get lost."* Everything is on `main` through PR #877. Nothing
 is running and nothing is unpushed. The record with every number and figure is
