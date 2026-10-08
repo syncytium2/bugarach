@@ -178,6 +178,65 @@ def call_moments(r: StackCeiling, score: np.ndarray, threshold: float, *,
     return np.asarray(rows, float)
 
 
+@dataclass
+class StackCeilingDetection:
+    """Calls as parallel arrays, under the field names every other detector's result uses."""
+
+    onset_sec: np.ndarray
+    """Where the call's first called window begins."""
+    width_sec: np.ndarray
+    """From there to the end of its last called window."""
+    strength: np.ndarray
+    """The cost to rebuild the call's tallest tower elsewhere, in seconds."""
+    nrois: np.ndarray
+    """The height of that tower."""
+    opts: dict
+
+    @property
+    def n_events(self) -> int:
+        return int(self.onset_sec.size)
+
+
+def frame_centres(t_range, frame_interval_sec: float) -> np.ndarray:
+    """Every moment of ``t_range`` half a frame off the frame grid, so that with onsets on the
+    grid no window edge lands on one."""
+    lo, hi = float(t_range[0]), float(t_range[1])
+    n = int(np.floor((hi - lo) / frame_interval_sec + 1e-9))
+    return lo + (np.arange(n) + 0.5) * frame_interval_sec
+
+
+def detection_from(r: StackCeiling, cost: np.ndarray, *, threshold_sec: float, min_rois: int,
+                   merge_gap_sec: float) -> StackCeilingDetection:
+    """The calls at one threshold, from a measure already computed. A search over thresholds
+    computes :func:`stack_ceiling` and :func:`rebuild_cost` once and calls this for each."""
+    calls = call_moments(r, cost, threshold_sec, min_rois=min_rois, merge_gap_sec=merge_gap_sec)
+    peak = np.searchsorted(r.centres, calls[:, 2]) if len(calls) else np.empty(0, int)
+    peak = np.clip(peak, 0, max(r.centres.size - 1, 0))
+    return StackCeilingDetection(
+        onset_sec=calls[:, 0] - r.width_sec / 2.0,
+        width_sec=calls[:, 1] - calls[:, 0] + r.width_sec,
+        strength=cost[peak].astype(float), nrois=r.height[peak].astype(int),
+        opts=dict(width_sec=r.width_sec, period_sec=r.period_sec, threshold_sec=threshold_sec,
+                  min_rois=int(min_rois), merge_gap_sec=merge_gap_sec))
+
+
+def stack_ceiling_detect(trains, t_range, *, min_rois: int, frame_interval_sec: float,
+                         threshold_sec: float, width_sec: float = 2.0,
+                         period_sec: float = 120.0, merge_gap_sec: float = 0.5,
+                         stride: int = 5) -> StackCeilingDetection:
+    """Call the moments whose tower is costly to rebuild elsewhere in its period.
+
+    ``min_rois`` is required, as in ``stack``: the recording's ADR-0008 floor, never under
+    :data:`MINIMUM_ROIS`. ``threshold_sec`` has no default because nobody has chosen one.
+    """
+    if min_rois < MINIMUM_ROIS:
+        raise ValueError(f"min_rois must be at least {MINIMUM_ROIS} (ADR-0008, decision 1)")
+    r = stack_ceiling(trains, frame_centres(t_range, frame_interval_sec), width_sec=width_sec,
+                      period_sec=period_sec)
+    return detection_from(r, rebuild_cost(r, stride=stride), threshold_sec=threshold_sec,
+                          min_rois=min_rois, merge_gap_sec=merge_gap_sec)
+
+
 def expected_height(trains, centre: float, *, period_sec: float, radii_sec) -> np.ndarray:
     """The mean number of ROIs within each of ``radii_sec`` of a moment when every ROI's onsets
     in the period around ``centre`` are circularly shifted by an independent, uniform amount.
