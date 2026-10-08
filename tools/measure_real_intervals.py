@@ -77,8 +77,18 @@ def events_of(counts: np.ndarray, floor: int, dt: float, wf: int, lo: float,
     return merged
 
 
+def floor_key(window_sec: float, slice_id, stream, idx) -> tuple:
+    """The key that seeds a window's floor. At the default 2 s window it is the 2026-09-25 run's
+    key, so that run's floors are reproduced exactly; any other window gets its own."""
+    from bugarach import event_floor as ef
+
+    if window_sec == ef.WINDOW_SEC:
+        return (TAG, slice_id, stream, idx)
+    return (TAG, f"window={window_sec:g}", slice_id, stream, idx)
+
+
 def task(args):
-    i, folder, draws = args
+    i, folder, draws, window_sec = args
     from bugarach import event_floor as ef
     from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detect_folder import _region_index, folder_analysis_windows
@@ -106,16 +116,18 @@ def task(args):
             n_frames = int(round((hi - lo) / dt))
             frames = [np.unique(np.floor((np.asarray(t, float) - lo) / dt + 1e-9).astype(np.int64))
                       for t in tr]
-            wf = max(1, int(round(ef.WINDOW_SEC / dt)))
+            wf = max(1, int(round(window_sec / dt)))
             base = dict(slice_id=s.slice_id, group=group, region_idx=idx, stream=sname,
                         dt=dt, hours=(hi - lo) / 3600.0, n_roi=len(tr))
             try:
-                f = ef.window_floor(frames, n_frames, dt, key=(TAG, s.slice_id, sname, idx),
-                                    draws=draws)
+                f = ef.window_floor(frames, n_frames, dt,
+                                    key=floor_key(window_sec, s.slice_id, sname, idx),
+                                    draws=draws, window_sec=window_sec)
             except ValueError as e:
                 rows.append(dict(base, floor=None, n_events=None, note=str(e)))
                 continue
-            e = events_of(ef.coactive_counts(frames, n_frames, wf), f.floor, dt, wf, lo)
+            e = events_of(ef.coactive_counts(frames, n_frames, wf), f.floor, dt, wf, lo,
+                          merge_sec=window_sec)
             rows.append(dict(base, floor=f.floor, n_events=len(e), note=""))
             evs += [dict(base, time_sec=t, peak_count=c, floor=f.floor) for t, c in e]
             gaps += [dict(base, gap_sec=b[0] - a[0], floor=f.floor) for a, b in zip(e, e[1:])]
@@ -139,6 +151,11 @@ def main(argv=None) -> int:
     ap.add_argument("--also", type=Path, default=None)
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--draws", type=int, default=1000)
+    ap.add_argument("--window-sec", type=float, default=MERGE_SEC,
+                    help="the co-activity window: the count's window, the window the floor is "
+                         "counted in, and the distance under which two events merge. The default "
+                         "2 s is ADR-0008's window and reproduces the 2026-09-25 measurement; a "
+                         "narrower one is what lets gaps under 2 s be seen at all")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
 
@@ -153,7 +170,7 @@ def main(argv=None) -> int:
     stamp = dataset.stamp()
     n = len(load_folder(folder))
     with mp.Pool(a.workers) as pool:
-        recs = pool.map(task, [(i, str(folder), a.draws) for i in range(n)])
+        recs = pool.map(task, [(i, str(folder), a.draws, a.window_sec) for i in range(n)])
     rows = [r for rec in recs for r in rec["rows"]]
     events = [r for rec in recs for r in rec["events"]]
     gaps = [r for rec in recs for r in rec["gaps"]]
@@ -191,10 +208,13 @@ def main(argv=None) -> int:
             summary[s]["groups"][grp] = d
             intervals[s]["by_group"][grp] = sorted(gi.tolist())
     rules = dict(grid="each recording's frame interval",
-                 coactivity="event_floor.coactive_counts: ROIs with an onset in a 2 s window",
-                 floor="event_floor.window_floor, the baseline window's own, "
-                       f"{a.draws} draws", event="a maximal run of count >= floor, at its peak",
-                 merge=f"events less than {MERGE_SEC} s apart merged, keeping the higher",
+                 window_sec=a.window_sec,
+                 coactivity="event_floor.coactive_counts: ROIs with an onset in a "
+                            f"{a.window_sec:g} s window",
+                 floor="event_floor.window_floor, the baseline window's own, counted in the "
+                       f"same {a.window_sec:g} s window, {a.draws} draws",
+                 event="a maximal run of count >= floor, at its peak",
+                 merge=f"events less than {a.window_sec:g} s apart merged, keeping the higher",
                  windows="baseline windows only (FOUNDATIONS section 9)",
                  caveat="gaps within one recording are not independent; the tests treat them as "
                         "if they were, so their p values are optimistic")
