@@ -155,6 +155,24 @@ def test_split_dip_leaves_one_ragged_event_whole():
     assert r.n_events == 1
 
 
+def test_two_calls_never_share_an_onset():
+    """Tony, 2026-09-28, 20260130_270 near 10 min: two distinct coordinated events split
+    correctly, but the second call's one-window reach-back ran into the first one's events and
+    the bars overlapped. Here: 12 ROIs at 10.0, one straggler at 11.5, 12 other ROIs at 13.2.
+    The count is 1 from 12.0 to 13.2, so a 0.5 s merge gap keeps two calls; the second call's
+    reach-back (from 11.2) used to take the straggler, which the first call already holds."""
+    first = [[10.0 + 0.01 * r] for r in range(12)]
+    straggler = [[11.5]]
+    second = [[13.2 + 0.01 * r] for r in range(12)]
+    r = count_sliding_detect(_trains(*first, *straggler, *second), (0.0, 30.0),
+                             win_sec=2.0, min_rois=3, merge_gap_sec=0.5)
+    assert r.n_events == 2
+    end_first = r.onset_sec[0] + r.width_sec[0]
+    assert end_first == pytest.approx(11.5)          # the straggler stays with the first
+    assert r.onset_sec[1] == pytest.approx(13.2)     # and only there
+    assert r.onset_sec[1] > end_first
+
+
 def test_a_shallow_dip_does_not_split_and_a_deep_one_does():
     from bugarach.detectors.count import _split_at_dips
 
