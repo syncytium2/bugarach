@@ -136,6 +136,46 @@ bench.
 
 Numbers: [`close_events_summary.json`](close_events_summary.json). 384 recordings, 104 s.
 
+## The real gaps, measured in narrower windows
+
+⚠ **Measured on the stopped default folder, on Tony's acknowledgment.** Asked on 2026-10-08
+whether to run the gap measurement on the stopped folder, he answered *"go"*, agreed to the
+wording of the acknowledgment, and ran it himself. Measurement only, baseline windows, nothing
+ships from it. Every number was also computed without the four DI recordings the stop names;
+no share below moves by more than 0.01, and those rows are in the darkroom file.
+
+`tools/measure_real_intervals.py --window-sec` at 1 s and 0.5 s, on the 66 recordings of
+`2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED`. The 2 s rows are the
+2026-09-25 measurement, which is what the realistic bench plants from. The floor is counted in
+the same window as the events.
+
+| stream | window | floor, median | events per hour | gaps | shortest gap | under 2 s | under 5 s | under 10 s |
+|---|---|---|---|---|---|---|---|---|
+| fast | 2 s | 6 ROIs | 9.7 | 174 | 2.1 s | 0.0% | 7.5% | 16.1% |
+| fast | 1 s | 5 ROIs | 14.3 | 270 | 1.2 s | 1.9% | 11.1% | 18.9% |
+| fast | 0.5 s | 4 ROIs | 18.4 | 357 | 0.6 s | 3.9% | 16.0% | 23.5% |
+| slow | 2 s | 5 ROIs | 22.0 | 440 | 2.2 s | 0.0% | 0.9% | 12.7% |
+| slow | 1 s | 4 ROIs | 23.9 | 481 | 1.0 s | 1.5% | 2.7% | 15.8% |
+| slow | 0.5 s | 4 ROIs | 25.6 | 518 | 0.5 s | 4.4% | 5.8% | 19.9% |
+| combined | 2 s | 7 ROIs | 25.3 | 507 | 2.3 s | 0.0% | 3.4% | 15.2% |
+| combined | 1 s | 6 ROIs | 29.7 | 602 | 1.1 s | 2.2% | 8.1% | 21.9% |
+| combined | 0.5 s | 5 ROIs | 33.2 | 679 | 0.5 s | 6.3% | 13.5% | 27.0% |
+
+- **Short gaps exist, and they are a small share.** In a 0.5 s window, 4 to 6% of gaps are under
+  2 s and 6 to 16% are under 5 s. The 2 s measurement could not see any under 2 s.
+- **A narrower window counts more events, most of all on fast**: 18.4 per hour at 0.5 s against
+  9.7 at 2 s. The floor falls with the window (a median of 4 ROIs against 6 on fast), and it is
+  set so that chance reaches it at most once an hour at each window, so the extra events are
+  not chance by that rule. They are smaller, tighter events the 2 s floor refuses.
+- **So the window changes what counts as an event, not only how close two can sit.** A bench
+  built from the 0.5 s measurement would plant nearly twice as many fast events, at a lower
+  floor. That is a bigger revision than adding short gaps, and it touches ADR-0008's 2 s window.
+- The 2 s folder of this run came back empty; the 2 s rows above are the earlier measurement.
+
+The figure and every row, with and without the four named recordings, are in the darkroom only
+(`<darkroom>/bugarach/2026-10-08-stack-ceiling/real-gaps/`), built by
+`tools/make_real_gaps_by_window.py` from the measurement's output files.
+
 ## The first run: the threshold alone
 
 ![Figure 2](explainer_stack-ceiling-bench_20261008.png)
