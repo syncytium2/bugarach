@@ -3296,3 +3296,9 @@ session's work is not a sweep.
   (`summary.json` and four figures each) from `tools/measure_stack_on_folder.py` on the baseline
   windows of the six September 2026 pilot recordings. Those are darkroom-only.
 - **Released:** 2026-10-07, at write. Holds nothing.
+
+### darkroom/bugarach/2026-10-08-stack-ceiling/ — the tallest stack circular shifting can build: an animated page on one simulated recording (bugarach-far-pennant)
+- **Claimed:** 2026-10-08, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `explainer_stack-ceiling_20261008.html` and `.png` from
+  `tools/make_stack_ceiling_demo.py` on branch `stack-ceiling`. One simulated recording; no export
+  folder is read. The same files are in the repo at `docs/learned/runs/2026-10-08-stack-ceiling/`.
