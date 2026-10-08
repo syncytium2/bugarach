@@ -1,8 +1,72 @@
-# The stack ceiling: the idea, a page, and one bench run (2026-10-08)
+# The stack ceiling: the idea, a page, and two bench runs (2026-10-08)
 
-![Figure 1](explainer_stack-ceiling-bench_20261008.png)
+![Figure 1](explainer_stack-ceiling-search_20261008.png)
 
-**Figure 1. The stack ceiling's call rule on the three benches, by threshold.** Columns are the
+**Figure 1. F1 on the three benches after searching every setting of the stack ceiling.** F1 is
+the harmonic mean of recall and precision. Each pair of bars is one detector on the quiet (dark)
+and busy (light) background. The reference detectors run at their shipped operating points. All
+bars are from the odd seeds, which picked nothing.
+
+**Simulated recordings only. A working record of one day, not murderboarded.** Nothing ships
+from it and no operating point changes.
+
+## The result, after the search
+
+**Searched, the rule matches or beats LoCo on fast and combined. Almost none of that is the
+stack ceiling's own idea: it is the sliding count in a 0.5 s window.**
+
+The first run (next section) searched the threshold alone. Tony's question on it,
+*"stack_ceiling was not optimized?"*, was fair: every detector beside it ran at a fully searched
+operating point. `tools/search_stack_ceiling.py` then searched the window, the period, the merge
+gap and the threshold as one grid of 2,520 settings per stream, picked on the even seeds inside
+count (sliding)'s three limits, and reported on the odd seeds.
+
+| stream | detector | F1, quiet | F1, busy | calls per hour, nothing planted | calls per minute in the raised-rate stretch |
+|---|---|---|---|---|---|
+| fast | LoCo | 0.623 | 0.657 | 0.00 | 0.00 |
+| fast | count (sliding), shipped | 0.619 | 0.561 | 0.61 | 0.08 |
+| fast | best with the rebuild cost off: window 0.5 s, gap 1.5 s | 0.625 | 0.670 | 0.00 | 0.00 |
+| fast | stack ceiling, searched: window 0.5 s, period 480 s, gap 1.5 s, threshold 10 s | 0.625 | 0.686 | 0.00 | 0.00 |
+| slow | LoCo | 0.834 | 0.815 | 0.00 | 0.00 |
+| slow | count (sliding), shipped | 0.835 | 0.813 | 0.00 | 0.05 |
+| slow | stack ceiling, searched: window 1 s, gap 0.5 s, threshold 0 s (cost off) | 0.828 | 0.812 | 0.00 | 0.00 |
+| combined | LoCo | 0.797 | 0.814 | 0.00 | 0.00 |
+| combined | count (sliding), shipped | 0.830 | 0.767 | 0.44 | 0.08 |
+| combined | best with the rebuild cost off: window 0.5 s, gap 3 s | 0.824 | 0.830 | 0.00 | 0.00 |
+| combined | stack ceiling, searched: window 0.5 s, period 480 s, gap 3 s, threshold 8 s | 0.824 | 0.831 | 0.00 | 0.00 |
+
+Gain in F1 (mean of the two backgrounds) of the searched rule, on the odd seeds, with a 95%
+bootstrap interval over recordings:
+
+| stream | over LoCo | over count (sliding), shipped | over the best setting with the cost off |
+|---|---|---|---|
+| fast | +0.016 (−0.004 to +0.037) | +0.066 (+0.046 to +0.092) | +0.008 (+0.001 to +0.017) |
+| slow | −0.004 (−0.009 to 0.000) | −0.004 (−0.008 to +0.001) | 0.000, the same setting |
+| combined | +0.021 (+0.007 to +0.035) | +0.029 (+0.001 to +0.061) | +0.001 (−0.008 to +0.009) |
+
+- **The rebuild cost adds 0.008 F1 on fast, nothing on slow and 0.001 on combined.** A threshold
+  of 0 switches the cost off and leaves the sliding count at that window against the floor. On
+  slow the search picked exactly that.
+- **The gain over shipped count (sliding) comes from the window.** With the cost off, a 0.5 s
+  window scores 0.670 on the fast busy background against 0.561 at the shipped 2 s, and makes no
+  call on recordings with nothing planted (0.61 per hour at 2 s).
+- ⚠ **That is a finding about count (sliding), and it needs its own check.** The floor is counted
+  in a 2 s window (ADR-0008) and is here applied to a 0.5 s one, which asks for more than the
+  floor was set to mean. `bench.FLOOR_AT_WINDOW_ENV` exists to study that and was off. The
+  repository's own search of count (sliding) is the place to confirm it.
+- ⚠ **The period is unbracketed on fast and combined:** the pick is 480 s, the longest tried. It
+  only matters through the cost, which adds little.
+- The merge gap and window are bracketed. The grid edges of the first search (period 240 s, gap
+  0.5 s) were extended once.
+
+Numbers: [`search_summary.json`](search_summary.json). 672 recordings, 394 s on one laptop.
+
+## The first run: the threshold alone
+
+![Figure 2](explainer_stack-ceiling-bench_20261008.png)
+
+**Figure 2. The stack ceiling's call rule on the three benches, by threshold, at borrowed
+settings.** The window (2 s), merge gap (3 s) and period (120 s) are held. Columns are the
 fast, slow and combined streams. Top row: F1 (the harmonic mean of recall and precision), averaged
 over the quiet and busy backgrounds. Middle row: calls per hour on recordings with nothing
 planted. Bottom row: calls per minute inside a stretch where every ROI's rate is raised. Black
@@ -11,13 +75,8 @@ count (sliding) (grey) and stack (global) (orange) at their shipped operating po
 count (sliding)'s limit. Dashed grey: the threshold picked on the other half of the seeds.
 Everything drawn is from the odd seeds.
 
-**Simulated recordings only. A working record of one day, not murderboarded.** Nothing ships
-from it and no operating point changes.
-
-## The result
-
-**On the bench the rule is count (sliding) with fewer calls in a raised-rate stretch, and
-nothing more.** It does not beat LoCo anywhere.
+**At the borrowed settings the rule is count (sliding) with fewer calls in a raised-rate
+stretch.** This run is what the search above corrects: only the threshold was free.
 
 | stream | detector | F1, quiet | F1, busy | calls per hour, nothing planted | calls per minute in the raised-rate stretch |
 |---|---|---|---|---|---|
@@ -37,7 +96,7 @@ nothing more.** It does not beat LoCo anywhere.
 | combined | stack (global) | 0.829 | 0.741 | 0.00 | 0.07 |
 | combined | stack ceiling, 2 s | 0.830 | 0.768 | 0.44 | 0.02 |
 
-What Figure 1 and the table show:
+What Figure 2, the threshold sweep, and the table show:
 
 - **On slow and combined the picked threshold is 2 s, the lowest tried.** At that threshold the
   rule calls nearly every moment that reaches the floor, which is count (sliding). Its F1 matches
@@ -108,11 +167,14 @@ same recordings.
 ## Not done
 
 - No real recording.
-- The window, the merge gap and the period were not searched, and the threshold was searched on
-  a grid of eleven values.
+- The search is a grid, picked once: no second seed split, and the period's best value is past
+  the longest tried.
+- The 0.5 s window has not been tried on count (sliding) through the repository's own search,
+  nor with the floor counted in the rule's own window.
 - ⚠ The cost saturates near a quarter of the period (30 s at 120 s) for a tower holding most of
   the period's ROIs, so it cannot rank large events against each other.
 - Neither the page nor this record was put through the murderboard.
 
 Code: `src/bugarach/detectors/stack_ceiling.py`, `tests/test_stack_ceiling.py`,
-`tools/make_stack_ceiling_demo.py`, `tools/measure_stack_ceiling.py`.
+`tools/make_stack_ceiling_demo.py`, `tools/measure_stack_ceiling.py`,
+`tools/search_stack_ceiling.py`.
