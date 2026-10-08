@@ -132,7 +132,9 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
   its **legend**, and no explanation. The controls are one block after the figures that sticks to
   the bottom of the window. What is measured and how to read each figure goes last. Copy
   `tools/stack_ceiling_demo.template.html`; `tests/test_figure_page_layout.py` checks that page
-  and only that page.
+  and only that page. **A written report leads with its main figure, and its other figures stay
+  where the text discusses them** (Tony, the same day: *"reports should always lead with the main
+  figure, but the remaining figures should be in place"*).
 - **Nothing is ever drawn on the raster** (Tony, 2026-08-26 — *"please, lets never
   draw on the raster. i know i've changed my mind on this"*). The raster is **black
   and white**: one ink, one mark per event, nothing competing with it. Every

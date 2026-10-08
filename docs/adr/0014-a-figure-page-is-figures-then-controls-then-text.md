@@ -36,6 +36,14 @@ A page built around figures is laid out in this order:
 4. **The explanatory text comes last**, at the bottom of the scroll: any readout of the current
    state, what is measured, how to read each figure (named by number and name), and provenance.
 
+5. **A written report leads with its main figure, and its other figures stay in place.** Asked
+   the same day whether a long report with figures placed through its text counts, Tony ruled:
+   *"reports should always lead with the main figure, but the remaining figures should be in
+   place."* So a report opens, directly under its title, with the one figure that carries its
+   finding, and every other figure sits where the text discusses it. Points 1 to 4 describe a
+   page a reader opens to look at and work a figure: explainers, demonstrations, viewers and
+   status pages. Point 2, the legend with the figure, holds for every figure in either kind.
+
 **Reference implementation:** `tools/stack_ceiling_demo.template.html`, built by
 `tools/make_stack_ceiling_demo.py`. `tests/test_figure_page_layout.py` checks the built page
 against the four points above.
@@ -49,9 +57,8 @@ against the four points above.
 - **The estate half is not bugarach's to do.** The standard is for every repository. The request
   for a shared shell and a check that travels with it goes to the armory repository, which
   holds the estate's shared tools, as an issue.
-- **Open, and Tony's to rule:** whether a long written report with figures placed through its
-  text (the comparison reports, the methods pages) is a "figure page" under this record. As
-  written it covers pages a reader opens to look at and work a figure: explainers, demonstrations,
-  viewers and status pages.
+- **A report's author has to name its main figure.** Point 5 needs one, and nothing checks that
+  a report leads with it: the test covers the figure page alone.
+- **Not ruled:** where a report's controls go when it has any. No report here has them today.
 - The plot conventions still hold inside each figure: numbered figures, units on every number,
   minutes-friendly time axes, nothing drawn on a raster.
