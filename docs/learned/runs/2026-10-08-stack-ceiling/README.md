@@ -12,7 +12,7 @@ from it and no operating point changes.
 
 ## The result, after the search
 
-**Searched, the rule matches or beats LoCo on fast and combined. Almost none of that is the
+**Searched, the rule matches or beats the shipped LoCo on fast and combined. Almost none of that is the
 stack ceiling's own idea: it is the sliding count in a 0.5 s window.**
 
 The first run (next section) searched the threshold alone. Tony's question on it,
@@ -44,6 +44,20 @@ bootstrap interval over recordings:
 | slow | −0.004 (−0.009 to 0.000) | −0.004 (−0.008 to +0.001) | 0.000, the same setting |
 | combined | +0.021 (+0.007 to +0.035) | +0.029 (+0.001 to +0.061) | +0.001 (−0.008 to +0.009) |
 
+- ⚠ **The reference detectors here are the shipped points, and on fast those are not the best on
+  record.** Fast LoCo and CoactDetect ship in their binned form at points set on 2026-09-16.
+  Their sliding forms were searched on this realistic bench on 2026-09-26 and reached a held-out
+  mean F1 of 0.661 each (from 0.626 and 0.583 shipped); nothing was adopted
+  (`<darkroom>/bugarach/2026-09-26-full-panel/064/README.md`). The searched stack ceiling's mean
+  here is 0.655, on different seeds. So on fast it is about level with the tuned sliding forms,
+  not ahead of them. Slow LoCo and CoactDetect ship sliding and searched (2026-09-21, before
+  ADR-0008's floor and the realistic spacing); combined ships a sliding search pick (2026-09-23).
+- ⚠ **The 0.5 s window is a rediscovery.** count (sliding) was searched on this bench on
+  2026-09-26 (`<darkroom>/bugarach/2026-09-26-full-panel/064/count/README.md`): on fast the best
+  setting was a 0.5 s window with 2 ROIs above the floor, +0.020 F1 over CoactDetect's proposal
+  and refused for its precision difference between backgrounds (0.146 against a limit of 0.10).
+  Slow did not move and combined chose 1 s. None was adopted, so count (sliding) ships untuned.
+  This search did not vary the ROIs above the floor.
 - **The rebuild cost adds 0.008 F1 on fast, nothing on slow and 0.001 on combined.** A threshold
   of 0 switches the cost off and leaves the sliding count at that window against the floor. On
   slow the search picked exactly that.
