@@ -110,6 +110,10 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
   convention against bare enumerated labels still holds: the name is what lets it read without
   scrolling back. **Define every abbreviation** at first use, and every symbol (*J*, τ) before a
   figure uses it.
+- **No type smaller than 11 pt** in a document for a person to read (Tony, 2026-09-25, on a
+  one-page methods draft set at 9.6 pt to fit: *"next time don't use a font smaller than 11"*).
+  A page limit is met by cutting words, not by shrinking type. Figure text counts at the size it
+  lands on the page, not the size it was drawn at.
 - **Groups are always ordered DI, OVX, MALE, ORX** (Tony, 2026-09-23) — in figures, tables,
   legends, page lists and prose. Code takes it from `bugarach.groups` (`GROUP_ORDER`,
   `group_key`, `in_group_order`), never from `sorted()` or a typed tuple;
