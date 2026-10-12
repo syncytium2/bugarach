@@ -340,13 +340,21 @@ def naming_facts(folder: Path, given: dict) -> dict:
 
 
 def page_filename(facts: dict, group: str, treatment: str, stream: str, members,
-                  *, ext: str = "html", date: str | None = None) -> str:
+                  *, ext: str = "html", date: str | None = None,
+                  name_treatment: str | None = None) -> str:
     """The page's name under the estate filename scheme (vendored ``tools/naming``).
 
     An all-groups page names the groups actually on it, in display order and side by side
     (``di-ovx-male-orx``), never ``ALL``: the rows are separate recordings, not pooled.
     Raises ``naming.artifact_name.NameError_`` when a value has no registered code.
+
+    ``name_treatment`` replaces the treatment in the NAME only. A page is keyed by treatment 1
+    and draws every period after it, so where a whole cohort was given a sequence (the
+    September 2026 pilot: APV+CNQX, then gabazine added) the name can say the sequence,
+    ``apv+cnqx-then-gz``, where treatment 1 alone would name a page that also shows gabazine.
+    Which recordings go on the page does not change.
     """
+    treatment = name_treatment or treatment
     from naming import artifact_name
 
     groups = (in_group_order(group_of(sl) for sl, _ in members)
@@ -930,6 +938,11 @@ def main(argv=None) -> int:
     ap.add_argument("--source", default=None,
                     help="pilot-YYYYMMDD for a pilot cohort, or none for the main series "
                          "(default: the folder's `source` in current_export.toml)")
+    ap.add_argument("--name-treatment", default=None, metavar="TREATMENT",
+                    help="the treatment as the page NAMES say it, in the filename scheme's own "
+                         "terms, e.g. apv+cnqx-then-gz for a cohort given a sequence (default: "
+                         "treatment 1). Needs exactly one --treatments value; changes no page's "
+                         "contents")
     ap.add_argument("--calls-variant", default="own_floor",
                     help="which run to draw for detectors that take the floor as their own "
                          "minimum (default own_floor); the rest ran once and are all drawn")
@@ -942,6 +955,9 @@ def main(argv=None) -> int:
                 f"floors. Every call is drawn; no floor removes one.")
         a.note = f"{a.note} {rule}" if a.note else rule
 
+    if a.name_treatment and len(a.treatments) != 1:
+        ap.error("--name-treatment names the pages of ONE treatment; pass exactly one "
+                 "--treatments value with it")
     folder = resolve_folder(a.folder, unscanned=a.unscanned,
                             steps_excluded=a.steps_excluded)
     removed = read_removed(folder) if a.steps_excluded else None
@@ -977,7 +993,8 @@ def main(argv=None) -> int:
     names, unnamed = {}, []
     for key, spec in pages.items():
         try:
-            names[key] = page_filename(facts, *key, spec["members"])
+            names[key] = page_filename(facts, *key, spec["members"],
+                                       name_treatment=a.name_treatment)
         except NameError_ as exc:
             unnamed.append(f"  {key[0]} / {key[1]} / {key[2]}: {exc}")
     if unnamed:
