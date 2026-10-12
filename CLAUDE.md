@@ -96,6 +96,8 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
 
 ## Plot conventions (viewer, exports, figures)
 
+- **Output file names follow the lab-wide scheme in armory `tools/naming`** (Tony, 2026-10-12). Build every deliverable name with `artifact_name.py build` (R and MATLAB call it through `system`), never by hand, and `check` a name before it reaches anyone. The scheme does not yet cover export folders or data files (CSV/JSON); that extension is being designed. Until it lands, do not invent a new export-name pattern: reuse the existing one and say so to Tony.
+
 - **Minutes-friendly time axes, always**: 60-base ticks (1/2/5/10/15/30 x
   60^k s) labeled `45s` / `2m` / `2m30s`, never raw seconds. Implemented as
   `_time_axis_hook` in `src/bugarach/ui/app.py` — reuse it.
