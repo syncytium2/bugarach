@@ -876,8 +876,12 @@ def main(argv=None) -> int:
                     help=f"one page per group per treatment (default: "
                          f"{' '.join(DEFAULT_TREATMENTS)})")
     ap.add_argument("--width", type=int, default=PAGE_PX)
+    ap.add_argument("--png", action="store_true",
+                    help="also write a flat .png beside each page (needs playwright chromium). "
+                         "Off by default: the page is the .html (Tony, 2026-10-12)")
     ap.add_argument("--no-png", action="store_true",
-                    help="skip the flat render (needs playwright chromium)")
+                    help="accepted and ignored: HTML only is the default now, and commands "
+                         "written before 2026-10-12 still pass it")
     ap.add_argument("--unscanned", action="store_true",
                     help="the folder was NEVER scanned for field steps (producer: "
                          "UNCHECKED), so it has no manifest. Draw it with no red and "
@@ -1079,14 +1083,14 @@ def main(argv=None) -> int:
             pn.Column(*items, margin=(0, 0, 0, SCROLL_GUTTER_PX)).save(str(tmp))
             os.replace(tmp, html)
         written.append(html)
-        if not a.no_png:
+        if a.png:
             from make_diagnostic import _render_png
             shot = html.with_suffix(".png")
             if _render_png(html, shot, scale=a.png_scale):
                 written.append(shot)
             else:
                 print("(no PNG: pip install playwright && python -m playwright "
-                      "install chromium, or pass --no-png)", file=sys.stderr)
+                      "install chromium)", file=sys.stderr)
         print(f"  {group:9s} {treatment:9s} {len(spec['members']):2d} recording(s), "
               f"{red:3d} red, extent {spec['ext'][0] / 60:+.0f}m..{spec['ext'][1] / 60:+.0f}m")
 

@@ -200,11 +200,14 @@ def test_a_hand_reviewed_folder_is_drawn_without_the_no_scan_warning(tmp_path):
     hand, so "no field-step scan has been run" is false there. Same folder shape as an
     unscanned one (no manifest), drawn the same way, and the page does not carry the warning."""
     d = _folder(tmp_path, manifest=None)
-    args = ["--folder", str(d), "--no-png", "--treatments", "TTX", "--signal", "roi",
+    args = ["--folder", str(d), "--treatments", "TTX", "--signal", "roi",
             "--win", "win20min", "--source", "none"]
     assert mod.main(args + ["--hand-reviewed", "--out", str(tmp_path / "reviewed")]) == 0
     pages = list((tmp_path / "reviewed").glob("*.html"))
     assert pages
+    # HTML only unless --png is passed (Tony, 2026-10-12); the old --no-png still parses.
+    assert not list((tmp_path / "reviewed").glob("*.png"))
+    assert mod.main(args + ["--hand-reviewed", "--no-png", "--out", str(tmp_path / "old")]) == 0
     assert all("no field-step scan" not in p.read_text(encoding="utf-8") for p in pages)
     assert mod.main(args + ["--unscanned", "--out", str(tmp_path / "unscanned")]) == 0
     assert all("no field-step scan" in p.read_text(encoding="utf-8")
