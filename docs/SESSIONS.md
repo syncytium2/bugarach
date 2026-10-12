@@ -3309,3 +3309,15 @@ session's work is not a sweep.
   and 0.5 s windows, run by Tony on the stopped default folder under his acknowledgment (#858),
   with `real_gaps_by_window.json` and its figure from `tools/make_real_gaps_by_window.py`.
 - **Released:** 2026-10-08, at the session's end. Holds nothing.
+
+### darkroom/bugarach/2026-10-12-apv-cnqx-gz-combined-rasters/ — one combined-stream raster page per pilot dataset, every recording a row, aligned at baseline end (065/combined-dataset-raster-page)
+- **Claimed:** 2026-10-12, before the first write. A new folder, so nothing existing is overwritten.
+- **Writes:** `4x/` and `3x/`, each holding two pages as `.html` and `.png` from
+  `tools/make_group_raster_summary.py --all-groups --streams combined --unscanned` on branch
+  `combined-dataset-raster-page`: the August 2026 pilot (six MALE recordings, APV+CNQX+GZ in one
+  period) and the September 2026 pilot (six DI recordings, APV+CNQX then gabazine). And a
+  `README.md`. Drawn from interface2's four eval folders
+  `2026-10-12_apv_cnqx_{gz_aug_MIXED_MOCO,then_gz_sept_rigid}_{4x,3x}_REVIEW_BLANKED_FIELDSTEPS_UNSCANNED`,
+  read by name; the dataset default is not touched. Darkroom only: the pages show real
+  recordings, so no copy goes in the repo. Requested by Tony through the orchestrator.
+- **Released:** 2026-10-12, at write. Holds nothing.
