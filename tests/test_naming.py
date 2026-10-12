@@ -59,6 +59,24 @@ def test_an_all_groups_page_names_the_groups_on_it_in_display_order():
     assert "all" not in name.split("_")
 
 
+def test_a_sequence_cohorts_page_can_be_named_for_the_whole_sequence():
+    """The September 2026 pilot: APV+CNQX, then gabazine added. The page is keyed by treatment 1
+    and shows gabazine too, so its name may say the sequence. The scheme still checks it."""
+    facts = {"signal": "roi", "win": "win20min", "source": "pilot-20260917"}
+    name = mod.page_filename(facts, mod.ALL_GROUPS, "APV+CNQX", "combined", [rec("DI")],
+                             date="20261012", name_treatment="apv+cnqx-then-gabazine")
+    assert name == ("pilot-20260917_raster_roi_combined_apv+cnqx-then-gz_di_"
+                    "win20min_20261012.html")
+    with pytest.raises(artifact_name.NameError_):
+        mod.page_filename(facts, mod.ALL_GROUPS, "APV+CNQX", "combined", [rec("DI")],
+                          date="20261012", name_treatment="apv+cnqx-then-aspirin")
+
+
+def test_name_treatment_needs_exactly_one_treatment():
+    with pytest.raises(SystemExit):
+        mod.main(["--treatments", "TTX", "senktide", "--name-treatment", "ttx-then-senktide"])
+
+
 def test_a_label_with_no_code_is_refused_not_guessed():
     with pytest.raises(artifact_name.NameError_):
         mod.page_filename(MAIN, "UNGROUPED", "TTX", "fast", [rec(None)], date="20261007")

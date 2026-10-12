@@ -340,13 +340,21 @@ def naming_facts(folder: Path, given: dict) -> dict:
 
 
 def page_filename(facts: dict, group: str, treatment: str, stream: str, members,
-                  *, ext: str = "html", date: str | None = None) -> str:
+                  *, ext: str = "html", date: str | None = None,
+                  name_treatment: str | None = None) -> str:
     """The page's name under the estate filename scheme (vendored ``tools/naming``).
 
     An all-groups page names the groups actually on it, in display order and side by side
     (``di-ovx-male-orx``), never ``ALL``: the rows are separate recordings, not pooled.
     Raises ``naming.artifact_name.NameError_`` when a value has no registered code.
+
+    ``name_treatment`` replaces the treatment in the NAME only. A page is keyed by treatment 1
+    and draws every period after it, so where a whole cohort was given a sequence (the
+    September 2026 pilot: APV+CNQX, then gabazine added) the name can say the sequence,
+    ``apv+cnqx-then-gz``, where treatment 1 alone would name a page that also shows gabazine.
+    Which recordings go on the page does not change.
     """
+    treatment = name_treatment or treatment
     from naming import artifact_name
 
     groups = (in_group_order(group_of(sl) for sl, _ in members)
@@ -868,12 +876,22 @@ def main(argv=None) -> int:
                     help=f"one page per group per treatment (default: "
                          f"{' '.join(DEFAULT_TREATMENTS)})")
     ap.add_argument("--width", type=int, default=PAGE_PX)
+    ap.add_argument("--png", action="store_true",
+                    help="also write a flat .png beside each page (needs playwright chromium). "
+                         "Off by default: the page is the .html (Tony, 2026-10-12)")
     ap.add_argument("--no-png", action="store_true",
-                    help="skip the flat render (needs playwright chromium)")
+                    help="accepted and ignored: HTML only is the default now, and commands "
+                         "written before 2026-10-12 still pass it")
     ap.add_argument("--unscanned", action="store_true",
                     help="the folder was NEVER scanned for field steps (producer: "
                          "UNCHECKED), so it has no manifest. Draw it with no red and "
                          "say so in the header. Needs --folder.")
+    ap.add_argument("--hand-reviewed", action="store_true",
+                    help="the folder has no manifest because a person reviewed every recording "
+                         "by hand and the producer removed what they marked (Tony, 2026-10-12, "
+                         "on the two 2026 pilots: every minute of every ROI). Drawn as "
+                         "--unscanned draws it, with no red, and WITHOUT the no-scan warning, "
+                         "which would be false. Needs --folder.")
     ap.add_argument("--steps-excluded", action="store_true",
                     help=f"draw the ANALYSIS dataset, field-step artifacts already "
                          f"removed (default: the '{EXCLUDED_ROLE}' export). No red; the header "
@@ -930,6 +948,11 @@ def main(argv=None) -> int:
     ap.add_argument("--source", default=None,
                     help="pilot-YYYYMMDD for a pilot cohort, or none for the main series "
                          "(default: the folder's `source` in current_export.toml)")
+    ap.add_argument("--name-treatment", default=None, metavar="TREATMENT",
+                    help="the treatment as the page NAMES say it, in the filename scheme's own "
+                         "terms, e.g. apv+cnqx-then-gz for a cohort given a sequence (default: "
+                         "treatment 1). Needs exactly one --treatments value; changes no page's "
+                         "contents")
     ap.add_argument("--calls-variant", default="own_floor",
                     help="which run to draw for detectors that take the floor as their own "
                          "minimum (default own_floor); the rest ran once and are all drawn")
@@ -942,7 +965,16 @@ def main(argv=None) -> int:
                 f"floors. Every call is drawn; no floor removes one.")
         a.note = f"{a.note} {rule}" if a.note else rule
 
-    folder = resolve_folder(a.folder, unscanned=a.unscanned,
+    if a.name_treatment and len(a.treatments) != 1:
+        ap.error("--name-treatment names the pages of ONE treatment; pass exactly one "
+                 "--treatments value with it")
+    if a.hand_reviewed and a.unscanned:
+        ap.error("--hand-reviewed and --unscanned contradict each other: one says a person "
+                 "looked at everything, the other that nobody looked")
+    # No manifest either way, so the folder is found and read the same way; only the header
+    # differs, and it takes a.unscanned alone.
+    no_manifest = a.unscanned or a.hand_reviewed
+    folder = resolve_folder(a.folder, unscanned=no_manifest,
                             steps_excluded=a.steps_excluded)
     removed = read_removed(folder) if a.steps_excluded else None
     facts = naming_facts(folder, {k: getattr(a, k) for k in NAME_FACTS})
@@ -963,7 +995,7 @@ def main(argv=None) -> int:
     import panel as pn
 
     pages, manifest, skipped = measure(folder, tuple(a.treatments),
-                                       unscanned=a.unscanned,
+                                       unscanned=no_manifest,
                                        steps_excluded=a.steps_excluded,
                                        groups=tuple(a.groups) if a.groups else None,
                                        combined=bool(a.streams and "combined" in a.streams),
@@ -977,7 +1009,8 @@ def main(argv=None) -> int:
     names, unnamed = {}, []
     for key, spec in pages.items():
         try:
-            names[key] = page_filename(facts, *key, spec["members"])
+            names[key] = page_filename(facts, *key, spec["members"],
+                                       name_treatment=a.name_treatment)
         except NameError_ as exc:
             unnamed.append(f"  {key[0]} / {key[1]} / {key[2]}: {exc}")
     if unnamed:
@@ -1050,14 +1083,14 @@ def main(argv=None) -> int:
             pn.Column(*items, margin=(0, 0, 0, SCROLL_GUTTER_PX)).save(str(tmp))
             os.replace(tmp, html)
         written.append(html)
-        if not a.no_png:
+        if a.png:
             from make_diagnostic import _render_png
             shot = html.with_suffix(".png")
             if _render_png(html, shot, scale=a.png_scale):
                 written.append(shot)
             else:
                 print("(no PNG: pip install playwright && python -m playwright "
-                      "install chromium, or pass --no-png)", file=sys.stderr)
+                      "install chromium)", file=sys.stderr)
         print(f"  {group:9s} {treatment:9s} {len(spec['members']):2d} recording(s), "
               f"{red:3d} red, extent {spec['ext'][0] / 60:+.0f}m..{spec['ext'][1] / 60:+.0f}m")
 
