@@ -882,6 +882,12 @@ def main(argv=None) -> int:
                     help="the folder was NEVER scanned for field steps (producer: "
                          "UNCHECKED), so it has no manifest. Draw it with no red and "
                          "say so in the header. Needs --folder.")
+    ap.add_argument("--hand-reviewed", action="store_true",
+                    help="the folder has no manifest because a person reviewed every recording "
+                         "by hand and the producer removed what they marked (Tony, 2026-10-12, "
+                         "on the two 2026 pilots: every minute of every ROI). Drawn as "
+                         "--unscanned draws it, with no red, and WITHOUT the no-scan warning, "
+                         "which would be false. Needs --folder.")
     ap.add_argument("--steps-excluded", action="store_true",
                     help=f"draw the ANALYSIS dataset, field-step artifacts already "
                          f"removed (default: the '{EXCLUDED_ROLE}' export). No red; the header "
@@ -958,7 +964,13 @@ def main(argv=None) -> int:
     if a.name_treatment and len(a.treatments) != 1:
         ap.error("--name-treatment names the pages of ONE treatment; pass exactly one "
                  "--treatments value with it")
-    folder = resolve_folder(a.folder, unscanned=a.unscanned,
+    if a.hand_reviewed and a.unscanned:
+        ap.error("--hand-reviewed and --unscanned contradict each other: one says a person "
+                 "looked at everything, the other that nobody looked")
+    # No manifest either way, so the folder is found and read the same way; only the header
+    # differs, and it takes a.unscanned alone.
+    no_manifest = a.unscanned or a.hand_reviewed
+    folder = resolve_folder(a.folder, unscanned=no_manifest,
                             steps_excluded=a.steps_excluded)
     removed = read_removed(folder) if a.steps_excluded else None
     facts = naming_facts(folder, {k: getattr(a, k) for k in NAME_FACTS})
@@ -979,7 +991,7 @@ def main(argv=None) -> int:
     import panel as pn
 
     pages, manifest, skipped = measure(folder, tuple(a.treatments),
-                                       unscanned=a.unscanned,
+                                       unscanned=no_manifest,
                                        steps_excluded=a.steps_excluded,
                                        groups=tuple(a.groups) if a.groups else None,
                                        combined=bool(a.streams and "combined" in a.streams),

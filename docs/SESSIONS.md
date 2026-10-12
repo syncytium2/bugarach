@@ -3312,8 +3312,8 @@ session's work is not a sweep.
 
 ### darkroom/bugarach/2026-10-12-apv-cnqx-gz-combined-rasters/ — one combined-stream raster page per pilot dataset, every recording a row, aligned at baseline end (065/combined-dataset-raster-page)
 - **Claimed:** 2026-10-12, before the first write. A new folder, so nothing existing is overwritten.
-- **Writes:** `4x/` and `3x/`, each holding two pages as `.html` and `.png` from
-  `tools/make_group_raster_summary.py --all-groups --streams combined --unscanned` on branch
+- **Writes:** `4x/` and `3x/`, each holding two `.html` pages from
+  `tools/make_group_raster_summary.py --all-groups --streams combined --hand-reviewed` on branch
   `combined-dataset-raster-page`: the August 2026 pilot (six MALE recordings, APV+CNQX+GZ in one
   period) and the September 2026 pilot (six DI recordings, APV+CNQX then gabazine). And a
   `README.md`. Drawn from interface2's four eval folders
