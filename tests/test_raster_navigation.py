@@ -224,3 +224,37 @@ def test_the_gestures_in_a_browser(page):
     assert again["x"] == home["x"]
     assert _flat(again["y"]) == pytest.approx(_flat(home["y"]))
     assert again["heights"] == home["heights"]
+
+
+#: Set the page's time range and return the labels its one time axis would draw.
+_LABELS_JS = """([lo, hi]) => {
+  const doc = Bokeh.documents[0];
+  const all = Array.from(doc.all_models.values ? doc.all_models.values() : doc.all_models);
+  const figs = all.filter(m => Array.isArray(m.tags) && m.tags.includes('bugarach-nav'));
+  const fig = figs.find(f => f.below.length);
+  fig.x_range.setv({start: lo, end: hi});
+  const axis = fig.below[0];
+  const major = axis.ticker.get_ticks(lo, hi, fig.x_range, 0).major;
+  return axis.formatter.doFormat(major, {loc: 0});
+}"""
+
+
+@pytest.mark.parametrize("lo, hi, labels", [
+    # ticks a minute or more apart: every label in full, as before
+    (-1200, 1800, ["-20m", "-10m", "0s", "10m", "20m", "30m"]),
+    # closer than a minute: whole minutes named, seconds alone between them
+    (695, 815, ["11m45s", "12m", "15s", "30s", "45s", "13m", "15s", "30s"]),
+    # no whole minute in the window: the first label still says where it is
+    (752, 757, ["12m32s", "33s", "34s", "35s", "36s", "37s"]),
+    # below a second the ticks carry on in tenths
+    (753.95, 754.65, ["12m34s", "34.1s", "34.2s", "34.3s", "34.4s", "34.5s", "34.6s"]),
+    # before t = 0 every label is whole: "-1m" then "50s" would read as a later time
+    (-90, -30, ["-1m30s", "-1m20s", "-1m10s", "-1m", "-50s", "-40s", "-30s"]),
+])
+def test_a_zoomed_axis_names_the_minute_once_and_then_counts_seconds(page, lo, hi, labels):
+    """Tony, 2026-10-13: "the x-axis needs to be smarter about when to switch from minutes
+    to seconds." The shared hook wrote 12m30s, 12m32s, 12m34s and stopped at one second."""
+    try:
+        assert page.evaluate(_LABELS_JS, [lo, hi]) == labels
+    finally:
+        page.evaluate("bugarachNav.reset()")

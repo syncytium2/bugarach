@@ -49,6 +49,51 @@ def navigation_hook(plot, element):
     # last zoom, and whichever of the two runs second is the view the reader gets.
     fig.js_on_event("doubletap", CustomJS(
         code="setTimeout(() => window.bugarachNav && window.bugarachNav.reset(), 0);"))
+    for axis in fig.below:
+        _zoomable_time_axis(axis)
+
+
+#: The label rule for an axis a reader can zoom. ``tick``, ``index`` and ``ticks`` are what
+#: bokeh hands a CustomJSTickFormatter. Tenths of a second throughout, so 12m34.5s is not
+#: printed as 12m34.49999s.
+ZOOM_LABEL_JS = """
+    const t10 = Math.round(Math.abs(tick) * 10);
+    const sign = tick < 0 && t10 ? '-' : '';
+    const m = Math.floor(t10 / 600);
+    const s10 = t10 - m * 600;
+    const secs = s10 % 10 ? (s10 / 10).toFixed(1) : String(s10 / 10);
+    const full = !m ? sign + secs + 's'
+               : !s10 ? sign + m + 'm'
+               : sign + m + 'm' + (s10 < 100 ? '0' : '') + secs + 's';
+    const step = ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 60;
+    // Ticks a minute or more apart, a whole minute, the first label on the axis, and
+    // anything before t = 0 say the whole time. Between them, the seconds alone.
+    if (step >= 60 || !s10 || !m || index === 0 || tick < 0) return full;
+    return secs + 's';
+"""
+
+
+def _zoomable_time_axis(axis) -> None:
+    """Ticks and labels for a time axis that will be zoomed far past where it was built.
+
+    ``_time_axis_hook`` labels every tick in full, ``12m30s``, ``12m32s``, ``12m34s``, and
+    stops at one second. Built for a whole recording that is right. Zoomed to a few seconds
+    it repeats the minute on every tick and then runs out of ticks (Tony, 2026-10-13: *"the
+    x-axis needs to be smarter about when to switch from minutes to seconds"*).
+
+    So once the ticks are closer than a minute, a whole minute is labelled ``12m`` and the
+    ticks after it carry seconds only, ``15s``, ``30s``, ``45s``, up to ``13m``. The first
+    label on the axis is always written in full, so a window holding no whole minute still
+    says where it is. Times before t = 0 stay in full: ``-12m`` followed by ``55s`` would
+    read as a later time than it is. Below one second the ticks go on in 0.5, 0.2 and 0.1 s.
+    """
+    from bokeh.models import AdaptiveTicker, CompositeTicker, CustomJSTickFormatter
+
+    axis.ticker = CompositeTicker(tickers=[
+        AdaptiveTicker(base=10, mantissas=[1, 2, 5], min_interval=0.1, max_interval=0.5),
+        AdaptiveTicker(base=60, mantissas=[1, 2, 5, 10, 15, 30], min_interval=1),
+    ])
+    axis.formatter = CustomJSTickFormatter(code=ZOOM_LABEL_JS)
 
 
 NAV_SCRIPT = r"""
