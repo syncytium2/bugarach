@@ -103,7 +103,12 @@ def _time_axis_hook(plot, element):
     # active_scroll on "auto" and nothing claims the wheel, so scrolling over
     # the plot did nothing at all and zooming meant finding the box-zoom button
     # first. Hand the wheel to the x-constrained zoom explicitly.
+    #
+    # WITH CTRL HELD, AND ONLY THEN (Tony, 2026-10-13; ADR-0015). The bare wheel
+    # scrolls the page. For seven weeks this hook claimed the bare wheel while the
+    # convention said the wheel scrolls; the modifier is what lets both be true.
     if wheel is not None and toolbar is not None:
+        wheel.modifiers = {"ctrl": True}
         toolbar.active_scroll = wheel
 
     xaxis = plot.handles.get("xaxis")
@@ -627,8 +632,8 @@ def _raster(stream, name: str, ext) -> hv.Scatter:
     t = np.concatenate(ts) if ts else np.empty(0)
     y = np.concatenate(ys) if ys else np.empty(0)
     # no title — vertical space is precious; the y-label carries identity.
-    # wheel zoom stays in the toolbar but NOT active, so the mouse wheel
-    # scrolls the page; drag pans, toolbar toggles zoom when wanted
+    # the bare wheel scrolls the page and Ctrl+wheel zooms time (the hook sets
+    # that, ADR-0015); drag pans
     return hv.Scatter((t, y), kdims=["t"], vdims=["roi"]).opts(
         marker="dash", angle=90, size=5, color="black", alpha=0.7,
         width=950, height=150, xlim=ext, title="",

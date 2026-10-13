@@ -1,9 +1,16 @@
 ---
-status: open
+status: done
 filed: 2026-08-22
 ---
 
 # The mouse wheel zooms the raster, and three places say it does not
+
+> **Done 2026-10-13.** Tony ruled it
+> ([ADR-0015](../adr/0015-raster-pages-navigate-the-way-igor-does.md)): the bare wheel scrolls
+> the page and Ctrl+wheel zooms time, on every surface. `_time_axis_hook` puts Ctrl on the
+> wheel tool, and the `_raster` comment and `CLAUDE.md` now say the same. To-do item 3,
+> whether an export should carry the x-range it was made at, is not settled by this and moves
+> to [the follow-up](2026-10-13-igor-navigation-on-the-other-two-raster-surfaces.md).
 
 Found while writing
 [`2026-08-22-train-on-human-called-events.md`](2026-08-22-train-on-human-called-events.md),
