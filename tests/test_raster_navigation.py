@@ -58,9 +58,9 @@ def _figures(tmp_path):
     return [hv.renderer("bokeh").get_plot(p).state for _, panels in blocks for p in panels]
 
 
-def test_a_plain_drag_is_the_box_and_only_a_raster_lets_it_run_vertically(tmp_path):
-    """Tony, 2026-10-13: Igor's assignment. The box has the plain drag, and down means
-    taller rows, which only a raster has."""
+def test_a_plain_drag_is_the_box_and_the_box_zooms_time_only(tmp_path):
+    """Tony, 2026-10-13: Igor's assignment, the box has the plain drag. And the same day,
+    on the first real pages: "disable the pitch and make zoom only x-axis" (ADR-0016)."""
     from bokeh.models import BoxZoomTool
 
     figs = _figures(tmp_path)
@@ -70,9 +70,7 @@ def test_a_plain_drag_is_the_box_and_only_a_raster_lets_it_run_vertically(tmp_pa
         assert len(boxes) == 1
         assert fig.toolbar.active_drag is boxes[0]
         assert navigate.NAV_TAG in fig.tags
-        raster = navigate.PITCH_TAG in fig.tags
-        assert boxes[0].dimensions == ("auto" if raster else "width")
-    assert [navigate.PITCH_TAG in f.tags for f in figs] == [False, True, False, True]
+        assert boxes[0].dimensions == "width"
 
 
 def test_the_wheel_zooms_only_with_ctrl_held_and_only_in_time(tmp_path):
@@ -126,15 +124,20 @@ def page(tmp_path_factory):
 
 
 def _view(page):
-    return page.evaluate("({...bugarachNav.view(), heights: bugarachNav.heights(),"
+    return page.evaluate("({...bugarachNav.view(), y: bugarachNav.rows(),"
+                         " heights: bugarachNav.heights(),"
                          " depth: bugarachNav.depth(), scrollY: window.scrollY})")
+
+
+def _flat(rows):
+    return [v for row in rows for v in row]
 
 
 def _settled(page, before):
     """Wait for the view to differ from ``before`` and for the script to have recorded it."""
     page.wait_for_function(
         "b => { const v = bugarachNav.view();"
-        " return JSON.stringify([v.x, v.y]) !== JSON.stringify([b.x, b.y])"
+        " return JSON.stringify(v.x) !== JSON.stringify(b.x)"
         " && bugarachNav.depth() !== b.depth; }", arg=before, timeout=10_000)
     return _view(page)
 
@@ -172,24 +175,23 @@ def test_the_gestures_in_a_browser(page):
     home = _view(page)
     assert home["x"] == [-1200, 1800] and home["depth"] == 1
 
-    # A box dragged across: time closes on it, no rows are picked, no panel grows.
+    # A box dragged across: time closes on it.
     _drag(page, x + 0.4 * w, y + 20, x + 0.6 * w, y + 23)
     across = _settled(page, home)
     assert home["x"][0] < across["x"][0] < across["x"][1] < home["x"][1]
     assert across["x"][1] - across["x"][0] == pytest.approx(0.2 * 3000, rel=0.1)
-    assert across["y"] == home["y"] and across["heights"] == home["heights"]
+    # approx: bokeh writes a range back through its screen mapping
+    assert _flat(across["y"]) == pytest.approx(_flat(home["y"]))
+    assert across["heights"] == home["heights"]
 
-    # A box dragged down: time stays, that recording shows fewer rows on whole-row
-    # bounds, and its panel is taller. The other recording is untouched.
-    _drag(page, x + 0.5 * w, y + 0.2 * h, x + 0.5 * w + 2, y + 0.7 * h)
+    # A box dragged corner to corner still zooms time only: every row stays on screen
+    # and no panel changes height (ADR-0016).
+    _drag(page, x + 0.3 * w, y + 0.2 * h, x + 0.7 * w, y + 0.7 * h)
     down = _settled(page, across)
-    # approx: bokeh writes the time range back through its screen mapping
-    assert down["x"] == pytest.approx(across["x"])
-    lo, hi = down["y"][1]
-    assert hi - lo < home["y"][1][1] - home["y"][1][0]
-    assert (lo + 0.5) % 1 == 0 and (hi + 0.5) % 1 == 0
-    assert down["heights"][1] > home["heights"][1]
-    assert down["heights"][3] == home["heights"][3] and down["y"][3] == home["y"][3]
+    assert down["x"][1] - down["x"][0] == pytest.approx(0.4 * (across["x"][1] - across["x"][0]),
+                                                        rel=0.1)
+    assert _flat(down["y"]) == pytest.approx(_flat(home["y"]))
+    assert down["heights"] == home["heights"]
 
     # Shift-drag slides: the same span of time, moved.
     x, y, w, h = _raster(page)
@@ -215,9 +217,10 @@ def test_the_gestures_in_a_browser(page):
     back = _view(page)
     assert back["x"] == slid["x"] and back["depth"] == wheeled["depth"] - 1
 
-    # Double-click shows everything, and the tall panel goes back to its own height.
+    # Double-click shows everything.
     page.mouse.dblclick(x + 0.5 * w, y + 10)
     page.wait_for_function("bugarachNav.view().x[0] === -1200", timeout=10_000)
     again = _view(page)
-    assert again["x"] == home["x"] and again["y"] == home["y"]
+    assert again["x"] == home["x"]
+    assert _flat(again["y"]) == pytest.approx(_flat(home["y"]))
     assert again["heights"] == home["heights"]

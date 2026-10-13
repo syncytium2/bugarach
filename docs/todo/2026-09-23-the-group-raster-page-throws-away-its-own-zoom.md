@@ -10,8 +10,10 @@ filed: 2026-09-23
 > Ctrl+wheel, double-click, Ctrl+Z
 > ([ADR-0015](../adr/0015-raster-pages-navigate-the-way-igor-does.md), `bugarach.ui.navigate`).
 > Of the two decisions at the end: the PNG is taken before the navigation is added, and
-> `--roi-px` keeps its default, because dragging a box down a raster now draws those rows
-> taller on the page itself.
+> the `--roi-px` default is **still undecided**. A gesture that drew rows taller on the page
+> was built and removed the same day
+> ([ADR-0016](../adr/0016-a-raster-zooms-in-time-only.md)), so the question moved to
+> [the follow-up](2026-10-13-igor-navigation-on-the-other-two-raster-surfaces.md).
 
 > **Not murderboarded** — a defect report for sessions in this tree. Reproduce with the
 > command below. Nothing here is for an outside reader.
