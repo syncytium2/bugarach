@@ -124,8 +124,15 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
 - **Unlinked y, linked x**: signal rows carry a unique value dimension per
   detector so y-ranges never link across rows; x links through the shared
   `t` dimension.
-- **Scroll wins**: wheel-zoom stays in the toolbar but inactive — the mouse
-  wheel scrolls the page; drag pans.
+- **Scroll wins, and a raster navigates the way Igor Pro does** (Tony, 2026-10-13;
+  [ADR-0015](docs/adr/0015-raster-pages-navigate-the-way-igor-does.md)). The bare mouse wheel
+  scrolls the page; **Ctrl+wheel** zooms time at the cursor. A plain drag draws a zoom box:
+  across is time, on every panel of the page; down picks rows and draws them **taller** (row
+  pitch, never a y-crop at the same height). **Shift-drag** slides. Double-click shows
+  everything and Ctrl+Z steps back one view. `bugarach.ui.navigate` is the implementation
+  (`navigation_hook` per panel, `add_navigation` on the saved page) — reuse it. The group
+  raster pages have all of it; the Panel app has the wheel rule only and the canvas viewer has
+  none yet ([todo](docs/todo/2026-10-13-igor-navigation-on-the-other-two-raster-surfaces.md)).
 - **A figure page is figures, then controls, then text** (Tony, 2026-10-08, on the stack ceiling
   page: *"this architecture (figures at the top, controls stuck to bottom, explainer text at the
   bottom of the scroll) needs to be standardized for the estate"*;

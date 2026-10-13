@@ -294,3 +294,5 @@ def test_the_wheel_actually_zooms(sim):
         assert isinstance(scroll, WheelZoomTool), (
             f"active_scroll is {scroll!r} — the wheel does nothing")
         assert scroll.dimensions == "width"
+        # and only with Ctrl held, so the bare wheel scrolls the page (ADR-0015)
+        assert scroll.modifiers == {"ctrl": True}

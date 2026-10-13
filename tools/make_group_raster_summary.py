@@ -613,11 +613,13 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
                lanes=None, not_run=(), lane_px: int = None, roi_px: int = None):
     """Regions over detector lanes over raster, for ONE stream, per recording."""
     from bugarach.detect_folder import folder_analysis_windows
+    from bugarach.ui.app import _time_axis_hook
     from bugarach.ui.diagnostic import lane_panel, raster_panel, region_lane_panel
+    from bugarach.ui.navigate import navigation_hook
 
     _name_unknown_labels(members)
     lanes = lanes or {}
-    blocks, red_drawn = [], 0
+    blocks, red_drawn, rasters = [], 0, []
     for sl, anchor in members:
         # A UNIQUE y-DIMENSION PER PANEL. The name is what links y-ranges across
         # panels, so leaving the defaults draws every recording against the ROI
@@ -680,6 +682,7 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
                 marked_ink=(SLOW_INK if st.label is not None else None),
                 ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"
             ).opts(ylabel="", backend_opts=TIGHT))
+            rasters.append(panels[-1])
         blocks.append((sl, panels))
 
     # ONE X-AXIS PER LINKED GROUP, on the bottom row only (CLAUDE.md). Every
@@ -693,6 +696,12 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
     if flat:
         last_h = flat[-1].opts.get("plot").kwargs.get("height") or 0
         flat[-1].opts(height=last_h + AXIS_PX, toolbar=None)
+    # NAVIGATION IS GESTURES ON THE PLOT, SO NO TOOLBAR COMES BACK. Every panel gets the
+    # box zoom and the Ctrl+wheel zoom (`ui.navigate`, ADR-0015); only a raster lets the
+    # box run vertically, because only a raster has rows worth drawing taller.
+    for p in flat:
+        p.opts(hooks=[_time_axis_hook,
+                      navigation_hook(row_pitch=any(p is r for r in rasters))])
     return blocks, red_drawn
 
 
@@ -1081,16 +1090,24 @@ def main(argv=None) -> int:
             # cursor and scroll without landing on a plot (Tony, 2026-09-21: "need a
             # little space on the left so there is a place to put the cursor to scroll").
             pn.Column(*items, margin=(0, 0, 0, SCROLL_GUTTER_PX)).save(str(tmp))
+            shot = None
+            if a.png:
+                # THE PNG IS TAKEN BEFORE THE NAVIGATION GOES IN. The bar that names the
+                # gestures sticks to the bottom of the window, and in a screenshot it is
+                # a row of buttons nobody can press.
+                from make_diagnostic import _render_png
+                shot = html.with_suffix(".png")
+                if not _render_png(tmp, shot, scale=a.png_scale):
+                    shot = None
+                    print("(no PNG: pip install playwright && python -m playwright "
+                          "install chromium)", file=sys.stderr)
+            from bugarach.ui.navigate import add_navigation
+            tmp.write_text(add_navigation(tmp.read_text(encoding="utf-8")),
+                           encoding="utf-8")
             os.replace(tmp, html)
         written.append(html)
-        if a.png:
-            from make_diagnostic import _render_png
-            shot = html.with_suffix(".png")
-            if _render_png(html, shot, scale=a.png_scale):
-                written.append(shot)
-            else:
-                print("(no PNG: pip install playwright && python -m playwright "
-                      "install chromium)", file=sys.stderr)
+        if shot is not None:
+            written.append(shot)
         print(f"  {group:9s} {treatment:9s} {len(spec['members']):2d} recording(s), "
               f"{red:3d} red, extent {spec['ext'][0] / 60:+.0f}m..{spec['ext'][1] / 60:+.0f}m")
 
