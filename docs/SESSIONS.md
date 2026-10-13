@@ -3321,3 +3321,11 @@ session's work is not a sweep.
   read by name; the dataset default is not touched. Darkroom only: the pages show real
   recordings, so no copy goes in the repo. Requested by Tony through the orchestrator.
 - **Released:** 2026-10-12, at write. Holds nothing.
+
+### darkroom/bugarach/2026-10-12-apv-cnqx-gz-combined-rasters/4x/ — the two 4x pilot pages redrawn with the box-zoom navigation (065/igor-raster-navigation)
+- **Claimed:** 2026-10-13, before the write. Tony: "draw up the last two rasters using the 4x threshold", so the pages can be zoomed.
+- **Writes:** two new `.html` pages into `4x/`, dated 20261013, from `tools/make_group_raster_summary.py
+  --all-groups --streams combined --hand-reviewed` on `main` after PR #882. Same two eval folders, read by
+  name; the dataset default is not touched. The two pages dated 20261012 stay beside them, untouched, and
+  the folder's `README.md` gets a paragraph saying which is which. Darkroom only: real recordings.
+- **Released:** 2026-10-13, at write. Holds nothing.
