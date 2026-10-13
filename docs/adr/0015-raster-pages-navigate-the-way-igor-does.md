@@ -6,6 +6,10 @@ Accepted, 2026-10-13, by Tony. He asked for a review of Igor Pro's graph navigat
 on bringing it to the HTML rasters, was given three decisions, and answered each in a line:
 plain drag is *"igor"*, vertical is *"row pitch"*, and Ctrl+wheel zoom is *"yes"*.
 
+**Point 2 of the decision, row pitch, is superseded by
+[ADR-0016](0016-a-raster-zooms-in-time-only.md)**, the same day: the box zooms time only. The
+rest stands.
+
 Numbers 0012 and 0013 are held by open proposals (#848, #855), so this record is 0015.
 
 ## Context

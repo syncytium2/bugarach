@@ -126,9 +126,11 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
   `t` dimension.
 - **Scroll wins, and a raster navigates the way Igor Pro does** (Tony, 2026-10-13;
   [ADR-0015](docs/adr/0015-raster-pages-navigate-the-way-igor-does.md)). The bare mouse wheel
-  scrolls the page; **Ctrl+wheel** zooms time at the cursor. A plain drag draws a zoom box:
-  across is time, on every panel of the page; down picks rows and draws them **taller** (row
-  pitch, never a y-crop at the same height). **Shift-drag** slides. Double-click shows
+  scrolls the page; **Ctrl+wheel** zooms time at the cursor. A plain drag draws a zoom box,
+  and **the box zooms time only**, on every panel of the page: no gesture changes a panel's
+  height or its rows (Tony, the same day, on the first real pages: *"disable the pitch and make
+  zoom only x-axis"*; [ADR-0016](docs/adr/0016-a-raster-zooms-in-time-only.md)). Row height is
+  `--roi-px`, set when the page is built. **Shift-drag** slides. Double-click shows
   everything and Ctrl+Z steps back one view. `bugarach.ui.navigate` is the implementation
   (`navigation_hook` per panel, `add_navigation` on the saved page) — reuse it. The group
   raster pages have all of it; the Panel app has the wheel rule only and the canvas viewer has

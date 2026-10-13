@@ -619,7 +619,7 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
 
     _name_unknown_labels(members)
     lanes = lanes or {}
-    blocks, red_drawn, rasters = [], 0, []
+    blocks, red_drawn = [], 0
     for sl, anchor in members:
         # A UNIQUE y-DIMENSION PER PANEL. The name is what links y-ranges across
         # panels, so leaving the defaults draws every recording against the ROI
@@ -682,7 +682,6 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
                 marked_ink=(SLOW_INK if st.label is not None else None),
                 ydim=f"roi_{sl.slice_id}_{sname}", ticks="minimal"
             ).opts(ylabel="", backend_opts=TIGHT))
-            rasters.append(panels[-1])
         blocks.append((sl, panels))
 
     # ONE X-AXIS PER LINKED GROUP, on the bottom row only (CLAUDE.md). Every
@@ -697,11 +696,9 @@ def build_page(members, *, ext, manifest, width: int, stream: str,
         last_h = flat[-1].opts.get("plot").kwargs.get("height") or 0
         flat[-1].opts(height=last_h + AXIS_PX, toolbar=None)
     # NAVIGATION IS GESTURES ON THE PLOT, SO NO TOOLBAR COMES BACK. Every panel gets the
-    # box zoom and the Ctrl+wheel zoom (`ui.navigate`, ADR-0015); only a raster lets the
-    # box run vertically, because only a raster has rows worth drawing taller.
+    # box zoom and the Ctrl+wheel zoom (`ui.navigate`), in time only (ADR-0016).
     for p in flat:
-        p.opts(hooks=[_time_axis_hook,
-                      navigation_hook(row_pitch=any(p is r for r in rasters))])
+        p.opts(hooks=[_time_axis_hook, navigation_hook])
     return blocks, red_drawn
 
 
