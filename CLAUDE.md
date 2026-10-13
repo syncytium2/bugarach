@@ -100,7 +100,12 @@ F1 0.57 and here is the trace showing why" beats three paragraphs of mechanism.
 
 - **Minutes-friendly time axes, always**: 60-base ticks (1/2/5/10/15/30 x
   60^k s) labeled `45s` / `2m` / `2m30s`, never raw seconds. Implemented as
-  `_time_axis_hook` in `src/bugarach/ui/app.py` — reuse it.
+  `_time_axis_hook` in `src/bugarach/ui/app.py` — reuse it. **On a page a reader can zoom,
+  ticks closer than a minute name the minute once and then count seconds** (Tony, 2026-10-13:
+  *"the x-axis needs to be smarter about when to switch from minutes to seconds"*): `12m`,
+  `15s`, `30s`, `45s`, `13m`, with the first label on the axis always in full and ticks going
+  down to 0.1 s. That is `navigation_hook` in `bugarach.ui.navigate`, which replaces the axis
+  the first hook built.
 - **Compact labeling**: no titles above plots; identity + counts live in
   y-axis labels ("fast · 30 ROI", "rate (27)"); one x-axis per linked group
   (bottom row only, with extra height so plot areas match).
