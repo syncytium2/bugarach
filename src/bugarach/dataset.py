@@ -37,8 +37,7 @@ from pathlib import Path
 
 __all__ = ["Kind", "kind", "describe", "data_root", "resolve", "require",
            "current", "current_name", "declared_exports", "default", "default_role",
-           "confirm", "confirmed", "require_confirmed", "stamp",
-           "DataError", "UnconfirmedDefault", "ENV_VAR", "POINTER"]
+           "report", "stamp", "DataError", "ENV_VAR", "POINTER"]
 
 ENV_VAR = "BUGARACH_DATA_ROOT"
 """Optional. Where the stores live, so a dataset can be named rather than pathed."""
@@ -358,83 +357,36 @@ def refuse_if_archived(role: str) -> None:
         f"{REPRODUCE_ENV}='<which run>'.")
 
 
-# --- the per-session confirmation ---------------------------------------------------
+# --- the report: every analysis says which folder it reads ----------------------------
 #
-# Tony, 2026-09-21: "there should be one default data folder that the user confirms at
-# the start of every session." Printed by the briefing and enforced here: inside a
-# Claude Code session (CLAUDE_CODE_SESSION_ID, which the harness exports to every shell
-# it runs), the default opens only once the person has confirmed it for that session.
-# A person at a terminal has no session id and is their own confirmation; the suite is
-# exempt because a test is a check, not an analysis.
+# ADR-0018 (Tony, 2026-10-14): "it is probably time to simply report the data set you are
+# using." From 2026-09-21 the default opened inside a Claude session only after the person
+# had confirmed it for that session, because a stale folder had been read without anyone
+# noticing. That gate is retired. What replaces it is a line on stderr, once per folder
+# per process, naming the role, the folder and what is in it — so the folder a run read
+# is in its log and in front of whoever is watching. ``stamp()`` still puts it in the
+# result. The archive refusal and the contamination stop are unchanged.
 
-SESSION_ENV = "CLAUDE_CODE_SESSION_ID"
-
-
-def _session_id() -> str | None:
-    if os.environ.get("PYTEST_CURRENT_TEST"):
-        return None
-    return os.environ.get(SESSION_ENV) or None
+_reported: set[str] = set()
 
 
-def _confirm_dir() -> Path:
-    return Path(os.environ.get("BUGARACH_STATE_DIR") or Path.home() / ".bugarach") / "confirmed"
-
-
-class UnconfirmedDefault(DataError):
-    """The default folder has not been confirmed by the person in this session."""
-
-
-def confirmed() -> str | None:
-    """The folder name confirmed for this session, or ``None``."""
-    sid = _session_id()
-    if sid is None:
-        return None
-    try:
-        return (_confirm_dir() / sid).read_text(encoding="utf-8").strip() or None
-    except OSError:
-        return None
-
-
-def confirm() -> str:
-    """Record that the person confirmed the current default for this session."""
-    sid = _session_id()
-    name = current_name("default")
-    if sid is None:
-        return name
-    d = _confirm_dir()
-    d.mkdir(parents=True, exist_ok=True)
-    (d / sid).write_text(name + "\n", encoding="utf-8")
-    return name
-
-
-def require_confirmed() -> None:
-    """Refuse the default until this session's person has confirmed it.
-
-    The confirmation names a folder, not a role, so a default that moves mid-session
-    needs confirming again.
-    """
-    if _session_id() is None:
+def report(role: str, path: Path) -> None:
+    """Say on stderr which declared folder is being read. Once per folder per process."""
+    key = str(path)
+    if key in _reported:
         return
-    name = current_name("default")
-    got = confirmed()
-    if got == name:
-        return
-    was = f" (this session confirmed {got!r}, and the default has moved)" if got else ""
-    raise UnconfirmedDefault(
-        f"STOP: the default dataset is {name!r} ({default_role()}), and the person has "
-        f"not confirmed it this session{was}.\n"
-        f"Ask them: \"Default dataset: {name}. Confirm?\" On a yes, run\n"
-        f"    python -m bugarach.dataset confirm\n"
-        f"and carry on. Do not confirm on their behalf.")
+    _reported.add(key)
+    tag = f"{role}, default" if role == default_role() else role
+    print(f"dataset: {Path(path).name} [{tag}] — {describe(path)}", file=sys.stderr)
 
 
 def _gate_declared(path: Path) -> None:
     """A declared folder reached by name or path passes the same gates as by role.
 
     Without this, ``--dataset 2026-09-03_..._STEPS_EXCLUDED`` (or its path) walked past the
-    archive refusal, the contamination stop and the session confirmation that
-    ``current()`` enforces for the same folder by role — the checks would hold only for
-    callers polite enough to use the role.
+    archive refusal and the contamination stop that ``current()`` enforces for the same
+    folder by role — the checks would hold only for callers polite enough to use the role.
+    It is reported the same way too.
     """
     try:
         roles = declared_exports()
@@ -444,8 +396,7 @@ def _gate_declared(path: Path) -> None:
         if str(table.get("name")) == Path(path).name:
             refuse_if_archived(role)
             refuse_if_contaminated(role)
-            if role == default_role():
-                require_confirmed()
+            report(role, Path(path))
             return
 
 
@@ -559,14 +510,12 @@ def current(role: str = "default") -> Path:
     Raises ``DataError`` — never returns a store, never guesses a folder — if the
     declared name is not under the data root on this machine.
 
-    The default folder, however it is named, passes :func:`require_confirmed`; an
-    ``archive`` folder opens only with ``BUGARACH_REPRODUCE`` set.
+    Whatever it opens is named on stderr by :func:`report`; an ``archive`` folder opens
+    only with ``BUGARACH_REPRODUCE`` set.
     """
     role = _role(role)
     refuse_if_archived(role)
     refuse_if_contaminated(role)
-    if role == default_role():
-        require_confirmed()
     name = current_name(role)
     try:
         path = resolve(name)
@@ -583,6 +532,7 @@ def current(role: str = "default") -> Path:
             f"{_pointer_path()} declares the {role} export as {name!r}, but "
             f"{path} is a {k.name.replace('_', ' ')} ({k.detail}). The pointer names "
             f"export folders only; stores are not inputs.")
+    report(role, path)
     return path
 
 
@@ -652,19 +602,13 @@ def main() -> int:
     is "which folder, and is it here?", and a session running it has usually just
     been told that one of them is missing.
 
-    ``confirm`` records the person's confirmation of the default for this session —
-    run it only on their yes.
+    ``confirm`` is retired (ADR-0018) and says so, rather than failing as an unknown
+    word for someone typing it from habit.
     """
     argv = sys.argv[1:]
     if argv[:1] == ["confirm"]:
-        try:
-            name = confirm()
-        except DataError as exc:
-            print(exc)
-            return 1
-        sid = _session_id()
-        print(f"confirmed for session {sid}: {name}" if sid else
-              f"no Claude session here ({SESSION_ENV} unset), nothing to confirm: {name}")
+        print("nothing to confirm: the per-session confirmation was retired by ADR-0018. "
+              "Every analysis now names the folder it reads on stderr.")
         return 0
 
     try:
@@ -676,11 +620,7 @@ def main() -> int:
 
     root = data_root()
     print(f"data root: {root if root else f'not found (${ENV_VAR} unset, no Dropbox)'}")
-    got = confirmed()
-    state = ("no Claude session" if _session_id() is None else
-             "CONFIRMED this session" if got == roles[dflt]["name"] else
-             "NOT confirmed this session")
-    print(f"default: {dflt} = {roles[dflt]['name']}  ({state})")
+    print(f"default: {dflt} = {roles[dflt]['name']}")
     print(f"declared in {POINTER}:")
 
     bad = 0

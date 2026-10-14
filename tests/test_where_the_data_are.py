@@ -91,42 +91,27 @@ def test_an_archive_folder_does_not_open_without_saying_why(monkeypatch):
             dataset.current(role)
 
 
-# ------------------------------------------------ the per-session confirmation
+# ------------------------------------------------ the report (ADR-0018)
 
-@pytest.fixture
-def in_a_session(monkeypatch, tmp_path):
-    monkeypatch.setenv("BUGARACH_STATE_DIR", str(tmp_path))
-    monkeypatch.setattr(dataset, "_session_id", lambda: "session-under-test")
-    return tmp_path
-
-
-def test_the_default_refuses_until_the_person_confirms_it(in_a_session):
-    with pytest.raises(dataset.UnconfirmedDefault) as exc:
-        dataset.require_confirmed()
-    assert dataset.current_name("default") in str(exc.value), "the stop must NAME it"
-    assert "python -m bugarach.dataset confirm" in str(exc.value)
-    assert dataset.confirm() == dataset.current_name("default")
-    dataset.require_confirmed()                                   # now passes
+def test_the_folder_read_is_named_on_stderr_once(monkeypatch, tmp_path, capsys):
+    """The per-session confirmation is retired; what replaced it is a line that names
+    the folder, its role and what is in it, so a run's log says what it read."""
+    monkeypatch.setattr(dataset, "_reported", set())
+    folder = tmp_path / dataset.current_name("default")
+    folder.mkdir()
+    dataset.report(dataset.default_role(), folder)
+    dataset.report(dataset.default_role(), folder)          # the same folder again
+    err = capsys.readouterr().err
+    assert err.count("dataset: ") == 1, "once per folder, not once per call"
+    assert folder.name in err and f"[{dataset.default_role()}, default]" in err
 
 
-def test_a_confirmation_is_of_a_folder_so_a_moved_default_asks_again(in_a_session):
-    (in_a_session / "confirmed").mkdir()
-    (in_a_session / "confirmed" / "session-under-test").write_text("an-older-folder\n")
-    with pytest.raises(dataset.UnconfirmedDefault, match="has moved"):
-        dataset.require_confirmed()
-
-
-def test_a_confirmation_belongs_to_one_session(in_a_session, monkeypatch):
-    dataset.confirm()
-    monkeypatch.setattr(dataset, "_session_id", lambda: "another-session")
-    with pytest.raises(dataset.UnconfirmedDefault):
-        dataset.require_confirmed()
-
-
-def test_no_session_means_no_gate(monkeypatch):
-    """A person at a terminal is their own confirmation, and the suite is a check."""
-    monkeypatch.setattr(dataset, "_session_id", lambda: None)
-    dataset.require_confirmed()
+def test_the_confirmation_is_gone_and_says_so(monkeypatch, capsys):
+    for name in ("confirm", "confirmed", "require_confirmed", "UnconfirmedDefault"):
+        assert not hasattr(dataset, name), f"{name} outlived ADR-0018"
+    monkeypatch.setattr(dataset.sys, "argv", ["dataset", "confirm"])
+    assert dataset.main() == 0
+    assert "ADR-0018" in capsys.readouterr().out
 
 
 #: Code that may still name a non-eval role, each with the reason. Keep it short.

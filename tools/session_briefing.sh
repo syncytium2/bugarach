@@ -442,7 +442,7 @@ render() {
   [ -n "$ds_role" ] && ds_name=$(sed -n "/^\[${ds_role}\]/,/^\[[a-z]/p" current_export.toml \
             | sed -n 's/^name[[:space:]]*=[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' | head -1)
   # resolve(), not current(): locating the folder is not reading it, and current() is
-  # what refuses until the confirmation this line asks for.
+  # where the archive and contamination gates live.
   ds_path=$(PYTHONPATH=src python3 -c 'from bugarach import dataset
 try: print(dataset.resolve(dataset.current_name()))
 except Exception: pass' 2>/dev/null)
@@ -454,7 +454,7 @@ except Exception: pass' 2>/dev/null)
     # 9,182B against its 9,150B budget and degraded it to TERSE (2026-09-21).
     local scored
     scored=$(python3 tools/check_scored_dataset.py --brief 2>/dev/null | head -1)
-    echo "!! data in: $ds_name; confirm with Tony: python -m bugarach.dataset confirm${scored:+; $scored}"
+    echo "!! data in: $ds_name${scored:+; $scored}"
   else
     echo "!! data in: $ds_name declared, NOT here — PYTHONPATH=src python3 -m bugarach.dataset"
   fi
