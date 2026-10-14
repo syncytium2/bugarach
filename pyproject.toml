@@ -26,12 +26,16 @@ dependencies = [
 ui = ["panel>=1.4", "holoviews>=1.18"]
 docs = ["markdown>=3.5"]
 dl = ["torch>=2.0"]
+# The figure tools under tools/ (make_*_figure.py and friends, 31 files on 2026-10-14) draw
+# with matplotlib. Nothing under src/ or tests/ does, so for weeks nothing declared it, CI
+# never noticed, and a Windows workstation built from the line above had no copy at all.
+figures = ["matplotlib>=3.7"]
 # Elephant carries seven of the surrogate screen's candidates. Pinned exactly: the
 # adapter in src/bugarach/surrogates.py corrects defects found by running 1.2.1, and
 # a different release can move, fix or add them without anything here noticing.
 surrogates = ["elephant==1.2.1"]
 dev = ["pytest>=8", "pytest-xdist", "pyspike", "panel>=1.4", "holoviews>=1.18", "markdown>=3.5",
-       "playwright>=1.40", "torch>=2.0", "elephant==1.2.1"]
+       "playwright>=1.40", "torch>=2.0", "elephant==1.2.1", "matplotlib>=3.7"]
 
 [project.scripts]
 bugarach = "bugarach.cli:main"
