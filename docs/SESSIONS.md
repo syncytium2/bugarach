@@ -3353,3 +3353,7 @@ session's work is not a sweep.
   default, `pensub` and the flagged review copy. Checked on WSMIP065 after the move: every declared role resolves
   (the five archives from `deprecated/`), an archive is still refused without `BUGARACH_REPRODUCE`, and the
   flagged copy and `PRE_ARTIFACT_KILLER` resolve by name. Holds nothing.
+
+### darkroom/bugarach/2026-10-14-coordinated-fraction-under-treatment/ — the coordinated fraction, baseline against treatment 1, on the two cleared 2026 pilots (WSMIP065/fraction-treatment)
+- **Claimed:** 2026-10-14, before the write. Tony: the August and September pilots as baseline and treatment 1, treatment 2 and high K+ left out; ADR-0017 makes it bugarach's to measure.
+- **Writes:** a NEW dated folder: one `coordination_under_treatment.json` per pilot folder and one `before-after` PNG per pilot and stream, from `tools/measure_coordination_under_treatment.py`. Reads the four 2026-10-12 eval folders (August and September, 4x and 3x) by name, cleared for analysis by their READMEs since the producer's fix today. Darkroom only: real recordings.
