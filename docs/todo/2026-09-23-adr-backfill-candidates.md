@@ -26,8 +26,9 @@ Candidates, newest first, each with where it lives today:
   item 2.
 - [ ] **SPIKE-synch flat across the background axis is a result, not a reason to move the axis**
   (2026-09-22): the overnight handoff, `docs/handoffs/2026-09-22-overnight.md`.
-- [ ] **One default dataset, confirmed by Tony every session** (2026-09-21): CLAUDE.md and
-  `bugarach.dataset`.
+- [x] **One default dataset, confirmed by Tony every session** (2026-09-21): written up, and its
+  confirmation half retired, in
+  [ADR-0018](../adr/0018-the-dataset-is-reported-not-confirmed.md) (2026-10-14).
 - [ ] **A known contamination stops the work** (2026-09-17): CLAUDE.md and
   `dataset.refuse_if_contaminated`.
 - [ ] **No long-lived goal branch; sessions start from `main`** (2026-09-14): CLAUDE.md.

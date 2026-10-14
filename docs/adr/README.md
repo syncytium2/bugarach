@@ -44,6 +44,7 @@ two never disagree, and cross-reference them.
 | [0015](0015-raster-pages-navigate-the-way-igor-does.md) | Raster pages navigate the way Igor Pro does: drag a box to zoom, down is row pitch, Shift-drag slides, Ctrl+wheel zooms | Accepted; row pitch superseded by ADR-0016 |
 | [0016](0016-a-raster-zooms-in-time-only.md) | A raster zooms in time only: the box sets the time range, and no gesture changes a panel's height or rows | Accepted |
 | [0017](0017-group-and-treatment-comparisons-default-to-fireflies.md) | Group and treatment comparisons default to fireflies; an exception is flagged and confirmed | Accepted |
+| [0018](0018-the-dataset-is-reported-not-confirmed.md) | The dataset an analysis reads is reported, not confirmed per session | Accepted |
 
 **The habit lapsed for 25 days and restarted on 2026-09-23.** After ADR-0005 on 2026-08-29
 no ADR was written, and nothing decided to stop. Rulings went instead into bench-constant
