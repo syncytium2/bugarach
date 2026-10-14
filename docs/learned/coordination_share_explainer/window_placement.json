@@ -1,0 +1,25 @@
+{
+  "recordings_per_set": 24,
+  "false_pairs_per_window": {
+    "60 s stretch": {
+      "two offsets (the tool)": 0.1349,
+      "every offset (sliding)": 0.1389
+    },
+    "300 s stretch": {
+      "two offsets (the tool)": 0.1366,
+      "every offset (sliding)": 0.1383
+    }
+  },
+  "planted_share": {
+    "two offsets (the tool)": {
+      "median_error": -0.186,
+      "p10": 0.769,
+      "p90": 0.854
+    },
+    "every offset (sliding)": {
+      "median_error": -0.1966,
+      "p10": 0.774,
+      "p90": 0.856
+    }
+  }
+}

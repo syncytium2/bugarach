@@ -30,12 +30,12 @@ filed: 2026-10-14
 >    both the same *k*.
 > 3. Whether the stop reaches the bench's real-derived settings.
 > 4. The adopted model.
-> 5. Writing to Rotter and Grün. **Tony asked why; the answer given:** it is not needed. The
->    murderboard's role 2 raises "nobody asked" whenever a page claims something as its own. The
->    cheaper fix is to drop the novelty claim from *Where the method comes from*. That was
->    offered and is not yet done.
+> 5. ~~Writing to Rotter and Grün.~~ **Retired:** not needed. Role 2 raised it only because the
+>    page claimed the variant as its own; the novelty claim is now dropped from *Where the method
+>    comes from*.
 >
-> **Answered in conversation after the review, not yet in the page:**
+> **Answered in conversation after the review, now in the page** (unreviewed; the check is
+> `check_window_placement.py`, committed):
 > - **The windows are fixed, not sliding.** Back-to-back 1 s windows, counted at two offsets half
 >   a window apart and averaged (`population_cumulants`). The tool's module docstring and this
 >   todo's item 1 say "slide a window"; the code does not. That is a wording error for the tool's
@@ -43,7 +43,7 @@ filed: 2026-10-14
 > - **A sliding window would not help near a change in overall rate.** Tested on the page's own
 >   simulations (scratch check, not committed). Every-offset sliding against the tool's two
 >   offsets: false pairs 0.139 against 0.135 per window (1-minute stretch) and 0.138 against
->   0.137 (5-minute); planted share −19.7% against −18.6%. Window placement only steadies
+>   0.137 (5-minute); planted share 19.7% low against 18.6% low. Window placement only steadies
 >   edge-splitting. The rate-change error comes from the chance estimate (the ±32 s slides).
 > - **What would help:** (a) the Staude, Grün & Rotter (2010) correction for a shared changing
 >   rate (the principled fix, which changes the measure); (b) measuring chance locally, in blocks

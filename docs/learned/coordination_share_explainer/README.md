@@ -90,9 +90,11 @@ waits*), and the background rates themselves were measured with this tool's fixe
 ### 1. Count onsets in windows, and look at the spread, not the mean
 
 Cut the recording into windows of *w* seconds and count the onsets in each, over all cells: that
-is *X*, Figure 1C. The tool counts twice, the second time with the windows moved by half a
-window, and averages the two. A moment whose onsets straddle a window edge is split between two
-windows: in Figure 1C the 10-cell moment at 30m25s shows as two bars, 4 and 6.
+is *X*, Figure 1C. The windows are fixed, back to back, not sliding: the tool counts twice, the
+second time with the windows moved by half a window, and averages the two. A moment whose onsets
+straddle a window edge is split between two windows: in Figure 1C the 10-cell moment at 30m25s
+shows as two bars, 4 and 6. Counting at every position instead (a sliding window) changes the
+answer by about one percentage point (*What else it counts*).
 
 A shared moment of 10 cells puts up to 10 onsets in one window. Cells with independent onsets
 rarely do. So sharing shows in **how spread out the counts are**. In Figure 2A, same mean, wider
@@ -250,9 +252,20 @@ moments, as the tool pools over a folder, so its participants per moment come fr
   has no shared moments at all, the pooled triples land just above or just below zero by chance:
   below, the tool gives no answer; just above, it gives a small, meaningless one.
 
-A rate shared across cells that changes within a window is what Staude, Grün and Rotter (2010)
-correct for (see *Where the method comes from*); that correction has not been tried here. The
-tool's own note warns the effect may be larger on the slow stream, which this page does not test.
+**A sliding window would not fix this.** The false excess comes from how far the shifted copies
+slide, not from where the windows fall. Counting at every position in place of the tool's two
+leaves the false pairs from a busy stretch where they were: 0.139 against 0.135 per window for a
+1-minute stretch, 0.138 against 0.137 for a 5-minute one (medians over 24 recordings). It moves the
+planted share on the mixed set from 18.6% low to 19.7% low.
+
+Three things would help, none tried here. The principled one is the correction Staude, Grün and
+Rotter (2010) give for a rate shared across cells that changes over time (see *Where the method
+comes from*), which changes the measure. Chance could be measured locally, in blocks or with
+smaller slides, which costs real pairs: slides closer than two windows subtract real moments
+(step 2). The cheapest is to report the share both with and without the field-wide busy stretches
+that [`tools/measure_rate_stretches.py`](../../../tools/measure_rate_stretches.py) already finds,
+which would show directly how much a wash-in contributes. The tool's own note warns the effect may
+be larger on the slow stream, which this page does not test.
 
 ## How far one recording strays
 
@@ -315,12 +328,10 @@ Rotter and Grün 2008, *Neural Comput* 20:1973, for pairs of cells; Staude, Grü
 Poisson (Reimer, Staude, Ehm and Rotter 2012, *J Neurosci Methods* 208:18). Neither correction
 has been tried here.
 
-What this project adds: a variant of the population-count moment ratio CuBIC already uses
-(excess factorial cumulants, with chance measured by the shifted copies, closed by one of two
-models), reported as a share of events, applied to calcium-event onsets, with the checks above.
-⚠ Not searched: fluorescence fluctuation-moment analysis (for example Qian and Elson 1990, *PNAS*
-87:5479, which sizes molecular aggregates from fluctuation moments), and method-of-moments
-estimation for compound Poisson counts in statistics. Nobody has asked these authors about it.
+The tool uses the population-count moment ratio CuBIC already uses, with chance measured by the
+shifted copies, closes it with one of the two models, and reports the result as a share of events
+on calcium-event onsets. This page makes no claim that any of that is new. What it adds is the
+checks above, on simulated calcium recordings.
 
 ## What waits
 
@@ -354,13 +365,17 @@ estimation for compound Poisson counts in statistics. Nobody has asked these aut
     the tool's own check rerun at 2 s and 4 s reads the share 16% low and passes.
   - `population_cumulants` says the two offsets "halve" the moments split by a window edge; they
     steady the loss without reducing it.
+  - The module docstring opens its statistic with "Slide a window"; the windows are fixed, at two
+    offsets.
   - The 43% in `CAL_NO_PROBE` predates the bench's realistic intervals, and the bench's own
     recording no longer carries a stretch, so the calibration's `hot_window=None` is now redundant.
 - *f*₂ = E[*X*(*X*−1)] − E[*X*]² and *f*₃ = E[*X*(*X*−1)(*X*−2)] − 3 E[*X*(*X*−1)] E[*X*] +
   2 E[*X*]³, where E[·] is the average over windows. With moments of *k* cells at rate λ per
   second, falling whole inside windows, *f*₂ = λ*wk*(*k*−1) and *f*₃ = λ*wk*(*k*−1)(*k*−2).
 - The figures: [`explain_coordination_share.py`](explain_coordination_share.py); every number
-  from the simulations is in [`numbers.json`](numbers.json). The rest come from the tool, from
+  from the simulations is in [`numbers.json`](numbers.json), except the sliding-window comparison,
+  which [`check_window_placement.py`](check_window_placement.py) writes to
+  [`window_placement.json`](window_placement.json). The rest come from the tool, from
   `bench.py` (backgrounds, decoys, the stretch level, the 15-minute shortest baseline), and from
   the 2026-09-25 real-intervals run (the 41 s median gap, events per hour by group).
 - The review: [murderboard record](../../reviews/coordination_share_explainer_2026-10-14.md).

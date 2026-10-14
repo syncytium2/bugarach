@@ -57,9 +57,15 @@ until a blind reviewer re-ran it.
 4. **The adopted model.** The fixed model is adopted to match the bench. The bench mixes three
    moment sizes, where the fixed model reads low, and on the bench itself the binomial model is
    closer. The check cannot choose between them, because all six medians pass.
-5. **Correspondence.** Nobody has asked the Rotter or Grün groups about this two-number variant of
-   CuBIC. The reading log already names one open question to the Grün group, so one letter could
-   cover both.
+5. **Correspondence.** ~~Nobody has asked the Rotter or Grün groups about this two-number variant
+   of CuBIC.~~ **Retired after the run, same day:** role 2 raised it because the page claimed the
+   variant as this project's own. Tony asked why a letter was needed; it was not. The page now
+   makes no novelty claim, so there is nothing to ask.
+
+**Changed after this record, not reviewed.** Besides retiring decision 5, the page now says the
+windows are fixed, not sliding, and reports a check that a sliding window does not reduce the false
+excess from a busy stretch (`check_window_placement.py`, `window_placement.json`). It also names
+three possible remedies, and lists the docstring's "Slide a window" for the tool's next editor.
 
 ## Appendix: run record
 
