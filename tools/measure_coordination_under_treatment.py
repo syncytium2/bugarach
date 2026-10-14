@@ -343,15 +343,17 @@ def page_pdf(columns: list[dict], path: Path, *, model: str, w: float) -> None:
             ax.tick_params(labelleft=True)
             for side in ("top", "right"):
                 ax.spines[side].set_visible(False)
-        axes[-1][j].set_xlabel(col["name"], labelpad=8)
+        # Column identity at the top (Tony, 2026-10-14: "put the bottom line at the top as
+        # column titles"), written from the data so every column says the same things.
+        axes[0][j].set_title(col["name"], fontsize=11, pad=12)
     fig.supylabel("coordinated fraction of events (%), one axis for every panel")
     fig.text(0.5, 0.012,
              f"Figure 1. Coordinated fraction of calcium events, baseline against treatment 1, "
-             f"each recording against its own baseline.\nOne line per recording. Hollow and "
-             f"dashed: too few events in a window to measure, left out of the median.\nThe "
-             f"median is the wide grey band, drawn under the recordings. A recording with no "
-             f"events at all in a window\nhas no fraction and no line. {model} model, {w:g} s "
-             f"counting window.",
+             f"each recording against its own baseline.\nCoordinated: onsets that land in the "
+             f"same {w:g} s in more cells than those cells' own event rates explain.\nOne line "
+             f"per recording. Hollow and dashed: too few events in a window to measure, left out "
+             f"of the median.\nThe median is the wide grey band, drawn under the recordings. A "
+             f"recording with no events in a window has no line.",
              ha="center", va="bottom", fontsize=8)
     fig.tight_layout(rect=(0.02, 0.075, 1, 1))
     fig.savefig(path)
@@ -377,7 +379,8 @@ def main(argv=None) -> int:
                     help="draw ONE portrait PDF page instead of a PNG per folder and stream: a "
                          "column per --folder, a row per stream, one y-axis for every panel")
     ap.add_argument("--column-name", action="append", default=None,
-                    help="with --page: the line under each --folder's column, in order")
+                    help="with --page: each --folder's column title, in order (e.g. 'August "
+                         "pilot'); group, recording and mouse counts are added from the data")
     ap.add_argument("--jobs", type=int, default=12)
     ap.add_argument("--seed", type=int, default=20261014)
     ap.add_argument("--out", type=Path, default=None,
@@ -436,8 +439,10 @@ def main(argv=None) -> int:
                                      "-".join(groups), out / name)
                     print(f"  wrote {out / name}")
             key = f"{mcr.ADOPTED_MODEL}@{mcr.PRIMARY_W}"
+            n_mice = len({r["mouse"] for r in recs})
             columns.append({
-                "name": (a.column_name[k] if a.column_name else folder.name),
+                "name": (f"{a.column_name[k] if a.column_name else folder.name} · "
+                         f"{'-'.join(groups)} · {len(recs)} recordings, {n_mice} mice"),
                 "treatment": " / ".join(labels),
                 "streams": {s: rec["streams"][s][key] for s in STREAMS}})
             dest = out / folder.name
