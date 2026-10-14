@@ -1,0 +1,232 @@
+{
+ "note": "synthetic recordings only; no real recording read",
+ "cells": 32,
+ "duration_sec": 2700.0,
+ "levels": [
+  0.3,
+  0.203,
+  0.1
+ ],
+ "per_level": 5,
+ "jitter_sec": 0.106,
+ "quiet_hz": 0.0049,
+ "busy_hz": 0.0169,
+ "seeds": 24,
+ "schedules": {
+  "mixed": {
+   "close_pairs": 2,
+   "medium_pairs": 2
+  },
+  "120 s only": {
+   "close_pairs": 0,
+   "medium_pairs": 0
+  },
+  "close pairs": {
+   "close_pairs": 2,
+   "medium_pairs": 0
+  },
+  "medium pairs": {
+   "close_pairs": 0,
+   "medium_pairs": 2
+  }
+ },
+ "figures": {
+  "1": {
+   "file": "explainer_coordinated-share-fig1-the-count_20261014.png",
+   "numbers": {
+    "window": [
+     2110.0,
+     2470.0
+    ],
+    "seed": 10,
+    "background_hz": 0.0049
+   }
+  },
+  "2": {
+   "file": "explainer_coordinated-share-fig2-wider-spread_20261014.png",
+   "numbers": {
+    "mean_real": 0.4737037037037037,
+    "mean_shifted": 0.4737037037037037,
+    "f2": 0.20671042605091466,
+    "f3": 1.3679241116444198,
+    "f2_shifted_mean": -0.00744105052630979,
+    "f3_shifted_mean": -0.001127850837878211
+   }
+  },
+  "3": {
+   "file": "explainer_coordinated-share-fig3-planted-vs-recovered_20261014.png",
+   "numbers": {
+    "median_error": {
+     "fixed": -0.20742874776316672,
+     "binomial": -0.11022088967414712
+    },
+    "recordings": 48,
+    "planted_share_range": [
+     0.030585962652929812,
+     0.28273809523809523
+    ]
+   }
+  },
+  "4": {
+   "file": "explainer_coordinated-share-fig4-window-and-spacing_20261014.png",
+   "numbers": {
+    "mixed": {
+     "share": {
+      "1.0": -0.20742874776316672,
+      "2.0": -0.14995058578738807,
+      "4.0": -0.1765905120014749
+     },
+     "share_binomial": {
+      "1.0": -0.11022088967414712,
+      "2.0": -0.048035914357662024,
+      "4.0": -0.10020957763629201
+     },
+     "k": {
+      "1.0": 0.3021978362424589,
+      "2.0": 0.32006582679932705,
+      "4.0": 0.5380062506547154
+     },
+     "lam": {
+      "1.0": -0.39135880111440846,
+      "2.0": -0.3560552837931815,
+      "4.0": -0.4646253956068078
+     }
+    },
+    "120 s only": {
+     "share": {
+      "1.0": -0.181648846289248,
+      "2.0": -0.15592534222579651,
+      "4.0": -0.10408860343868459
+     },
+     "share_binomial": {
+      "1.0": -0.0777440914715361,
+      "2.0": -0.051389458689270806,
+      "4.0": 0.009203490770645584
+     },
+     "k": {
+      "1.0": 0.27543733978828855,
+      "2.0": 0.2946278357244694,
+      "4.0": 0.2785442954262143
+     },
+     "lam": {
+      "1.0": -0.35837604233337617,
+      "2.0": -0.3480175271360034,
+      "4.0": -0.2992723054130438
+     }
+    },
+    "close pairs": {
+     "share": {
+      "1.0": -0.1884208122550728,
+      "2.0": -0.14129055533710322,
+      "4.0": -0.17584107669651555
+     },
+     "share_binomial": {
+      "1.0": -0.08824171929067526,
+      "2.0": -0.03866565545006734,
+      "4.0": -0.10100953580597083
+     },
+     "k": {
+      "1.0": 0.29720224745119217,
+      "2.0": 0.32259372097133054,
+      "4.0": 0.5575163508885572
+     },
+     "lam": {
+      "1.0": -0.37436187044883823,
+      "2.0": -0.3507383022866243,
+      "4.0": -0.47085054816066296
+     }
+    },
+    "medium pairs": {
+     "share": {
+      "1.0": -0.19553412390156744,
+      "2.0": -0.15892532665521264,
+      "4.0": -0.1313755017149319
+     },
+     "share_binomial": {
+      "1.0": -0.09684782629121869,
+      "2.0": -0.057688880586639846,
+      "4.0": -0.02458714283623209
+     },
+     "k": {
+      "1.0": 0.30204288288882286,
+      "2.0": 0.31695382500807745,
+      "4.0": 0.3003490467852936
+     },
+     "lam": {
+      "1.0": -0.3821510130959926,
+      "2.0": -0.3613483955372326,
+      "4.0": -0.3320066635704694
+     }
+    }
+   }
+  },
+  "5": {
+   "file": "explainer_coordinated-share-fig5-blind-spots_20261014.png",
+   "numbers": {
+    "A": {
+     "nothing planted, steady background": {
+      "recordings": 24,
+      "answered": 0,
+      "median": null,
+      "max": null
+     },
+     "nothing planted, one 5-minute stretch at 0.127 onsets per second per cell": {
+      "recordings": 24,
+      "answered": 24,
+      "median": 0.03735290938353643,
+      "max": 0.05651422081540935
+     },
+     "nothing planted, background rising 3\u00d7 over 45 minutes": {
+      "recordings": 24,
+      "answered": 0,
+      "median": null,
+      "max": null
+     }
+    },
+    "B": {
+     "15 moments": {
+      "recordings": 24,
+      "no_answer": 0,
+      "median_rate_hz": 0.005277777777777778,
+      "own_q10": 0.7819632813416212,
+      "own_median": 0.8145893419775154,
+      "own_q90": 0.8433387799785662,
+      "pooled_median": 0.8139818199705802
+     },
+     "6 moments": {
+      "recordings": 24,
+      "no_answer": 0,
+      "median_rate_hz": 0.004658564814814815,
+      "own_q10": 0.7304346968075681,
+      "own_median": 0.8249069568212032,
+      "own_q90": 0.9100186055042897,
+      "pooled_median": 0.8058026484630283
+     },
+     "3 moments": {
+      "recordings": 24,
+      "no_answer": 0,
+      "median_rate_hz": 0.004403935185185185,
+      "own_q10": 0.688442624359158,
+      "own_median": 0.8693641897153506,
+      "own_q90": 1.0539237206959355,
+      "pooled_median": 0.8328277042072882
+     },
+     "background lowered, 15 moments": {
+      "1.0x quiet": {
+       "pooled_median": 0.7904511495317383,
+       "median_rate_hz": 0.005277777777777778
+      },
+      "0.5x quiet": {
+       "pooled_median": 0.8121109823678827,
+       "median_rate_hz": 0.0032812500000000003
+      },
+      "0.25x quiet": {
+       "pooled_median": 0.8122722321186079,
+       "median_rate_hz": 0.0022916666666666667
+      }
+     }
+    }
+   }
+  }
+ }
+}

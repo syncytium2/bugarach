@@ -1,7 +1,19 @@
 ---
-status: open
+status: in-progress
 filed: 2026-10-14
 ---
+
+> **Built 2026-10-14, on simulated recordings only:**
+> [`learned/coordination_share_explainer/`](../learned/coordination_share_explainer/README.md).
+> Two things changed from the plan below. **No real number is quoted**: the default export has
+> been under the contamination stop since 2026-10-05, and pinning is a cross-cell artifact this
+> measure counts, so item 4's baseline figures and item 5's `shape_usable` count wait for the
+> corrected export. **The recordings have their own gap schedule** (Tony, 2026-10-14): close pairs
+> 2 s apart, medium pairs 10 to 20 s apart, and single moments 120 s apart, for this page only.
+> The bench is unchanged. **Item 5's first bullet was backwards**: a shared change slower than
+> the shifts' span survives into the shifted copies and is subtracted, so it is *not* counted. A
+> change faster than about a minute is counted. Figure 5 of the page shows both. What is left: the
+> real numbers when the stop clears, and a redraw when the revised bench is decided.
 
 # An explainer for `tools/measure_coordination_rates.py`: what fraction of calcium events are coordinated, measured without defining an event
 
