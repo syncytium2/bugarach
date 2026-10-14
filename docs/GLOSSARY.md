@@ -420,8 +420,8 @@ load-bearing terms with no glossary entry.
   spike-train literature keeps its own terms inside its description (SPIKE-synch's
   "spike pair"), and its assumptions have to be argued for calcium events, not inherited.
 - **background** — the steady random event rate a bench recording is simulated at:
-  *quiet* (0.0052 per second per ROI) or *busy* (0.019), the 25th and 75th percentiles
-  of real baseline rates. The code's word is *regime*. Not the elevated-rate test.
+  *quiet* (0.0049 per second per ROI) or *busy* (0.0169), the 25th and 75th percentiles
+  of real baseline rates with the coordinated share subtracted (`bench.REGIMES`). The code's word is *regime*. Not the elevated-rate test.
   Every test below runs at one background or both; the tests are never named *quiet*
   or *busy* themselves, so that "the quiet background" always means this.
 - **no-coordination test** (formerly *empty recording*, *null recording*; code:

@@ -417,8 +417,8 @@ def figure3(out, date, mixed, one_size, bench_cal):
             xm = 0.315 if model == "fixed" else 0.335
             ax.plot([xm - 0.008, xm + 0.008], [q(r, 50)] * 2, color=INK, lw=3 if model == "fixed" else 1.5,
                     label=("median (what the check tests)" if tag == "A" and model == "fixed" else None))
-            ax.text(xm, q(r, 50) + (0.04 if model == "binomial" else -0.07), f"{q(r, 50) - 1:+.0%}",
-                    ha="center", fontsize=9)
+            ax.text(xm, q(r, 50) + (0.04 if model == "binomial" else -0.07),
+                    f"{q(r, 50) - 1:+.0%}".replace("-", "−"), ha="center", fontsize=10)
         ax.set_xlim(0, 0.35)
         ax.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
         ax.set_xlabel(f"planted share of events\n{what}", fontsize=10)
@@ -535,6 +535,7 @@ def figure5(out, date, run, durations, amplitudes, nulls, slow):
         axC.scatter(exc, np.full(exc.size, i) + jit, s=18, color=INK,
                     label="after" if i == 0 else None)
         stats["C"][label.replace("\n", " ")] = dict(raw_f2_median=q(raw, 50), excess_f2_median=q(exc, 50),
+                                                    excess_f2_min=q(exc, 0), excess_f2_max=q(exc, 100),
                                                     removed=1 - q(exc, 50) / q(raw, 50) if q(raw, 50) else None)
     keys = list(stats["C"])
     for steady, rising in ((keys[0], keys[1]), (keys[2], keys[3])):
@@ -547,9 +548,11 @@ def figure5(out, date, run, durations, amplitudes, nulls, slow):
     # Symmetric log: the quiet rows sit near 0.001-0.004 and the busy ones near 0.5, and a linear
     # axis hides the quiet rows' before-and-after under each other.
     axC.set_xscale("symlog", linthresh=1e-3)
-    axC.set_xlim(-0.01, 5)
-    tk = [-0.01, 0, 0.01, 1]
-    axC.set_xticks(tk, ["−0.01", "0", "0.01", "1"])
+    # The left limit comes from the data: at 13× quiet single recordings' leftovers reach −0.13.
+    lo = min(min(m["cum"]["1.0"]["f2"] for m, _ in res) for res in slow.values())
+    axC.set_xlim(min(-0.01, 1.3 * lo), 5)
+    tk = [-0.1, 0, 0.01, 1]
+    axC.set_xticks(tk, ["−0.1", "0", "0.01", "1"])
     axC.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
     axC.set_yticks(range(len(slow)), list(slow))
     axC.set_ylim(len(slow) - 0.5, -0.5)

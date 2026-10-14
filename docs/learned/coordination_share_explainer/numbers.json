@@ -312,11 +312,15 @@
      "constant, quiet": {
       "raw_f2_median": 0.002995621684832616,
       "excess_f2_median": 0.0014284774485246346,
+      "excess_f2_min": -0.005049061816736326,
+      "excess_f2_max": 0.00814356221609982,
       "removed": 0.5231449098671976
      },
      "rising 3\u00d7 over 45 min, quiet": {
       "raw_f2_median": 0.0038039449467770882,
       "excess_f2_median": 0.0001576818574780776,
+      "excess_f2_min": -0.007057655634988971,
+      "excess_f2_max": 0.01271392668157371,
       "removed": 0.9585478076879965,
       "rise_added_f2": 0.0008083232619444723,
       "rise_left_after": -0.001270795591046557,
@@ -325,11 +329,15 @@
      "constant, 13\u00d7 quiet": {
       "raw_f2_median": 0.4072909914905968,
       "excess_f2_median": 0.0023890862598249865,
+      "excess_f2_min": -0.12786292987286674,
+      "excess_f2_max": 0.09244257456648997,
       "removed": 0.9941342030397445
      },
      "rising 3\u00d7 over 45 min, 13\u00d7 quiet": {
       "raw_f2_median": 0.5927828962467352,
       "excess_f2_median": 0.005895519995103793,
+      "excess_f2_min": -0.08184049372957591,
+      "excess_f2_max": 0.14687960278075707,
       "removed": 0.990054503879191,
       "rise_added_f2": 0.18549190475613841,
       "rise_left_after": 0.0035064337352788064,

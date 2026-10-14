@@ -11,7 +11,7 @@ filed: 2026-10-14
 > corrected export. **The recordings have their own gap schedule** (Tony, 2026-10-14): close pairs
 > 2 s apart, medium pairs 10 to 20 s apart, and single moments 120 s apart, for this page only.
 > The bench is unchanged. **Item 5's first bullet was backwards**: a slow shared change survives
-> into the shifted copies and is subtracted (99% of a threefold rise over 45 minutes). What is
+> into the shifted copies and is subtracted (98% of what a threefold rise over 45 minutes adds, in the median). What is
 > counted is a change *faster* than the copies' slides, which includes the sharp edges of a long
 > busy stretch: it is how fast the rate changes, not how long the change lasts. The tool's
 > docstring says "slower than about a minute survives", which is right in direction and too sharp
