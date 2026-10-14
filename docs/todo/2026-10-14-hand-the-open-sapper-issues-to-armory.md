@@ -14,7 +14,7 @@ issues to armory session on mac"*). That session reads this file from `syncytium
 Every finding in `docs/sapper_feedback/` that is not `done` has an answer **appended to its own
 file** (the README's convention), and its `status:` is `done`, `open` with a reason it waits, or
 `won't-fix` with the reason. For each one fixed, the fix is on bugarach's `main` with a selftest
-fixture proving the rule can fire (`tools/sapper.py --selftest`). Nothing else about what sapper
+fixture proving the rule can trigger (`tools/sapper.py --selftest`). Nothing else about what sapper
 blocks today changes without the finding saying so.
 
 How a fix reaches bugarach is armory's call, with one default. A rule only bugarach uses lands
