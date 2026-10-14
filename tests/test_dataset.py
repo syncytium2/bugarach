@@ -144,6 +144,24 @@ def test_an_unknown_name_lists_what_is_there(tmp_path, monkeypatch):
     assert "real_one" in str(e.value), "a typo should show the near misses"
 
 
+def test_a_deprecated_export_is_still_found_by_name_but_not_offered(tmp_path, monkeypatch):
+    """The stale exports moved to `exports/bugarach/deprecated/` on 2026-10-14. An
+    archive role must still reproduce its run by name; a typo's hint must not suggest
+    one, because the hint lists what to read."""
+    root = tmp_path / "data"
+    old = root / "exports" / "bugarach" / "deprecated" / "2026-01-01_old"
+    old.mkdir(parents=True)
+    (old / "r.csv").write_text("time_sec,roi\n")
+    (root / "exports" / "bugarach" / "2026-02-01_new").mkdir()
+    monkeypatch.setenv(ds.ENV_VAR, str(root))
+    assert ds.resolve("2026-01-01_old") == old
+    with pytest.raises(ds.DataError) as e:
+        ds.resolve("typo")
+    hint = str(e.value).split("available:")[1]   # the root path names this test
+    assert "2026-01-01_old" not in hint and "deprecated" not in hint
+    assert "2026-02-01_new" in hint
+
+
 def test_a_bare_name_with_nowhere_to_look_says_so(tmp_path, monkeypatch):
     """No data root and no path: the error must name the variable to set."""
     monkeypatch.setenv(ds.ENV_VAR, str(tmp_path / "does_not_exist"))
