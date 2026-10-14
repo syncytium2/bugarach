@@ -43,6 +43,12 @@ FOUNDATIONS is silent on a question about the *preparation* (not the code), the
 authority is `syncytium2/foundations` FOUNDATIONS §15 — check it before building
 anything on an assumption about what a condition does.
 
+**Group and treatment comparisons are `fireflies`' by default**
+([ADR-0017](docs/adr/0017-group-and-treatment-comparisons-default-to-fireflies.md)). When a
+request would have bugarach make a finding about the groups or a treatment itself, say so
+before starting, name the default, and wait for Tony's yes. Confirmed exceptions are listed
+in FOUNDATIONS §9.
+
 ## Todos
 
 Open work items live in `docs/todo/` (one file per item, frontmatter

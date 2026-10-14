@@ -309,8 +309,18 @@ ecosystem's rotation). Consequences:
 
 These are not bugarach's to derive, and getting them wrong has already produced
 a wrong conclusion in this repo. The authority is the global
-`syncytium2/foundations` FOUNDATIONS §15; treatment effects themselves are
-`fireflies`' and must not be re-derived here.
+`syncytium2/foundations` FOUNDATIONS §15. **Group and treatment comparisons whose
+result is a claim about the preparation are `fireflies`' by default**; bugarach exports
+the measures, and a comparison that sets or checks the instrument stays here. A request
+that would have bugarach make such a finding itself is flagged before work starts and
+waits for Tony's yes ([ADR-0017](adr/0017-group-and-treatment-comparisons-default-to-fireflies.md)).
+Confirmed exceptions:
+
+- **The coordinated fraction under treatment** (Tony, 2026-10-14): the share of events
+  that are coordinated, the rate of shared moments and the share of the field per moment,
+  each treatment window paired with its own baseline, per stream and per group. The
+  per-cell event rate goes beside them as the denominator and is not reported as a
+  treatment effect.
 
 - **TTX IS NOT A SILENCING CONTROL, and coordination persists under it.** Events
   persist and coordination persists; the mechanism is open work. Two separate

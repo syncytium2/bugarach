@@ -43,6 +43,7 @@ two never disagree, and cross-reference them.
 | [0014](0014-a-figure-page-is-figures-then-controls-then-text.md) | A figure page is figures, then controls, then text; a report leads with its main figure (0012 and 0013 are open proposals, #848 and #855) | Accepted |
 | [0015](0015-raster-pages-navigate-the-way-igor-does.md) | Raster pages navigate the way Igor Pro does: drag a box to zoom, down is row pitch, Shift-drag slides, Ctrl+wheel zooms | Accepted; row pitch superseded by ADR-0016 |
 | [0016](0016-a-raster-zooms-in-time-only.md) | A raster zooms in time only: the box sets the time range, and no gesture changes a panel's height or rows | Accepted |
+| [0017](0017-group-and-treatment-comparisons-default-to-fireflies.md) | Group and treatment comparisons default to fireflies; an exception is flagged and confirmed | Proposed |
 
 **The habit lapsed for 25 days and restarted on 2026-09-23.** After ADR-0005 on 2026-08-29
 no ADR was written, and nothing decided to stop. Rulings went instead into bench-constant
