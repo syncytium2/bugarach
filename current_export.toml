@@ -316,8 +316,11 @@ corpus's own null — which is what the Cossart lab's own SCE method does, and w
 # NOT AN INPUT. Named here so that "it is not in the list" is never the reason a
 # session goes looking in the store for itself.
 #
-# `_quarantine/` holds `2026-08-17_revised_2v` and `..._v2` — earlier exports kept
-# for provenance, withdrawn as inputs. Its own `WHY.md` says why. Do not read them.
+# `exports/bugarach/deprecated/` holds every stale export, moved there on 2026-10-14:
+# the `archive` roles above (still resolved by name, so their runs reproduce), three
+# undeclared exports, and the folders set aside earlier. Among those, `_quarantine/`
+# holds `2026-08-17_revised_2v` and `..._v2`, earlier exports kept for provenance and
+# withdrawn as inputs. Its own `WHY.md` says why. Do not read them.
 #
 # `.mat` stores under `processed_archive/` are the PRODUCER's working form. They hold
 # recordings the lab has withdrawn, and re-deriving the withdrawal here is what cost a

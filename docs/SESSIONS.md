@@ -3336,3 +3336,16 @@ session's work is not a sweep.
   --streams combined --hand-reviewed` on `main` after PR #885. The two 3x eval folders, read by name; the dataset
   default is not touched. The pages dated 20261012 stay beside them; the folder README gets one paragraph. Darkroom only.
 - **Released:** 2026-10-14, at write. Holds nothing.
+
+### data/exports/bugarach/deprecated/ — the stale export folders moved out of the way (WSMIP065/deprecated-exports)
+- **Claimed:** 2026-10-14, before the move. Tony approved the list the same day, after ADR-0018 retired the per-session confirmation: *"i approve the depr folder move list"*.
+- **Moves** into `<data root>/exports/bugarach/deprecated/`, nothing deleted or renamed: the five `archive` roles in
+  `current_export.toml` (`2026-08-18_revised_2v_periods`, `2026-09-03_revised_2v_long_STEPS_EXCLUDED`, `..._SENKTIDE`,
+  `..._TTX`, `2026-09-17_revised_2v_long_STEPS_AND_PINS_EXCLUDED`); three undeclared exports (`2026-09-02_revised_2v`,
+  `2026-09-02_revised_2v_long`, `2026-09-03_revised_2v_long_PRE_ARTIFACT_KILLER`); and the four already set aside
+  (`_quarantine`, `_superseded_flagrun1`, `_superseded_flagrun2`, `_superseded_run1_STEPS_EXCLUDED`).
+- **Stays:** the default (`2026-09-23_..._senktide_ttx_...`), the `pensub` eval folder, and
+  `2026-09-03_revised_2v_long_STEPS_FLAGGED_FOR_REVIEW`, which the field-step figure and the raster review copy read.
+- **Order:** after this PR merges, so `dataset.resolve` already searches `deprecated/` and an archived run still
+  reproduces by name. Dropbox carries the move to every machine; a machine on older code cannot find a moved folder
+  by name until it pulls.
