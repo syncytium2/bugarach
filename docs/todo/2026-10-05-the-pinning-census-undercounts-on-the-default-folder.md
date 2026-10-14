@@ -5,6 +5,13 @@ filed: 2026-10-05
 
 # The pinning census undercounts, so the default folder's pinned-ROI exclusion is wrong on `20260629_312` and `20260629_309`
 
+> **Superseded in part, 2026-10-05 afternoon (found 2026-10-14).** interface2's blanking register
+> (branch `pinning-review`) records Tony's later decision: the four pinned recordings are redone
+> from **rigid** motion correction with ROIs re-picked, and time blanking for them is off the
+> table. The draft request below still asks for a time-blanked cut, so it should not be posted as
+> it stands. The stop is unchanged: it clears when a corrected export becomes the default. What
+> replaces the request is [a defect review of all 66 recordings, built in interface2](2026-10-14-a-defect-review-viewer-belongs-to-interface2.md).
+
 > **A question for the producer, not a filter.** bugarach adds no exclusion of its own (CLAUDE.md,
 > "The export folder is the input"). The fix is a new export from interface2, once its corrected
 > ROI sets are signed off. **The work stops until it arrives** (Tony, 2026-10-05): see the last
