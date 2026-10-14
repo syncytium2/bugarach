@@ -3329,3 +3329,10 @@ session's work is not a sweep.
   name; the dataset default is not touched. The two pages dated 20261012 stay beside them, untouched, and
   the folder's `README.md` gets a paragraph saying which is which. Darkroom only: real recordings.
 - **Released:** 2026-10-13, at write. Holds nothing.
+
+### darkroom/bugarach/2026-10-12-apv-cnqx-gz-combined-rasters/3x/ — the two 3x pilot pages redrawn with box-zoom navigation (065/claim-3x-pilot-rasters)
+- **Claimed:** 2026-10-14, before the write. Tony: "rebuild the 3x pages", after the 4x pair was redrawn on 2026-10-13.
+- **Writes:** two new `.html` pages into `3x/`, dated 20261014, from `tools/make_group_raster_summary.py --all-groups
+  --streams combined --hand-reviewed` on `main` after PR #885. The two 3x eval folders, read by name; the dataset
+  default is not touched. The pages dated 20261012 stay beside them; the folder README gets one paragraph. Darkroom only.
+- **Released:** 2026-10-14, at write. Holds nothing.

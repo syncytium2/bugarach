@@ -309,8 +309,8 @@ ecosystem's rotation). Consequences:
 
 These are not bugarach's to derive, and getting them wrong has already produced
 a wrong conclusion in this repo. The authority is the global
-`syncytium2/foundations` FOUNDATIONS §15; treatment effects themselves are
-`fireflies`' and must not be re-derived here.
+`syncytium2/foundations` FOUNDATIONS §15. Comparing groups or treatments is
+`fireflies`' work by default; an exception needs Tony's yes and is listed in §11.
 
 - **TTX IS NOT A SILENCING CONTROL, and coordination persists under it.** Events
   persist and coordination persists; the mechanism is open work. Two separate
@@ -393,3 +393,21 @@ What can be mechanized is enforced by **sapper** (`tools/sapper.py`,
 self-testing rules run by pytest/CI and the optional pre-commit hook);
 disputes and new-rule requests are filed under `docs/sapper_feedback/`.
 Prefer a firing check over prose, prose in the repo over agent memory.
+
+## 11. Who compares groups and treatments: fireflies by default, exceptions listed here
+
+[ADR-0017](adr/0017-group-and-treatment-comparisons-default-to-fireflies.md). A
+comparison across groups, or between baseline and a treatment, whose result is a claim
+about the preparation is `fireflies`' work: bugarach exports the measures. A comparison
+that sets or checks the instrument stays here. A request that would have bugarach make
+such a finding itself is flagged before work starts and waits for Tony's yes in words.
+(§9 points here in one line rather than holding this, because the session briefing
+copies all of §9 and has a byte budget.)
+
+Confirmed exceptions:
+
+- **The coordinated fraction under treatment** (Tony, 2026-10-14): the share of events
+  that are coordinated, the rate of shared moments and the share of the field per moment,
+  each treatment window paired with its own baseline, per stream and per group. The
+  per-cell event rate goes beside them as the denominator and is not reported as a
+  treatment effect.
