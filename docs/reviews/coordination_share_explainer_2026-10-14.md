@@ -66,6 +66,9 @@ until a blind reviewer re-ran it.
 windows are fixed, not sliding, and reports a check that a sliding window does not reduce the false
 excess from a busy stretch (`check_window_placement.py`, `window_placement.json`). It also names
 three possible remedies, and lists the docstring's "Slide a window" for the tool's next editor.
+Figure 7 and the section *Calling events instead* (CoactDetect's calls beside the measure, on the
+same simulated recordings; `compare_with_calls.py`) were added the same day, at Tony's request, and
+were not reviewed either.
 
 ## Appendix: run record
 

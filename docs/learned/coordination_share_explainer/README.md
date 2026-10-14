@@ -24,6 +24,10 @@
 
 ![Figure 6](explainer_coordinated-share-fig6-one-recording_20261014.png)
 
+**Figure 7. Calling events against counting them.** A: Figure 1's five minutes, with the planted moments (▼ green, called by CoactDetect; ▼ red, missed) and CoactDetect's calls (black bar, each call's span) in lanes above the raster. B: share of onsets coordinated, 24 simulated recordings per set: gray dash, planted; ● blue, this measure; ○ orange, onsets inside CoactDetect's calls; △ orange, the same at the floor the recording has without its busy stretch; black bar, median. C: planted moments CoactDetect called, by how many cells joined them, 120 per bar.
+
+![Figure 7](explainer_coordinated-share-fig7-calling-events_20261014.png)
+
 ---
 
 ## The question
@@ -34,7 +38,9 @@ how unevenly those counts are spread. Implicitly, it counts as coordination **on
 cells within one window (1 s here), more often than the same cells give when each one's onsets
 are slid in time by up to about half a minute.** So anything that lines cells up over less than
 about a minute counts, including the start and end of a stretch where the whole field gets
-busier. Figure 5, what else it counts, shows how much.
+busier. Figure 5, what else it counts, shows how much. Each cell's onsets are called (on real
+data, by the producer's event detection); shared moments never are. Figure 7, calling events
+against counting them, sets the measure beside a detector that does call them.
 
 This is the measure bugarach will report treatment results through, each treatment window beside
 its own baseline: the share of calcium events that are coordinated, how often shared moments
@@ -291,6 +297,37 @@ far that can miss for a single 45-minute recording. Each group also changes the 
 
 Every recording in Figure 6 gave an answer.
 
+## Calling events instead
+
+The measure works out one share per recording and never says which onsets formed a moment. A
+detector does. CoactDetect counts the cells with an onset in each 2 s bin and calls a bin whose
+count beats chance, where chance comes from sliding each cell's onsets within the 60 s around that
+bin. It is the window-by-window version of what this measure adds up over a whole recording, with
+chance measured locally. Figure 7, calling events against counting them, runs it on the page's own
+recordings at the bench's settings, with its minimum cell count set to each recording's own floor
+(5 to 6 cells at the quiet background, 6 to 9 at busy), as the bench sets it. From its calls, the
+share of events coordinated is the onsets inside a called span over all onsets.
+
+- **With moments planted, the two give nearly the same answer** (Figure 7B): a median 16.9% from
+  the measure and 16.4% from the calls, against 20.0% planted, at the quiet background; 5.3% and
+  5.2% against 6.8% at busy. They get there differently. The calls find nearly every moment of 10
+  cells and most of 6, but only about 1 in 6 of the 3-cell moments, which sit under the floor
+  (Figure 7C); a call's span also takes in any background onset that falls inside it. The
+  measure's errors are those of Figure 3.
+- **A busy stretch is where they part.** With nothing planted, the measure reads a median 8.2%
+  for a 1-minute stretch and 3.0% for a 5-minute one (Figure 5). CoactDetect makes no call in
+  either, in the median. Its floor does rise with the stretch, to 15 to 17 cells, because the floor
+  is measured on the whole recording. But at the floor the same recording has without its stretch
+  (4 cells), CoactDetect still makes a median of 0 to 0.5 calls: its local chance estimate, not the
+  floor, is what keeps the stretch out. The cost is the small moments.
+- **With nothing planted and no stretch, both read about zero**: the measure a median 0.1%,
+  CoactDetect no calls.
+
+So CoactDetect already does what *What else it counts* suggests, measuring chance locally, and pays
+for it in small moments. Reporting the two side by side would show both errors: a share from the
+measure well above the share from the calls points to a change in overall rate, not to
+coordination. That has not been tested on real recordings.
+
 ## The simulated recordings
 
 Every recording starts from the bench's own generator (`simulate_coordination`): each cell's
@@ -375,7 +412,10 @@ checks above, on simulated calcium recordings.
 - The figures: [`explain_coordination_share.py`](explain_coordination_share.py); every number
   from the simulations is in [`numbers.json`](numbers.json), except the sliding-window comparison,
   which [`check_window_placement.py`](check_window_placement.py) writes to
-  [`window_placement.json`](window_placement.json). The rest come from the tool, from
+  [`window_placement.json`](window_placement.json), and Figure 7, which
+  [`compare_with_calls.py`](compare_with_calls.py) draws and records in [`calls.json`](calls.json)
+  (CoactDetect at `bench.OPERATING_POINTS["coact"]`, binned, floor from
+  `event_floor.window_floor`). The rest come from the tool, from
   `bench.py` (backgrounds, decoys, the stretch level, the 15-minute shortest baseline), and from
   the 2026-09-25 real-intervals run (the 41 s median gap, events per hour by group).
 - The review: [murderboard record](../../reviews/coordination_share_explainer_2026-10-14.md).

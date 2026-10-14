@@ -51,6 +51,13 @@ filed: 2026-10-14
 >   without the field-wide rate stretches `tools/measure_rate_stretches.py` already finds. That
 >   would show directly how much a wash-in contributes under treatment.
 >
+> **Added after the review, unreviewed: Figure 7, calling events against counting them**
+> (`compare_with_calls.py`, Tony asked "are events called? show the rasters and the calls").
+> CoactDetect at the bench's point agrees with the measure on planted sets (16.4% against 16.9%,
+> 20.0% planted, quiet) but makes no calls in a busy stretch, even at the stretch-free floor, where
+> the measure reads 8.2% (1 min) and 3.0% (5 min). It misses about 5 of 6 three-cell moments.
+> Reporting both side by side is a candidate treatment readout, untested on real recordings.
+>
 > **Still open, design-level** (the record's adjudication):
 > - a figure of planted paired changes, to show whether a treatment effect can be detected at all;
 > - slow-stream and busy-background versions of Figure 5;

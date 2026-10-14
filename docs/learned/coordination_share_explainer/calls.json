@@ -1,0 +1,96 @@
+{
+ "note": "simulated recordings only; no real recording read",
+ "file": "explainer_coordinated-share-fig7-calling-events_20261014.png",
+ "numbers": {
+  "window_sec": [
+   1800.0,
+   2100.0
+  ],
+  "seed": 13,
+  "calls_in_view": 3,
+  "shares": {
+   "planted quiet": {
+    "planted_median_pct": 20.021274894735907,
+    "measure_median_pct": 16.85910623376818,
+    "measure_answers": 24,
+    "calls_median_pct": 16.35916492656858,
+    "calls_per_recording_median": 9.0,
+    "false_calls_per_recording_median": 0.0,
+    "floor_cells_median": 5.0
+   },
+   "planted busy": {
+    "planted_median_pct": 6.846847735975682,
+    "measure_median_pct": 5.310980692304967,
+    "measure_answers": 24,
+    "calls_median_pct": 5.185682896417493,
+    "calls_per_recording_median": 7.5,
+    "false_calls_per_recording_median": 0.0,
+    "floor_cells_median": 7.0
+   },
+   "nothing planted": {
+    "planted_median_pct": 0.0,
+    "measure_median_pct": 0.13445070865782377,
+    "measure_answers": 24,
+    "calls_median_pct": 0.0,
+    "calls_per_recording_median": 0.0,
+    "false_calls_per_recording_median": 0.0,
+    "floor_cells_median": 4.0
+   },
+   "nothing planted, 1-min busy stretch": {
+    "planted_median_pct": 0.0,
+    "measure_median_pct": 8.206609237843526,
+    "measure_answers": 24,
+    "calls_median_pct": 0.0,
+    "calls_per_recording_median": 0.0,
+    "false_calls_per_recording_median": 0.0,
+    "floor_cells_median": 15.0,
+    "floor_without_stretch_median": 4.0,
+    "calls_at_that_floor_median": 0.0,
+    "call_share_at_that_floor_median_pct": 0.0
+   },
+   "nothing planted, 5-min busy stretch": {
+    "planted_median_pct": 0.0,
+    "measure_median_pct": 3.0452242030893864,
+    "measure_answers": 24,
+    "calls_median_pct": 0.0,
+    "calls_per_recording_median": 0.0,
+    "false_calls_per_recording_median": 0.0,
+    "floor_cells_median": 17.0,
+    "floor_without_stretch_median": 4.0,
+    "calls_at_that_floor_median": 0.5,
+    "call_share_at_that_floor_median_pct": 0.11876484560570072
+   }
+  },
+  "called_by_size_pct": {
+   "planted quiet": {
+    "10 cells": 100.0,
+    "6 cells": 93.33333333333333,
+    "3 cells": 16.666666666666664
+   },
+   "planted busy": {
+    "10 cells": 98.33333333333333,
+    "6 cells": 66.66666666666666,
+    "3 cells": 14.166666666666666
+   }
+  },
+  "floors_cells": {
+   "planted quiet": [
+    5,
+    6
+   ],
+   "planted busy": [
+    6,
+    7,
+    8,
+    9
+   ]
+  },
+  "coact": {
+   "int_win_sec": 2.0,
+   "context_win_sec": 60.0,
+   "alpha": 0.0001,
+   "n_surrogates": 100
+  },
+  "match_tolerance_sec": 2.5
+ }
+}
