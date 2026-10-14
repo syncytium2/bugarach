@@ -2,10 +2,11 @@
 
 ## Status
 
-Proposed, 2026-10-14. Drafted at Tony's request: *"the default is fireflies for group
+Accepted, 2026-10-14, by Tony. Drafted at his request: *"the default is fireflies for group
 comparison, flag requests that differ"*, with the first exception named in the same message:
 *"in this case it is silly for fireflies to handle this extremely specialized analysis"*. He asked
-to confirm the division of labour before it is accepted.
+to confirm the division of labour before it was accepted, read the four points below, including
+the instrument carve-out in point 2, and answered *"yes."*
 
 ## Context
 
