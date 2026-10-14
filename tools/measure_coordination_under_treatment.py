@@ -280,10 +280,12 @@ def before_after_png(rows: list[dict], label: str, stream: str, group: str, path
         # it is kept out of the median, because its fraction is not a measurement.
         ax.plot([0, 1], [b, t], color="0.45" if ok else "0.7", lw=1,
                 ls="-" if ok else "--", marker="o", ms=3.5,
-                mfc="0.45" if ok else "white", mec="0.45" if ok else "0.6")
+                mfc="0.45" if ok else "white", mec="0.45" if ok else "0.6", zorder=3)
     if good:
-        ax.plot([0, 1], np.median(np.array(good), axis=0), color="black", lw=2.5,
-                marker="o", ms=5)
+        # The median as a wide pale band UNDER the recordings: with an odd count it is one
+        # of them, and drawn on top it hid that recording (Tony, 2026-10-14).
+        ax.plot([0, 1], np.median(np.array(good), axis=0), color="black", lw=9, alpha=0.18,
+                solid_capstyle="round", zorder=1)
     ax.set_xticks([0, 1], ["baseline", label])
     ax.set_xlim(-0.3, 1.3)
     ax.set_ylim(bottom=min(0, ax.get_ylim()[0]))
@@ -292,6 +294,66 @@ def before_after_png(rows: list[dict], label: str, stream: str, group: str, path
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
     fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
+def page_pdf(columns: list[dict], path: Path, *, model: str, w: float) -> None:
+    """One portrait page: a column per folder, a row per stream, one y-axis for all panels.
+
+    Tony, 2026-10-14: "portrait mode, 2 columns aug and sept, rows fast slow and combined
+    single page pdf only", and "be sure to match the axes". The y-range is shared by every
+    panel, so a height means the same thing in each. ``columns`` holds, per folder, the
+    column's name line and ``streams``: {stream: compare() result}.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    streams = [s for s in STREAMS if all(s in c["streams"] for c in columns)]
+    fig, axes = plt.subplots(len(streams), len(columns), figsize=(8.5, 11), sharey=True,
+                             squeeze=False)
+    vals = [r[c]["fraction"] * 100 for col in columns for s in streams
+            for r in col["streams"][s]["per_recording"] for c in CONDITIONS
+            if np.isfinite(r[c]["fraction"])]
+    lo, hi = min(0.0, min(vals, default=0.0)), max(vals, default=1.0)
+    for j, col in enumerate(columns):
+        for i, s in enumerate(streams):
+            ax = axes[i][j]
+            res = col["streams"][s]
+            rows = res["per_recording"]
+            good = []
+            for r in rows:
+                b, t = r["baseline"]["fraction"] * 100, r["treatment_1"]["fraction"] * 100
+                if not (np.isfinite(b) and np.isfinite(t)):
+                    continue
+                ok = all(r[c]["shape_usable"] for c in CONDITIONS)
+                if ok:
+                    good.append((b, t))
+                ax.plot([0, 1], [b, t], color="0.45" if ok else "0.7", lw=1,
+                        ls="-" if ok else "--", marker="o", ms=3.5,
+                        mfc="0.45" if ok else "white", mec="0.45" if ok else "0.6", zorder=3)
+            if good:
+                ax.plot([0, 1], np.median(np.array(good), axis=0), color="black", lw=9,
+                        alpha=0.18, solid_capstyle="round", zorder=1)
+            ax.set_xticks([0, 1], ["baseline", col["treatment"]])
+            ax.set_xlim(-0.3, 1.3)
+            ax.set_ylim(lo - 0.04 * (hi - lo), hi + 0.04 * (hi - lo))
+            ax.set_ylabel(f"{s} · {len(good)} of {len(rows)} usable")
+            ax.tick_params(labelleft=True)
+            for side in ("top", "right"):
+                ax.spines[side].set_visible(False)
+        axes[-1][j].set_xlabel(col["name"], labelpad=8)
+    fig.supylabel("coordinated fraction of events (%), one axis for every panel")
+    fig.text(0.5, 0.012,
+             f"Figure 1. Coordinated fraction of calcium events, baseline against treatment 1, "
+             f"each recording against its own baseline.\nOne line per recording. Hollow and "
+             f"dashed: too few events in a window to measure, left out of the median.\nThe "
+             f"median is the wide grey band, drawn under the recordings. A recording with no "
+             f"events at all in a window\nhas no fraction and no line. {model} model, {w:g} s "
+             f"counting window.",
+             ha="center", va="bottom", fontsize=8)
+    fig.tight_layout(rect=(0.02, 0.075, 1, 1))
     fig.savefig(path)
     plt.close(fig)
 
@@ -311,6 +373,11 @@ def main(argv=None) -> int:
                     help="the naming scheme's treatment code for each --folder, in order")
     ap.add_argument("--win", default="win20min",
                     help="the naming scheme's analysis-window code (the 2026 pilots: win20min)")
+    ap.add_argument("--page", default=None, metavar="FILE.pdf",
+                    help="draw ONE portrait PDF page instead of a PNG per folder and stream: a "
+                         "column per --folder, a row per stream, one y-axis for every panel")
+    ap.add_argument("--column-name", action="append", default=None,
+                    help="with --page: the line under each --folder's column, in order")
     ap.add_argument("--jobs", type=int, default=12)
     ap.add_argument("--seed", type=int, default=20261014)
     ap.add_argument("--out", type=Path, default=None,
@@ -326,6 +393,7 @@ def main(argv=None) -> int:
     out = a.out or (paths.darkroom(create=True) / f"{date.today():%Y-%m-%d}-coordinated-fraction-under-treatment")
     out.mkdir(parents=True, exist_ok=True)
     codes = artifact_name.load_codes()
+    columns = []
 
     with ProcessPoolExecutor(a.jobs) as ex:
         for k, spec in enumerate(a.folder):
@@ -358,7 +426,7 @@ def main(argv=None) -> int:
                       f"treatment_1 {head['median_fraction']['treatment_1']:.4f}; median ratio "
                       f"{head['median_ratio']:.2f}, leave-one-out {head['ratio_leave_one_out']}, "
                       f"{head['treatment_at_or_above_baseline']} at or above", flush=True)
-                if a.source and a.treatment_name:
+                if a.source and a.treatment_name and not a.page:
                     name = artifact_name.build(
                         codes, type="before-after", ext="png", date=today,
                         source=None if a.source[k] == "none" else a.source[k], signal="roi",
@@ -367,11 +435,19 @@ def main(argv=None) -> int:
                     before_after_png(head["per_recording"], " / ".join(labels), stream,
                                      "-".join(groups), out / name)
                     print(f"  wrote {out / name}")
+            key = f"{mcr.ADOPTED_MODEL}@{mcr.PRIMARY_W}"
+            columns.append({
+                "name": (a.column_name[k] if a.column_name else folder.name),
+                "treatment": " / ".join(labels),
+                "streams": {s: rec["streams"][s][key] for s in STREAMS}})
             dest = out / folder.name
             dest.mkdir(exist_ok=True)
             (dest / "coordination_under_treatment.json").write_text(
                 json.dumps(rec, indent=1, default=float) + "\n")
             print(f"wrote {dest / 'coordination_under_treatment.json'}")
+    if a.page:
+        page_pdf(columns, out / a.page, model=mcr.ADOPTED_MODEL, w=mcr.PRIMARY_W)
+        print(f"wrote {out / a.page}")
     return 0
 
 
