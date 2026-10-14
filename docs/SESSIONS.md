@@ -3353,3 +3353,8 @@ session's work is not a sweep.
   default, `pensub` and the flagged review copy. Checked on WSMIP065 after the move: every declared role resolves
   (the five archives from `deprecated/`), an archive is still refused without `BUGARACH_REPRODUCE`, and the
   flagged copy and `PRE_ARTIFACT_KILLER` resolve by name. Holds nothing.
+
+### darkroom/bugarach/2026-10-14-coordination-share-explainer/ — the explainer for the coordinated share, synthetic recordings only (WSMIP065/coordination-share-explainer)
+- **Claimed:** 2026-10-14, before the write. Tony: build the explainer the todo `2026-10-14-explainer-for-the-coordinated-share.md` describes, on a temporary synthetic set with 2 s, 10-20 s and 120 s gaps, without waiting on the data review.
+- **Writes:** a NEW folder: five figure PNGs named by `tools/naming/artifact_name.py`, `numbers.json` and the README, from `docs/learned/coordination_share_explainer/explain_coordination_share.py`. No real recording is read, so the repo copy is the same files.
+- **Released:** 2026-10-14, at write. Holds nothing.

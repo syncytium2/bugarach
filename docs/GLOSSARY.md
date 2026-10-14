@@ -353,8 +353,9 @@ Terms used by `bugarach.bench`, `bugarach.simulate` and
 load-bearing terms with no glossary entry.
 
 - **regime** — a named background-activity level the bench runs at. Both are
-  derived from untreated recordings: `baseline_quiet` (0.0052 Hz/ROI, the p25 of
-  baseline slices) and `baseline_busy` (0.0190, the p75). Treatments are never
+  derived from untreated recordings: `baseline_quiet` (0.0049 Hz/ROI, the p25 of
+  baseline slices) and `baseline_busy` (0.0169, the p75; both as `bench.REGIMES` holds them;
+  earlier fits gave 0.0052 and 0.0190). Treatments are never
   regimes. Re-derived 2026-08-20 from the export folder — the recordings the lab
   approved — having been fitted against the `.mat` store, which carries the two
   recordings the lab withdrew.
@@ -365,8 +366,9 @@ load-bearing terms with no glossary entry.
   under **Parameter vocabulary** above, with the three terms it is confused with.
 - **elevated-rate test** (formerly *promiscuity probe*, *probe*; code: `hot_window`,
   `probe_per_hour`, `MAX_PROBE_PER_MIN`) — a 5-minute stretch (20:00–25:00, easing in over
-  30 s) where each cell's independent event rate is elevated to the background's 99th
-  percentile, with *no* planted events. **Since ADR-0009 (2026-09-24) it lives in a recording
+  30 s and ending sharply) where each cell's independent event rate is raised by the
+  background's 99th percentile (0.1334 per second, added on top of the cell's own rate), with
+  *no* planted events. **Since ADR-0009 (2026-09-24) it lives in a recording
   of its own, the elevated-rate recording**, with nothing planted anywhere; before that it
   sat inside every bench recording (at 0.06 per second on fast, about 12× the quiet
   background). It is scored for calls inside the stretch and, against the no-coordination
@@ -418,8 +420,8 @@ load-bearing terms with no glossary entry.
   spike-train literature keeps its own terms inside its description (SPIKE-synch's
   "spike pair"), and its assumptions have to be argued for calcium events, not inherited.
 - **background** — the steady random event rate a bench recording is simulated at:
-  *quiet* (0.0052 per second per ROI) or *busy* (0.019), the 25th and 75th percentiles
-  of real baseline rates. The code's word is *regime*. Not the elevated-rate test.
+  *quiet* (0.0049 per second per ROI) or *busy* (0.0169), the 25th and 75th percentiles
+  of real baseline rates with the coordinated share subtracted (`bench.REGIMES`). The code's word is *regime*. Not the elevated-rate test.
   Every test below runs at one background or both; the tests are never named *quiet*
   or *busy* themselves, so that "the quiet background" always means this.
 - **no-coordination test** (formerly *empty recording*, *null recording*; code:
@@ -493,6 +495,32 @@ load-bearing terms with no glossary entry.
   candidates.
 - **precision swing** (code: `MAX_PRECISION_DROP`) — the absolute difference in precision
   between the quiet and busy backgrounds; a budget.
+
+## Measuring coordination without events
+
+Terms of `tools/measure_coordination_rates.py` and its explainer,
+[`learned/coordination_share_explainer/`](learned/coordination_share_explainer/README.md). Added
+2026-10-14, when that explainer's review found them used across four documents with no entry.
+
+- **shared moment** — a time at which several cells have an onset together, within about the
+  jitter. The measure's unit: in a real recording it is inferred and never located, since the
+  measure does not say which onsets belong to one. In a simulation the planted events are
+  shared moments with a known time and membership, which is what lets the measure be checked.
+  Not a **coordinated event** in the detectors' sense, which is a call with a time and a
+  membership.
+- **coordinated share** (code: `coordinated_share_of_rate`; also "share of events coordinated",
+  "coordinated fraction") — of all onsets in a recording, over all cells, the fraction that
+  belong to a shared moment. A population number, not any one cell's.
+- **factorial cumulants *f*₂, *f*₃** — of *X*, the onsets over all cells in one window of *w*
+  seconds: pairs and triples of onsets beyond what independent steady-rate cells give. The
+  measure keeps their excess over its **shifted copies**.
+- **shifted copy** (code: `shifted`) — each cell's whole train slid by its own offset, wrapping
+  round, every two cells' offsets at least two windows apart. **Not a rigid shift** (below):
+  the offsets are a fixed ladder, not drawn in ±*J*, and the train wraps.
+- **fixed model / binomial model** (code: `solve`, `ADOPTED_MODEL` = fixed) — the two ways the
+  measure turns *f*₂ and *f*₃ into participants per moment (*k*) and moments per second (λ).
+  Fixed: every moment is joined by the same *k* cells. Binomial: each cell joins each moment
+  with the same probability (the multiple-interaction process of Kuhn, Aertsen and Rotter 2003).
 
 ## Surrogate vocabulary
 
