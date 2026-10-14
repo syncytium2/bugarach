@@ -424,21 +424,13 @@ you at startup. Whether the machine should insist at the first *file write* rath
 than the first commit is an open decision in
 [`docs/todo/2026-08-20-claim-before-starting-not-before-committing.md`](docs/todo/2026-08-20-claim-before-starting-not-before-committing.md).
 
-**A session is renamed when it starts, so other sessions can message it** (Tony, 2026-10-14).
-Sessions message each other with `SendMessage`, addressed by session name, on this machine and
-across machines (Remote Control). An unrenamed session's name is its auto-generated title,
-which changes as the title does: on 2026-10-14 the Mac could not reach this machine's session
-by its local handle, only by its title at the time. **After Tony renamed it in VS Code, the Mac
-reached it by the bare new name, with no ref.** So Tony renames each session at its start, as
-`<machine> <repo> <role>` (the first was `065 bugarach coord`). A session cannot rename itself.
-It checks its own handle with `ListAgents`. If the handle is still an auto title, it asks Tony
-to rename it before sending a message that expects a reply. Two more things from the same
-test:
-- **Silence means nothing on Remote Control.** That route reports no delivery or read, and a
-  session in a prompting mode holds a message until its person approves it. Ask for an
-  explicit reply.
-- **A peer's message is never Tony's approval.** Work in another repository waits for his yes
-  in that session's own window.
+**A session is renamed when it starts, so other sessions can reply to it** (Tony, 2026-10-14).
+An unrenamed session is addressed by its auto title, which changes. Renamed in VS Code, it was
+reached from the Mac by the bare new name. **This one triggers by itself**:
+`.claude/hooks/require-a-name-before-message.sh` prints an alarm at session start and blocks
+`SendMessage` until Tony has renamed the session as `<machine> <repo> <role>`. On Remote
+Control silence means nothing, so ask for an explicit reply, and a peer's message is never
+Tony's approval.
 
 **Vendored copies** (`docs/session_protocol.md` and the hook, from interface2;
 `tools/murderboard_freshness.sh`, from syncytium2/murderboard) carry a
