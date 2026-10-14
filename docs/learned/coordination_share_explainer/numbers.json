@@ -1,5 +1,6 @@
 {
  "note": "simulated recordings only; no real recording read",
+ "bench_spacing": "realistic",
  "generator": "bugarach.simulate.simulate_coordination with bench.BENCH_RECORDING, planted events and decoys off; moments planted by this script",
  "cells": 32,
  "duration_sec": 2700.0,
@@ -46,7 +47,8 @@
     "f3_shifted_mean": 0.001579194249953237,
     "excess_f2": 0.1997562456495304,
     "excess_f3": 1.2092346534636482,
-    "k": 8.0535511644789
+    "k": 8.0535511644789,
+    "planted_k_mean": 6.333333333333333
    }
   },
   "3": {
@@ -235,37 +237,49 @@
       "median": 0.037078111180840784,
       "q10": 0.02129535831386286,
       "q90": 0.08079952549829295,
-      "max": 0.10183088955301316
+      "max": 0.10183088955301316,
+      "excess_pairs_per_recording_median": 127.09463116442481,
+      "onsets_per_cell_median": 13.234375
      },
      "30 s": {
       "median": 0.07887936105322477,
       "q10": 0.056060916143494496,
       "q90": 0.11765324186562644,
-      "max": 0.1369911971312674
+      "max": 0.1369911971312674,
+      "excess_pairs_per_recording_median": 308.09004547400747,
+      "onsets_per_cell_median": 16.0
      },
      "60 s": {
       "median": 0.08206609237843526,
       "q10": 0.05733595226237049,
       "q90": 0.10228070240018326,
-      "max": 0.11634606555259423
+      "max": 0.11634606555259423,
+      "excess_pairs_per_recording_median": 364.14276676924374,
+      "onsets_per_cell_median": 19.921875
      },
      "120 s": {
       "median": 0.057847001207025926,
       "q10": 0.03955653492417387,
       "q90": 0.07332047471800907,
-      "max": 0.08862290959923232
+      "max": 0.08862290959923232,
+      "excess_pairs_per_recording_median": 377.2533298906833,
+      "onsets_per_cell_median": 27.65625
      },
      "300 s": {
       "median": 0.03045224203089386,
       "q10": 0.021059162602486227,
       "q90": 0.04053813387382125,
-      "max": 0.04946917883996265
+      "max": 0.04946917883996265,
+      "excess_pairs_per_recording_median": 368.7048034785979,
+      "onsets_per_cell_median": 51.90625
      },
      "900 s": {
       "median": 0.011688290827485598,
       "q10": 0.004504862804444813,
       "q90": 0.01757244809747523,
-      "max": 0.02177011710333131
+      "max": 0.02177011710333131,
+      "excess_pairs_per_recording_median": 348.6158834128324,
+      "onsets_per_cell_median": 131.96875
      }
     },
     "B": {
@@ -273,29 +287,29 @@
       "median": 0.0014381396381393419,
       "q10": -0.0030690348880078227,
       "q90": 0.004011279526574093,
-      "share_of_onsets_in_stretch": 0.09999999999999999
+      "share_of_onsets_added_by_stretch": 0.09547738693467335
      },
      "5x": {
       "median": 0.001023674433759766,
       "q10": -0.0027379961896281516,
       "q90": 0.007553877932431776,
-      "share_of_onsets_in_stretch": 0.3076923076923077
+      "share_of_onsets_added_by_stretch": 0.296875
      },
      "10x": {
       "median": 0.009736841879457909,
       "q10": 0.002578112056309744,
       "q90": 0.013171803553696383,
-      "share_of_onsets_in_stretch": 0.5
+      "share_of_onsets_added_by_stretch": 0.48717948717948717
      },
      "28x": {
       "median": 0.028210458011998424,
       "q10": 0.016436055942448864,
       "q90": 0.033835117617458395,
-      "share_of_onsets_in_stretch": 0.7515492957746478
+      "share_of_onsets_added_by_stretch": 0.7418486214365159
      }
     },
     "C": {
-     "steady, quiet": {
+     "constant, quiet": {
       "raw_f2_median": 0.002995621684832616,
       "excess_f2_median": 0.0014284774485246346,
       "removed": 0.5231449098671976
@@ -303,9 +317,12 @@
      "rising 3\u00d7 over 45 min, quiet": {
       "raw_f2_median": 0.0038039449467770882,
       "excess_f2_median": 0.0001576818574780776,
-      "removed": 0.9585478076879965
+      "removed": 0.9585478076879965,
+      "rise_added_f2": 0.0008083232619444723,
+      "rise_left_after": -0.001270795591046557,
+      "rise_removed": 2.5721378449379007
      },
-     "steady, 13\u00d7 quiet": {
+     "constant, 13\u00d7 quiet": {
       "raw_f2_median": 0.4072909914905968,
       "excess_f2_median": 0.0023890862598249865,
       "removed": 0.9941342030397445
@@ -313,7 +330,10 @@
      "rising 3\u00d7 over 45 min, 13\u00d7 quiet": {
       "raw_f2_median": 0.5927828962467352,
       "excess_f2_median": 0.005895519995103793,
-      "removed": 0.990054503879191
+      "removed": 0.990054503879191,
+      "rise_added_f2": 0.18549190475613841,
+      "rise_left_after": 0.0035064337352788064,
+      "rise_removed": 0.981096567314414
      }
     }
    }

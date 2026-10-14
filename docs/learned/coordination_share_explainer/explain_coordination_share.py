@@ -49,7 +49,9 @@ for _p in (REPO / "src", REPO / "tools"):
 
 import measure_coordination_rates as mcr  # noqa: E402
 from bugarach import bench  # noqa: E402
+from bugarach.detectors._shared import matlab_round  # noqa: E402
 from bugarach.simulate import simulate_coordination  # noqa: E402
+from bugarach.time_axis import label as minutes, ticks as time_ticks  # noqa: E402
 
 PAGE_DATE = "20261014"
 DT = mcr.DT
@@ -58,7 +60,7 @@ N = int(bench.BENCH_RECORDING["n_roi"])                    # 32 cells
 LEVELS = tuple(bench.BENCH_RECORDING["participation"])     # share of cells joining, 3 levels
 PER_LEVEL = int(bench.BENCH_RECORDING["n_per_level"][0])   # 5 moments at each level
 N_MOMENTS = len(LEVELS) * PER_LEVEL                        # 15
-SIZES = tuple(max(1, int(round(p * N))) for p in LEVELS)   # 10, 6, 3 cells
+SIZES = tuple(max(1, matlab_round(p * N)) for p in LEVELS)  # 10, 6, 3 cells, as simulate rounds
 JITTER = mcr.CAL_JITTER["bugarach.bench"]                  # 0.106 s, the calibration's jitter
 QUIET = float(bench.REGIMES["baseline_quiet"]["bg_rate_hz"])
 BUSY = float(bench.REGIMES["baseline_busy"]["bg_rate_hz"])
@@ -153,7 +155,7 @@ def recording(seed: int, bg_hz: float = QUIET, pairs: int = 2, pair_gap=2.0, mix
     joined = [[] for _ in range(N)]
     for t, k in zip(times, ks):
         for c in rng.choice(N, k, replace=False):
-            joined[c].append(t + rng.randn() * JITTER)
+            joined[c].append(min(max(t + rng.randn() * JITTER, 0.0), T))   # clamped, as simulate does
     trains, n_bg, n_pl = [], 0, 0
     for i in range(N):
         # The tool's own frame conversion and clamp (measure_coordination_rates._sim).
@@ -221,15 +223,10 @@ def q(v, p):
 
 # ---------------------------------------------------------------- figure helpers
 
-def minutes(t: float) -> str:
-    """The house time label (``_time_axis_hook``): 45s, 2m, 2m30s; zero is 0s."""
-    m, s = divmod(int(round(t)), 60)
-    return f"{s}s" if m == 0 else (f"{m}m" if s == 0 else f"{m}m{s:02d}s")
-
-
-def time_axis(ax, t0, t1, step=30):
-    ticks = np.arange(np.ceil(t0 / step) * step, t1 + 1e-9, step)
-    ax.set_xticks(ticks, [minutes(t) for t in ticks])
+def time_axis(ax, t0, t1):
+    """The house time axis (``bugarach.time_axis``, the viewer's ticker and labels)."""
+    tk = time_ticks(t0, t1)
+    ax.set_xticks(tk, [minutes(t) for t in tk])
     ax.set_xlim(t0, t1)
 
 
@@ -276,10 +273,17 @@ def figure1(out, date):
     gs = fig.add_gridspec(4, 1, height_ratios=[0.8, 5, 1.8, 5], hspace=0.2)
     lane = fig.add_subplot(gs[0])
     shown = {}
+    n_close = 0
     for t, g in zip(rec["times"], rec["gap"]):
         if t0 <= t <= t1:
             shown[g] = True
-            lane.scatter([t], [0], marker="v", s=34, color=GAP_COLOUR[g], zorder=3)
+            # The two moments of a close pair are 2 s apart, a few pixels at this scale: stack
+            # the second above the first so both can be counted.
+            y = 0.0
+            if g == "close":
+                y = 0.7 * (n_close % 2)
+                n_close += 1
+            lane.scatter([t], [y], marker="v", s=34, color=GAP_COLOUR[g], zorder=3)
     labels = {"close": "moment in a close pair (2 s apart)",
               "medium": "moment in a medium pair (10–20 s apart)",
               "single": "single moment (120 s or more from the next)"}
@@ -288,9 +292,9 @@ def figure1(out, date):
             lane.scatter([], [], marker="v", s=34, color=GAP_COLOUR[g], label=labels[g])
     pairs = [t for t, g in zip(rec["times"], rec["gap"]) if g == "close" and t0 <= t <= t1]
     for a in pairs[::2]:
-        lane.text(a + 1.0, 0.45, "2 s pair", ha="center", va="bottom", fontsize=9, color=INK)
+        lane.text(a - 4.0, 0.35, "2 s pair", ha="right", va="center", fontsize=10, color=INK)
     lane.set_xlim(t0, t1)
-    lane.set_ylim(-0.6, 1.4)
+    lane.set_ylim(-0.6, 1.3)
     lane.set_yticks([0], ["planted"])
     lane.tick_params(axis="y", length=0)
     lane.tick_params(axis="x", bottom=False, labelbottom=False)
@@ -344,12 +348,12 @@ def figure2(out, date):
     surs = np.array([mcr.population_cumulants(mcr.shifted(rec["trains"], L, 2 * wf, rng), L, wf)
                      for _ in range(mcr.N_SURR)])
     e2, e3 = f2r - surs[:, 0].mean(), f3r - surs[:, 1].mean()
-    k = e3 / e2 + 2
+    k = mcr.solve(e2, e3, N, 1.0, "fixed")["k"]
     fig, (axA, axB) = plt.subplots(1, 2, figsize=(10.5, 4.4), gridspec_kw=dict(wspace=0.32))
     top = int(max(Xr.max(), Xs.max()))
     bins = np.arange(-0.5, top + 1.5)
     x = np.arange(top + 1)
-    axA.bar(x - 0.2, np.histogram(Xs, bins)[0], width=0.38, color=GREEN,
+    axA.bar(x - 0.2, np.histogram(Xs, bins)[0], width=0.38, color=MUTED,
             label=f"shifted copy · mean {Xs.mean():.2f} onsets per window")
     axA.bar(x + 0.2, np.histogram(Xr, bins)[0], width=0.38, color=INK,
             label=f"recording · mean {Xr.mean():.2f} onsets per window")
@@ -362,17 +366,19 @@ def figure2(out, date):
     jit = np.random.RandomState(5)
     for i, (real, s) in enumerate(((f2r, surs[:, 0]), (f3r, surs[:, 1]))):
         axB.scatter(np.full(s.size, i - 0.12) + jit.uniform(-0.04, 0.04, s.size), s, s=20,
-                    color=GREEN, label="each of 20 shifted copies" if i == 0 else None)
+                    color=MUTED, label="each of 20 shifted copies" if i == 0 else None)
         axB.scatter([i + 0.12], [real], s=70, color=INK, marker="D",
                     label="the recording" if i == 0 else None)
         axB.annotate("", xy=(i + 0.12, real), xytext=(i + 0.12, s.mean()),
                      arrowprops=dict(arrowstyle="<->", color=MUTED, lw=1.2))
         axB.text(i + 0.2, (real + s.mean()) / 2, f"excess\n{real - s.mean():.2f}", va="center")
-    axB.axhline(0, color=GRID, lw=1)
+    axB.axhline(0, color=GRID, lw=1, label="zero")
     axB.set_xticks([0, 1], ["f₂\npairs beyond\nchance", "f₃\ntriples beyond\nchance"])
     axB.set_xlim(-0.5, 1.75)
-    axB.set_ylabel("per 1 s window")
-    axB.text(0.02, 0.62, f"k = f₃ ÷ f₂ + 2\n   = {e3:.2f} ÷ {e2:.2f} + 2\n   ≈ {k:.1f} cells per moment",
+    axB.set_ylabel("pairs (f₂) or triples (f₃)\nbeyond chance, per 1 s window")
+    planted_k = float(np.mean(rec["ks"]))
+    axB.text(0.02, 0.62, f"k = excess f₃ ÷ excess f₂ + 2\n   = {e3:.2f} ÷ {e2:.2f} + 2"
+             f"\n   ≈ {k:.1f} cells per moment\n   (planted: 10, 6 and 3 cells,\n    mean {planted_k:.1f})",
              transform=axB.transAxes, va="top")
     axB.legend(frameon=False, loc="upper left")
     letter(axB, "B")
@@ -381,13 +387,15 @@ def figure2(out, date):
                       mean_shifted=float(Xs.mean()), max_window_real=int(Xr.max()),
                       max_window_shifted=int(Xs.max()), f2=f2r, f3=f3r,
                       f2_shifted_mean=float(surs[:, 0].mean()),
-                      f3_shifted_mean=float(surs[:, 1].mean()), excess_f2=e2, excess_f3=e3, k=k)
+                      f3_shifted_mean=float(surs[:, 1].mean()), excess_f2=e2, excess_f3=e3, k=k,
+                      planted_k_mean=planted_k)
 
 
 def figure3(out, date, mixed, one_size, bench_cal):
     """Recovered against planted, on three sets: three moment sizes, one size, and the bench as
     the tool's own calibration builds it."""
-    fig, axes = plt.subplots(1, 3, figsize=(10.5, 4.2), sharey=True, gridspec_kw=dict(wspace=0.1))
+    fig, axes = plt.subplots(1, 3, figsize=(10.5, 4.2), sharey=True, sharex=True,
+                             gridspec_kw=dict(wspace=0.1))
     stats = {}
     panels = [("A", "three moment sizes (10, 6, 3 cells)", mixed, planted(mixed)),
               ("B", "one moment size (6 cells)", one_size, planted(one_size)),
@@ -405,16 +413,22 @@ def figure3(out, date, mixed, one_size, bench_cal):
             lab = f"{model} model" + (" (adopted)" if model == mcr.ADOPTED_MODEL else "")
             ax.scatter(p, r, s=26, facecolor=face, edgecolor=INK, lw=1,
                        label=lab if tag == "A" else None)
-        ax.set_xlim(0, None)
+            # The median, which is what the check passes or fails, drawn at the right edge.
+            xm = 0.315 if model == "fixed" else 0.335
+            ax.plot([xm - 0.008, xm + 0.008], [q(r, 50)] * 2, color=INK, lw=3 if model == "fixed" else 1.5,
+                    label=("median (what the check tests)" if tag == "A" and model == "fixed" else None))
+            ax.text(xm, q(r, 50) + (0.04 if model == "binomial" else -0.07), f"{q(r, 50) - 1:+.0%}",
+                    ha="center", fontsize=9)
+        ax.set_xlim(0, 0.35)
         ax.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
         ax.set_xlabel(f"planted share of events\n{what}", fontsize=10)
         letter(ax, tag, x=-0.05)
         stats[what]["recordings"] = len(res)
     axes[0].set_ylabel("recovered ÷ planted (1 s window)")
     axes[0].set_ylim(0.4, 1.6)
-    fig.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4, frameon=False)
+    fig.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=5, frameon=False, fontsize=9.5)
     name = save(fig, out, "coordinated-share-fig3-planted-vs-recovered", date,
-                "Figure 3. Planted against recovered")
+                "Figure 3. Recovered against planted")
     return name, stats
 
 
@@ -427,8 +441,9 @@ def figure4(out, date, sets):
     table = {}
     for ax, (key, what), tag in zip(axes, quantities, "ABC"):
         if key == "share":
-            ax.axhspan(-mcr.CAL_TOL, mcr.CAL_TOL, color=GRID, alpha=0.7, lw=0, label="pass band (±25%)")
-        ax.axhline(0, color=MUTED, lw=1)
+            ax.axhspan(-mcr.CAL_TOL, mcr.CAL_TOL, color=GRID, alpha=0.7, lw=0,
+                       label="pass band (±25%, the share only)")
+        ax.axhline(0, color=MUTED, lw=1, label="right answer (0%)" if key == "share" else None)
         for i, (name, res) in enumerate(sets.items()):
             p = planted(res, key)
             meds = []
@@ -452,7 +467,7 @@ def figure4(out, date, sets):
         ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
         letter(ax, tag, x=-0.32)
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=3,
+    fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4,
                frameon=False, title="intervals between moments (median over 48 recordings each)")
     name = save(fig, out, "coordinated-share-fig4-window-and-intervals", date,
                 "Figure 4. Window size and the intervals between moments")
@@ -475,18 +490,21 @@ def figure5(out, date, run, durations, amplitudes, nulls, slow):
         med.append(q(s, 50))
         lo.append(q(s, 10))
         hi.append(q(s, 90))
-        stats["A"][f"{d:g} s"] = dict(median=med[-1], q10=lo[-1], q90=hi[-1], max=q(s, 100))
+        extra = [m["cum"]["1.0"]["f2"] * m["cum"]["1.0"]["n_win"] for m, _ in res]
+        stats["A"][f"{d:g} s"] = dict(median=med[-1], q10=lo[-1], q90=hi[-1], max=q(s, 100),
+                                      excess_pairs_per_recording_median=q(extra, 50),
+                                      onsets_per_cell_median=q([m["rate"] * T for m, _ in res], 50))
     axA.fill_between(xs, lo, hi, color=GRID, lw=0, label="10th–90th percentile")
     axA.plot(xs, med, color=INK, marker="o", lw=1.8, label="median, 24 recordings")
-    axA.axhline(0, color=MUTED, lw=1)
-    axA.axhline(stats["A"]["no stretch"]["median"], color=MUTED, lw=1, ls=":",
+    axA.axhline(0, color=MUTED, lw=1, label="zero (the right answer)")
+    axA.axhline(stats["A"]["no stretch"]["median"], color=ORANGE, lw=1.5, ls=":",
                 label="no stretch (median)")
     axA.set_xticks(xs, [minutes(d) for d in durations])
     axA.set_xlabel(f"length of a stretch at +{HOT['hot_rate_hz']} onsets\nper second per cell (sharp edges)",
                    fontsize=10)
     axA.set_ylabel("share of events reported coordinated\n(nothing planted; 1 s window)", fontsize=10)
     axA.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=1))
-    axA.legend(frameon=False, fontsize=9, loc="upper right")
+    axA.legend(frameon=False, fontsize=10, loc="lower left", bbox_to_anchor=(-0.2, 1.02))
     letter(axA, "A", x=-0.3)
     xs, med, lo, hi = [], [], [], []
     for mult, (res, frac) in amplitudes.items():
@@ -496,17 +514,18 @@ def figure5(out, date, run, durations, amplitudes, nulls, slow):
         lo.append(q(s, 10))
         hi.append(q(s, 90))
         stats["B"][f"{mult:.0f}x"] = dict(median=med[-1], q10=lo[-1], q90=hi[-1],
-                                          share_of_onsets_in_stretch=frac)
+                                          share_of_onsets_added_by_stretch=frac)
     axB.fill_between(xs, lo, hi, color=GRID, lw=0)
     axB.plot(xs, med, color=INK, marker="o", lw=1.8)
     axB.axhline(0, color=MUTED, lw=1)
     axB.set_xscale("log")
     axB.set_xticks(xs, [f"{x:.0f}×" for x in xs])
     axB.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
-    axB.set_xlabel("rate inside a 5-minute stretch\n÷ the background (the bench's 30 s ramps)",
+    axB.set_xlabel("rate inside a 5-minute stretch ÷ the\nbackground (30 s ramp in, sharp end)",
                    fontsize=10)
+    axB.set_ylabel("share reported coordinated\n(scale differs from A)", fontsize=10)
     axB.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=1))
-    letter(axB, "B", x=-0.18)
+    letter(axB, "B", x=-0.3)
     for i, (label, res) in enumerate(slow.items()):
         raw = np.array([m["raw_f2_1s"] for m, _ in res])
         exc = np.array([m["cum"]["1.0"]["f2"] for m, _ in res])
@@ -517,11 +536,26 @@ def figure5(out, date, run, durations, amplitudes, nulls, slow):
                     label="after" if i == 0 else None)
         stats["C"][label.replace("\n", " ")] = dict(raw_f2_median=q(raw, 50), excess_f2_median=q(exc, 50),
                                                     removed=1 - q(exc, 50) / q(raw, 50) if q(raw, 50) else None)
+    keys = list(stats["C"])
+    for steady, rising in ((keys[0], keys[1]), (keys[2], keys[3])):
+        a, b = stats["C"][steady], stats["C"][rising]
+        added = b["raw_f2_median"] - a["raw_f2_median"]
+        left = b["excess_f2_median"] - a["excess_f2_median"]
+        b["rise_added_f2"], b["rise_left_after"] = added, left
+        b["rise_removed"] = 1 - left / added if added > 0 else None
     axC.axvline(0, color=MUTED, lw=1)
+    # Symmetric log: the quiet rows sit near 0.001-0.004 and the busy ones near 0.5, and a linear
+    # axis hides the quiet rows' before-and-after under each other.
+    axC.set_xscale("symlog", linthresh=1e-3)
+    axC.set_xlim(-0.01, 5)
+    tk = [-0.01, 0, 0.01, 1]
+    axC.set_xticks(tk, ["−0.01", "0", "0.01", "1"])
+    axC.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
     axC.set_yticks(range(len(slow)), list(slow))
     axC.set_ylim(len(slow) - 0.5, -0.5)
-    axC.set_xlabel("pairs beyond chance, f₂\n(per 1 s window; nothing planted)", fontsize=10)
-    axC.legend(frameon=False, fontsize=9, loc="lower left", bbox_to_anchor=(0, 1.0))
+    axC.set_xlabel("pairs beyond chance, f₂ (per 1 s window;\nnothing planted; linear below 0.001)",
+                   fontsize=10)
+    axC.legend(frameon=False, fontsize=10, loc="lower left", bbox_to_anchor=(0, 1.0))
     letter(axC, "C", x=-0.55)
     name = save(fig, out, "coordinated-share-fig5-what-else-counts", date,
                 "Figure 5. What else it counts")
@@ -542,7 +576,10 @@ def figure6(out, date, groups):
             ok = np.isfinite(v)
             ax.scatter(np.full(ok.sum(), i + dx) + jit.uniform(-0.06, 0.06, ok.sum()), v[ok], s=18,
                        facecolor=face, edgecolor=INK, lw=0.9, label=name if i == 0 else None)
-            ax.plot([i + dx - 0.1, i + dx + 0.1], [q(v, 50)] * 2, color=ORANGE, lw=2.5,
+            xw = i + dx + (0.11 if dx > 0 else -0.11)
+            ax.plot([xw, xw], [q(v, 10), q(v, 90)], color=MUTED, lw=1.5,
+                    label="10th–90th percentile" if (i == 0 and dx > 0) else None)
+            ax.plot([xw - 0.03, xw + 0.03], [q(v, 50)] * 2, color=MUTED, lw=3,
                     label="median" if (i == 0 and dx > 0) else None)
         stats[label.replace("\n", " ")] = dict(
             recordings=len(res), no_answer=int((~np.isfinite(mine)).sum()),
@@ -550,10 +587,12 @@ def figure6(out, date, groups):
             tool=dict(q10=q(tool, 10), median=q(tool, 50), q90=q(tool, 90), min=q(tool, 0), max=q(tool, 100)),
             planted_share_median=q(p, 50), event_rate_hz=q([m["rate"] for m, _ in res], 50))
     ax.axhline(1, color=MUTED, lw=1, label="right answer")
-    ax.set_xticks(range(len(groups)), list(groups))
-    ax.set_ylim(0, None)
+    ticklabels = [f"{g}\n(planted share {stats[g.replace(chr(10), ' ')]['planted_share_median']:.0%})"
+                  for g in groups]
+    ax.set_xticks(range(len(groups)), ticklabels)
+    ax.set_ylim(0.4, 1.6)
     ax.set_ylabel("share recovered ÷ planted\n(fixed model, 1 s window)")
-    ax.legend(frameon=False, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=4)
+    ax.legend(frameon=False, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=3)
     name = save(fig, out, "coordinated-share-fig6-one-recording", date,
                 "Figure 6. How far one recording strays")
     return name, stats
@@ -571,10 +610,12 @@ def main():
         from bugarach.paths import darkroom
         root = darkroom()
         if root is None:
-            sys.exit("no darkroom found: set BUGARACH_DARKROOM or pass --out")
+            from bugarach.paths import unresolved_message
+            sys.exit(unresolved_message("--out DIR"))
         a.out = root / "2026-10-14-coordination-share-explainer"
     a.out.mkdir(parents=True, exist_ok=True)
     record = dict(note="simulated recordings only; no real recording read",
+                  bench_spacing=bench.spacing(),
                   generator="bugarach.simulate.simulate_coordination with bench.BENCH_RECORDING, "
                             "planted events and decoys off; moments planted by this script",
                   cells=N, duration_sec=T, moment_sizes=list(SIZES), moments=N_MOMENTS,
@@ -597,13 +638,15 @@ def main():
         for added in (QUIET, 4 * QUIET, 9 * QUIET, HOT["hot_rate_hz"]):
             res = run_set(pool, dict(n_total=0, hot_window=HOT["hot_window"], hot_rate_hz=added,
                                      ramp_sec=HOT["ramp_sec"]), bgs=(QUIET,))
-            span = HOT["hot_window"][1] - HOT["hot_window"][0]
+            # Onsets the stretch adds (the ramp in thins its first ramp_sec by half on average),
+            # as a share of all onsets.
+            span = HOT["hot_window"][1] - HOT["hot_window"][0] - HOT["ramp_sec"] / 2
             frac = added * span / (added * span + QUIET * T)
             amplitudes[(QUIET + added) / QUIET] = (res, frac)
         hi = 13.0 * QUIET
-        slow = {"steady, quiet": nulls,
+        slow = {"constant, quiet": nulls,
                 "rising 3× over\n45 min, quiet": run_set(pool, dict(n_total=0, ramp=3.0), bgs=(QUIET,)),
-                "steady,\n13× quiet": run_set(pool, dict(n_total=0), bgs=(hi,)),
+                "constant,\n13× quiet": run_set(pool, dict(n_total=0), bgs=(hi,)),
                 "rising 3× over\n45 min, 13× quiet": run_set(pool, dict(n_total=0, ramp=3.0), bgs=(hi,))}
         groups = {f"{n} moments\nquiet": run_set(pool, dict(mixed=False, pairs=0, n_total=n), bgs=(QUIET,))
                   for n in (15, 6, 3)}
