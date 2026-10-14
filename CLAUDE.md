@@ -47,7 +47,7 @@ anything on an assumption about what a condition does.
 ([ADR-0017](docs/adr/0017-group-and-treatment-comparisons-default-to-fireflies.md)). When a
 request would have bugarach make a finding about the groups or a treatment itself, say so
 before starting, name the default, and wait for Tony's yes. Confirmed exceptions are listed
-in FOUNDATIONS §9.
+in FOUNDATIONS §11.
 
 ## Todos
 

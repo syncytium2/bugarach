@@ -51,7 +51,7 @@ in the 2026-09-22 and 2026-09-23 run records) because §9 makes a pooled constan
 3. **When a request would have bugarach make a finding about the preparation itself, the
    session flags it before starting.** The flag names the default (fireflies), says why this
    request differs from it, and the work waits for Tony's yes in words. A confirmed exception
-   is listed under FOUNDATIONS §9, with its date and scope, so the next session reads it there
+   is listed in FOUNDATIONS §11, with its date and scope, so the next session reads it there
    rather than re-asking.
 4. **First exception, confirmed by Tony on 2026-10-14: the coordinated fraction under
    treatment.** bugarach measures, for each treatment window paired with its own baseline:
@@ -70,13 +70,15 @@ in the 2026-09-22 and 2026-09-23 run records) because §9 makes a pooled constan
 
 ## Consequences
 
-- FOUNDATIONS §9's opening sentence points here and lists the confirmed exceptions, so the
-  clause no longer reads as forbidding work Tony has approved.
+- FOUNDATIONS §9's opening clause now says this in one line and points to a new §11, which
+  states the rule and lists the confirmed exceptions. So §9 no longer reads as forbidding work
+  Tony has approved. The list is not in §9 itself because the session briefing copies all of
+  §9 under a byte budget: the first draft put it there and took the briefing 31 B over.
 - **Point 3 is not mechanized.** A request arrives in conversation, not as a line in the tree,
   so there is nothing for sapper to match. It rests on the CLAUDE.md line that points here and
-  on the exception list in §9.
-- The first run under point 4 is TTX against its own baseline, on the default dataset once
-  Tony has confirmed it for the session. APV+CNQX(+GZ) is read from the two eval folders
-  exported on 2026-10-12, by name. Both are separate PRs.
+  on the exception list in §11.
+- The first run under point 4 is TTX against its own baseline, on the default dataset.
+  APV+CNQX(+GZ) is read from the two eval folders exported on 2026-10-12, by name. Both are
+  separate PRs.
 - Fireflies' export from bugarach is unchanged. Nothing here stops the coordinated fraction
   being exported to fireflies later if Tony wants it plotted with their figures.
