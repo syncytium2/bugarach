@@ -227,17 +227,33 @@ def compare(recs: list[dict], stream: str, w: float, model: str) -> dict:
         xs = [x for x in xs if np.isfinite(x)]
         return float(np.median(xs)) if xs else float("nan")
 
-    ratios = [x["ratio"] for x in rows]
-    loo = [med(ratios[:j] + ratios[j + 1:]) for j in range(len(ratios))] if len(ratios) > 2 else []
+    def summary(sub):
+        ratios = [x["ratio"] for x in sub]
+        loo = ([med(ratios[:j] + ratios[j + 1:]) for j in range(len(ratios))]
+               if len(ratios) > 2 else [])
+        return {
+            "recordings": len(sub), "mice": len({x["mouse"] for x in sub}),
+            "median_fraction": {c: med([x[c]["fraction"] for x in sub]) for c in CONDITIONS},
+            "median_rate_hz": {c: med([x[c]["rate_hz"] for x in sub]) for c in CONDITIONS},
+            "median_shared_moments_per_min": {
+                c: med([x[c]["shared_moments_per_min"] for x in sub]) for c in CONDITIONS},
+            "median_ratio": med(ratios),
+            "ratio_leave_one_out": [min(loo), max(loo)] if loo else None,
+            "treatment_at_or_above_baseline": int(sum(1 for x in ratios
+                                                      if np.isfinite(x) and x >= 1)),
+        }
+
+    # A window below shape_usable's floors (too few events) has an f3 too noisy to trust,
+    # and a treatment that cuts the event rate puts many treatment windows there. The
+    # fraction of almost nothing is not a measurement, so the headline is taken over the
+    # recordings usable in BOTH windows; the all-recordings summary stays beside it.
+    usable = [x for x in rows if all(x[c]["shape_usable"] for c in CONDITIONS)]
     return {
-        "recordings": len(rows), "mice": len({x["mouse"] for x in rows}),
-        "median_fraction": {c: med([x[c]["fraction"] for x in rows]) for c in CONDITIONS},
-        "median_rate_hz": {c: med([x[c]["rate_hz"] for x in rows]) for c in CONDITIONS},
+        **summary(usable),
+        "usable_in_both": [x["slice_id"] for x in usable],
+        "all_recordings": summary(rows),
         "pooled_participants_per_moment": {c: med([x[c]["participants_per_moment"] for x in rows])
                                            for c in CONDITIONS},
-        "median_ratio": med(ratios),
-        "ratio_leave_one_out": [min(loo), max(loo)] if loo else None,
-        "treatment_at_or_above_baseline": int(sum(1 for x in ratios if np.isfinite(x) and x >= 1)),
         "per_recording": rows,
     }
 
@@ -251,18 +267,28 @@ def before_after_png(rows: list[dict], label: str, stream: str, group: str, path
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(3.4, 3.6), dpi=150)
-    pts = [(r["baseline"]["fraction"] * 100, r["treatment_1"]["fraction"] * 100) for r in rows]
-    for b, t in pts:
-        if np.isfinite(b) and np.isfinite(t):
-            ax.plot([0, 1], [b, t], color="0.55", lw=1, marker="o", ms=3)
-    good = [p for p in pts if all(np.isfinite(p))]
+    good = []
+    for r in rows:
+        b, t = r["baseline"]["fraction"] * 100, r["treatment_1"]["fraction"] * 100
+        if not (np.isfinite(b) and np.isfinite(t)):
+            continue
+        ok = all(r[c]["shape_usable"] for c in CONDITIONS)
+        if ok:
+            good.append((b, t))
+        # A pair with a window below shape_usable's floors is drawn hollow and dashed: it is
+        # shown, because hiding it would hide what the treatment did to the event rate, and
+        # it is kept out of the median, because its fraction is not a measurement.
+        ax.plot([0, 1], [b, t], color="0.45" if ok else "0.7", lw=1,
+                ls="-" if ok else "--", marker="o", ms=3.5,
+                mfc="0.45" if ok else "white", mec="0.45" if ok else "0.6")
     if good:
         ax.plot([0, 1], np.median(np.array(good), axis=0), color="black", lw=2.5,
                 marker="o", ms=5)
     ax.set_xticks([0, 1], ["baseline", label])
     ax.set_xlim(-0.3, 1.3)
-    ax.set_ylim(bottom=0)
-    ax.set_ylabel(f"coordinated fraction of events (%)\n{stream} · {group} · {len(good)} recordings")
+    ax.set_ylim(bottom=min(0, ax.get_ylim()[0]))
+    ax.set_ylabel(f"coordinated fraction of events (%)\n{stream} · {group} · "
+                  f"{len(good)} of {len(rows)} usable")
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
     fig.tight_layout()
@@ -276,7 +302,8 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--folder", action="append", required=True,
-                    help="an export folder, by name or path; repeat for several")
+                    help="an export folder, by name or path; repeat for several. A folder "
+                         "under exports/bugarach_eval/ is not searched by name: pass its path")
     ap.add_argument("--source", action="append", default=None,
                     help="the naming scheme's source for each --folder, in order "
                          "(e.g. pilot-20260811); 'none' for the main series")
@@ -325,12 +352,12 @@ def main(argv=None) -> int:
                     f"{m}@{w}": compare(recs, stream, w, m)
                     for w in mcr.WINDOWS for m in mcr.MODELS}
                 head = rec["streams"][stream][f"{mcr.ADOPTED_MODEL}@{mcr.PRIMARY_W}"]
-                print(f"{folder.name} {stream}: fraction baseline "
-                      f"{head['median_fraction']['baseline']:.4f} -> treatment_1 "
-                      f"{head['median_fraction']['treatment_1']:.4f}; median ratio "
+                print(f"{folder.name} {stream}: {head['recordings']} of "
+                      f"{head['all_recordings']['recordings']} recordings usable in both; "
+                      f"fraction baseline {head['median_fraction']['baseline']:.4f} -> "
+                      f"treatment_1 {head['median_fraction']['treatment_1']:.4f}; median ratio "
                       f"{head['median_ratio']:.2f}, leave-one-out {head['ratio_leave_one_out']}, "
-                      f"{head['treatment_at_or_above_baseline']} of {head['recordings']} at or above",
-                      flush=True)
+                      f"{head['treatment_at_or_above_baseline']} at or above", flush=True)
                 if a.source and a.treatment_name:
                     name = artifact_name.build(
                         codes, type="before-after", ext="png", date=today,

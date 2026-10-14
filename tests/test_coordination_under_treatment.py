@@ -116,3 +116,14 @@ def test_a_planted_rise_in_coordination_reads_as_one(measured):
     assert f["treatment_1"] > f["baseline"] > 0
     assert head["median_ratio"] > 1.5
     assert head["treatment_at_or_above_baseline"] == 3
+
+
+def test_a_window_too_sparse_to_measure_stays_out_of_the_headline(measured):
+    """A treatment that cuts the event rate leaves windows below shape_usable's floors, and
+    the fraction of almost nothing is not a measurement (the 2026 pilots, 2026-10-14)."""
+    import copy
+    recs = copy.deepcopy(measured)
+    recs[0]["windows"]["treatment_1"]["streams"]["fast"]["shape_usable"] = False
+    head = mct.compare(recs, "fast", 1.0, "fixed")
+    assert head["recordings"] == 2 and head["all_recordings"]["recordings"] == 3
+    assert recs[0]["slice_id"] not in head["usable_in_both"]
