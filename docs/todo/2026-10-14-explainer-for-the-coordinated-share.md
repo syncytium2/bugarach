@@ -10,10 +10,18 @@ filed: 2026-10-14
 > measure counts, so item 4's baseline figures and item 5's `shape_usable` count wait for the
 > corrected export. **The recordings have their own gap schedule** (Tony, 2026-10-14): close pairs
 > 2 s apart, medium pairs 10 to 20 s apart, and single moments 120 s apart, for this page only.
-> The bench is unchanged. **Item 5's first bullet was backwards**: a shared change slower than
-> the shifts' span survives into the shifted copies and is subtracted, so it is *not* counted. A
-> change faster than about a minute is counted. Figure 5 of the page shows both. What is left: the
-> real numbers when the stop clears, and a redraw when the revised bench is decided.
+> The bench is unchanged. **Item 5's first bullet was backwards**: a slow shared change survives
+> into the shifted copies and is subtracted (99% of a threefold rise over 45 minutes). What is
+> counted is a change *faster* than the copies' slides, which includes the sharp edges of a long
+> busy stretch: it is how fast the rate changes, not how long the change lasts. The tool's
+> docstring says "slower than about a minute survives", which is right in direction and too sharp
+> as a boundary; Figure 5 of the page shows the curve. What is left: the real numbers when the
+> stop clears, a redraw when the revised bench is decided, and three notes for whoever next edits
+> the tool, none changed here: its docstring's "120 s spacing floor" predates the realistic
+> bench (2026-10-07); `population_cumulants` says two offsets "halve" the moments split by a
+> window edge, but they steady the loss without recovering it; and Staude, Grün and Rotter (2010,
+> *Front Comput Neurosci* 4:16) extend the cumulant method to changing rates, the weakness Figure
+> 5 shows.
 
 # An explainer for `tools/measure_coordination_rates.py`: what fraction of calcium events are coordinated, measured without defining an event
 

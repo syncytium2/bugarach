@@ -494,6 +494,30 @@ load-bearing terms with no glossary entry.
 - **precision swing** (code: `MAX_PRECISION_DROP`) — the absolute difference in precision
   between the quiet and busy backgrounds; a budget.
 
+## Measuring coordination without events
+
+Terms of `tools/measure_coordination_rates.py` and its explainer,
+[`learned/coordination_share_explainer/`](learned/coordination_share_explainer/README.md). Added
+2026-10-14, when that explainer's review found them used across four documents with no entry.
+
+- **shared moment** — a time at which several cells have an onset together, within about the
+  jitter. The measure's unit, inferred and never located: it does not say which onsets belong
+  to one. Not a **coordinated event**, which is a detector's call or a planted event, with a
+  time and a membership.
+- **coordinated share** (code: `coordinated_share_of_rate`; also "share of events coordinated",
+  "coordinated fraction") — of all onsets in a recording, over all cells, the fraction that
+  belong to a shared moment. A population number, not any one cell's.
+- **factorial cumulants *f*₂, *f*₃** — of *X*, the onsets over all cells in one window of *w*
+  seconds: pairs and triples of onsets beyond what independent steady-rate cells give. The
+  measure keeps their excess over its **shifted copies**.
+- **shifted copy** (code: `shifted`) — each cell's whole train slid by its own offset, wrapping
+  round, every two cells' offsets at least two windows apart. **Not a rigid shift** (below):
+  the offsets are a fixed ladder, not drawn in ±*J*, and the train wraps.
+- **fixed model / binomial model** (code: `solve`, `ADOPTED_MODEL` = fixed) — the two ways the
+  measure turns *f*₂ and *f*₃ into participants per moment (*k*) and moments per second (λ).
+  Fixed: every moment is joined by the same *k* cells. Binomial: each cell joins each moment
+  with the same probability (the multiple-interaction process of Kuhn, Aertsen and Rotter 2003).
+
 ## Surrogate vocabulary
 
 Terms from the surrogate screen,
