@@ -404,7 +404,7 @@ Requires Python ≥ 3.14.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[ui]"        # viewer;  [dev] adds pytest,  [dl] adds torch
+pip install -e ".[ui]"        # viewer;  [dev] adds pytest,  [dl] adds torch,  [figures] adds matplotlib for tools/
 ```
 
 ## Use

@@ -57,10 +57,13 @@ From the worktree, **install torch first, from the CUDA index**, then the repo:
 ```powershell
 uv venv .venv --python 3.14
 uv pip install --python .venv\Scripts\python.exe torch --index-url https://download.pytorch.org/whl/cu126
-uv pip install --python .venv\Scripts\python.exe -e ".[ui,dl,docs,surrogates]" pytest pytest-xdist playwright
+uv pip install --python .venv\Scripts\python.exe -e ".[ui,dl,docs,surrogates,figures]" pytest pytest-xdist playwright
 ```
 
-For a CPU-only machine use `https://download.pytorch.org/whl/cpu` instead. These extras are CI's;
+For a CPU-only machine use `https://download.pytorch.org/whl/cpu` instead. These extras are CI's
+plus `figures`, which is matplotlib for the figure tools under `tools/`; CI runs no figure tool and
+leaves it out. It was missing from this line until 2026-10-14, and WSMIP065 had no matplotlib in any
+Python it carried until it was installed by hand that day. The rest is as CI has it;
 they leave out the `dev` extra's `pyspike`, which compiles C code and did not build under WSL. CI
 tolerates its absence, and nothing under `src/` imports it. On WSMIP064 the environment built in
 under a minute.
