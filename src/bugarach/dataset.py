@@ -208,8 +208,15 @@ def resolve(spec) -> Path:
     # naming `dandi_000219` would silently analyse 1 recording instead of 59, with every
     # shape check passing. Searching the export directories before the root is what
     # makes the name mean the conforming folder.
-    for sub in ("processed_archive", "exports/bugarach", "exports/external",
-                "exports", ""):
+    #
+    # `exports/bugarach/deprecated/` holds the stale exports, moved there on 2026-10-14
+    # (Tony approved the list once ADR-0018 retired the per-session confirmation). They
+    # are still found BY NAME, so an `archive` role reproduces its run under
+    # BUGARACH_REPRODUCE exactly as before; the archive refusal, not the location, is
+    # what keeps them out of new analysis. They are left out of the "available" hint
+    # below, which lists what to read.
+    for sub in ("processed_archive", "exports/bugarach", "exports/bugarach/deprecated",
+                "exports/external", "exports", ""):
         cand = root / sub / spec if sub else root / spec
         if cand.is_dir():
             return cand
@@ -219,7 +226,7 @@ def resolve(spec) -> Path:
         d = root / sub
         if d.is_dir():
             available += [f"{sub}/{c.name}" for c in sorted(d.iterdir())
-                          if c.is_dir()][:8]
+                          if c.is_dir() and c.name != "deprecated"][:8]
     hint = ("\n  available: " + ", ".join(available)) if available else ""
     raise DataError(f"no dataset named {spec!r} under {root}{hint}")
 
