@@ -3,25 +3,61 @@ status: in-progress
 filed: 2026-10-14
 ---
 
-> **Built 2026-10-14, on simulated recordings only:**
-> [`learned/coordination_share_explainer/`](../learned/coordination_share_explainer/README.md).
-> Two things changed from the plan below. **No real number is quoted**: the default export has
-> been under the contamination stop since 2026-10-05, and pinning is a cross-cell artifact this
-> measure counts, so item 4's baseline figures and item 5's `shape_usable` count wait for the
-> corrected export. **The recordings have their own gap schedule** (Tony, 2026-10-14): close pairs
-> 2 s apart, medium pairs 10 to 20 s apart, and single moments 120 s apart, for this page only.
-> The bench is unchanged. **Item 5's first bullet was backwards**: a slow shared change survives
-> into the shifted copies and is subtracted (98% of what a threefold rise over 45 minutes adds, in the median). What is
-> counted is a change *faster* than the copies' slides, which includes the sharp edges of a long
-> busy stretch: it is how fast the rate changes, not how long the change lasts. The tool's
-> docstring says "slower than about a minute survives", which is right in direction and too sharp
-> as a boundary; Figure 5 of the page shows the curve. What is left: the real numbers when the
-> stop clears, a redraw when the revised bench is decided, and three notes for whoever next edits
-> the tool, none changed here: its docstring's "120 s spacing floor" predates the realistic
-> bench (2026-10-07); `population_cumulants` says two offsets "halve" the moments split by a
-> window edge, but they steady the loss without recovering it; and Staude, Grün and Rotter (2010,
-> *Front Comput Neurosci* 4:16) extend the cumulant method to changing rates, the weakness Figure
-> 5 shows.
+> **State, 2026-10-14 (WSMIP065, branch `coordination-share-explainer`, draft PR #894).**
+> The page is built on simulated recordings only:
+> [`learned/coordination_share_explainer/`](../learned/coordination_share_explainer/README.md),
+> six figures, darkroom copy in `bugarach/2026-10-14-coordination-share-explainer/`. It was
+> murderboarded in three blind rounds, all 11 roles each, and stopped at the cap unconverged:
+> [record](../reviews/coordination_share_explainer_2026-10-14.md). Round 3's fixes were applied
+> after the cap without a fourth review.
+>
+> **Changed from the plan below:**
+> - **No real number is quoted.** The default export has been under the contamination stop since
+>   2026-10-05, and pinning is a cross-cell artifact this measure counts.
+> - **The recordings have their own gap schedule** (Tony, 2026-10-14): 2 s pairs, 10–20 s pairs
+>   and 120 s singles, plus 0.5 s pairs. The bench is unchanged.
+> - **Item 5's first bullet was backwards, and so were the first two replacements.** What the page
+>   now shows (Figure 5), with nothing planted: a slow smooth rise is 98% removed in the median.
+>   A field-wide busy stretch leaves about the same false excess at every length from a minute up
+>   (350–380 pairs per recording), from its first and last half minute, which the copies' ±32 s
+>   slides cannot reach. The reported share falls with length only because longer stretches add
+>   more real onsets.
+>
+> **Decisions waiting on Tony** (the record has the detail):
+> 1. ADR-0014 against a cold reader: figures-first puts every figure before the definitions it uses.
+> 2. Whether moments per minute and cells per moment should be reported as treatment readouts
+>    (§11). They are off by 26–69% here, and pooling a baseline with its treatment window gives
+>    both the same *k*.
+> 3. Whether the stop reaches the bench's real-derived settings.
+> 4. The adopted model.
+> 5. Writing to Rotter and Grün. **Tony asked why; the answer given:** it is not needed. The
+>    murderboard's role 2 raises "nobody asked" whenever a page claims something as its own. The
+>    cheaper fix is to drop the novelty claim from *Where the method comes from*. That was
+>    offered and is not yet done.
+>
+> **Answered in conversation after the review, not yet in the page:**
+> - **The windows are fixed, not sliding.** Back-to-back 1 s windows, counted at two offsets half
+>   a window apart and averaged (`population_cumulants`). The tool's module docstring and this
+>   todo's item 1 say "slide a window"; the code does not. That is a wording error for the tool's
+>   next editor.
+> - **A sliding window would not help near a change in overall rate.** Tested on the page's own
+>   simulations (scratch check, not committed). Every-offset sliding against the tool's two
+>   offsets: false pairs 0.139 against 0.135 per window (1-minute stretch) and 0.138 against
+>   0.137 (5-minute); planted share −19.7% against −18.6%. Window placement only steadies
+>   edge-splitting. The rate-change error comes from the chance estimate (the ±32 s slides).
+> - **What would help:** (a) the Staude, Grün & Rotter (2010) correction for a shared changing
+>   rate (the principled fix, which changes the measure); (b) measuring chance locally, in blocks
+>   or with smaller slides, which costs real pairs; (c) the cheap one: report the share with and
+>   without the field-wide rate stretches `tools/measure_rate_stretches.py` already finds. That
+>   would show directly how much a wash-in contributes under treatment.
+>
+> **Still open, design-level** (the record's adjudication):
+> - a figure of planted paired changes, to show whether a treatment effect can be detected at all;
+> - slow-stream and busy-background versions of Figure 5;
+> - 15-minute windows with 2–3 moments;
+> - the real numbers, when the stop clears;
+> - a redraw on the revised bench;
+> - the tool docstrings the page lists under *For developers*.
 
 # An explainer for `tools/measure_coordination_rates.py`: what fraction of calcium events are coordinated, measured without defining an event
 
