@@ -3349,3 +3349,7 @@ session's work is not a sweep.
 - **Order:** after this PR merges, so `dataset.resolve` already searches `deprecated/` and an archived run still
   reproduces by name. Dropbox carries the move to every machine; a machine on older code cannot find a moved folder
   by name until it pulls.
+- **Released:** 2026-10-14, after the move. All 12 folders are in `deprecated/`, and the top level holds the
+  default, `pensub` and the flagged review copy. Checked on WSMIP065 after the move: every declared role resolves
+  (the five archives from `deprecated/`), an archive is still refused without `BUGARACH_REPRODUCE`, and the
+  flagged copy and `PRE_ARTIFACT_KILLER` resolve by name. Holds nothing.
