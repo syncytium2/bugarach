@@ -5,7 +5,7 @@ filed: 2026-10-14
 
 # A defect review of the 66-recording export, with Tony's marks recorded as he makes them, is interface2's to build
 
-waiting: Tony hands the request below to an interface2 session, and answers the four questions under it.
+waiting: Tony answers the five questions below; interface2 has the request (TASK_senktide_ttx_defect_review.md, 6c4b5558).
 
 **Why this is filed here and built there.** Tony asked a bugarach session (2026-10-14) to set up a
 viewer for checking the 66 recordings of the default export. It should show the artifacts already
@@ -112,6 +112,18 @@ were read; the stop holds.
 4. **Which marks count against an export's correctness?** For example, `_235` ROIs 12 and 16 have
    "garbage 2655-end", which lies after every regime window. Should a mark outside the analysis
    window still be applied, or only recorded?
+
+5. **The first-second blank against "byte-identical when unmarked".** Raised by the interface2
+   session on receipt (2026-10-14). Tony's standing rule of 2026-10-12, that the first second of
+   a recording is blanked, removes events on every recording, so the must-not-change clause cannot
+   hold for all 66 as written. Should the clause read "identical except for the first-second
+   blank, listed in the manifest like any other mark", or is that blank already applied in the
+   current folder?
+
+**Received.** The interface2 producer session filed the request as
+`docs/handoffs/TASK_senktide_ttx_defect_review.md` on its `main` (`6c4b5558`), with the outcome,
+the must-not-change clauses and all five questions. Nothing is built yet. It will name the folder
+to Tony and to this repository when it lands.
 
 ## What bugarach does when the folder arrives
 
