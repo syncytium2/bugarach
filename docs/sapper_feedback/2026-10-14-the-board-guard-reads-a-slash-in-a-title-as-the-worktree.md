@@ -1,6 +1,6 @@
 ---
 rule: none-yet (tools/guard_local_board.sh, not a sapper rule)
-status: open
+status: done
 filed: 2026-10-14
 ---
 
@@ -64,3 +64,20 @@ A worktree name with a space in it would still be cut short, as it is today. Non
 not a vendored file, so the fix is allowed here. It is handed to the armory session with the other
 open items in
 [`../todo/2026-10-14-hand-the-open-sapper-issues-to-armory.md`](../todo/2026-10-14-hand-the-open-sapper-issues-to-armory.md).
+
+## What was done (2026-10-14, the armory session on the Mac)
+
+The suggested fix, as written: `claims_heading` now cuts the first token before it strips the
+host. The comment above it says why the order matters.
+
+The guard's `--selftest` has four new cases: the three headings above, and a check that the last
+path segment of a title (`measure_coordination_rates.py`, `deprecated`) no longer counts as a
+claim. Run against the old order, three of the four fail. The fourth case, a host with slashes,
+passes either way, and that is its job: it shows the fix kept what the loop was for.
+`tests/test_local_board_guard.py`, `tests/test_board_digest.py` and
+`tests/test_hooks_installed.py` pass locally.
+
+**Not done: a warning at the moment a block is written.** The finding notes that nothing tells a
+session, as it writes a heading, that a path in the title breaks the guard. With the fix, a path
+in the title no longer does, so there is nothing left to warn about. A worktree name containing a
+space is still cut short, as before. None exists.

@@ -86,10 +86,17 @@ verdict() {
 #
 # Headings look like `### <host>/<id> — <task>` per the protocol's template, and
 # sometimes `### <id> — <task>` with no host. So: take heading lines, drop the
-# marker, drop everything up to the LAST slash (a host may contain one), and take
-# the identifier up to the first space. Then compare it EXACTLY — never as a regex,
+# marker, cut the first token (up to the first space), and only then drop everything
+# up to the LAST slash in that token (a host may contain one). Then compare it EXACTLY — never as a regex,
 # because a worktree name may contain characters a regex would read as syntax, and
 # never as a substring, which is the bug this replaces.
+#
+# THE ORDER OF THOSE TWO CUTS MATTERS, AND UNTIL 2026-10-14 IT WAS BACKWARDS. The
+# slash loop ran over the whole line, title included, so a task title holding a path
+# moved the identifier into the title: `### WSMIP065/handoff-explainer — explainer for
+# tools/measure_coordination_rates.py` was read as `measure_coordination_rates.py`, and
+# a correctly claimed worktree was refused. It refused two commits in one session.
+# docs/sapper_feedback/2026-10-14-the-board-guard-reads-a-slash-in-a-title-as-the-worktree.md
 #
 # The comparison is exact but the ACCEPTANCE is not narrow: either the worktree's
 # directory basename or its branch will do, since those legitimately differ (this
@@ -102,8 +109,8 @@ claims_heading() {
     /^###[[:space:]]/ {
       s = $0
       sub(/^###[[:space:]]+/, "", s)
-      if (index(s, "/")) { while (index(s, "/")) sub(/^[^\/]*\//, "", s) }
       sub(/[[:space:]].*$/, "", s)
+      if (index(s, "/")) { while (index(s, "/")) sub(/^[^\/]*\//, "", s) }
       if (s == "") next
       if ((want1 != "" && s == want1) || (want2 != "" && s == want2)) { found = 1; exit }
     }
@@ -215,6 +222,18 @@ selftest() {
   printf '### Mac/v1.2+rc — a task\n- **Status:** ACTIVE\n' > "$tmp/meta.md"
   t "a name with regex syntax matches itself"     ALLOW     "$tmp/meta.md" "x" 'v1.2+rc' ""
   t "and does not match what the regex would"     UNCLAIMED "$tmp/meta.md" "x" 'v1X2+rc' ""
+
+  # A path in a block's TITLE is not the worktree. The slash loop once ran over the
+  # whole line, so each of these read as the last path segment of its title.
+  {
+    printf '### WSMIP065/handoff-explainer — explainer for tools/measure_coordination_rates.py\n'
+    printf '### Mac/a/b/settle-the-guard — x\n'
+    printf '### bare-id — moves exports/bugarach/deprecated\n'
+  } > "$tmp/titles.md"
+  t "a path in the title does not hide the claim" ALLOW     "$tmp/titles.md" "handoff-explainer" "x" ""
+  t "a host with slashes still strips to the id"  ALLOW     "$tmp/titles.md" "settle-the-guard" "x" ""
+  t "no host, a path in the title, still claims"  ALLOW     "$tmp/titles.md" "bare-id" "x" ""
+  t "the title's last segment is not a claim"     UNCLAIMED "$tmp/titles.md" "measure_coordination_rates.py" "deprecated" ""
 
   # --audit must not crash outside a worktree tree, and must report rather than gate.
   if audit >/dev/null 2>&1; then printf '  ok   %-46s\n' "--audit runs and reports"
