@@ -31,7 +31,7 @@ JSON-escaped form), so the run records that carried it are caught. `Public` and 
 Windows' own folders and pass, and so does a name that does not start with a letter or digit, so
 `C:\\Users\\...` in `src/bugarach/paths.py`'s docstring is not a hit.
 `tests/test_sapper.py::test_sap004_sees_a_windows_home` holds the vectors, including the MATLAB
-path from CLAUDE.md that must not fire.
+path from CLAUDE.md that must not trigger it.
 
 The 29 lines in the tree are replaced, by `%USERPROFILE%` (and the project folder Claude names
 after the home, `c--Users-<user>-...`, by `c--Users-USER-...`). History is not rewritten:
