@@ -89,7 +89,15 @@ RULES = [
         # two of those in a PUBLIC repo from the day it was written until
         # 2026-08-20. A rule that covers the shape you thought of is worth less
         # than it looks; this one now matches any absolute home-directory path.
-        pattern=r"(" + _UM + r"|DeFazio/|Dropbox/|/(?:Users|home)/[A-Za-z0-9._-]+/)",
+        #
+        # AND IT STILL ONLY KNEW FORWARD SLASHES. A Windows home matched nothing, so by
+        # 2026-10-14 29 lines in 7 tracked files carried one: run records written on the
+        # workstation, a search log, a handoff and two reviews. The last alternative
+        # covers it, plain and JSON-escaped; Public and Default are Windows' own folders,
+        # not a person, and a name must start with a letter or digit, so `C:\\Users\\...` in
+        # prose is not one. Replaced in the tree, not in history (Tony, 2026-10-18).
+        pattern=(r"(" + _UM + r"|DeFazio/|Dropbox/|/(?:Users|home)/[A-Za-z0-9._-]+/"
+                 r"|[A-Za-z]:\\{1,2}Users\\{1,2}(?!Public\b|Default\b)[A-Za-z0-9][A-Za-z0-9._-]*)"),
         include=["**"],
         # test_paths.py is the path-RESOLVER's own test: inventing
         # `/Users/rd/Dropbox-UM/Someone` is precisely its job, and the strings are

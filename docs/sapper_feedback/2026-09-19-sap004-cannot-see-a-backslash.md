@@ -1,6 +1,6 @@
 ---
 rule: SAP004
-status: open
+status: done
 filed: 2026-09-19
 ---
 
@@ -19,7 +19,25 @@ personal path as a Mac one. The rule's own comment records that its pattern was 
 cover personal paths and did not; this is the same shape, one separator over.
 
 **Suggested fix.** Let SAP004's path alternatives take either separator, `[\\/]`, and add
-`wsl\$` as an alternative. Self-test fixtures: a line holding `C:\Users\someone\x` and one holding
+`wsl\$` as an alternative. Self-test fixtures: a line holding `C:\Users\<name>\x` and one holding
 `\\wsl$\Ubuntu\home\someone\x` must fire; `C:\Program Files\MATLAB\R2025b\bin\matlab.exe`, which
 CLAUDE.md's launch recipe spells out, must not. Then have the report's test call the sapper
 pattern rather than keep its own.
+
+## What was done (2026-10-18, the armory session on the Mac)
+
+SAP004 now matches a Windows home, `C:\Users\<name>`, with one backslash or two (the
+JSON-escaped form), so the run records that carried it are caught. `Public` and `Default` are
+Windows' own folders and pass, and so does a name that does not start with a letter or digit, so
+`C:\\Users\\...` in `src/bugarach/paths.py`'s docstring is not a hit.
+`tests/test_sapper.py::test_sap004_sees_a_windows_home` holds the vectors, including the MATLAB
+path from CLAUDE.md that must not fire.
+
+The 29 lines in the tree are replaced, by `%USERPROFILE%` (and the project folder Claude names
+after the home, `c--Users-<user>-...`, by `c--Users-USER-...`). History is not rewritten:
+Tony, 2026-10-18, *"leaky path is not scary, just minimize instances somehow. not rewriting
+history for an obscure path."* The example above now reads `<name>` rather than a made-up
+name, so this file does not trip the rule it asks for.
+
+Not done: the `\\wsl$\` form, which no tracked file carries, and pointing
+`tests/test_build_fair_comparison_report.py` at this pattern.

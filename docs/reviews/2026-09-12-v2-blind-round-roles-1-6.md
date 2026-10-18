@@ -42,7 +42,7 @@ Nothing silently dropped. Non-independence handled by mouse-grouped splits and f
 | # | location | issue | sev |
 |---|---|---|---|
 | 1 | discriminator table, `fast/negative` | "not flagged" is false — P = 0.035, `significant=True`; this flag voided 126 fast rows | **high** |
-| 2 | sources table row 4 | `docs/reviews/2026-09-12-surrogate-screen-reevaluated_2026-09-12.md` does not exist anywhere under `C:\Users\defazio\bugarach` | **high** |
+| 2 | sources table row 4 | `docs/reviews/2026-09-12-surrogate-screen-reevaluated_2026-09-12.md` does not exist anywhere under `%USERPROFILE%\bugarach` | **high** |
 | 3 | "the night's 100 splits and 99 draws" | K actually ranges 19–99; the whole joint-ISI family ran at 19 | med |
 | 4 | within-scope paired floors 0.260 / 0.537 | hold only at maximum K; at K=19 the floor is 1.000. Conclusion strengthened | med |
 | 5 | "differ on 5–7 of 13" | does not reproduce. Recomputed 4–8 pooled over scopes, dist {4:3, 6:59, 7:2, 8:51}; 6–8 at scope `all`. No tolerance (0, 1e-9, 1e-6) yields 5–7 | med |
