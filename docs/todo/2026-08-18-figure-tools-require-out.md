@@ -51,8 +51,8 @@ quietly stops being written at all. Each wants a run and a look at what it produ
 
 ## The adjacent gotcha, for whoever picks this up
 
-`~/Dropbox-UniversityofMichigan` is a **symlink** to
-`~/Library/CloudStorage/Dropbox-UniversityofMichigan`. Both paths are the same directory.
+`~/Dropbox-<org>` is a **symlink** to
+`~/Library/CloudStorage/Dropbox-<org>`. Both paths are the same directory.
 A session checking whether a file "really" reached Dropbox can look at one, see the other
 in a tool's output, and conclude they are different places. They are not — verify with
 `ls -ld` before concluding anything is missing or duplicated.

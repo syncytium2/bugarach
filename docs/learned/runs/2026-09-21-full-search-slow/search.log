@@ -75,8 +75,8 @@
 17:09:07     180 evaluations in 140 s
 17:09:07 stage 3: held-out confirmation
 17:09:24   held-out: 65 evaluations in 18 s
-17:09:31 wrote C:\Users\defazio\runs\2026-09-21-full-search-slow\full_search.html
-17:09:31 wrote C:\Users\defazio\runs\2026-09-21-full-search-slow\full_search.png
+17:09:31 wrote %USERPROFILE%\runs\2026-09-21-full-search-slow\full_search.html
+17:09:31 wrote %USERPROFILE%\runs\2026-09-21-full-search-slow\full_search.png
 17:09:31 finished in 11.2 min
 17:09:31   LoCo          shipped  held-out mean F1 0.802 
 17:09:31   LoCo          rounds   held-out mean F1 0.846 gain +0.044 [+0.038, +0.051]

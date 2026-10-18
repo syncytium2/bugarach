@@ -1194,7 +1194,7 @@
   "argv": [
    "tools\\tune_learned_vs_coact.py",
    "--out",
-   "C:\\Users\\defazio\\runs\\bench-replicate1",
+   "%USERPROFILE%\\runs\\bench-replicate1",
    "--replicate",
    "1",
    "--device",

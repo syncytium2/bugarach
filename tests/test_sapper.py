@@ -54,3 +54,28 @@ def test_the_quote_gate_survives_it_too():
                        capture_output=True, text=True, cwd=REPO, env=CP1252)
     assert "UnicodeEncodeError" not in r.stderr, r.stderr
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_sap004_sees_a_windows_home():
+    """SAP004 once knew only forward-slash homes, and 29 lines of Windows home paths
+    reached the public tree past it. Plain and JSON-escaped forms both block; Windows'
+    own folders, a placeholder and a program path do not."""
+    import importlib.util
+    import re
+    spec = importlib.util.spec_from_file_location("sapper", SAPPER)
+    sapper = importlib.util.module_from_spec(spec)
+    sys.modules["sapper"] = sapper           # its dataclasses look the module up
+    spec.loader.exec_module(sapper)
+    rx = re.compile(next(r for r in sapper.RULES if r.id == "SAP004").pattern)
+    one, two = "\\", "\\\\"                    # a backslash, and a JSON-escaped one
+    home = "C:" + one + "Users" + one + "someone"
+    for bad in (home + one + "runs",
+                "C:" + two + "Users" + two + "someone" + two + "runs",
+                "wrote " + home + one + "x.png"):
+        assert rx.search(bad), bad
+    for good in ("C:" + one + "Users" + one + "Public" + one + "x",
+                 "C:" + one + "Users" + one + "Default" + one + "x",
+                 "%USERPROFILE%" + one + "runs",
+                 "C:" + two + "Users" + two + "...",
+                 "C:" + one + "Program Files" + one + "MATLAB"):
+        assert not rx.search(good), good

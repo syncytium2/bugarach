@@ -1059,7 +1059,7 @@
   "argv": [
    "tools/tune_learned_vs_coact.py",
    "--out",
-   "C:\\Users\\defazio/runs/quick-replicate1",
+   "%USERPROFILE%/runs/quick-replicate1",
    "--quick",
    "--replicate",
    "1",
