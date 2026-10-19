@@ -9,7 +9,7 @@
      rather than naming a sha this page could not know — the reasoning is at the
      visible stamp. -->
 <meta name="bugarach:born" content="2026-08-13">
-<meta name="bugarach:version-date" content="2026-09-26">
+<meta name="bugarach:version-date" content="2026-10-19">
 <meta name="bugarach:commit" content="content-addressed">
 <!--
   The raster viewer, client side.
@@ -73,6 +73,7 @@
     background: var(--panel); font-size: 13px;
   }
   nav.site .brand { font-weight: 600; margin-right: 10px; letter-spacing: -.01em; }
+  nav.site a.home { margin-right: 6px; }
   nav.site a {
     color: var(--muted); text-decoration: none; padding: 4px 9px;
     border-radius: 6px;
@@ -743,6 +744,7 @@
 <div class="status wip" role="note"><b>&#9888; Under construction</b><span class="status-why">This page is live software still being built. Expect rough edges, and behavior that changes without notice.</span></div>
 
 <nav class="site">
+  <a class="home" href="https://tonydefazio.com/">&larr; tonydefazio.com</a>
   <span class="brand">bugarach</span>
   <a href="index.html">Overview</a>
   <a href="viewer.html" aria-current="page">Raster viewer</a>
@@ -1940,12 +1942,13 @@
      a page edited without bumping it turns CI red instead of shipping a date
      that has quietly become a lie. Bump it when you edit this page. -->
 <p class="site-dates" data-bugarach-born="2026-08-13"
-   data-bugarach-version-date="2026-09-26"
+   data-bugarach-version-date="2026-10-19"
    data-bugarach-commit="content-addressed"
    style="margin:1.5rem max(1.2rem, calc(50% - 23rem));color:#666;font-size:.85rem">
-  First published 2026-08-13 · this version 2026-09-26 · identified by its own
+  First published 2026-08-13 · this version 2026-10-19 · identified by its own
   bytes rather than by a build stamp
 </p>
+<p class="site-home" style="margin:0 max(1.2rem, calc(50% - 23rem)) 1.5rem;font-size:.85rem"><a class="home" href="https://tonydefazio.com/">&larr; tonydefazio.com</a></p>
 
 <script>
 "use strict";
