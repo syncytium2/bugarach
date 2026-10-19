@@ -524,11 +524,17 @@ them, so a rename that stopped matching would publish both the old name and the
 new, and nothing would say so.
 """
 
+HOME_LINK = '<a class="home" href="https://tonydefazio.com/">&larr; tonydefazio.com</a>'
+"""The link back to tonydefazio.com. `docs/site/raster_viewer.html` carries the
+same markup by hand, in its nav and under its footer stamp, because that page is
+copied byte-for-byte."""
+
 NAV_CSS = """  nav.site { display:flex; align-items:center; gap:4px; flex-wrap:wrap;
               font: .88rem/1.5 system-ui, sans-serif;
               padding:.55rem max(1.2rem, calc(50% - 23rem));
               border-bottom:1px solid #8883; margin:0 0 1rem; }
   nav.site .brand { font-weight:600; margin-right:.6rem; }
+  nav.site a.home { margin-right:.4rem; }
   nav.site a { color:#666; text-decoration:none; padding:.25rem .55rem;
                 border-radius:6px; }
   nav.site a:hover { background:#8881; color:inherit; }
@@ -657,7 +663,11 @@ def nav_html(current: str) -> str:
     links = "".join(
         '  <a href="%s"%s>%s</a>\n' % (href, here if href == current else "", label)
         for href, label in PAGES)
-    nav = f'<nav class="site">\n  <span class="brand">bugarach</span>\n{links}</nav>'
+    # First in the bar: the way back to the parent site, the same on every
+    # tonydefazio.com destination (2026-10-19). An absolute link, so it is a
+    # navigation and never a request; `local_refs` ignores it.
+    nav = (f'<nav class="site">\n  {HOME_LINK}\n'
+           f'  <span class="brand">bugarach</span>\n{links}</nav>')
     return status_html(current) + nav
 
 
@@ -849,7 +859,9 @@ def date_stamp(commit: str) -> str:
             f' style="margin:1.5rem max(1.2rem, calc(50% - 23rem));'
             f'color:#666;font-size:.85rem">\n'
             f'  First published {born} · this version {version}'
-            f' (<code>{name}</code>)\n</p>\n')
+            f' (<code>{name}</code>)\n</p>\n'
+            f'<p class="site-home" style="margin:0 max(1.2rem, calc(50% - 23rem)) 1.5rem;'
+            f'font-size:.85rem">{HOME_LINK}</p>\n')
 
 
 def meta_stamp(commit: str) -> str:
