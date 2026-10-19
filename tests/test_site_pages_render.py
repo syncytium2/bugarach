@@ -56,6 +56,11 @@ SITE = REPO / "site"
 #: and would have passed on the day two pages shipped with no bar at all.
 PAGES = ["index.html", "viewer.html", "diagnostic.html", "learned_detector.html"]
 
+#: The link back to the main site, first in every bar (PR #900, 2026-10-19: visitors
+#: could not get back to tonydefazio.com without the back button). Every site Tony
+#: links from there carries the same link the same way.
+HOME = "https://tonydefazio.com/"
+
 VIEWPORT = {"width": 1280, "height": 900}
 
 
@@ -194,17 +199,18 @@ def _open(browser, url):
 
 @pytest.mark.parametrize("page_name", PAGES)
 def test_every_page_serves_and_carries_the_whole_nav(walked, page_name):
-    """200, and a bar that reaches every other page.
+    """200, and a bar that reaches every other page and, first, the main site.
 
     The 2026-08-23 failure was not a broken link — it was a bar that was not
     rendered at all, on a page whose links all resolved.
     """
     f = walked[page_name]
     assert f["status"] == 200, f"{page_name} served HTTP {f['status']}"
-    assert f["navLinks"] == PAGES, (
-        f"{page_name} carries nav links {f['navLinks']}, expected every page: "
-        f"{PAGES}. A page a reader cannot leave is a dead end, and link-resolution "
-        f"tests cannot see this because the links they check are in the template.")
+    assert f["navLinks"] == [HOME] + PAGES, (
+        f"{page_name} carries nav links {f['navLinks']}, expected the way home and "
+        f"then every page: {[HOME] + PAGES}. A page a reader cannot leave is a dead "
+        f"end, and link-resolution tests cannot see this because the links they "
+        f"check are in the template.")
 
 
 @pytest.mark.parametrize("page_name", PAGES)
