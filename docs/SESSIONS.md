@@ -15,8 +15,8 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
   2026-10-20: answer the reviewer's comments on the plain-language detector document (the copy
   Tony put at `bugarach/detector_review_plain-22Sep2026.docx`) in a form he reviews before
   anything goes back; bring the approach up to date for the combined stream; note the new
-  simulated data set as pending. Draft for Tony, not murderboarded yet. Released by the merge
-  of the PR that carries this block.
+  simulated data set as pending. Draft for Tony, not murderboarded yet. Released by a later PR,
+  once the final copy is written.
 - **Touches:** that folder only. The source `.docx` at the top level is read, never written.
 
 ### WSMIP064/apv-sept-rasters — DARKROOM claim: `bugarach/2026-10-05-apv-cnqx-gz-sept-rasters/` (NEW)
