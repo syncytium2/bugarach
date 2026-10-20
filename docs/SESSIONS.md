@@ -11,7 +11,7 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 ---
 
 ### WSMIP065/sue-review-response — DARKROOM claim: `bugarach/2026-10-20-detector-review-response/` (NEW)
-- **Status:** ACTIVE, claimed 2026-10-20 before any write. Goal: detector-review-document. Tony,
+- **Status:** ACTIVE, claimed 2026-10-20 before any write; draft written there at about 11:30 AM EDT, held until Tony has reviewed it and the final copy is written. Goal: detector-review-document. Tony,
   2026-10-20: answer the reviewer's comments on the plain-language detector document (the copy
   Tony put at `bugarach/detector_review_plain-22Sep2026.docx`) in a form he reviews before
   anything goes back; bring the approach up to date for the combined stream; note the new
