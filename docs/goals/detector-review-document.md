@@ -37,6 +37,18 @@ the roles what the previous round found.
 
 ## Where it stands
 
+**2026-10-20: a reviewer's comments on the plain-language page are being answered.** Tony put a Word
+copy of the page in the darkroom (`bugarach/detector_review_plain-22Sep2026.docx`), carrying a lab
+reviewer's tracked edits and 98 comments (Moenter, review comments, 2026-09-18 to 2026-09-22). Her
+edits keep CoactDetect and chorus in the main text and move the other five programs to an appendix.
+A draft reply for Tony to review is in `bugarach/2026-10-20-detector-review-response/`: her edits
+accepted, our changes tracked, a reply threaded under every comment, and a ledger that lists the
+decisions that are his. The draft also brings in the combined stream and notes the new simulated
+data set as pending. The comments stay in the darkroom, because they are private correspondence
+and this repository is public. **Not murderboarded yet.** That happens once Tony has settled the
+draft and before it goes back. The figure fixes she asked for need the builder, which is still on
+the unmerged branch.
+
 **Two documents exist, both built, both in the darkroom, and neither has finished review.** They are
 on branch `detector-review-doc`, [PR #587](https://github.com/syncytium2/bugarach/pull/587) ⚠ **open
 and unmerged, so none of it is on `main`**.
@@ -76,6 +88,7 @@ is a ruling, *argued* is reasoning nobody has measured.
 | **The review changed the findings, not only the wording.** The bench never planted events in its busy block, so a detector that goes blind there lost nothing; a new stage plants them, and detectors that judge chance from nearby time lose most of those events while the ratio tube models lose all of them | measured, and the stage is built | [PR #587](https://github.com/syncytium2/bugarach/pull/587) |
 | **Binned SCE was being scored over the wrong stretch**, found by reading the document rather than the code: scored over each call's own bin, tuned binned SCE goes from F1 0.45 to 0.70. Filed as a decision because the detector's contract is parity-locked — and it then landed | measured, then landed | [PR #593](https://github.com/syncytium2/bugarach/pull/593); [the todo](../todo/2026-09-15-binned-sce-calls-are-scored-over-the-wrong-stretch.md) |
 | **The murderboard ran completely**: all eleven roles accounted for with `--require-mode --require-reports`, and public copies of all three rounds' role reports are kept with the treatment-recording lines removed | built, checked | `docs/reviews/detector_review_2026-09-15.md` and `docs/reviews/detector-review-2026-09-15/` ⚠ **on the branch, not on `main`** |
+| **The document is a record of September 2026, and it does not rank the detectors.** Tony, 2026-10-20: the document was true when it was written, the work will keep moving, so ranking is avoided. Scores are reported as what the test gave at the time. Wording such as "best", "highest" or "performed better" comes out, and a later change is described as "since then", not as a correction | decided | this page |
 | **Writing the document is how two defects in the instrument were found.** Both findings above came from assembling the explanation, not from testing the code. That is an argument for the document existing at all, and it belongs in the case for doing this again | argued, from two instances | this page |
 
 ### What the document draws on, and how current each piece is

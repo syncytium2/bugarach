@@ -10,6 +10,15 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/sue-review-response — DARKROOM claim: `bugarach/2026-10-20-detector-review-response/` (NEW)
+- **Status:** ACTIVE, claimed 2026-10-20 before any write; draft written there at about 11:30 AM EDT, held until Tony has reviewed it and the final copy is written. Goal: detector-review-document. Tony,
+  2026-10-20: answer the reviewer's comments on the plain-language detector document (the copy
+  Tony put at `bugarach/detector_review_plain-22Sep2026.docx`) in a form he reviews before
+  anything goes back; bring the approach up to date for the combined stream; note the new
+  simulated data set as pending. Draft for Tony, not murderboarded yet. Released by a later PR,
+  once the final copy is written.
+- **Touches:** that folder only. The source `.docx` at the top level is read, never written.
+
 ### WSMIP064/apv-sept-rasters — DARKROOM claim: `bugarach/2026-10-05-apv-cnqx-gz-sept-rasters/` (NEW)
 - **Status:** claimed 2026-10-05 by WSMIP064 on Tony's request via the orchestrator: fast, slow
   and combined raster pages of the six September APV+CNQX-then-gabazine recordings, all six on
