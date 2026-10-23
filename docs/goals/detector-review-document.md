@@ -151,6 +151,8 @@ document assembled from them inherits it.
 
 ## Open work a session can do without a ruling
 
+**Start with [the handoff of 2026-10-23](../todo/2026-10-23-handoff-detector-explainer-edits.md)**: the reply to the plain document's reviewer, brought in line with every ruling since the draft.
+
 1. **Merge `main` into the branch and regenerate.** The document's numbers predate locust's per-event
    widths, binned SCE's scoring and the retune of all six operating points.
 2. **Add the overnight search result**, phrased as a measurement rather than an adoption.
