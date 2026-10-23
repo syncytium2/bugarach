@@ -31,7 +31,9 @@ SERIES = [
     ("as 3", "assess, K = 3 cells", "#eda100"),
     ("as 4", "assess, K = 4 cells", "#e87ba4"),
     ("as 6", "assess, K = 6 cells", "#008300"),
+    ("th fit", "coordination rates, jitter fitted across windows (Aim 0)", "#6250d6"),
 ]
+PRED_KEY = {"k": "k", "per_min": "lam", "share": "share"}   # truth key -> prediction ratio
 PARAMS = [  # (column label, truth key, coord-rates key, assess key)
     ("participants per event (cells)", "k", "k", "part"),
     ("coordinated events per min", "per_min", "lam", "per_min"),
@@ -42,6 +44,8 @@ PARAMS = [  # (column label, truth key, coord-rates key, assess key)
 
 def value(row, series, cr_key, as_key):
     kind, arg = series.split()
+    if kind == "th":
+        return row.get("theory_jitter") if as_key == "jit" else None
     if kind == "cr":
         if cr_key is None:
             return None
@@ -58,6 +62,14 @@ def main():
     a = ap.parse_args()
     rec = json.loads((HERE / "aim1_one_source.json").read_text())
     rows = rec["rows"]
+    import theory   # beside this file: the Aim 0 predictions
+    for r in rows:
+        t = r["true"]
+        lam = t["n_events"] / rec["duration_sec"]
+        r["pred"] = {w: theory.coord_rates_exact(round(t["k"]), t["jitter"], float(w), lam,
+                                                 rec["n_roi"]) for w in ("1.0", "2.0", "4.0")}
+        r["theory_jitter"] = theory.jitter_from_windows(
+            {float(w): theory.f2_of(r["coord_rates"][w], float(w)) for w in ("1.0", "2.0", "4.0")})
     if a.out is None:
         from bugarach.paths import darkroom
         a.out = darkroom() / "2026-10-23-synthetic-validation"
@@ -65,7 +77,7 @@ def main():
 
     jits = sorted({r["true"]["jitter"] for r in rows})
     bgs = sorted({r["true"]["bg_rate"] for r in rows})
-    fig, axes = plt.subplots(len(bgs), len(PARAMS), figsize=(15, 6.6), sharex=True, sharey=True)
+    fig, axes = plt.subplots(len(bgs), len(PARAMS), figsize=(15, 7.0), sharex=True, sharey=True)
     for i, bg in enumerate(bgs):
         for j, (label, tkey, ckey, akey) in enumerate(PARAMS):
             ax = axes[i, j]
@@ -87,8 +99,27 @@ def main():
                         q = np.percentile(rat, [25, 50, 75])
                         lo.append(q[0]); med.append(q[1]); hi.append(q[2])
                 if xs:
-                    ax.plot(xs, med, "-o", color=col, lw=2, ms=6, label=slabel if (i, j) == (0, 0) else None)
+                    first = (skey == "th fit" and (i, j) == (0, 3)) or (skey != "th fit" and (i, j) == (0, 0))
+                    ax.plot(xs, med, "-o", color=col, lw=2, ms=6, label=slabel if first else None)
                     ax.vlines(xs, lo, hi, color=col, lw=1.5, alpha=0.7)
+                # Aim 0, assessment event rate: chance clusters at K plus the planted events
+                if skey.startswith("as") and tkey == "per_min":
+                    K = int(skey.split()[1])
+                    pm = [np.median([(theory.chance_clusters_per_min(rec["n_roi"], bg, K)
+                                      + r["true"]["per_min"]) / r["true"]["per_min"] for r in rows
+                                     if r["true"]["bg_rate"] == bg and r["true"]["jitter"] == jt])
+                          for jt in jits]
+                    ax.plot([jt * (1.04 ** (s_i - 2.5)) for jt in jits], pm, ls=(0, (4, 2)),
+                            color=col, lw=1.5, alpha=0.9)
+                # Aim 0: the predicted ratio for the coordination-rates series, dashed
+                if skey.startswith("cr") and ckey is not None and tkey in PRED_KEY:
+                    w = skey.split()[1]
+                    pm = [np.median([r["pred"][w][PRED_KEY[tkey]] for r in rows
+                                     if r["true"]["bg_rate"] == bg and r["true"]["jitter"] == jt])
+                          for jt in jits]
+                    ax.plot([jt * (1.04 ** (s_i - 2.5)) for jt in jits], pm, ls=(0, (4, 2)),
+                            color=col, lw=1.5, alpha=0.9,
+                            label="predicted (Aim 0), same colour, dashed" if (i, j, s_i) == (0, 0, 0) else None)
             ax.set_xscale("log"); ax.set_yscale("log")
             ax.set_ylim(0.08, 30)
             ax.set_xticks(jits); ax.set_xticklabels([f"{j:g}" for j in jits])
@@ -101,14 +132,17 @@ def main():
                 ax.set_ylabel(f"recovered ÷ planted\nbackground {bg:g} Hz per cell")
             if i == 0:
                 ax.text(0.02, 1.02, label, transform=ax.transAxes, fontsize=10, color="#333")
-    fig.legend(loc="upper center", ncol=6, frameon=False, fontsize=9)
+    fig.legend(loc="upper center", ncol=4, frameon=False, fontsize=9)
     n_rec = len(rows)
-    fig.text(0.01, 0.005,
+    import textwrap
+    fig.text(0.01, 0.005, "\n".join(textwrap.wrap(
              f"Figure 1. Aim 1a, one source, random membership. {n_rec} simulated recordings "
              f"({rec['n_roi']} cells, {rec['duration_sec'] / 60:.0f} min each); points are medians "
              "over seeds, participation (0.15/0.3/0.6) and event count (15/45), bars the "
-             "interquartile range. Dashed line: perfect recovery.", fontsize=8.5, color="#333")
-    fig.tight_layout(rect=(0, 0.03, 1, 0.94))
+             "interquartile range. Grey dashed line: perfect recovery; coloured dashed lines: the Aim 0 "
+             "prediction (theory.py): exact cumulants for the coordination-rates tool, chance clusters "
+             "plus planted events for the assessment's event rate.", 230)), fontsize=8.5, color="#333")
+    fig.tight_layout(rect=(0, 0.05, 1, 0.91))
     # Synthetic data: the synth source, a recovery plot, and a topic (armory naming README).
     sys.path.insert(0, str(ROOT / "tools"))
     from naming import artifact_name

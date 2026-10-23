@@ -18,6 +18,36 @@ low participation. Tony: *"Treat like a phd project (except we have days not yea
 - 2026-10-23: goal page written; Tony's four decisions answered (below). **Aim 1a has run**: one
   source, random membership, 240 simulated recordings, measured blind. Result below and in
   [`learned/synthetic_validation/`](../learned/synthetic_validation/README.md).
+- 2026-10-23, later: **Aim 0 (theory) added** after Tony asked whether an analytical prediction
+  could replace the brute force. It predicts Aim 1a from the planted parameters alone, and gives a
+  jitter estimate that works where the assessment's does not. Result below; `theory.py`.
+
+### Aim 0, first result (2026-10-23; derived and checked against Aim 1a, not reviewed)
+
+Tony, 2026-10-23: *"Is it possible there's an analytical prediction to be made here? We are
+solving this with brute force."* For this generator, yes. The derivations are in the docstring of
+[`learned/synthetic_validation/theory.py`](../learned/synthetic_validation/theory.py); its
+`check()` prints every comparison in about 12 s, against about a minute of simulation.
+
+- **Window sharing.** The chance that n onsets of one event share a window of width w is
+  g_n(w, σ) = E[(1 − R_n/w)+], with R_n the range of n jittered onsets. g_2 has a closed form.
+- **The coordination-rates tool is predicted exactly.** Factorial cumulants add over independent
+  processes, and with at most one event per window (events ≥ 20 s apart) the excess pair and
+  triple cumulants are closed forms in (k, σ, w, λ, N). At 0.01 Hz background the predicted
+  participants match the measured median within about 0.03 in every cell. The residual a Poisson
+  treatment leaves (5–15 %, growing with window and event rate) is the regularity of the event
+  train, and the exact form removes it.
+- **Jitter from how the pair count changes with window**, fitted across the tool's 1, 2 and 4 s
+  windows: planted 0.2, 0.5 and 1.0 s come back as about 0.17, 0.48 and 1.0 s at both
+  backgrounds. That turns jitter from Aim 1a's weakest parameter into one of its best. It floors
+  near the 0.1 s frame (planted 0.05 s reads about 0.02 s).
+- **Chance clusters at K** (the assessment): a binomial tail per 1 s bin, with the tool's merging,
+  predicts the measured cluster rate within about 10 % at every K and background. K = 3 or 4 at
+  0.05 Hz is swamped before anything is simulated.
+- **Not predicted:** the weakest cells (5 cells per event, 15 events, 0.05 Hz), where the tool's
+  estimate is noise-dominated rather than biased.
+
+Figure 1 now carries the predictions as dashed lines, and the fitted jitter as its own series.
 
 ### Aim 1a, first result (2026-10-23; measured, one generator, not reviewed)
 
@@ -85,6 +115,20 @@ Nothing sweeps conditions, and nothing runs simulate → assess → `derive_spec
 
 ## The plan (revised from the handoff's)
 
+**Aim 0: predict first, simulate to check** (added 2026-10-23). For each question, derive what the
+tools and the simpler detectors should return from the planted parameters, then simulate to test
+the prediction and measure what is left over. Next derivations, in order of use:
+- two sources: their cumulants add, so the tool's window dependence separates sources only when
+  their jitters differ; with equal jitters only a combined participation term is identifiable
+  (Aim 1c's answer, predicted before it is run);
+- a shared slow rate change adds pair excess that grows with the window, while coordination levels
+  off once the window exceeds the jitter;
+- count (sliding) and binned SCE: recall as the chance that at least K of k jittered onsets share
+  the detector's window, false alarms as the chance tail; their capability maps are then drawn
+  analytically and the grid in Aim 2 is placed around the predicted boundaries;
+- CoactDetect and LoCo (rolling context, merge gaps), clustered spacing and per-cell burstiness
+  stay simulated.
+
 **Aim 1: recover the parameters, and find where they stop being identifiable.**
 1a. One source, random membership: sweep jitter, participation, event count and background rate;
     measure blind with the two in-memory tools; plot true against recovered. *First experiment.*
@@ -109,7 +153,7 @@ in for a stranger's data.
 
 ## Waiting on Tony
 
-- Merge of the handoff PR #905 (this page links its todo).
+- Nothing (PR #905 and #906 merged 2026-10-23).
 
 ## Open work a session can do without a ruling
 
