@@ -137,6 +137,7 @@ does and is the first thing a session reads when it picks that goal up.
 | Every hand-written detector at a setting this bench chose | [`coded-detector-optimization.md`](coded-detector-optimization.md) | `opt/` |
 | A learned architecture that beats the hand-written detectors, separably | [`learned-model-family.md`](learned-model-family.md) | `nets/` |
 | A document about the detectors an outside reader can judge | [`detector-review-document.md`](detector-review-document.md) | `review/` |
+| The toolset validated on synthetic data with two or more sources, and a capability map per detector (Tony, 2026-10-22) | [`synthetic-validation.md`](synthetic-validation.md) | `synth/` |
 
 **Three of these four were written on 2026-09-16, and writing them is what found the problem they
 fix.** Asked where four goals stood, two independent searches of `main` reported that the detector

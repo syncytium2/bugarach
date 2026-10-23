@@ -1,9 +1,11 @@
 ---
-status: open
+status: picked-up
 filed: 2026-10-23
 ---
 
 # Handoff: validate the multi-source toolset on synthetic data
+
+**Picked up 2026-10-23**: the goal page is [`goals/synthetic-validation.md`](../goals/synthetic-validation.md), and Tony's four decisions are answered there.
 
 **This is a handoff to a new session** (Tony, 2026-10-23: *"make a handoff for the synthetic
 validation"*). It is filed as a todo because nothing is half-done: this is a programme ready to start.
