@@ -1,9 +1,15 @@
 ---
-status: open
+status: done
 filed: 2026-10-22
+closed: 2026-10-23
 ---
 
 # Decoys were never formally deprecated; the ruling waits on Tony
+
+> **Closed 2026-10-23 by [ADR-0019](../adr/0019-the-decoys-are-retired-negatives-are-rate-matched.md).**
+> Tony: *"Consider old decoys dead. We'll add rate matched negatives to our toolset."* What is left
+> to build is in [the follow-on todo](2026-10-23-rate-matched-negatives-and-the-bench-without-decoys.md).
+> The rest of this page is the record of the search.
 
 **Tony, 2026-10-22:** *"pretty sure we deprecated decoys. that should recorded as an adr."* Then,
 on hearing that no record was found: *"we've got to find that discussion on decoys … it means we
@@ -39,6 +45,15 @@ The trail, in date order. Each step argues against decoys, and none of them remo
   is its own PR, after the ADR.
 - The places left unsearched are claude.ai or cloud chats, and conversations outside Claude. If the
   original discussion turns up there, cite it in the ADR.
+
+## Does anyone else use decoys? (2026-10-23)
+
+No synchrony or assembly benchmark does it our way (ADR-0006's references). Fields that use
+decoys build them to be **known false while looking real**: the target–decoy search in proteomics
+(Elias & Gygi 2007, doi:10.1038/nmeth1019); knockoffs in statistics (Barber & Candès 2015,
+doi:10.1214/15-AOS1337; Candès et al. 2018, doi:10.1111/rssb.12265); and property-matched decoys
+in drug screening, DUD-E (Mysinger et al. 2012, doi:10.1021/jm300687e). Ours were true positives
+scored as false. Full citations are in ADR-0019.
 
 Goal page: [`detector-review-document.md`](../goals/detector-review-document.md). The reply to the
 plain document's reviewer answers her decoy comment from whatever this ruling says.

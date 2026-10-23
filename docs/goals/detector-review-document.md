@@ -47,10 +47,11 @@ the roles what the previous round found.
   onset of a ROI into one list, labelled by source, and drops nothing. The reply draft presents the
   2 s rule as our method. It should say the exporter assigns the streams and combined is the two
   together.
-- **Decoys: Tony recalled deprecating them, and no record of it exists.** All three machines, `origin` and
-  GitHub were searched. ADR-0006 left the question open and it was never closed. The trail
-  and the decision are in [the todo](../todo/2026-10-22-decoys-were-never-deprecated.md). ⏳
-  **Waiting on Tony**: write the ADR as a ruling dated the day he makes it.
+- **Decoys: Tony recalled deprecating them, and no record of it existed**, on any of the three machines,
+  on `origin` or on GitHub. ADR-0006 had left the question open ([the search](../todo/2026-10-22-decoys-were-never-deprecated.md)).
+  **Ruled 2026-10-23: [ADR-0019](../adr/0019-the-decoys-are-retired-negatives-are-rate-matched.md).** The old decoys are
+  retired, and negatives become a rate-matched tool in the toolset. The reply can say decoys were
+  dropped, as something that changed since September.
 - **PR #587 is to be merged, and the murderboard waits for Tony's command.** A trial merge of `main` into
   `detector-review-doc` on 2026-10-22 conflicted in five files: `HANDOFF-detector-review.md`,
   `docs/GLOSSARY.md`, `docs/SESSIONS.md`, `docs/todo/2026-09-17-detector-windowing-does-not-match-intent.md`
@@ -109,6 +110,7 @@ is a ruling, *argued* is reasoning nobody has measured.
 | **Binned SCE was being scored over the wrong stretch**, found by reading the document rather than the code: scored over each call's own bin, tuned binned SCE goes from F1 0.45 to 0.70. Filed as a decision because the detector's contract is parity-locked — and it then landed | measured, then landed | [PR #593](https://github.com/syncytium2/bugarach/pull/593); [the todo](../todo/2026-09-15-binned-sce-calls-are-scored-over-the-wrong-stretch.md) |
 | **The murderboard ran completely**: all eleven roles accounted for with `--require-mode --require-reports`, and public copies of all three rounds' role reports are kept with the treatment-recording lines removed | built, checked | `docs/reviews/detector_review_2026-09-15.md` and `docs/reviews/detector-review-2026-09-15/` ⚠ **on the branch, not on `main`** |
 | **The document is a record of September 2026, and it does not rank the detectors.** Tony, 2026-10-20: the document was true when it was written, the work will keep moving, so ranking is avoided. Scores are reported as what the test gave at the time. Wording such as "best", "highest" or "performed better" comes out, and a later change is described as "since then", not as a correction | decided | this page |
+| **The decoys are retired** (Tony, 2026-10-23: *"Consider old decoys dead"*). Negatives keep each ROI's rate and the slow shared change, and destroy alignment; scores already recorded stay records of their date | decided | [ADR-0019](../adr/0019-the-decoys-are-retired-negatives-are-rate-matched.md) |
 | **Writing the document is how two defects in the instrument were found.** Both findings above came from assembling the explanation, not from testing the code. That is an argument for the document existing at all, and it belongs in the case for doing this again | argued, from two instances | this page |
 
 ### What the document draws on, and how current each piece is
@@ -142,7 +144,6 @@ document assembled from them inherits it.
 
 | decision | why it gates the goal | filed |
 |---|---|---|
-| **The decoy ADR** (2026-10-22). No deprecation was ever recorded, so the ruling has to be made now | The reply to the reviewer's decoy comment, and every bench number, follow from it | [the todo](../todo/2026-10-22-decoys-were-never-deprecated.md) |
 | **Go-ahead for the #587 merge and, later, the murderboard** (2026-10-22). The merge was asked for and paused while decoys were searched. The murderboard runs on his command only | The builder the figure fixes need is on that branch | this page, *Where it stands* |
 | **Whether the document shows the bake-off's selection rounds or the retune's figure.** The rounds come from the ungated path he called stale on 2026-08-28; the retune's figure is gated and current | It is the document's own account of how a setting was chosen, so it cannot show both | `HANDOFF-detector-optimization.md` on branch `detector-review-doc` ⚠ **not on `main`** |
 | **The plain-language notes still in flight.** The loop is his to end | The page is finished when he stops sending notes | `docs/reviews/detector_review_plain_notes.md` ⚠ **not on `main`** |
