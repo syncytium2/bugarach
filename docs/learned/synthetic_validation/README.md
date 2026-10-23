@@ -10,6 +10,8 @@ recordings only; nothing here reads a real recording.
 | `theory.py` | Aim 0: the predictions (window sharing g_n, the exact cumulants of the coordination-rates tool, jitter fitted across windows, chance clusters at K); `check()` tests each against `aim1_one_source.json` |
 | `blind_README.md`, `blind_a/`, `blind_b/` | the two blind theory passes, kept as they ran |
 | `aim1_one_source_shared_seeds.json` | the first Aim 1a record, whose cells shared five backgrounds; the blind passes ran on it |
+| `membership_limit.py` | Aim 0: assembled against random participation as assemblies multiply; prediction 1 + (E − 1)/M |
+| `order_limit.py` | Aim 0: a synfire-style order indicator by score sort, with its closed forms (one template, M templates, no-order bias) |
 | `theory_check.json` | its record: every prediction beside the measured median |
 | `aim1_figure.py` | Figure 1, recovered ÷ planted against planted jitter, with the Aim 0 predictions dashed, to the darkroom and here |
 | `synth_recovery_plot_one-source-jitter_20261023.png` | Figure 1 |

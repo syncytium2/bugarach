@@ -103,6 +103,64 @@ three found first. The other analytical routes (likelihood bounds, scan statisti
 correlogram's own second-order prediction) are different ways to the same quantities and to the
 limits on them, not competing answers.
 
+### Aim 0, membership and order (2026-10-23; derived and checked on membership and order alone)
+
+Tony asked whether the analysis generalises so that, as the number of sources grows, an
+assembly converges to random participation. It does, and the same holds for order. Then:
+*"How does this compare with Kreuz synfire measurement? Pretty sure his is brute force. Synfire
+is very slow."*
+
+**Three properties of a coordinated event, and which tool sees each:**
+
+| property | seen by | blind to it |
+|---|---|---|
+| how many cells, and how tightly timed (k, σ) | the coordination-rates tool, the chance floor | — |
+| **which** cells (membership) | `bugarach.assembly`; the pair-count dispersion below | every population-count tool, at any number of sources |
+| **in what order** (leader to follower) | SPIKE-order / synfire indicator (`tools/synfire_scan.py`) | everything else here |
+
+**Membership** ([`membership_limit.py`](../learned/synthetic_validation/membership_limit.py)).
+With M fixed assemblies and E events, the dispersion of pair co-occurrence counts across cell
+pairs, relative to random participation, is **1 + (E − 1)/M**. So an assembly converges to random
+as 1/M, and what sets it is how often an assembly is reused (E/M), not M alone. Checked at 33
+cells, 10 per event, 45 events: 44.5 against 45.0 at M = 1, 5.30 against 5.40 at M = 10, 1.94
+against 1.98 at M = 45, 1.03 against 1.04 at M = 1000. Membership is read perfectly here; background
+cells joining by chance and missed members shrink the excess by a factor blind pass B derived.
+
+**Order** ([`order_limit.py`](../learned/synthetic_validation/order_limit.py)). Give each source a
+latency template (spread s across cells) under the event's jitter σ, and score order the way
+SPIKE-order does: for each pair, the mean sign of who leads, cells sorted from leader to follower,
+the indicator F the share of pair agreements with that sort. Two changes from the published method:
+**the sort is a score sort (each cell's net lead count), O(N²) and deterministic, not simulated
+annealing over N! orders**, and the coincidences come from known events rather than adaptive
+windows. Predictions, with τ = s/σ:
+
+| case | prediction | check (33 cells, 10 per event) |
+|---|---|---|
+| one template | F = (2/π) arctan τ | τ = 1: 0.503 against 0.500; τ = 2.5: 0.747 against 0.758 |
+| M independent templates | F ≈ √(2/π) · √((2/π) arcsin(τ²/(1+τ²))) / √M | M = 2: 0.461 against 0.460; M = 64: 0.084 against 0.086 |
+| no order | F ≈ 0.375 / √n̄, n̄ = events a pair shares | constant to ±0.01 from 25 to 800 events |
+
+The last row matters for the real data. With no order present, the indicator is the
+optimisation's own bias, and it falls as 1/√(events per pair). That is the August finding that
+the indicator is *"strongly anti-correlated with spike count"* (fast ρ −0.75,
+[`todo/2026-08-19-synfire-measured-and-what-it-cost.md`](../todo/2026-08-19-synfire-measured-and-what-it-cost.md)),
+and why the order-free control's median sat at 0.10. The null that todo had to build, permuting
+which cell owns each onset with the onsets kept, is the exchangeable limit both convergences
+reach: no membership and no order.
+
+**Against the brute force:** `synfire_scan.py` anneals each recording several times and then
+re-anneals every surrogate. Under the template model the optimal order is the score order in
+expectation, the indicator and its null bias are closed forms, and the whole check above runs in
+about 20 s. ⚠ Not yet compared with PySpike's indicator on the same trains (PySpike is not
+installed in this venv): its adaptive coincidence windows and normalisation change the constants,
+and the scaling laws are the claim, not the numbers.
+
+**What it changes for the generator.** The August todos already said the generator plants no
+order, so a synfire measure can only score its own bias here. A source should carry three things:
+participation and timing (k, σ), a membership rule (random, or an assembly reused E/M times),
+and a latency template (spread s). Each has a predicted convergence to the exchangeable limit, so
+Aim 1b and 1c can be placed where those predictions say the structure becomes undetectable.
+
 ### Aim 1a, first result (2026-10-23; measured, one generator, not reviewed)
 
 ⚠ **Rerun the same day with a seed per recording** (see *Aim 0, replicated blind*). The bullets below
@@ -176,6 +234,11 @@ Nothing sweeps conditions, and nothing runs simulate → assess → `derive_spec
 **Aim 0: predict first, simulate to check** (added 2026-10-23; replicated blind the same day). For
 each question, derive what the tools and the simpler detectors should return from the planted
 parameters, then simulate to test the prediction and measure what is left over. Next, in order:
+- the detectability threshold for membership structure in the cell-by-cell co-activation matrix
+  (planted low-rank structure against sampling noise; random-matrix theory has a sharp threshold)
+  and its counterpart for order;
+- check the score-sort indicator against PySpike's on the same trains, and if they agree, offer it
+  as the fast route for `synfire_scan.py`;
 - move blind A's joint fit across windows, the noise model and the closed-form floor into
   `theory.py`, and re-plot Figure 1 on dimensionless axes;
 - Cramér–Rao bounds for (λ, k, σ), as Aim 1's identifiability boundary;
@@ -221,8 +284,8 @@ in for a stranger's data.
 1. Aim 1a, extended: recovery against participation and event count separately (Figure 1 pools
    them), and the correlogram tool's jitter once open item 4 lands.
 2. The rate-matched negative tool (todo above).
-3. The generator: several sources, each with its own participation, jitter, spacing and
-   membership rule (random or assembly); optional shared slow comodulation.
+3. The generator: several sources, each with its own participation, jitter, spacing, membership
+   rule (random or an assembly) and latency template; optional shared slow comodulation.
 4. A `--folder` route for the correlogram, real-interval and slow-comodulation tools, and one
    library function that writes a simulation as a folder.
 5. `score` per source.
