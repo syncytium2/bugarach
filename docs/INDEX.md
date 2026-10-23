@@ -218,3 +218,4 @@ enforced by `tests/test_index_resolves.py`, which reads code spans too.
 Anything that changes weekly — counts, current numbers, who holds what. Those go
 stale and an index that lies is worse than none. **Rows point at the file that owns
 the answer, and the file is the authority.**
+| **people marking coordinated events, and judging real against synthetic: the rater sheet** | rater sheet, human marks, hand-marked events, psychophysics, Qualtrics, survey, visual Turing test, real or synthetic, can synthetic data train detectors, human reference, inter-rater agreement | [`tools/rater_sheet/README.md`](../tools/rater_sheet/README.md); what waits on Tony is in [the todo](todo/2026-10-23-the-human-rater-sheet.md) |

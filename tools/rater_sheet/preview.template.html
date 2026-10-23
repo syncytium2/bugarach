@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rater Sheet Preview</title>
+<style>
+  body { margin: 0; background: #fafafa; color: #222; font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 8px 0 4px; }
+  .note { color: #666; font-size: 13px; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 16px; margin: 12px 0; }
+  button.nav { padding: 8px 16px; font: inherit; border-radius: 4px; border: 1px solid #2b5fab; background: #2b5fab; color: #fff; cursor: pointer; }
+  button.nav:disabled { background: #ccc; border-color: #ccc; cursor: default; }
+  pre { white-space: pre-wrap; font-size: 12px; background: #f2f2f2; padding: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Rater sheet: local preview</h1>
+  <p class="note">This page runs the same sheet the Qualtrics survey runs, on the pilot's synthetic
+  rows, in a new random order on every load. Nothing is sent anywhere. At the end you can save the
+  answers as a CSV laid out like a Qualtrics export, to test the scoring.</p>
+  <div class="card" id="intro">
+    <p><b>What to do.</b> Each row is two minutes of activity from 32 cells, one cell per lane,
+    with a tick at each calcium event. Some moments have many cells becoming active together:
+    those are <b>coordinated events</b>. Click each one you see. Then say whether the row looks
+    like a real recording or a synthetic one.</p>
+    <p>There are no right answers to look for in the layout. Some rows have no coordinated events.</p>
+    <button class="nav" id="start">Start</button>
+  </div>
+  <div class="card" id="question" hidden>
+    <div id="counter" class="note"></div>
+    <div id="host"></div>
+    <button class="nav" id="next" disabled>Next</button>
+  </div>
+  <div class="card" id="done" hidden>
+    <p><b>Done.</b> These lines are what the survey stores for each row:</p>
+    <pre id="lines"></pre>
+    <button class="nav" id="save">Save as CSV</button>
+  </div>
+</main>
+<script>/*RATER_ROWS*/</script>
+<script>/*RATER_CORE*/</script>
+<script>
+(function () {
+  var ids = Object.keys(RATER_ROWS);
+  for (var i = ids.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
+  var at = -1, sheet = null, current = null, answers = [];
+  var $ = function (id) { return document.getElementById(id); };
+  function show(n) {
+    if (sheet) sheet.destroy();
+    $("counter").textContent = "Row " + (n + 1) + " of " + ids.length;
+    $("next").disabled = true;
+    sheet = RaterSheet.mount($("host"), RATER_ROWS[ids[n]], function (s) {
+      current = RaterSheet.encode(s);
+      $("next").disabled = !s.judge;
+    });
+  }
+  $("start").onclick = function () { $("intro").hidden = true; $("question").hidden = false; at = 0; show(0); };
+  $("next").onclick = function () {
+    answers.push(current);
+    at += 1;
+    if (at < ids.length) { show(at); window.scrollTo(0, 0); return; }
+    sheet.destroy(); $("question").hidden = true; $("done").hidden = false;
+    $("lines").textContent = answers.join("\n");
+  };
+  $("save").onclick = function () {
+    var q = function (s) { return '"' + String(s).replace(/"/g, '""') + '"'; };
+    var cols = answers.map(function (_, k) { return (k + 1) + "_QID1_TEXT"; });
+    var rid = "R_preview" + Date.now().toString(36);
+    var lines = [
+      ["ResponseId"].concat(cols).map(q).join(","),
+      ["Response ID"].concat(cols.map(function () { return "rater sheet row"; })).map(q).join(","),
+      ['{"ImportId":"_recordId"}'].concat(cols.map(function (c) { return '{"ImportId":"' + c + '"}'; })).map(q).join(","),
+      [rid].concat(answers).map(q).join(",")
+    ];
+    var blob = new Blob([lines.join("\r\n") + "\r\n"], {type: "text/csv"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "rater-sheet-preview-" + rid + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+})();
+</script>
+</body>
+</html>
