@@ -1,0 +1,8 @@
+sig=0.05 k=5 nev=45 b=0.05 w=1.0: f2 mean 0.3109 (se 0.0076) pred0 0.3146 predHC 0.3079 | f3 mean 0.8131 (sd 0.18) pred0 0.9159 predHC 0.8384 sd_pred 0.14 | raw f3 0.814 sur f3 0.000952 | median f3 0.7918
+sig=0.05 k=5 nev=45 b=0.05 w=4.0: f2 mean 1.197 (se 0.053) pred0 1.315 predHC 1.207 | f3 mean 2.158 (sd 1.5) pred0 3.915 predHC 2.675 sd_pred 2.2 | raw f3 2.15 sur f3 -0.0101 | median f3 2.108
+sig=0.05 k=5 nev=45 b=0.01 w=1.0: f2 mean 0.3078 (se 0.0024) pred0 0.3146 predHC 0.3079 | f3 mean 0.8286 (sd 0.069) pred0 0.9159 predHC 0.8384 sd_pred 0.02 | raw f3 0.829 sur f3 -8.37e-05 | median f3 0.8237
+sig=0.05 k=5 nev=45 b=0.01 w=4.0: f2 mean 1.222 (se 0.018) pred0 1.315 predHC 1.207 | f3 mean 2.673 (sd 0.54) pred0 3.915 predHC 2.675 sd_pred 0.32 | raw f3 2.68 sur f3 0.00812 | median f3 2.614
+sig=0.05 k=20 nev=45 b=0.01 w=1.0: f2 mean 5.899 (se 0.015) pred0 5.977 predHC 5.87 | f3 mean 98.05 (sd 2.5) pred0 104.4 predHC 98.5 sd_pred 0.072 | raw f3 98.1 sur f3 0.0154 | median f3 98.39
+sig=0.05 k=20 nev=45 b=0.01 w=4.0: f2 mean 23.45 (se 0.073) pred0 24.98 predHC 23.26 | f3 mean 351.8 (sd 11) pred0 446.4 predHC 351.2 sd_pred 1.1 | raw f3 352 sur f3 0.0795 | median f3 351.3
+sig=1.0 k=10 nev=45 b=0.05 w=1.0: f2 mean 0.3797 (se 0.0084) pred0 0.4057 predHC 0.3788 | f3 mean 0.7729 (sd 0.22) pred0 1.006 predHC 0.8121 sd_pred 0.21 | raw f3 0.775 sur f3 0.00218 | median f3 0.7631
+sig=1.0 k=10 nev=45 b=0.05 w=4.0: f2 mean 3.852 (se 0.075) pred0 4.31 predHC 3.879 | f3 mean 18.66 (sd 3.7) pred0 27.74 predHC 19.71 sd_pred 3.3 | raw f3 18.7 sur f3 0.0173 | median f3 17.82

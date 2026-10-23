@@ -18,8 +18,96 @@ low participation. Tony: *"Treat like a phd project (except we have days not yea
 - 2026-10-23: goal page written; Tony's four decisions answered (below). **Aim 1a has run**: one
   source, random membership, 240 simulated recordings, measured blind. Result below and in
   [`learned/synthetic_validation/`](../learned/synthetic_validation/README.md).
+- 2026-10-23, later: **Aim 0 (theory) added** after Tony asked whether an analytical prediction
+  could replace the brute force. It predicts Aim 1a from the planted parameters alone, and gives a
+  jitter estimate that works where the assessment's does not. Result below; `theory.py`.
+
+### Aim 0, first result (2026-10-23; derived and checked against Aim 1a, not reviewed)
+
+Tony, 2026-10-23: *"Is it possible there's an analytical prediction to be made here? We are
+solving this with brute force."* For this generator, yes. The derivations are in the docstring of
+[`learned/synthetic_validation/theory.py`](../learned/synthetic_validation/theory.py); its
+`check()` prints every comparison in about 12 s, against about a minute of simulation.
+
+- **Window sharing.** The chance that n onsets of one event share a window of width w is
+  g_n(w, σ) = E[(1 − R_n/w)+], with R_n the range of n jittered onsets. g_2 has a closed form.
+- **The coordination-rates tool is predicted exactly.** Factorial cumulants add over independent
+  processes, and with at most one event per window (events ≥ 20 s apart) the excess pair and
+  triple cumulants are closed forms in (k, σ, w, λ, N). At 0.01 Hz background the predicted
+  participants match the measured median within about 0.03 in every cell. The residual a Poisson
+  treatment leaves (5–15 %, growing with window and event rate) is the regularity of the event
+  train, and the exact form removes it.
+- **Jitter from how the pair count changes with window**, fitted across the tool's 1, 2 and 4 s
+  windows: planted 0.2, 0.5 and 1.0 s come back as about 0.17, 0.48 and 1.0 s at both
+  backgrounds. That turns jitter from Aim 1a's weakest parameter into one of its best. It floors
+  near the 0.1 s frame (planted 0.05 s reads about 0.02 s).
+- **Chance clusters at K** (the assessment): a binomial tail per 1 s bin, with the tool's merging,
+  predicts the measured cluster rate within about 10 % at every K and background. K = 3 or 4 at
+  0.05 Hz is swamped before anything is simulated.
+- **Not predicted:** the weakest cells (5 cells per event, 15 events, 0.05 Hz), where the tool's
+  estimate is noise-dominated rather than biased.
+
+Figure 1 now carries the predictions as dashed lines, and the fitted jitter as its own series.
+After the reseeding below, the exact form matches the measured median participants within a median
+0.011 (worst 0.06) of the planted value at 0.01 Hz, and within 0.016 (worst 0.11) at 0.05 Hz for
+events of 10 or more cells (`theory_check.json`).
+
+### Aim 0, replicated blind (2026-10-23)
+
+Tony then asked for the pass to be run *"two more times with independent agents that don't know
+what you discovered, to see if this is the only solution"*. Two agents got his first question and
+pointers to the code and the Aim 1a record, nothing else, each in its own checkout of `main`. Their
+scripts are kept in [`learned/synthetic_validation/blind_a/` and `blind_b/`](../learned/synthetic_validation/blind_README.md).
+
+**All three reached the same core answer independently:**
+
+| result | this session | blind A | blind B |
+|---|---|---|---|
+| the coordination-rates tool's excess cumulants, exactly, with the at-most-one-event term | ✓ (on a second try) | ✓ | ✓ |
+| k_hat = 2 + (k − 2) g_3/g_2, which is the "window must exceed jitter" behaviour | ✓ | ✓ | ✓ |
+| jitter from how the pair count changes with window | ✓ (one-parameter fit) | ✓ (joint fit of jitter, k, rate) | ✓ (ratio of two windows) |
+| chance clusters at K: 60 q (1 − q)^2 per minute from the binomial tail | ✓ | ✓ | ✓ |
+| two sources with equal jitter are not identifiable from pairs and triples | stated | ✓ (as a rank question) | ✓ |
+| a shared slow rate change grows with window differently from coordination | stated | ✓ | — |
+
+**What only the blind passes found:**
+- **A design flaw in Aim 1a** (both). The seeds were `1000 + seed` in every cell and the generator
+  draws the background first, so every cell at one background rate shared five background draws.
+  Errors in Figure 1 were correlated across each row, and at 0.05 Hz the five happened to run low.
+  **Fixed**: each recording now has its own seed, Aim 1a was rerun, and the first record is kept as
+  `aim1_one_source_shared_seeds.json`. The 0.05 Hz rows now sit on the prediction.
+- **The noise of each estimate**, from Charlier polynomials (orthogonal under a Poisson
+  background), and with it a signal-to-noise figure that predicts when the tool returns nothing
+  (A and B).
+- **The assessment fully**: participants and jitter as medians over a mixture of chance and event
+  clusters. Its jitter saturates because onsets are gathered within ±1.5 s: a 1 s Gaussian cut
+  there has SD 0.74 s (A and B).
+- **The ADR-0008 chance floor in closed form**, matching `window_floor` exactly or within one cell
+  (A and B). At 33 cells it is 6 at 0.01 Hz and 12 at 0.05 Hz, so a 5-cell event can never pass it
+  at either: a capability edge stated before any detector runs.
+- **Count detector recall and false alarms** analytically, within about 0.03 recall in most
+  conditions (B).
+- **A joint fit across windows** that recovers jitter within about 5 % from 0.2 s, and participants
+  and rate within a few per cent (A). Better than this session's one-parameter fit, which reads
+  0.2 s as about 0.17 s. Adopt it.
+- **Routes not yet taken** (both): Fisher information and Cramér–Rao bounds for the cluster
+  process, which is the principled answer to *where parameters stop being identifiable*; scan
+  statistics for the sliding detectors; grid axes in dimensionless groups (σ/w, λw, N·b·w, the
+  signal-to-noise, K against the floor).
+
+**Disagreements:** none on substance. Open residuals: B saw f3 5–7 % below prediction at 0.05 Hz
+over 60 seeds; A saw rate 3–5 % above prediction. Neither is explained.
+
+**So: not the only solution, but one answer reached three ways.** The cumulant route is the one all
+three found first. The other analytical routes (likelihood bounds, scan statistics, the
+correlogram's own second-order prediction) are different ways to the same quantities and to the
+limits on them, not competing answers.
 
 ### Aim 1a, first result (2026-10-23; measured, one generator, not reviewed)
+
+⚠ **Rerun the same day with a seed per recording** (see *Aim 0, replicated blind*). The bullets below
+were written on the first run, whose cells shared five backgrounds; they still hold in direction,
+and Figure 1 is the rerun.
 
 Figure 1, *recovery against planted jitter*, is
 `synth_recovery_plot_one-source-jitter_20261023.png` in the darkroom folder below and in
@@ -85,6 +173,23 @@ Nothing sweeps conditions, and nothing runs simulate → assess → `derive_spec
 
 ## The plan (revised from the handoff's)
 
+**Aim 0: predict first, simulate to check** (added 2026-10-23; replicated blind the same day). For
+each question, derive what the tools and the simpler detectors should return from the planted
+parameters, then simulate to test the prediction and measure what is left over. Next, in order:
+- move blind A's joint fit across windows, the noise model and the closed-form floor into
+  `theory.py`, and re-plot Figure 1 on dimensionless axes;
+- Cramér–Rao bounds for (λ, k, σ), as Aim 1's identifiability boundary;
+- two sources: their cumulants add, so the tool's window dependence separates sources only when
+  their jitters differ; with equal jitters only a combined participation term is identifiable
+  (Aim 1c's answer, predicted before it is run);
+- a shared slow rate change adds pair excess that grows with the window, while coordination levels
+  off once the window exceeds the jitter;
+- count (sliding) and binned SCE: recall as the chance that at least K of k jittered onsets share
+  the detector's window, false alarms as the chance tail; their capability maps are then drawn
+  analytically and the grid in Aim 2 is placed around the predicted boundaries;
+- CoactDetect and LoCo (rolling context, merge gaps), clustered spacing and per-cell burstiness
+  stay simulated.
+
 **Aim 1: recover the parameters, and find where they stop being identifiable.**
 1a. One source, random membership: sweep jitter, participation, event count and background rate;
     measure blind with the two in-memory tools; plot true against recovered. *First experiment.*
@@ -109,7 +214,7 @@ in for a stranger's data.
 
 ## Waiting on Tony
 
-- Merge of the handoff PR #905 (this page links its todo).
+- Nothing (PR #905 and #906 merged 2026-10-23).
 
 ## Open work a session can do without a ruling
 
