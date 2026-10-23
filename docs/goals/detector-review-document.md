@@ -37,6 +37,26 @@ the roles what the previous round found.
 
 ## Where it stands
 
+**2026-10-22: four rulings from Tony on the reply draft, and two of them wait on him.**
+- **The deep learning models are on hold** (Tony, 2026-10-22). Chorus is one of them, so it does
+  not get the main-text figure and paragraph the reply draft planned. The draft keeps CoactDetect
+  in the main text, and chorus waits with the other learned models.
+- **The combined list.** Interface2 assigns events to fast and slow, and the 2 s working rule of
+  2026-10-07 describes how it does that ([`combined-stream-coordination.md`](combined-stream-coordination.md)).
+  bugarach builds combined itself: `bugarach.combined.combine` puts every fast and every slow
+  onset of a ROI into one list, labelled by source, and drops nothing. The reply draft presents the
+  2 s rule as our method. It should say the exporter assigns the streams and combined is the two
+  together.
+- **Decoys: Tony recalled deprecating them, and no record of it exists.** All three machines, `origin` and
+  GitHub were searched. ADR-0006 left the question open and it was never closed. The trail
+  and the decision are in [the todo](../todo/2026-10-22-decoys-were-never-deprecated.md). ⏳
+  **Waiting on Tony**: write the ADR as a ruling dated the day he makes it.
+- **PR #587 is to be merged, and the murderboard waits for Tony's command.** A trial merge of `main` into
+  `detector-review-doc` on 2026-10-22 conflicted in five files: `HANDOFF-detector-review.md`,
+  `docs/GLOSSARY.md`, `docs/SESSIONS.md`, `docs/todo/2026-09-17-detector-windowing-does-not-match-intent.md`
+  and `tools/sapper.py`. The merge was aborted and the branch is unchanged. ⏳ It resumes after the
+  decoy ruling.
+
 **2026-10-20: a reviewer's comments on the plain-language page are being answered.** Tony put a Word
 copy of the page in the darkroom (`bugarach/detector_review_plain-22Sep2026.docx`), carrying a lab
 reviewer's tracked edits and 98 comments (Moenter, review comments, 2026-09-18 to 2026-09-22). Her
@@ -122,6 +142,8 @@ document assembled from them inherits it.
 
 | decision | why it gates the goal | filed |
 |---|---|---|
+| **The decoy ADR** (2026-10-22). No deprecation was ever recorded, so the ruling has to be made now | The reply to the reviewer's decoy comment, and every bench number, follow from it | [the todo](../todo/2026-10-22-decoys-were-never-deprecated.md) |
+| **Go-ahead for the #587 merge and, later, the murderboard** (2026-10-22). The merge was asked for and paused while decoys were searched. The murderboard runs on his command only | The builder the figure fixes need is on that branch | this page, *Where it stands* |
 | **Whether the document shows the bake-off's selection rounds or the retune's figure.** The rounds come from the ungated path he called stale on 2026-08-28; the retune's figure is gated and current | It is the document's own account of how a setting was chosen, so it cannot show both | `HANDOFF-detector-optimization.md` on branch `detector-review-doc` ⚠ **not on `main`** |
 | **The plain-language notes still in flight.** The loop is his to end | The page is finished when he stops sending notes | `docs/reviews/detector_review_plain_notes.md` ⚠ **not on `main`** |
 | **The decisions in [`coded-detector-optimization.md`](coded-detector-optimization.md)** — binned SCE's threshold, locust's anchor, rate+context — each changes a number this document prints | A document published ahead of them prints a value that is about to move | that page |
