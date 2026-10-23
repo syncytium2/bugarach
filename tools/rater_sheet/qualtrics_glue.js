@@ -1,8 +1,8 @@
 /* Qualtrics glue. The question is a Text Entry question inside a Loop & Merge block whose
  * Field 1 is the row id, and whose text contains <span class="rater-row">${lm://Field/1}</span>.
  * The script hides the text box and writes one self-describing line into it, so the export
- * needs no column map: row=r07;judge=probably_real;marks=31.2,52.0
- * Next stays disabled until the real-or-synthetic question is answered. */
+ * needs no column map: row=r07;real=0.45;marks=31.2,52.0 (real: +1 real, 0 no idea, -1 synthetic).
+ * Next stays disabled until the slider has been touched. */
 Qualtrics.SurveyEngine.addOnload(function () {
   var q = this;
   var root = q.getQuestionContainer();
@@ -29,7 +29,7 @@ Qualtrics.SurveyEngine.addOnload(function () {
   }
   var sheet = RaterSheet.mount(host, row, function (state) {
     write(RaterSheet.encode(state));
-    if (state.judge) q.enableNextButton(); else q.disableNextButton();
+    if (state.real !== null) q.enableNextButton(); else q.disableNextButton();
   });
   Qualtrics.SurveyEngine.addOnUnload(function () { sheet.destroy(); });
 });

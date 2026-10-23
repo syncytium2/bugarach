@@ -13,8 +13,22 @@ survey for control, and U-M Qualtrics, where custom JavaScript is enabled on his
 heat-map question type is not available there.
 
 **Built:** the synthetic-only pilot, [`tools/rater_sheet/`](../../tools/rater_sheet/README.md).
-It has 20 rows, a key kept out of the survey, a paste-ready question script, a local preview,
+It has 10 rows of 15 minutes, an opening walk-through, a key kept out of the survey, a paste-ready question script, a local preview,
 and a scorer. Tested end to end in Chromium.
+
+## Settled on 2026-10-23, after Tony tried the first version
+
+- **One x-axis length, 15 minutes, for every row** (*"ideally we take the x-axis length as constant"*,
+  and *"choose a length that we can share with the dandiset"*). It fits all 59 Cossart recordings
+  (shortest 1153.5 s) and this lab's 20-minute windows. Two-minute rows were *"very unrealistic for
+  our data"*.
+- **Zoom and pan are buttons**, with a readable axis (*"our people are very sensitive to the x-axis
+  and being able to zoom … it is just hidden in gray tiny font"*).
+- **A 30-second animated walk-through opens the survey.**
+- **The judgement is a slider**: real, no idea in the middle, synthetic.
+- **Cossart has plenty of events**, more than we do: about 6 clusters a minute at K = 12, around 90
+  per 15-minute row. That is a heavier marking load than ours; how many Cossart rows a rater gets is
+  open.
 
 ## How the answer will be read
 
@@ -39,6 +53,5 @@ and a scorer. Tested end to end in Chromium.
 
 ## Known weaknesses of the pilot
 
-- Every planted row's first event falls at 30–45 s (the generator's spacing and margin).
 - The flat and fitted fields differ in total event count (flat has more active ROIs), so "real or
   synthetic" may be judged on density rather than structure. With real rows, match density.

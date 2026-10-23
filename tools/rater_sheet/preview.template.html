@@ -22,11 +22,12 @@
   rows, in a new random order on every load. Nothing is sent anywhere. At the end you can save the
   answers as a CSV laid out like a Qualtrics export, to test the scoring.</p>
   <div class="card" id="intro">
-    <p><b>What to do.</b> Each row is two minutes of activity from 32 cells, one cell per lane,
-    with a tick at each calcium event. Some moments have many cells becoming active together:
-    those are <b>coordinated events</b>. Click each one you see. Then say whether the row looks
-    like a real recording or a synthetic one.</p>
-    <p>There are no right answers to look for in the layout. Some rows have no coordinated events.</p>
+    <p><b>What to do.</b> Each row is 15 minutes of activity, one cell per lane, with a tick at
+    each calcium event. Some moments have many cells becoming active together: those are
+    <b>coordinated events</b>. Zoom in, click each one you see, then say how real the row looks.
+    Some rows have no coordinated events. This 30-second walk-through shows every control.</p>
+    <div id="demo"></div>
+    <button class="nav" id="replay" style="background:#f4f4f4;color:#1f1f1f;border-color:#8a8a8a">Replay the walk-through</button>
     <button class="nav" id="start">Start</button>
   </div>
   <div class="card" id="question" hidden>
@@ -54,10 +55,14 @@
     $("next").disabled = true;
     sheet = RaterSheet.mount($("host"), RATER_ROWS[ids[n]], function (s) {
       current = RaterSheet.encode(s);
-      $("next").disabled = !s.judge;
+      $("next").disabled = s.real === null;
     });
   }
-  $("start").onclick = function () { $("intro").hidden = true; $("question").hidden = false; at = 0; show(0); };
+  var demo = null;
+  function play() { if (demo) demo.stop(); demo = RaterSheet.demo($("demo"), RATER_DEMO.row, RATER_DEMO.event_time, null, RATER_DEMO.lane); }
+  $("replay").onclick = play;
+  play();
+  $("start").onclick = function () { if (demo) demo.stop(); $("intro").hidden = true; $("question").hidden = false; at = 0; show(0); };
   $("next").onclick = function () {
     answers.push(current);
     at += 1;

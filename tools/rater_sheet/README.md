@@ -20,21 +20,35 @@ logins and control.
 
 ## The pilot's rows
 
-There are 20 rows, each 120 s of 32 ROIs, built with the bench's own simulator with no decoys
-(ADR-0019). Ten conditions run on both background fields:
+**Every row is 15 minutes**, one x-axis length for everything the sheet will ever show (Tony,
+2026-10-23). That length fits inside every one of Cossart's 59 DANDI:000219 recordings (shortest
+1153.5 s) and inside this lab's 20-minute analysis windows, so real rows from both corpora can join
+later without changing the axis. At 15 minutes a coordinated event is a hairline until you zoom, as
+on the lab's own rasters, so the controls are buttons above the raster, not hidden gestures.
 
-- **participation** 0.30, 0.20, 0.10 of ROIs, with tight timing (0.105 s, measured on fast), on a
-  quiet and a busy background (`bench.REGIMES`);
-- **wide timing**, 0.5 s, at 0.20, on both backgrounds;
-- **nothing planted**, on both backgrounds.
+There are 10 rows of 32 ROIs, built with the bench's own simulator with no decoys (ADR-0019). Each of
+5 conditions runs on both background fields:
 
-Planted rows carry 3 events each. The two fields are the **fitted** field (the bench's measured
-rate shape and slow bursts) and the **flat** field (the same mean rate, no shape). In the pilot,
-"real or synthetic?" therefore asks whether people can see what the fitting changed.
+- **tight timing** (0.105 s, measured on fast) and **wide timing** (0.5 s), each on a quiet and a
+  busy background (`bench.REGIMES`). Each of these rows plants six events, two each at 30%, 20% and
+  10% of ROIs, so every row tests every participation level;
+- **nothing planted**, on the busy background.
 
-**A known weakness:** every planted row's first event falls between 30 and 45 s, because of the
-generator's minimum spacing and margin. Raters may learn that. Fix it before the real-row
-version.
+The two fields are the **fitted** field (the bench's measured rate shape and slow bursts) and the
+**flat** field (the same mean rate, no shape). In the pilot, "how real does this row look?" therefore
+asks whether people can see what the fitting changed.
+
+**The judgement is a slider** (Tony, 2026-10-23): real on the left, no idea in the middle, synthetic
+on the right, stored from +1 to −1. Next stays locked until it has been touched, so a middle answer is
+a choice, not an omission. The scorer reports the AUC (0.5 is chance) and the d′ that follows from it.
+
+**A 30-second walk-through opens the survey.** It runs on a row of its own, never scored, and shows
+every control: zoom, slide, mark, remove a mark, whole row, and the slider.
+
+**Cossart's event rate is far higher than ours.** At their chosen K = 12, the median recording has
+about 6 clusters a minute, around 90 in 15 minutes, against this lab's roughly 10 to 25
+coordinated events an hour. A Cossart row would be a much bigger marking job. Lanes shrink to fit
+(566 ROIs draw at 1 pixel each).
 
 A mark counts as a hit within `bugarach.score.TOL_SEC` (2.5 s) of an event's median onset,
 matched one to one, nearest first, the same tolerance the bench scores detectors with.
@@ -45,19 +59,21 @@ matched one to one, nearest first, the same tolerance the bench scores detectors
    `<darkroom>/bugarach/2026-10-23-rater-sheet-pilot/`.
 2. **Try it locally first.** Open `explainer_rater-sheet-pilot-preview_20261023.html` in a browser.
    It is the same sheet.
-3. In Qualtrics, create a survey. Add an intro text question; the preview's intro text can be
-   reused.
-4. Add a block with **one Text Entry question** (single line). In its question text, switch to
+3. In Qualtrics, create a survey. First block: one **Text/Graphic** question with the instructions
+   (the preview's intro text can be reused). Its **Question behavior → JavaScript**: paste all of
+   `explainer_rater-sheet-pilot-intro_20261023.js`. That is the walk-through; Next unlocks when it
+   ends.
+4. Add a second block with **one Text Entry question** (single line). In its question text, switch to
    the HTML view and add:
    `<span class="rater-row">${lm://Field/1}</span>` along with any instruction text you want.
 5. In the question's left panel, **Question behavior → JavaScript**: delete the template and
    paste all of `explainer_rater-sheet-pilot-question_20261023.js`.
-6. On the block, open **Loop & Merge**. Put the 20 ids from
+6. On the block, open **Loop & Merge**. Put the 10 ids from
    `explainer_rater-sheet-pilot-rows_20261023.txt` in Field 1, one per loop, and turn on
    **Randomize loop order**.
 7. **Preview the survey.** Mark something on two rows, finish, then check
    **Data & Analysis**: each row's answer should read like
-   `row=r07;judge=probably_real;marks=31.2,52.0`. If that column is empty, the page did not
+   `row=r07;real=0.45;marks=331.2,452.0`. If that column is empty, the page did not
    accept the script's write. Tell Claude what the editor shows, because the fix is in
    `qualtrics_glue.js`.
 8. Export: **Data & Analysis → Export → CSV**, with "Use numeric values". Then:
