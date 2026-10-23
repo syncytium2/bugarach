@@ -10,6 +10,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/rater-sheet — DARKROOM claim: `bugarach/2026-10-23-rater-sheet-pilot/` (NEW)
+- **Status:** ACTIVE, claimed 2026-10-23 before any write. Goal: the rater sheet (Tony, 2026-10-22/23): the synthetic-only pilot's
+  rows, key, Qualtrics script and preview, built by `tools/rater_sheet/make_pilot.py`. Released when the pilot has run.
+- **Touches:** that folder only.
+
 ### WSMIP065/sue-review-response — DARKROOM claim: `bugarach/2026-10-20-detector-review-response/` (NEW)
 - **Status:** ACTIVE, claimed 2026-10-20 before any write; draft written there at about 11:30 AM EDT, held until Tony has reviewed it and the final copy is written. Goal: detector-review-document. Tony,
   2026-10-20: answer the reviewer's comments on the plain-language detector document (the copy
