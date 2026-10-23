@@ -10,6 +10,11 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/synthetic-validation — DARKROOM claim: `bugarach/2026-10-23-synthetic-validation/` (NEW)
+- **Status:** ACTIVE, claimed 2026-10-23 before any write. Goal: `docs/goals/synthetic-validation.md`. Aim 1 figures from
+  synthetic recordings only. Released when the goal's first PR merges.
+- **Touches:** that folder only.
+
 ### WSMIP065/rater-sheet — DARKROOM claim: `bugarach/2026-10-23-rater-sheet-pilot/` (NEW)
 - **Status:** ACTIVE, claimed 2026-10-23 before any write. Goal: the rater sheet (Tony, 2026-10-22/23): the synthetic-only pilot's
   rows, key, Qualtrics script and preview, built by `tools/rater_sheet/make_pilot.py`. Released when the pilot has run.

@@ -5,7 +5,8 @@
     "stream",
     "treatment",
     "groups",
-    "win"
+    "win",
+    "thr"
   ],
   "sources": [
     {
@@ -16,7 +17,24 @@
         "stream",
         "treatment",
         "groups",
-        "win"
+        "win",
+        "thr"
+      ],
+      "optional": [
+        "thr"
+      ]
+    },
+    {
+      "code": "pilots",
+      "name": "several pilot cohorts side by side on one deliverable, written pilots-YYYYMMDD-YYYYMMDD[...] with the days oldest first. Each pilot's treatment and groups are fixed by its own code, so the name does not repeat them, and could not within the length cap",
+      "fields": [
+        "signal",
+        "stream",
+        "win",
+        "thr"
+      ],
+      "optional": [
+        "thr"
       ]
     },
     {
@@ -26,6 +44,22 @@
         "treatment",
         "groups"
       ]
+    },
+    {
+      "code": "synth",
+      "name": "synthetic: simulated, not recorded. Absent means real data. Its dataset fields are each optional, written only when the simulation mimics them (a fast-stream fit, DI against OVX), and found by their registered codes; a free topic last says what the simulation is",
+      "fields": [
+        "form",
+        "stream",
+        "treatment",
+        "groups",
+        "win",
+        "topic"
+      ],
+      "required": [
+        "form"
+      ],
+      "flexible": true
     }
   ],
   "types": [
@@ -85,6 +119,10 @@
       "name": "recovered calcium kernel"
     },
     {
+      "code": "recovery",
+      "name": "parameter recovery: planted (or known) values against the values a measurement recovered"
+    },
+    {
       "code": "report",
       "name": "multi-section report"
     },
@@ -94,6 +132,32 @@
       "fields": [
         "topic"
       ]
+    },
+    {
+      "code": "export",
+      "name": "an export: a folder of data a consumer ingests (fireflies from 2R/, bugarach from exports/<consumer>/). Its files are named by the export rules, its screens are in manifest.json",
+      "fields": [
+        "signal",
+        "treatment",
+        "groups",
+        "win",
+        "thr",
+        "moco",
+        "review"
+      ],
+      "optional": [
+        "win"
+      ]
+    }
+  ],
+  "forms": [
+    {
+      "code": "plot",
+      "name": "a figure or page drawn from the data"
+    },
+    {
+      "code": "dataset",
+      "name": "the data themselves: a folder, or a table"
     }
   ],
   "signals": [
@@ -223,8 +287,193 @@
         "long_window_20",
         "20min"
       ]
+    },
+    {
+      "code": "win5min-strict",
+      "name": "5-minute window; a slice is kept only if every window it exports is the full length, first treatment only (interface2 aCa5z run mode short_window_5_strict)",
+      "aliases": [
+        "short_window_5_strict",
+        "short5strict"
+      ]
+    },
+    {
+      "code": "win20min-strict",
+      "name": "20-minute window; a slice is kept only if every window it exports is the full length, first treatment only (interface2 aCa5z run mode long_window_20_strict)",
+      "aliases": [
+        "long_window_20_strict",
+        "long20strict"
+      ]
     }
   ],
+  "thresholds": [
+    {
+      "code": "thr4x",
+      "name": "detection threshold 4 x sigma_est (fast ROI_MLspike_sigmaest_4, slow ROI_slow_filtfilt_4); the canonical pairing",
+      "aliases": [
+        "4x",
+        "factor4",
+        "4x_sigma_est",
+        "sigmaest_4",
+        "sig4"
+      ]
+    },
+    {
+      "code": "thr3x",
+      "name": "detection threshold 3 x sigma_est",
+      "aliases": [
+        "3x",
+        "factor3",
+        "3x_sigma_est",
+        "sigmaest_3",
+        "sig3"
+      ]
+    }
+  ],
+  "mocos": [
+    {
+      "code": "flex",
+      "name": "non-rigid motion correction (NoRMCorre); can pin ROIs to the frame floor (interface2 docs/moco_floor_pinning.md)",
+      "aliases": [
+        "nonrigid",
+        "non-rigid",
+        "normcorre"
+      ]
+    },
+    {
+      "code": "rigid",
+      "name": "rigid motion correction"
+    }
+  ],
+  "reviews": [
+    {
+      "code": "unblanked",
+      "name": "no reviewer windows blanked",
+      "aliases": [
+        "unreviewed"
+      ]
+    },
+    {
+      "code": "blanked",
+      "name": "events inside the reviewer's blank windows removed, listed in review_blanked_excluded.tsv",
+      "aliases": [
+        "review_blanked",
+        "reviewblanked"
+      ]
+    }
+  ],
+  "keeps": [
+    {
+      "code": "alive",
+      "name": "dead ROIs removed by the full-trace rule: one event in fast or slow anywhere in the trace keeps a ROI",
+      "aliases": [
+        "clean",
+        "deadroi"
+      ]
+    },
+    {
+      "code": "unfiltered",
+      "name": "every ROI kept, none removed",
+      "aliases": [
+        "none",
+        "nofilter"
+      ]
+    },
+    {
+      "code": "bt",
+      "name": "fireflies: ROI dropped if empty in baseline and treatment"
+    },
+    {
+      "code": "bthik",
+      "name": "fireflies: ROI dropped if empty in baseline, treatment and high K+ (01-scripts/rejection_rule.R)"
+    }
+  ],
+  "tables": [
+    {
+      "code": "metrics",
+      "name": "per-ROI per-region frequency/duration in the aCa5z schema, per-second units (was <prefix>_ROI_<STREAM>_<win>_<date>_clean.csv)",
+      "fields": [
+        "stream",
+        "win"
+      ]
+    },
+    {
+      "code": "fsw",
+      "name": "pilot frequency/amplitude/width diagnostic, custard+slow+fast in one table, PER-MINUTE units (was pilot_fsw_factor<f>_<win>.csv)",
+      "fields": [
+        "win"
+      ]
+    }
+  ],
+  "export_files": {
+    "_comment": "Names fixed by a consumer's contract or by the export rules. Checked by exact membership, never renamed. A recording is <slice_id>.csv (bugarach contract). Markdown is prose and is not checked.",
+    "fixed": [
+      "manifest.json",
+      "slices.csv",
+      "regions.csv",
+      "metric_dictionary.csv",
+      "dead_roi_verdict.csv",
+      "dead_roi_verdict.tsv",
+      "field_steps_excluded.tsv",
+      "field_steps_flagged.tsv",
+      "moco_pinned_excluded.tsv",
+      "review_blanked_excluded.tsv",
+      "review_blank_windows.tsv"
+    ],
+    "recording": "^\\d{8}_\\d+\\.csv$",
+    "checked_exts": [
+      "csv",
+      "tsv",
+      "json"
+    ],
+    "manifest_required": [
+      "name",
+      "consumer",
+      "archive",
+      "producer",
+      "screens"
+    ],
+    "screens_required": {
+      "dead_roi": null,
+      "field_steps": [
+        "excluded",
+        "flagged",
+        "unscanned"
+      ],
+      "moco_pin": [
+        "excluded",
+        "flagged",
+        "unscanned"
+      ],
+      "f0_displaced": [
+        "excluded",
+        "kept"
+      ]
+    }
+  },
+  "export_rules": {
+    "_comment": "Rules only exports follow. A treatment field lists every treatment region the export holds, high K+ included (Tony, 2026-10-12); baseline is implied.",
+    "moco_pools": {
+      "_comment": "a cohort with slices of both kinds is pooled: flex+rigid",
+      "mixed": "flex+rigid",
+      "mixedmoco": "flex+rigid",
+      "mixed_moco": "flex+rigid"
+    },
+    "inboxes": {
+      "_comment": "Where exports are written, under the Dropbox data root. Each child folder of an inbox is one export. 'exports/*' means every consumer folder under exports/. A directory starting with '_' (a holding area: _hold, _superseded, _quarantine) and the names in 'skip' are not exports.",
+      "paths": [
+        "2R",
+        "exports/*"
+      ],
+      "skip": [
+        "QUARANTINE",
+        "external"
+      ]
+    },
+    "checked_from": {
+      "_comment": "An export folder holding any entry older than this day predates the export scheme and is not checked: existing exports keep their names (Tony, 2026-10-12). Renaming starts with the first batch built after the extension lands.",
+      "date": "20261013"
+    }
+  },
   "reserved": [
     "then",
     "vs"
@@ -244,5 +493,9 @@
     "copy",
     "fixed",
     "full"
-  ]
+  ],
+  "default_optional": [
+    "thr"
+  ],
+  "_comment_thr": "thr on a deliverable is optional (Tony, 2026-10-12): written when the page is not the canonical 4x, or whenever a producer chooses; no thr field means thr4x. On an export it is required."
 }
