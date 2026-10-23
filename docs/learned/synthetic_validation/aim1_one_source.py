@@ -44,7 +44,7 @@ HERE = Path(__file__).resolve().parent
 
 
 def cell(args):
-    jit, part, n_ev, bg, seed = args
+    idx, (jit, part, n_ev, bg, seed) = args
     from bugarach.assess import assess_coactivity
     from bugarach.simulate import simulate_coordination
     import measure_coordination_rates as mcr
@@ -52,11 +52,11 @@ def cell(args):
     s, gt = simulate_coordination(
         duration_sec=DURATION, n_roi=N_ROI, bg_rate_hz=bg, participation=(part,),
         n_per_level=(n_ev,), jitter_sec=jit, min_sep_sec=MIN_SEP, grid_sec=0.1,
-        seed=1000 + seed)
+        seed=1000 + 100 * idx + seed)   # its own background per cell (see below)
     st = next(iter(s.streams.values()))
     L = int(round(DURATION / mcr.DT))
     trains = [np.minimum(mcr._frames(np.asarray(t), 0.0, DURATION), L - 1) for t in st.t50rise]
-    rng = np.random.RandomState(7 + seed)
+    rng = np.random.RandomState(7 + 100 * idx + seed)
     m = mcr.measure(trains, L, rng)
     cr = {w: mcr.solve(c["f2"], c["f3"], N_ROI, float(w), "fixed") for w, c in m["cum"].items()}
 
@@ -67,7 +67,7 @@ def cell(args):
     true = mcr.truth(gt, N_ROI, DURATION)
     true.update(jitter=jit, part_frac=part, n_events=n_ev, bg_rate=bg,
                 per_min=60.0 * len(gt.events) / DURATION, n_onsets=int(sum(len(t) for t in trains)))
-    return dict(seed=seed, true=true, coord_rates=cr, assess={str(k): v for k, v in asr.items()})
+    return dict(seed=seed, cell=idx, true=true, coord_rates=cr, assess={str(k): v for k, v in asr.items()})
 
 
 def main():
@@ -77,12 +77,17 @@ def main():
     ap.add_argument("--out", type=Path, default=None, help="figure folder (default: darkroom)")
     a = ap.parse_args()
     seeds, jits = (SEEDS[:1], JITTERS[::3]) if a.quick else (SEEDS, JITTERS)
-    grid = list(itertools.product(jits, PARTS, N_EVENTS, BG_RATES, seeds))
+    # Every recording gets its own seed. The first run (2026-10-23) seeded 1000 + seed in every
+    # cell, and the generator draws the background first, so all cells at one background rate
+    # shared five background draws and their errors were correlated across Figure 1. Both blind
+    # theory passes found it independently (goal page, Aim 0).
+    cells = list(itertools.product(jits, PARTS, N_EVENTS, BG_RATES))
+    grid = [(i, (*c, s)) for i, c in enumerate(cells) for s in seeds]
     t0 = time.time()
     with ProcessPoolExecutor(a.workers) as ex:
         rows = list(ex.map(cell, grid))
     print(f"{len(rows)} recordings in {time.time() - t0:.0f} s", file=sys.stderr)
-    rec = dict(what="Aim 1a: one source, random membership, blind recovery", n_roi=N_ROI,
+    rec = dict(what="Aim 1a: one source, random membership, blind recovery", seeding="per cell", n_roi=N_ROI,
                duration_sec=DURATION, min_sep_sec=MIN_SEP, ks=KS, quick=a.quick, rows=rows)
     name = "aim1_one_source_quick.json" if a.quick else "aim1_one_source.json"
     (HERE / name).write_text(json.dumps(rec, indent=1, default=float))

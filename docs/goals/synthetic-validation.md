@@ -48,8 +48,66 @@ solving this with brute force."* For this generator, yes. The derivations are in
   estimate is noise-dominated rather than biased.
 
 Figure 1 now carries the predictions as dashed lines, and the fitted jitter as its own series.
+After the reseeding below, the exact form matches the measured median participants within a median
+0.011 (worst 0.06) of the planted value at 0.01 Hz, and within 0.016 (worst 0.11) at 0.05 Hz for
+events of 10 or more cells (`theory_check.json`).
+
+### Aim 0, replicated blind (2026-10-23)
+
+Tony then asked for the pass to be run *"two more times with independent agents that don't know
+what you discovered, to see if this is the only solution"*. Two agents got his first question and
+pointers to the code and the Aim 1a record, nothing else, each in its own checkout of `main`. Their
+scripts are kept in [`learned/synthetic_validation/blind_a/` and `blind_b/`](../learned/synthetic_validation/blind_README.md).
+
+**All three reached the same core answer independently:**
+
+| result | this session | blind A | blind B |
+|---|---|---|---|
+| the coordination-rates tool's excess cumulants, exactly, with the at-most-one-event term | ✓ (on a second try) | ✓ | ✓ |
+| k_hat = 2 + (k − 2) g_3/g_2, which is the "window must exceed jitter" behaviour | ✓ | ✓ | ✓ |
+| jitter from how the pair count changes with window | ✓ (one-parameter fit) | ✓ (joint fit of jitter, k, rate) | ✓ (ratio of two windows) |
+| chance clusters at K: 60 q (1 − q)^2 per minute from the binomial tail | ✓ | ✓ | ✓ |
+| two sources with equal jitter are not identifiable from pairs and triples | stated | ✓ (as a rank question) | ✓ |
+| a shared slow rate change grows with window differently from coordination | stated | ✓ | — |
+
+**What only the blind passes found:**
+- **A design flaw in Aim 1a** (both). The seeds were `1000 + seed` in every cell and the generator
+  draws the background first, so every cell at one background rate shared five background draws.
+  Errors in Figure 1 were correlated across each row, and at 0.05 Hz the five happened to run low.
+  **Fixed**: each recording now has its own seed, Aim 1a was rerun, and the first record is kept as
+  `aim1_one_source_shared_seeds.json`. The 0.05 Hz rows now sit on the prediction.
+- **The noise of each estimate**, from Charlier polynomials (orthogonal under a Poisson
+  background), and with it a signal-to-noise figure that predicts when the tool returns nothing
+  (A and B).
+- **The assessment fully**: participants and jitter as medians over a mixture of chance and event
+  clusters. Its jitter saturates because onsets are gathered within ±1.5 s: a 1 s Gaussian cut
+  there has SD 0.74 s (A and B).
+- **The ADR-0008 chance floor in closed form**, matching `window_floor` exactly or within one cell
+  (A and B). At 33 cells it is 6 at 0.01 Hz and 12 at 0.05 Hz, so a 5-cell event can never pass it
+  at either: a capability edge stated before any detector runs.
+- **Count detector recall and false alarms** analytically, within about 0.03 recall in most
+  conditions (B).
+- **A joint fit across windows** that recovers jitter within about 5 % from 0.2 s, and participants
+  and rate within a few per cent (A). Better than this session's one-parameter fit, which reads
+  0.2 s as about 0.17 s. Adopt it.
+- **Routes not yet taken** (both): Fisher information and Cramér–Rao bounds for the cluster
+  process, which is the principled answer to *where parameters stop being identifiable*; scan
+  statistics for the sliding detectors; grid axes in dimensionless groups (σ/w, λw, N·b·w, the
+  signal-to-noise, K against the floor).
+
+**Disagreements:** none on substance. Open residuals: B saw f3 5–7 % below prediction at 0.05 Hz
+over 60 seeds; A saw rate 3–5 % above prediction. Neither is explained.
+
+**So: not the only solution, but one answer reached three ways.** The cumulant route is the one all
+three found first. The other analytical routes (likelihood bounds, scan statistics, the
+correlogram's own second-order prediction) are different ways to the same quantities and to the
+limits on them, not competing answers.
 
 ### Aim 1a, first result (2026-10-23; measured, one generator, not reviewed)
+
+⚠ **Rerun the same day with a seed per recording** (see *Aim 0, replicated blind*). The bullets below
+were written on the first run, whose cells shared five backgrounds; they still hold in direction,
+and Figure 1 is the rerun.
 
 Figure 1, *recovery against planted jitter*, is
 `synth_recovery_plot_one-source-jitter_20261023.png` in the darkroom folder below and in
@@ -115,9 +173,12 @@ Nothing sweeps conditions, and nothing runs simulate → assess → `derive_spec
 
 ## The plan (revised from the handoff's)
 
-**Aim 0: predict first, simulate to check** (added 2026-10-23). For each question, derive what the
-tools and the simpler detectors should return from the planted parameters, then simulate to test
-the prediction and measure what is left over. Next derivations, in order of use:
+**Aim 0: predict first, simulate to check** (added 2026-10-23; replicated blind the same day). For
+each question, derive what the tools and the simpler detectors should return from the planted
+parameters, then simulate to test the prediction and measure what is left over. Next, in order:
+- move blind A's joint fit across windows, the noise model and the closed-form floor into
+  `theory.py`, and re-plot Figure 1 on dimensionless axes;
+- Cramér–Rao bounds for (λ, k, σ), as Aim 1's identifiability boundary;
 - two sources: their cumulants add, so the tool's window dependence separates sources only when
   their jitters differ; with equal jitters only a combined participation term is identifiable
   (Aim 1c's answer, predicted before it is run);

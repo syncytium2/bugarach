@@ -1,0 +1,15 @@
+Jitter from the window ratio of the pair excess (blind), sigma_hat / sigma: median [IQR] over 60 recordings per cell
+(assess jit_obs / sigma beside it, for comparison)
+sigma=0.05 b=0.01: w1/2: 1.64 [1.36,1.95] (undef 6)  w1/4: 1.69 [1.07,2.41] (undef 7)  | assess K=4: 2.42
+sigma=0.05 b=0.05: w1/2: 1.74 [1.08,2.36] (undef 10)  w1/4: 2.10 [1.27,2.66] (undef 9)  | assess K=4: 13.03
+sigma=0.20 b=0.01: w1/2: 1.07 [0.95,1.23] (undef 0)  w1/4: 1.08 [0.94,1.25] (undef 0)  | assess K=4: 1.20
+sigma=0.20 b=0.05: w1/2: 1.05 [0.89,1.19] (undef 3)  w1/4: 1.15 [0.97,1.35] (undef 6)  | assess K=4: 3.27
+sigma=0.50 b=0.01: w1/2: 1.05 [1.00,1.10] (undef 0)  w1/4: 1.00 [0.97,1.06] (undef 0)  | assess K=4: 0.99
+sigma=0.50 b=0.05: w1/2: 1.03 [0.95,1.07] (undef 6)  w1/4: 1.05 [0.97,1.16] (undef 6)  | assess K=4: 1.32
+sigma=1.00 b=0.01: w1/2: 1.11 [0.96,1.37] (undef 1)  w1/4: 1.04 [0.95,1.10] (undef 0)  | assess K=4: 0.69
+sigma=1.00 b=0.05: w1/2: 1.06 [0.91,1.18] (undef 11)  w1/4: 1.08 [0.97,1.22] (undef 10)  | assess K=4: 0.69
+
+w1/4 estimator by participants k (both backgrounds pooled): median sigma_hat/sigma
+  k=5: sigma 0.05: 2.56; sigma 0.2: 1.14; sigma 0.5: 1.01; sigma 1.0: 1.03
+  k=10: sigma 0.05: 2.20; sigma 0.2: 1.15; sigma 0.5: 1.04; sigma 1.0: 1.04
+  k=20: sigma 0.05: 1.48; sigma 0.2: 1.04; sigma 0.5: 1.02; sigma 1.0: 1.05
