@@ -46,6 +46,10 @@ cross-validation.
 
 ## Where it stands
 
+**2026-10-22: on hold.** Tony: *"the deep learning models are on hold for now."* No training,
+bake-off or write-up on this goal until he lifts it. The detector document leaves chorus out of
+its main text for this reason ([`detector-review-document.md`](detector-review-document.md)).
+
 **2026-09-24, how little chorus needs to see** ([run record](../learned/runs/2026-09-24-chorus-span-sweep/README.md)):
 the same 409.6 s-trained checkpoints run over pieces of 409.6, 300, 200, 100, 60 and 30 s.
 - On each model's own bench, F1 is unchanged down to 200 s, within about 0.02.
