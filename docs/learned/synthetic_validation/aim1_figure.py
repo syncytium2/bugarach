@@ -109,11 +109,12 @@ def main():
              "over seeds, participation (0.15/0.3/0.6) and event count (15/45), bars the "
              "interquartile range. Dashed line: perfect recovery.", fontsize=8.5, color="#333")
     fig.tight_layout(rect=(0, 0.03, 1, 0.94))
-    # Synthetic only, so no dataset fields: the scheme's explainer type, with a topic.
+    # Synthetic data: the synth source, a recovery plot, and a topic (armory naming README).
     sys.path.insert(0, str(ROOT / "tools"))
     from naming import artifact_name
-    name = artifact_name.build(artifact_name.load_codes(), type="explainer", ext="png",
-                               topic="synthetic recovery one source jitter")
+    name = artifact_name.build(artifact_name.load_codes(), source="synth", type="recovery",
+                               form="plot", topic="one source jitter", ext="png",
+                               date="20261023")
     for d in (a.out, HERE):
         fig.savefig(d / name, dpi=130)
         print(d / name)

@@ -22,7 +22,7 @@ low participation. Tony: *"Treat like a phd project (except we have days not yea
 ### Aim 1a, first result (2026-10-23; measured, one generator, not reviewed)
 
 Figure 1, *recovery against planted jitter*, is
-`explainer_synthetic-recovery-one-source-jitter_20261023.png` in the darkroom folder below and in
+`synth_recovery_plot_one-source-jitter_20261023.png` in the darkroom folder below and in
 the learned folder. What it shows:
 
 - **The coordinated share of onsets is the most robust quantity**: within about 20 % of

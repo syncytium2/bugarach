@@ -13,7 +13,26 @@
     "patch_timecourse_senktide_ovx_20261007.pdf",
     "raster_pensub_fast_senktide_ovx_win5min_20261007.png",
     "explainer_optimization-history_20261007.html",
-    "explainer_why-the-window-is-20-minutes_20261007_v2.pdf"
+    "explainer_why-the-window-is-20-minutes_20261007_v2.pdf",
+    "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012",
+    "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_win20min_thr3x_rigid_blanked_20261012",
+    "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_thr4x_flex+rigid_blanked_20261012",
+    "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+    "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_unblanked_20261006",
+    "export_roi_senktide-ttx_di-ovx-male-orx_win20min_thr4x_flex_unblanked_20260923",
+    "export_pensub_senktide-ttx_di-ovx-male-orx_thr4x_flex_unblanked_20260810_v2",
+    "raster_roi_fast_senktide_di_win5min-strict_20261012.png",
+    "pilot-20260917_before-after_roi_fast-slow_apv+cnqx-then-gz_di_win20min_20261012.png",
+    "pilot-20260917_before-after_roi_fast-slow_apv+cnqx-then-gz_di_win20min_thr3x_20261012.png",
+    "pilot-20260917_before-after_roi_fast-slow_apv+cnqx-then-gz_di_win20min_thr4x_20261012.png",
+    "raster_roi_combined_senktide-ttx_di_win20min_thr3x_20261012.html",
+    "pilots-20260811-20260917_before-after_roi_fast-slow-combined_win20min_20261014.pdf",
+    "pilots-20260811-20260917_before-after_roi_fast-slow-combined_win20min_thr3x_20261014.pdf",
+    "synth_recovery_plot_one-source-jitter_20261023.png",
+    "synth_raster_plot_fast_di-ovx_two-sources-close_20261023.html",
+    "synth_raster_dataset_two-sources-close_20261023",
+    "synth_raster_dataset_fast_ttx_di_win20min_20261023.csv",
+    "synth_raster_plot_di-ovx_20261023_v2.png"
   ],
   "invalid": [
     {
@@ -135,6 +154,126 @@
     {
       "name": "explainer_full-story_20261007.html",
       "why": "banned word in a topic"
+    },
+    {
+      "name": "2026-10-12_apv_cnqx_gz_aug_MIXED_MOCO_4x_REVIEW_BLANKED_FIELDSTEPS_UNSCANNED",
+      "why": "today's bugarach_eval folder: capitals, date first, no type"
+    },
+    {
+      "name": "pilot_apv_cnqx_gz_20261012_BLANKED_DEADROI",
+      "why": "today's fireflies folder: capitals, no type, cohort spelled as treatments"
+    },
+    {
+      "name": "pilot_apv_cnqx_gz_ROI_FAST_20min_20261012_clean.csv",
+      "why": "today's fireflies file, as a standalone name"
+    },
+    {
+      "name": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012.csv",
+      "why": "an export is a folder: no extension"
+    },
+    {
+      "name": "raster_roi_combined_senktide-ttx_di_win20min_20261007",
+      "why": "a deliverable needs an extension"
+    },
+    {
+      "name": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_rigid+flex_blanked_20261012",
+      "why": "moco not in canonical order"
+    },
+    {
+      "name": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_mixed_blanked_20261012",
+      "why": "'mixed' is an alias; written flex+rigid"
+    },
+    {
+      "name": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_4x_flex+rigid_blanked_20261012",
+      "why": "'4x' is an alias; written thr4x"
+    },
+    {
+      "name": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_unreviewed_20261012",
+      "why": "'unreviewed' is an alias; written unblanked"
+    },
+    {
+      "name": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex-rigid_blanked_20261012",
+      "why": "moco pools with '+'; slices are not side by side"
+    },
+    {
+      "name": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_flex+rigid_blanked_20261012",
+      "why": "missing the threshold"
+    },
+    {
+      "name": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_alive_20261012",
+      "why": "dead-ROI removal belongs in manifest.json, not the folder name"
+    },
+    {
+      "name": "pilot-20260917_before-after_roi_fast-slow_apv+cnqx-then-gz_di_thr3x_win20min_20261012.png",
+      "why": "threshold before the window; it is written after it"
+    },
+    {
+      "name": "pilot-20260917_before-after_roi_fast-slow_apv+cnqx-then-gz_di_win20min_3x_20261012.png",
+      "why": "'3x' is an alias; written thr3x"
+    },
+    {
+      "name": "patch_timecourse_senktide_ovx_thr3x_20261007.pdf",
+      "why": "patch has no threshold field"
+    },
+    {
+      "name": "pilots-20260917-20260811_before-after_roi_combined_win20min_20261014.pdf",
+      "why": "pilots not oldest first"
+    },
+    {
+      "name": "pilots-20260811-20260811_before-after_roi_combined_win20min_20261014.pdf",
+      "why": "the same pilot twice"
+    },
+    {
+      "name": "pilots-20260811_before-after_roi_combined_win20min_20261014.pdf",
+      "why": "one pilot is pilot-<day>"
+    },
+    {
+      "name": "pilots-20260811-20261332_before-after_roi_combined_win20min_20261014.pdf",
+      "why": "not a calendar date"
+    },
+    {
+      "name": "pilots-20260811-20260917_before-after_roi_combined_apv+cnqx_male-di_win20min_20261014.pdf",
+      "why": "treatment and groups belong to each pilot, not the name"
+    },
+    {
+      "name": "pilots-20260811-20260917_export_roi_apv+cnqx_di_thr4x_rigid_blanked_20261014",
+      "why": "an export is one cohort"
+    },
+    {
+      "name": "coordinated-fraction_before-after_pilots-20260811-20260917_4x_win20min_20261014.pdf",
+      "why": "the hand-made name of 2026-10-14"
+    },
+    {
+      "name": "synth_raster_plot_20261023.png",
+      "why": "a synthetic name must say what was simulated: a dataset field or a topic"
+    },
+    {
+      "name": "synth_raster_two-sources_20261023.png",
+      "why": "a synthetic name says plot or dataset right after the type"
+    },
+    {
+      "name": "synth_raster_plot_fast_diestrus_20261023.png",
+      "why": "an alias left over reads as a misspelt code, not a topic"
+    },
+    {
+      "name": "synth_raster_plot_two-sources_fast_20261023.png",
+      "why": "codes come before the topic, in field order"
+    },
+    {
+      "name": "synth_recovery_plot_one-source-jitter_20261023",
+      "why": "a plot is a file and needs an extension"
+    },
+    {
+      "name": "synth_explainer_plot_x_20261023.png",
+      "why": "an explainer has its own layout and is not simulated data"
+    },
+    {
+      "name": "synth_raster_plot_roi_fast_20261023.png",
+      "why": "a synthetic name has no signal: nothing was imaged"
+    },
+    {
+      "name": "raster_plot_roi_fast_ttx_di_win20min_20261023.png",
+      "why": "only a synthetic name has a form field"
     }
   ],
   "build": [
@@ -212,6 +351,153 @@
         "ext": "html"
       },
       "expect": "explainer_optimization-history_20261007.html"
+    },
+    {
+      "args": {
+        "type": "export",
+        "source": "pilot-20260811",
+        "signal": "ROI",
+        "treatment": "APV+CNQX+GZ-then-high K+",
+        "groups": "MALE",
+        "win": "long_window_20",
+        "thr": "4x_sigma_est",
+        "moco": "MIXED_MOCO",
+        "review": "REVIEW_BLANKED",
+        "date": "20261012"
+      },
+      "expect": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012"
+    },
+    {
+      "args": {
+        "type": "export",
+        "source": "pilot-20260917",
+        "signal": "roi",
+        "treatment": "apv+cnqx-then-gabazine-then-hik",
+        "groups": "di",
+        "thr": "factor4",
+        "moco": "rigid",
+        "review": "blanked",
+        "date": "20261012"
+      },
+      "expect": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012"
+    },
+    {
+      "args": {
+        "type": "export",
+        "signal": "roi",
+        "treatment": "ttx-senktide",
+        "groups": "orx-di-ovx-male",
+        "win": "20min",
+        "thr": "4x",
+        "moco": "nonrigid",
+        "review": "unreviewed",
+        "date": "20260923"
+      },
+      "expect": "export_roi_senktide-ttx_di-ovx-male-orx_win20min_thr4x_flex_unblanked_20260923"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "signal": "roi",
+        "stream": "fast",
+        "treatment": "senktide",
+        "groups": "di",
+        "win": "short_window_5_strict",
+        "date": "20261012",
+        "ext": "png"
+      },
+      "expect": "raster_roi_fast_senktide_di_win5min-strict_20261012.png"
+    },
+    {
+      "args": {
+        "type": "before-after",
+        "source": "pilot-20260917",
+        "signal": "roi",
+        "stream": "fast-slow",
+        "treatment": "apv+cnqx-then-gz",
+        "groups": "di",
+        "win": "20min",
+        "thr": "3x_sigma_est",
+        "date": "20261012",
+        "ext": "png"
+      },
+      "expect": "pilot-20260917_before-after_roi_fast-slow_apv+cnqx-then-gz_di_win20min_thr3x_20261012.png"
+    },
+    {
+      "args": {
+        "type": "before-after",
+        "source": "pilot-20260917",
+        "signal": "roi",
+        "stream": "fast-slow",
+        "treatment": "apv+cnqx-then-gz",
+        "groups": "di",
+        "win": "20min",
+        "date": "20261012",
+        "ext": "png"
+      },
+      "expect": "pilot-20260917_before-after_roi_fast-slow_apv+cnqx-then-gz_di_win20min_20261012.png"
+    },
+    {
+      "args": {
+        "type": "before-after",
+        "source": "pilot-20260917, pilot-20260811",
+        "signal": "ROI",
+        "stream": "fast-slow-combined",
+        "win": "20min",
+        "date": "20261014",
+        "ext": "pdf"
+      },
+      "expect": "pilots-20260811-20260917_before-after_roi_fast-slow-combined_win20min_20261014.pdf"
+    },
+    {
+      "args": {
+        "type": "before-after",
+        "source": "pilots-20260917-20260811",
+        "signal": "roi",
+        "stream": "combined",
+        "win": "win20min",
+        "thr": "3x",
+        "date": "20261014",
+        "ext": "pdf"
+      },
+      "expect": "pilots-20260811-20260917_before-after_roi_combined_win20min_thr3x_20261014.pdf"
+    },
+    {
+      "args": {
+        "source": "synth",
+        "type": "recovery",
+        "form": "plot",
+        "topic": "One source jitter",
+        "ext": "png",
+        "date": "20261023"
+      },
+      "expect": "synth_recovery_plot_one-source-jitter_20261023.png"
+    },
+    {
+      "args": {
+        "source": "synth",
+        "type": "raster",
+        "form": "plot",
+        "stream": "FAST",
+        "groups": "OVX-DI",
+        "topic": "two sources close",
+        "ext": "html",
+        "date": "20261023"
+      },
+      "expect": "synth_raster_plot_fast_di-ovx_two-sources-close_20261023.html"
+    },
+    {
+      "args": {
+        "source": "synth",
+        "type": "raster",
+        "form": "dataset",
+        "stream": "fast",
+        "treatment": "TTX",
+        "groups": "diestrus",
+        "win": "long",
+        "date": "20261023"
+      },
+      "expect": "synth_raster_dataset_fast_ttx_di_win20min_20261023"
     }
   ],
   "build_refused": [
@@ -322,6 +608,286 @@
         "ext": "html"
       },
       "why": "a topic on a dataset name"
+    },
+    {
+      "args": {
+        "type": "export",
+        "source": "pilot-20260811",
+        "signal": "roi",
+        "treatment": "apv+cnqx+gz",
+        "groups": "male",
+        "thr": "4x",
+        "moco": "rigid",
+        "review": "blanked",
+        "date": "20261012",
+        "ext": "csv"
+      },
+      "why": "an export is a folder"
+    },
+    {
+      "args": {
+        "type": "export",
+        "source": "pilot-20260811",
+        "signal": "roi",
+        "treatment": "apv+cnqx+gz",
+        "groups": "male",
+        "moco": "rigid",
+        "review": "blanked",
+        "date": "20261012"
+      },
+      "why": "no threshold"
+    },
+    {
+      "args": {
+        "type": "export",
+        "source": "pilot-20260811",
+        "signal": "roi",
+        "treatment": "apv+cnqx+gz",
+        "groups": "male",
+        "thr": "5x",
+        "moco": "rigid",
+        "review": "blanked",
+        "date": "20261012"
+      },
+      "why": "unregistered threshold"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "signal": "roi",
+        "stream": "fast",
+        "treatment": "ttx",
+        "groups": "male",
+        "win": "win20min",
+        "date": "20261012"
+      },
+      "why": "a deliverable needs an extension"
+    },
+    {
+      "args": {
+        "type": "timecourse",
+        "source": "patch",
+        "treatment": "senktide",
+        "groups": "ovx",
+        "thr": "3x",
+        "date": "20261007",
+        "ext": "pdf"
+      },
+      "why": "patch has no threshold field"
+    },
+    {
+      "args": {
+        "type": "before-after",
+        "source": "pilot-20260811, patch",
+        "signal": "roi",
+        "stream": "combined",
+        "win": "win20min",
+        "date": "20261014",
+        "ext": "pdf"
+      },
+      "why": "only pilots share a source"
+    },
+    {
+      "args": {
+        "type": "before-after",
+        "source": "pilot-20260811, pilot-20260917",
+        "signal": "roi",
+        "stream": "combined",
+        "treatment": "apv+cnqx",
+        "win": "win20min",
+        "date": "20261014",
+        "ext": "pdf"
+      },
+      "why": "a several-pilot name has no treatment field"
+    },
+    {
+      "args": {
+        "type": "explainer",
+        "source": "pilot-20260811 pilot-20260917",
+        "topic": "coordination",
+        "date": "20261014",
+        "ext": "html"
+      },
+      "why": "an explainer covers no study"
+    },
+    {
+      "args": {
+        "source": "synth",
+        "type": "raster",
+        "form": "plot",
+        "ext": "png",
+        "date": "20261023"
+      },
+      "why": "nothing says what was simulated"
+    },
+    {
+      "args": {
+        "source": "synth",
+        "type": "raster",
+        "topic": "x",
+        "ext": "png",
+        "date": "20261023"
+      },
+      "why": "no form"
+    },
+    {
+      "args": {
+        "source": "synth",
+        "type": "raster",
+        "form": "plot",
+        "topic": "fast",
+        "ext": "png",
+        "date": "20261023"
+      },
+      "why": "the topic would read back as a stream"
+    },
+    {
+      "args": {
+        "source": "synth",
+        "type": "raster",
+        "form": "plot",
+        "signal": "roi",
+        "topic": "x",
+        "ext": "png",
+        "date": "20261023"
+      },
+      "why": "no signal on synthetic data"
+    },
+    {
+      "args": {
+        "type": "raster",
+        "form": "plot",
+        "signal": "roi",
+        "stream": "fast",
+        "treatment": "ttx",
+        "groups": "di",
+        "win": "long",
+        "ext": "png",
+        "date": "20261023"
+      },
+      "why": "form is synthetic-only"
     }
-  ]
+  ],
+  "export_files": {
+    "_comment": "Data files inside an export folder: [folder, file] pairs. A field is written once on the path: in the folder if every file shares it, in the file if they differ.",
+    "valid": [
+      [
+        "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "metrics_fast_win20min.csv"
+      ],
+      [
+        "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "metrics_slow_win5min.csv"
+      ],
+      [
+        "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "fsw_win20min.csv"
+      ],
+      [
+        "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "dead_roi_verdict.csv"
+      ],
+      [
+        "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "manifest.json"
+      ],
+      [
+        "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012",
+        "20260811_370.csv"
+      ],
+      [
+        "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012",
+        "slices.csv"
+      ],
+      [
+        "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012",
+        "regions.csv"
+      ],
+      [
+        "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012",
+        "moco_pinned_excluded.tsv"
+      ],
+      [
+        "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012",
+        "review_blanked_excluded.tsv"
+      ],
+      [
+        "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012",
+        "field_steps_excluded.tsv"
+      ],
+      [
+        "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012",
+        "metrics_fast.csv"
+      ],
+      [
+        "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "metrics_fast_win20min_alive.csv"
+      ],
+      [
+        "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "metrics_fast_win20min_unfiltered.csv"
+      ],
+      [
+        "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "metrics_custard_win5min-strict.csv"
+      ]
+    ],
+    "invalid": [
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "pilot_apv_cnqx_gz_ROI_FAST_20min_20261012_clean.csv",
+        "why": "today's fireflies file name"
+      },
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "pilot_fsw_factor4_20min.csv",
+        "why": "today's fsw name"
+      },
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "metrics_fast.csv",
+        "why": "the folder has no window, so the file must carry it"
+      },
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "metrics_win20min.csv",
+        "why": "a metrics table holds one stream and must say which"
+      },
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "metrics_fast-slow_win20min.csv",
+        "why": "one stream per file"
+      },
+      {
+        "folder": "pilot-20260811_export_roi_apv+cnqx+gz-then-hik_male_win20min_thr4x_flex+rigid_blanked_20261012",
+        "file": "metrics_fast_win20min.csv",
+        "why": "the folder already carries the window"
+      },
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "fsw_fast_win20min.csv",
+        "why": "fsw holds every stream; it has no stream field"
+      },
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "metrics_fast_win20min_clean.csv",
+        "why": "'clean' is an alias; written alive"
+      },
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "metrics_win20min_fast.csv",
+        "why": "fields out of order"
+      },
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "field_steps_excluded.csv",
+        "why": "the bugarach contract would load a .csv as a recording; the manifest is .tsv"
+      },
+      {
+        "folder": "pilot-20260917_export_roi_apv+cnqx-then-gz-then-hik_di_thr4x_rigid_blanked_20261012",
+        "file": "metrics_fast_win20min_20261012.csv",
+        "why": "the date is the folder's"
+      }
+    ]
+  }
 }
