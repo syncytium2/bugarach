@@ -102,7 +102,7 @@ def main():
     t0 = time.time()
     with ProcessPoolExecutor(a.workers) as ex:
         rows = list(ex.map(cell, grid))
-        chance = list(ex.map(chance_cell, list(itertools.product(BG_RATES, range(10)))))
+        chance = list(ex.map(chance_cell, list(itertools.product(BG_RATES, range(100)))))
     print(f"{len(rows)} recordings + {len(chance)} background-only in {time.time() - t0:.0f} s",
           file=sys.stderr)
     rec = dict(what="Aim 1a: one source, random membership, blind recovery",

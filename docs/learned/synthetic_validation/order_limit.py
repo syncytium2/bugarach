@@ -1,39 +1,48 @@
-"""Aim 0, order: a synfire-style order indicator, its closed forms, and what they do not cover.
+"""Aim 0, order: a synfire-style order indicator, its closed forms and fits, and their limits.
 
-Goal page: docs/goals/synthetic-validation.md, "Aim 0, membership and order". Synthetic only.
-Revised after the murderboard of 2026-10-23 (docs/reviews/synthetic-validation-aim0_2026-10-23.md).
+Goal page: docs/goals/synthetic-validation.md, "Aim 0, order". Synthetic only. Revised after
+both murderboard rounds of 2026-10-23 (docs/reviews/synthetic-validation-aim0_2026-10-23.md).
 
-Model. Each source s has a latency template delta_si ~ N(0, s^2) over cells; an event from s
-puts cell i at t0 + delta_si + N(0, sigma^2). Membership is random (k of N cells). Readout is
-perfect: each event's participants and onsets are known, there is no background, and no
-coincidence window is involved.
+Model. Each source has a latency template: a fixed offset per cell, drawn N(0, delta^2) once;
+an event from it puts cell i at t0 + offset_i + N(0, sigma^2). Membership is random (k of N
+cells). Readout is perfect: each event's participants and onsets are known, there is no
+background, and no coincidence window is involved. r = delta / sigma.
 
 Statistic. For each pair, D_ij = sum over co-participations of sign(t_j - t_i). Cells are put
 in an order, and F = sum over ordered pairs (i before j) of D_ij / sum of co-participations: net
-agreement (agreeing minus disagreeing) as a share of all pair co-participations, 0 with no
-order and 1 for a perfect sequence. The order is chosen two ways:
+agreement (agreeing minus disagreeing), as a share of all pair co-participations; 0 with no
+order, 1 for a perfect sequence. The order is chosen two ways:
 
   * the SCORE sort: each cell's net lead count (a Borda / Copeland count), O(N^2), no search;
-  * a LOCAL SEARCH from it (insertion moves until none improves F), standing in for the
-    simulated annealing of tools/synfire_scan.py, which can only do as well or better.
+  * a LOCAL SEARCH from it (insertion moves until none improves F). It is an approximate
+    stand-in for the simulated annealing of tools/synfire_scan.py, not a bound on it: a port of
+    PySpike's annealer on the same matrices ended slightly below it (no-order constant about
+    0.48 against 0.49-0.50; murderboard round 2, role 6).
 
 This differs from SPIKE-order / the Synfire Indicator (Kreuz, Satuvuori, Pofahl & Mulansky 2017,
-New J Phys 19:043028) in three ways: coincidences come from known events rather than ISI-adaptive
-windows; the sort; and the normalisation, which there is by all spikes, coincident or not
-(eq. 14), so background and non-participating spikes shrink it by a factor that varies with
-participation and rate (murderboard role 6 measured 0.28 at 10 of 33 cells with no background,
-less with it). None of the numbers below is PySpike's.
+New J Phys 19:043028) in four ways: coincidences come from known events, not ISI-adaptive
+windows (which on sparse trains also pair onsets from neighbouring events: +33 % coincidences
+in a reviewer's test at 33 cells, 10 per event, an event every 25 s); the sort; the normalisation,
+which there is by all spikes (eq. 14), so with no background each participant's k - 1 partners
+out of N - 1 possible give F_Kreuz = F (k - 1)/(N - 1) (0.28 at 10 of 33 cells), less again when
+background spikes are present; and the annealing itself. None of the numbers below is PySpike's.
 
-Predictions, tau = s / sigma:
-  one template:   F = (2/pi) arctan(tau): the population Kendall tau between template and observed
-                  latencies under a bivariate normal (Greiner's relation; Kruskal 1958).
-  M templates:    the signal term F_M ~ sqrt(2/pi) * sqrt((2/pi) arcsin(tau^2 / (1 + tau^2))) / sqrt(M).
-                  A finite run adds the no-order bias in quadrature: F ~ sqrt(F_M^2 + F_0^2).
-  no order:       F_0 ~ c / sqrt(n_bar), n_bar = mean co-participations per pair. The 1/sqrt
-                  scaling is the prediction; c is FITTED here, depends on N and k, and is larger
-                  under a search than under the score sort. Kreuz et al. 2017 (sec. 3.1) already
-                  note that the sorted indicator on order-free trains is a finite-size effect that
-                  falls with the number of spikes.
+Predictions:
+  one template:   F = (2/pi) arctan(r): the population Kendall tau between template and observed
+                  latencies under a bivariate normal (Greiner's relation; Kruskal 1958). A finite
+                  run adds the no-order bias in quadrature, sqrt(F_1^2 + F_0^2), which is what the
+                  score sort shows at small r; at large r the sort itself loses about 2 %.
+  M templates:    the signal term F_M ~ sqrt(2/pi) * sqrt((2/pi) arcsin(r^2 / (1 + r^2))) / sqrt(M):
+                  for each pair the M templates' signs average like M independent draws of
+                  2 Phi(X) - 1 with X ~ N(0, r^2), whose variance is (2/pi) arcsin(r^2/(1+r^2)),
+                  and E|mean| of that is sqrt(2/pi) times its SD (central limit, so asymptotic in
+                  M; it assumes the order agrees with every pair's net sign, which it cannot, so
+                  it runs high at moderate M). The no-order bias adds in quadrature.
+  no order:       F_0 ~ c / sqrt(n_bar), n_bar = mean co-participations per pair: the 1/sqrt(n)
+                  rate of a sum of random signs. c is FITTED, depends on N and k, and is larger
+                  under a search than under the score sort. Kreuz et al. 2017 (sec. 2.5, 3.1)
+                  already note the finite-size effect and that the null would be binomial if
+                  pairs were independent; the content here is the scaling with a fitted constant.
 
     python docs/learned/synthetic_validation/order_limit.py
 """
@@ -117,11 +126,11 @@ if __name__ == "__main__":
     rng = np.random.default_rng(0)
     N, k, sigma, REPS = 33, 10, 0.2, 40
     rec = dict(N=N, k=k, sigma_sec=sigma, one=[], none=[], many=[], c_by_field=[])
-    print(f"one template, {N} cells, {k} per event, 200 events: F (score sort) vs (2/pi) arctan(s/sigma)")
+    print(f"one template, {N} cells, {k} per event, 200 events: F (score sort) vs (2/pi) arctan(r)")
     for s in (0.05, 0.1, 0.2, 0.5, 1.0):
         f = np.mean([indicators(simulate(N, k, 200, 1, s, sigma, rng), N)[0] for _ in range(REPS)])
-        rec["one"].append(dict(tau=s / sigma, measured=f, predicted=pred_one(s / sigma)))
-        print(f"  tau {s / sigma:5.2f}: measured {f:.3f}  predicted {pred_one(s / sigma):.3f}")
+        rec["one"].append(dict(r=s / sigma, measured=f, predicted=pred_one(s / sigma)))
+        print(f"  r {s / sigma:5.2f}: measured {f:.3f}  predicted {pred_one(s / sigma):.3f}")
     print("\nno order: F * sqrt(n_bar) under the score sort and under the local search")
     for E in (25, 50, 100, 200, 400, 800):
         v = np.array([indicators(simulate(N, k, E, 1, 0.0, sigma, rng), N)[:2] for _ in range(REPS)])
@@ -138,7 +147,7 @@ if __name__ == "__main__":
                                       c_search=v[:, 1].mean() * np.sqrt(nb)))
         print(f"  {NN:3d} cells, {kk:2d} per event: c score {v[:, 0].mean() * np.sqrt(nb):.3f}, "
               f"c search {v[:, 1].mean() * np.sqrt(nb):.3f}")
-    print("\nM templates, tau = 2.5, 2000 events: F (score sort) vs sqrt(F_M^2 + F_0^2), "
+    print("\nM templates, r = 2.5, 2000 events: F (score sort) vs sqrt(F_M^2 + F_0^2), "
           "F_0 measured on the same run size")
     E = 2000
     f0 = np.mean([indicators(simulate(N, k, E, 1, 0.0, sigma, rng), N)[0] for _ in range(REPS)])

@@ -1,9 +1,10 @@
-"""Figure 1 for Aim 1a: recovered divided by planted, for each parameter, against planted jitter.
+"""Figure 1 for Aim 1a: what each estimate recovers, against planted jitter.
 
 Measured values only; the Aim 0 predictions are compared in Figure 2 (aim0_figures.py). The
-caption lives on the goal page, where it is set at body size. Reads aim1_one_source.json beside
-this file. Writes the PNG to --out (default: the darkroom folder this goal claims) and, unless
---no-repo, a copy beside this file.
+caption lives on the goal page. Reads aim1_one_source.json beside this file. Writes the PNG to
+--out (default: the darkroom folder this goal claims) and, unless --no-repo, a copy beside this
+file. Panels A-C and E-G are recovered / planted; D and H are recovered jitter in seconds against
+the identity line, so an estimator that returns a constant reads as a flat line.
 
     PYTHONPATH=src python docs/learned/synthetic_validation/aim1_figure.py
 """
@@ -19,6 +20,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
@@ -27,16 +29,19 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(HERE))
 
-# Fixed categorical order (dataviz default palette, light mode); K = 6 takes red, not a second
-# green, so it cannot be confused with the 4 s window (murderboard role 10).
+plt.rcParams.update({"font.size": 12})
+
+# (key, label, colour, marker, line style). Colour picks the member; marker and line pick the
+# family (circle/solid: coordination rates; square/dashed: assessor; diamond: the joint fit), so
+# no pair is told apart by colour alone.
 SERIES = [
-    ("cr 1.0", "coordination rates, 1 s window", "#2a78d6"),
-    ("cr 2.0", "coordination rates, 2 s window", "#eb6834"),
-    ("cr 4.0", "coordination rates, 4 s window", "#1baf7a"),
-    ("as 3", "assessor, K = 3 cells", "#eda100"),
-    ("as 4", "assessor, K = 4 cells", "#e87ba4"),
-    ("as 6", "assessor, K = 6 cells", "#e34948"),
-    ("fit", "coordination rates, joint fit across windows", "#6250d6"),
+    ("cr 1.0", "coordination rates, 1 s window", "#2a78d6", "o", "-"),
+    ("cr 2.0", "coordination rates, 2 s window", "#eb6834", "o", "-"),
+    ("cr 4.0", "coordination rates, 4 s window", "#1baf7a", "o", "-"),
+    ("as 3", "assessor, K = 3 cells", "#eda100", "s", "--"),
+    ("as 4", "assessor, K = 4 cells", "#e87ba4", "s", "--"),
+    ("as 6", "assessor, K = 6 cells", "#008300", "s", "--"),
+    ("fit", "joint fit across windows (events of 10+ cells)", "#6250d6", "D", "-"),
 ]
 PARAMS = [  # (y label, truth key, coordination-rates key, assessor key)
     ("participants per event", "k", "k", "part"),
@@ -45,6 +50,7 @@ PARAMS = [  # (y label, truth key, coordination-rates key, assessor key)
     ("jitter SD", "jitter", None, "jit"),
 ]
 YLIM = (0.05, 30)
+JLIM = (0.004, 3)
 
 
 def value(row, series, tkey, cr_key, as_key):
@@ -52,7 +58,7 @@ def value(row, series, tkey, cr_key, as_key):
     kind, _, arg = series.partition(" ")
     if kind == "fit":
         f = row.get("_fit")
-        if f is None:
+        if f is None or row["true"]["k"] < 9.5:
             return None
         return {"k": f["k"], "per_min": f["lam"] * 60.0, "jitter": f["sigma"]}.get(tkey)
     if kind == "cr":
@@ -82,19 +88,21 @@ def main():
 
     jits = sorted({r["true"]["jitter"] for r in rows})
     bgs = sorted({r["true"]["bg_rate"] for r in rows})
-    fig, axes = plt.subplots(len(bgs), len(PARAMS), figsize=(15, 7.4), sharex=True, sharey=True)
+    fig, axes = plt.subplots(len(bgs), len(PARAMS), figsize=(12.5, 7.6), sharex=True)
     letters = "ABCDEFGH"
     for i, bg in enumerate(bgs):
         for j, (label, tkey, ckey, akey) in enumerate(PARAMS):
             ax = axes[i, j]
-            ax.axhline(1.0, color="#888", lw=1, ls="--", zorder=0,
-                       label="perfect recovery" if (i, j) == (0, 0) else None)
-            for s_i, (skey, slabel, col) in enumerate(SERIES):
-                if skey == "fit" and tkey == "share":
-                    continue
+            jitter_panel = tkey == "jitter"
+            if jitter_panel:
+                xx = np.array([0.03, 1.5])
+                ax.plot(xx, xx, color="#888", lw=1, ls=":", zorder=0)
+            else:
+                ax.axhline(1.0, color="#888", lw=1, ls=":", zorder=0)
+            for s_i, (skey, slabel, col, mk, ls) in enumerate(SERIES):
                 med, lo, hi, xs = [], [], [], []
                 for jt in jits:
-                    rat = []
+                    vals = []
                     for r in rows:
                         if r["true"]["bg_rate"] != bg or r["true"]["jitter"] != jt:
                             continue
@@ -102,44 +110,50 @@ def main():
                         t = r["true"][tkey]
                         if v is None or not np.isfinite(v) or not t:
                             continue
-                        rat.append(v / t)
-                    if rat:
-                        xs.append(jt * (1.04 ** (s_i - 3)))
-                        q = np.percentile(rat, [25, 50, 75])
+                        vals.append(v if jitter_panel else v / t)
+                    if vals:
+                        xs.append(jt * (1.05 ** (s_i - 3)))
+                        q = np.percentile(vals, [25, 50, 75])
                         lo.append(q[0]); med.append(q[1]); hi.append(q[2])
-                if xs:
-                    first = (i, j) == (0, 3) if skey == "fit" else (i, j) == (0, 0)
-                    ax.plot(xs, med, "-o", color=col, lw=2, ms=6, label=slabel if first else None)
-                    lo_c = np.clip(lo, YLIM[0], None)
-                    ax.vlines(xs, lo_c, hi, color=col, lw=1.5, alpha=0.7)
-                    off = [x for x, l in zip(xs, lo) if l < YLIM[0]]
-                    if off:   # an interquartile bar running off the bottom is marked, not cut
-                        ax.plot(off, [YLIM[0] * 1.15] * len(off), "v", color=col, ms=7)
+                if not xs:
+                    continue
+                ylim = JLIM if jitter_panel else YLIM
+                ax.plot(xs, med, ls=ls, marker=mk, color=col, lw=1.8, ms=6)
+                ax.vlines(xs, np.clip(lo, ylim[0], None), np.minimum(hi, ylim[1]), color=col, lw=1.5)
+                off = [x for x, l in zip(xs, lo) if l < ylim[0]]
+                if off:   # an interquartile bar running off the bottom is marked, not cut
+                    ax.plot(off, [ylim[0] * 1.25] * len(off), "v", color=col, ms=7)
             ax.set_xscale("log"); ax.set_yscale("log")
-            ax.set_ylim(*YLIM)
+            ax.set_ylim(*(JLIM if jitter_panel else YLIM))
             ax.set_xticks(jits); ax.set_xticklabels([f"{x:g}" for x in jits])
             ax.grid(True, which="major", color="#e5e5e5", lw=0.6)
             for sp in ("top", "right"):
                 ax.spines[sp].set_visible(False)
-            ax.text(0.02, 0.96, letters[i * len(PARAMS) + j], transform=ax.transAxes,
-                    fontsize=12, fontweight="bold", va="top")
+            ax.text(-0.02, 1.03, letters[i * len(PARAMS) + j], transform=ax.transAxes,
+                    fontsize=13, fontweight="bold", va="bottom", ha="right")
             if i == len(bgs) - 1:
                 ax.set_xlabel("planted jitter SD (s)")
-            ax.set_ylabel(f"{label}\nrecovered ÷ planted", fontsize=9)
-            ax.yaxis.set_tick_params(labelleft=True)
-        fig.text(0.004, 0.70 - 0.42 * i, f"background {bg:g} Hz per cell", rotation=90,
-                 fontsize=11, va="center")
-    fig.legend(loc="upper center", ncol=4, frameon=False, fontsize=9.5)
-    fig.tight_layout(rect=(0.02, 0.0, 1, 0.90))
-    sys.path.insert(0, str(ROOT / "tools"))
+            ax.set_ylabel(f"{label}\n" + ("recovered (s)" if jitter_panel else "recovered ÷ planted"),
+                          fontsize=11)
+        fig.text(0.005, 0.70 - 0.40 * i, f"background {bg:g} Hz per cell", rotation=90,
+                 fontsize=12, va="center")
+    handles = [Line2D([], [], color=c, marker=m, ls=l, lw=1.8, ms=6, label=lab)
+               for _, lab, c, m, l in SERIES]
+    handles += [Line2D([], [], color="#888", ls=":", label="perfect recovery"),
+                Line2D([], [], color="#444", marker="|", ls="none", ms=12, mew=1.5,
+                       label="interquartile range"),
+                Line2D([], [], color="#444", marker="v", ls="none", ms=7,
+                       label="range continues below the axis")]
+    fig.legend(handles=handles, loc="upper center", ncol=4, frameon=False, fontsize=10.5)
+    fig.tight_layout(rect=(0.02, 0.0, 1, 0.86))
     from naming import artifact_name
     name = artifact_name.build(artifact_name.load_codes(), source="synth", type="recovery",
                                form="plot", topic="one source jitter", ext="png",
                                date="20261023")
-    meta = {"Title": "Figure 1. Aim 1a, measured recovery against planted jitter",
-            "Author": "bugarach synthetic validation (docs/learned/synthetic_validation)"}
-    dests = [a.out] + ([] if a.no_repo else [HERE])
-    for d in dests:
+    meta = {"Title": "Figure 1, recovery against planted jitter (Aim 1a)",
+            "Author": "bugarach synthetic validation (docs/learned/synthetic_validation)",
+            "Creation Time": "2026-10-23"}
+    for d in [a.out] + ([] if a.no_repo else [HERE]):
         fig.savefig(d / name, dpi=130, metadata=meta)
         print(d / name)
 
