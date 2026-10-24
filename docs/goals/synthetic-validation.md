@@ -381,7 +381,11 @@ interchangeable within events) and also moves background onsets.
   noisy comparisons (Shah & Wainwright 2018). Mariani et al. 2025 replaced annealing with a direct
   shift for latency correction (9.7 s against 861.8 s for annealing on one 183-train dataset);
   Kreuz's 2026 review still sorts by annealing. Kreuz's lab has applied the Synfire Indicator to
-  wide-field calcium imaging (Cecchini et al. 2021; ⚠ not read). ⚠ Not searched: the hippocampal
+  wide-field calcium imaging (Cecchini et al. 2021). A search of the group's papers, code and
+  website on 2026-10-24 found no ranking sort and no analytical null
+  ([`kreuz_sort/`](../learned/synthetic_validation/kreuz_sort/README.md)); in a re-implementation
+  on synthetic order matrices, their annealer fell below a Borda sort plus insertion search from
+  about 100 trains (unconfirmed on real data). ⚠ Not searched: the hippocampal
   replay and cortical sequence rank-order methods (Lee & Wilson 2002; Luczak et al. 2007), where
   rank-order nulls with few cells are standard. Citations and what was opened are in the
   [folder README](../learned/synthetic_validation/README.md#prior-art).
@@ -554,8 +558,12 @@ in for a stranger's data.
   [`todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md`](../todo/2026-08-24-kreuz-answered-the-spike-synch-questions-in-april.md)),
   which pointed to his own papers on a construction this repository had claimed, and the
   August–September `max_tau` thread ([`kreuz_note.md`](../kreuz_note.md) and its two sequels), in
-  which he pointed to Mariani et al. 2025. Ask before the score sort or the 1/√n̄ scaling is
-  offered as new.
+  which he pointed to Mariani et al. 2025. **Searched 2026-10-24**
+  ([`kreuz_sort/`](../learned/synthetic_validation/kreuz_sort/README.md)): no paper, codebase or
+  web page of his group has a non-annealing sort, an analytical null or a bias formula, and the
+  only stated reason for annealing is a travelling-salesman analogy. A draft note asking him is
+  with Tony; until he answers, the score sort and the 1/√n̄ scaling are "not found in his
+  group's work", not "new".
 - **Has anyone asked the Grün lab** about the joint fit? Louis & Grün 2009 and Louis, Borgelt &
   Grün 2010 are its closest precedent (*Aim 0, the predictions*).
 

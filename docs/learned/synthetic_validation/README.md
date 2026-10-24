@@ -10,6 +10,7 @@ recordings only; nothing here reads a real recording.
 | `theory.py` | Aim 0: the predictions (window sharing g_n, the excess cumulants with the at-most-one-event term, passed through the tool's own `solve()`, the joint fit of jitter, participants and rate across windows, chance clusters at K); `check()` tests each against `aim1_one_source.json` per condition |
 | `theory_check.json` | `theory.py`'s record: every prediction beside the measured median, per condition, with NaN and search-bound counts . `theory.py --from-record` prints the page's Aim 0 and Aim 1a numbers from the two records without rerunning |
 | `blind_README.md`, `blind_a/`, `blind_b/` | the two blind theory passes, kept as they ran |
+| `kreuz_sort/` | 2026-10-24: two agents' search of the Kreuz group's literature, code and website for a fast sort or an analytical null for the Synfire Indicator (none found), with a synthetic annealer-versus-Borda comparison |
 | `aim1_one_source_shared_seeds.json` | the first Aim 1a record, whose conditions shared five backgrounds; the blind passes ran on it |
 | `membership_limit.py`, `membership_limit.json` | Aim 0: assembled against random participation as assemblies multiply (`bugarach.assembly.stat_dispersion`); prediction 1 + (E − 1)/M, and per-recording detection by the package's `AssemblyResult.verdict()` |
 | `order_limit.py`, `order_limit.json` | Aim 0: an order indicator by score sort and by local search, with its closed forms (one template, M templates), the fitted no-order constant across field sizes, and the no-order indicator's mean and spread at small event counts |
@@ -82,8 +83,9 @@ NeurIPS 2020) is a Neyman–Scott process with per-neuron offsets.
   Mariani et al. 2025 (*J Neurosci Methods* 416:110378; arXiv 2410.15018) replaced it with a direct
   shift (9.7 s against 861.8 s on one 183-train dataset, read in the arXiv version). Kreuz's
   review (*Biol Cybern* 120(3–4):21, 2026; doi 10.1007/s00422-026-01045-5) still sorts by
-  annealing. Cecchini et al. 2021 (*PLoS Comput Biol* 17:e1008963; ⚠ not read) applied the
-  framework to wide-field calcium imaging.
+  annealing. Cecchini et al. 2021 (*PLoS Comput Biol* 17:e1008963; read with its S2 Appendix)
+  applied the framework to wide-field calcium imaging. The full search of the group's work is in
+  [`kreuz_sort/`](kreuz_sort/README.md).
 - Greiner's relation via Kruskal 1958 (*JASA* 53:814; ⚠ neither opened).
 - Sorting by net wins comes within a factor of 5 of the fewest disagreements when each pair's
   weights sum to 1 (Coppersmith, Fleischer & Rudra, SODA 2006, *ACM Trans Algorithms* 6(3), 2010;
