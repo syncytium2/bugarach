@@ -321,15 +321,18 @@ share one log axis.
   every pair's net sign, so it runs up to 10 % high at M = 2–16. The no-order bias adds to it in
   quadrature (as √(signal² + bias²)) when the bias is small; at 10 events of 7 cells that sum
   overstates F by a fifth. Both were checked at fixed E only (2000 and 200 events).
-- **No order**: F ≈ c/√n̄, the 1/√n scaling of a mean of random signs. **c is fitted, not
-  derived**: 0.38 under the score sort and 0.50 under the local search at 33 cells and 10 per
-  event, over n̄ = 2–68; across 15–100 cells and 5–30 per event, 0.22–0.51 (score sort) and
-  0.31–0.60 (local search). Kreuz et al. 2017 (sec. 2.5, 3.1) already describe the finite-size
-  effect and note the null would be binomial if pairs were independent. **The 1/√ form is known**:
-  it follows from Kendall's W (Kendall & Babington Smith 1939), whose no-order mean is 1/m, and
-  with every cell in every event the constant is analytic (about 0.64). Not found anywhere: the
-  constant when only some cells join each event, and detection power at few events. Kendall's W
-  for incomplete rankings (Skillings & Mack 1981) may give it; not yet tried.
+- **No order: derived for the score sort** (2026-10-24, [`kendall_w/`](../learned/synthetic_validation/kendall_w/derivation.md)). With no order
+  planted, the mean of F under the score sort is exact for every N, k and E, from one lattice
+  convolution, and for n̄ ≳ 2 it is c/√n̄ with **c(N, k) = √(4(k + 1)/(3πN))**: 0.376 at 33
+  cells and 10 per event, nothing fitted. It matches fresh simulation in 33 of 33 comparisons
+  (six field sizes, eight small runs, an event sweep), and an independent re-simulation of four
+  further cases within about 1 SE. With every cell in every event it is Kendall's W case
+  (Kendall & Babington Smith 1939; c ≈ 0.65–0.68); with partial participation the score's
+  covariance is that of Durbin's 1951 incomplete-block test, in Skillings & Mack's 1981 random
+  form. **The local-search constant is still fitted** (0.50 at 33 cells and 10 per event, 1.15–1.54
+  times the score sort's, with a loose union bound above it), and only the mean is derived, not
+  the spread. Kreuz et al. 2017 (sec. 2.5, 3.1) describe the finite-size effect without a
+  formula.
 
 **With few events the no-order bias is large, and raw indicators are not comparable across
 recordings.** Simulated directly at 33 cells under the score sort, the no-order F (mean ± SD over
@@ -422,7 +425,7 @@ Aim 1c.
 | A joint fit across the tool's windows recovers jitter from 0.2 s up, participants within 0.94–1.14 and rate within 0.73–1.14, for events of 10+ cells; not 0.05 s, not 5-cell events, and the lab's 0.10–0.15 s and 7-cell events untested | derived and checked (same scope) | *Aim 0, the predictions* |
 | Chance clusters at K follow 60 q (1 − q)² per minute | derived and checked (background only; K = 6 at 0.01 Hz untestable at this size) | *Aim 0, the predictions* |
 | With assemblies, pair co-participation variance is 1 + (E − 1)/M times random; it reaches random only at fixed E | derived and checked (equally used random assemblies, perfect readout, fixed E; E = M e derived only) | *Aim 0, membership* |
-| One latency template gives F = (2/π) arctan r; the no-order constant is fitted; at 5–10 events of 7 cells one template is detected in 43–99 % of recordings | derived and checked; fitted; simulated (known events, no background, no frame grid, random membership) | *Aim 0, order* |
+| One latency template gives F = (2/π) arctan r; with no order, F under the score sort has an exact mean, c/√n̄ with c = √(4(k + 1)/(3πN)); at 5–10 events of 7 cells one template is detected in 43–99 % of recordings | derived and checked; the local-search constant fitted; power simulated (known events, no background, no frame grid, random membership) | *Aim 0, order* |
 | Three sessions reached the same core derivation | consistency check, not review | *Aim 0, rederived by two more sessions* |
 
 ## Tried and dropped

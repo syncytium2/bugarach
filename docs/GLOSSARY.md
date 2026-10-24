@@ -699,5 +699,6 @@ Added 2026-10-23 with [`goals/synthetic-validation.md`](goals/synthetic-validati
   Synfire Indicator, which is normalized by all spikes. **Score sort**: order by each ROI's net
   lead count. **Local search**: moves of single ROIs from there while F rises. **No-order
   bias** F₀: the F an order-free recording still shows, because a finite run has net signs by
-  chance; F₀ ≈ c/√n̄, with the **no-order constant** c fitted, where **n̄** is the mean number of
-  events a pair of ROIs shares.
+  chance; F₀ ≈ c/√n̄, where **n̄** is the mean number of events a pair of ROIs shares. The
+  **no-order constant** c is derived for the score sort, c = √(4(k + 1)/(3πN))
+  (`learned/synthetic_validation/kendall_w/`), and fitted for the local search.

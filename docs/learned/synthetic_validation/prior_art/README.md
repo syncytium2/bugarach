@@ -33,7 +33,7 @@ The Kreuz group's verdict (no fast sort, no analytical null) is in [`../kreuz_so
 | One template: F = (2/π) arctan(δ/σ) | **known** | Greiner's relation (via Kendall and Kruskal); Thurstone's Case V model |
 | M templates: the signal falls as 1/√M | **partly known** | follows from Kendall's W algebra; no paper states it for mixed sequence templates |
 | No-order bias ∝ 1/√(events) | **partly known** | Kendall & Babington Smith 1939 (Kendall's W): E[W] = 1/m with no order, so a ranking's agreement with the rank-sum consensus is about 1/√m. With every cell in every event the constant is analytic (about 0.64) |
-| The constant under partial participation (0.38 for the score sort, 0.50 after search), the √n̄ scaling over shared events, and detection power at 5–25 events | **not found** | field practice is shuffles (replay, calcium imaging). Silva et al. 2015 warn that picking the best template inflates rank correlation |
+| The constant under partial participation (0.38 for the score sort, 0.50 after search), the √n̄ scaling over shared events, and detection power at 5–25 events | **not found**; the score-sort constant has since been derived here, c = √(4(k + 1)/(3πN)), in [`../kendall_w/`](../kendall_w/derivation.md) | field practice is shuffles (replay, calcium imaging). Silva et al. 2015 warn that picking the best template inflates rank correlation |
 | Chance clusters at K | **known in form** | the accidental-coincidence rate of particle physics; radar's threshold set against local background. Ours is the assessor-specific version (1 s bins, the merge rule) |
 | Membership excess 1 + (E − 1)/M | analogue known | Kish's design effect; ecology's fixed-margin null models for presence–absence matrices |
 
