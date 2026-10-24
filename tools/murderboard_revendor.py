@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# vendored from syncytium2/murderboard @ 08f5ddb — do NOT edit here; update upstream and re-copy.
+# vendored from syncytium2/murderboard @ 682c31b — do NOT edit here; update upstream and re-copy.
 # instrument: propagation
 """murderboard_revendor — re-copy vendored files and bump their stamps, surgically.
 
@@ -85,7 +85,7 @@ EXAMPLE_CONFIG = {
                 "tools/murderboard_freshness.sh",
                 "tools/murderboard_roster.sh",
                 "tools/murderboard_prose.sh",
-
+                "tools/murderboard_subagents.sh",
                 "tools/murderboard_model_gate.sh",
                 "tools/murderboard_revendor.py",
                 # The COMPILER, not the eleven agent files it produces. Vendoring the output
@@ -105,7 +105,7 @@ EXAMPLE_CONFIG = {
                 "tools/murderboard_freshness.sh": "murderboard_freshness.sh",
                 "tools/murderboard_roster.sh": "murderboard_roster.sh",
                 "tools/murderboard_prose.sh": "murderboard_prose.sh",
-
+                "tools/murderboard_subagents.sh": "murderboard_subagents.sh",
                 "tools/murderboard_model_gate.sh": "murderboard_model_gate.sh",
                 "tools/murderboard_revendor.py": "murderboard_revendor.py",
                 "tools/murderboard_agents.py": "murderboard_agents.py",
