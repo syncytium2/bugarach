@@ -196,12 +196,13 @@ background (16 conditions × 3 windows); the three windows reuse the same record
   triple counts, like one source whose participation blends the two, so these tools cannot tell
   them apart (blind B; plan item 2).
 
-**What is old and what is new.** Reading jitter from how coincidence counts change with the window
-is old (Grün et al. 1999 for pairs). Fitting group size and jitter together across bin widths is
-Louis & Grün 2009 and Louis, Borgelt & Grün 2010, for the population count's distribution; the
-cumulant route is CuBIC's (Staude, Rotter & Grün 2010). Not found in the sources read: g_n for
-Gaussian jitter and n onsets, the pair-and-triple form with the at-most-one-event term, and the
-event rate in the same fit. The full chain, with what was and was not opened, is in the
+**What is old and what is new** (searched 2026-10-24, verdicts in [`prior_art/`](../learned/synthetic_validation/prior_art/README.md)). Window
+sharing for two onsets with uniform jitter is Grün et al. 1999's fission probability. Reading
+group size and jitter across bin widths is Grün, Abeles & Diesmann 2008 and Louis & Grün
+2009/2010, by a slope-change rule with uniform jitter; the cumulant route is CuBIC's (Staude,
+Rotter & Grün 2010). Not found in any source read, nor in Grün's Elephant code: g_n for Gaussian
+jitter and n onsets with the size correction built on it, the at-most-one-event term, and a formal
+fit that also recovers the event rate. The full chain, with what was and was not opened, is in the
 [folder README](../learned/synthetic_validation/README.md#prior-art).
 
 ### Aim 0, rederived by two more sessions (2026-10-23)
@@ -324,7 +325,11 @@ share one log axis.
   derived**: 0.38 under the score sort and 0.50 under the local search at 33 cells and 10 per
   event, over n̄ = 2–68; across 15–100 cells and 5–30 per event, 0.22–0.51 (score sort) and
   0.31–0.60 (local search). Kreuz et al. 2017 (sec. 2.5, 3.1) already describe the finite-size
-  effect and note the null would be binomial if pairs were independent.
+  effect and note the null would be binomial if pairs were independent. **The 1/√ form is known**:
+  it follows from Kendall's W (Kendall & Babington Smith 1939), whose no-order mean is 1/m, and
+  with every cell in every event the constant is analytic (about 0.64). Not found anywhere: the
+  constant when only some cells join each event, and detection power at few events. Kendall's W
+  for incomplete rankings (Skillings & Mack 1981) may give it; not yet tried.
 
 **With few events the no-order bias is large, and raw indicators are not comparable across
 recordings.** Simulated directly at 33 cells under the score sort, the no-order F (mean ± SD over
@@ -375,7 +380,10 @@ interchangeable within events) and also moves background onsets.
   coincidences predict a fall with spike count too. Kreuz et al. 2017 (sec. 3.1) warn that their
   indicator is "not sufficient to reliably compare two datasets with widely different number of
   spike trains and spikes". The test is plan item 3.
-- **Prior art for the fast sort: it has known guarantees, and Kreuz's lab still anneals the sort.**
+- **Prior art for the fast sort: it is the textbook ranking, and Kreuz's lab still anneals the
+  sort.** Ranking by net lead count is the Borda or Copeland ranking of a tournament; Schneider,
+  Havenith & Nikolić 2006 rank units by summed pairwise delays the same way, and an independent
+  survey reached it unprompted ([`prior_art/`](../learned/synthetic_validation/prior_art/README.md)).
   Sorting by net wins comes within a factor of 5 of the fewest disagreements (Coppersmith,
   Fleischer & Rudra 2010), and Borda counting is optimal up to constants for top-k ranking from
   noisy comparisons (Shah & Wainwright 2018). Mariani et al. 2025 replaced annealing with a direct
@@ -562,10 +570,12 @@ in for a stranger's data.
   ([`kreuz_sort/`](../learned/synthetic_validation/kreuz_sort/README.md)): no paper, codebase or
   web page of his group has a non-annealing sort, an analytical null or a bias formula, and the
   only stated reason for annealing is a travelling-salesman analogy. A draft note asking him is
-  with Tony; until he answers, the score sort and the 1/√n̄ scaling are "not found in his
-  group's work", not "new".
+  with Tony. The wider search ([`prior_art/`](../learned/synthetic_validation/prior_art/README.md)) found the score sort and the 1/√ scaling
+  textbook (Borda ranking, Kendall's W), so the question for him is why his group anneals.
 - **Has anyone asked the Grün lab** about the joint fit? Louis & Grün 2009 and Louis, Borgelt &
-  Grün 2010 are its closest precedent (*Aim 0, the predictions*).
+  Grün 2010 are its closest precedent (*Aim 0, the predictions*). Louis et al. 2010 could not be
+  opened: whether it has an n-onset closed form, a formal fit, or the event rate is the question
+  for them ([`prior_art/`](../learned/synthetic_validation/prior_art/README.md)).
 
 ## Open work a session can do without a ruling
 
