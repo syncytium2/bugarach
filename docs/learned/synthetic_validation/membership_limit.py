@@ -1,7 +1,7 @@
 """Aim 0, membership: assembled vs random participation as the number of assemblies grows.
 
 Goal page: docs/goals/synthetic-validation.md, "Aim 0, membership". Synthetic only. Revised
-after both murderboard rounds of 2026-10-23 (docs/reviews/synthetic-validation-aim0_2026-10-23.md).
+after the murderboard of 2026-10-23/24, all four rounds (docs/reviews/synthetic-validation-aim0_2026-10-23.md).
 
 Model. E coordinated events, each recruiting k of N cells (ROIs). Random participation: a fresh
 k-set per event. Assembled: M fixed k-sets, drawn at random (so they may overlap), each event

@@ -108,8 +108,9 @@ def main():
     rec = dict(what="Aim 1a: one source, random membership, blind recovery",
                seeding="per recording: 1000 + 100 * condition index + seed",
                assessor_settings="K = 3, 4, 6 cells (absolute counts), 1 s bins, merge_bins 2, "
-                                 "120 surrogates (shipped default 1000; only observation-based "
-                                 "outputs are used here)",
+                                 "120 surrogates (shipped default 1000). Only observation-based "
+                                 "outputs are used here; jit_defined also needs a surrogate "
+                                 "cluster, so it is not one of them",
                n_roi=N_ROI, duration_sec=DURATION, min_sep_sec=MIN_SEP, ks=KS, quick=a.quick,
                rows=rows, chance_arm=chance)
     name = "aim1_one_source_quick.json" if a.quick else "aim1_one_source.json"

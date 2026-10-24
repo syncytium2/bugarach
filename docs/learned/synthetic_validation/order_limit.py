@@ -1,7 +1,7 @@
 """Aim 0, order: a synfire-style order indicator, its closed forms and fits, and their limits.
 
 Goal page: docs/goals/synthetic-validation.md, "Aim 0, order". Synthetic only. Revised after
-both murderboard rounds of 2026-10-23 (docs/reviews/synthetic-validation-aim0_2026-10-23.md).
+the murderboard of 2026-10-23/24, all four rounds (docs/reviews/synthetic-validation-aim0_2026-10-23.md).
 
 Model. Each source has a latency template: a fixed offset per cell, drawn N(0, delta^2) once;
 an event from it puts cell i at t0 + offset_i + N(0, sigma^2). Membership is random (k of N
@@ -23,12 +23,13 @@ This differs from SPIKE-order / the Synfire Indicator (Kreuz, Satuvuori, Pofahl 
 New J Phys 19:043028) in four ways, the same four the goal page tables:
   * coincidences: known events here, ISI-adaptive windows there. On sparse trains those also
     pair onsets of neighbouring events (+36 % with an event every 25 s, +44 % with renewal gaps,
-    in a review agent's PySpike 0.9.0 test at 33 cells, 10 per event; murderboard blind round 2,
+    in a review agent's PySpike 0.9.0 test at 33 cells, 10 per event; murderboard round 3,
     role 6, not kept here), and those cross-event pairs lean against the planted order;
   * the order: the score sort here, simulated annealing there;
   * the normalisation: by all spikes there (eq. 14), so with no background and known
     coincidences F_Kreuz = F (k - 1)/(N - 1) (0.28 at 10 of 33 cells), less with background;
-  * the null: relabelling or the fitted c / sqrt(n_bar) here, order-swapping surrogates there.
+  * the null: order-free simulation and the fitted c / sqrt(n_bar) here, order-swapping
+    surrogates there (synfire_scan.py adds its own relabel null).
 None of the numbers below is PySpike's. Omitted: the 0.1 s frame grid. Rounded onsets tie, and a
 tie counts 0 here as in PySpike; at delta = sigma = 0.1 s that lowered F about 9 % (same test).
 
@@ -172,4 +173,21 @@ if __name__ == "__main__":
             nb = nbar(N, kk, E)
             rec["small"].append(dict(k=kk, E=E, n_bar=nb, mean=float(v.mean()), sd=float(v.std())))
             print(f"  {kk:2d} per event, {E:3d} events (n_bar {nb:5.2f}): F {v.mean():.3f} +- {v.std():.3f}")
+    # Detection at small runs, simulated on both sides: the share of recordings with M templates
+    # (r = 2.5) whose score-sort F exceeds the 95th percentile of order-free recordings of the
+    # same size. Neither the asymptotic F_M nor the quadrature sum is used.
+    print("\npower against an order-free null (one-sided 5 %), r = 2.5, 300 recordings per point")
+    rec["power"] = []
+    for kk in (7, 13):
+        for E in (5, 10, 25):
+            null = np.array([indicators(simulate(N, kk, E, 1, 0.0, sigma, rng), N)[0] for _ in range(300)])
+            thr = float(np.percentile(null, 95))
+            row = dict(k=kk, E=E, null_mean=float(null.mean()), null_sd=float(null.std()), threshold=thr,
+                       power={})
+            for M in (1, 2, 4, 8, 16):
+                v = np.array([indicators(simulate(N, kk, E, M, 0.5, sigma, rng), N)[0] for _ in range(300)])
+                row["power"][str(M)] = float(np.mean(v > thr))
+            rec["power"].append(row)
+            print(f"  {kk:2d} per event, {E:2d} events: " +
+                  " ".join(f"M {m}: {p:.2f}" for m, p in row["power"].items()))
     (HERE / "order_limit.json").write_text(json.dumps(rec, indent=1, default=float))

@@ -79,7 +79,7 @@ def fig2(dests):
     cr = tc["coord_rates"]
     quant = [("k", "participants per event"), ("lam", "coordinated events per min"),
              ("share", "coordinated share of onsets")]
-    lim = (0.2, 2.6)
+    lim = (0.15, 2.6)
     fig, axes = plt.subplots(2, 4, figsize=(13, 7.4))
     L = "ABCDEFGH"
     for i, bg in enumerate((0.01, 0.05)):
@@ -103,8 +103,8 @@ def fig2(dests):
                 hi_n = sum(r["meas"][q] > lim[1] for r in off)
                 where = ", ".join(x for x in (f"{hi_n} above" if hi_n else "",
                                               f"{len(off) - hi_n} below" if len(off) - hi_n else "") if x)
-                ax.text(0.03, 0.97, f"{len(off)} off scale:\n{where}\n({', '.join(str(x) for x in ks)}-cell events)",
-                        transform=ax.transAxes, ha="left", va="top", fontsize=11, color="#444")
+                ax.text(0.97, 0.03, f"{len(off)} off scale\n{where}\n({', '.join(str(x) for x in ks)}-cell)",
+                        transform=ax.transAxes, ha="right", va="bottom", fontsize=11, color="#444")
         ax = axes[i, 3]
         ch = [c for c in tc["chance"] if c["bg"] == bg]
         lo_ax, hi_ax = 1e-3, 20
@@ -139,7 +139,7 @@ def fig2(dests):
                        label="same measurements, Poisson-train prediction"),
                 Line2D([], [], color="#888", ls=":", label="prediction = measurement"),
                 Line2D([], [], color="#6250d6", marker="o", ls="none", ms=7,
-                       label="chance clusters (95 % interval within the marker)")]
+                       label="chance clusters (95 % interval about the marker size)")]
     fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False, fontsize=11)
     fig.tight_layout(rect=(0.03, 0, 1, 0.88))
     save(fig, name("one source predicted against measured"),
@@ -168,15 +168,12 @@ def fig3(dests):
     ax.plot(reuse, [100 * r["flagged"] for r in rows], "--s", color="#6250d6", ms=5, mfc="white",
             lw=1.2, label="either null rejects")
     rb = 100 * m["random_verdicts"]["structure-beyond-rate"] / m["reps_verdict"]
-    ax.axhline(rb, color="#888", ls=":", lw=1)
-    ax.text(3e-3, rb + 3, f"both reject under random participation: {rb:.0f} %", fontsize=11,
-            color="#444")
-    m1 = [r for r in rows if r["M"] == 1][0]
-    ax.annotate("M = 1: only the uniform null\nrejects (one assembly holds\nevery event)",
-                (m1["reuse"], 0), xytext=(0.62, 0.30), textcoords="axes fraction",
-                ha="right", va="center", fontsize=11, color="#444",
-                arrowprops=dict(arrowstyle="->", color="#666", lw=1))
-    ax.legend(frameon=False, fontsize=11, loc="upper left")
+    re_ = 100 * m["random_flagged"]
+    ax.axhline(re_, color="#888", ls="--", lw=0.8, label=f"random participation, either ({re_:.0f} %)")
+    ax.axhline(rb, color="#888", ls=":", lw=1, label=f"random participation, both ({rb:.0f} %)")
+    ax.text(0.62, 0.62, "M = 1\n(rightmost):\nuniform null\nonly",
+            transform=ax.transAxes, ha="left", va="top", fontsize=11, color="#444")
+    ax.legend(frameon=False, fontsize=11, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2)
     ax.set_xscale("log"); ax.set_xlim(*xl); ax.set_ylim(-4, 105)
     ax.set_xlabel("reuse: events per assembly, E/M")
     ax.set_ylabel(f"recordings flagged (%, of {m['reps_verdict']})")
@@ -195,11 +192,11 @@ def fig4(dests):
     rr = np.geomspace(0.1, 10, 200)
     c200 = [r for r in o["none"] if r["E"] == 200][0]["c_score"]
     f0_200 = c200 / np.sqrt(ol.nbar(N, k, 200))
-    ax.plot(rr, ol.pred_one(rr), color=PRED, lw=2, label="signal: (2/π) arctan r")
+    ax.plot(rr, ol.pred_one(rr), color=PRED, lw=2, label="signal (2/π) arctan r")
     ax.plot(rr, np.hypot(ol.pred_one(rr), f0_200), color=PRED, lw=1.5, ls="--",
-            label="with the no-order bias (200 events)")
+            label="with no-order bias")
     ax.plot([r["r"] for r in o["one"]], [r["measured"] for r in o["one"]], "o", color=SIM, ms=7,
-            label="simulated, score sort")
+            label="simulated")
     ax.set_xscale("log"); ax.set_yscale("log"); ax.set_ylim(0.04, 1.1)
     ax.set_yticks([0.05, 0.1, 0.2, 0.4, 0.8]); plain_log(ax, "y")
     ax.set_xlabel("r = template spread ÷ jitter"); ax.set_ylabel("order indicator F")
@@ -208,17 +205,17 @@ def fig4(dests):
     f0 = o["many"][0]["F_0"]
     MM = np.geomspace(2, 300, 200)
     ax.plot(MM, ol.pred_many(2.5, MM), "-", color=PRED, lw=2,
-            label="signal $F_M$ (asymptotic, M ≥ 2)")
+            label="signal $F_M$, M ≥ 2")
     ax.plot(MM, np.hypot(ol.pred_many(2.5, MM), f0), "--", color=PRED, lw=1.5,
-            label="with the no-order bias $F_0$")
+            label="with bias $F_0$")
     ax.plot([1], [o["many"][0]["predicted"]], "D", color=PRED, ms=7, mfc="white",
-            label="M = 1: (2/π) arctan r")
+            label="M = 1 closed form")
     ax.plot([r["M"] for r in o["many"]], [r["measured"] for r in o["many"]], "o", color=SIM, ms=7,
-            label="simulated, score sort")
+            label="simulated")
     ax.set_xscale("log"); ax.set_yscale("log"); ax.set_ylim(0.04, 1.1)
     ax.set_yticks([0.05, 0.1, 0.2, 0.4, 0.8]); plain_log(ax, "y")
     ax.set_xlabel("latency templates M (r = 2.5, 2000 events)"); ax.set_ylabel("order indicator F")
-    style(ax); letter(ax, "B"); ax.legend(frameon=False, fontsize=11, loc="upper right")
+    style(ax); letter(ax, "B"); ax.legend(frameon=False, fontsize=11, loc="lower left")
     ax = axes[2]
     nb = np.array([r["n_bar"] for r in o["none"]])
     for key, col, mk, lab in (("c_score", SIM, "o", "score sort"), ("c_search", SEARCH, "s", "local search")):

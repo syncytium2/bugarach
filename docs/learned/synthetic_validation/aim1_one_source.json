@@ -1,7 +1,7 @@
 {
  "what": "Aim 1a: one source, random membership, blind recovery",
  "seeding": "per recording: 1000 + 100 * condition index + seed",
- "assessor_settings": "K = 3, 4, 6 cells (absolute counts), 1 s bins, merge_bins 2, 120 surrogates (shipped default 1000; only observation-based outputs are used here)",
+ "assessor_settings": "K = 3, 4, 6 cells (absolute counts), 1 s bins, merge_bins 2, 120 surrogates (shipped default 1000). Only observation-based outputs are used here; jit_defined also needs a surrogate cluster, so it is not one of them",
  "n_roi": 33,
  "duration_sec": 2700.0,
  "min_sep_sec": 20.0,

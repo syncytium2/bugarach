@@ -31,3 +31,67 @@ Reproduce, from the repository root:
 
 Pass `--out DIR --no-repo` to either figure script to write only to DIR. The captions and what
 each figure shows are on the goal page.
+
+## Prior art
+
+What the goal page's Aim 0 rests on, and how far each source was read. ⚠ marks a source not
+opened, or read as abstract only.
+
+**Window sharing and the joint fit.**
+- The generator is a Neyman–Scott cluster process (Neyman & Scott 1952, *ApJ* 116:144, restated
+  1958 in *J R Stat Soc B* 20:1; ⚠ abstract only). Its Gaussian-scatter case is now called the
+  Thomas process, after Thomas 1949 (*Biometrika* 36:18; ⚠ not opened). Here the number of events
+  is fixed and they are held apart rather than Poisson-placed.
+- The coordination-rates tool's route is CuBIC's cumulant route (Staude, Rotter & Grün 2010,
+  *J Comput Neurosci* 29:327; read) on the multiple-interaction model of Kuhn, Aertsen & Rotter
+  2003 (*Neural Comput* 15:67), with factorial rather than ordinary cumulants.
+- Grün et al. 1999 (*J Neurosci Methods* 94:67; read) derived the two-onset, uniform-jitter case
+  of window sharing ("fission probability") and read the coincidence width from the analysis
+  width; it credits the effect to Grün's 1996 thesis (⚠ not opened). Pazienti et al. 2008
+  (*Brain Res* 1225:39; ⚠ abstract only) estimated synchronization precision from how detection
+  decays with the dither width at one fixed window.
+- Louis & Grün 2009 (*BMC Neurosci* 10(Suppl 1):P253; read) and Louis, Borgelt & Grün 2010
+  (*Neural Netw* 23:705; ⚠ abstract only) fit group size and jitter together by following the
+  population count's distribution across bin widths, on the complexity distribution of Grün,
+  Abeles & Diesmann 2008 (*LNCS* 5286:96). This is the joint fit's closest precedent.
+- In spatial statistics a Thomas process's scatter and parent rate are fitted by minimum contrast
+  on its pair-count curve across scales (Pfanzagl 1969, *Metrika* 14:249; Diggle & Gratton 1984,
+  *J R Stat Soc B* 46:193; Waagepetersen 2007, *Biometrics* 63:252; ⚠ software documentation
+  read, not the papers).
+- Not found in the sources read: g_n for Gaussian jitter and n onsets, the pair-and-triple form
+  with the at-most-one-event term, and the event rate in the same fit. ⚠ Not searched:
+  quadrat-variance ecology, physics counting statistics, composite and Palm likelihood for
+  cluster processes (Guan 2006; Tanaka, Ogata & Stoyan 2008).
+
+**Membership.** Kish's design effect (1965; ⚠ book not opened) has the form of 1 + (E − 1)/M.
+The detectability threshold for planted low-rank structure (plan item 5) is random-matrix theory:
+Baik, Ben Arous & Péché 2005 (*Ann Probab* 33:1643) and Baik & Silverstein 2006 (*J Multivariate
+Anal* 97:1382; ⚠ neither opened). The PCA assembly method with a Marchenko–Pastur null comes from
+Peyrache et al. 2009 (*Nat Neurosci* 12:919) and 2010 (*J Comput Neurosci* 29:309), building on
+Chapin & Nicolelis 1999 (*J Neurosci Methods* 94:121); Lopes-dos-Santos et al. extended it in 2011
+(*PLoS ONE* 6:e20996; read) and restated it in 2013 (*J Neurosci Methods* 220:149).
+
+**Likelihood bounds** (plan item 6). Wang, Degleris, Williams & Linderman (*JASA* 119:2382, 2024)
+do Bayesian inference for Neyman–Scott processes; PP-Seq (Williams, Degleris, Wang & Linderman,
+NeurIPS 2020) is a Neyman–Scott process with per-neuron offsets.
+
+**Order.**
+- Kreuz, Satuvuori, Pofahl & Mulansky 2017 (*New J Phys* 19:043028; read): SPIKE-order and the
+  Synfire Indicator, eq. 14, the surrogates (sec. 2.5) and the finite-size effect (sec. 3.1).
+- Kreuz et al. 2022 (*J Neurosci Methods* 381:109703) introduced latency correction by annealing;
+  Mariani et al. 2025 (*J Neurosci Methods* 416:110378; arXiv 2410.15018) replaced it with a direct
+  shift (9.7 s against 861.8 s on one 183-train dataset, read in the arXiv version). Kreuz's
+  review (*Biol Cybern* 120(3–4):21, 2026; doi 10.1007/s00422-026-01045-5) still sorts by
+  annealing. Cecchini et al. 2021 (*PLoS Comput Biol* 17:e1008963; ⚠ not read) applied the
+  framework to wide-field calcium imaging.
+- Greiner's relation via Kruskal 1958 (*JASA* 53:814; ⚠ neither opened).
+- Sorting by net wins comes within a factor of 5 of the fewest disagreements when each pair's
+  weights sum to 1 (Coppersmith, Fleischer & Rudra, SODA 2006, *ACM Trans Algorithms* 6(3), 2010;
+  ⚠ abstract). Borda counting is optimal up to constants for top-k recovery from noisy pairwise
+  comparisons (Shah & Wainwright 2018, *JMLR* 18(199); ⚠ abstract).
+- ⚠ Not searched: hippocampal replay and cortical sequence rank-order methods (Lee & Wilson 2002,
+  *Neuron* 36:1183; Luczak et al. 2007, *PNAS* 104:347).
+
+**Correspondence.** The repository's letters with Kreuz (April 2026; the August–September
+`max_tau` thread) do not cover a fast sort or an analytical null; the goal page's *Waiting on
+Tony* holds the open question.

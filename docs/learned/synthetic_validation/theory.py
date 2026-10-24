@@ -1,7 +1,7 @@
 """Aim 0: what the measuring tools should return, predicted from the planted parameters.
 
 Goal page: docs/goals/synthetic-validation.md, "Aim 0". Synthetic only. Revised after the
-murderboard of 2026-10-23 (docs/reviews/synthetic-validation-aim0_2026-10-23.md).
+murderboard of 2026-10-23/24, all four rounds (docs/reviews/synthetic-validation-aim0_2026-10-23.md).
 
 The generator is a cluster process of the Neyman-Scott / Thomas type (Gaussian offspring), but
 with a fixed number of parents held at least `min_sep` apart rather than Poisson parents:
@@ -81,7 +81,9 @@ def s_eff(sigma: float, dt: float = DT) -> float:
     expectation: event times are continuous and the windows sit on the frame grid, so under a
     uniform phase E|round(a) - round(b)| = |a - b| (murderboard round 2, role 6, by simulation:
     g_2 0.9441 measured, 0.9436 unrounded, 0.9349 with an added dt^2/12). An earlier version added
-    dt^2/12 here and biased the joint fit about 18 % low at 0.05 s; it is dropped."""
+    dt^2/12 here and biased the joint fit low at 0.05 s: about 18 % on the shared-seed record, and
+    8 % at 0.01 Hz and 35 % at 0.05 Hz on the reseeded one (review agents' reruns, not kept here).
+    It is dropped."""
     return float(sigma)
 
 
@@ -315,6 +317,16 @@ def summary(out: dict) -> None:
               f"expected; binomial P(>= {nz}) = {stats.binom.sf(nz - 1, len(z), p2):.2f}); "
               f"measured above predicted in {above} of {len(rs)} (sign test p = "
               f"{stats.binomtest(above, len(rs)).pvalue:.3f}); median signed residual {signed:+.3f}")
+        # the three windows reuse each condition's recordings: one sign per condition
+        byc = defaultdict(list)
+        for r in rs:
+            byc[(r["sigma"], r["k"], r["n_events"])].append(r["meas"]["k"] - r["exact"]["k"])
+        below = sum(np.mean(v) < 0 for v in byc.values())
+        print(f"    per condition (mean over windows): measured below predicted in {below} of "
+              f"{len(byc)} (sign test p = {stats.binomtest(below, len(byc)).pvalue:.2f})")
+        per_s = {s_: np.median([abs(r["meas"]["k"] - r["exact"]["k"]) for r in rs if r["sigma"] == s_])
+                 for s_ in sorted({r["sigma"] for r in rs})}
+        print("    median |residual| by jitter: " + ", ".join(f"{k_:g} s {v:.3f}" for k_, v in per_s.items()))
         for q in ("lam", "share"):
             above = sum(r["meas"][q] > r["exact"][q] for r in rs if np.isfinite(r["meas"][q]))
             print(f"    {q}: measured above predicted in {above} of {len(rs)}")
@@ -372,8 +384,8 @@ def aim1_summary(path=HERE / "aim1_one_source.json") -> None:
         t = r["true"]
         cond[(t["bg_rate"], t["jitter"], int(round(t["k"])), t["n_events"])].append(r)
     jits = sorted({k[1] for k in cond})
-    print("\nAim 1a. Assessor jitter (s), median over recordings, events of 10+ cells, where the "
-          "assessor marks it defined (n defined / n)")
+    print("\nAim 1a. Assessor jitter (s), median over recordings pooled over participation and event "
+          "count, events of 10+ cells, wherever it observed clusters (n with a value / n)")
     for bg in (0.01, 0.05):
         for K in rec["ks"]:
             parts = []
@@ -382,19 +394,23 @@ def aim1_summary(path=HERE / "aim1_one_source.json") -> None:
                      and r["true"]["jitter"] == s and r["true"]["k"] >= 10]
                 d = [r["assess"][str(K)]["jit"] for r in rows if r["true"]["bg_rate"] == bg
                      and r["true"]["jitter"] == s and r["true"]["k"] >= 10
-                     and r["assess"][str(K)]["jit_defined"]]
+                     and r["assess"][str(K)]["jit"] is not None
+                     and np.isfinite(r["assess"][str(K)]["jit"])]
                 parts.append(f"{s:g}: {np.median(d):.2f} ({len(d)}/{len(v)})" if d else f"{s:g}: -")
             print(f"  bg {bg} K {K}: " + "; ".join(parts))
-    print("assessor rate / planted at K = 6, condition medians (0.01 Hz)")
+    print("assessor cluster rate / planted event rate at K = 6, condition medians (0.01 Hz)")
     for k in (5, 10):
         for s in jits:
             v = [float(np.median([r["assess"]["6"]["per_min"] / r["true"]["per_min"] for r in rs]))
                  for (bg, s_, k_, ne), rs in cond.items() if bg == 0.01 and s_ == s and k_ == k]
             print(f"  {k}-cell, sigma {s:g}: {min(v):.2f}-{max(v):.2f}")
-    print("smallest K with chance clusters at or below one per hour (the assessor's own rule)")
+    from bugarach.event_floor import FA_PER_HOUR, floor_of
+    print("ADR-0008's budget applied to the assessor's predicted chance clusters: smallest K at "
+          f"or below {FA_PER_HOUR:g} per hour")
     for bg in (0.01, 0.05):
-        K = next(K for K in range(2, N) if chance_clusters_per_min(N, bg, K) <= 1 / 60)
-        print(f"  bg {bg}: K = {K} ({chance_clusters_per_min(N, bg, K) * 60:.2f} per hour)")
+        per_hour = [0.0] + [chance_clusters_per_min(N, bg, K) * 60 for K in range(1, N + 1)]
+        K = floor_of(per_hour, FA_PER_HOUR)
+        print(f"  bg {bg}: K = {K} ({per_hour[K]:.2f} per hour)")
     print("coordination-rates tool at 1 s jitter, events of 10+ cells: per-condition medians / planted")
     for bg in (0.01, 0.05):
         for w, q in (("1.0", "k"), ("4.0", "k"), ("1.0", "lam")):

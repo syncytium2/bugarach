@@ -471,7 +471,8 @@ load-bearing terms with no glossary entry.
     (`tools/measure_jitter_correlogram.py`) and converted to σ by the tool's simulator
     calibration: **σ = 0.105 s fast, 0.131 s slow, 0.150 s combined** (the raw half-widths are
     0.186 s fast and 0.228 s slow,
-    [`learned/runs/2026-09-23-jitter-by-group-66/`](learned/runs/2026-09-23-jitter-by-group-66/README.md)).
+    [`learned/runs/2026-09-23-jitter-by-group-66/`](learned/runs/2026-09-23-jitter-by-group-66/README.md);
+    combined from `learned/runs/2026-09-23-jitter-correlogram-combined-senktide-ttx/`).
     Quote σ, or say you are quoting a half-width. For an unrounded Gaussian a pair's lag has SD
     σ√2 and the correlogram half-width is √(2 ln 2) · σ√2 ≈ 1.67 σ; the tool calibrates instead
     of using that ratio because frames, participation and chance pairs move the width. Not
@@ -668,6 +669,9 @@ Added 2026-10-23 with [`goals/synthetic-validation.md`](goals/synthetic-validati
   `cell` key and `cell()` function predate this entry and mean a condition.
 - **absolute K** — the synthetic sweeps set the assessor's threshold as a count of cells (K = 3,
   4, 6 of 33). It is not the percentage K above and does not transfer across field sizes.
+- **Aim 1a backgrounds** — 0.01 and 0.05 Hz per cell. They are not the bench's quiet and busy
+  regimes (0.0052 and 0.0190 Hz): 0.01 Hz is close to the lab's measured 0.0096 Hz, and 0.05 Hz
+  is the retired default, about 5× busier.
 - **membership** — which ROIs take part in an event. **Random** draws a fresh set each event; an
   **assembly** is a fixed set reused across events. **Reuse** E/M is events per assembly.
 - **latency template** — a fixed leader-to-follower offset per ROI for one source, under the
@@ -679,9 +683,9 @@ Added 2026-10-23 with [`goals/synthetic-validation.md`](goals/synthetic-validati
   (`bugarach.assembly`, an order indicator) see which ROIs are active together.
 - **exchangeable limit** — ROIs interchangeable within events: no fixed membership and no order.
   Assemblies converge to it as they multiply if the total number of events is fixed (if each
-  brings its own events, they do not); the order signal of M templates falls as 1/√M either way.
-  The August synfire null, which permutes which ROI owns each onset across the whole recording,
-  approximates it and also moves background onsets.
+  brings its own events, they do not); the order signal of M templates falls as 1/√M (simulated
+  at fixed events only). The August synfire null, which permutes which ROI owns each onset
+  across the baseline window, approximates it and also moves background onsets.
 - **window sharing g_n** — the chance that n onsets of one event fall in the same counting window
   (`learned/synthetic_validation/theory.py`). It is why the coordination-rates tool needs a
   window wider than the jitter.
@@ -694,5 +698,6 @@ Added 2026-10-23 with [`goals/synthetic-validation.md`](goals/synthetic-validati
   of pair co-participations (`learned/synthetic_validation/order_limit.py`); not Kreuz's
   Synfire Indicator, which is normalized by all spikes. **Score sort**: order by each ROI's net
   lead count. **Local search**: moves of single ROIs from there while F rises. **No-order
-  constant** c: F ≈ c/√n̄ with no order planted, where **n̄** is the mean number of events a pair
-  of ROIs shares.
+  bias** F₀: the F an order-free recording still shows, because a finite run has net signs by
+  chance; F₀ ≈ c/√n̄, with the **no-order constant** c fitted, where **n̄** is the mean number of
+  events a pair of ROIs shares.
