@@ -10,6 +10,7 @@ recordings only; nothing here reads a real recording.
 | `theory.py` | Aim 0: the predictions (window sharing g_n, the excess cumulants with the at-most-one-event term, passed through the tool's own `solve()`, the joint fit of jitter, participants and rate across windows, chance clusters at K); `check()` tests each against `aim1_one_source.json` per condition |
 | `theory_check.json` | `theory.py`'s record: every prediction beside the measured median, per condition, with NaN and search-bound counts . `theory.py --from-record` prints the page's Aim 0 and Aim 1a numbers from the two records without rerunning |
 | `blind_README.md`, `blind_a/`, `blind_b/` | the two blind theory passes, kept as they ran |
+| `prior_art/` | 2026-10-24: four more searches (Grün's literature, the Elephant code, other order literature, a naive cross-field survey) and one verdict table: what in Aim 0 was already known |
 | `kreuz_sort/` | 2026-10-24: two agents' search of the Kreuz group's literature, code and website for a fast sort or an analytical null for the Synfire Indicator (none found), with a synthetic annealer-versus-Borda comparison |
 | `aim1_one_source_shared_seeds.json` | the first Aim 1a record, whose conditions shared five backgrounds; the blind passes ran on it |
 | `membership_limit.py`, `membership_limit.json` | Aim 0: assembled against random participation as assemblies multiply (`bugarach.assembly.stat_dispersion`); prediction 1 + (E − 1)/M, and per-recording detection by the package's `AssemblyResult.verdict()` |
