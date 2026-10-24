@@ -63,7 +63,7 @@ and the coordination-rates tool no per-event jitter except through the joint fit
 condition, and the generator draws the background first), found by both blind passes below. Each
 recording now has its own seed; the first record is kept as `aim1_one_source_shared_seeds.json`.
 
-- **The coordinated share of onsets is the most robust estimate**: within about 25 % of planted
+- **The coordinated share of onsets moves least**: within about 25 % of planted
   in every condition at the 2 and 4 s windows, and down to 0.74 at the 1 s window when the jitter
   is 1 s (C, G).
 - **Participants need a window wider than the jitter.** The 1 s window reads 0.4 at 1 s jitter
