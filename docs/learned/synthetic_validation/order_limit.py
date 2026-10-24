@@ -1,37 +1,110 @@
-"""Aim 0, order: a synfire-style indicator predicted, not optimised (Tony, 2026-10-23).
+"""Aim 0, order: a synfire-style order indicator, its closed forms and fits, and their limits.
 
-Model. Each source s has a latency template delta_si ~ N(0, s^2) over cells; an event from s
-puts cell i at t0 + delta_si + N(0, sigma^2). Membership is random (k of N), so this isolates
-order. Perfect readout: each event's participants and onsets are known.
+Goal page: docs/goals/synthetic-validation.md, "Aim 0, order". Synthetic only. Revised after
+the murderboard of 2026-10-23/24, all four rounds (docs/reviews/synthetic-validation-aim0_2026-10-23.md).
 
-Statistic, in the spirit of SPIKE-order (Kreuz et al. 2017): D_ij = mean over co-participations
-of sign(t_j - t_i); cells sorted from leader to follower; F = sum over ordered pairs of
-n_ij D_ij / sum n_ij. Here the sort is the score s_i = sum_j n_ij D_ij (a Borda count), which
-is O(N^2) and deterministic, instead of simulated annealing over N! orders.
+Model. Each source has a latency template: a fixed offset per cell, drawn N(0, delta^2) once;
+an event from it puts cell i at t0 + offset_i + N(0, sigma^2). Membership is random (k of N
+cells). Readout is perfect: each event's participants and onsets are known, there is no
+background, and no coincidence window is involved. r = delta / sigma.
 
-Predictions, with tau = s / sigma:
-  one template:            F = (2/pi) arctan(tau)
-  M independent templates: F ~ sqrt(2/pi) * sqrt((2/pi) arcsin(tau^2/(1+tau^2))) / sqrt(M)
-  no order (any M):        F ~ c / sqrt(n_bar), n_bar = mean co-participations per pair
-                           (the optimisation's own bias; it is why the indicator falls with
-                           event count in the real recordings)
+Statistic. For each pair, D_ij = sum over co-participations of sign(t_j - t_i). Cells are put
+in an order, and F = sum over ordered pairs (i before j) of D_ij / sum of co-participations: net
+agreement (agreeing minus disagreeing), as a share of all pair co-participations; 0 with no
+order, 1 for a perfect sequence. The order is chosen two ways:
+
+  * the SCORE sort: each cell's net lead count (a Borda / Copeland count), O(N^2), no search;
+  * a LOCAL SEARCH from it (insertion moves until none improves F). It is an approximate
+    stand-in for the simulated annealing of tools/synfire_scan.py, not a bound on it: a port of
+    PySpike's annealer on the same matrices ended slightly below it (no-order constant about
+    0.48 against 0.49-0.50; murderboard round 2, role 6).
+
+This differs from SPIKE-order / the Synfire Indicator (Kreuz, Satuvuori, Pofahl & Mulansky 2017,
+New J Phys 19:043028) in four ways, the same four the goal page tables:
+  * coincidences: known events here, ISI-adaptive windows there. On sparse trains those also
+    pair onsets of neighbouring events (+36 % with an event every 25 s, +44 % with renewal gaps,
+    in a review agent's PySpike 0.9.0 test at 33 cells, 10 per event; murderboard round 3,
+    role 6, not kept here), and those cross-event pairs lean against the planted order;
+  * the order: the score sort here, simulated annealing there;
+  * the normalisation: by all spikes there (eq. 14), so with no background and known
+    coincidences F_Kreuz = F (k - 1)/(N - 1) (0.28 at 10 of 33 cells), less with background;
+  * the null: order-free simulation and the fitted c / sqrt(n_bar) here, order-swapping
+    surrogates there (synfire_scan.py adds its own relabel null).
+None of the numbers below is PySpike's. Omitted: the 0.1 s frame grid. Rounded onsets tie, and a
+tie counts 0 here as in PySpike; at delta = sigma = 0.1 s that lowered F about 9 % (same test).
+
+Predictions:
+  one template:   F = (2/pi) arctan(r): the population Kendall tau between template and observed
+                  latencies under a bivariate normal (Greiner's relation; Kruskal 1958). A finite
+                  run adds the no-order bias in quadrature, sqrt(F_1^2 + F_0^2), which is what the
+                  score sort shows at small r; at large r the sort itself loses about 2 %.
+  M templates:    the signal term F_M ~ sqrt(2/pi) * sqrt((2/pi) arcsin(r^2 / (1 + r^2))) / sqrt(M):
+                  for each pair the M templates' signs average like M independent draws of
+                  2 Phi(X) - 1 with X ~ N(0, r^2), whose variance is (2/pi) arcsin(r^2/(1+r^2)),
+                  and E|mean| of that is sqrt(2/pi) times its SD (central limit, so asymptotic in
+                  M; it assumes the order agrees with every pair's net sign, which it cannot, so
+                  it runs high at moderate M). The no-order bias adds in quadrature.
+  no order:       F_0 ~ c / sqrt(n_bar), n_bar = mean co-participations per pair: the 1/sqrt(n)
+                  scaling of a mean of random signs. c is FITTED, depends on N and k, and is larger
+                  under a search than under the score sort. Kreuz et al. 2017 (sec. 2.5, 3.1)
+                  already note the finite-size effect and that the null would be binomial if
+                  pairs were independent; the content here is the scaling with a fitted constant.
 
     python docs/learned/synthetic_validation/order_limit.py
 """
+import json
+from pathlib import Path
+
 import numpy as np
 
+HERE = Path(__file__).resolve().parent
 
-def indicator(events, N):
-    """events: list of (cells, onsets). Returns F under the score sort."""
+
+def pair_matrices(events, N):
     n = np.zeros((N, N)); d = np.zeros((N, N))
     for cells, t in events:
-        o = np.sign(t[None, :] - t[:, None])          # +1 where row leads column
+        o = np.sign(t[None, :] - t[:, None])          # +1 where the row cell leads the column cell
         n[np.ix_(cells, cells)] += 1 - np.eye(len(cells))
         d[np.ix_(cells, cells)] += o
-    order = np.argsort(-d.sum(1))                       # leaders first
-    iu = np.triu_indices(N, 1)
-    dd = d[np.ix_(order, order)][iu]
-    return dd.sum() / n[iu].sum()
+    return n, d
+
+
+def f_of(order, n, d):
+    iu = np.triu_indices(len(order), 1)
+    return d[np.ix_(order, order)][iu].sum() / n[iu].sum()
+
+
+def score_order(d):
+    return np.argsort(-d.sum(1))
+
+
+def local_search(order, d, max_pass=50):
+    """Insertion moves: take a cell out and put it where it adds most, until nothing improves."""
+    order = list(order)
+    for _ in range(max_pass):
+        improved = False
+        for i in range(len(order)):
+            c = order.pop(i)
+            rest = np.array(order)
+            # gain of inserting c at position p: sum_{j before p} d[j,c]... as leader over the rest
+            lead = d[c, rest]                 # c before j adds d[c, j]
+            follow = d[rest, c]               # j before c adds d[j, c]
+            # value at position p = sum_{j<p} follow_j + sum_{j>=p} lead_j
+            cf = np.concatenate([[0.0], np.cumsum(follow)])
+            cl = np.concatenate([np.cumsum(lead[::-1])[::-1], [0.0]])
+            p = int(np.argmax(cf + cl))
+            order.insert(p, c)
+            if p != i:
+                improved = True
+        if not improved:
+            break
+    return np.array(order)
+
+
+def indicators(events, N):
+    n, d = pair_matrices(events, N)
+    o = score_order(d)
+    return f_of(o, n, d), f_of(local_search(o, d), n, d), n
 
 
 def simulate(N, k, E, M, s, sigma, rng):
@@ -51,22 +124,70 @@ def pred_many(tau, M):
     return np.sqrt(2 / np.pi) * np.sqrt(2 / np.pi * np.arcsin(tau ** 2 / (1 + tau ** 2))) / np.sqrt(M)
 
 
+def nbar(N, k, E):
+    return E * k * (k - 1) / (N * (N - 1))
+
+
 if __name__ == "__main__":
     rng = np.random.default_rng(0)
-    N, k, sigma, REPS = 33, 10, 0.2, 60
-    print("one template, E = 200 events: F measured vs (2/pi) arctan(s/sigma)")
+    N, k, sigma, REPS = 33, 10, 0.2, 40
+    rec = dict(N=N, k=k, sigma_sec=sigma, one=[], none=[], many=[], c_by_field=[])
+    print(f"one template, {N} cells, {k} per event, 200 events: F (score sort) vs (2/pi) arctan(r)")
     for s in (0.05, 0.1, 0.2, 0.5, 1.0):
-        f = np.mean([indicator(simulate(N, k, 200, 1, s, sigma, rng), N) for _ in range(REPS)])
-        print(f"  s/sigma {s / sigma:5.2f}: {f:.3f}  predicted {pred_one(s / sigma):.3f}")
-    print("\nno order (s = 0): the optimisation's bias against co-participations per pair")
+        f = np.mean([indicators(simulate(N, k, 200, 1, s, sigma, rng), N)[0] for _ in range(REPS)])
+        rec["one"].append(dict(r=s / sigma, measured=f, predicted=pred_one(s / sigma)))
+        print(f"  r {s / sigma:5.2f}: measured {f:.3f}  predicted {pred_one(s / sigma):.3f}")
+    print("\nno order: F * sqrt(n_bar) under the score sort and under the local search")
     for E in (25, 50, 100, 200, 400, 800):
-        f = np.mean([indicator(simulate(N, k, E, 1, 0.0, sigma, rng), N) for _ in range(REPS)])
-        nbar = E * k * (k - 1) / (N * (N - 1))
-        print(f"  E {E:4d} (n_bar {nbar:5.1f}): F {f:.3f}   F * sqrt(n_bar) = {f * np.sqrt(nbar):.3f}")
-    print("\nM templates, s/sigma = 2.5, E = 2000 events: F measured vs prediction (+ no-order bias)")
-    E = 2000; nbar = E * k * (k - 1) / (N * (N - 1))
-    bias = np.mean([indicator(simulate(N, k, E, 1, 0.0, sigma, rng), N) for _ in range(REPS)])
+        v = np.array([indicators(simulate(N, k, E, 1, 0.0, sigma, rng), N)[:2] for _ in range(REPS)])
+        nb = nbar(N, k, E)
+        rec["none"].append(dict(E=E, n_bar=nb, c_score=v[:, 0].mean() * np.sqrt(nb),
+                                c_search=v[:, 1].mean() * np.sqrt(nb)))
+        print(f"  {E:4d} events (n_bar {nb:5.1f}): c score {v[:, 0].mean() * np.sqrt(nb):.3f}, "
+              f"c search {v[:, 1].mean() * np.sqrt(nb):.3f}")
+    print("\nthe no-order constant c depends on the field: 400 events")
+    for NN, kk in ((15, 5), (33, 5), (33, 10), (33, 20), (100, 10), (100, 30)):
+        v = np.array([indicators(simulate(NN, kk, 400, 1, 0.0, sigma, rng), NN)[:2] for _ in range(20)])
+        nb = nbar(NN, kk, 400)
+        rec["c_by_field"].append(dict(N=NN, k=kk, c_score=v[:, 0].mean() * np.sqrt(nb),
+                                      c_search=v[:, 1].mean() * np.sqrt(nb)))
+        print(f"  {NN:3d} cells, {kk:2d} per event: c score {v[:, 0].mean() * np.sqrt(nb):.3f}, "
+              f"c search {v[:, 1].mean() * np.sqrt(nb):.3f}")
+    print("\nM templates, r = 2.5, 2000 events: F (score sort) vs sqrt(F_M^2 + F_0^2), "
+          "F_0 measured on the same run size")
+    E = 2000
+    f0 = np.mean([indicators(simulate(N, k, E, 1, 0.0, sigma, rng), N)[0] for _ in range(REPS)])
     for M in (1, 2, 4, 8, 16, 64, 256):
-        f = np.mean([indicator(simulate(N, k, E, M, 0.5, sigma, rng), N) for _ in range(REPS // 2)])
-        p = pred_one(2.5) if M == 1 else np.hypot(pred_many(2.5, M), bias)
-        print(f"  M {M:4d}: F {f:.3f}   predicted {p:.3f}")
+        f = np.mean([indicators(simulate(N, k, E, M, 0.5, sigma, rng), N)[0] for _ in range(REPS // 2)])
+        fm = pred_one(2.5) if M == 1 else pred_many(2.5, M)
+        p = fm if M == 1 else float(np.hypot(fm, f0))
+        rec["many"].append(dict(M=M, measured=f, F_M=fm, F_0=f0, predicted=p))
+        print(f"  M {M:4d}: measured {f:.3f}   F_M {fm:.3f}   predicted {p:.3f}")
+    # Simulated at small n_bar directly, rather than extrapolating c / sqrt(n_bar) below the
+    # n_bar = 2.1 fitted above: the no-order indicator's mean and spread at 33 cells.
+    print("\nno order, small runs: mean and SD of F under the score sort, 33 cells")
+    rec["small"] = []
+    for kk in (7, 13):
+        for E in (10, 25, 60, 140):
+            v = np.array([indicators(simulate(N, kk, E, 1, 0.0, sigma, rng), N)[0] for _ in range(200)])
+            nb = nbar(N, kk, E)
+            rec["small"].append(dict(k=kk, E=E, n_bar=nb, mean=float(v.mean()), sd=float(v.std())))
+            print(f"  {kk:2d} per event, {E:3d} events (n_bar {nb:5.2f}): F {v.mean():.3f} +- {v.std():.3f}")
+    # Detection at small runs, simulated on both sides: the share of recordings with M templates
+    # (r = 2.5) whose score-sort F exceeds the 95th percentile of order-free recordings of the
+    # same size. Neither the asymptotic F_M nor the quadrature sum is used.
+    print("\npower against an order-free null (one-sided 5 %), r = 2.5, 300 recordings per point")
+    rec["power"] = []
+    for kk in (7, 13):
+        for E in (5, 10, 25):
+            null = np.array([indicators(simulate(N, kk, E, 1, 0.0, sigma, rng), N)[0] for _ in range(300)])
+            thr = float(np.percentile(null, 95))
+            row = dict(k=kk, E=E, null_mean=float(null.mean()), null_sd=float(null.std()), threshold=thr,
+                       power={})
+            for M in (1, 2, 4, 8, 16):
+                v = np.array([indicators(simulate(N, kk, E, M, 0.5, sigma, rng), N)[0] for _ in range(300)])
+                row["power"][str(M)] = float(np.mean(v > thr))
+            rec["power"].append(row)
+            print(f"  {kk:2d} per event, {E:2d} events: " +
+                  " ".join(f"M {m}: {p:.2f}" for m, p in row["power"].items()))
+    (HERE / "order_limit.json").write_text(json.dumps(rec, indent=1, default=float))

@@ -52,7 +52,7 @@ def cell(args):
     s, gt = simulate_coordination(
         duration_sec=DURATION, n_roi=N_ROI, bg_rate_hz=bg, participation=(part,),
         n_per_level=(n_ev,), jitter_sec=jit, min_sep_sec=MIN_SEP, grid_sec=0.1,
-        seed=1000 + 100 * idx + seed)   # its own background per cell (see below)
+        seed=1000 + 100 * idx + seed)   # its own background per recording (see main)
     st = next(iter(s.streams.values()))
     L = int(round(DURATION / mcr.DT))
     trains = [np.minimum(mcr._frames(np.asarray(t), 0.0, DURATION), L - 1) for t in st.t50rise]
@@ -67,7 +67,23 @@ def cell(args):
     true = mcr.truth(gt, N_ROI, DURATION)
     true.update(jitter=jit, part_frac=part, n_events=n_ev, bg_rate=bg,
                 per_min=60.0 * len(gt.events) / DURATION, n_onsets=int(sum(len(t) for t in trains)))
-    return dict(seed=seed, cell=idx, true=true, coord_rates=cr, assess={str(k): v for k, v in asr.items()})
+    # The raw excess cumulants are kept as well: solve() refuses (NaN) when f2 or f3 <= 0, and a
+    # fit across windows should not inherit that screen (murderboard 2026-10-23, roles 6 and 7).
+    cum = {w: dict(f2=float(c["f2"]), f3=float(c["f3"])) for w, c in m["cum"].items()}
+    return dict(seed=seed, cell=idx, true=true, coord_rates=cr, cum=cum,
+                assess={str(k): v for k, v in asr.items()})
+
+
+def chance_cell(args):
+    """Background only (no coordinated events): the assessor's cluster rate is all chance."""
+    bg, seed = args
+    from bugarach.assess import assess_coactivity
+    from bugarach.simulate import simulate_coordination
+    s, _ = simulate_coordination(duration_sec=DURATION, n_roi=N_ROI, bg_rate_hz=bg,
+                                 participation=(0.3,), n_per_level=(0,), grid_sec=0.1,
+                                 seed=900000 + 1000 * int(round(bg * 1000)) + seed)
+    recs = assess_coactivity(s, window=(0.0, DURATION), min_rois=KS, n_surrogates=20)
+    return dict(bg_rate=bg, seed=seed, per_min={str(r.min_rois): r.clusters_permin for r in recs})
 
 
 def main():
@@ -86,9 +102,17 @@ def main():
     t0 = time.time()
     with ProcessPoolExecutor(a.workers) as ex:
         rows = list(ex.map(cell, grid))
-    print(f"{len(rows)} recordings in {time.time() - t0:.0f} s", file=sys.stderr)
-    rec = dict(what="Aim 1a: one source, random membership, blind recovery", seeding="per cell", n_roi=N_ROI,
-               duration_sec=DURATION, min_sep_sec=MIN_SEP, ks=KS, quick=a.quick, rows=rows)
+        chance = list(ex.map(chance_cell, list(itertools.product(BG_RATES, range(100)))))
+    print(f"{len(rows)} recordings + {len(chance)} background-only in {time.time() - t0:.0f} s",
+          file=sys.stderr)
+    rec = dict(what="Aim 1a: one source, random membership, blind recovery",
+               seeding="per recording: 1000 + 100 * condition index + seed",
+               assessor_settings="K = 3, 4, 6 cells (absolute counts), 1 s bins, merge_bins 2, "
+                                 "120 surrogates (shipped default 1000). Only observation-based "
+                                 "outputs are used here; jit_defined also needs a surrogate "
+                                 "cluster, so it is not one of them",
+               n_roi=N_ROI, duration_sec=DURATION, min_sep_sec=MIN_SEP, ks=KS, quick=a.quick,
+               rows=rows, chance_arm=chance)
     name = "aim1_one_source_quick.json" if a.quick else "aim1_one_source.json"
     (HERE / name).write_text(json.dumps(rec, indent=1, default=float))
     print(HERE / name, file=sys.stderr)

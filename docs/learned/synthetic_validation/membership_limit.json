@@ -1,0 +1,116 @@
+{
+ "N": 33,
+ "k": 10,
+ "E": 45,
+ "reps_mean": 400,
+ "reps_verdict": 60,
+ "n_surr": 200,
+ "alpha": 0.05,
+ "random_flagged": 0.05,
+ "random_verdicts": {
+  "no-assembly": 57,
+  "uniform-only": 2,
+  "margin-only": 0,
+  "structure-beyond-rate": 1
+ },
+ "rows": [
+  {
+   "M": 1,
+   "reuse": 45.0,
+   "measured": 44.543959482496575,
+   "predicted": 45.0,
+   "flagged": 1.0,
+   "verdicts": {
+    "no-assembly": 0,
+    "uniform-only": 60,
+    "margin-only": 0,
+    "structure-beyond-rate": 0
+   },
+   "n": 60
+  },
+  {
+   "M": 3,
+   "reuse": 15.0,
+   "measured": 15.494866512567112,
+   "predicted": 15.666666666666666,
+   "flagged": 1.0,
+   "verdicts": {
+    "no-assembly": 0,
+    "uniform-only": 0,
+    "margin-only": 0,
+    "structure-beyond-rate": 60
+   },
+   "n": 60
+  },
+  {
+   "M": 10,
+   "reuse": 4.5,
+   "measured": 5.296321953016921,
+   "predicted": 5.4,
+   "flagged": 1.0,
+   "verdicts": {
+    "no-assembly": 0,
+    "uniform-only": 0,
+    "margin-only": 0,
+    "structure-beyond-rate": 60
+   },
+   "n": 60
+  },
+  {
+   "M": 45,
+   "reuse": 1.0,
+   "measured": 1.9424356433166534,
+   "predicted": 1.9777777777777779,
+   "flagged": 1.0,
+   "verdicts": {
+    "no-assembly": 0,
+    "uniform-only": 0,
+    "margin-only": 0,
+    "structure-beyond-rate": 60
+   },
+   "n": 60
+  },
+  {
+   "M": 150,
+   "reuse": 0.3,
+   "measured": 1.272088010900076,
+   "predicted": 1.2933333333333334,
+   "flagged": 0.8333333333333334,
+   "verdicts": {
+    "no-assembly": 10,
+    "uniform-only": 1,
+    "margin-only": 6,
+    "structure-beyond-rate": 43
+   },
+   "n": 60
+  },
+  {
+   "M": 1000,
+   "reuse": 0.045,
+   "measured": 1.0323397745780916,
+   "predicted": 1.044,
+   "flagged": 0.26666666666666666,
+   "verdicts": {
+    "no-assembly": 44,
+    "uniform-only": 1,
+    "margin-only": 7,
+    "structure-beyond-rate": 8
+   },
+   "n": 60
+  },
+  {
+   "M": 10000,
+   "reuse": 0.0045,
+   "measured": 0.9877710551682152,
+   "predicted": 1.0044,
+   "flagged": 0.03333333333333333,
+   "verdicts": {
+    "no-assembly": 58,
+    "uniform-only": 1,
+    "margin-only": 0,
+    "structure-beyond-rate": 1
+   },
+   "n": 60
+  }
+ ]
+}
