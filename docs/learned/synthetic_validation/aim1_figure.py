@@ -4,7 +4,10 @@ Measured values only; the Aim 0 predictions are compared in Figure 2 (aim0_figur
 caption lives on the goal page. Reads aim1_one_source.json beside this file. Writes the PNG to
 --out (default: the darkroom folder this goal claims) and, unless --no-repo, a copy beside this
 file. Panels A-C and E-G are recovered / planted; D and H are recovered jitter in seconds against
-the identity line, so an estimator that returns a constant reads as a flat line.
+the identity line, so an estimator that returns a constant reads as a flat line. Only events of
+10 or more cells are plotted (5-cell events are below the event floor; the page quotes them).
+The assessor's jitter is plotted only where the assessor marks it defined (`jit_defined`), as
+`bugarach.adapt.generator_params` reads it.
 
     PYTHONPATH=src python docs/learned/synthetic_validation/aim1_figure.py
 """
@@ -41,7 +44,7 @@ SERIES = [
     ("as 3", "assessor, K = 3 cells", "#eda100", "s", "--"),
     ("as 4", "assessor, K = 4 cells", "#e87ba4", "s", "--"),
     ("as 6", "assessor, K = 6 cells", "#008300", "s", "--"),
-    ("fit", "joint fit across windows (events of 10+ cells)", "#6250d6", "D", "-"),
+    ("fit", "joint fit across windows", "#6250d6", "D", "-"),
 ]
 PARAMS = [  # (y label, truth key, coordination-rates key, assessor key)
     ("participants per event", "k", "k", "part"),
@@ -58,7 +61,7 @@ def value(row, series, tkey, cr_key, as_key):
     kind, _, arg = series.partition(" ")
     if kind == "fit":
         f = row.get("_fit")
-        if f is None or row["true"]["k"] < 9.5:
+        if f is None:
             return None
         return {"k": f["k"], "per_min": f["lam"] * 60.0, "jitter": f["sigma"]}.get(tkey)
     if kind == "cr":
@@ -68,7 +71,10 @@ def value(row, series, tkey, cr_key, as_key):
         return v * 60.0 if cr_key == "lam" else v
     if as_key is None:
         return None
-    return row["assess"][arg][as_key]
+    a = row["assess"][arg]
+    if as_key == "jit" and not a["jit_defined"]:
+        return None
+    return a[as_key]
 
 
 def main():
@@ -104,7 +110,8 @@ def main():
                 for jt in jits:
                     vals = []
                     for r in rows:
-                        if r["true"]["bg_rate"] != bg or r["true"]["jitter"] != jt:
+                        if (r["true"]["bg_rate"] != bg or r["true"]["jitter"] != jt
+                                or r["true"]["k"] < 9.5):
                             continue
                         v = value(r, skey, tkey, ckey, akey)
                         t = r["true"][tkey]
@@ -112,7 +119,7 @@ def main():
                             continue
                         vals.append(v if jitter_panel else v / t)
                     if vals:
-                        xs.append(jt * (1.05 ** (s_i - 3)))
+                        xs.append(jt * (1.09 ** (s_i - 3)))
                         q = np.percentile(vals, [25, 50, 75])
                         lo.append(q[0]); med.append(q[1]); hi.append(q[2])
                 if not xs:
@@ -135,7 +142,7 @@ def main():
                 ax.set_xlabel("planted jitter SD (s)")
             ax.set_ylabel(f"{label}\n" + ("recovered (s)" if jitter_panel else "recovered ÷ planted"),
                           fontsize=11)
-        fig.text(0.005, 0.70 - 0.40 * i, f"background {bg:g} Hz per cell", rotation=90,
+        fig.text(0.012, 0.70 - 0.40 * i, f"background {bg:g} Hz per cell", rotation=90,
                  fontsize=12, va="center")
     handles = [Line2D([], [], color=c, marker=m, ls=l, lw=1.8, ms=6, label=lab)
                for _, lab, c, m, l in SERIES]
@@ -145,14 +152,14 @@ def main():
                 Line2D([], [], color="#444", marker="v", ls="none", ms=7,
                        label="range continues below the axis")]
     fig.legend(handles=handles, loc="upper center", ncol=4, frameon=False, fontsize=10.5)
-    fig.tight_layout(rect=(0.02, 0.0, 1, 0.86))
+    fig.tight_layout(rect=(0.03, 0.0, 1, 0.86))
     from naming import artifact_name
     name = artifact_name.build(artifact_name.load_codes(), source="synth", type="recovery",
                                form="plot", topic="one source jitter", ext="png",
                                date="20261023")
     meta = {"Title": "Figure 1, recovery against planted jitter (Aim 1a)",
             "Author": "bugarach synthetic validation (docs/learned/synthetic_validation)",
-            "Creation Time": "2026-10-23"}
+            "Creation Time": __import__("datetime").datetime.now().isoformat(timespec="seconds")}
     for d in [a.out] + ([] if a.no_repo else [HERE]):
         fig.savefig(d / name, dpi=130, metadata=meta)
         print(d / name)

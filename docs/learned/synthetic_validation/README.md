@@ -8,12 +8,12 @@ recordings only; nothing here reads a real recording.
 | `aim1_one_source.py` | Aim 1a: one source, random membership. Simulates a grid (jitter 0.05/0.2/0.5/1 s, participation 0.15/0.3/0.6, 15 or 45 events, background 0.01 or 0.05 Hz per cell, 5 seeds; 33 cells, 45 min) and measures each recording blind with `measure_coordination_rates` (1, 2, 4 s windows) and `assess_coactivity` (K = 3, 4, 6 cells). About a minute on 24 workers. |
 | `aim1_one_source.json` | its run record: planted values, every estimate and the raw excess cumulants per recording, plus 200 background-only recordings (100 per background) for the chance-cluster test |
 | `theory.py` | Aim 0: the predictions (window sharing g_n, the excess cumulants with the at-most-one-event term, passed through the tool's own `solve()`, the joint fit of jitter, participants and rate across windows, chance clusters at K); `check()` tests each against `aim1_one_source.json` per condition |
-| `theory_check.json` | `theory.py`'s record: every prediction beside the measured median, per condition, with NaN and search-bound counts |
+| `theory_check.json` | `theory.py`'s record: every prediction beside the measured median, per condition, with NaN and search-bound counts . `theory.py --from-record` prints the page's Aim 0 and Aim 1a numbers from the two records without rerunning |
 | `blind_README.md`, `blind_a/`, `blind_b/` | the two blind theory passes, kept as they ran |
 | `aim1_one_source_shared_seeds.json` | the first Aim 1a record, whose conditions shared five backgrounds; the blind passes ran on it |
 | `membership_limit.py`, `membership_limit.json` | Aim 0: assembled against random participation as assemblies multiply (`bugarach.assembly.stat_dispersion`); prediction 1 + (E − 1)/M, and per-recording detection by the package's `AssemblyResult.verdict()` |
-| `order_limit.py`, `order_limit.json` | Aim 0: an order indicator by score sort and by local search, with its closed forms (one template, M templates) and the fitted no-order constant across field sizes |
-| `aim1_figure.py` | Figure 1, measured recovery against planted jitter (with the joint fit), to the darkroom and here |
+| `order_limit.py`, `order_limit.json` | Aim 0: an order indicator by score sort and by local search, with its closed forms (one template, M templates), the fitted no-order constant across field sizes, and the no-order indicator's mean and spread at small event counts |
+| `aim1_figure.py` | Figure 1, measured recovery against planted jitter for events of 10+ cells (with the joint fit), to the darkroom and here |
 | `aim0_figures.py` | Figures 2–4: predicted against measured; membership; order |
 | `synth_recovery_plot_one-source-jitter_20261023.png` | Figure 1 |
 | `synth_recovery_plot_one-source-predicted-against-measured_20261023.png` | Figure 2 |

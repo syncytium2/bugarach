@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime
 import sys
 from pathlib import Path
 
@@ -66,8 +67,9 @@ def name(topic, type_="recovery"):
 
 def save(fig, fname, title, dests):
     for d in dests:
-        fig.savefig(d / fname, dpi=130, metadata={"Title": title, "Author": META,
-                                                  "Creation Time": "2026-10-23"})
+        fig.savefig(d / fname, dpi=130, metadata={
+            "Title": title, "Author": META,
+            "Creation Time": datetime.now().isoformat(timespec="seconds")})
         print(d / fname)
     plt.close(fig)
 
@@ -98,38 +100,48 @@ def fig2(dests):
             off = [r for r in rows if np.isfinite(r["meas"][q]) and not (lim[0] <= r["meas"][q] <= lim[1])]
             if off:
                 ks = sorted({r["k"] for r in off})
-                ax.text(0.03, 0.97, f"{len(off)} off scale\n({', '.join(str(x) for x in ks)}-cell events)",
-                        transform=ax.transAxes, ha="left", va="top", fontsize=10, color="#444")
+                hi_n = sum(r["meas"][q] > lim[1] for r in off)
+                where = ", ".join(x for x in (f"{hi_n} above" if hi_n else "",
+                                              f"{len(off) - hi_n} below" if len(off) - hi_n else "") if x)
+                ax.text(0.03, 0.97, f"{len(off)} off scale:\n{where}\n({', '.join(str(x) for x in ks)}-cell events)",
+                        transform=ax.transAxes, ha="left", va="top", fontsize=11, color="#444")
         ax = axes[i, 3]
         ch = [c for c in tc["chance"] if c["bg"] == bg]
         lo_ax, hi_ax = 1e-3, 20
         ax.plot([lo_ax, hi_ax], [lo_ax, hi_ax], color="#888", ls=":", lw=1, zorder=0)
         tiny = [c for c in ch if c["predicted"] < lo_ax and c["pooled_rate"] < lo_ax]
         if tiny:
-            ax.text(0.03, 0.95, "\n".join(f"K = {c['K']}: {c['predicted']:.0e}/min predicted,\n"
-                                          f"{c['pooled_count']} clusters measured" for c in tiny),
-                    transform=ax.transAxes, ha="left", va="top", fontsize=10, color="#333")
-        for c in [c for c in ch if c not in tiny]:
+            def sci(v):
+                e = int(np.floor(np.log10(v)))
+                return f"{v / 10 ** e:.0f} × 10$^{{{e}}}$"
+            ax.text(0.03, 0.97, "\n".join(f"K = {c['K']}: {sci(c['predicted'])} per min\npredicted, "
+                                          f"{c['pooled_count']} measured\n(not testable at this size)"
+                                          for c in tiny),
+                    transform=ax.transAxes, ha="left", va="top", fontsize=11, color="#333")
+        shown = sorted([c for c in ch if c not in tiny], key=lambda c: c["K"])
+        for n_, c in enumerate(shown):
             x, y = c["predicted"], c["pooled_rate"]
             ax.errorbar(x, y, yerr=[[y - c["pooled_rate_ci"][0]], [c["pooled_rate_ci"][1] - y]],
                         fmt="o", color="#6250d6", ms=7, capsize=3, zorder=2)
-            ax.annotate(f"K = {c['K']}", (x, y), textcoords="offset points", xytext=(-10, 8),
-                        ha="right", fontsize=10, color="#333")
+            # alternate sides so each label sits by its own point
+            ax.annotate(f"K = {c['K']}", (x, y), textcoords="offset points",
+                        xytext=(-10, 8) if n_ % 2 == 0 else (10, -14),
+                        ha="right" if n_ % 2 == 0 else "left", fontsize=11, color="#333")
         ax.set_xscale("log"); ax.set_yscale("log"); ax.set_xlim(lo_ax, hi_ax); ax.set_ylim(lo_ax, hi_ax)
         ax.set_xlabel("predicted (per min)")
         ax.set_ylabel("chance clusters, background only\nmeasured (per min)", fontsize=11)
         style(ax); letter(ax, L[i * 4 + 3])
-        fig.text(0.005, 0.71 - 0.43 * i, f"background {bg:g} Hz per cell", rotation=90,
+        fig.text(0.012, 0.71 - 0.43 * i, f"background {bg:g} Hz per cell", rotation=90,
                  fontsize=12, va="center")
     handles = [Line2D([], [], color=c, marker=m, ls="none", ms=7,
                       label=f"full prediction, {kk} cells per event") for kk, (c, m) in K_STYLE.items()]
     handles += [Line2D([], [], color=GREY, marker="o", ls="none", ms=5,
-                       label="Poisson events (no at-most-one-event term)"),
+                       label="same measurements, Poisson-train prediction"),
                 Line2D([], [], color="#888", ls=":", label="prediction = measurement"),
-                Line2D([], [], color="#6250d6", marker="o", ls="-", ms=7,
-                       label="chance clusters: pooled rate, 95 % interval")]
-    fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False, fontsize=10.5)
-    fig.tight_layout(rect=(0.02, 0, 1, 0.88))
+                Line2D([], [], color="#6250d6", marker="o", ls="none", ms=7,
+                       label="chance clusters (95 % interval within the marker)")]
+    fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False, fontsize=11)
+    fig.tight_layout(rect=(0.03, 0, 1, 0.88))
     save(fig, name("one source predicted against measured"),
          "Figure 2, predicted against measured (Aim 0)", dests)
 
@@ -149,17 +161,23 @@ def fig3(dests):
     ax.set_xlabel("reuse: events per assembly, E/M")
     ax.set_ylabel("pair-count variance ÷ random")
     style(ax); letter(ax, "A")
-    ax.legend(frameon=False, fontsize=10.5, loc="upper left")
+    ax.legend(frameon=False, fontsize=11, loc="upper left")
     ax = axes[1]
-    ax.plot(reuse, [100 * r["flagged"] for r in rows], "-o", color="#6250d6", ms=7,
-            label="flagged by the assembly verdict")
-    ax.axhline(100 * m["random_flagged"], color="#888", ls=":", lw=1)
-    ax.text(3e-3, 100 * m["random_flagged"] + 3,
-            f"{100 * m['random_flagged']:.0f} % flagged under random participation", fontsize=10,
+    both = [100 * r["verdicts"]["structure-beyond-rate"] / r["n"] for r in rows]
+    ax.plot(reuse, both, "-o", color="#6250d6", ms=7, label="both nulls reject")
+    ax.plot(reuse, [100 * r["flagged"] for r in rows], "--s", color="#6250d6", ms=5, mfc="white",
+            lw=1.2, label="either null rejects")
+    rb = 100 * m["random_verdicts"]["structure-beyond-rate"] / m["reps_verdict"]
+    ax.axhline(rb, color="#888", ls=":", lw=1)
+    ax.text(3e-3, rb + 3, f"both reject under random participation: {rb:.0f} %", fontsize=11,
             color="#444")
-    ax.text(0.97, 0.55, "at M = 1 every recording reads\n'uniform-only' (one saturated assembly)",
-            transform=ax.transAxes, ha="right", va="top", fontsize=10, color="#444")
-    ax.set_xscale("log"); ax.set_xlim(*xl); ax.set_ylim(0, 105)
+    m1 = [r for r in rows if r["M"] == 1][0]
+    ax.annotate("M = 1: only the uniform null\nrejects (one assembly holds\nevery event)",
+                (m1["reuse"], 0), xytext=(0.62, 0.30), textcoords="axes fraction",
+                ha="right", va="center", fontsize=11, color="#444",
+                arrowprops=dict(arrowstyle="->", color="#666", lw=1))
+    ax.legend(frameon=False, fontsize=11, loc="upper left")
+    ax.set_xscale("log"); ax.set_xlim(*xl); ax.set_ylim(-4, 105)
     ax.set_xlabel("reuse: events per assembly, E/M")
     ax.set_ylabel(f"recordings flagged (%, of {m['reps_verdict']})")
     style(ax); letter(ax, "B")
@@ -177,21 +195,22 @@ def fig4(dests):
     rr = np.geomspace(0.1, 10, 200)
     c200 = [r for r in o["none"] if r["E"] == 200][0]["c_score"]
     f0_200 = c200 / np.sqrt(ol.nbar(N, k, 200))
-    ax.plot(rr, ol.pred_one(rr), color=PRED, lw=2, label="(2/π) arctan r")
+    ax.plot(rr, ol.pred_one(rr), color=PRED, lw=2, label="signal: (2/π) arctan r")
     ax.plot(rr, np.hypot(ol.pred_one(rr), f0_200), color=PRED, lw=1.5, ls="--",
-            label="with the no-order bias of 200 events")
+            label="with the no-order bias (200 events)")
     ax.plot([r["r"] for r in o["one"]], [r["measured"] for r in o["one"]], "o", color=SIM, ms=7,
             label="simulated, score sort")
     ax.set_xscale("log"); ax.set_yscale("log"); ax.set_ylim(0.04, 1.1)
     ax.set_yticks([0.05, 0.1, 0.2, 0.4, 0.8]); plain_log(ax, "y")
     ax.set_xlabel("r = template spread ÷ jitter"); ax.set_ylabel("order indicator F")
-    style(ax); letter(ax, "A"); ax.legend(frameon=False, fontsize=10, loc="lower right")
+    style(ax); letter(ax, "A"); ax.legend(frameon=False, fontsize=11, loc="lower right")
     ax = axes[1]
     f0 = o["many"][0]["F_0"]
     MM = np.geomspace(2, 300, 200)
-    ax.plot(MM, np.hypot(ol.pred_many(2.5, MM), f0), "-", color=PRED, lw=2,
-            label="predicted √(F_M² + F_0²)")
-    ax.plot(MM, ol.pred_many(2.5, MM), ":", color=PRED, lw=1.5, label="signal term F_M alone")
+    ax.plot(MM, ol.pred_many(2.5, MM), "-", color=PRED, lw=2,
+            label="signal $F_M$ (asymptotic, M ≥ 2)")
+    ax.plot(MM, np.hypot(ol.pred_many(2.5, MM), f0), "--", color=PRED, lw=1.5,
+            label="with the no-order bias $F_0$")
     ax.plot([1], [o["many"][0]["predicted"]], "D", color=PRED, ms=7, mfc="white",
             label="M = 1: (2/π) arctan r")
     ax.plot([r["M"] for r in o["many"]], [r["measured"] for r in o["many"]], "o", color=SIM, ms=7,
@@ -199,7 +218,7 @@ def fig4(dests):
     ax.set_xscale("log"); ax.set_yscale("log"); ax.set_ylim(0.04, 1.1)
     ax.set_yticks([0.05, 0.1, 0.2, 0.4, 0.8]); plain_log(ax, "y")
     ax.set_xlabel("latency templates M (r = 2.5, 2000 events)"); ax.set_ylabel("order indicator F")
-    style(ax); letter(ax, "B"); ax.legend(frameon=False, fontsize=10, loc="lower left")
+    style(ax); letter(ax, "B"); ax.legend(frameon=False, fontsize=11, loc="upper right")
     ax = axes[2]
     nb = np.array([r["n_bar"] for r in o["none"]])
     for key, col, mk, lab in (("c_score", SIM, "o", "score sort"), ("c_search", SEARCH, "s", "local search")):
@@ -210,7 +229,7 @@ def fig4(dests):
     ax.set_xscale("log"); ax.set_yscale("log"); ax.set_ylim(0.04, 1.1)
     ax.set_xticks([2, 5, 10, 20, 50]); ax.set_yticks([0.05, 0.1, 0.2, 0.4, 0.8]); plain_log(ax)
     ax.set_xlabel("events a pair of cells shares, n̄"); ax.set_ylabel("order indicator F, no order")
-    style(ax); letter(ax, "C"); ax.legend(frameon=False, fontsize=10, loc="upper right")
+    style(ax); letter(ax, "C"); ax.legend(frameon=False, fontsize=11, loc="upper right")
     fig.tight_layout()
     save(fig, name("order indicator closed forms"),
          "Figure 4, an order indicator against its closed forms and fits (Aim 0)", dests)

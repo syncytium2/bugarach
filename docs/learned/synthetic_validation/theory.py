@@ -15,8 +15,12 @@ N cells, k participants per event (cells), sigma jitter SD (s), w window (s), la
    Rounding onsets to the frame changes nothing in expectation (see `s_eff`). g_2 has a closed
    form (two onsets differ by N(0, 2 s^2)); g_3 is a one-dimensional integral. Grun et al.
    1999 (J Neurosci Methods 94:67) derived the uniform-jitter, two-onset case ("fission
-   probability"); Pazienti et al. 2008 (Brain Res 1225:39; abstract read) used the detection of
-   jittered coincidences against window width to estimate synchronization precision.
+   probability") and read the temporal scatter from how detection changes with the analysis
+   width; Pazienti et al. 2008 (Brain Res 1225:39; abstract read) estimated synchronization
+   precision from how detection decays with the dither width, at one fixed window. Louis & Grun
+   2009 (BMC Neurosci 10(Suppl 1):P253) and Louis, Borgelt & Grun 2010 (Neural Netw 23:705;
+   abstract read) fitted group size and jitter together from the population complexity
+   distribution across bin widths: the precedent for section 3.
 
 2. The coordination-rates tool (tools/measure_coordination_rates.py). Its route is the cumulant
    route of CuBIC (Staude, Rotter & Grun 2010, J Comput Neurosci 29:327) on the multiple-
@@ -32,12 +36,15 @@ N cells, k participants per event (cells), sigma jitter SD (s), w window (s), la
    The predictions are passed through the tool's own `solve()`, so a prediction and a
    measurement are the same estimator (including its refusal when f2 or f3 <= 0). Omitted: the
    surrogate's offsets (multiples of 2w, spanning minutes) are not independent of the renewal
-   event train; that term is about 1 % of f2 here (murderboard role 6).
+   event train; a review agent's test put it at about 1 % of f2, of the sign and size of the
+   rate residual (murderboard, blind round 2, role 6; not kept here).
 
 3. Jitter, participants and rate, fitted together across the tool's windows (1, 2, 4 s): the
-   six excess cumulants against the exact forms above, for (sigma, k, lambda). This replaces a
-   one-parameter fit of f2(w)/w that ignored the at-most-one-event term (blind pass A's route;
-   see blind_README.md).
+   six excess cumulants against the exact forms above, for (sigma, k, lambda). The joint fit
+   follows blind pass A's route, re-specified (blind_README.md lists the differences); it
+   replaces a one-parameter fit of f2(w)/w that ignored the at-most-one-event term. The pair-only
+   analogue in spatial statistics is minimum-contrast fitting of a Thomas process to its
+   K-function (Diggle, Besag & Gleaves 1976; Waagepetersen 2007).
 
 4. Chance clusters at K (bugarach.assess). In 1 s bins, a bin reaches K cells with
    q = P(Binomial(N, 1 - exp(-b)) >= K); a cluster starts on a bin at or over K whose two
@@ -128,7 +135,7 @@ def g(n: int, w: float, sigma: float) -> float:
     raise ValueError(n)
 
 
-def excess_cumulants(k: float, sigma: float, w: float, lam: float, n_cells: int):
+def predicted_excess_cumulants(k: float, sigma: float, w: float, lam: float, n_cells: int):
     """The (f2, f3) the tool's surrogate-corrected cumulants should equal, exactly as derived."""
     p = lam * w
     g2, g3 = g(2, w, sigma), g(3, w, sigma)
@@ -148,7 +155,7 @@ def poisson_cumulants(k, sigma, w, lam):
 def predict_solve(k, sigma, w, lam, n_cells, poisson=False):
     """What the tool's fixed-model solve() returns, as ratios to the planted values."""
     f2, f3 = (poisson_cumulants(k, sigma, w, lam) if poisson
-              else excess_cumulants(k, sigma, w, lam, n_cells))
+              else predicted_excess_cumulants(k, sigma, w, lam, n_cells))
     s = mcr.solve(f2, f3, n_cells, w, "fixed")
     return dict(k=s["k"] / k, lam=s["lam"] / lam, share=s["share"] / (lam * k / n_cells))
 
@@ -169,7 +176,7 @@ def fit_joint(cum: dict, n_cells: int):
 
     def resid(x):
         sig, k, lam = np.exp(x[0]), 2 + np.exp(x[1]), np.exp(x[2])
-        pr = np.array([excess_cumulants(k, sig, w, lam, n_cells) for w in ws])
+        pr = np.array([predicted_excess_cumulants(k, sig, w, lam, n_cells) for w in ws])
         return np.concatenate([(pr[:, 0] - f2) / s2, (pr[:, 1] - f3) / s3])
 
     best = None
@@ -291,13 +298,23 @@ def summary(out: dict) -> None:
                       if r["bg"] == bg and r["k"] >= kmin and np.isfinite(r["meas"][q])]
                 print(f"bg {bg} k>={kmin:2d} {q:5s}: |meas - exact| median {np.median(d):.3f} "
                       f"worst {np.max(d):.3f} (n={len(d)}); Poisson median {np.median(dp):.3f}")
-    print("\nparticipants, k >= 10: |z| > 2 of (median - prediction) / (1.2533 SD / sqrt(n))")
+    # The SE of a median of n = 5, from an SD of the same 5 values (ddof 0), is heavy-tailed:
+    # calibrate |z| > 2 by simulating that statistic under a normal null.
+    x = np.random.default_rng(0).standard_normal((400_000, 5))
+    p2 = float(np.mean(np.abs(np.median(x, 1) / (1.2533 * x.std(1) / np.sqrt(5))) > 2))
+    print(f"\nparticipants, k >= 10: |z| > 2 of (median - prediction) / (1.2533 SD / sqrt(n)); "
+          f"null rate {p2:.3f} at n = 5 (simulated). The three windows reuse the same recordings.")
     for bg in (0.01, 0.05):
         rs = [r for r in cr if r["bg"] == bg and r["k"] >= 10 and np.isfinite(r["meas"]["k"])]
         z = [(r["meas"]["k"] - r["exact"]["k"]) / (1.2533 * max(r["meas_sd"]["k"], 1e-9)
                                                   / np.sqrt(r["n"] - r["n_nan"])) for r in rs]
-        print(f"  bg {bg}: {sum(abs(x) > 2 for x in z)} of {len(z)} condition-windows beyond 2 SE "
-              f"(about {0.0455 * len(z):.1f} expected)")
+        nz = sum(abs(v) > 2 for v in z)
+        above = sum(r["meas"]["k"] > r["exact"]["k"] for r in rs)
+        signed = np.median([r["meas"]["k"] - r["exact"]["k"] for r in rs])
+        print(f"  bg {bg}: {nz} of {len(z)} condition-windows beyond 2 SE (about {p2 * len(z):.1f} "
+              f"expected; binomial P(>= {nz}) = {stats.binom.sf(nz - 1, len(z), p2):.2f}); "
+              f"measured above predicted in {above} of {len(rs)} (sign test p = "
+              f"{stats.binomtest(above, len(rs)).pvalue:.3f}); median signed residual {signed:+.3f}")
         for q in ("lam", "share"):
             above = sum(r["meas"][q] > r["exact"][q] for r in rs if np.isfinite(r["meas"][q]))
             print(f"    {q}: measured above predicted in {above} of {len(rs)}")
@@ -309,6 +326,12 @@ def summary(out: dict) -> None:
                 v5 = [r["meas"][q] for r in cr if r["bg"] == bg and r["k"] == 5 and str(r["w"]) == w]
                 print(f"  bg {bg} w {w} {q:5s}: {min(v):.2f}-{max(v):.2f} "
                       f"(5-cell: {np.nanmin(v5):.2f}-{np.nanmax(v5):.2f})")
+    for bg in (0.01, 0.05):
+        r5 = [r for r in cr if r["bg"] == bg and r["k"] == 5]
+        wr = max((r for r in r5 if np.isfinite(r["meas"]["k"])), key=lambda r: r["meas"]["k"])
+        wl = max((r for r in r5 if np.isfinite(r["meas"]["lam"])), key=lambda r: r["meas"]["lam"])
+        print(f"  5-cell, bg {bg}: worst measured ratio to planted: participants {wr['meas']['k']:.2f} "
+              f"(w {wr['w']:g} s, sigma {wr['sigma']:g} s), rate {wl['meas']['lam']:.2f}")
     nan = sum(r["n_nan"] for r in cr)
     print(f"solve() refused (NaN) in {nan} of {sum(r['n'] for r in cr)} recording-windows")
     print("\njoint fit: sigma median [IQR] by background and planted sigma, k >= 10 vs k = 5")
@@ -340,5 +363,52 @@ def summary(out: dict) -> None:
               f"clusters against {c['expected_count']:.1f} expected = {c['pooled_rate']:.4f}/min "
               f"[{c['pooled_rate_ci'][0]:.4f}-{c['pooled_rate_ci'][1]:.4f}], p = {c['p_poisson']:.3f}")
 
+def aim1_summary(path=HERE / "aim1_one_source.json") -> None:
+    """The Aim 1a numbers the goal page quotes, recomputed from the run record."""
+    rec = json.loads(Path(path).read_text())
+    rows, N = rec["rows"], rec["n_roi"]
+    cond = defaultdict(list)
+    for r in rows:
+        t = r["true"]
+        cond[(t["bg_rate"], t["jitter"], int(round(t["k"])), t["n_events"])].append(r)
+    jits = sorted({k[1] for k in cond})
+    print("\nAim 1a. Assessor jitter (s), median over recordings, events of 10+ cells, where the "
+          "assessor marks it defined (n defined / n)")
+    for bg in (0.01, 0.05):
+        for K in rec["ks"]:
+            parts = []
+            for s in jits:
+                v = [r["assess"][str(K)]["jit"] for r in rows if r["true"]["bg_rate"] == bg
+                     and r["true"]["jitter"] == s and r["true"]["k"] >= 10]
+                d = [r["assess"][str(K)]["jit"] for r in rows if r["true"]["bg_rate"] == bg
+                     and r["true"]["jitter"] == s and r["true"]["k"] >= 10
+                     and r["assess"][str(K)]["jit_defined"]]
+                parts.append(f"{s:g}: {np.median(d):.2f} ({len(d)}/{len(v)})" if d else f"{s:g}: -")
+            print(f"  bg {bg} K {K}: " + "; ".join(parts))
+    print("assessor rate / planted at K = 6, condition medians (0.01 Hz)")
+    for k in (5, 10):
+        for s in jits:
+            v = [float(np.median([r["assess"]["6"]["per_min"] / r["true"]["per_min"] for r in rs]))
+                 for (bg, s_, k_, ne), rs in cond.items() if bg == 0.01 and s_ == s and k_ == k]
+            print(f"  {k}-cell, sigma {s:g}: {min(v):.2f}-{max(v):.2f}")
+    print("smallest K with chance clusters at or below one per hour (the assessor's own rule)")
+    for bg in (0.01, 0.05):
+        K = next(K for K in range(2, N) if chance_clusters_per_min(N, bg, K) <= 1 / 60)
+        print(f"  bg {bg}: K = {K} ({chance_clusters_per_min(N, bg, K) * 60:.2f} per hour)")
+    print("coordination-rates tool at 1 s jitter, events of 10+ cells: per-condition medians / planted")
+    for bg in (0.01, 0.05):
+        for w, q in (("1.0", "k"), ("4.0", "k"), ("1.0", "lam")):
+            v = [float(np.nanmedian([r["coord_rates"][w][q] / r["true"][q] for r in rs]))
+                 for (bg_, s, k, ne), rs in cond.items() if bg_ == bg and s == 1.0 and k >= 10]
+            print(f"  bg {bg} w {w} {q}: {min(v):.2f}-{max(v):.2f}")
+        v = [float(np.nanmedian([r["coord_rates"]["4.0"]["k"] / r["true"]["k"] for r in rs]))
+             for (bg_, s, k, ne), rs in cond.items() if bg_ == bg and k >= 10]
+        print(f"  bg {bg} w 4.0 k, every jitter: {min(v):.2f}-{max(v):.2f}")
+
+
 if __name__ == "__main__":
-    summary(check())
+    if "--from-record" in sys.argv:      # summarize theory_check.json without rerunning check()
+        summary(json.loads((HERE / "theory_check.json").read_text()))
+    else:
+        summary(check())
+    aim1_summary()

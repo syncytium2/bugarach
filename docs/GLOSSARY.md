@@ -664,18 +664,24 @@ Added 2026-10-23 with [`goals/synthetic-validation.md`](goals/synthetic-validati
   are streams, and a stream may carry several sources.
 - **condition** — one grid point of a synthetic sweep (one participation, jitter, event count and
   background), simulated as several recordings. In this vocabulary never "cell", which is an ROI
-  (the radar section's "cell under test" is a time bin, a third sense).
+  (the radar section's "cell under test" is a time bin, a third sense). The Aim 1a record's
+  `cell` key and `cell()` function predate this entry and mean a condition.
 - **absolute K** — the synthetic sweeps set the assessor's threshold as a count of cells (K = 3,
   4, 6 of 33). It is not the percentage K above and does not transfer across field sizes.
 - **membership** — which ROIs take part in an event. **Random** draws a fresh set each event; an
   **assembly** is a fixed set reused across events. **Reuse** E/M is events per assembly.
 - **latency template** — a fixed leader-to-follower offset per ROI for one source, under the
   event's jitter. What SPIKE-order and the synfire indicator look for. To a population-count tool
-  a template adds to the jitter, so the two cannot be told apart there.
+  a template adds to the jitter (derived, not yet simulated; on average over random membership),
+  so the two cannot be told apart there.
+- **population-count tool** — one that sees only how many ROIs are active in each window or bin:
+  the coordination-rates tool, the assessor, the count detector. **Cell-by-cell statistics**
+  (`bugarach.assembly`, an order indicator) see which ROIs are active together.
 - **exchangeable limit** — ROIs interchangeable within events: no fixed membership and no order.
-  Assemblies and templates both converge to it as sources multiply. The August synfire null,
-  which permutes which ROI owns each onset across the whole recording, approximates it and also
-  moves background onsets.
+  Assemblies converge to it as they multiply if the total number of events is fixed (if each
+  brings its own events, they do not); the order signal of M templates falls as 1/√M either way.
+  The August synfire null, which permutes which ROI owns each onset across the whole recording,
+  approximates it and also moves background onsets.
 - **window sharing g_n** — the chance that n onsets of one event fall in the same counting window
   (`learned/synthetic_validation/theory.py`). It is why the coordination-rates tool needs a
   window wider than the jitter.
@@ -684,8 +690,9 @@ Added 2026-10-23 with [`goals/synthetic-validation.md`](goals/synthetic-validati
   would not have it.
 - **joint fit** — jitter, participants and event rate fitted together to the coordination-rates
   tool's pair and triple counts at its three windows.
-- **order indicator F** — net agreement of pair lead signs with an order of the cells, as a share
+- **order indicator F** — net agreement of pair lead signs with an order of the ROIs, as a share
   of pair co-participations (`learned/synthetic_validation/order_limit.py`); not Kreuz's
-  Synfire Indicator, which is normalised by all spikes. **Score sort**: order by each cell's net
-  lead count. **Local search**: insertion moves from there. **No-order constant** c: F ≈ c/√n̄
-  with no order planted, where **n̄** is the mean number of events a pair of cells shares.
+  Synfire Indicator, which is normalized by all spikes. **Score sort**: order by each ROI's net
+  lead count. **Local search**: moves of single ROIs from there while F rises. **No-order
+  constant** c: F ≈ c/√n̄ with no order planted, where **n̄** is the mean number of events a pair
+  of ROIs shares.

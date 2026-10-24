@@ -20,12 +20,17 @@ order, 1 for a perfect sequence. The order is chosen two ways:
     0.48 against 0.49-0.50; murderboard round 2, role 6).
 
 This differs from SPIKE-order / the Synfire Indicator (Kreuz, Satuvuori, Pofahl & Mulansky 2017,
-New J Phys 19:043028) in four ways: coincidences come from known events, not ISI-adaptive
-windows (which on sparse trains also pair onsets from neighbouring events: +33 % coincidences
-in a reviewer's test at 33 cells, 10 per event, an event every 25 s); the sort; the normalisation,
-which there is by all spikes (eq. 14), so with no background each participant's k - 1 partners
-out of N - 1 possible give F_Kreuz = F (k - 1)/(N - 1) (0.28 at 10 of 33 cells), less again when
-background spikes are present; and the annealing itself. None of the numbers below is PySpike's.
+New J Phys 19:043028) in four ways, the same four the goal page tables:
+  * coincidences: known events here, ISI-adaptive windows there. On sparse trains those also
+    pair onsets of neighbouring events (+36 % with an event every 25 s, +44 % with renewal gaps,
+    in a review agent's PySpike 0.9.0 test at 33 cells, 10 per event; murderboard blind round 2,
+    role 6, not kept here), and those cross-event pairs lean against the planted order;
+  * the order: the score sort here, simulated annealing there;
+  * the normalisation: by all spikes there (eq. 14), so with no background and known
+    coincidences F_Kreuz = F (k - 1)/(N - 1) (0.28 at 10 of 33 cells), less with background;
+  * the null: relabelling or the fitted c / sqrt(n_bar) here, order-swapping surrogates there.
+None of the numbers below is PySpike's. Omitted: the 0.1 s frame grid. Rounded onsets tie, and a
+tie counts 0 here as in PySpike; at delta = sigma = 0.1 s that lowered F about 9 % (same test).
 
 Predictions:
   one template:   F = (2/pi) arctan(r): the population Kendall tau between template and observed
@@ -39,7 +44,7 @@ Predictions:
                   M; it assumes the order agrees with every pair's net sign, which it cannot, so
                   it runs high at moderate M). The no-order bias adds in quadrature.
   no order:       F_0 ~ c / sqrt(n_bar), n_bar = mean co-participations per pair: the 1/sqrt(n)
-                  rate of a sum of random signs. c is FITTED, depends on N and k, and is larger
+                  scaling of a mean of random signs. c is FITTED, depends on N and k, and is larger
                   under a search than under the score sort. Kreuz et al. 2017 (sec. 2.5, 3.1)
                   already note the finite-size effect and that the null would be binomial if
                   pairs were independent; the content here is the scaling with a fitted constant.
@@ -157,4 +162,14 @@ if __name__ == "__main__":
         p = fm if M == 1 else float(np.hypot(fm, f0))
         rec["many"].append(dict(M=M, measured=f, F_M=fm, F_0=f0, predicted=p))
         print(f"  M {M:4d}: measured {f:.3f}   F_M {fm:.3f}   predicted {p:.3f}")
+    # Simulated at small n_bar directly, rather than extrapolating c / sqrt(n_bar) below the
+    # n_bar = 2.1 fitted above: the no-order indicator's mean and spread at 33 cells.
+    print("\nno order, small runs: mean and SD of F under the score sort, 33 cells")
+    rec["small"] = []
+    for kk in (7, 13):
+        for E in (10, 25, 60, 140):
+            v = np.array([indicators(simulate(N, kk, E, 1, 0.0, sigma, rng), N)[0] for _ in range(200)])
+            nb = nbar(N, kk, E)
+            rec["small"].append(dict(k=kk, E=E, n_bar=nb, mean=float(v.mean()), sd=float(v.std())))
+            print(f"  {kk:2d} per event, {E:3d} events (n_bar {nb:5.2f}): F {v.mean():.3f} +- {v.std():.3f}")
     (HERE / "order_limit.json").write_text(json.dumps(rec, indent=1, default=float))

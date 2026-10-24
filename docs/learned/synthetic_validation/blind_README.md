@@ -8,7 +8,11 @@ question and pointers to the code and the Aim 1a record, nothing else, and worke
 checkout of `main`. Their scripts are kept here **as they ran**: from a worktree's `_scratch/`
 folder, against the first Aim 1a record, now `aim1_one_source_shared_seeds.json` (their paths
 still say `aim1_one_source.json`), so **they do not run where they now sit**. They are a record,
-not maintained tools; `theory.py` is, and blind A's joint fit is ported into it. Each folder's
+not maintained tools; `theory.py` is. Its joint fit follows blind A's route (`invert_cr.py`),
+re-specified rather than ported: residuals scaled by each order's mean size (A: Charlier
+background SE plus a 5 % floor); the surrogate's 1/N and 1/N² terms included (A has neither);
+closed-form unrounded window sharing (A: frame-quantized numeric); σ bounds 0.005–5 s and k ≤ N
+(A: 0.01–4 s, k − 2 ≤ 60); different starting points. Each folder's
 `REPORT.md` is that agent's final report, verbatim apart from personal paths.
 
 | folder | what it holds |
