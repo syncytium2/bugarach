@@ -8,7 +8,7 @@ had covered some of this ground. Four more agents searched:
 - **A cross-field survey:** one agent given only the day-one problem and none of our answers,
   covering radar, seismology, particle physics, EEG, ECG, BCI and others.
 
-The reports are kept verbatim.
+The reports are kept verbatim. They describe spike-train literature in its own terms, so they say "firing" where this repository would say "event" or "onset" for calcium data (GLOSSARY, *firing*).
 
 | file | what |
 |---|---|
