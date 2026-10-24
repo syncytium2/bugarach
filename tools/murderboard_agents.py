@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# vendored from syncytium2/murderboard @ 08f5ddb — do NOT edit here; update upstream and re-copy.
+# vendored from syncytium2/murderboard @ 682c31b — do NOT edit here; update upstream and re-copy.
 """murderboard_agents.py — compile `doc_review_process.md` into one agent file per role.
 
 THE GAP THIS CLOSES. The review team is eleven specialists, and until now they existed only
@@ -588,7 +588,7 @@ PLACEHOLDER_RE = re.compile(r"<[^>]*>")
 
 
 def tool_set(raw):
-    """A comma-separated tool list, normalised for set comparison."""
+    """A comma-separated tool list, normalized for set comparison."""
     return frozenset(t.strip().lower() for t in raw.split(",") if t.strip())
 
 

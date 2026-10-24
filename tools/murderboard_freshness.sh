@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# vendored from syncytium2/murderboard @ 08f5ddb — do NOT edit here; update upstream and re-copy.
+# vendored from syncytium2/murderboard @ 682c31b — do NOT edit here; update upstream and re-copy.
 # instrument: propagation
 # murderboard_freshness.sh — is this repo's VENDORED murderboard current with upstream?
 #
@@ -43,7 +43,7 @@
 #   2. $MURDERBOARD_HEAD                    explicit, via environment
 #   3. gh api (the authority — asks the remote)
 #   4. a local clone's origin/main          offline fallback; may itself be behind, so
-#                                           the verdict is labelled with its source
+#                                           the verdict is labeled with its source
 #
 # A BEHIND CLONE MUST NOT ACCUSE THE CONSUMER. Resolution 4 only knows what that clone last
 # fetched, so a disagreement can mean "the consumer is stale" OR "this clone is". Before
@@ -126,6 +126,8 @@ tools/murderboard_roster.sh
 murderboard_roster.sh
 tools/murderboard_prose.sh
 murderboard_prose.sh
+tools/murderboard_subagents.sh
+murderboard_subagents.sh
 tools/murderboard_model_gate.sh
 murderboard_model_gate.sh
 tools/murderboard_revendor.py
@@ -290,7 +292,7 @@ EOF
   # wrong upstream yields a confident verdict about a repository never looked at. A
   # DIRECTORY-source marketplace names no repo and cannot be checked this way; that is the
   # developer's own clone, and refusing it would disable the gate in the one case where the
-  # person can actually act on it. Accepted, and labelled as unverified in the source.
+  # person can actually act on it. Accepted, and labeled as unverified in the source.
   if [ -n "$repo" ] && [ "$repo" != "$REPO_SLUG" ]; then
     CHECKOUT_WHY="that plugin came from $repo, not $REPO_SLUG — refusing to judge one repository against another"
     return 1
@@ -681,7 +683,7 @@ selftest() {
   # filename in the git common dir, so a second family's cached upstream HEAD was compared
   # against the first family's stamp — a confident, completely wrong verdict in BOTH
   # directions. Prove the cache path is keyed by slug.
-  # Asserted on OBSERVABLE behaviour, not on an internal variable: run two families in a
+  # Asserted on OBSERVABLE behavior, not on an internal variable: run two families in a
   # throwaway repo (so the cache lands in ITS git dir) and require two distinct cache files.
   # A single shared file is the poisoning bug.
   # NB the head must come from a resolution source that CACHES. --upstream/$MURDERBOARD_HEAD
@@ -1176,7 +1178,7 @@ if [ -z "$stamp" ]; then
 fi
 
 # --- upstream HEAD, cached ----------------------------------------------------
-# The cache stores its OWN expiry, so ageing it costs no stat(1). Machine-local (git
+# The cache stores its OWN expiry, so aging it costs no stat(1). Machine-local (git
 # common dir), shared by every worktree of this repo, never committed.
 # KEYED BY SLUG, not a fixed name. A repo can vendor from more than one upstream (this
 # tool now polices any of them via --slug/--label), and a shared cache file would let one
