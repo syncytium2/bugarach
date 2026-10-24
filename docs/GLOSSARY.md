@@ -470,6 +470,10 @@ load-bearing terms with no glossary entry.
     correlogram's peak (`tools/measure_jitter_correlogram.py`): 0.105 s fast, 0.131 s slow,
     0.150 s combined. Not ***J***, the surrogate's jitter radius below (± 20 s for the event
     floor's null), which is how far a surrogate moves an onset, not a property of the data.
+    **Two measures of one spread:** the generator's `jitter_sec`, written σ on
+    [`goals/synthetic-validation.md`](goals/synthetic-validation.md), is the SD of each
+    participant's onset about the event time. A pair's lag then has SD σ√2, and a Gaussian
+    correlogram peak of that SD has half-width √(2 ln 2) · σ√2 ≈ 1.67 σ. Say which one you quote.
   - **participation** — the share of a recording's ROIs that take part in one coordinated
     event (0.20 fast, 0.38 slow, 0.25 combined at the bench's middle level).
 - **participant floor** — the recruitment level below which a detector stops
@@ -648,3 +652,21 @@ Added 2026-09-16, with the label-free detector work:
   only as the smear widens. ⚠ **Not the orientation of the raster image.** These
   models are permutation-invariant over ROIs and the encoder sorts rows by rate, so a
   tilt is a fact about row order, which no order-free model reads.
+
+**Synthetic-validation vocabulary** — added 2026-10-23 with
+[`goals/synthetic-validation.md`](goals/synthetic-validation.md).
+- **source** — one generating process of coordinated events, with its own participation, jitter,
+  intervals, membership rule and (optionally) latency template. Not a **stream**: fast and slow
+  are streams, and a stream may carry several sources.
+- **condition** — one grid point of a synthetic sweep (one participation, jitter, event count and
+  background), simulated as several recordings. Never "cell", which is an ROI.
+- **membership** — which ROIs take part in an event. **Random** draws a fresh set each event; an
+  **assembly** is a fixed set reused across events.
+- **latency template** — a fixed leader-to-follower offset per ROI for one source, under the
+  event's jitter. What SPIKE-order and the synfire indicator look for.
+- **exchangeable limit** — ROIs interchangeable within events: no fixed membership and no order.
+  Both assemblies and templates converge to it as sources multiply; it is the null that keeps
+  every onset time and permutes which ROI owns it.
+- **window sharing g_n** — the chance that n onsets of one event fall in the same counting window
+  (`learned/synthetic_validation/theory.py`). It is why the coordination-rates tool needs a
+  window wider than the jitter.

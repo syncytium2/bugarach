@@ -1,11 +1,15 @@
 # The blind theory passes (2026-10-23)
 
 Tony asked whether an analytical prediction could replace the brute force, then asked for the pass
-to be run twice more by independent agents that did not know the first answer. Each agent got his
+to be run twice more by agents that did not know the first answer. They shared the prompt, the
+repository, the record, the tool definitions and the model with the first pass, so this is a
+consistency check rather than independent review. Each agent got his
 question and pointers to the code and the Aim 1a record, nothing else, and worked in its own
 checkout of `main`. Their scripts are kept here **as they ran**: from a worktree's `_scratch/`
 folder, against the first Aim 1a record, now `aim1_one_source_shared_seeds.json` (their paths
-still say `aim1_one_source.json`). They are a record, not maintained tools; `theory.py` is.
+still say `aim1_one_source.json`), so **they do not run where they now sit**. They are a record,
+not maintained tools; `theory.py` is, and blind A's joint fit is ported into it. Each folder's
+`REPORT.md` is that agent's final report, verbatim apart from personal paths.
 
 | folder | what it holds |
 |---|---|
