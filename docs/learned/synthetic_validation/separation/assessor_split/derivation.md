@@ -21,18 +21,18 @@ all.
 
 1. Bin j holds onsets t with ⌊t / 1 s⌋ = j (`_coact_count`). The count is the number of distinct
    ROIs with at least one onset in the bin.
-2. A bin fires when its count is at least K (`counts >= K`).
-3. Fire bins merge into one group when consecutive fire indices differ by at most `merge_bins` = 2,
+2. A bin triggers when its count is at least K (`counts >= K`).
+3. Triggered bins merge into one group when consecutive triggered indices differ by at most `merge_bins` = 2,
    that is, with at most one sub-K bin between them (`_clusters`).
-4. The group centre is tc = mean of (j + 0.5) over its fire bins. Each ROI's nearest onset with
+4. The group centre is tc = mean of (j + 0.5) over its triggered bins. Each ROI's nearest onset with
    |t − tc| ≤ 1.5 s is gathered, and the group is kept as a cluster when at least K ROIs gather.
 
 **The gather never removes a group at these defaults.** The interval [tc − 1.5, tc + 1.5] fully
 contains the bins b with tc − 1.5 ≤ b ≤ tc − 0.5, which are at least two consecutive bins b₀ and
 b₀ + 1, with b₀ = ⌈tc − 1.5⌉. Since tc lies in [f₁ + ½, fₙ + ½] (f₁ and fₙ are the first and last
-fire bins), either b₀ = f₁ − 1, in which case the window also covers f₁, or b₀ lies in [f₁, fₙ].
-In the second case b₀ is a fire bin, or it is the single sub-K bin between two fire bins, so b₀ + 1
-fires. Either way a whole fire bin lies inside the gather window. Every ROI counted in that bin
+triggered bins), either b₀ = f₁ − 1, in which case the window also covers f₁, or b₀ lies in [f₁, fₙ].
+In the second case b₀ is a triggered bin, or it is the single sub-K bin between two triggered bins, so b₀ + 1
+triggers. Either way a whole triggered bin lies inside the gather window. Every ROI counted in that bin
 therefore has an onset within 1.5 s of tc, so at least K ROIs gather. The argument needs
 `wm_factor` ≥ 1.5 bins and `merge_bins` ≤ 2. Checked: merged groups equalled `_clusters`' output in
 all 576 simulated recording-thresholds. The shipped `assess_coactivity` reported the same cluster
@@ -82,7 +82,7 @@ Assumptions, all of them the generator's own:
   (no common-mode jitter).
 
 **Conditional independence of bins.** Let X_j be the number of distinct cells with an *event* onset
-in bin j. Given the vector X, the bins fire independently, with
+in bin j. Given the vector X, the bins trigger independently, with
 
   φ(x) = P(x + Binomial(N − x, p_b) ≥ K),
 
@@ -111,7 +111,7 @@ A onset can no longer share a bin with its B onset. That is why three counters s
 The initial state is (k − m, k − m, m), weighted by the hypergeometric law.
 
 **Grouping automaton.** The state is "no group yet", or (g, d): g groups so far, capped at "3 or
-more", and d sub-K bins since the last fire, capped at 2. A fire with d ≤ 1 stays in g. A fire with
+more", and d sub-K bins since the last triggered bin, capped at 2. A triggered bin with d ≤ 1 stays in g. A triggered bin with
 d = 2 opens group g + 1. A sub-K bin raises d. Both tools use this same automaton.
 
 **The formula.** With π a vector over (placement state × automaton state):
@@ -119,7 +119,7 @@ d = 2 opens group g + 1. A sub-K bin raises d. Both tools use this same automato
   π_{j+1} = Σ_x T_j(x) π_j ⊗ [φ(x) F + (1 − φ(x)) F̄],
 
 where T_j(x) is the placement transition restricted to X_j = x, and F and F̄ are the automaton's
-fire and no-fire maps. Then
+triggered and untriggered maps. Then
 
   P(G = g | Δ, σ, k, K, b, N) = (1/w) ∫₀^w Σ_m H(m) · [π_final(u, m)]_g du.
 
@@ -130,7 +130,7 @@ P(G ≥ 3) is the chance of extra groups. `dp_groups` implements it. Every P sum
 precision.
 
 **The closed form in the limit.** As σ → 0 and b → 0, each event's onsets fall in one bin, and the
-pair splits iff ⌊(u + Δ)/w⌋ − ⌊u/w⌋ ≥ 3, that is, at least two sub-K bins between the two fire bins.
+pair splits iff ⌊(u + Δ)/w⌋ − ⌊u/w⌋ ≥ 3, that is, at least two sub-K bins between the two triggered bins.
 With u uniform that gives
 
   P(two) → f_A f_B · clamp(Δ/w − 2, 0, 1),

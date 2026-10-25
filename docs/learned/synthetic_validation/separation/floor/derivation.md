@@ -42,7 +42,7 @@ That is roughly **one-fifth to one-tenth of the assessor's 3 s floor**. It is al
 real 5th-percentile inter-event gaps of 3.8 s (fast) and 7.1 s (slow). Without cell identity
 the floor is 0.61 s in both streams.
 
-Cell identity helps only through cells recruited by both events. Those cells must also fire
+Cell identity helps only through cells recruited by both events. Those cells must also have an onset
 twice, which real cells cannot do inside their within-cell floor (0.4 s fast, 3.2 s slow). So
 identity lowers the fast floor by about 0.2 s and leaves the slow floor almost unchanged. §6 has
 the comparison.
@@ -235,7 +235,7 @@ Resolvable Δ (s), 50 % / 80 % power, from shared cells alone at b = 0 (closed f
 
 **This is where the model as posed misleads.** With g = one frame, shared cells give 50 % power
 at Δ = 0 for k ≥ 7 cells, and 80 % for k ≥ 10. The "two events" are then told apart while
-coinciding, purely because one cell fired twice inside a jitter width. Real cells cannot do
+coinciding, purely because one cell had two onsets inside a jitter width. Real cells cannot do
 that.
 
 With the measured floors the shared-cell route only opens once Δ is past g:
@@ -250,7 +250,7 @@ In the slow stream, the measured within-cell floor of 3.2 s is itself longer tha
 Suppose memberships are drawn fresh and at random for every event, and no cell is shared. Then
 the cells in A and the cells in B form a uniformly random partition of the participants. It is
 independent of the onset times, and has the same law as a random subset of the union under
-H0. The likelihood ratio does not depend on which cells fired, only on when. **Membership
+H0. The likelihood ratio does not depend on which cells had onsets, only on when. **Membership
 lowers the floor only through shared cells (§3.1), or through knowledge of membership from
 outside the pair.**
 
@@ -258,7 +258,7 @@ The simulation confirms this. With memberships forced disjoint (σ 0.131 s, 7 ce
 the per-cell identity test and the pooled test have the same resolvable Δ (§5, "membership-only
 check").
 
-Outside knowledge would be, for example, recurring ensembles: cells that reliably fire together
+Outside knowledge would be, for example, recurring ensembles: cells that reliably have events together
 across many events. That information is not in the onset times of the pair. Its maximum value is
 the **membership oracle**, a two-sample t test on onsets labelled by event:
 
@@ -293,7 +293,7 @@ number of participants:
 
   13 participants (k = 7) × 0.0096 Hz × 12 s ≈ 1.5 cells.
 
-**So one doubly-firing cell is no longer significant evidence by itself.** The evidence must come
+**So one cell with two onsets is no longer significant evidence by itself.** The evidence must come
 from several shared cells whose second onsets agree in time with each other, and with the
 second burst in the pooled onsets. Chance onsets are uniform in time. For two of them to agree
 within ±2σ has probability about (m choose 2)·(bL)²·4σ/L, roughly 0.01. The per-cell likelihood
@@ -437,7 +437,7 @@ and cell-identity tests. Within-cell floor g = 0.4 s fast, 3.2 s slow; b = 0.009
 
 | stream (σ) | k = 7 cells: Δ₅₀ / Δ₈₀ | k = 13 cells: Δ₅₀ / Δ₈₀ | what sets it |
 |---|---|---|---|
-| fast (0.105 s) | **0.33 / 0.44 s** | **0.19 / 0.26 s** | shared cells firing twice, once Δ clears 0.4 s |
+| fast (0.105 s) | **0.33 / 0.44 s** | **0.19 / 0.26 s** | shared cells with two onsets, once Δ clears 0.4 s |
 | slow (0.131 s) | **0.58 / 0.76 s** | **0.48 / 0.59 s** | the burst shape (pooled onsets); shared cells cannot help below 3.2 s |
 
 Without cell identity, using onset times alone, the floor is 0.51 / 0.61 s (fast, 7 cells) and
@@ -446,7 +446,7 @@ centres are closer than about 0.2–0.6 s.** At about 0.25–0.75 s a good metho
 times in 5. That is 2–6 σ, set by the jitter, not by the frame.
 
 The model taken literally (g = one frame) gives a lower floor, often "any" in Table 2. That
-number is an artefact of letting one cell fire twice within a jitter width (§3.1).
+number is an artefact of letting one cell have two onsets within a jitter width (§3.1).
 
 **Against the assessor's floor (about 3 s).** The assessor bins at 1 s and merges clusters
 within 2 bins, so it cannot score two events closer than about 3 s as two. That is **4–12 times

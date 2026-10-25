@@ -8,12 +8,12 @@ Writes split_output.txt, synth_recovery_plot_assessor-split-against-separation_2
 
 The prediction is an exact recursion over bins (`dp_groups`). Given which cells have an event
 onset in a bin, the bins are independent (background is independent Poisson per cell), so a
-bin fires with phi(X) = P(X + Bin(N - X, p_b) >= K), X the number of distinct cells with an
+bin triggers with phi(X) = P(X + Bin(N - X, p_b) >= K), X the number of distinct cells with an
 event onset there. X itself comes from a sequential (bin-by-bin) multinomial placement of the
 two events' onsets, tracked by three counters: cells with only an A onset still to land, cells
-with only a B onset still to land, and shared cells with both still to land. The fire pattern
+with only a B onset still to land, and shared cells with both still to land. The trigger pattern
 drives a 10-state automaton that counts merged groups (merge when at most one sub-K bin lies
-between fire bins). The gather is shown in derivation.md never to remove a group at the
+between triggered bins). The gather is shown in derivation.md never to remove a group at the
 defaults, so groups are clusters. Phase of the bin grid: midpoint quadrature over one bin.
 Membership overlap: hypergeometric, mixed into the initial state.
 """
@@ -48,7 +48,7 @@ PAD_SIG = 7.0                    # region: clouds' +-7 sigma, plus PAD_BINS bins
 PAD_BINS = 3
 
 # automaton: 0 = no group yet; 1 + 3 (g - 1) + d, g = groups so far (3 = 3 or more),
-# d = sub-K bins since the last fire bin (2 = two or more: the group is closed)
+# d = sub-K bins since the last triggered bin (2 = two or more: the group is closed)
 FIRE_TO = np.zeros(10, int)
 NOFIRE_TO = np.zeros(10, int)
 for s in range(10):
@@ -61,7 +61,7 @@ for s in range(10):
 
 
 def phi_table(bin_sec: float, xcap: int) -> np.ndarray:
-    """phi[x, c]: chance a bin fires given x distinct cells have an event onset in it."""
+    """phi[x, c]: chance a bin triggers given x distinct cells have an event onset in it."""
     out = np.ones((xcap + 1, len(COMBOS)))
     for c, (b, K) in enumerate(COMBOS):
         pb = 1.0 - math.exp(-b * bin_sec)
@@ -256,11 +256,11 @@ def simulate_point(args):
     n_bins = int(np.ceil(T / 1.0))
     obs = _coact_count(trains, T, 1.0, n_bins)
     for K in THRESHOLDS:
-        fire = np.flatnonzero(obs >= K)
+        hit = np.flatnonzero(obs >= K)
         groups = []
-        if fire.size:
-            cur = [fire[0]]
-            for f in fire[1:]:
+        if hit.size:
+            cur = [hit[0]]
+            for f in hit[1:]:
                 if f - cur[-1] <= 2:
                     cur.append(f)
                 else:

@@ -78,7 +78,7 @@ where γ₂ = λ²(g_E − 1). Under the renewal closure, for ordered gaps u₁ 
 **What each term is.** The first term counts pairs and triples from one event. The γ₂ terms count
 pairs from two different events: one onset from each, or one onset from one event and two from the
 other. The γ₃ term counts triples with one onset from each of three events. The pairs from two
-events include pairs where one cell fires in both events. Membership is independent across events
+events include pairs where one cell has an onset in both events. Membership is independent across events
 (A2), so those pairs carry their share, k²/N per event pair, with no extra term.
 
 ## 3. The recording
