@@ -204,7 +204,10 @@ def test_the_gestures_in_a_browser(page):
     page.mouse.move(x + 0.5 * w, y + 10)
     page.mouse.wheel(0, -240)
     page.wait_for_timeout(400)
-    assert _view(page)["x"] == slid["x"]
+    # approx throughout: an x range read back from bokeh is a float that has been through its
+    # screen mapping, so a view restored or left alone can differ in the last bits. rel=1e-9
+    # still fails any real change of view (the smallest step here moves the range by percent).
+    assert _view(page)["x"] == pytest.approx(slid["x"], rel=1e-9)
     page.evaluate("window.scrollTo(0, 0)")
     page.keyboard.down("Control")
     page.mouse.wheel(0, -240)
@@ -215,7 +218,8 @@ def test_the_gestures_in_a_browser(page):
     # Ctrl+Z steps back one view at a time.
     page.keyboard.press("Control+z")
     back = _view(page)
-    assert back["x"] == slid["x"] and back["depth"] == wheeled["depth"] - 1
+    assert back["x"] == pytest.approx(slid["x"], rel=1e-9)
+    assert back["depth"] == wheeled["depth"] - 1
 
     # Double-click shows everything.
     page.mouse.dblclick(x + 0.5 * w, y + 10)
