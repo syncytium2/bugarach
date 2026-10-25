@@ -1,9 +1,11 @@
 ---
-status: open
+status: picked-up
 filed: 2026-10-25
 ---
 
 # Handoff: derive the minimum separation of events the tools can resolve
+
+**Picked up 2026-10-25** by the session that wrote it (Tony: the theory stays here), branch `synth/minimum-separation`.
 
 **For a new session.** Tony, 2026-10-25: *"Discuss whether or not our analytical approach can
 determine the minimum separation of events we can detect"* and *"What parameters of the data
