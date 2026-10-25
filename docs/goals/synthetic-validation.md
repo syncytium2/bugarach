@@ -382,7 +382,7 @@ interchangeable within events) and also moves background onsets.
   they are not independent units. Dilution by non-coincident spikes and cross-event
   coincidences predict a fall with spike count too. Kreuz et al. 2017 (sec. 3.1) warn that their
   indicator is "not sufficient to reliably compare two datasets with widely different number of
-  spike trains and spikes". The test is plan item 3.
+  spike trains and spikes". The test is plan item 4.
 - **Prior art for the fast sort: it is the textbook ranking, and Kreuz's lab still anneals the
   sort.** Ranking by net lead count is the Borda or Copeland ranking of a tournament; Schneider,
   Havenith & Nikolić 2006 rank units by summed pairwise delays the same way, and an independent
@@ -400,6 +400,58 @@ interchangeable within events) and also moves background onsets.
   replay and cortical sequence rank-order methods (Lee & Wilson 2002; Luczak et al. 2007), where
   rank-order nulls with few cells are standard. Citations and what was opened are in the
   [folder README](../learned/synthetic_validation/README.md#prior-art).
+
+### Aim 0, the minimum separation of two events (2026-10-25; derived, checked by simulation)
+
+Tony, 2026-10-25: *"Discuss whether or not our analytical approach can determine the minimum
+separation of events we can detect"*, and *"What parameters of the data determine min detectable
+separation"*. **Yes, and it is set by the tools, not the data.** Three derivations, each checked by
+simulation and independently re-simulated ([`separation/`](../learned/synthetic_validation/separation/README.md)):
+
+- **The data's own floor: 0.26–0.76 s.** That is the separation any method could resolve from onset
+  times and cell identity, at 80 % power and 5 % false alarm, for the lab's σ of 0.105–0.131 s,
+  7–13 of 33 cells and 0.0096 Hz. Jitter sets it, at 2–6 σ. Onset clouds are unimodal below 2σ, but
+  that is not the statistical limit. The 0.1 s frame does not bind, and a cell with an onset in both
+  events helps only on the fast stream, whose shortest within-cell interval is 0.4 s
+  ([`floor/`](../learned/synthetic_validation/separation/floor/derivation.md)).
+- **The assessor's floor: about 2.5 s. The count detector's: about 5 s.** The chance a pair is
+  reported as two reaches half its plateau at (merge rule + ½) × bin width, almost whatever the
+  jitter, participation, background or threshold. The ±1.5 s gather never removes a cluster at the
+  defaults. The data set only the plateau: each event must reach K by itself, so 7-cell events on
+  the 0.05 Hz background are almost never split. The exact prediction matches 28,800 simulated
+  pairs within binomial noise ([`assessor_split/`](../learned/synthetic_validation/separation/assessor_split/derivation.md)).
+- **So between about 0.6 and 2.5 s the tools merge pairs the data could separate.** On real gaps
+  (`gaps.csv`), 1.7 % of fast-stream gaps are under 3 s and 7.5 % under 5 s. The assessor resolves
+  about 98 % of fast gaps when both events are detected; the count detector at its shipped 2 s bins
+  merges about 7 % of fast gaps and 1 % of slow ones. Those are lower bounds, since `gaps.csv`
+  itself merged events under 2 s apart. Whether people do better is the rater sheet's separation
+  test (PR #916).
+- **The coordination-rates prediction, for events that can share a window.** The general form
+  takes the event train's pair correlation in place of the at-most-one-event term. It carries two
+  terms the page's form lacked ([`real_intervals/`](../learned/synthetic_validation/separation/real_intervals/derivation.md)):
+  - **The surrogates see the events' spacing.** That explains most of Aim 1a's rate excess at
+    0.01 Hz: the median residual falls from 0.030 to 0.013, measured above predicted from 43 to 35 of
+    48, and the participants' possible high bias goes (sign test p = 0.006 becomes 0.19).
+  - **On real fast-stream gaps the page's form fails at the 4 s window.** It predicts rate 1.17 and
+    participants 0.89 of planted where the tool measures 1.03 and 0.96, and the joint fit reads
+    jitter 1.5–1.65 times high. The general form fixes both (χ² about 15 against 74–133 over 12
+    condition-windows). **Until it is in `theory.py`, the joint fit should not be run on real
+    fast-stream intervals** (plan item 5).
+
+![Figure 5](../learned/synthetic_validation/separation/assessor_split/synth_recovery_plot_assessor-split-against-separation_20261025.png)
+
+**Figure 5, the tools merge pairs closer than their bins.** The chance a pair of events is reported
+as two, against the separation of their centres (A–D) and against the realized separation of their
+median onsets (E–H). Lines are the exact prediction; points are 400 simulated pairs each.
+Assessor in solid lines, count detector dashed; 7 and 13 of 33 cells; jitter 0.105 and 0.5 s;
+background 0.0096 and 0.05 Hz. Dotted: 2σ. Dash-dot: the 3.8 s 5th percentile of real fast-stream
+gaps.
+
+![Figure 6](../learned/synthetic_validation/separation/floor/synth_recovery_plot_separation-floor-any-method_20261025.png)
+
+**Figure 6, the data's floor lies well below the tools'.** The separation any test resolves at 50 %
+and 80 % power, against cells per event, at σ = 0.105, 0.131 and 0.5 s (a–c), with and without
+cell identity. Panel d shows the power curves at the lab's two streams.
 
 ### What membership and order change for the generator
 
@@ -427,6 +479,8 @@ Aim 1c.
 | With assemblies, pair co-participation variance is 1 + (E − 1)/M times random; it reaches random only at fixed E | derived and checked (equally used random assemblies, perfect readout, fixed E; E = M e derived only) | *Aim 0, membership* |
 | One latency template gives F = (2/π) arctan r; with no order, F under the score sort has an exact mean, c/√n̄ with c = √(4(k + 1)/(3πN)); at 5–10 events of 7 cells one template is detected in 43–99 % of recordings | derived and checked; the local-search constant fitted; power simulated (known events, no background, no frame grid, random membership) | *Aim 0, order* |
 | Three sessions reached the same core derivation | consistency check, not review | *Aim 0, rederived by two more sessions* |
+| The assessor splits two events half the time at about 2.5 s, the count detector at about 5 s; any method could at 0.26–0.76 s | derived and checked (one generator, Gaussian jitter, random membership) | *Aim 0, the minimum separation* |
+| The coordination-rates prediction needs the event train's pair correlation: the surrogates see the spacing, and real fast-stream gaps break the at-most-one-event term | derived and checked by simulation; the Palm form for real data untested | *Aim 0, the minimum separation* |
 
 ## Tried and dropped
 
@@ -519,21 +573,26 @@ test the prediction and measure what is left over.
    does not cap it, [`FOUNDATIONS.md`](../FOUNDATIONS.md) §2); and a note that its reruns
    reproduce only in the same process, which `synfire_scan.py`'s docstring overstates.
 
+5. Put the general event-train form into `theory.py` and `fit_joint` (`separation/real_intervals/`
+   proposes the interface: Poisson, hard-core and empirical-interval trains, and the Palm form for
+   real data). Until then the joint fit is not to be run on real fast-stream intervals. Measure
+   real gaps down to one frame, not through `gaps.csv`'s 2 s merge.
+
 *For later aims*:
 
-5. Derive how strong a fixed assembly must be before the cell-by-cell co-activation matrix shows
+6. Derive how strong a fixed assembly must be before the cell-by-cell co-activation matrix shows
    it above sampling noise (random-matrix theory; references in the
    [folder README](../learned/synthetic_validation/README.md#prior-art)). The repository has met
    the limits of the usual PCA method: `bugarach.assembly` notes its noise bound is unavailable
    with fewer events than cells, and [`assembly_report.md`](../assembly_report.md) found PCA
    against it flags essentially every simulated recording.
-6. Derive the best precision any method could reach for (λ, k, σ) from these recordings, as
+7. Derive the best precision any method could reach for (λ, k, σ) from these recordings, as
    Aim 1's boundary of what can be recovered (likelihood bounds; references in the folder
    README).
-7. Check the shared-modulation ([GLOSSARY](../GLOSSARY.md), *shared modulation*) prediction: shared slow rate change adds pair
+8. Check the shared-modulation ([GLOSSARY](../GLOSSARY.md), *shared modulation*) prediction: shared slow rate change adds pair
    excess that grows with the window while coordination levels off. Staude, Rotter & Grün 2008
    (*Neural Comput* 20:1973) show how to separate coordination from rate covariation.
-8. Re-plot Figure 1 on dimensionless axes (σ/w, λw, N·b·w, K against the event floor) and place
+9. Re-plot Figure 1 on dimensionless axes (σ/w, λw, N·b·w, K against the event floor) and place
    the Aim 2 grid around the predicted boundaries.
 
 No closed form is planned for CoactDetect's and LoCo's rolling context and merge gaps, for
@@ -582,7 +641,7 @@ in for a stranger's data.
 
 ## Open work a session can do without a ruling
 
-1. Aim 0's numbered next steps (*The plan*), items 1–8.
+1. Aim 0's numbered next steps (*The plan*), items 1–9.
 2. Aim 1a, extended: recovery against participation and event count separately (Figure 1 pools
    them).
 3. The rate-matched negative tool (todo above).

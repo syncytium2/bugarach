@@ -10,6 +10,7 @@ recordings only; nothing here reads a real recording.
 | `theory.py` | Aim 0: the predictions (window sharing g_n, the excess cumulants with the at-most-one-event term, passed through the tool's own `solve()`, the joint fit of jitter, participants and rate across windows, chance clusters at K); `check()` tests each against `aim1_one_source.json` per condition |
 | `theory_check.json` | `theory.py`'s record: every prediction beside the measured median, per condition, with NaN and search-bound counts . `theory.py --from-record` prints the page's Aim 0 and Aim 1a numbers from the two records without rerunning |
 | `blind_README.md`, `blind_a/`, `blind_b/` | the two blind theory passes, kept as they ran |
+| `separation/` | 2026-10-25: the minimum separation of two events: the floor for any method, the assessor's and count detector's split probability, and the coordination-rates prediction for events that can share a window |
 | `kendall_w/` | 2026-10-24: the no-order mean of the order indicator under the score sort, derived exactly (Durbin / Skillings–Mack rank-sum covariance; Kendall's W when every cell joins), c = √(4(k + 1)/(3πN)), with the checking script and its output |
 | `prior_art/` | 2026-10-24: four more searches (Grün's literature, the Elephant code, other order literature, a naive cross-field survey) and one verdict table: what in Aim 0 was already known |
 | `kreuz_sort/` | 2026-10-24: two agents' search of the Kreuz group's literature, code and website for a fast sort or an analytical null for the Synfire Indicator (none found), with a synthetic annealer-versus-Borda comparison |
@@ -67,14 +68,14 @@ opened, or read as abstract only.
   cluster processes (Guan 2006; Tanaka, Ogata & Stoyan 2008).
 
 **Membership.** Kish's design effect (1965; ⚠ book not opened) has the form of 1 + (E − 1)/M.
-The detectability threshold for planted low-rank structure (plan item 5) is random-matrix theory:
+The detectability threshold for planted low-rank structure (plan item 6) is random-matrix theory:
 Baik, Ben Arous & Péché 2005 (*Ann Probab* 33:1643) and Baik & Silverstein 2006 (*J Multivariate
 Anal* 97:1382; ⚠ neither opened). The PCA assembly method with a Marchenko–Pastur null comes from
 Peyrache et al. 2009 (*Nat Neurosci* 12:919) and 2010 (*J Comput Neurosci* 29:309), building on
 Chapin & Nicolelis 1999 (*J Neurosci Methods* 94:121); Lopes-dos-Santos et al. extended it in 2011
 (*PLoS ONE* 6:e20996; read) and restated it in 2013 (*J Neurosci Methods* 220:149).
 
-**Likelihood bounds** (plan item 6). Wang, Degleris, Williams & Linderman (*JASA* 119:2382, 2024)
+**Likelihood bounds** (plan item 7). Wang, Degleris, Williams & Linderman (*JASA* 119:2382, 2024)
 do Bayesian inference for Neyman–Scott processes; PP-Seq (Williams, Degleris, Wang & Linderman,
 NeurIPS 2020) is a Neyman–Scott process with per-neuron offsets.
 

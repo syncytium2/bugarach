@@ -1,9 +1,12 @@
 ---
-status: open
+status: done
+closed: 2026-10-25
 filed: 2026-10-25
 ---
 
 # Handoff: a separation test on the human rater sheet
+
+**Done 2026-10-25** by the rater-sheet session: [PR #916](https://github.com/syncytium2/bugarach/pull/916) (rows r11–r14, a separation score; pairs record their realized separation as well as the planned one).
 
 **For a new session.** Tony, 2026-10-25: *"add this to the human test sheet. What is the limit of
 human detection of separation"*. "This" is the minimum separation of two coordinated events: how
