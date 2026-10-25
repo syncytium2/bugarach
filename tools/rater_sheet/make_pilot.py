@@ -14,6 +14,8 @@ The pilot asks two questions of each row (Tony, 2026-10-22/23):
    flat ones can see the difference the fitting made; that is the format test for the real
    question later.
 
+**Separation rows** (r11 to r14, 2026-10-25) follow the pilot's ten: see ``build_separation``.
+
 No decoys (ADR-0019). Every row is **15 minutes** of 32 ROIs, the bench's ROI count. The length is one
 constant for every row, real or synthetic, ours or Cossart's (Tony, 2026-10-23: *"ideally we take the
 x-axis length as constant"*). 15 min fits inside every one of Cossart's 59 DANDI:000219 recordings
@@ -122,6 +124,88 @@ def build(seed0: int = SEED0):
     return rows, key
 
 
+# ---- the separation rows (Tony, 2026-10-25: "What is the limit of human detection of separation") ----
+#
+# How close in time can two coordinated events be before people mark them as one? Each separation row
+# plants six pairs, one at each separation, and three single events as controls, at one participation
+# level, so separation is the only thing that varies within a row. The rows come after the pilot's
+# ten (r11 on) and use seeds of their own, so the ten are byte-identical to before.
+SEP_DELTAS_SEC = (0.5, 1.0, 2.0, 3.0, 5.0, 8.0)     # onset to onset, between the two events' nominal times
+SEP_SINGLES = 3
+SEP_PARTICIPATION = 0.20
+SEP_SEED0 = SEED0 + 1000
+SEP_CONDITIONS = [
+    dict(jitter_sec=TIGHT_JITTER_SEC, bg="quiet"),
+    dict(jitter_sec=TIGHT_JITTER_SEC, bg="busy"),
+    dict(jitter_sec=WIDE_JITTER_SEC, bg="quiet"),
+    dict(jitter_sec=WIDE_JITTER_SEC, bg="busy"),
+]
+SEP_EDGE_SEC = 45.0                                 # no item this close to either end of the row
+
+
+def _grid(t: float, grid: float = 0.1) -> float:
+    """The imaging grid, rounding halves away from zero as the generator does."""
+    return round(float(np.sign(t) * np.floor(abs(t) / grid + 0.5) * grid), 1)
+
+
+def _plant(rng, n_roi: int, n_part: int, time: float, jitter: float, exclude=()) -> tuple[list, list]:
+    pool = [r for r in range(n_roi) if r not in set(exclude)]
+    rois = sorted(int(r) for r in rng.choice(pool, size=n_part, replace=False))
+    onsets = [min(max(_grid(time + rng.normal(0.0, jitter)), 0.0), DURATION_SEC) for _ in rois]
+    return rois, onsets
+
+
+def make_separation_row(cond: dict, seed: int):
+    """Background from the fitted field, then pairs and singles planted by hand.
+
+    The generator keeps planted events at least ``min_sep_sec`` apart, so the pairs cannot come from
+    it. **The two events of a pair recruit different cells**: a cell with two onsets 0.5 s apart would
+    be a property no recording has, and the question is about two groups of cells, not about one
+    cell's double onset. Items sit in equal slots, at a random place in each, so neighbouring items
+    are at least about 60 s apart and never interact."""
+    s, _ = simulate_coordination(duration_sec=DURATION_SEC,
+                                 bg_rate_hz=QUIET_HZ if cond["bg"] == "quiet" else BUSY_HZ,
+                                 participation=(), n_per_level=(), seed=seed, **_recording("fitted"))
+    trains = [list(np.asarray(tr, float)) for tr in s.streams["events"].t50rise]
+    n_roi = len(trains)
+    from bugarach.detectors._shared import matlab_round
+    n_part = max(1, matlab_round(SEP_PARTICIPATION * n_roi))
+    rng = np.random.default_rng(seed + 1)
+    kinds = [("pair", d) for d in SEP_DELTAS_SEC] + [("single", None)] * SEP_SINGLES
+    rng.shuffle(kinds)
+    slot = (DURATION_SEC - 2 * SEP_EDGE_SEC) / len(kinds)
+    items = []
+    for k, (kind, delta) in enumerate(kinds):
+        t1 = round(SEP_EDGE_SEC + k * slot + rng.uniform(0.25, 0.5) * slot, 1)
+        rois1, on1 = _plant(rng, n_roi, n_part, t1, cond["jitter_sec"])
+        events = [dict(time=t1, median_onset=round(float(np.median(on1)), 2), rois=rois1, onsets=on1)]
+        if kind == "pair":
+            t2 = round(t1 + delta, 1)
+            rois2, on2 = _plant(rng, n_roi, n_part, t2, cond["jitter_sec"], exclude=rois1)
+            events.append(dict(time=t2, median_onset=round(float(np.median(on2)), 2), rois=rois2, onsets=on2))
+        for ev in events:
+            for r, t in zip(ev["rois"], ev["onsets"]):
+                trains[r].append(t)
+        items.append(dict(kind=kind, delta_sec=delta, events=events))
+    trains = [[round(float(t), 1) for t in sorted(tr)] for tr in trains]
+    return trains, items, n_part
+
+
+def build_separation(seed0: int = SEP_SEED0, first_index: int = len(CONDITIONS) * len(FIELDS) + 1):
+    """The separation rows and their key, ids following the pilot's (r11 on)."""
+    rows, key = {}, {}
+    for n, cond in enumerate(SEP_CONDITIONS):
+        rid = f"r{first_index + n:02d}"
+        seed = seed0 + n
+        trains, items, n_part = make_separation_row(cond, seed)
+        rows[rid] = dict(id=rid, n_roi=len(trains), duration_sec=DURATION_SEC, trains=trains)
+        key[rid] = dict(kind="separation", field="fitted", jitter_sec=cond["jitter_sec"],
+                        background=cond["bg"], bg_rate_hz=QUIET_HZ if cond["bg"] == "quiet" else BUSY_HZ,
+                        participation=SEP_PARTICIPATION, n_part=n_part, seed=seed,
+                        n_events_total=sum(len(t) for t in trains), items=items, events=[])
+    return rows, key
+
+
 def demo_row(seed: int = SEED0 - 1) -> dict:
     """The walk-through's own row: easy, fitted, quiet, never scored. The pointer goes to its first
     event, on the lane of a cell that takes part in it."""
@@ -170,6 +254,9 @@ def main(argv=None) -> int:
         args.out = Path(darkroom()) / FOLDER
     args.out.mkdir(parents=True, exist_ok=True)
     rows, key = build()
+    sep_rows, sep_key = build_separation()
+    rows.update(sep_rows)
+    key.update(sep_key)
     demo = demo_row()
     (args.out / (STEM.format("question") + ".js")).write_text(question_js(rows), encoding="utf-8")
     (args.out / (STEM.format("intro") + ".js")).write_text(intro_js(demo), encoding="utf-8")
