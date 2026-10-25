@@ -30,6 +30,14 @@ and a scorer. Tested end to end in Chromium.
   per 15-minute row. That is a heavier marking load than ours; how many Cossart rows a rater gets is
   open.
 
+## Added 2026-10-25: the separation test
+
+Tony: *"What is the limit of human detection of separation"*. Four rows (r11 to r14) plant pairs at
+0.5 to 8 s apart, plus singles as controls, at 20% participation. The scorer reports P(resolved)
+against separation and the fitted limit, with zoom logged per mark. How to read it is in the
+[README](../../tools/rater_sheet/README.md), *The separation rows*. The handoff that asked for it is
+[`2026-10-25-handoff-rater-sheet-separation.md`](2026-10-25-handoff-rater-sheet-separation.md).
+
 ## How the answer will be read
 
 - **Real or synthetic:** d′ near 0 means people cannot tell the simulator from the data by eye.

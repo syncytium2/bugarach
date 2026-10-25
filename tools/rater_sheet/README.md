@@ -53,6 +53,53 @@ coordinated events an hour. A Cossart row would be a much bigger marking job. La
 A mark counts as a hit within `bugarach.score.TOL_SEC` (2.5 s) of an event's median onset,
 matched one to one, nearest first, the same tolerance the bench scores detectors with.
 
+## The separation rows (added 2026-10-25)
+
+Tony, 2026-10-25: *"What is the limit of human detection of separation"*: how close in time two
+coordinated events can be before people mark them as one. Four more rows, **r11 to r14**, follow the
+pilot's ten, which are byte-identical to before (a test checks their fingerprint).
+
+- **Each row** is 15 minutes of 32 ROIs on the fitted background. It plants **six pairs**, one at
+  each separation of 0.5, 1, 2, 3, 5 and 8 s (onset to onset), and **three single events** as
+  controls, in random order, each in its own 90 s slot, so neighbouring items are about a minute
+  apart at least and never interact.
+- **Participation is fixed at 20%** (6 cells), so separation is the only thing varying within a row.
+  The two events of a pair **recruit different cells**: one cell with two onsets 0.5 s apart is
+  something no recording shows.
+- **The four rows** are tight (0.105 s) and wide (0.5 s) timing, each on the quiet and the busy
+  background.
+- **The instruction** now on every row, in the walk-through and on the intro page: *if two events sit
+  close together, mark both.*
+- **Zoom is logged.** Every mark carries the width of the view it was placed in (`spans=` in the
+  stored line). At full width a pixel is about 0.9 s, and a click within 7 pixels of a mark removes
+  it, so a pair closer than about 6 s can only be marked as two after zooming. Whether people zoom is
+  part of the result.
+
+**How it is scored** (`score_export.py`, printed under each rater and pooled):
+
+- A **pair** is looked at from 2.5 s before its first event to 2.5 s after its second, each event at
+  the median onset of its cells. Each mark in that stretch goes to the nearer event. The pair is
+  **resolved** when both events got a mark, and **detected** when either did.
+- A **single** is **split** when it got two marks or more in its ±2.5 s. The split rate is the false
+  alarm: "two where there was one".
+- **P(resolved) against separation** is reported overall and per condition, with the narrowest view
+  people used. A logistic curve in log separation is fitted, floored at the split rate. **D50** is the
+  separation at which resolving runs halfway from that floor to certainty, and **D75** is three
+  quarters of the way. When every pair or no pair is resolved, the fit says the limit lies outside the
+  tested range.
+- **The realized separation can be smaller than the planned one.** At wide timing and 0.5 s, the two
+  groups' median onsets can coincide (r13 does). Then the pair holds no second cluster to find, and
+  nobody can resolve it. That is the data's own limit: two Gaussian onset clouds stop being bimodal
+  below twice their spread, 0.2 s at tight timing and 1 s at wide. Each outcome carries
+  `realized_delta_sec` so the curve can be read against either.
+
+**What the answer is compared with** (from the handoff): the data's own limit above; the assessor's
+floor of about 3 s; and real event intervals, whose 5th percentile is 3.8 s on fast and 7.1 s on
+slow. If people resolve pairs the assessor merges, people's marks are the better reference for close
+events. The detectors' limit is derived in a sister handoff
+(`docs/todo/2026-10-25-handoff-minimum-separation-theory.md`); the human curve belongs on the same
+plot.
+
 ## Setting it up in Qualtrics (about 15 minutes)
 
 1. `python tools/rater_sheet/make_pilot.py`. It prints the four files it wrote in
@@ -68,7 +115,7 @@ matched one to one, nearest first, the same tolerance the bench scores detectors
    `<span class="rater-row">${lm://Field/1}</span>` along with any instruction text you want.
 5. In the question's left panel, **Question behavior → JavaScript**: delete the template and
    paste all of `explainer_rater-sheet-pilot-question_20261023.js`.
-6. On the block, open **Loop & Merge**. Put the 10 ids from
+6. On the block, open **Loop & Merge**. Put the 14 ids (the pilot's ten and the four separation rows) from
    `explainer_rater-sheet-pilot-rows_20261023.txt` in Field 1, one per loop, and turn on
    **Randomize loop order**.
 7. **Preview the survey.** Mark something on two rows, finish, then check
