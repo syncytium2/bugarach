@@ -46,6 +46,14 @@ N cells, k participants per event (cells), sigma jitter SD (s), w window (s), la
    analogue in spatial statistics is minimum-contrast fitting of a Thomas process to its
    K-function (Diggle, Besag & Gleaves 1976; Waagepetersen 2007).
 
+   Sections 2 and 3 for any event train: `train=` on `predicted_excess_cumulants`,
+   `predict_solve` and `fit_joint` takes an `event_train.EventTrain` (beside this file;
+   derivation in separation/real_intervals/derivation.md). It replaces the at-most-one-event term
+   with the train's pair correlation and carries the surrogate's dependence on the train, its
+   leakage and, with `n_events`, the fixed-count term. Without `train` everything here is the
+   hard-core, independent-surrogate form above, unchanged. On real recordings use
+   `train=EventTrain.palm(gaps, lam)` (untested on real data; see its docstring).
+
 4. Chance clusters at K (bugarach.assess). In 1 s bins, a bin reaches K cells with
    q = P(Binomial(N, 1 - exp(-b)) >= K); a cluster starts on a bin at or over K whose two
    preceding bins are below it (merge_bins = 2), about (60 / bin) q (1 - q)^2 per minute.
@@ -53,6 +61,8 @@ N cells, k participants per event (cells), sigma jitter SD (s), w window (s), la
    reaches K depends on k, sigma and the bin, and no detection term is modelled here.
 
     PYTHONPATH=src python docs/learned/synthetic_validation/theory.py   # checks Aim 1a
+    ... theory.py --train empirical      # the same under the general form: theory_check_empirical.json
+    ... theory.py --check-real           # real-gap simulation, page vs general: theory_check_real.json
 """
 
 from __future__ import annotations
@@ -70,6 +80,9 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 import measure_coordination_rates as mcr  # noqa: E402
+sys.path.insert(0, str(HERE))
+import event_train as et  # noqa: E402
+from event_train import EventTrain  # noqa: E402,F401
 
 DT = mcr.DT
 WINDOWS = tuple(float(w) for w in mcr.WINDOWS)
@@ -137,8 +150,16 @@ def g(n: int, w: float, sigma: float) -> float:
     raise ValueError(n)
 
 
-def predicted_excess_cumulants(k: float, sigma: float, w: float, lam: float, n_cells: int):
-    """The (f2, f3) the tool's surrogate-corrected cumulants should equal, exactly as derived."""
+def predicted_excess_cumulants(k: float, sigma: float, w: float, lam: float, n_cells: int,
+                               train: EventTrain | None = None, n_events: float | None = None):
+    """The (f2, f3) the tool's surrogate-corrected cumulants should equal, exactly as derived.
+
+    ``train`` None: the hard-core form of section 2. An `EventTrain`: the general form, with the
+    tool's surrogate; ``n_events`` conditions it on the recording's event count (`fixed_count`;
+    leave it None for a `from_times` train, which is already conditioned)."""
+    if train is not None:
+        t = train if n_events is None else train.fixed_count(n_events)
+        return et.cumulants_from(et.coefficients(w, sigma, n_cells, t), k, lam)
     p = lam * w
     g2, g3 = g(2, w, sigma), g(3, w, sigma)
     f2 = p * k * (k - 1) * g2 - (p * k) ** 2 * (1 - 1 / n_cells)
@@ -154,20 +175,27 @@ def poisson_cumulants(k, sigma, w, lam):
     return p * k * (k - 1) * g(2, w, sigma), p * k * (k - 1) * (k - 2) * g(3, w, sigma)
 
 
-def predict_solve(k, sigma, w, lam, n_cells, poisson=False):
+def predict_solve(k, sigma, w, lam, n_cells, poisson=False, train=None, n_events=None):
     """What the tool's fixed-model solve() returns, as ratios to the planted values."""
     f2, f3 = (poisson_cumulants(k, sigma, w, lam) if poisson
-              else predicted_excess_cumulants(k, sigma, w, lam, n_cells))
+              else predicted_excess_cumulants(k, sigma, w, lam, n_cells, train, n_events))
     s = mcr.solve(f2, f3, n_cells, w, "fixed")
     return dict(k=s["k"] / k, lam=s["lam"] / lam, share=s["share"] / (lam * k / n_cells))
 
 
-def fit_joint(cum: dict, n_cells: int):
+def fit_joint(cum: dict, n_cells: int, train: EventTrain | None = None,
+              n_events: float | None = None, sigma_grid=None):
     """Fit (sigma, k, lambda) to the six excess cumulants across windows.
 
     cum: {window_sec: {"f2": .., "f3": ..}}. Residuals are scaled by each order's mean absolute
     value so f2 and f3 weigh alike. Returns a dict with the estimates and whether sigma hit a
-    bound, or None when the cumulants carry no usable signal (f2 <= 0 at every window)."""
+    bound, or None when the cumulants carry no usable signal (f2 <= 0 at every window).
+
+    ``train``: fit the general form for that event train instead of the hard core (``n_events``
+    as in `predicted_excess_cumulants`). Its coefficients depend on sigma only, so they are
+    tabulated once per train on a log-sigma grid (``sigma_grid``, default
+    `event_train.SIGMA_GRID`, which spans SIGMA_BOUNDS; outside a narrower grid they are held at
+    its ends) and interpolated, and the fit stays fast."""
     ws = np.array(sorted(float(w) for w in cum))
     f2 = np.array([cum[str(w)]["f2"] if str(w) in cum else cum[w]["f2"] for w in ws])
     f3 = np.array([cum[str(w)]["f3"] if str(w) in cum else cum[w]["f3"] for w in ws])
@@ -176,9 +204,17 @@ def fit_joint(cum: dict, n_cells: int):
     s2 = max(np.mean(np.abs(f2)), 1e-12)
     s3 = max(np.mean(np.abs(f3)), 1e-12)
 
+    if train is None:
+        model = lambda k, sig, w, lam: predicted_excess_cumulants(k, sig, w, lam, n_cells)  # noqa: E731
+    else:
+        grid = et.SIGMA_GRID if sigma_grid is None else np.asarray(sigma_grid, float)
+        t = train if n_events is None else train.fixed_count(n_events)
+        tab = et.coefficient_table(t, n_cells, ws, grid)
+        model = lambda k, sig, w, lam: et.cumulants_from(et.interpolated(tab, w, sig, grid), k, lam)  # noqa: E731
+
     def resid(x):
         sig, k, lam = np.exp(x[0]), 2 + np.exp(x[1]), np.exp(x[2])
-        pr = np.array([predicted_excess_cumulants(k, sig, w, lam, n_cells) for w in ws])
+        pr = np.array([model(k, sig, w, lam) for w in ws])
         return np.concatenate([(pr[:, 0] - f2) / s2, (pr[:, 1] - f3) / s3])
 
     best = None
@@ -230,14 +266,53 @@ def _q(v, qs=(25, 50, 75)):
     return [float(np.percentile(v, q)) for q in qs] if v.size else [float("nan")] * len(qs)
 
 
-def check(path=HERE / "aim1_one_source.json") -> dict:
-    """Every prediction against the Aim 1a run record, per condition. Writes theory_check.json."""
+TRAINS = ("hardcore-dependent", "analytic", "empirical")
+N_DRAW = 20000      # generator draws behind the empirical pair correlation (as in the derivation)
+
+
+def generator_train(spec: str, m: int, T: float, min_sep: float = 20.0, margin: float = 5.0,
+                    n_draw: int = N_DRAW) -> EventTrain:
+    """The Aim 1a generator's event train at m events per recording, as an `EventTrain` already
+    conditioned on the count (so pass no ``n_events`` with it).
+
+    ``hardcore-dependent``: the page's 20 s hard core, uncorrelated beyond, with the tool's
+    surrogate (dependence and leakage). ``analytic``: `_place_renewal`'s law at interval_cv 1,
+    min_sep + Exp(excess) with excess = (T - 2 margin) / (m + 1) - min_sep, plus the fixed-count
+    term; it ignores the overrun rescaling. ``empirical``: the pair correlation of ``n_draw``
+    draws of `_place_renewal` itself (seeds 0 .. n_draw-1, circular lags). The run record does
+    not store the planted event times, so, as in the derivation (section 7.1), the generator is
+    redrawn with the same m, span and floor; the draws are the derivation's."""
+    if spec == "hardcore-dependent":
+        return EventTrain.hard_core(min_sep)
+    if spec == "analytic":
+        e = (T - 2 * margin) / (m + 1) - min_sep
+        dens = lambda t: np.where(t >= min_sep, np.exp(-(t - min_sep) / e) / e, 0.0)  # noqa: E731
+        return EventTrain.renewal(density=dens, mean=min_sep + e, cv2=(e / (min_sep + e)) ** 2,
+                                  name=f"generator m={m}").fixed_count(m)
+    if spec == "empirical":
+        from bugarach.simulate import _place_renewal
+        draws = [_place_renewal(np.random.RandomState(i), m, margin, T - margin, min_sep, None, 1.0)
+                 for i in range(n_draw)]
+        return EventTrain.from_times(draws, T, name=f"generator m={m} (empirical)")
+    raise ValueError(f"train {spec!r}: one of {TRAINS}")
+
+
+def check(path=HERE / "aim1_one_source.json", train: str | None = None) -> dict:
+    """Every prediction against the Aim 1a run record, per condition. Writes theory_check.json.
+
+    ``train`` (one of TRAINS): the same under the general form for that event train, written to
+    theory_check_<train>.json instead. Each row then also keeps the page's prediction ("page")
+    and solve() on the condition's mean f2, f3 ("pooled")."""
     rec = json.loads(Path(path).read_text())
     rows, N, T = rec["rows"], rec["n_roi"], rec["duration_sec"]
     out = dict(what="Aim 0 predictions against Aim 1a, per condition (k, sigma, events, bg, w); "
                     "each measured value is a median over the condition's 5 recordings, "
                     "NaN estimates (solve refused) excluded and counted",
                coord_rates=[], joint_fit=[], chance=[])
+    trains = {}
+    if train is not None:
+        out["train"] = train
+        out["what"] += f"; predictions ('exact') under the general form, event train {train!r}"
 
     cond = defaultdict(list)
     for r in rows:
@@ -246,17 +321,30 @@ def check(path=HERE / "aim1_one_source.json") -> dict:
 
     for (bg, s, k, ne), rs in sorted(cond.items()):
         lam = ne / T
+        tr = None
+        if train is not None:
+            if ne not in trains:
+                trains[ne] = generator_train(train, ne, T, rec["min_sep_sec"])
+            tr = trains[ne]
         for w in (str(x) for x in mcr.WINDOWS):
-            e = predict_solve(k, s, float(w), lam, N)
+            e = predict_solve(k, s, float(w), lam, N, train=tr)
             p = predict_solve(k, s, float(w), lam, N, poisson=True)
             vals = {q: [x["coord_rates"][w][q] / x["true"][q] for x in rs] for q in ("k", "lam", "share")}
             m = {q: float(np.nanmedian(v)) if np.any(np.isfinite(v)) else float("nan")
                  for q, v in vals.items()}
             sd = {q: float(np.nanstd(v)) for q, v in vals.items()}
-            out["coord_rates"].append(dict(bg=bg, sigma=s, k=k, n_events=ne, w=float(w),
-                                           exact=e, poisson=p, meas=m, meas_sd=sd,
-                                           n_nan=int(np.sum(~np.isfinite(vals["k"]))), n=len(rs)))
-        fits = [fit_joint(x["cum"], N) for x in rs]
+            row = dict(bg=bg, sigma=s, k=k, n_events=ne, w=float(w),
+                       exact=e, poisson=p, meas=m, meas_sd=sd,
+                       n_nan=int(np.sum(~np.isfinite(vals["k"]))), n=len(rs))
+            if tr is not None:
+                row["page"] = predict_solve(k, s, float(w), lam, N)
+                f2m = float(np.mean([x["cum"][w]["f2"] for x in rs]))
+                f3m = float(np.mean([x["cum"][w]["f3"] for x in rs]))
+                sv = mcr.solve(f2m, f3m, N, float(w), "fixed")
+                row["pooled"] = dict(k=sv["k"] / k, lam=sv["lam"] / lam,
+                                     share=sv["share"] / (lam * k / N))
+            out["coord_rates"].append(row)
+        fits = [fit_joint(x["cum"], N, train=tr) for x in rs]
         ok = [f for f in fits if f is not None]
         out["joint_fit"].append(dict(
             bg=bg, sigma=s, k=k, n_events=ne, n=len(rs), n_usable=len(ok),
@@ -284,8 +372,165 @@ def check(path=HERE / "aim1_one_source.json") -> dict:
                                   pooled_count=tot, expected_count=exp_tot,
                                   pooled_rate=tot * scale, pooled_rate_ci=[lo * scale, hi * scale],
                                   p_poisson=p_two))
-    (HERE / "theory_check.json").write_text(json.dumps(out, indent=1))
+    name = "theory_check.json" if train is None else f"theory_check_{train}.json"
+    (HERE / name).write_text(json.dumps(out, indent=1))
     return out
+
+
+def general_summary(out: dict) -> None:
+    """For a general-form record: the residuals under the page's form and the general one side by
+    side, as derivation.md section 7.2 tabulates them (events of 10+ cells)."""
+    cr = out["coord_rates"]
+    print(f"\ngeneral form, event train {out['train']!r}, against the page's form; events of 10+ "
+          "cells; residual = condition median of measured / planted minus predicted / planted")
+    print(f"  {'bg':>5} {'qty':>5} {'prediction':>10} {'median res':>10} {'median |res|':>12} "
+          f"{'meas > pred':>11} {'sign p':>7} | pooled f2, f3: median res, above")
+    for bg in (0.01, 0.05):
+        for q in ("lam", "k", "share"):
+            sel = [r for r in cr if r["bg"] == bg and r["k"] >= 10 and np.isfinite(r["meas"][q])]
+            for lab, key in (("page", "page"), ("general", "exact")):
+                res = np.array([r["meas"][q] - r[key][q] for r in sel])
+                pres = np.array([r["pooled"][q] - r[key][q] for r in sel
+                                 if np.isfinite(r["pooled"][q])])
+                above = int(np.sum(res > 0))
+                pv = stats.binomtest(above, res.size).pvalue
+                print(f"  {bg:>5} {q:>5} {lab:>10} {np.median(res):+10.4f} "
+                      f"{np.median(np.abs(res)):12.4f} {above:>5} of {res.size:<3} {pv:7.3f} | "
+                      f"{np.median(pres):+.4f}, {int(np.sum(pres > 0))} of {pres.size}")
+
+
+# ------------------------------------------------------------------ real-gap check
+
+GAPS = ROOT / "docs" / "learned" / "runs" / "2026-09-25-real-intervals" / "gaps.csv"
+REAL = dict(stream="fast", sigma=0.105, ks=(7, 13), bg=0.0096, n_cells=33, T=2700.0, margin=5.0)
+
+
+def load_gaps(stream: str = "fast") -> np.ndarray:
+    import csv
+    with open(GAPS, newline="") as fh:
+        return np.array([float(r["gap_sec"]) for r in csv.DictReader(fh) if r["stream"] == stream])
+
+
+def _realgap_recording(args):
+    """One recording whose events follow a stationary renewal train with gaps resampled from
+    ``gaps``, planted through `simulate_coordination` itself (its placement replaced by these
+    times) and measured with the shipped tool. As in derivation.md section 7.3."""
+    k, seed, gaps = args
+    from bugarach import simulate as sim
+    c = REAL
+    T, lo, hi = c["T"], c["margin"], c["T"] - c["margin"]
+    rng_t = np.random.RandomState(700000 + seed)
+    t, times = lo - 4000.0, []
+    while t < hi:                       # the long run-in makes the train stationary on [lo, hi)
+        t += gaps[rng_t.randint(0, gaps.size)]
+        if lo <= t < hi:
+            times.append(t)
+    times = np.array(times)
+    orig = sim._place_renewal
+    sim._place_renewal = lambda rng, m, lo_, hi_, ms, ex, cv: times.copy()  # noqa: E731
+    try:
+        s, gt = sim.simulate_coordination(
+            duration_sec=T, n_roi=c["n_cells"], bg_rate_hz=c["bg"],
+            participation=(k / c["n_cells"],), n_per_level=(times.size,), jitter_sec=c["sigma"],
+            min_sep_sec=0.0, grid_sec=0.1, seed=800000 + seed)
+    finally:
+        sim._place_renewal = orig
+    st = next(iter(s.streams.values()))
+    L = int(round(T / mcr.DT))
+    trains = [np.minimum(mcr._frames(np.asarray(tr), 0.0, T), L - 1) for tr in st.t50rise]
+    m = mcr.measure(trains, L, np.random.RandomState(900000 + seed))
+    cum = {w: dict(f2=float(v["f2"]), f3=float(v["f3"])) for w, v in m["cum"].items()}
+    ev = np.array(sorted(e.time for e in gt.events))
+    return dict(k=k, seed=seed, true=mcr.truth(gt, c["n_cells"], T), cum=cum, times=ev.tolist())
+
+
+def check_real(n_rec: int = 40, jobs: int | None = None) -> dict:
+    """Real fast-stream gaps, simulated and measured with the shipped tool: the page's form
+    against the general form, and the joint fit under each. Measured is solve() on the
+    recordings' mean f2, f3, with a bootstrap SE. Two general trains: the renewal train of the gap
+    law itself (lam = 1 / mean gap), and `EventTrain.palm` built as it would be on real data, from
+    the planted times' own gaps and event rate. Writes theory_check_real.json."""
+    import os
+    from concurrent.futures import ProcessPoolExecutor
+    c = REAL
+    N, T, s = c["n_cells"], c["T"], c["sigma"]
+    gaps = load_gaps(c["stream"])
+    lam_f = 1.0 / gaps.mean()
+    jobs = jobs or max(1, min(12, (os.cpu_count() or 2) - 1))
+    args = [(k, 1000 * k + i, gaps) for k in c["ks"] for i in range(n_rec)]
+    with ProcessPoolExecutor(jobs) as ex:
+        rows = list(ex.map(_realgap_recording, args))
+    m_bar = lam_f * (T - 2 * c["margin"])
+    renewal = EventTrain.renewal(intervals=gaps, name=f"{c['stream']} gaps")
+    planted_gaps = np.concatenate([np.diff(r["times"]) for r in rows])
+    m_meas = float(np.mean([len(r["times"]) for r in rows]))
+    lam_meas = m_meas / T
+    palm = EventTrain.palm(planted_gaps, lam_meas, name="planted gaps")
+    out = dict(what="real fast-stream gaps (gaps.csv) as stationary renewal trains, planted with "
+                    "simulate_coordination and measured with measure_coordination_rates; ratios "
+                    "to planted; measured = solve() on the mean f2, f3 over recordings "
+                    "(bootstrap SE)",
+               setup=dict(c, n_rec=n_rec, lam_f=lam_f, lam_planted=lam_meas,
+                          share_gaps_under_4s=float(np.mean(gaps < 4.0))),
+               windows=[], joint_fit=[])
+    qs = ("k", "lam", "share")
+    for k in c["ks"]:
+        rs = [r for r in rows if r["k"] == k]
+        lam_i = np.array([r["true"]["lam"] for r in rs])
+        for w in mcr.WINDOWS:
+            f2 = np.array([r["cum"][str(w)]["f2"] for r in rs])
+            f3 = np.array([r["cum"][str(w)]["f3"] for r in rs])
+
+            def ratio(a2, a3, lam):
+                v = mcr.solve(a2, a3, N, w, "fixed")
+                return dict(k=v["k"] / k, lam=v["lam"] / lam, share=v["share"] / (lam * k / N))
+
+            meas = ratio(f2.mean(), f3.mean(), lam_i.mean())
+            bs = np.random.RandomState(1)
+            boot = []
+            for _ in range(400):
+                ii = bs.randint(0, len(rs), len(rs))
+                v = ratio(f2[ii].mean(), f3[ii].mean(), lam_i[ii].mean())
+                boot.append([v[q] for q in qs])
+            se = dict(zip(qs, np.nanstd(np.array(boot), axis=0).tolist()))
+            pred = dict(page=predict_solve(k, s, w, lam_f, N),
+                        general=predict_solve(k, s, w, lam_f, N, train=renewal, n_events=m_bar),
+                        palm=predict_solve(k, s, w, lam_meas, N, train=palm, n_events=m_meas))
+            out["windows"].append(dict(k=k, w=w, measured=meas, measured_se=se, predicted=pred))
+        fits = {}
+        for lab, tr, ne in (("page", None, None), ("general", renewal, m_bar),
+                            ("palm", palm, m_meas)):
+            fs = [fit_joint(r["cum"], N, train=tr, n_events=ne) for r in rs]
+            ok = [(f, r["true"]["lam"]) for f, r in zip(fs, rs) if f is not None]
+            fits[lab] = dict(n_usable=len(ok), n_at_bound=int(sum(f["at_bound"] for f, _ in ok)),
+                             sigma_ratio_q=_q([f["sigma"] / s for f, _ in ok]),
+                             k_ratio_q=_q([f["k"] / k for f, _ in ok]),
+                             lam_ratio_q=_q([f["lam"] / lt for f, lt in ok]))
+        out["joint_fit"].append(dict(k=k, n=len(rs), **fits))
+    (HERE / "theory_check_real.json").write_text(json.dumps(out, indent=1))
+    return out
+
+
+def real_summary(out: dict) -> None:
+    """The numbers of a check_real() record."""
+    c = out["setup"]
+    print(f"real {c['stream']}-stream gaps: {c['n_rec']} recordings per k, sigma {c['sigma']} s, "
+          f"lam = 1 / mean gap = {c['lam_f']:.5f} Hz (planted {c['lam_planted']:.5f} Hz); "
+          f"{100 * c['share_gaps_under_4s']:.1f} % of gaps under 4 s")
+    print("  ratio to planted: measured (SE) | page | general (renewal) | palm (planted gaps)")
+    for r in out["windows"]:
+        for q, lab in (("lam", "rate"), ("k", "participants")):
+            m, se, p = r["measured"][q], r["measured_se"][q], r["predicted"]
+            print(f"  k {r['k']:2d} w {r['w']:g} s {lab:12s}: {m:.3f} ({se:.3f}) | page "
+                  f"{p['page'][q]:.3f} | general {p['general'][q]:.3f} | palm {p['palm'][q]:.3f}")
+    print("  joint fit across windows, fitted / planted, median [IQR] over recordings")
+    for r in out["joint_fit"]:
+        for lab in ("page", "general", "palm"):
+            f = r[lab]
+            print(f"  k {r['k']:2d} {lab:7s}: " + "; ".join(
+                f"{q} {f[q + '_ratio_q'][1]:.2f} [{f[q + '_ratio_q'][0]:.2f}, "
+                f"{f[q + '_ratio_q'][2]:.2f}]" for q in ("sigma", "k", "lam"))
+                + f" (usable {f['n_usable']}/{r['n']}, at the sigma bound {f['n_at_bound']})")
 
 
 def summary(out: dict) -> None:
@@ -423,8 +668,24 @@ def aim1_summary(path=HERE / "aim1_one_source.json") -> None:
 
 
 if __name__ == "__main__":
-    if "--from-record" in sys.argv:      # summarize theory_check.json without rerunning check()
-        summary(json.loads((HERE / "theory_check.json").read_text()))
+    if "--check-real" in sys.argv:       # real-gap simulation; writes theory_check_real.json
+        if "--from-record" in sys.argv:
+            real_summary(json.loads((HERE / "theory_check_real.json").read_text()))
+        else:
+            real_summary(check_real())
+    elif "--train" in sys.argv:          # the general form; writes theory_check_<train>.json
+        spec = sys.argv[sys.argv.index("--train") + 1]
+        if spec not in TRAINS:
+            raise SystemExit(f"--train: one of {', '.join(TRAINS)}")
+        if "--from-record" in sys.argv:
+            res = json.loads((HERE / f"theory_check_{spec}.json").read_text())
+        else:
+            res = check(train=spec)
+        summary(res)
+        general_summary(res)
     else:
-        summary(check())
-    aim1_summary()
+        if "--from-record" in sys.argv:      # summarize theory_check.json without rerunning check()
+            summary(json.loads((HERE / "theory_check.json").read_text()))
+        else:
+            summary(check())
+        aim1_summary()

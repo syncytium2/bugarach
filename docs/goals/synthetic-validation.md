@@ -435,8 +435,12 @@ simulation and independently re-simulated ([`separation/`](../learned/synthetic_
   - **On real fast-stream gaps the page's form fails at the 4 s window.** It predicts rate 1.17 and
     participants 0.89 of planted where the tool measures 1.03 and 0.96, and the joint fit reads
     jitter 1.5–1.65 times high. The general form fixes both (χ² about 15 against 74–133 over 12
-    condition-windows). **Until it is in `theory.py`, the joint fit should not be run on real
-    fast-stream intervals** (plan item 5).
+    condition-windows). **On real fast-stream intervals, run the joint fit with the stream's own
+    event train**: `theory.fit_joint(cum, n_cells, train=EventTrain.palm(gaps, lam),
+    n_events=lam * T)`, with the stream's measured gaps and event rate
+    ([`event_train.py`](../learned/synthetic_validation/event_train.py); plan item 5). Without
+    `train` the fit assumes the 20 s hard core and reads fast-stream jitter high. The Palm form is
+    untested on real data.
 
 ![Figure 5](../learned/synthetic_validation/separation/assessor_split/synth_recovery_plot_assessor-split-against-separation_20261025.png)
 
@@ -573,10 +577,13 @@ test the prediction and measure what is left over.
    does not cap it, [`FOUNDATIONS.md`](../FOUNDATIONS.md) §2); and a note that its reruns
    reproduce only in the same process, which `synfire_scan.py`'s docstring overstates.
 
-5. Put the general event-train form into `theory.py` and `fit_joint` (`separation/real_intervals/`
-   proposes the interface: Poisson, hard-core and empirical-interval trains, and the Palm form for
-   real data). Until then the joint fit is not to be run on real fast-stream intervals. Measure
-   real gaps down to one frame, not through `gaps.csv`'s 2 s merge.
+5. **Done 2026-10-28:** the general event-train form is in `theory.py` and `fit_joint`, as
+   `train=` ([`event_train.py`](../learned/synthetic_validation/event_train.py): Poisson,
+   hard-core, renewal, empirical and Palm trains). `theory.py --train empirical` reproduces the
+   derivation's Aim 1a residuals, and `theory.py --check-real` its real-gap result with the
+   shipped tool. Without `train` every output is unchanged. What remains: the Palm form, which
+   real data need, is untested on real data; and real gaps should be measured down to one frame,
+   not through `gaps.csv`'s 2 s merge.
 
 *For later aims*:
 
