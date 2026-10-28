@@ -9,6 +9,9 @@ recordings only; nothing here reads a real recording.
 | `aim1_one_source.json` | its run record: planted values, every estimate and the raw excess cumulants per recording, plus 200 background-only recordings (100 per background) for the chance-cluster test |
 | `theory.py` | Aim 0: the predictions (window sharing g_n, the excess cumulants with the at-most-one-event term, passed through the tool's own `solve()`, the joint fit of jitter, participants and rate across windows, chance clusters at K); `check()` tests each against `aim1_one_source.json` per condition |
 | `theory_check.json` | `theory.py`'s record: every prediction beside the measured median, per condition, with NaN and search-bound counts . `theory.py --from-record` prints the page's Aim 0 and Aim 1a numbers from the two records without rerunning |
+| `event_train.py` | 2026-10-28: the coordination-rates prediction for any stationary event train, ported from [`separation/real_intervals/`](separation/real_intervals/derivation.md). `EventTrain.poisson()`, `hard_core(d)`, `renewal(intervals \| density, mean)`, `palm(intervals, lam)` for real data (untested on real data), `from_times(...)`, and `.fixed_count(m)`; `coefficients(w, sigma, n_cells, train)` gives f2, f3's coefficients with the tool's own surrogate, cached on the train. `theory.py` takes it as `train=` in `predicted_excess_cumulants`, `predict_solve` and `fit_joint`; without `train` it is unchanged |
+| `theory_check_empirical.json`, `theory_check_analytic.json`, `theory_check_hardcore-dependent.json` | `theory.py --train <name>`: `check()` again under the general form, for the generator's empirical pair correlation (20 000 redrawn trains; the run record has no event times), its analytic interval law, or the 20 s hard core with the tool's surrogate. Each row also keeps the page's prediction and solve() on the condition's mean f2, f3. `--train <name> --from-record` reprints them, with the page and general residuals side by side. `theory_check.json` is untouched |
+| `theory_check_real.json`, `theory_check_real.txt` | `theory.py --check-real`: 40 recordings per k (7, 13) of a renewal train of real fast-stream gaps, measured with the shipped tool; the page's form against the general form (renewal and Palm) and the joint fit under each. The `.txt` is the run's printout |
 | `blind_README.md`, `blind_a/`, `blind_b/` | the two blind theory passes, kept as they ran |
 | `separation/` | 2026-10-25: the minimum separation of two events: the floor for any method, the assessor's and count detector's split probability, and the coordination-rates prediction for events that can share a window |
 | `kendall_w/` | 2026-10-24: the no-order mean of the order indicator under the score sort, derived exactly (Durbin / Skillings–Mack rank-sum covariance; Kendall's W when every cell joins), c = √(4(k + 1)/(3πN)), with the checking script and its output |
@@ -28,6 +31,8 @@ Reproduce, from the repository root:
 
     PYTHONPATH=src python docs/learned/synthetic_validation/aim1_one_source.py --workers 24
     PYTHONPATH=src python docs/learned/synthetic_validation/theory.py
+    PYTHONPATH=src python docs/learned/synthetic_validation/theory.py --train empirical   # also analytic, hardcore-dependent
+    PYTHONPATH=src python docs/learned/synthetic_validation/theory.py --check-real
     PYTHONPATH=src python docs/learned/synthetic_validation/membership_limit.py
     python docs/learned/synthetic_validation/order_limit.py
     PYTHONPATH=src python docs/learned/synthetic_validation/aim1_figure.py
