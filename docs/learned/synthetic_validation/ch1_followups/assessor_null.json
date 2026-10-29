@@ -1,0 +1,7952 @@
+{
+ "n_surrogates": 1000,
+ "rows": [
+  {
+   "cell": 1,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7348469228349535,
+     "jit_null": 0.7144714100980774,
+     "jit_excess": 0.0203755127368761,
+     "jit_defined": true,
+     "clusters_permin": 7.933333333333334
+    },
+    "4": {
+     "jit_obs": 0.6879687078026453,
+     "jit_null": 0.6584438373433688,
+     "jit_excess": 0.029524870459276542,
+     "jit_defined": true,
+     "clusters_permin": 4.222222222222222
+    },
+    "6": {
+     "jit_obs": 0.58635968360883,
+     "jit_null": 0.5863278064294346,
+     "jit_excess": 3.18771793953454e-05,
+     "jit_defined": true,
+     "clusters_permin": 0.4888888888888889
+    }
+   }
+  },
+  {
+   "cell": 1,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7172857915107904,
+     "jit_null": 0.7129035319489819,
+     "jit_excess": 0.004382259561808488,
+     "jit_defined": true,
+     "clusters_permin": 7.911111111111111
+    },
+    "4": {
+     "jit_obs": 0.6551987615690857,
+     "jit_null": 0.6575422818863246,
+     "jit_excess": -0.002343520317238834,
+     "jit_defined": true,
+     "clusters_permin": 3.688888888888889
+    },
+    "6": {
+     "jit_obs": 0.5322449790455923,
+     "jit_null": 0.584575932238449,
+     "jit_excess": -0.05233095319285663,
+     "jit_defined": true,
+     "clusters_permin": 0.4444444444444444
+    }
+   }
+  },
+  {
+   "cell": 1,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7536577472566967,
+     "jit_null": 0.7168274782287858,
+     "jit_excess": 0.03683026902791087,
+     "jit_defined": true,
+     "clusters_permin": 7.844444444444444
+    },
+    "4": {
+     "jit_obs": 0.7012569393171167,
+     "jit_null": 0.6611016749567398,
+     "jit_excess": 0.040155264360376974,
+     "jit_defined": true,
+     "clusters_permin": 3.8666666666666667
+    },
+    "6": {
+     "jit_obs": 0.5944184833375444,
+     "jit_null": 0.5878867554171492,
+     "jit_excess": 0.006531727920395247,
+     "jit_defined": true,
+     "clusters_permin": 0.4666666666666667
+    }
+   }
+  },
+  {
+   "cell": 1,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7182153808805098,
+     "jit_null": 0.7144810876123482,
+     "jit_excess": 0.003734293268161659,
+     "jit_defined": true,
+     "clusters_permin": 8.066666666666666
+    },
+    "4": {
+     "jit_obs": 0.6798108980759676,
+     "jit_null": 0.6588048658500337,
+     "jit_excess": 0.02100603222593389,
+     "jit_defined": true,
+     "clusters_permin": 3.977777777777778
+    },
+    "6": {
+     "jit_obs": 0.5911382616989382,
+     "jit_null": 0.5844817970847079,
+     "jit_excess": 0.006656464614230306,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    }
+   }
+  },
+  {
+   "cell": 1,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7422747424885391,
+     "jit_null": 0.7171830657909282,
+     "jit_excess": 0.02509167669761092,
+     "jit_defined": true,
+     "clusters_permin": 8.177777777777777
+    },
+    "4": {
+     "jit_obs": 0.6718843437888335,
+     "jit_null": 0.6626698486921916,
+     "jit_excess": 0.009214495096641961,
+     "jit_defined": true,
+     "clusters_permin": 4.2
+    },
+    "6": {
+     "jit_obs": 0.5995368582868329,
+     "jit_null": 0.5907003682368978,
+     "jit_excess": 0.008836490049935142,
+     "jit_defined": true,
+     "clusters_permin": 0.4666666666666667
+    }
+   }
+  },
+  {
+   "cell": 3,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.6948792289723071,
+     "jit_null": 0.7218222679316716,
+     "jit_excess": -0.02694303895936445,
+     "jit_defined": true,
+     "clusters_permin": 8.6
+    },
+    "4": {
+     "jit_obs": 0.6802704262543131,
+     "jit_null": 0.6662067275764716,
+     "jit_excess": 0.014063698677841519,
+     "jit_defined": true,
+     "clusters_permin": 4.844444444444444
+    },
+    "6": {
+     "jit_obs": 0.6143486906779572,
+     "jit_null": 0.5911106824994982,
+     "jit_excess": 0.023238008178459002,
+     "jit_defined": true,
+     "clusters_permin": 0.9333333333333333
+    }
+   }
+  },
+  {
+   "cell": 3,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7146094504459382,
+     "jit_null": 0.7228318095023994,
+     "jit_excess": -0.008222359056461293,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.6693917124456714,
+     "jit_null": 0.6672372084952394,
+     "jit_excess": 0.0021545039504320407,
+     "jit_defined": true,
+     "clusters_permin": 4.844444444444444
+    },
+    "6": {
+     "jit_obs": 0.5829420456369799,
+     "jit_null": 0.5889187056243205,
+     "jit_excess": -0.005976659987340538,
+     "jit_defined": true,
+     "clusters_permin": 0.9555555555555556
+    }
+   }
+  },
+  {
+   "cell": 3,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7201851613763329,
+     "jit_null": 0.7188543985950774,
+     "jit_excess": 0.0013307627812555456,
+     "jit_defined": true,
+     "clusters_permin": 8.044444444444444
+    },
+    "4": {
+     "jit_obs": 0.6584484432857598,
+     "jit_null": 0.6632919709859708,
+     "jit_excess": -0.004843527700211014,
+     "jit_defined": true,
+     "clusters_permin": 4.311111111111111
+    },
+    "6": {
+     "jit_obs": 0.5728715546977585,
+     "jit_null": 0.5888557320062724,
+     "jit_excess": -0.01598417730851387,
+     "jit_defined": true,
+     "clusters_permin": 1.0444444444444445
+    }
+   }
+  },
+  {
+   "cell": 3,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7020377680974306,
+     "jit_null": 0.726274550977628,
+     "jit_excess": -0.024236782880197483,
+     "jit_defined": true,
+     "clusters_permin": 8.488888888888889
+    },
+    "4": {
+     "jit_obs": 0.6778817641435481,
+     "jit_null": 0.6712696160414346,
+     "jit_excess": 0.006612148102113413,
+     "jit_defined": true,
+     "clusters_permin": 5.022222222222222
+    },
+    "6": {
+     "jit_obs": 0.5833333333333377,
+     "jit_null": 0.5967716534283235,
+     "jit_excess": -0.0134383200949858,
+     "jit_defined": true,
+     "clusters_permin": 0.8666666666666667
+    }
+   }
+  },
+  {
+   "cell": 3,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7362387128514245,
+     "jit_null": 0.7246219231016385,
+     "jit_excess": 0.011616789749785972,
+     "jit_defined": true,
+     "clusters_permin": 8.044444444444444
+    },
+    "4": {
+     "jit_obs": 0.6637222088236449,
+     "jit_null": 0.6683908976761674,
+     "jit_excess": -0.0046686888525225845,
+     "jit_defined": true,
+     "clusters_permin": 5.111111111111111
+    },
+    "6": {
+     "jit_obs": 0.5869132194446517,
+     "jit_null": 0.5953831679506376,
+     "jit_excess": -0.008469948505985925,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    }
+   }
+  },
+  {
+   "cell": 5,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7120393247566879,
+     "jit_null": 0.7173287857833529,
+     "jit_excess": -0.005289461026665054,
+     "jit_defined": true,
+     "clusters_permin": 7.844444444444444
+    },
+    "4": {
+     "jit_obs": 0.6584396957697829,
+     "jit_null": 0.661067084502421,
+     "jit_excess": -0.002627388732638125,
+     "jit_defined": true,
+     "clusters_permin": 4.0
+    },
+    "6": {
+     "jit_obs": 0.5639343738609417,
+     "jit_null": 0.5866614031860053,
+     "jit_excess": -0.022727029325063652,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    }
+   }
+  },
+  {
+   "cell": 5,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7088723439378868,
+     "jit_null": 0.7177654008380803,
+     "jit_excess": -0.008893056900193486,
+     "jit_defined": true,
+     "clusters_permin": 8.244444444444444
+    },
+    "4": {
+     "jit_obs": 0.6414269805897348,
+     "jit_null": 0.663275390975087,
+     "jit_excess": -0.021848410385352235,
+     "jit_defined": true,
+     "clusters_permin": 4.111111111111111
+    },
+    "6": {
+     "jit_obs": 0.5105301417556044,
+     "jit_null": 0.585377004916474,
+     "jit_excess": -0.07484686316086964,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    }
+   }
+  },
+  {
+   "cell": 5,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7206148168652399,
+     "jit_null": 0.724782174255254,
+     "jit_excess": -0.00416735739001417,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.6791538853603191,
+     "jit_null": 0.6693298986558294,
+     "jit_excess": 0.009823986704489696,
+     "jit_defined": true,
+     "clusters_permin": 4.2
+    },
+    "6": {
+     "jit_obs": 0.4922826045184625,
+     "jit_null": 0.5920806367741673,
+     "jit_excess": -0.09979803225570483,
+     "jit_defined": true,
+     "clusters_permin": 0.6666666666666666
+    }
+   }
+  },
+  {
+   "cell": 5,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7345227732690305,
+     "jit_null": 0.7169901774111227,
+     "jit_excess": 0.017532595857907785,
+     "jit_defined": true,
+     "clusters_permin": 8.088888888888889
+    },
+    "4": {
+     "jit_obs": 0.6793760373504221,
+     "jit_null": 0.6621290714528832,
+     "jit_excess": 0.017246965897538824,
+     "jit_defined": true,
+     "clusters_permin": 3.8222222222222224
+    },
+    "6": {
+     "jit_obs": 0.5446016058468,
+     "jit_null": 0.587670233591075,
+     "jit_excess": -0.043068627744275,
+     "jit_defined": true,
+     "clusters_permin": 0.4666666666666667
+    }
+   }
+  },
+  {
+   "cell": 5,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7284687135812034,
+     "jit_null": 0.71487298428984,
+     "jit_excess": 0.013595729291363323,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.6347102826149226,
+     "jit_null": 0.66065302730664,
+     "jit_excess": -0.025942744691717423,
+     "jit_defined": true,
+     "clusters_permin": 4.022222222222222
+    },
+    "6": {
+     "jit_obs": 0.4839062292209209,
+     "jit_null": 0.5856602961187455,
+     "jit_excess": -0.10175406689782457,
+     "jit_defined": true,
+     "clusters_permin": 0.6666666666666666
+    }
+   }
+  },
+  {
+   "cell": 7,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7154751226721935,
+     "jit_null": 0.7348068491318405,
+     "jit_excess": -0.01933172645964698,
+     "jit_defined": true,
+     "clusters_permin": 8.222222222222221
+    },
+    "4": {
+     "jit_obs": 0.6563724601227197,
+     "jit_null": 0.6778005765188888,
+     "jit_excess": -0.02142811639616915,
+     "jit_defined": true,
+     "clusters_permin": 4.622222222222222
+    },
+    "6": {
+     "jit_obs": 0.5089672082242291,
+     "jit_null": 0.6023106493878393,
+     "jit_excess": -0.09334344116361015,
+     "jit_defined": true,
+     "clusters_permin": 1.2222222222222223
+    }
+   }
+  },
+  {
+   "cell": 7,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7081154947644823,
+     "jit_null": 0.7253744768011575,
+     "jit_excess": -0.017258982036675197,
+     "jit_defined": true,
+     "clusters_permin": 7.777777777777778
+    },
+    "4": {
+     "jit_obs": 0.6247636915904183,
+     "jit_null": 0.6698298157368072,
+     "jit_excess": -0.045066124146388886,
+     "jit_defined": true,
+     "clusters_permin": 4.155555555555556
+    },
+    "6": {
+     "jit_obs": 0.48236767245386486,
+     "jit_null": 0.5924418578851819,
+     "jit_excess": -0.11007418543131703,
+     "jit_defined": true,
+     "clusters_permin": 1.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 7,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.6964194138592885,
+     "jit_null": 0.7292241711824142,
+     "jit_excess": -0.03280475732312571,
+     "jit_defined": true,
+     "clusters_permin": 8.333333333333334
+    },
+    "4": {
+     "jit_obs": 0.6399623541346509,
+     "jit_null": 0.6739545632146404,
+     "jit_excess": -0.033992209079989566,
+     "jit_defined": true,
+     "clusters_permin": 4.7555555555555555
+    },
+    "6": {
+     "jit_obs": 0.471902858321807,
+     "jit_null": 0.5993003728945486,
+     "jit_excess": -0.12739751457274162,
+     "jit_defined": true,
+     "clusters_permin": 1.4
+    }
+   }
+  },
+  {
+   "cell": 7,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7391810672823673,
+     "jit_null": 0.7271921530973959,
+     "jit_excess": 0.011988914184971389,
+     "jit_defined": true,
+     "clusters_permin": 8.133333333333333
+    },
+    "4": {
+     "jit_obs": 0.658397328827045,
+     "jit_null": 0.6720824747951081,
+     "jit_excess": -0.013685145968063028,
+     "jit_defined": true,
+     "clusters_permin": 4.533333333333333
+    },
+    "6": {
+     "jit_obs": 0.4455843966584262,
+     "jit_null": 0.5942732409340726,
+     "jit_excess": -0.14868884427564644,
+     "jit_defined": true,
+     "clusters_permin": 1.2222222222222223
+    }
+   }
+  },
+  {
+   "cell": 7,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7176350047203828,
+     "jit_null": 0.730406957381165,
+     "jit_excess": -0.012771952660782238,
+     "jit_defined": true,
+     "clusters_permin": 8.333333333333334
+    },
+    "4": {
+     "jit_obs": 0.634355223116118,
+     "jit_null": 0.6747838729508888,
+     "jit_excess": -0.04042864983477079,
+     "jit_defined": true,
+     "clusters_permin": 4.533333333333333
+    },
+    "6": {
+     "jit_obs": 0.49302831873728664,
+     "jit_null": 0.5978345095493482,
+     "jit_excess": -0.1048061908120616,
+     "jit_defined": true,
+     "clusters_permin": 1.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 9,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7285710600028822,
+     "jit_null": 0.7188737762340183,
+     "jit_excess": 0.009697283768863918,
+     "jit_defined": true,
+     "clusters_permin": 7.5777777777777775
+    },
+    "4": {
+     "jit_obs": 0.6575568054403591,
+     "jit_null": 0.6628987406524449,
+     "jit_excess": -0.005341935212085813,
+     "jit_defined": true,
+     "clusters_permin": 3.7555555555555555
+    },
+    "6": {
+     "jit_obs": 0.3408672412986162,
+     "jit_null": 0.5892222985293567,
+     "jit_excess": -0.24835505723074053,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    }
+   }
+  },
+  {
+   "cell": 9,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7020206414783372,
+     "jit_null": 0.7202235134149393,
+     "jit_excess": -0.018202871936602083,
+     "jit_defined": true,
+     "clusters_permin": 8.0
+    },
+    "4": {
+     "jit_obs": 0.6430951940197526,
+     "jit_null": 0.6641011738225072,
+     "jit_excess": -0.02100597980275465,
+     "jit_defined": true,
+     "clusters_permin": 4.111111111111111
+    },
+    "6": {
+     "jit_obs": 0.3275449805533801,
+     "jit_null": 0.5887127332810171,
+     "jit_excess": -0.26116775272763704,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    }
+   }
+  },
+  {
+   "cell": 9,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7449832212875508,
+     "jit_null": 0.7230026974698984,
+     "jit_excess": 0.021980523817652364,
+     "jit_defined": true,
+     "clusters_permin": 8.2
+    },
+    "4": {
+     "jit_obs": 0.7044078904941906,
+     "jit_null": 0.6667544755880193,
+     "jit_excess": 0.037653414906171356,
+     "jit_defined": true,
+     "clusters_permin": 4.022222222222222
+    },
+    "6": {
+     "jit_obs": 0.414414201536073,
+     "jit_null": 0.593745423019766,
+     "jit_excess": -0.17933122148369296,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    }
+   }
+  },
+  {
+   "cell": 9,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7140261337740302,
+     "jit_null": 0.7287783123786502,
+     "jit_excess": -0.01475217860461997,
+     "jit_defined": true,
+     "clusters_permin": 8.8
+    },
+    "4": {
+     "jit_obs": 0.6615638039272216,
+     "jit_null": 0.6730946400299499,
+     "jit_excess": -0.011530836102728315,
+     "jit_defined": true,
+     "clusters_permin": 4.377777777777778
+    },
+    "6": {
+     "jit_obs": 0.3375490985610798,
+     "jit_null": 0.5985677294267752,
+     "jit_excess": -0.2610186308656954,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    }
+   }
+  },
+  {
+   "cell": 9,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7463243262818016,
+     "jit_null": 0.726448615783895,
+     "jit_excess": 0.019875710497906596,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.6811754546370373,
+     "jit_null": 0.670425294766788,
+     "jit_excess": 0.010750159870249298,
+     "jit_defined": true,
+     "clusters_permin": 4.066666666666666
+    },
+    "6": {
+     "jit_obs": 0.3457377653569328,
+     "jit_null": 0.5952545054396078,
+     "jit_excess": -0.249516740082675,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    }
+   }
+  },
+  {
+   "cell": 11,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7123902560024609,
+     "jit_null": 0.7431202611342471,
+     "jit_excess": -0.030730005131786253,
+     "jit_defined": true,
+     "clusters_permin": 7.733333333333333
+    },
+    "4": {
+     "jit_obs": 0.6447632753670381,
+     "jit_null": 0.6866441994494432,
+     "jit_excess": -0.04188092408240507,
+     "jit_defined": true,
+     "clusters_permin": 4.133333333333334
+    },
+    "6": {
+     "jit_obs": 0.2993644060656651,
+     "jit_null": 0.6100118026936581,
+     "jit_excess": -0.31064739662799296,
+     "jit_defined": true,
+     "clusters_permin": 1.2666666666666666
+    }
+   }
+  },
+  {
+   "cell": 11,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7190271204898995,
+     "jit_null": 0.7446529030586889,
+     "jit_excess": -0.025625782568789446,
+     "jit_defined": true,
+     "clusters_permin": 8.155555555555555
+    },
+    "4": {
+     "jit_obs": 0.6021785520389956,
+     "jit_null": 0.688626208391132,
+     "jit_excess": -0.08644765635213636,
+     "jit_defined": true,
+     "clusters_permin": 4.311111111111111
+    },
+    "6": {
+     "jit_obs": 0.2808208074724573,
+     "jit_null": 0.6123506184785564,
+     "jit_excess": -0.33152981100609913,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    }
+   }
+  },
+  {
+   "cell": 11,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7140178069008419,
+     "jit_null": 0.7443602125433691,
+     "jit_excess": -0.030342405642527215,
+     "jit_defined": true,
+     "clusters_permin": 8.28888888888889
+    },
+    "4": {
+     "jit_obs": 0.6196768100850851,
+     "jit_null": 0.6885553113773477,
+     "jit_excess": -0.06887850129226258,
+     "jit_defined": true,
+     "clusters_permin": 4.088888888888889
+    },
+    "6": {
+     "jit_obs": 0.2946157140621316,
+     "jit_null": 0.6140090185943672,
+     "jit_excess": -0.3193933045322356,
+     "jit_defined": true,
+     "clusters_permin": 1.2666666666666666
+    }
+   }
+  },
+  {
+   "cell": 11,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.6991700089061805,
+     "jit_null": 0.7445937373531148,
+     "jit_excess": -0.04542372844693432,
+     "jit_defined": true,
+     "clusters_permin": 8.844444444444445
+    },
+    "4": {
+     "jit_obs": 0.6284902544988294,
+     "jit_null": 0.6890676619228564,
+     "jit_excess": -0.06057740742402695,
+     "jit_defined": true,
+     "clusters_permin": 4.6
+    },
+    "6": {
+     "jit_obs": 0.22024189770907274,
+     "jit_null": 0.6107816427352658,
+     "jit_excess": -0.39053974502619304,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    }
+   }
+  },
+  {
+   "cell": 11,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.6983524754355768,
+     "jit_null": 0.7457362871953216,
+     "jit_excess": -0.04738381175974482,
+     "jit_defined": true,
+     "clusters_permin": 8.177777777777777
+    },
+    "4": {
+     "jit_obs": 0.6410928169930822,
+     "jit_null": 0.6895477884437646,
+     "jit_excess": -0.04845497145068245,
+     "jit_defined": true,
+     "clusters_permin": 4.555555555555555
+    },
+    "6": {
+     "jit_obs": 0.2755081884531807,
+     "jit_null": 0.6112001976193231,
+     "jit_excess": -0.3356920091661424,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    }
+   }
+  },
+  {
+   "cell": 13,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7580519781989935,
+     "jit_null": 0.7141960737452351,
+     "jit_excess": 0.04385590445375842,
+     "jit_defined": true,
+     "clusters_permin": 8.088888888888889
+    },
+    "4": {
+     "jit_obs": 0.700446051432166,
+     "jit_null": 0.658808687879001,
+     "jit_excess": 0.04163736355316494,
+     "jit_defined": true,
+     "clusters_permin": 3.6444444444444444
+    },
+    "6": {
+     "jit_obs": 0.5800456553294208,
+     "jit_null": 0.58258831501579,
+     "jit_excess": -0.002542659686369242,
+     "jit_defined": true,
+     "clusters_permin": 0.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 13,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.751061443881277,
+     "jit_null": 0.7143581204390818,
+     "jit_excess": 0.03670332344219529,
+     "jit_defined": true,
+     "clusters_permin": 8.0
+    },
+    "4": {
+     "jit_obs": 0.6562519841239751,
+     "jit_null": 0.6583546962413542,
+     "jit_excess": -0.002102712117379113,
+     "jit_defined": true,
+     "clusters_permin": 4.111111111111111
+    },
+    "6": {
+     "jit_obs": 0.48048168381928213,
+     "jit_null": 0.5857229811264385,
+     "jit_excess": -0.10524129730715637,
+     "jit_defined": true,
+     "clusters_permin": 0.4
+    }
+   }
+  },
+  {
+   "cell": 13,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7139094246938514,
+     "jit_null": 0.7141444472279189,
+     "jit_excess": -0.00023502253406748608,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.6923046397979269,
+     "jit_null": 0.6583100808537785,
+     "jit_excess": 0.03399455894414838,
+     "jit_defined": true,
+     "clusters_permin": 4.111111111111111
+    },
+    "6": {
+     "jit_obs": 0.6045830527820637,
+     "jit_null": 0.581394104225045,
+     "jit_excess": 0.023188948557018696,
+     "jit_defined": true,
+     "clusters_permin": 0.4444444444444444
+    }
+   }
+  },
+  {
+   "cell": 13,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.727683866472141,
+     "jit_null": 0.7154617793210276,
+     "jit_excess": 0.012222087151113392,
+     "jit_defined": true,
+     "clusters_permin": 8.066666666666666
+    },
+    "4": {
+     "jit_obs": 0.6693280212272767,
+     "jit_null": 0.6614121582122392,
+     "jit_excess": 0.00791586301503755,
+     "jit_defined": true,
+     "clusters_permin": 4.333333333333333
+    },
+    "6": {
+     "jit_obs": 0.5540256712864665,
+     "jit_null": 0.5858669243187777,
+     "jit_excess": -0.03184125303231122,
+     "jit_defined": true,
+     "clusters_permin": 0.4222222222222222
+    }
+   }
+  },
+  {
+   "cell": 13,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7364974451926349,
+     "jit_null": 0.7147277503990146,
+     "jit_excess": 0.021769694793620342,
+     "jit_defined": true,
+     "clusters_permin": 8.177777777777777
+    },
+    "4": {
+     "jit_obs": 0.6662176864341756,
+     "jit_null": 0.6579616789403654,
+     "jit_excess": 0.008256007493810169,
+     "jit_defined": true,
+     "clusters_permin": 4.0
+    },
+    "6": {
+     "jit_obs": 0.6027713773341581,
+     "jit_null": 0.582273993644336,
+     "jit_excess": 0.020497383689822124,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    }
+   }
+  },
+  {
+   "cell": 15,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7361687608452736,
+     "jit_null": 0.7267778528807773,
+     "jit_excess": 0.009390907964496265,
+     "jit_defined": true,
+     "clusters_permin": 8.333333333333334
+    },
+    "4": {
+     "jit_obs": 0.6725927091345486,
+     "jit_null": 0.6704370946110219,
+     "jit_excess": 0.00215561452352675,
+     "jit_defined": true,
+     "clusters_permin": 4.377777777777778
+    },
+    "6": {
+     "jit_obs": 0.6284902544988286,
+     "jit_null": 0.5933243906677632,
+     "jit_excess": 0.03516586383106535,
+     "jit_defined": true,
+     "clusters_permin": 0.7333333333333333
+    }
+   }
+  },
+  {
+   "cell": 15,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7118052168020362,
+     "jit_null": 0.7215376389119471,
+     "jit_excess": -0.009732422109910877,
+     "jit_defined": true,
+     "clusters_permin": 8.2
+    },
+    "4": {
+     "jit_obs": 0.6456000579466608,
+     "jit_null": 0.6671196354561677,
+     "jit_excess": -0.02151957750950695,
+     "jit_defined": true,
+     "clusters_permin": 4.7555555555555555
+    },
+    "6": {
+     "jit_obs": 0.6069537520626022,
+     "jit_null": 0.5924287918198774,
+     "jit_excess": 0.01452496024272476,
+     "jit_defined": true,
+     "clusters_permin": 0.8666666666666667
+    }
+   }
+  },
+  {
+   "cell": 15,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7174027227901113,
+     "jit_null": 0.7188531576305488,
+     "jit_excess": -0.0014504348404374978,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.6999206304209742,
+     "jit_null": 0.6635003404335181,
+     "jit_excess": 0.036420289987456056,
+     "jit_defined": true,
+     "clusters_permin": 4.466666666666667
+    },
+    "6": {
+     "jit_obs": 0.5741176295735873,
+     "jit_null": 0.5889148578696987,
+     "jit_excess": -0.014797228296111409,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    }
+   }
+  },
+  {
+   "cell": 15,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7221957235161933,
+     "jit_null": 0.7201581422373482,
+     "jit_excess": 0.002037581278845124,
+     "jit_defined": true,
+     "clusters_permin": 7.955555555555556
+    },
+    "4": {
+     "jit_obs": 0.6529411730478516,
+     "jit_null": 0.6633638393434711,
+     "jit_excess": -0.010422666295619498,
+     "jit_defined": true,
+     "clusters_permin": 4.222222222222222
+    },
+    "6": {
+     "jit_obs": 0.5937553827507244,
+     "jit_null": 0.5867196618262116,
+     "jit_excess": 0.007035720924512767,
+     "jit_defined": true,
+     "clusters_permin": 0.8666666666666667
+    }
+   }
+  },
+  {
+   "cell": 15,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.6958004161446625,
+     "jit_null": 0.7198520423311184,
+     "jit_excess": -0.024051626186455954,
+     "jit_defined": true,
+     "clusters_permin": 8.4
+    },
+    "4": {
+     "jit_obs": 0.6587863264840741,
+     "jit_null": 0.6636568836333816,
+     "jit_excess": -0.004870557149307508,
+     "jit_defined": true,
+     "clusters_permin": 4.355555555555555
+    },
+    "6": {
+     "jit_obs": 0.5963525497860337,
+     "jit_null": 0.5899263730788584,
+     "jit_excess": 0.0064261767071752685,
+     "jit_defined": true,
+     "clusters_permin": 0.8666666666666667
+    }
+   }
+  },
+  {
+   "cell": 17,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7324878576047947,
+     "jit_null": 0.7203872543866316,
+     "jit_excess": 0.012100603218163086,
+     "jit_defined": true,
+     "clusters_permin": 7.711111111111111
+    },
+    "4": {
+     "jit_obs": 0.7014687172831724,
+     "jit_null": 0.6647774443730149,
+     "jit_excess": 0.0366912729101575,
+     "jit_defined": true,
+     "clusters_permin": 4.177777777777778
+    },
+    "6": {
+     "jit_obs": 0.5273407203072022,
+     "jit_null": 0.5896436669841816,
+     "jit_excess": -0.06230294667697933,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    }
+   }
+  },
+  {
+   "cell": 17,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7291873883525821,
+     "jit_null": 0.7152550041916999,
+     "jit_excess": 0.013932384160882272,
+     "jit_defined": true,
+     "clusters_permin": 7.688888888888889
+    },
+    "4": {
+     "jit_obs": 0.6284902544988272,
+     "jit_null": 0.659697682299166,
+     "jit_excess": -0.031207427800338805,
+     "jit_defined": true,
+     "clusters_permin": 3.7111111111111112
+    },
+    "6": {
+     "jit_obs": 0.5425482887975097,
+     "jit_null": 0.5833476255357383,
+     "jit_excess": -0.04079933673822855,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    }
+   }
+  },
+  {
+   "cell": 17,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7324128241700627,
+     "jit_null": 0.720628960879389,
+     "jit_excess": 0.011783863290673713,
+     "jit_defined": true,
+     "clusters_permin": 7.911111111111111
+    },
+    "4": {
+     "jit_obs": 0.6568322247184529,
+     "jit_null": 0.6654565024963958,
+     "jit_excess": -0.008624277777942835,
+     "jit_defined": true,
+     "clusters_permin": 4.2
+    },
+    "6": {
+     "jit_obs": 0.5346937776872052,
+     "jit_null": 0.589776210060668,
+     "jit_excess": -0.055082432373462886,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    }
+   }
+  },
+  {
+   "cell": 17,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7259476565152683,
+     "jit_null": 0.7184663463435913,
+     "jit_excess": 0.007481310171676969,
+     "jit_defined": true,
+     "clusters_permin": 7.888888888888889
+    },
+    "4": {
+     "jit_obs": 0.658212441207839,
+     "jit_null": 0.6626366293469946,
+     "jit_excess": -0.0044241881391556825,
+     "jit_defined": true,
+     "clusters_permin": 3.7777777777777777
+    },
+    "6": {
+     "jit_obs": 0.5350587619952343,
+     "jit_null": 0.5865709015704441,
+     "jit_excess": -0.05151213957520984,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    }
+   }
+  },
+  {
+   "cell": 17,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7044500781023414,
+     "jit_null": 0.7170011186521221,
+     "jit_excess": -0.012551040549780734,
+     "jit_defined": true,
+     "clusters_permin": 8.311111111111112
+    },
+    "4": {
+     "jit_obs": 0.6631442720998937,
+     "jit_null": 0.661095330780376,
+     "jit_excess": 0.0020489413195177164,
+     "jit_defined": true,
+     "clusters_permin": 4.133333333333334
+    },
+    "6": {
+     "jit_obs": 0.4716651427443235,
+     "jit_null": 0.584656013685799,
+     "jit_excess": -0.11299087094147553,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    }
+   }
+  },
+  {
+   "cell": 19,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7158909679893835,
+     "jit_null": 0.7343007873932007,
+     "jit_excess": -0.01840981940381725,
+     "jit_defined": true,
+     "clusters_permin": 8.444444444444445
+    },
+    "4": {
+     "jit_obs": 0.6232021761683407,
+     "jit_null": 0.6780507905956201,
+     "jit_excess": -0.054848614427279396,
+     "jit_defined": true,
+     "clusters_permin": 4.377777777777778
+    },
+    "6": {
+     "jit_obs": 0.5224505196231937,
+     "jit_null": 0.6002717069057715,
+     "jit_excess": -0.07782118728257781,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    }
+   }
+  },
+  {
+   "cell": 19,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.6997635756100202,
+     "jit_null": 0.7286398705731241,
+     "jit_excess": -0.028876294963103843,
+     "jit_defined": true,
+     "clusters_permin": 7.822222222222222
+    },
+    "4": {
+     "jit_obs": 0.6396613687465086,
+     "jit_null": 0.6723202067224778,
+     "jit_excess": -0.032658837975969246,
+     "jit_defined": true,
+     "clusters_permin": 4.511111111111111
+    },
+    "6": {
+     "jit_obs": 0.4697517074654045,
+     "jit_null": 0.5948053973117173,
+     "jit_excess": -0.12505368984631282,
+     "jit_defined": true,
+     "clusters_permin": 1.2222222222222223
+    }
+   }
+  },
+  {
+   "cell": 19,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7023769168568837,
+     "jit_null": 0.7296548846571258,
+     "jit_excess": -0.027277967800242053,
+     "jit_defined": true,
+     "clusters_permin": 7.933333333333334
+    },
+    "4": {
+     "jit_obs": 0.6396841872634829,
+     "jit_null": 0.6736571301851567,
+     "jit_excess": -0.033972942921673854,
+     "jit_defined": true,
+     "clusters_permin": 4.177777777777778
+    },
+    "6": {
+     "jit_obs": 0.5107812015897224,
+     "jit_null": 0.5974024808161278,
+     "jit_excess": -0.08662127922640539,
+     "jit_defined": true,
+     "clusters_permin": 1.2666666666666666
+    }
+   }
+  },
+  {
+   "cell": 19,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7140178069007639,
+     "jit_null": 0.7376026346575841,
+     "jit_excess": -0.023584827756820248,
+     "jit_defined": true,
+     "clusters_permin": 8.28888888888889
+    },
+    "4": {
+     "jit_obs": 0.6652782871474623,
+     "jit_null": 0.6812860579713953,
+     "jit_excess": -0.01600777082393301,
+     "jit_defined": true,
+     "clusters_permin": 4.977777777777778
+    },
+    "6": {
+     "jit_obs": 0.48511151209170933,
+     "jit_null": 0.6047658861636007,
+     "jit_excess": -0.11965437407189139,
+     "jit_defined": true,
+     "clusters_permin": 1.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 19,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7071557702942746,
+     "jit_null": 0.727964385761497,
+     "jit_excess": -0.020808615467222458,
+     "jit_defined": true,
+     "clusters_permin": 8.222222222222221
+    },
+    "4": {
+     "jit_obs": 0.6412784849331228,
+     "jit_null": 0.6728952766055416,
+     "jit_excess": -0.03161679167241882,
+     "jit_defined": true,
+     "clusters_permin": 4.377777777777778
+    },
+    "6": {
+     "jit_obs": 0.46249727794166706,
+     "jit_null": 0.5972957497424412,
+     "jit_excess": -0.1347984718007741,
+     "jit_defined": true,
+     "clusters_permin": 1.1555555555555554
+    }
+   }
+  },
+  {
+   "cell": 21,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.6902092786948761,
+     "jit_null": 0.729829692311839,
+     "jit_excess": -0.03962041361696289,
+     "jit_defined": true,
+     "clusters_permin": 8.444444444444445
+    },
+    "4": {
+     "jit_obs": 0.6618156843109815,
+     "jit_null": 0.6741398563731091,
+     "jit_excess": -0.012324172062127658,
+     "jit_defined": true,
+     "clusters_permin": 4.644444444444445
+    },
+    "6": {
+     "jit_obs": 0.4043325963669735,
+     "jit_null": 0.5994813478003871,
+     "jit_excess": -0.1951487514334136,
+     "jit_defined": true,
+     "clusters_permin": 0.6888888888888889
+    }
+   }
+  },
+  {
+   "cell": 21,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7333249899349732,
+     "jit_null": 0.722559649399224,
+     "jit_excess": 0.01076534053574918,
+     "jit_defined": true,
+     "clusters_permin": 8.133333333333333
+    },
+    "4": {
+     "jit_obs": 0.6679079362286751,
+     "jit_null": 0.6672540513327915,
+     "jit_excess": 0.000653884895883583,
+     "jit_defined": true,
+     "clusters_permin": 4.088888888888889
+    },
+    "6": {
+     "jit_obs": 0.35763775234832373,
+     "jit_null": 0.5924430149618667,
+     "jit_excess": -0.23480526261354295,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    }
+   }
+  },
+  {
+   "cell": 21,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7445355148629714,
+     "jit_null": 0.7252014687997854,
+     "jit_excess": 0.019334046063186006,
+     "jit_defined": true,
+     "clusters_permin": 8.088888888888889
+    },
+    "4": {
+     "jit_obs": 0.6500183054719801,
+     "jit_null": 0.6696891792095909,
+     "jit_excess": -0.019670873737610783,
+     "jit_defined": true,
+     "clusters_permin": 3.8222222222222224
+    },
+    "6": {
+     "jit_obs": 0.3270420794624612,
+     "jit_null": 0.5942076034639348,
+     "jit_excess": -0.26716552400147353,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    }
+   }
+  },
+  {
+   "cell": 21,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7007139216541948,
+     "jit_null": 0.7232833267402469,
+     "jit_excess": -0.022569405086052097,
+     "jit_defined": true,
+     "clusters_permin": 8.066666666666666
+    },
+    "4": {
+     "jit_obs": 0.651625496967235,
+     "jit_null": 0.6672828754054088,
+     "jit_excess": -0.01565737843817372,
+     "jit_defined": true,
+     "clusters_permin": 3.8666666666666667
+    },
+    "6": {
+     "jit_obs": 0.3333809489800648,
+     "jit_null": 0.5912874655710958,
+     "jit_excess": -0.257906516591031,
+     "jit_defined": true,
+     "clusters_permin": 0.7333333333333333
+    }
+   }
+  },
+  {
+   "cell": 21,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7300684899378022,
+     "jit_null": 0.7236597309739355,
+     "jit_excess": 0.006408758963866612,
+     "jit_defined": true,
+     "clusters_permin": 7.8
+    },
+    "4": {
+     "jit_obs": 0.6742897497861691,
+     "jit_null": 0.6679112030620219,
+     "jit_excess": 0.006378546724147172,
+     "jit_defined": true,
+     "clusters_permin": 3.8444444444444446
+    },
+    "6": {
+     "jit_obs": 0.45911928061667867,
+     "jit_null": 0.592928147782278,
+     "jit_excess": -0.1338088671655993,
+     "jit_defined": true,
+     "clusters_permin": 0.6888888888888889
+    }
+   }
+  },
+  {
+   "cell": 23,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.6914443130832747,
+     "jit_null": 0.7442849922214908,
+     "jit_excess": -0.05284067913821611,
+     "jit_defined": true,
+     "clusters_permin": 8.2
+    },
+    "4": {
+     "jit_obs": 0.6274286147974387,
+     "jit_null": 0.688710870363029,
+     "jit_excess": -0.061282255565590305,
+     "jit_defined": true,
+     "clusters_permin": 4.2
+    },
+    "6": {
+     "jit_obs": 0.3430194421054726,
+     "jit_null": 0.6112987025739547,
+     "jit_excess": -0.2682792604684821,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    }
+   }
+  },
+  {
+   "cell": 23,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7027325108282512,
+     "jit_null": 0.7498079422155153,
+     "jit_excess": -0.04707543138726411,
+     "jit_defined": true,
+     "clusters_permin": 8.0
+    },
+    "4": {
+     "jit_obs": 0.61931685887774,
+     "jit_null": 0.6943051684310741,
+     "jit_excess": -0.07498830955333413,
+     "jit_defined": true,
+     "clusters_permin": 4.7555555555555555
+    },
+    "6": {
+     "jit_obs": 0.34065735105827527,
+     "jit_null": 0.6183508905400165,
+     "jit_excess": -0.2776935394817412,
+     "jit_defined": true,
+     "clusters_permin": 1.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 23,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7088303565928513,
+     "jit_null": 0.7469480432892891,
+     "jit_excess": -0.03811768669643778,
+     "jit_defined": true,
+     "clusters_permin": 8.355555555555556
+    },
+    "4": {
+     "jit_obs": 0.6229150296681851,
+     "jit_null": 0.6900578691157446,
+     "jit_excess": -0.0671428394475595,
+     "jit_defined": true,
+     "clusters_permin": 4.311111111111111
+    },
+    "6": {
+     "jit_obs": 0.3308456958445629,
+     "jit_null": 0.6121097610578586,
+     "jit_excess": -0.2812640652132957,
+     "jit_defined": true,
+     "clusters_permin": 1.2222222222222223
+    }
+   }
+  },
+  {
+   "cell": 23,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.6731441601444088,
+     "jit_null": 0.7449443735591498,
+     "jit_excess": -0.07180021341474097,
+     "jit_defined": true,
+     "clusters_permin": 7.733333333333333
+    },
+    "4": {
+     "jit_obs": 0.5939098377499142,
+     "jit_null": 0.6887867294325423,
+     "jit_excess": -0.09487689168262803,
+     "jit_defined": true,
+     "clusters_permin": 4.5777777777777775
+    },
+    "6": {
+     "jit_obs": 0.36547425158473795,
+     "jit_null": 0.6124767771277342,
+     "jit_excess": -0.24700252554299623,
+     "jit_defined": true,
+     "clusters_permin": 1.2222222222222223
+    }
+   }
+  },
+  {
+   "cell": 23,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7270291799999598,
+     "jit_null": 0.7468844473731389,
+     "jit_excess": -0.01985526737317911,
+     "jit_defined": true,
+     "clusters_permin": 8.244444444444444
+    },
+    "4": {
+     "jit_obs": 0.6218252702059406,
+     "jit_null": 0.6921017831115942,
+     "jit_excess": -0.07027651290565362,
+     "jit_defined": true,
+     "clusters_permin": 4.688888888888889
+    },
+    "6": {
+     "jit_obs": 0.3159776847076298,
+     "jit_null": 0.615475685652197,
+     "jit_excess": -0.2994980009445672,
+     "jit_defined": true,
+     "clusters_permin": 1.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 25,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7234178138070249,
+     "jit_null": 0.7120963877760335,
+     "jit_excess": 0.0113214260309914,
+     "jit_defined": true,
+     "clusters_permin": 7.8
+    },
+    "4": {
+     "jit_obs": 0.6431456783936345,
+     "jit_null": 0.6564615732599663,
+     "jit_excess": -0.01331589486633189,
+     "jit_defined": true,
+     "clusters_permin": 3.6666666666666665
+    },
+    "6": {
+     "jit_obs": 0.6414686555704088,
+     "jit_null": 0.5841976673033437,
+     "jit_excess": 0.057270988267065115,
+     "jit_defined": true,
+     "clusters_permin": 0.4
+    }
+   }
+  },
+  {
+   "cell": 25,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7059694449074276,
+     "jit_null": 0.7174125179161963,
+     "jit_excess": -0.011443073008768678,
+     "jit_defined": true,
+     "clusters_permin": 7.977777777777778
+    },
+    "4": {
+     "jit_obs": 0.6837744209143568,
+     "jit_null": 0.6613028440401612,
+     "jit_excess": 0.022471576874195653,
+     "jit_defined": true,
+     "clusters_permin": 4.133333333333334
+    },
+    "6": {
+     "jit_obs": 0.5931812559667793,
+     "jit_null": 0.5859019057574182,
+     "jit_excess": 0.007279350209361102,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    }
+   }
+  },
+  {
+   "cell": 25,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7354935106580949,
+     "jit_null": 0.7114758772728964,
+     "jit_excess": 0.024017633385198467,
+     "jit_defined": true,
+     "clusters_permin": 7.822222222222222
+    },
+    "4": {
+     "jit_obs": 0.6817344825971291,
+     "jit_null": 0.6564056057662396,
+     "jit_excess": 0.02532887683088947,
+     "jit_defined": true,
+     "clusters_permin": 3.6666666666666665
+    },
+    "6": {
+     "jit_obs": 0.6285979332723567,
+     "jit_null": 0.5853124311359023,
+     "jit_excess": 0.043285502136454435,
+     "jit_defined": true,
+     "clusters_permin": 0.4
+    }
+   }
+  },
+  {
+   "cell": 25,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7127411872482138,
+     "jit_null": 0.7112733692175808,
+     "jit_excess": 0.0014678180306330058,
+     "jit_defined": true,
+     "clusters_permin": 7.8
+    },
+    "4": {
+     "jit_obs": 0.6599212107523673,
+     "jit_null": 0.6566656705380698,
+     "jit_excess": 0.0032555402142975254,
+     "jit_defined": true,
+     "clusters_permin": 3.9555555555555557
+    },
+    "6": {
+     "jit_obs": 0.5680375574438338,
+     "jit_null": 0.5840820882524222,
+     "jit_excess": -0.016044530808588475,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    }
+   }
+  },
+  {
+   "cell": 25,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7359800721940036,
+     "jit_null": 0.7182865297801286,
+     "jit_excess": 0.017693542413874996,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.6813126626147483,
+     "jit_null": 0.6626334703706902,
+     "jit_excess": 0.018679192244058118,
+     "jit_defined": true,
+     "clusters_permin": 4.222222222222222
+    },
+    "6": {
+     "jit_obs": 0.6261913919400321,
+     "jit_null": 0.5887748692069036,
+     "jit_excess": 0.037416522733128565,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    }
+   }
+  },
+  {
+   "cell": 27,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.730068489937757,
+     "jit_null": 0.7190263396296872,
+     "jit_excess": 0.011042150308069765,
+     "jit_defined": true,
+     "clusters_permin": 8.333333333333334
+    },
+    "4": {
+     "jit_obs": 0.6657487361052528,
+     "jit_null": 0.6639332380929289,
+     "jit_excess": 0.0018154980123238351,
+     "jit_defined": true,
+     "clusters_permin": 4.488888888888889
+    },
+    "6": {
+     "jit_obs": 0.5861954743803319,
+     "jit_null": 0.5905679708062592,
+     "jit_excess": -0.004372496425927297,
+     "jit_defined": true,
+     "clusters_permin": 0.7111111111111111
+    }
+   }
+  },
+  {
+   "cell": 27,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7407191397961825,
+     "jit_null": 0.7199741636118326,
+     "jit_excess": 0.020744976184349895,
+     "jit_defined": true,
+     "clusters_permin": 8.0
+    },
+    "4": {
+     "jit_obs": 0.6691691265144022,
+     "jit_null": 0.664571549779345,
+     "jit_excess": 0.004597576735057229,
+     "jit_defined": true,
+     "clusters_permin": 4.622222222222222
+    },
+    "6": {
+     "jit_obs": 0.6631451761393193,
+     "jit_null": 0.5900604457205728,
+     "jit_excess": 0.07308473041874652,
+     "jit_defined": true,
+     "clusters_permin": 0.8
+    }
+   }
+  },
+  {
+   "cell": 27,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7488390665465727,
+     "jit_null": 0.7214045913634788,
+     "jit_excess": 0.027434475183093943,
+     "jit_defined": true,
+     "clusters_permin": 7.866666666666666
+    },
+    "4": {
+     "jit_obs": 0.6946221994724893,
+     "jit_null": 0.6662851039721699,
+     "jit_excess": 0.028337095500319376,
+     "jit_defined": true,
+     "clusters_permin": 4.6
+    },
+    "6": {
+     "jit_obs": 0.5709411207422956,
+     "jit_null": 0.5904723330169213,
+     "jit_excess": -0.01953121227462562,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    }
+   }
+  },
+  {
+   "cell": 27,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7422937423958303,
+     "jit_null": 0.7238528787596483,
+     "jit_excess": 0.018440863636182026,
+     "jit_defined": true,
+     "clusters_permin": 7.888888888888889
+    },
+    "4": {
+     "jit_obs": 0.667618368316983,
+     "jit_null": 0.6685803265214857,
+     "jit_excess": -0.0009619582045027331,
+     "jit_defined": true,
+     "clusters_permin": 4.6
+    },
+    "6": {
+     "jit_obs": 0.6361817922003538,
+     "jit_null": 0.5912056742354599,
+     "jit_excess": 0.04497611796489387,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    }
+   }
+  },
+  {
+   "cell": 27,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7402702209328784,
+     "jit_null": 0.719996095203757,
+     "jit_excess": 0.02027412572912146,
+     "jit_defined": true,
+     "clusters_permin": 7.4
+    },
+    "4": {
+     "jit_obs": 0.6827814263661117,
+     "jit_null": 0.6652484936937905,
+     "jit_excess": 0.017532932672321255,
+     "jit_defined": true,
+     "clusters_permin": 3.977777777777778
+    },
+    "6": {
+     "jit_obs": 0.5836917463572661,
+     "jit_null": 0.589599352650383,
+     "jit_excess": -0.005907606293116929,
+     "jit_defined": true,
+     "clusters_permin": 0.7111111111111111
+    }
+   }
+  },
+  {
+   "cell": 29,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.742854853476331,
+     "jit_null": 0.7203081348610516,
+     "jit_excess": 0.02254671861527935,
+     "jit_defined": true,
+     "clusters_permin": 7.977777777777778
+    },
+    "4": {
+     "jit_obs": 0.7071067811865471,
+     "jit_null": 0.6649652782573142,
+     "jit_excess": 0.04214150292923291,
+     "jit_defined": true,
+     "clusters_permin": 3.977777777777778
+    },
+    "6": {
+     "jit_obs": 0.6170582829545826,
+     "jit_null": 0.5902068910030775,
+     "jit_excess": 0.0268513919515051,
+     "jit_defined": true,
+     "clusters_permin": 0.4888888888888889
+    }
+   }
+  },
+  {
+   "cell": 29,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7184639700016121,
+     "jit_null": 0.7201530338820141,
+     "jit_excess": -0.0016890638804020197,
+     "jit_defined": true,
+     "clusters_permin": 7.8
+    },
+    "4": {
+     "jit_obs": 0.6347665462695424,
+     "jit_null": 0.6644459479303833,
+     "jit_excess": -0.02967940166084082,
+     "jit_defined": true,
+     "clusters_permin": 4.133333333333334
+    },
+    "6": {
+     "jit_obs": 0.5695252183696299,
+     "jit_null": 0.5908895138063115,
+     "jit_excess": -0.021364295436681613,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    }
+   }
+  },
+  {
+   "cell": 29,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7463243262817955,
+     "jit_null": 0.7131657695479747,
+     "jit_excess": 0.03315855673382073,
+     "jit_defined": true,
+     "clusters_permin": 7.888888888888889
+    },
+    "4": {
+     "jit_obs": 0.6647396504555092,
+     "jit_null": 0.658180278905388,
+     "jit_excess": 0.006559371550121207,
+     "jit_defined": true,
+     "clusters_permin": 3.5555555555555554
+    },
+    "6": {
+     "jit_obs": 0.5449319822301357,
+     "jit_null": 0.5849733565474986,
+     "jit_excess": -0.04004137431736288,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    }
+   }
+  },
+  {
+   "cell": 29,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7104659772022379,
+     "jit_null": 0.7151005031480605,
+     "jit_excess": -0.004634525945822587,
+     "jit_defined": true,
+     "clusters_permin": 7.533333333333333
+    },
+    "4": {
+     "jit_obs": 0.6760177512462184,
+     "jit_null": 0.6606737723553733,
+     "jit_excess": 0.015343978890845156,
+     "jit_defined": true,
+     "clusters_permin": 4.022222222222222
+    },
+    "6": {
+     "jit_obs": 0.5337498373666397,
+     "jit_null": 0.5844299014880769,
+     "jit_excess": -0.05068006412143722,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    }
+   }
+  },
+  {
+   "cell": 29,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7327784697398593,
+     "jit_null": 0.719143190051862,
+     "jit_excess": 0.01363527968799727,
+     "jit_defined": true,
+     "clusters_permin": 7.7555555555555555
+    },
+    "4": {
+     "jit_obs": 0.6631813656983331,
+     "jit_null": 0.6630263108636674,
+     "jit_excess": 0.00015505483466571324,
+     "jit_defined": true,
+     "clusters_permin": 3.8
+    },
+    "6": {
+     "jit_obs": 0.6204706000683806,
+     "jit_null": 0.5870939718762599,
+     "jit_excess": 0.03337662819212073,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    }
+   }
+  },
+  {
+   "cell": 31,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.714209407709695,
+     "jit_null": 0.7290006049102253,
+     "jit_excess": -0.014791197200530348,
+     "jit_defined": true,
+     "clusters_permin": 8.177777777777777
+    },
+    "4": {
+     "jit_obs": 0.6478554322361375,
+     "jit_null": 0.6740741632206865,
+     "jit_excess": -0.026218730984548966,
+     "jit_defined": true,
+     "clusters_permin": 4.711111111111111
+    },
+    "6": {
+     "jit_obs": 0.5440992152576288,
+     "jit_null": 0.6002507772625327,
+     "jit_excess": -0.0561515620049039,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    }
+   }
+  },
+  {
+   "cell": 31,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7454624643228362,
+     "jit_null": 0.7278077582738146,
+     "jit_excess": 0.01765470604902164,
+     "jit_defined": true,
+     "clusters_permin": 8.11111111111111
+    },
+    "4": {
+     "jit_obs": 0.6473102985810701,
+     "jit_null": 0.671897848832281,
+     "jit_excess": -0.024587550251210843,
+     "jit_defined": true,
+     "clusters_permin": 4.533333333333333
+    },
+    "6": {
+     "jit_obs": 0.5762249936097268,
+     "jit_null": 0.5949198361399319,
+     "jit_excess": -0.018694842530205147,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    }
+   }
+  },
+  {
+   "cell": 31,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7201851613763318,
+     "jit_null": 0.7316699499168496,
+     "jit_excess": -0.01148478854051782,
+     "jit_defined": true,
+     "clusters_permin": 7.933333333333334
+    },
+    "4": {
+     "jit_obs": 0.6524674344839502,
+     "jit_null": 0.6754533596673773,
+     "jit_excess": -0.022985925183427125,
+     "jit_defined": true,
+     "clusters_permin": 4.8
+    },
+    "6": {
+     "jit_obs": 0.5740645928204476,
+     "jit_null": 0.599209651631931,
+     "jit_excess": -0.025145058811483323,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    }
+   }
+  },
+  {
+   "cell": 31,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.6708203932499538,
+     "jit_null": 0.7263207071236327,
+     "jit_excess": -0.05550031387367893,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.614669553145872,
+     "jit_null": 0.6706973029758676,
+     "jit_excess": -0.05602774982999559,
+     "jit_defined": true,
+     "clusters_permin": 4.311111111111111
+    },
+    "6": {
+     "jit_obs": 0.5659308948783272,
+     "jit_null": 0.5980560816084001,
+     "jit_excess": -0.03212518673007292,
+     "jit_defined": true,
+     "clusters_permin": 1.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 31,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7237314963264496,
+     "jit_null": 0.7372365602666435,
+     "jit_excess": -0.013505063940193907,
+     "jit_defined": true,
+     "clusters_permin": 8.266666666666667
+    },
+    "4": {
+     "jit_obs": 0.6633249580710452,
+     "jit_null": 0.6805189043321108,
+     "jit_excess": -0.01719394626106563,
+     "jit_defined": true,
+     "clusters_permin": 5.0
+    },
+    "6": {
+     "jit_obs": 0.6239025582398647,
+     "jit_null": 0.6032336198532358,
+     "jit_excess": 0.020668938386628977,
+     "jit_defined": true,
+     "clusters_permin": 1.288888888888889
+    }
+   }
+  },
+  {
+   "cell": 33,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7391435110702183,
+     "jit_null": 0.7283120057876562,
+     "jit_excess": 0.010831505282562048,
+     "jit_defined": true,
+     "clusters_permin": 8.177777777777777
+    },
+    "4": {
+     "jit_obs": 0.6590026854804927,
+     "jit_null": 0.6726008695244676,
+     "jit_excess": -0.013598184043974948,
+     "jit_defined": true,
+     "clusters_permin": 4.266666666666667
+    },
+    "6": {
+     "jit_obs": 0.5643674940950789,
+     "jit_null": 0.5973017240510603,
+     "jit_excess": -0.03293422995598139,
+     "jit_defined": true,
+     "clusters_permin": 0.7111111111111111
+    }
+   }
+  },
+  {
+   "cell": 33,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7156912633260908,
+     "jit_null": 0.7260809848916847,
+     "jit_excess": -0.010389721565593923,
+     "jit_defined": true,
+     "clusters_permin": 7.644444444444445
+    },
+    "4": {
+     "jit_obs": 0.6799859942535265,
+     "jit_null": 0.6703378390445793,
+     "jit_excess": 0.009648155208947129,
+     "jit_defined": true,
+     "clusters_permin": 3.9555555555555557
+    },
+    "6": {
+     "jit_obs": 0.5819804968392939,
+     "jit_null": 0.5932870063348183,
+     "jit_excess": -0.011306509495524475,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    }
+   }
+  },
+  {
+   "cell": 33,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7219561664759802,
+     "jit_null": 0.7212096812892019,
+     "jit_excess": 0.000746485186778223,
+     "jit_defined": true,
+     "clusters_permin": 7.911111111111111
+    },
+    "4": {
+     "jit_obs": 0.6545172703167478,
+     "jit_null": 0.6659610524562913,
+     "jit_excess": -0.011443782139543557,
+     "jit_defined": true,
+     "clusters_permin": 3.7111111111111112
+    },
+    "6": {
+     "jit_obs": 0.5732410986162282,
+     "jit_null": 0.5917882430492504,
+     "jit_excess": -0.01854714443302219,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    }
+   }
+  },
+  {
+   "cell": 33,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7056907948892945,
+     "jit_null": 0.7290242014483708,
+     "jit_excess": -0.02333340655907623,
+     "jit_defined": true,
+     "clusters_permin": 8.222222222222221
+    },
+    "4": {
+     "jit_obs": 0.6804410334481603,
+     "jit_null": 0.6724957597521073,
+     "jit_excess": 0.007945273696053023,
+     "jit_defined": true,
+     "clusters_permin": 4.288888888888889
+    },
+    "6": {
+     "jit_obs": 0.533975533268947,
+     "jit_null": 0.5976153907175799,
+     "jit_excess": -0.06363985744863287,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    }
+   }
+  },
+  {
+   "cell": 33,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7230227523558848,
+     "jit_null": 0.7243427687893882,
+     "jit_excess": -0.0013200164335034348,
+     "jit_defined": true,
+     "clusters_permin": 8.177777777777777
+    },
+    "4": {
+     "jit_obs": 0.6710839540338718,
+     "jit_null": 0.668905253334688,
+     "jit_excess": 0.0021787006991838,
+     "jit_defined": true,
+     "clusters_permin": 4.222222222222222
+    },
+    "6": {
+     "jit_obs": 0.5756983337031372,
+     "jit_null": 0.5931336584032413,
+     "jit_excess": -0.017435324700104116,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    }
+   }
+  },
+  {
+   "cell": 35,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7104432946906623,
+     "jit_null": 0.7475522034214879,
+     "jit_excess": -0.03710890873082562,
+     "jit_defined": true,
+     "clusters_permin": 7.644444444444445
+    },
+    "4": {
+     "jit_obs": 0.6615638039272254,
+     "jit_null": 0.691446293058271,
+     "jit_excess": -0.02988248913104563,
+     "jit_defined": true,
+     "clusters_permin": 4.555555555555555
+    },
+    "6": {
+     "jit_obs": 0.5336326065295797,
+     "jit_null": 0.6149326088861427,
+     "jit_excess": -0.08130000235656298,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    }
+   }
+  },
+  {
+   "cell": 35,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7079895625622218,
+     "jit_null": 0.7445056647409044,
+     "jit_excess": -0.03651610217868262,
+     "jit_defined": true,
+     "clusters_permin": 7.955555555555556
+    },
+    "4": {
+     "jit_obs": 0.6287112037952723,
+     "jit_null": 0.6890284299832827,
+     "jit_excess": -0.06031722618801039,
+     "jit_defined": true,
+     "clusters_permin": 3.8444444444444446
+    },
+    "6": {
+     "jit_obs": 0.5431176113201565,
+     "jit_null": 0.6107698298658062,
+     "jit_excess": -0.06765221854564973,
+     "jit_defined": true,
+     "clusters_permin": 1.2
+    }
+   }
+  },
+  {
+   "cell": 35,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7151921964131968,
+     "jit_null": 0.7443943638575631,
+     "jit_excess": -0.029202167444366323,
+     "jit_defined": true,
+     "clusters_permin": 7.466666666666667
+    },
+    "4": {
+     "jit_obs": 0.6309478885733942,
+     "jit_null": 0.6874170832075376,
+     "jit_excess": -0.05646919463414335,
+     "jit_defined": true,
+     "clusters_permin": 4.066666666666666
+    },
+    "6": {
+     "jit_obs": 0.52641677832865,
+     "jit_null": 0.6106347796965841,
+     "jit_excess": -0.08421800136793411,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    }
+   }
+  },
+  {
+   "cell": 35,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7118052168020661,
+     "jit_null": 0.7462121977432674,
+     "jit_excess": -0.034406980941201315,
+     "jit_defined": true,
+     "clusters_permin": 7.844444444444444
+    },
+    "4": {
+     "jit_obs": 0.625033332444452,
+     "jit_null": 0.6906798733329799,
+     "jit_excess": -0.06564654088852784,
+     "jit_defined": true,
+     "clusters_permin": 4.2
+    },
+    "6": {
+     "jit_obs": 0.5290382055436994,
+     "jit_null": 0.6122754400117707,
+     "jit_excess": -0.0832372344680713,
+     "jit_defined": true,
+     "clusters_permin": 1.2222222222222223
+    }
+   }
+  },
+  {
+   "cell": 35,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7068752421525484,
+     "jit_null": 0.747107739938324,
+     "jit_excess": -0.040232497785775645,
+     "jit_defined": true,
+     "clusters_permin": 7.911111111111111
+    },
+    "4": {
+     "jit_obs": 0.6236764642150692,
+     "jit_null": 0.6914138277850416,
+     "jit_excess": -0.0677373635699724,
+     "jit_defined": true,
+     "clusters_permin": 4.644444444444445
+    },
+    "6": {
+     "jit_obs": 0.5513462469108505,
+     "jit_null": 0.6137376614956398,
+     "jit_excess": -0.06239141458478925,
+     "jit_defined": true,
+     "clusters_permin": 1.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 37,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7290015817207118,
+     "jit_null": 0.7179081452723044,
+     "jit_excess": 0.011093436448407434,
+     "jit_defined": true,
+     "clusters_permin": 8.622222222222222
+    },
+    "4": {
+     "jit_obs": 0.6886526150697768,
+     "jit_null": 0.662520621523423,
+     "jit_excess": 0.02613199354635387,
+     "jit_defined": true,
+     "clusters_permin": 4.2
+    },
+    "6": {
+     "jit_obs": 0.6801960501698515,
+     "jit_null": 0.5904353153465348,
+     "jit_excess": 0.0897607348233167,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 37,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7387247699341598,
+     "jit_null": 0.7146398762241044,
+     "jit_excess": 0.0240848937100554,
+     "jit_defined": true,
+     "clusters_permin": 8.422222222222222
+    },
+    "4": {
+     "jit_obs": 0.6880495158565372,
+     "jit_null": 0.6599150834817888,
+     "jit_excess": 0.02813443237474833,
+     "jit_defined": true,
+     "clusters_permin": 3.8666666666666667
+    },
+    "6": {
+     "jit_obs": 0.6669667323424973,
+     "jit_null": 0.5814078089272965,
+     "jit_excess": 0.08555892341520077,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    }
+   }
+  },
+  {
+   "cell": 37,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7286974680894378,
+     "jit_null": 0.7126131836339249,
+     "jit_excess": 0.01608428445551291,
+     "jit_defined": true,
+     "clusters_permin": 7.888888888888889
+    },
+    "4": {
+     "jit_obs": 0.6765927710061842,
+     "jit_null": 0.657209801846173,
+     "jit_excess": 0.019382969160011254,
+     "jit_defined": true,
+     "clusters_permin": 3.7555555555555555
+    },
+    "6": {
+     "jit_obs": 0.6116429864366567,
+     "jit_null": 0.5794585634866454,
+     "jit_excess": 0.03218442295001134,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 37,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7364368490578586,
+     "jit_null": 0.7169789415869934,
+     "jit_excess": 0.019457907470865177,
+     "jit_defined": true,
+     "clusters_permin": 8.177777777777777
+    },
+    "4": {
+     "jit_obs": 0.6473388749701575,
+     "jit_null": 0.6616545085108415,
+     "jit_excess": -0.014315633540683992,
+     "jit_defined": true,
+     "clusters_permin": 4.066666666666666
+    },
+    "6": {
+     "jit_obs": 0.5738714262356414,
+     "jit_null": 0.5864440324907345,
+     "jit_excess": -0.012572606255093155,
+     "jit_defined": true,
+     "clusters_permin": 0.17777777777777778
+    }
+   }
+  },
+  {
+   "cell": 37,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7293833011524039,
+     "jit_null": 0.7132901728983516,
+     "jit_excess": 0.01609312825405229,
+     "jit_defined": true,
+     "clusters_permin": 7.7555555555555555
+    },
+    "4": {
+     "jit_obs": 0.6957010852370251,
+     "jit_null": 0.6578679727883394,
+     "jit_excess": 0.0378331124486857,
+     "jit_defined": true,
+     "clusters_permin": 4.066666666666666
+    },
+    "6": {
+     "jit_obs": 0.6386055049379217,
+     "jit_null": 0.5810936843546162,
+     "jit_excess": 0.057511820583305506,
+     "jit_defined": true,
+     "clusters_permin": 0.2222222222222222
+    }
+   }
+  },
+  {
+   "cell": 39,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7529940238806758,
+     "jit_null": 0.7243715138653758,
+     "jit_excess": 0.02862251001530003,
+     "jit_defined": true,
+     "clusters_permin": 8.422222222222222
+    },
+    "4": {
+     "jit_obs": 0.7067699834626551,
+     "jit_null": 0.6672752081497288,
+     "jit_excess": 0.03949477531292622,
+     "jit_defined": true,
+     "clusters_permin": 4.511111111111111
+    },
+    "6": {
+     "jit_obs": 0.6617555289469719,
+     "jit_null": 0.5932275772532827,
+     "jit_excess": 0.06852795169368919,
+     "jit_defined": true,
+     "clusters_permin": 0.4888888888888889
+    }
+   }
+  },
+  {
+   "cell": 39,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7341824087111415,
+     "jit_null": 0.7195152962105525,
+     "jit_excess": 0.014667112500588941,
+     "jit_defined": true,
+     "clusters_permin": 8.177777777777777
+    },
+    "4": {
+     "jit_obs": 0.6824326235712175,
+     "jit_null": 0.6642979606180065,
+     "jit_excess": 0.018134662953210978,
+     "jit_defined": true,
+     "clusters_permin": 4.2444444444444445
+    },
+    "6": {
+     "jit_obs": 0.6519981129754688,
+     "jit_null": 0.5881837559676106,
+     "jit_excess": 0.0638143570078582,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    }
+   }
+  },
+  {
+   "cell": 39,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7424621202458753,
+     "jit_null": 0.7224145370981065,
+     "jit_excess": 0.020047583147768777,
+     "jit_defined": true,
+     "clusters_permin": 8.244444444444444
+    },
+    "4": {
+     "jit_obs": 0.6800732494550294,
+     "jit_null": 0.6656123604219293,
+     "jit_excess": 0.014460889033100166,
+     "jit_defined": true,
+     "clusters_permin": 4.4
+    },
+    "6": {
+     "jit_obs": 0.663324958071128,
+     "jit_null": 0.590783176142083,
+     "jit_excess": 0.07254178192904503,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    }
+   }
+  },
+  {
+   "cell": 39,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7387247699341444,
+     "jit_null": 0.7210297810508097,
+     "jit_excess": 0.01769498888333465,
+     "jit_defined": true,
+     "clusters_permin": 7.844444444444444
+    },
+    "4": {
+     "jit_obs": 0.6725173055224011,
+     "jit_null": 0.6654595248636734,
+     "jit_excess": 0.0070577806587276415,
+     "jit_defined": true,
+     "clusters_permin": 3.911111111111111
+    },
+    "6": {
+     "jit_obs": 0.6200358412579311,
+     "jit_null": 0.5899774071138847,
+     "jit_excess": 0.03005843414404641,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    }
+   }
+  },
+  {
+   "cell": 39,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.7874007874011919,
+     "jit_null": 0.7259814672254334,
+     "jit_excess": 0.06141932017575846,
+     "jit_defined": true,
+     "clusters_permin": 7.822222222222222
+    },
+    "4": {
+     "jit_obs": 0.7012629906552359,
+     "jit_null": 0.6696791001594915,
+     "jit_excess": 0.03158389049574439,
+     "jit_defined": true,
+     "clusters_permin": 4.044444444444444
+    },
+    "6": {
+     "jit_obs": 0.6903300337922333,
+     "jit_null": 0.5934133487079641,
+     "jit_excess": 0.0969166850842692,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    }
+   }
+  },
+  {
+   "cell": 41,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7432233529572003,
+     "jit_null": 0.7182771618144735,
+     "jit_excess": 0.02494619114272678,
+     "jit_defined": true,
+     "clusters_permin": 7.644444444444445
+    },
+    "4": {
+     "jit_obs": 0.6996966178777134,
+     "jit_null": 0.663051723767281,
+     "jit_excess": 0.03664489411043237,
+     "jit_defined": true,
+     "clusters_permin": 4.088888888888889
+    },
+    "6": {
+     "jit_obs": 0.643650403618019,
+     "jit_null": 0.5879766785408976,
+     "jit_excess": 0.05567372507712132,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    }
+   }
+  },
+  {
+   "cell": 41,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7360841466261638,
+     "jit_null": 0.7146136209763299,
+     "jit_excess": 0.021470525649833982,
+     "jit_defined": true,
+     "clusters_permin": 7.6
+    },
+    "4": {
+     "jit_obs": 0.6774396558610906,
+     "jit_null": 0.6599383227913574,
+     "jit_excess": 0.017501333069733116,
+     "jit_defined": true,
+     "clusters_permin": 3.7333333333333334
+    },
+    "6": {
+     "jit_obs": 0.6851938281657393,
+     "jit_null": 0.5836737882445711,
+     "jit_excess": 0.1015200399211682,
+     "jit_defined": true,
+     "clusters_permin": 0.4888888888888889
+    }
+   }
+  },
+  {
+   "cell": 41,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.731374795101042,
+     "jit_null": 0.7139741923748207,
+     "jit_excess": 0.017400602726221237,
+     "jit_defined": true,
+     "clusters_permin": 7.622222222222222
+    },
+    "4": {
+     "jit_obs": 0.708436760973971,
+     "jit_null": 0.658417767448173,
+     "jit_excess": 0.05001899352579797,
+     "jit_defined": true,
+     "clusters_permin": 4.088888888888889
+    },
+    "6": {
+     "jit_obs": 0.6633249580710793,
+     "jit_null": 0.5843512601006742,
+     "jit_excess": 0.0789736979704051,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    }
+   }
+  },
+  {
+   "cell": 41,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7683314031820492,
+     "jit_null": 0.7231150786154319,
+     "jit_excess": 0.04521632456661728,
+     "jit_defined": true,
+     "clusters_permin": 7.955555555555556
+    },
+    "4": {
+     "jit_obs": 0.6928338961871645,
+     "jit_null": 0.6686738622571696,
+     "jit_excess": 0.024160033929994884,
+     "jit_defined": true,
+     "clusters_permin": 4.4
+    },
+    "6": {
+     "jit_obs": 0.6205503913394093,
+     "jit_null": 0.5930348607443634,
+     "jit_excess": 0.027515530595045856,
+     "jit_defined": true,
+     "clusters_permin": 0.7111111111111111
+    }
+   }
+  },
+  {
+   "cell": 41,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7358183005529537,
+     "jit_null": 0.711319236710942,
+     "jit_excess": 0.024499063842011726,
+     "jit_defined": true,
+     "clusters_permin": 7.666666666666667
+    },
+    "4": {
+     "jit_obs": 0.6554896388705689,
+     "jit_null": 0.6565903049922341,
+     "jit_excess": -0.0011006661216652613,
+     "jit_defined": true,
+     "clusters_permin": 3.888888888888889
+    },
+    "6": {
+     "jit_obs": 0.6269350663455278,
+     "jit_null": 0.5823293324001159,
+     "jit_excess": 0.044605733945411896,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    }
+   }
+  },
+  {
+   "cell": 43,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7326496263004576,
+     "jit_null": 0.7264921958833446,
+     "jit_excess": 0.00615743041711303,
+     "jit_defined": true,
+     "clusters_permin": 7.555555555555555
+    },
+    "4": {
+     "jit_obs": 0.6817481940003083,
+     "jit_null": 0.6716714954481493,
+     "jit_excess": 0.01007669855215898,
+     "jit_defined": true,
+     "clusters_permin": 4.133333333333334
+    },
+    "6": {
+     "jit_obs": 0.6470983416268933,
+     "jit_null": 0.5959909665702311,
+     "jit_excess": 0.051107375056662185,
+     "jit_defined": true,
+     "clusters_permin": 0.9111111111111111
+    }
+   }
+  },
+  {
+   "cell": 43,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7344688178843686,
+     "jit_null": 0.7271726427893404,
+     "jit_excess": 0.007296175095028223,
+     "jit_defined": true,
+     "clusters_permin": 8.066666666666666
+    },
+    "4": {
+     "jit_obs": 0.6824326235712627,
+     "jit_null": 0.6706900603154194,
+     "jit_excess": 0.01174256325584322,
+     "jit_defined": true,
+     "clusters_permin": 4.733333333333333
+    },
+    "6": {
+     "jit_obs": 0.6614384192857394,
+     "jit_null": 0.597189811797519,
+     "jit_excess": 0.06424860748822048,
+     "jit_defined": true,
+     "clusters_permin": 1.0666666666666667
+    }
+   }
+  },
+  {
+   "cell": 43,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7522615475334562,
+     "jit_null": 0.7254609609638113,
+     "jit_excess": 0.026800586569644902,
+     "jit_defined": true,
+     "clusters_permin": 7.666666666666667
+    },
+    "4": {
+     "jit_obs": 0.7033254343948171,
+     "jit_null": 0.6694271329669281,
+     "jit_excess": 0.033898301427888966,
+     "jit_defined": true,
+     "clusters_permin": 3.888888888888889
+    },
+    "6": {
+     "jit_obs": 0.6547911890698505,
+     "jit_null": 0.5948531813139988,
+     "jit_excess": 0.059938007755851674,
+     "jit_defined": true,
+     "clusters_permin": 1.0666666666666667
+    }
+   }
+  },
+  {
+   "cell": 43,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7272338040465763,
+     "jit_null": 0.72528648042886,
+     "jit_excess": 0.0019473236177163233,
+     "jit_defined": true,
+     "clusters_permin": 8.044444444444444
+    },
+    "4": {
+     "jit_obs": 0.6778371971850558,
+     "jit_null": 0.669562676713599,
+     "jit_excess": 0.008274520471456714,
+     "jit_defined": true,
+     "clusters_permin": 4.133333333333334
+    },
+    "6": {
+     "jit_obs": 0.6764961631994115,
+     "jit_null": 0.5919218411562006,
+     "jit_excess": 0.08457432204321091,
+     "jit_defined": true,
+     "clusters_permin": 0.9111111111111111
+    }
+   }
+  },
+  {
+   "cell": 43,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7310758638397807,
+     "jit_null": 0.7275011283245565,
+     "jit_excess": 0.0035747355152242477,
+     "jit_defined": true,
+     "clusters_permin": 7.733333333333333
+    },
+    "4": {
+     "jit_obs": 0.7226686447337811,
+     "jit_null": 0.6715443809673238,
+     "jit_excess": 0.05112426376645729,
+     "jit_defined": true,
+     "clusters_permin": 4.177777777777778
+    },
+    "6": {
+     "jit_obs": 0.7041088202609201,
+     "jit_null": 0.5941852365190138,
+     "jit_excess": 0.10992358374190636,
+     "jit_defined": true,
+     "clusters_permin": 1.0444444444444445
+    }
+   }
+  },
+  {
+   "cell": 45,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7296444013222821,
+     "jit_null": 0.7273430519566246,
+     "jit_excess": 0.0023013493656575124,
+     "jit_defined": true,
+     "clusters_permin": 8.155555555555555
+    },
+    "4": {
+     "jit_obs": 0.6911343333004915,
+     "jit_null": 0.6724660438492461,
+     "jit_excess": 0.018668289451245323,
+     "jit_defined": true,
+     "clusters_permin": 4.2
+    },
+    "6": {
+     "jit_obs": 0.7188553893504197,
+     "jit_null": 0.5955924830285064,
+     "jit_excess": 0.12326290632191328,
+     "jit_defined": true,
+     "clusters_permin": 0.7111111111111111
+    }
+   }
+  },
+  {
+   "cell": 45,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.719027120489901,
+     "jit_null": 0.7229463324647177,
+     "jit_excess": -0.003919211974816705,
+     "jit_defined": true,
+     "clusters_permin": 8.066666666666666
+    },
+    "4": {
+     "jit_obs": 0.6768035204074738,
+     "jit_null": 0.6671749450740482,
+     "jit_excess": 0.009628575333425649,
+     "jit_defined": true,
+     "clusters_permin": 3.911111111111111
+    },
+    "6": {
+     "jit_obs": 0.6802777210652922,
+     "jit_null": 0.5929226686354734,
+     "jit_excess": 0.08735505242981878,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    }
+   }
+  },
+  {
+   "cell": 45,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7325753658610997,
+     "jit_null": 0.7232543057158736,
+     "jit_excess": 0.009321060145226157,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.6810887322302119,
+     "jit_null": 0.6671385889587458,
+     "jit_excess": 0.013950143271466153,
+     "jit_defined": true,
+     "clusters_permin": 4.044444444444444
+    },
+    "6": {
+     "jit_obs": 0.6784377479015569,
+     "jit_null": 0.5914438492159435,
+     "jit_excess": 0.08699389868561336,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    }
+   }
+  },
+  {
+   "cell": 45,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7459020926375598,
+     "jit_null": 0.7268215413473567,
+     "jit_excess": 0.01908055129020314,
+     "jit_defined": true,
+     "clusters_permin": 7.688888888888889
+    },
+    "4": {
+     "jit_obs": 0.6765927710061637,
+     "jit_null": 0.6708133564270569,
+     "jit_excess": 0.005779414579106801,
+     "jit_defined": true,
+     "clusters_permin": 4.2
+    },
+    "6": {
+     "jit_obs": 0.7197010883932908,
+     "jit_null": 0.5936580904942651,
+     "jit_excess": 0.12604299789902573,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    }
+   }
+  },
+  {
+   "cell": 45,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7220989072933189,
+     "jit_null": 0.7284704038847083,
+     "jit_excess": -0.006371496591389358,
+     "jit_defined": true,
+     "clusters_permin": 8.266666666666667
+    },
+    "4": {
+     "jit_obs": 0.6890296835129163,
+     "jit_null": 0.6727313694974221,
+     "jit_excess": 0.016298314015494197,
+     "jit_defined": true,
+     "clusters_permin": 4.066666666666666
+    },
+    "6": {
+     "jit_obs": 0.6847693705979748,
+     "jit_null": 0.597734843233959,
+     "jit_excess": 0.08703452736401585,
+     "jit_defined": true,
+     "clusters_permin": 0.7777777777777778
+    }
+   }
+  },
+  {
+   "cell": 47,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7333217280064636,
+     "jit_null": 0.7467518507302042,
+     "jit_excess": -0.013430122723740667,
+     "jit_defined": true,
+     "clusters_permin": 7.955555555555556
+    },
+    "4": {
+     "jit_obs": 0.7025124977705611,
+     "jit_null": 0.6912777211714869,
+     "jit_excess": 0.011234776599074237,
+     "jit_defined": true,
+     "clusters_permin": 4.2
+    },
+    "6": {
+     "jit_obs": 0.7096612203150489,
+     "jit_null": 0.6149142257504329,
+     "jit_excess": 0.094746994564616,
+     "jit_defined": true,
+     "clusters_permin": 1.2666666666666666
+    }
+   }
+  },
+  {
+   "cell": 47,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7390470053998416,
+     "jit_null": 0.7480178596100755,
+     "jit_excess": -0.008970854210233914,
+     "jit_defined": true,
+     "clusters_permin": 8.022222222222222
+    },
+    "4": {
+     "jit_obs": 0.7250287350627406,
+     "jit_null": 0.6917166428995407,
+     "jit_excess": 0.03331209216319986,
+     "jit_defined": true,
+     "clusters_permin": 4.644444444444445
+    },
+    "6": {
+     "jit_obs": 0.7237374084608539,
+     "jit_null": 0.6161959762105287,
+     "jit_excess": 0.1075414322503252,
+     "jit_defined": true,
+     "clusters_permin": 1.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 47,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7470577207252952,
+     "jit_null": 0.7450288453401421,
+     "jit_excess": 0.0020288753851530617,
+     "jit_defined": true,
+     "clusters_permin": 7.7555555555555555
+    },
+    "4": {
+     "jit_obs": 0.7057586259445611,
+     "jit_null": 0.689834989337267,
+     "jit_excess": 0.015923636607294123,
+     "jit_defined": true,
+     "clusters_permin": 4.155555555555556
+    },
+    "6": {
+     "jit_obs": 0.7001670644415117,
+     "jit_null": 0.6131198950050526,
+     "jit_excess": 0.08704716943645907,
+     "jit_defined": true,
+     "clusters_permin": 1.2666666666666666
+    }
+   }
+  },
+  {
+   "cell": 47,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7300195675700552,
+     "jit_null": 0.7458738718901825,
+     "jit_excess": -0.015854304320127355,
+     "jit_defined": true,
+     "clusters_permin": 7.6
+    },
+    "4": {
+     "jit_obs": 0.7050006491175953,
+     "jit_null": 0.6900724011106981,
+     "jit_excess": 0.014928248006897182,
+     "jit_defined": true,
+     "clusters_permin": 3.9555555555555557
+    },
+    "6": {
+     "jit_obs": 0.7243266052979707,
+     "jit_null": 0.6152672601910589,
+     "jit_excess": 0.10905934510691173,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    }
+   }
+  },
+  {
+   "cell": 47,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.05,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7155744431054872,
+     "jit_null": 0.7479234799486139,
+     "jit_excess": -0.03234903684312662,
+     "jit_defined": true,
+     "clusters_permin": 7.7555555555555555
+    },
+    "4": {
+     "jit_obs": 0.7153583932894081,
+     "jit_null": 0.6922535477820343,
+     "jit_excess": 0.023104845507373795,
+     "jit_defined": true,
+     "clusters_permin": 4.5777777777777775
+    },
+    "6": {
+     "jit_obs": 0.7322066997014496,
+     "jit_null": 0.6149236325751382,
+     "jit_excess": 0.11728306712631142,
+     "jit_defined": true,
+     "clusters_permin": 1.3777777777777778
+    }
+   }
+  },
+  {
+   "cell": 0,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.4573474244670876,
+     "jit_null": 0.39604963763981066,
+     "jit_excess": 0.061297786827276934,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    },
+    "4": {
+     "jit_obs": 0.33714487489309014,
+     "jit_null": 0.370428383379133,
+     "jit_excess": -0.033283508486042834,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    },
+    "6": {
+     "jit_obs": 0.4572172558506797,
+     "jit_null": 0.2650729606571962,
+     "jit_excess": 0.19214429519348347,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 0,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.34641016151385423,
+     "jit_null": 0.3949838181667477,
+     "jit_excess": -0.04857365665289348,
+     "jit_defined": true,
+     "clusters_permin": 0.6888888888888889
+    },
+    "4": {
+     "jit_obs": 0.3067688753069884,
+     "jit_null": 0.3713114463738122,
+     "jit_excess": -0.06454257106682382,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    },
+    "6": {
+     "jit_obs": 0.3067688753069884,
+     "jit_null": 0.36098519573552157,
+     "jit_excess": -0.05421632042853319,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 0,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.4163331998931938,
+     "jit_null": 0.39016814934628763,
+     "jit_excess": 0.026165050546906155,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.31310315835100155,
+     "jit_null": 0.37336933960730423,
+     "jit_excess": -0.060266181256302676,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.32521404189377234,
+     "jit_null": 0.25852565227115576,
+     "jit_excess": 0.06668838962261658,
+     "jit_defined": true,
+     "clusters_permin": 0.08888888888888889
+    }
+   }
+  },
+  {
+   "cell": 0,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.3534826445300645,
+     "jit_null": 0.3905914235827409,
+     "jit_excess": -0.0371087790526764,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    },
+    "4": {
+     "jit_obs": 0.30908852176325713,
+     "jit_null": 0.36180533365779444,
+     "jit_excess": -0.05271681189453731,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.10954451150101661,
+     "jit_null": 0.418418680985583,
+     "jit_excess": -0.30887416948456636,
+     "jit_defined": true,
+     "clusters_permin": 0.1111111111111111
+    }
+   }
+  },
+  {
+   "cell": 0,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.2804757862395196,
+     "jit_null": 0.3870389057610568,
+     "jit_excess": -0.10656311952153724,
+     "jit_defined": true,
+     "clusters_permin": 0.6888888888888889
+    },
+    "4": {
+     "jit_obs": 0.17359800721941931,
+     "jit_null": 0.36616241860637355,
+     "jit_excess": -0.19256441138695424,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.2,
+     "jit_null": NaN,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.08888888888888889
+    }
+   }
+  },
+  {
+   "cell": 2,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.30879203510073244,
+     "jit_null": 0.4129292010205388,
+     "jit_excess": -0.10413716591980637,
+     "jit_defined": true,
+     "clusters_permin": 1.0666666666666667
+    },
+    "4": {
+     "jit_obs": 0.2966479394838633,
+     "jit_null": 0.3869153037482695,
+     "jit_excess": -0.09026736426440618,
+     "jit_defined": true,
+     "clusters_permin": 0.9555555555555556
+    },
+    "6": {
+     "jit_obs": 0.3013348177971398,
+     "jit_null": 0.4314038650978548,
+     "jit_excess": -0.130069047300715,
+     "jit_defined": true,
+     "clusters_permin": 0.13333333333333333
+    }
+   }
+  },
+  {
+   "cell": 2,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.14605934866806713,
+     "jit_null": 0.408498868539526,
+     "jit_excess": -0.26243951987145886,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    },
+    "4": {
+     "jit_obs": 0.0752772652709806,
+     "jit_null": 0.3791784435191945,
+     "jit_excess": -0.3039011782482139,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.10954451150109965,
+     "jit_null": 0.3231824760062067,
+     "jit_excess": -0.21363796450510705,
+     "jit_defined": true,
+     "clusters_permin": 0.15555555555555556
+    }
+   }
+  },
+  {
+   "cell": 2,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.15275252316530383,
+     "jit_null": 0.40819927587388743,
+     "jit_excess": -0.25544675270858364,
+     "jit_defined": true,
+     "clusters_permin": 1.3111111111111111
+    },
+    "4": {
+     "jit_obs": 0.09351636319742981,
+     "jit_null": 0.3839179554911979,
+     "jit_excess": -0.29040159229376805,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.16308653667417583,
+     "jit_null": 0.32246348445567946,
+     "jit_excess": -0.15937694778150363,
+     "jit_defined": true,
+     "clusters_permin": 0.26666666666666666
+    }
+   }
+  },
+  {
+   "cell": 2,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.08366600265344017,
+     "jit_null": 0.4042604865353228,
+     "jit_excess": -0.32059448388188266,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.0836660026533994,
+     "jit_null": 0.3641727407889541,
+     "jit_excess": -0.2805067381355547,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.27516228977513085,
+     "jit_null": 0.33639398966593975,
+     "jit_excess": -0.0612316998908089,
+     "jit_defined": true,
+     "clusters_permin": 0.15555555555555556
+    }
+   }
+  },
+  {
+   "cell": 2,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.24384994279159292,
+     "jit_null": 0.4253411961585386,
+     "jit_excess": -0.1814912533669457,
+     "jit_defined": true,
+     "clusters_permin": 1.288888888888889
+    },
+    "4": {
+     "jit_obs": 0.19301999684430826,
+     "jit_null": 0.39318483091235984,
+     "jit_excess": -0.20016483406805158,
+     "jit_defined": true,
+     "clusters_permin": 0.9777777777777777
+    },
+    "6": {
+     "jit_obs": 0.27131367660166555,
+     "jit_null": 0.3037496769154996,
+     "jit_excess": -0.032436000313834035,
+     "jit_defined": true,
+     "clusters_permin": 0.24444444444444444
+    }
+   }
+  },
+  {
+   "cell": 4,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.2940342302832267,
+     "jit_null": 0.4031191571277357,
+     "jit_excess": -0.10908492684450899,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    },
+    "4": {
+     "jit_obs": 0.09966990689866098,
+     "jit_null": 0.37858806694555935,
+     "jit_excess": -0.2789181600468984,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.07071067811859044,
+     "jit_null": 0.39295063657763946,
+     "jit_excess": -0.322239958459049,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 4,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.27209303995071416,
+     "jit_null": 0.40154499825970347,
+     "jit_excess": -0.1294519583089893,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    },
+    "4": {
+     "jit_obs": 0.1963299634428332,
+     "jit_null": 0.3723547448068343,
+     "jit_excess": -0.17602478136400107,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    },
+    "6": {
+     "jit_obs": 0.19116865471474537,
+     "jit_null": 0.3069900424607688,
+     "jit_excess": -0.11582138774602341,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 4,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.2863564212655465,
+     "jit_null": 0.40316592559258363,
+     "jit_excess": -0.11680950432703713,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.11037127426014627,
+     "jit_null": 0.3859368329427771,
+     "jit_excess": -0.27556555868263083,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    },
+    "6": {
+     "jit_obs": 0.09438798074490602,
+     "jit_null": 0.49817304602628426,
+     "jit_excess": -0.40378506528137825,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 4,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.1813529401164804,
+     "jit_null": 0.4063850810702956,
+     "jit_excess": -0.22503214095381519,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    },
+    "4": {
+     "jit_obs": 0.05270462766948497,
+     "jit_null": 0.3831782003229914,
+     "jit_excess": -0.3304735726535064,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.060099741720263763,
+     "jit_null": 0.33276860806468345,
+     "jit_excess": -0.27266886634441967,
+     "jit_defined": true,
+     "clusters_permin": 0.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 4,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.26457513110643327,
+     "jit_null": 0.40023723648002685,
+     "jit_excess": -0.13566210537359358,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.07378647873726013,
+     "jit_null": 0.3762486446498169,
+     "jit_excess": -0.30246216591255676,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.07378647873726013,
+     "jit_null": 0.27264215029117816,
+     "jit_excess": -0.19885567155391803,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 6,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.14277724733649905,
+     "jit_null": 0.4498697007804436,
+     "jit_excess": -0.30709245344394454,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    },
+    "4": {
+     "jit_obs": 0.08738628975050758,
+     "jit_null": 0.4138407609178545,
+     "jit_excess": -0.32645447116734694,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.08738628975050758,
+     "jit_null": 0.3577663321771337,
+     "jit_excess": -0.27038004242662617,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 6,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.10954451150099587,
+     "jit_null": 0.44757268283353197,
+     "jit_excess": -0.3380281713325361,
+     "jit_defined": true,
+     "clusters_permin": 1.2222222222222223
+    },
+    "4": {
+     "jit_obs": 0.06749485577103134,
+     "jit_null": 0.41498624917315924,
+     "jit_excess": -0.34749139340212787,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.06749485577101824,
+     "jit_null": 0.3925918962144211,
+     "jit_excess": -0.3250970404434028,
+     "jit_defined": true,
+     "clusters_permin": 0.9777777777777777
+    }
+   }
+  },
+  {
+   "cell": 6,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.195401684183681,
+     "jit_null": 0.4471785186375484,
+     "jit_excess": -0.25177683445386734,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.08615046853705478,
+     "jit_null": 0.40795507798662034,
+     "jit_excess": -0.32180460944956557,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.0788810637746923,
+     "jit_null": 0.4455519992580962,
+     "jit_excess": -0.3666709354834039,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 6,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.13684762594679495,
+     "jit_null": 0.4476979542747614,
+     "jit_excess": -0.31085032832796644,
+     "jit_defined": true,
+     "clusters_permin": 1.0888888888888888
+    },
+    "4": {
+     "jit_obs": 0.07888106377466668,
+     "jit_null": 0.4096516845308512,
+     "jit_excess": -0.3307706207561845,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.07888106377466668,
+     "jit_null": 0.44074292861565206,
+     "jit_excess": -0.36186186484098537,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 6,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.16787441193288874,
+     "jit_null": 0.452857218441694,
+     "jit_excess": -0.28498280650880525,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.1190874392277254,
+     "jit_null": 0.41514289959884343,
+     "jit_excess": -0.296055460371118,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.1190874392277254,
+     "jit_null": 0.3946596108299413,
+     "jit_excess": -0.27557217160221587,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 8,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.16297880196102063,
+     "jit_null": 0.42448918901810756,
+     "jit_excess": -0.26151038705708696,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    },
+    "4": {
+     "jit_obs": 0.05180687699113788,
+     "jit_null": 0.39284029484905375,
+     "jit_excess": -0.34103341785791585,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.05129891760421104,
+     "jit_null": 0.430607417087319,
+     "jit_excess": -0.37930849948310796,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 8,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.152752523165279,
+     "jit_null": 0.41923072649690263,
+     "jit_excess": -0.26647820333162364,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    },
+    "4": {
+     "jit_obs": 0.06386663736579243,
+     "jit_null": 0.39306488576496834,
+     "jit_excess": -0.3291982483991759,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.06386663736579243,
+     "jit_null": 0.36450917950115047,
+     "jit_excess": -0.300642542135358,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 8,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.21542360353202752,
+     "jit_null": 0.4314808963975003,
+     "jit_excess": -0.2160572928654728,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    },
+    "4": {
+     "jit_obs": 0.14877139317367277,
+     "jit_null": 0.3945472620670898,
+     "jit_excess": -0.24577586889341702,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.11892374507581624,
+     "jit_null": 0.36861235268547243,
+     "jit_excess": -0.2496886076096562,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 8,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.18285919983111898,
+     "jit_null": 0.4259950719210278,
+     "jit_excess": -0.24313587208990883,
+     "jit_defined": true,
+     "clusters_permin": 0.6666666666666666
+    },
+    "4": {
+     "jit_obs": 0.060319526317384756,
+     "jit_null": 0.3998528010463871,
+     "jit_excess": -0.33953327472900235,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.06015852075182582,
+     "jit_null": 0.41208688586620246,
+     "jit_excess": -0.35192836511437664,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 8,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.06386663736584161,
+     "jit_null": 0.4191534306857928,
+     "jit_excess": -0.35528679331995117,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    },
+    "4": {
+     "jit_obs": 0.05871429486123652,
+     "jit_null": 0.38868952068870755,
+     "jit_excess": -0.329975225827471,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.05871429486123652,
+     "jit_null": 0.44155915189939177,
+     "jit_excess": -0.38284485703815524,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 10,
+   "seed": 0,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.07608859102526978,
+     "jit_null": 0.520590255605461,
+     "jit_excess": -0.44450166458019125,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.06708203932500671,
+     "jit_null": 0.47433218102856844,
+     "jit_excess": -0.4072501417035617,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.06708203932500671,
+     "jit_null": 0.3897984198748137,
+     "jit_excess": -0.32271638054980695,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 10,
+   "seed": 1,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.06478065294948376,
+     "jit_null": 0.5100657551166926,
+     "jit_excess": -0.44528510216720885,
+     "jit_defined": true,
+     "clusters_permin": 1.0666666666666667
+    },
+    "4": {
+     "jit_obs": 0.06069769786674163,
+     "jit_null": 0.46914324191823276,
+     "jit_excess": -0.40844554405149114,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.06069769786674163,
+     "jit_null": 0.42425562927199956,
+     "jit_excess": -0.36355793140525794,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 10,
+   "seed": 2,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.06872899713828061,
+     "jit_null": 0.5249107315583111,
+     "jit_excess": -0.4561817344200305,
+     "jit_defined": true,
+     "clusters_permin": 1.288888888888889
+    },
+    "4": {
+     "jit_obs": 0.06048053188295952,
+     "jit_null": 0.4842067650140018,
+     "jit_excess": -0.42372623313104224,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.060480531882929345,
+     "jit_null": 0.4517033831906662,
+     "jit_excess": -0.3912228513077369,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 10,
+   "seed": 3,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.10779168622414965,
+     "jit_null": 0.5284476192514813,
+     "jit_excess": -0.4206559330273317,
+     "jit_defined": true,
+     "clusters_permin": 1.2666666666666666
+    },
+    "4": {
+     "jit_obs": 0.06863327411534158,
+     "jit_null": 0.4852762804691919,
+     "jit_excess": -0.4166430063538503,
+     "jit_defined": true,
+     "clusters_permin": 1.0444444444444445
+    },
+    "6": {
+     "jit_obs": 0.06863327411534158,
+     "jit_null": 0.42209050755598776,
+     "jit_excess": -0.35345723344064617,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 10,
+   "seed": 4,
+   "jit": 0.05,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.0824182112962576,
+     "jit_null": 0.5169127352015114,
+     "jit_excess": -0.4344945239052538,
+     "jit_defined": true,
+     "clusters_permin": 1.3333333333333333
+    },
+    "4": {
+     "jit_obs": 0.06407232755166048,
+     "jit_null": 0.48476684810569726,
+     "jit_excess": -0.4206945205540368,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.06407232755166048,
+     "jit_null": 0.4703323538741534,
+     "jit_excess": -0.4062600263224929,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 12,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.27786286014155154,
+     "jit_null": 0.3940254126657092,
+     "jit_excess": -0.11616255252415764,
+     "jit_defined": true,
+     "clusters_permin": 0.6666666666666666
+    },
+    "4": {
+     "jit_obs": 0.23299294900431208,
+     "jit_null": 0.36184621672383116,
+     "jit_excess": -0.12885326771951908,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    },
+    "6": {
+     "jit_obs": 0.1643167672515941,
+     "jit_null": 0.2699673812679194,
+     "jit_excess": -0.1056506140163253,
+     "jit_defined": true,
+     "clusters_permin": 0.06666666666666667
+    }
+   }
+  },
+  {
+   "cell": 12,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.2309401076759028,
+     "jit_null": 0.3941739096577667,
+     "jit_excess": -0.1632338019818639,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.18165902124584074,
+     "jit_null": 0.3708419352284149,
+     "jit_excess": -0.18918291398257417,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    },
+    "6": {
+     "jit_obs": 0.17888543820002384,
+     "jit_null": 0.34331192100526453,
+     "jit_excess": -0.1644264828052407,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 12,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.36560452221859313,
+     "jit_null": 0.3830063123045055,
+     "jit_excess": -0.01740179008591236,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    },
+    "4": {
+     "jit_obs": 0.268328157299968,
+     "jit_null": 0.35627304453784636,
+     "jit_excess": -0.08794488723787836,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.2160416425713691,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 12,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.3376231628621794,
+     "jit_null": 0.3916467121223641,
+     "jit_excess": -0.05402354926018471,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    },
+    "4": {
+     "jit_obs": 0.22166897529456758,
+     "jit_null": 0.3565278381553183,
+     "jit_excess": -0.13485886286075072,
+     "jit_defined": true,
+     "clusters_permin": 0.2222222222222222
+    },
+    "6": {
+     "jit_obs": 0.5851332774513816,
+     "jit_null": 0.23390082319509642,
+     "jit_excess": 0.35123245425628513,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 12,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.3195582495781683,
+     "jit_null": 0.3935545136960379,
+     "jit_excess": -0.07399626411786958,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    },
+    "4": {
+     "jit_obs": 0.24083189157582044,
+     "jit_null": 0.3643296159931034,
+     "jit_excess": -0.12349772441728293,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.20655911179772954,
+     "jit_null": 0.3699685309245773,
+     "jit_excess": -0.16340941912684778,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 14,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.28809720581768605,
+     "jit_null": 0.41044694734635134,
+     "jit_excess": -0.12234974152866529,
+     "jit_defined": true,
+     "clusters_permin": 1.3111111111111111
+    },
+    "4": {
+     "jit_obs": 0.2740893876760273,
+     "jit_null": 0.3958834937495095,
+     "jit_excess": -0.12179410607348218,
+     "jit_defined": true,
+     "clusters_permin": 0.9333333333333333
+    },
+    "6": {
+     "jit_obs": 0.3568599499660319,
+     "jit_null": 0.42639612970211005,
+     "jit_excess": -0.06953617973607817,
+     "jit_defined": true,
+     "clusters_permin": 0.044444444444444446
+    }
+   }
+  },
+  {
+   "cell": 14,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.3122242330826651,
+     "jit_null": 0.41726763147029244,
+     "jit_excess": -0.10504339838762733,
+     "jit_defined": true,
+     "clusters_permin": 1.288888888888889
+    },
+    "4": {
+     "jit_obs": 0.30605010483028705,
+     "jit_null": 0.38679832013398774,
+     "jit_excess": -0.08074821530370069,
+     "jit_defined": true,
+     "clusters_permin": 0.8666666666666667
+    },
+    "6": {
+     "jit_obs": 0.31994860175097745,
+     "jit_null": 0.3410444107438582,
+     "jit_excess": -0.02109580899288077,
+     "jit_defined": true,
+     "clusters_permin": 0.13333333333333333
+    }
+   }
+  },
+  {
+   "cell": 14,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.2701851217221369,
+     "jit_null": 0.41626079511091174,
+     "jit_excess": -0.14607567338877486,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.2645751311064691,
+     "jit_null": 0.38560156503703935,
+     "jit_excess": -0.12102643393057028,
+     "jit_defined": true,
+     "clusters_permin": 0.8444444444444444
+    },
+    "6": {
+     "jit_obs": 0.21840763677166553,
+     "jit_null": 0.35578803140783977,
+     "jit_excess": -0.13738039463617424,
+     "jit_defined": true,
+     "clusters_permin": 0.13333333333333333
+    }
+   }
+  },
+  {
+   "cell": 14,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.33380918415854094,
+     "jit_null": 0.41270025322614023,
+     "jit_excess": -0.0788910690675993,
+     "jit_defined": true,
+     "clusters_permin": 1.1333333333333333
+    },
+    "4": {
+     "jit_obs": 0.26832815729998494,
+     "jit_null": 0.3851335274583712,
+     "jit_excess": -0.11680537015838627,
+     "jit_defined": true,
+     "clusters_permin": 0.8666666666666667
+    },
+    "6": {
+     "jit_obs": 0.2502054590374767,
+     "jit_null": 0.49706890928704417,
+     "jit_excess": -0.24686345024956746,
+     "jit_defined": true,
+     "clusters_permin": 0.17777777777777778
+    }
+   }
+  },
+  {
+   "cell": 14,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.2645143519165126,
+     "jit_null": 0.41017564196189954,
+     "jit_excess": -0.14566129004538692,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    },
+    "4": {
+     "jit_obs": 0.22519832529191328,
+     "jit_null": 0.38175849070014983,
+     "jit_excess": -0.15656016540823656,
+     "jit_defined": true,
+     "clusters_permin": 0.7777777777777778
+    },
+    "6": {
+     "jit_obs": 0.2193062655175534,
+     "jit_null": 0.2709907417916011,
+     "jit_excess": -0.05168447627404771,
+     "jit_defined": true,
+     "clusters_permin": 0.06666666666666667
+    }
+   }
+  },
+  {
+   "cell": 16,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.22463353979667228,
+     "jit_null": 0.4007204612034325,
+     "jit_excess": -0.17608692140676024,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    },
+    "4": {
+     "jit_obs": 0.23094010767585318,
+     "jit_null": 0.3645585233640607,
+     "jit_excess": -0.1336184156882075,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    },
+    "6": {
+     "jit_obs": 0.2220585668733912,
+     "jit_null": 0.3506797632750089,
+     "jit_excess": -0.12862119640161768,
+     "jit_defined": true,
+     "clusters_permin": 0.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 16,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.28867513459481287,
+     "jit_null": 0.4029653007145021,
+     "jit_excess": -0.11429016611968923,
+     "jit_defined": true,
+     "clusters_permin": 0.6888888888888889
+    },
+    "4": {
+     "jit_obs": 0.20655911179774897,
+     "jit_null": 0.37075874836099987,
+     "jit_excess": -0.1641996365632509,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.2359378449224794,
+     "jit_null": 0.40095122445763937,
+     "jit_excess": -0.16501337953515996,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 16,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.2692525284794147,
+     "jit_null": 0.40143901088385503,
+     "jit_excess": -0.1321864824044403,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    },
+    "4": {
+     "jit_obs": 0.26498281555176884,
+     "jit_null": 0.37172407148797226,
+     "jit_excess": -0.10674125593620343,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.262466929133729,
+     "jit_null": 0.3366117082624274,
+     "jit_excess": -0.07414477912869843,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 16,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.2516611478423402,
+     "jit_null": 0.3993281506087711,
+     "jit_excess": -0.14766700276643085,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    },
+    "4": {
+     "jit_obs": 0.22470705580124523,
+     "jit_null": 0.382995553416191,
+     "jit_excess": -0.1582884976149458,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.23833292633059622,
+     "jit_null": 0.21948215446898592,
+     "jit_excess": 0.0188507718616103,
+     "jit_defined": true,
+     "clusters_permin": 0.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 16,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.29657065556779916,
+     "jit_null": 0.4071319068593947,
+     "jit_excess": -0.11056125129159555,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    },
+    "4": {
+     "jit_obs": 0.25298221281347394,
+     "jit_null": 0.3752074008698437,
+     "jit_excess": -0.12222518805636978,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.25298221281347394,
+     "jit_null": 0.3365227884325916,
+     "jit_excess": -0.08354057561911765,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 18,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.25733678754161676,
+     "jit_null": 0.45113185304379716,
+     "jit_excess": -0.1937950655021804,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.2762020931532466,
+     "jit_null": 0.407610888635533,
+     "jit_excess": -0.1314087954822864,
+     "jit_defined": true,
+     "clusters_permin": 1.0666666666666667
+    },
+    "6": {
+     "jit_obs": 0.29154759474225983,
+     "jit_null": 0.3955822069470641,
+     "jit_excess": -0.10403461220480426,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 18,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.2634247826083763,
+     "jit_null": 0.4511973634736064,
+     "jit_excess": -0.18777258086523008,
+     "jit_defined": true,
+     "clusters_permin": 1.288888888888889
+    },
+    "4": {
+     "jit_obs": 0.24380848062935917,
+     "jit_null": 0.4109835418538486,
+     "jit_excess": -0.16717506122448944,
+     "jit_defined": true,
+     "clusters_permin": 1.0666666666666667
+    },
+    "6": {
+     "jit_obs": 0.24380848062935917,
+     "jit_null": 0.34872597940863737,
+     "jit_excess": -0.1049174987792782,
+     "jit_defined": true,
+     "clusters_permin": 0.9777777777777777
+    }
+   }
+  },
+  {
+   "cell": 18,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.25796405669285394,
+     "jit_null": 0.44562320941231204,
+     "jit_excess": -0.1876591527194581,
+     "jit_defined": true,
+     "clusters_permin": 1.1333333333333333
+    },
+    "4": {
+     "jit_obs": 0.2522624895547422,
+     "jit_null": 0.4114423662796337,
+     "jit_excess": -0.15917987672489153,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.25796405669285394,
+     "jit_null": 0.3861987703435369,
+     "jit_excess": -0.12823471365068295,
+     "jit_defined": true,
+     "clusters_permin": 0.9555555555555556
+    }
+   }
+  },
+  {
+   "cell": 18,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.2649185123425982,
+     "jit_null": 0.4542749634498481,
+     "jit_excess": -0.18935645110724986,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.22632326929024624,
+     "jit_null": 0.4162720219213957,
+     "jit_excess": -0.18994875263114944,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.2260776661041823,
+     "jit_null": 0.3891690425534557,
+     "jit_excess": -0.16309137644927338,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 18,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.2668749186833,
+     "jit_null": 0.4555755665201486,
+     "jit_excess": -0.1887006478368486,
+     "jit_defined": true,
+     "clusters_permin": 1.3555555555555556
+    },
+    "4": {
+     "jit_obs": 0.23975128149027553,
+     "jit_null": 0.42958404722001503,
+     "jit_excess": -0.1898327657297395,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.2343268890014417,
+     "jit_null": 0.4795714813019962,
+     "jit_excess": -0.24524459230055454,
+     "jit_defined": true,
+     "clusters_permin": 0.9555555555555556
+    }
+   }
+  },
+  {
+   "cell": 20,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.2497893849668145,
+     "jit_null": 0.4245792987100824,
+     "jit_excess": -0.17478991374326788,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    },
+    "4": {
+     "jit_obs": 0.2102112125512707,
+     "jit_null": 0.40375194239866957,
+     "jit_excess": -0.19354072984739887,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.19540780569444907,
+     "jit_null": 0.31996441310225004,
+     "jit_excess": -0.12455660740780097,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 20,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.3214550253663988,
+     "jit_null": 0.42579184573804785,
+     "jit_excess": -0.10433682037164904,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    },
+    "4": {
+     "jit_obs": 0.2485640087626714,
+     "jit_null": 0.3939390833700225,
+     "jit_excess": -0.14537507460735108,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.2452404068314536,
+     "jit_null": 0.355275866706471,
+     "jit_excess": -0.1100354598750174,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 20,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.2692582403567292,
+     "jit_null": 0.4211065369455549,
+     "jit_excess": -0.1518482965888257,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.23232237130875258,
+     "jit_null": 0.38449343594151986,
+     "jit_excess": -0.15217106463276728,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.23232237130875258,
+     "jit_null": 0.36036892733586706,
+     "jit_excess": -0.12804655602711448,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 20,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.22307657406087308,
+     "jit_null": 0.4344377288725114,
+     "jit_excess": -0.21136115481163834,
+     "jit_defined": true,
+     "clusters_permin": 0.6888888888888889
+    },
+    "4": {
+     "jit_obs": 0.20566795340160726,
+     "jit_null": 0.39646579474111976,
+     "jit_excess": -0.1907978413395125,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.2074912807299582,
+     "jit_null": 0.4580583146519521,
+     "jit_excess": -0.2505670339219939,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 20,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.3018085269845642,
+     "jit_null": 0.4277234095925731,
+     "jit_excess": -0.12591488260800893,
+     "jit_defined": true,
+     "clusters_permin": 0.7111111111111111
+    },
+    "4": {
+     "jit_obs": 0.21731393280526573,
+     "jit_null": 0.3915540520901718,
+     "jit_excess": -0.17424011928490607,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.22646349437759494,
+     "jit_null": 0.3146160917634968,
+     "jit_excess": -0.08815259738590187,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 22,
+   "seed": 0,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.23725402775129126,
+     "jit_null": 0.5179668609697757,
+     "jit_excess": -0.2807128332184845,
+     "jit_defined": true,
+     "clusters_permin": 1.4
+    },
+    "4": {
+     "jit_obs": 0.21712199218955047,
+     "jit_null": 0.4810637754080403,
+     "jit_excess": -0.2639417832184898,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.2154554539378758,
+     "jit_null": 0.4119611668884643,
+     "jit_excess": -0.1965057129505885,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 22,
+   "seed": 1,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.2222774304926145,
+     "jit_null": 0.5201101378232548,
+     "jit_excess": -0.29783270733064027,
+     "jit_defined": true,
+     "clusters_permin": 1.288888888888889
+    },
+    "4": {
+     "jit_obs": 0.21373865005262527,
+     "jit_null": 0.48476376723687226,
+     "jit_excess": -0.271025117184247,
+     "jit_defined": true,
+     "clusters_permin": 1.0444444444444445
+    },
+    "6": {
+     "jit_obs": 0.20749128072992304,
+     "jit_null": 0.45468123497909646,
+     "jit_excess": -0.24718995424917342,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 22,
+   "seed": 2,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.21345204573688853,
+     "jit_null": 0.5215099354890307,
+     "jit_excess": -0.30805788975214216,
+     "jit_defined": true,
+     "clusters_permin": 1.288888888888889
+    },
+    "4": {
+     "jit_obs": 0.20660153509116946,
+     "jit_null": 0.48662453593209504,
+     "jit_excess": -0.2800230008409256,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.2067289096988324,
+     "jit_null": 0.45787274356084495,
+     "jit_excess": -0.25114383386201256,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 22,
+   "seed": 3,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.21545545393788088,
+     "jit_null": 0.5153134798834554,
+     "jit_excess": -0.29985802594557454,
+     "jit_defined": true,
+     "clusters_permin": 1.3555555555555556
+    },
+    "4": {
+     "jit_obs": 0.20925934551224404,
+     "jit_null": 0.4854198510226214,
+     "jit_excess": -0.2761605055103774,
+     "jit_defined": true,
+     "clusters_permin": 1.0444444444444445
+    },
+    "6": {
+     "jit_obs": 0.207744782694627,
+     "jit_null": 0.4085211097155863,
+     "jit_excess": -0.2007763270209593,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 22,
+   "seed": 4,
+   "jit": 0.2,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.20905823432485549,
+     "jit_null": 0.5197829845830177,
+     "jit_excess": -0.31072475025816226,
+     "jit_defined": true,
+     "clusters_permin": 1.3333333333333333
+    },
+    "4": {
+     "jit_obs": 0.20589982234597393,
+     "jit_null": 0.4833488286225792,
+     "jit_excess": -0.2774490062766053,
+     "jit_defined": true,
+     "clusters_permin": 1.0444444444444445
+    },
+    "6": {
+     "jit_obs": 0.20589982234597393,
+     "jit_null": 0.45327432426864517,
+     "jit_excess": -0.24737450192267124,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 24,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.39685019685028644,
+     "jit_null": 0.3976325812141523,
+     "jit_excess": -0.0007823843638658512,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    },
+    "4": {
+     "jit_obs": 0.4320493798938644,
+     "jit_null": 0.37358017239151364,
+     "jit_excess": 0.05846920750235074,
+     "jit_defined": true,
+     "clusters_permin": 0.2
+    },
+    "6": {
+     "jit_obs": 0.16431676725153876,
+     "jit_null": 0.4862198318098959,
+     "jit_excess": -0.32190306455835715,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 24,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.4330030788530831,
+     "jit_null": 0.3881616172622794,
+     "jit_excess": 0.04484146159080371,
+     "jit_defined": true,
+     "clusters_permin": 0.4888888888888889
+    },
+    "4": {
+     "jit_obs": 0.43011626335213005,
+     "jit_null": 0.3678640925936829,
+     "jit_excess": 0.062252170758447134,
+     "jit_defined": true,
+     "clusters_permin": 0.15555555555555556
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.20569908262109515,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 24,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.39280779633149354,
+     "jit_null": 0.3864410273644676,
+     "jit_excess": 0.006366768967025926,
+     "jit_defined": true,
+     "clusters_permin": 0.4888888888888889
+    },
+    "4": {
+     "jit_obs": 0.40359610276055036,
+     "jit_null": 0.3684507190136965,
+     "jit_excess": 0.03514538374685383,
+     "jit_defined": true,
+     "clusters_permin": 0.2222222222222222
+    },
+    "6": {
+     "jit_obs": 0.30937725468154004,
+     "jit_null": 0.46393890683459027,
+     "jit_excess": -0.15456165215305023,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 24,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.5118360507680082,
+     "jit_null": 0.3894387878819055,
+     "jit_excess": 0.1223972628861027,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    },
+    "4": {
+     "jit_obs": 0.5167204273105501,
+     "jit_null": 0.3680512400483402,
+     "jit_excess": 0.1486691872622099,
+     "jit_defined": true,
+     "clusters_permin": 0.2
+    },
+    "6": {
+     "jit_obs": 0.45017533133398024,
+     "jit_null": 0.6065495481593778,
+     "jit_excess": -0.15637421682539754,
+     "jit_defined": true,
+     "clusters_permin": 0.044444444444444446
+    }
+   }
+  },
+  {
+   "cell": 24,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.49749346475555245,
+     "jit_null": 0.3959268223286637,
+     "jit_excess": 0.10156664242688873,
+     "jit_defined": true,
+     "clusters_permin": 0.4888888888888889
+    },
+    "4": {
+     "jit_obs": 0.42904428230389113,
+     "jit_null": 0.3698503446906034,
+     "jit_excess": 0.05919393761328773,
+     "jit_defined": true,
+     "clusters_permin": 0.17777777777777778
+    },
+    "6": {
+     "jit_obs": 0.1870828693387092,
+     "jit_null": 0.3695746183452647,
+     "jit_excess": -0.18249174900655551,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 26,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.4393176527297982,
+     "jit_null": 0.4103511983147845,
+     "jit_excess": 0.02896645441501372,
+     "jit_defined": true,
+     "clusters_permin": 1.0888888888888888
+    },
+    "4": {
+     "jit_obs": 0.39200340134577816,
+     "jit_null": 0.37465482595357114,
+     "jit_excess": 0.017348575392207022,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.30196245246384407,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 26,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.48751068364362743,
+     "jit_null": 0.41881272757412347,
+     "jit_excess": 0.06869795606950396,
+     "jit_defined": true,
+     "clusters_permin": 1.1333333333333333
+    },
+    "4": {
+     "jit_obs": 0.4816637831515937,
+     "jit_null": 0.39626032752660384,
+     "jit_excess": 0.08540345562498985,
+     "jit_defined": true,
+     "clusters_permin": 0.5555555555555556
+    },
+    "6": {
+     "jit_obs": 0.2895168102721094,
+     "jit_null": 0.36616086373758266,
+     "jit_excess": -0.07664405346547326,
+     "jit_defined": true,
+     "clusters_permin": 0.044444444444444446
+    }
+   }
+  },
+  {
+   "cell": 26,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.5319774431308194,
+     "jit_null": 0.4074524115553523,
+     "jit_excess": 0.12452503157546713,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.4022658833997347,
+     "jit_null": 0.3707771758207232,
+     "jit_excess": 0.031488707579011455,
+     "jit_defined": true,
+     "clusters_permin": 0.4444444444444444
+    },
+    "6": {
+     "jit_obs": 0.26558522645195104,
+     "jit_null": 0.3353151457465598,
+     "jit_excess": -0.06972991929460876,
+     "jit_defined": true,
+     "clusters_permin": 0.044444444444444446
+    }
+   }
+  },
+  {
+   "cell": 26,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.5024935347594741,
+     "jit_null": 0.41235209870474465,
+     "jit_excess": 0.09014143605472946,
+     "jit_defined": true,
+     "clusters_permin": 1.1555555555555554
+    },
+    "4": {
+     "jit_obs": 0.4952656207677602,
+     "jit_null": 0.3744363864334068,
+     "jit_excess": 0.12082923433435339,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    },
+    "6": {
+     "jit_obs": 0.31251666622229396,
+     "jit_null": 0.31970896721738357,
+     "jit_excess": -0.007192300995089607,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 26,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.46151923036851045,
+     "jit_null": 0.41240730863809666,
+     "jit_excess": 0.04911192173041379,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.4893102887737395,
+     "jit_null": 0.3767161683433788,
+     "jit_excess": 0.11259412043036071,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    },
+    "6": {
+     "jit_obs": 0.3146426544511206,
+     "jit_null": 0.31233732296403205,
+     "jit_excess": 0.0023053314870885577,
+     "jit_defined": true,
+     "clusters_permin": 0.06666666666666667
+    }
+   }
+  },
+  {
+   "cell": 28,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.43493294502332613,
+     "jit_null": 0.40599884090231203,
+     "jit_excess": 0.028934104121014104,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.4743416490252509,
+     "jit_null": 0.3910731073150636,
+     "jit_excess": 0.08326854171018727,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.5081557066709224,
+     "jit_null": 0.5993957479703652,
+     "jit_excess": -0.09124004129944285,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    }
+   }
+  },
+  {
+   "cell": 28,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.4193248541803148,
+     "jit_null": 0.39992325188528105,
+     "jit_excess": 0.019401602295033737,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    },
+    "4": {
+     "jit_obs": 0.44083254568297675,
+     "jit_null": 0.38240260079925703,
+     "jit_excess": 0.05842994488371972,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.4869598050186065,
+     "jit_null": 0.45540197624219986,
+     "jit_excess": 0.031557828776406616,
+     "jit_defined": true,
+     "clusters_permin": 0.2222222222222222
+    }
+   }
+  },
+  {
+   "cell": 28,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.49665548085835354,
+     "jit_null": 0.40739688806116575,
+     "jit_excess": 0.08925859279718779,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.4869678665114414,
+     "jit_null": 0.37604798124967065,
+     "jit_excess": 0.11091988526177077,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.4869678665114414,
+     "jit_null": 0.4504411848716088,
+     "jit_excess": 0.03652668163983264,
+     "jit_defined": true,
+     "clusters_permin": 0.26666666666666666
+    }
+   }
+  },
+  {
+   "cell": 28,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.46155194211155676,
+     "jit_null": 0.40371075205918916,
+     "jit_excess": 0.0578411900523676,
+     "jit_defined": true,
+     "clusters_permin": 0.5777777777777777
+    },
+    "4": {
+     "jit_obs": 0.4578606377887991,
+     "jit_null": 0.3852293001364089,
+     "jit_excess": 0.07263133765239022,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    },
+    "6": {
+     "jit_obs": 0.4578606377887991,
+     "jit_null": 0.2767234960738371,
+     "jit_excess": 0.18113714171496198,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    }
+   }
+  },
+  {
+   "cell": 28,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.4800100214318078,
+     "jit_null": 0.4023842648909653,
+     "jit_excess": 0.07762575654084253,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    },
+    "4": {
+     "jit_obs": 0.5139904453434355,
+     "jit_null": 0.37778825437863156,
+     "jit_excess": 0.13620219096480396,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.4939845078398728,
+     "jit_null": 0.3350068786193513,
+     "jit_excess": 0.1589776292205215,
+     "jit_defined": true,
+     "clusters_permin": 0.26666666666666666
+    }
+   }
+  },
+  {
+   "cell": 30,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.5541760650831317,
+     "jit_null": 0.4578250747861952,
+     "jit_excess": 0.09635099029693645,
+     "jit_defined": true,
+     "clusters_permin": 1.1777777777777778
+    },
+    "4": {
+     "jit_obs": 0.5693696674233791,
+     "jit_null": 0.4278409640217832,
+     "jit_excess": 0.14152870340159596,
+     "jit_defined": true,
+     "clusters_permin": 1.0444444444444445
+    },
+    "6": {
+     "jit_obs": 0.5521857395017448,
+     "jit_null": 0.3004379313897232,
+     "jit_excess": 0.2517478081120216,
+     "jit_defined": true,
+     "clusters_permin": 0.7777777777777778
+    }
+   }
+  },
+  {
+   "cell": 30,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.4911704193232224,
+     "jit_null": 0.44282612624481466,
+     "jit_excess": 0.04834429307840776,
+     "jit_defined": true,
+     "clusters_permin": 1.3333333333333333
+    },
+    "4": {
+     "jit_obs": 0.4958055416896554,
+     "jit_null": 0.4144638713510208,
+     "jit_excess": 0.0813416703386346,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.48971231080787697,
+     "jit_null": 0.37158701356599133,
+     "jit_excess": 0.11812529724188564,
+     "jit_defined": true,
+     "clusters_permin": 0.7555555555555555
+    }
+   }
+  },
+  {
+   "cell": 30,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.5397497175815837,
+     "jit_null": 0.44138464694496793,
+     "jit_excess": 0.09836507063661581,
+     "jit_defined": true,
+     "clusters_permin": 1.2
+    },
+    "4": {
+     "jit_obs": 0.552843887219841,
+     "jit_null": 0.41594257125248,
+     "jit_excess": 0.136901315967361,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.5229510958113242,
+     "jit_null": 0.31187292898052094,
+     "jit_excess": 0.21107816683080322,
+     "jit_defined": true,
+     "clusters_permin": 0.7111111111111111
+    }
+   }
+  },
+  {
+   "cell": 30,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.5086524085534866,
+     "jit_null": 0.44317431684438247,
+     "jit_excess": 0.06547809170910412,
+     "jit_defined": true,
+     "clusters_permin": 1.1333333333333333
+    },
+    "4": {
+     "jit_obs": 0.5086524085534866,
+     "jit_null": 0.4141735736564318,
+     "jit_excess": 0.09447883489705478,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.48143747725450514,
+     "jit_null": 0.35583066696898724,
+     "jit_excess": 0.1256068102855179,
+     "jit_defined": true,
+     "clusters_permin": 0.7555555555555555
+    }
+   }
+  },
+  {
+   "cell": 30,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.45359263529138105,
+     "jit_null": 0.4511662078554849,
+     "jit_excess": 0.0024264274358961613,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    },
+    "4": {
+     "jit_obs": 0.4582575694956237,
+     "jit_null": 0.4138694430988277,
+     "jit_excess": 0.04438812639679596,
+     "jit_defined": true,
+     "clusters_permin": 1.0888888888888888
+    },
+    "6": {
+     "jit_obs": 0.4675856650779232,
+     "jit_null": 0.32701550153273956,
+     "jit_excess": 0.14057016354518365,
+     "jit_defined": true,
+     "clusters_permin": 0.7555555555555555
+    }
+   }
+  },
+  {
+   "cell": 32,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.4920419323166461,
+     "jit_null": 0.42001720394385883,
+     "jit_excess": 0.07202472837278728,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.49208013284714575,
+     "jit_null": 0.39138616073219434,
+     "jit_excess": 0.1006939721149514,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    },
+    "6": {
+     "jit_obs": 0.507081432264451,
+     "jit_null": 0.30219769236980387,
+     "jit_excess": 0.20488373989464714,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 32,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.4358898943540687,
+     "jit_null": 0.418474274761629,
+     "jit_excess": 0.0174156195924397,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.4826189517948651,
+     "jit_null": 0.3926520379768903,
+     "jit_excess": 0.08996691381797478,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.4826189517948651,
+     "jit_null": 0.406985885434021,
+     "jit_excess": 0.0756330663608441,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 32,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.42968776913869533,
+     "jit_null": 0.4379336991674393,
+     "jit_excess": -0.008245930028743964,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.4597720195374056,
+     "jit_null": 0.40258973222104066,
+     "jit_excess": 0.05718228731636493,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.4951342189112701,
+     "jit_null": 0.47781830221347354,
+     "jit_excess": 0.01731591669779653,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 32,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.4754126178209095,
+     "jit_null": 0.42802529364769504,
+     "jit_excess": 0.04738732417321445,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    },
+    "4": {
+     "jit_obs": 0.5025648501153227,
+     "jit_null": 0.3992817460289338,
+     "jit_excess": 0.10328310408638891,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    },
+    "6": {
+     "jit_obs": 0.47799183097223624,
+     "jit_null": 0.31365139833710604,
+     "jit_excess": 0.1643404326351302,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 32,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.4175114243630788,
+     "jit_null": 0.4237274345783702,
+     "jit_excess": -0.00621601021529139,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    },
+    "4": {
+     "jit_obs": 0.49988302725305006,
+     "jit_null": 0.3946856142106141,
+     "jit_excess": 0.10519741304243596,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": 0.49988302725305006,
+     "jit_null": 0.3322688032605174,
+     "jit_excess": 0.16761422399253267,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 34,
+   "seed": 0,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.470470089658371,
+     "jit_null": 0.5098979676999691,
+     "jit_excess": -0.039427878041598086,
+     "jit_defined": true,
+     "clusters_permin": 1.0888888888888888
+    },
+    "4": {
+     "jit_obs": 0.4760304786460721,
+     "jit_null": 0.4678508179900893,
+     "jit_excess": 0.008179660655982801,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.4791361273911922,
+     "jit_null": 0.4445757718227792,
+     "jit_excess": 0.034560355568413026,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 34,
+   "seed": 1,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.486386090026685,
+     "jit_null": 0.5219341485156724,
+     "jit_excess": -0.035548058488987455,
+     "jit_defined": true,
+     "clusters_permin": 1.2666666666666666
+    },
+    "4": {
+     "jit_obs": 0.486386090026685,
+     "jit_null": 0.4802333619089935,
+     "jit_excess": 0.006152728117691464,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.4826020740784039,
+     "jit_null": 0.37630309192956446,
+     "jit_excess": 0.10629898214883943,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 34,
+   "seed": 2,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.4836046821793031,
+     "jit_null": 0.5162595355391733,
+     "jit_excess": -0.03265485335987017,
+     "jit_defined": true,
+     "clusters_permin": 1.1555555555555554
+    },
+    "4": {
+     "jit_obs": 0.4846697451923009,
+     "jit_null": 0.4766628064182493,
+     "jit_excess": 0.008006938774051564,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.48284868969773576,
+     "jit_null": 0.46071048840792084,
+     "jit_excess": 0.02213820128981492,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 34,
+   "seed": 3,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.45845441631991957,
+     "jit_null": 0.5194259379173033,
+     "jit_excess": -0.06097152159738373,
+     "jit_defined": true,
+     "clusters_permin": 1.3333333333333333
+    },
+    "4": {
+     "jit_obs": 0.4773556546775491,
+     "jit_null": 0.4832942469250079,
+     "jit_excess": -0.005938592247458796,
+     "jit_defined": true,
+     "clusters_permin": 1.0444444444444445
+    },
+    "6": {
+     "jit_obs": 0.4672427521895577,
+     "jit_null": 0.42223950641191577,
+     "jit_excess": 0.04500324577764192,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 34,
+   "seed": 4,
+   "jit": 0.5,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.46787428167008405,
+     "jit_null": 0.5211861540476909,
+     "jit_excess": -0.05331187237760682,
+     "jit_defined": true,
+     "clusters_permin": 1.288888888888889
+    },
+    "4": {
+     "jit_obs": 0.47764302270925435,
+     "jit_null": 0.4820190574854568,
+     "jit_excess": -0.004376034776202464,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.47292482990095963,
+     "jit_null": 0.4762183208546307,
+     "jit_excess": -0.003293490953671041,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 36,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.5146165178462736,
+     "jit_null": 0.38570217848211596,
+     "jit_excess": 0.12891433936415764,
+     "jit_defined": true,
+     "clusters_permin": 0.4888888888888889
+    },
+    "4": {
+     "jit_obs": 0.34448028487371185,
+     "jit_null": 0.3682896360373452,
+     "jit_excess": -0.023809351163633363,
+     "jit_defined": true,
+     "clusters_permin": 0.06666666666666667
+    },
+    "6": {
+     "jit_obs": 0.34448028487371185,
+     "jit_null": 0.421730385918602,
+     "jit_excess": -0.07725010104489016,
+     "jit_defined": true,
+     "clusters_permin": 0.022222222222222223
+    }
+   }
+  },
+  {
+   "cell": 36,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.5263078946776509,
+     "jit_null": 0.3909633734962715,
+     "jit_excess": 0.1353445211813794,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    },
+    "4": {
+     "jit_obs": 0.5595610033566616,
+     "jit_null": 0.3630350754078912,
+     "jit_excess": 0.19652592794877038,
+     "jit_defined": true,
+     "clusters_permin": 0.13333333333333333
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.3208273092922345,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 36,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.6277076258235268,
+     "jit_null": 0.4026921623287237,
+     "jit_excess": 0.22501546349480311,
+     "jit_defined": true,
+     "clusters_permin": 0.4888888888888889
+    },
+    "4": {
+     "jit_obs": 0.6369570517031188,
+     "jit_null": 0.3786324857998948,
+     "jit_excess": 0.258324565903224,
+     "jit_defined": true,
+     "clusters_permin": 0.1111111111111111
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.35932964056223915,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 36,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.4000000000000057,
+     "jit_null": 0.3894910701290308,
+     "jit_excess": 0.010508929870974903,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    },
+    "4": {
+     "jit_obs": 0.5279785443550936,
+     "jit_null": 0.36214053285453396,
+     "jit_excess": 0.16583801150055966,
+     "jit_defined": true,
+     "clusters_permin": 0.08888888888888889
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.2318665311475832,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 36,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.5617575138389859,
+     "jit_null": 0.39657939157783595,
+     "jit_excess": 0.16517812226114992,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    },
+    "4": {
+     "jit_obs": 0.41352146256271544,
+     "jit_null": 0.3714492479849909,
+     "jit_excess": 0.04207221457772453,
+     "jit_defined": true,
+     "clusters_permin": 0.15555555555555556
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.32115930951809946,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 38,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.5965176722724433,
+     "jit_null": 0.42040500497753586,
+     "jit_excess": 0.1761126672949075,
+     "jit_defined": true,
+     "clusters_permin": 0.9111111111111111
+    },
+    "4": {
+     "jit_obs": 0.465832587954071,
+     "jit_null": 0.39357994057059154,
+     "jit_excess": 0.07225264738347947,
+     "jit_defined": true,
+     "clusters_permin": 0.4222222222222222
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.4577171424623354,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 38,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.5939219326949172,
+     "jit_null": 0.41596662795311906,
+     "jit_excess": 0.17795530474179816,
+     "jit_defined": true,
+     "clusters_permin": 0.8444444444444444
+    },
+    "4": {
+     "jit_obs": 0.40865633483405767,
+     "jit_null": 0.3896633039721349,
+     "jit_excess": 0.018993030861922777,
+     "jit_defined": true,
+     "clusters_permin": 0.2
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.35554131150560175,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 38,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.6047037842338071,
+     "jit_null": 0.412291048341863,
+     "jit_excess": 0.19241273589194413,
+     "jit_defined": true,
+     "clusters_permin": 0.8666666666666667
+    },
+    "4": {
+     "jit_obs": 0.5851946045915064,
+     "jit_null": 0.3859582672453445,
+     "jit_excess": 0.19923633734616192,
+     "jit_defined": true,
+     "clusters_permin": 0.13333333333333333
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.41987803668423024,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 38,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.560951572479004,
+     "jit_null": 0.41784356232599856,
+     "jit_excess": 0.1431080101530054,
+     "jit_defined": true,
+     "clusters_permin": 0.8222222222222222
+    },
+    "4": {
+     "jit_obs": 0.5367308674899383,
+     "jit_null": 0.3914738332869171,
+     "jit_excess": 0.14525703420302116,
+     "jit_defined": true,
+     "clusters_permin": 0.2222222222222222
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.47473059082879865,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 38,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.15,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 5,
+   "res": {
+    "3": {
+     "jit_obs": 0.6037664514217744,
+     "jit_null": 0.41356055304542305,
+     "jit_excess": 0.19020589837635138,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "4": {
+     "jit_obs": 0.4577377082169949,
+     "jit_null": 0.39164702225801407,
+     "jit_excess": 0.06609068595898082,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    },
+    "6": {
+     "jit_obs": NaN,
+     "jit_null": 0.4285980784433102,
+     "jit_excess": NaN,
+     "jit_defined": false,
+     "clusters_permin": 0.0
+    }
+   }
+  },
+  {
+   "cell": 40,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7042726744663607,
+     "jit_null": 0.40369974686034127,
+     "jit_excess": 0.3005729276060194,
+     "jit_defined": true,
+     "clusters_permin": 0.6
+    },
+    "4": {
+     "jit_obs": 0.708647880249323,
+     "jit_null": 0.38297289459525286,
+     "jit_excess": 0.32567498565407016,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    },
+    "6": {
+     "jit_obs": 0.7288499312081985,
+     "jit_null": 0.35800301209253665,
+     "jit_excess": 0.37084691911566187,
+     "jit_defined": true,
+     "clusters_permin": 0.1111111111111111
+    }
+   }
+  },
+  {
+   "cell": 40,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.5468227788919828,
+     "jit_null": 0.40035013037626715,
+     "jit_excess": 0.14647264851571568,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    },
+    "4": {
+     "jit_obs": 0.5856168061546325,
+     "jit_null": 0.3742017011314617,
+     "jit_excess": 0.21141510502317085,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.49221228510518655,
+     "jit_null": 0.41513625064662946,
+     "jit_excess": 0.0770760344585571,
+     "jit_defined": true,
+     "clusters_permin": 0.13333333333333333
+    }
+   }
+  },
+  {
+   "cell": 40,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7239761969409855,
+     "jit_null": 0.4070009597855425,
+     "jit_excess": 0.31697523715544296,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    },
+    "4": {
+     "jit_obs": 0.6752664783110396,
+     "jit_null": 0.38483700283044425,
+     "jit_excess": 0.29042947548059533,
+     "jit_defined": true,
+     "clusters_permin": 0.26666666666666666
+    },
+    "6": {
+     "jit_obs": 0.6729665453836715,
+     "jit_null": 0.3495554847302087,
+     "jit_excess": 0.3234110606534628,
+     "jit_defined": true,
+     "clusters_permin": 0.08888888888888889
+    }
+   }
+  },
+  {
+   "cell": 40,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.6482883446258892,
+     "jit_null": 0.40544702991093123,
+     "jit_excess": 0.242841314714958,
+     "jit_defined": true,
+     "clusters_permin": 0.5111111111111111
+    },
+    "4": {
+     "jit_obs": 0.6837397165587802,
+     "jit_null": 0.37666333855663886,
+     "jit_excess": 0.3070763780021413,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    },
+    "6": {
+     "jit_obs": 0.4882309286979323,
+     "jit_null": 0.28058551484080696,
+     "jit_excess": 0.20764541385712532,
+     "jit_defined": true,
+     "clusters_permin": 0.044444444444444446
+    }
+   }
+  },
+  {
+   "cell": 40,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.6406498181863066,
+     "jit_null": 0.40045069980275905,
+     "jit_excess": 0.24019911838354757,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    },
+    "4": {
+     "jit_obs": 0.6542586132555113,
+     "jit_null": 0.3694957155338574,
+     "jit_excess": 0.28476289772165386,
+     "jit_defined": true,
+     "clusters_permin": 0.3111111111111111
+    },
+    "6": {
+     "jit_obs": 0.5775907817054474,
+     "jit_null": 0.2872382683620228,
+     "jit_excess": 0.2903525133434246,
+     "jit_defined": true,
+     "clusters_permin": 0.1111111111111111
+    }
+   }
+  },
+  {
+   "cell": 42,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7008724721532545,
+     "jit_null": 0.4540922721692623,
+     "jit_excess": 0.24678019998399225,
+     "jit_defined": true,
+     "clusters_permin": 1.3555555555555556
+    },
+    "4": {
+     "jit_obs": 0.7038610384166516,
+     "jit_null": 0.42681020817550275,
+     "jit_excess": 0.27705083024114885,
+     "jit_defined": true,
+     "clusters_permin": 0.9333333333333333
+    },
+    "6": {
+     "jit_obs": 0.5822530979435692,
+     "jit_null": 0.3750760042742167,
+     "jit_excess": 0.20717709366935244,
+     "jit_defined": true,
+     "clusters_permin": 0.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 42,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.746547609555699,
+     "jit_null": 0.4526439755932002,
+     "jit_excess": 0.2939036339624988,
+     "jit_defined": true,
+     "clusters_permin": 1.2666666666666666
+    },
+    "4": {
+     "jit_obs": 0.6835734980766353,
+     "jit_null": 0.41302380062735977,
+     "jit_excess": 0.2705496974492755,
+     "jit_defined": true,
+     "clusters_permin": 1.0444444444444445
+    },
+    "6": {
+     "jit_obs": 0.6212889826803393,
+     "jit_null": 0.3443666793579991,
+     "jit_excess": 0.2769223033223402,
+     "jit_defined": true,
+     "clusters_permin": 0.28888888888888886
+    }
+   }
+  },
+  {
+   "cell": 42,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7056868248346698,
+     "jit_null": 0.4456502399559006,
+     "jit_excess": 0.26003658487876924,
+     "jit_defined": true,
+     "clusters_permin": 1.2444444444444445
+    },
+    "4": {
+     "jit_obs": 0.6775040941906216,
+     "jit_null": 0.4107866580097605,
+     "jit_excess": 0.26671743618086113,
+     "jit_defined": true,
+     "clusters_permin": 0.9333333333333333
+    },
+    "6": {
+     "jit_obs": 0.626498204307067,
+     "jit_null": 0.3296559365351836,
+     "jit_excess": 0.29684226777188344,
+     "jit_defined": true,
+     "clusters_permin": 0.24444444444444444
+    }
+   }
+  },
+  {
+   "cell": 42,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.6929237890213311,
+     "jit_null": 0.4502742016173299,
+     "jit_excess": 0.24264958740400122,
+     "jit_defined": true,
+     "clusters_permin": 1.1111111111111112
+    },
+    "4": {
+     "jit_obs": 0.6636045857230524,
+     "jit_null": 0.4221459671506588,
+     "jit_excess": 0.2414586185723936,
+     "jit_defined": true,
+     "clusters_permin": 0.8888888888888888
+    },
+    "6": {
+     "jit_obs": 0.5916065175405054,
+     "jit_null": 0.36820166680645294,
+     "jit_excess": 0.22340485073405247,
+     "jit_defined": true,
+     "clusters_permin": 0.3111111111111111
+    }
+   }
+  },
+  {
+   "cell": 42,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.3,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 10,
+   "res": {
+    "3": {
+     "jit_obs": 0.7051042035098941,
+     "jit_null": 0.4445963260551241,
+     "jit_excess": 0.26050787745477,
+     "jit_defined": true,
+     "clusters_permin": 1.2
+    },
+    "4": {
+     "jit_obs": 0.7008724721532633,
+     "jit_null": 0.40552506542882055,
+     "jit_excess": 0.29534740672444276,
+     "jit_defined": true,
+     "clusters_permin": 0.9111111111111111
+    },
+    "6": {
+     "jit_obs": 0.6451013148076958,
+     "jit_null": 0.3738223980574183,
+     "jit_excess": 0.27127891675027754,
+     "jit_defined": true,
+     "clusters_permin": 0.2222222222222222
+    }
+   }
+  },
+  {
+   "cell": 44,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7323378191235741,
+     "jit_null": 0.4280677914593944,
+     "jit_excess": 0.3042700276641797,
+     "jit_defined": true,
+     "clusters_permin": 0.6888888888888889
+    },
+    "4": {
+     "jit_obs": 0.7893223804639322,
+     "jit_null": 0.39753690766533417,
+     "jit_excess": 0.39178547279859804,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.7330541733409495,
+     "jit_null": 0.2753427246755426,
+     "jit_excess": 0.45771144866540686,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 44,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.6945363459131402,
+     "jit_null": 0.42293039169094104,
+     "jit_excess": 0.27160595422219913,
+     "jit_defined": true,
+     "clusters_permin": 0.6222222222222222
+    },
+    "4": {
+     "jit_obs": 0.7540358603146939,
+     "jit_null": 0.3921515143784719,
+     "jit_excess": 0.36188434593622204,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.7126075524505234,
+     "jit_null": 0.3871495858476117,
+     "jit_excess": 0.3254579666029117,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 44,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.685437496350698,
+     "jit_null": 0.4322432542868373,
+     "jit_excess": 0.25319424206386065,
+     "jit_defined": true,
+     "clusters_permin": 0.6888888888888889
+    },
+    "4": {
+     "jit_obs": 0.7985034823910548,
+     "jit_null": 0.3973760951419231,
+     "jit_excess": 0.4011273872491317,
+     "jit_defined": true,
+     "clusters_permin": 0.35555555555555557
+    },
+    "6": {
+     "jit_obs": 0.7398330495297378,
+     "jit_null": 0.3665933723064733,
+     "jit_excess": 0.3732396772232645,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 44,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7235934511253466,
+     "jit_null": 0.4349965519908521,
+     "jit_excess": 0.2885968991344945,
+     "jit_defined": true,
+     "clusters_permin": 0.5333333333333333
+    },
+    "4": {
+     "jit_obs": 0.7755453489224807,
+     "jit_null": 0.4004544824370293,
+     "jit_excess": 0.3750908664854514,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    },
+    "6": {
+     "jit_obs": 0.749853786917444,
+     "jit_null": 0.354728748774829,
+     "jit_excess": 0.39512503814261496,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 44,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 15,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.696419413859197,
+     "jit_null": 0.43588976801344403,
+     "jit_excess": 0.260529645845753,
+     "jit_defined": true,
+     "clusters_permin": 0.6444444444444445
+    },
+    "4": {
+     "jit_obs": 0.7410688271246825,
+     "jit_null": 0.4099270057198029,
+     "jit_excess": 0.3311418214048796,
+     "jit_defined": true,
+     "clusters_permin": 0.37777777777777777
+    },
+    "6": {
+     "jit_obs": 0.7503920543916502,
+     "jit_null": 0.3117234775770485,
+     "jit_excess": 0.43866857681460175,
+     "jit_defined": true,
+     "clusters_permin": 0.3333333333333333
+    }
+   }
+  },
+  {
+   "cell": 46,
+   "seed": 0,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7899367063252842,
+     "jit_null": 0.5174266413684157,
+     "jit_excess": 0.2725100649568686,
+     "jit_defined": true,
+     "clusters_permin": 1.1333333333333333
+    },
+    "4": {
+     "jit_obs": 0.7913028058918874,
+     "jit_null": 0.4737951524110605,
+     "jit_excess": 0.3175076534808269,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.7645110360112212,
+     "jit_null": 0.39807455462613256,
+     "jit_excess": 0.3664364813850886,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 46,
+   "seed": 1,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7161864516735421,
+     "jit_null": 0.5240966017767614,
+     "jit_excess": 0.19208984989678068,
+     "jit_defined": true,
+     "clusters_permin": 1.3333333333333333
+    },
+    "4": {
+     "jit_obs": 0.7411678784308987,
+     "jit_null": 0.4832513165834621,
+     "jit_excess": 0.2579165618474366,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.7122871199006898,
+     "jit_null": 0.420315039392833,
+     "jit_excess": 0.29197208050785683,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 46,
+   "seed": 2,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7462577200909473,
+     "jit_null": 0.522736256053869,
+     "jit_excess": 0.2235214640370783,
+     "jit_defined": true,
+     "clusters_permin": 1.2222222222222223
+    },
+    "4": {
+     "jit_obs": 0.7612958876622505,
+     "jit_null": 0.4821458027467706,
+     "jit_excess": 0.27915008491547993,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.7092871317697211,
+     "jit_null": 0.45843421943355644,
+     "jit_excess": 0.2508529123361647,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 46,
+   "seed": 3,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7608235369985388,
+     "jit_null": 0.5263335061346419,
+     "jit_excess": 0.23449003086389686,
+     "jit_defined": true,
+     "clusters_permin": 1.288888888888889
+    },
+    "4": {
+     "jit_obs": 0.7799991620575222,
+     "jit_null": 0.48523271483518476,
+     "jit_excess": 0.2947664472223374,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    },
+    "6": {
+     "jit_obs": 0.7447314952383628,
+     "jit_null": 0.43225324660079506,
+     "jit_excess": 0.31247824863756773,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  },
+  {
+   "cell": 46,
+   "seed": 4,
+   "jit": 1.0,
+   "part": 0.6,
+   "n_ev": 45,
+   "bg": 0.01,
+   "k": 20,
+   "res": {
+    "3": {
+     "jit_obs": 0.7483314773547498,
+     "jit_null": 0.5245044925855714,
+     "jit_excess": 0.2238269847691784,
+     "jit_defined": true,
+     "clusters_permin": 1.2666666666666666
+    },
+    "4": {
+     "jit_obs": 0.7769277524911338,
+     "jit_null": 0.486768891806539,
+     "jit_excess": 0.2901588606845948,
+     "jit_defined": true,
+     "clusters_permin": 1.0222222222222221
+    },
+    "6": {
+     "jit_obs": 0.730897069576668,
+     "jit_null": 0.4663675571010788,
+     "jit_excess": 0.2645295124755892,
+     "jit_defined": true,
+     "clusters_permin": 1.0
+    }
+   }
+  }
+ ],
+ "runtime_sec": 455.1073899269104,
+ "summary": [
+  {
+   "bg": 0.01,
+   "K": 3,
+   "sigma": 0.05,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.15786566256314982,
+   "jit_null": 0.4393297075175243,
+   "jit_excess": -0.27573050492021445,
+   "chance_sd_bg_only": 0.3796912725067233
+  },
+  {
+   "bg": 0.01,
+   "K": 3,
+   "sigma": 0.2,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.2576504221172353,
+   "jit_null": 0.44003046914241173,
+   "jit_excess": -0.1877158667923441,
+   "chance_sd_bg_only": 0.3796912725067233
+  },
+  {
+   "bg": 0.01,
+   "K": 3,
+   "sigma": 0.5,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.47294135373964025,
+   "jit_null": 0.4396591730562036,
+   "jit_excess": 0.02416785320802392,
+   "chance_sd_bg_only": 0.3796912725067233
+  },
+  {
+   "bg": 0.01,
+   "K": 3,
+   "sigma": 1.0,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.705395514172282,
+   "jit_null": 0.4402430470342841,
+   "jit_excess": 0.25661541347131495,
+   "chance_sd_bg_only": 0.3796912725067233
+  },
+  {
+   "bg": 0.01,
+   "K": 4,
+   "sigma": 0.05,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.06806406494318645,
+   "jit_null": 0.4039039395165037,
+   "jit_excess": -0.33022439924048874,
+   "chance_sd_bg_only": 0.3741657386774184
+  },
+  {
+   "bg": 0.01,
+   "K": 4,
+   "sigma": 0.2,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.22551516254574572,
+   "jit_null": 0.4056814155171013,
+   "jit_excess": -0.17070759025469776,
+   "chance_sd_bg_only": 0.3741657386774184
+  },
+  {
+   "bg": 0.01,
+   "K": 4,
+   "sigma": 0.5,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.48552791760949293,
+   "jit_null": 0.4082295876599342,
+   "jit_excess": 0.08230510602441093,
+   "chance_sd_bg_only": 0.3741657386774184
+  },
+  {
+   "bg": 0.01,
+   "K": 4,
+   "sigma": 1.0,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.7248583536870028,
+   "jit_null": 0.40772603557431175,
+   "jit_excess": 0.2925979613514664,
+   "chance_sd_bg_only": 0.3741657386774184
+  },
+  {
+   "bg": 0.01,
+   "K": 6,
+   "sigma": 0.05,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.0680640649431799,
+   "jit_null": 0.40337324834807187,
+   "jit_excess": -0.33851270277888973,
+   "chance_sd_bg_only": 0.4750939756661658
+  },
+  {
+   "bg": 0.01,
+   "K": 6,
+   "sigma": 0.2,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.22939293284317375,
+   "jit_null": 0.38768390644849626,
+   "jit_excess": -0.12842795502615031,
+   "chance_sd_bg_only": 0.4750939756661658
+  },
+  {
+   "bg": 0.01,
+   "K": 6,
+   "sigma": 0.5,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.4849042473581711,
+   "jit_null": 0.3739450527477779,
+   "jit_excess": 0.11221213969536253,
+   "chance_sd_bg_only": 0.4750939756661658
+  },
+  {
+   "bg": 0.01,
+   "K": 6,
+   "sigma": 1.0,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.7107871258352054,
+   "jit_null": 0.36739751955646316,
+   "jit_excess": 0.29440717413987016,
+   "chance_sd_bg_only": 0.4750939756661658
+  },
+  {
+   "bg": 0.05,
+   "K": 3,
+   "sigma": 0.05,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.7147506282231119,
+   "jit_null": 0.7268203844406455,
+   "jit_excess": -0.013762065632701104,
+   "chance_sd_bg_only": 0.7325753658611257
+  },
+  {
+   "bg": 0.05,
+   "K": 3,
+   "sigma": 0.2,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.7114240817468076,
+   "jit_null": 0.7283021281673105,
+   "jit_excess": -0.020331941420200783,
+   "chance_sd_bg_only": 0.7325753658611257
+  },
+  {
+   "bg": 0.05,
+   "K": 3,
+   "sigma": 0.5,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.7170776166638515,
+   "jit_null": 0.7280598820307354,
+   "jit_excess": -0.010937255053055872,
+   "chance_sd_bg_only": 0.7325753658611257
+  },
+  {
+   "bg": 0.05,
+   "K": 3,
+   "sigma": 1.0,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.7329856771534606,
+   "jit_null": 0.7266568686153506,
+   "jit_excess": 0.004866082966168639,
+   "chance_sd_bg_only": 0.7325753658611257
+  },
+  {
+   "bg": 0.05,
+   "K": 4,
+   "sigma": 0.05,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.6439292346933954,
+   "jit_null": 0.671253884780948,
+   "jit_excess": -0.021638263390760692,
+   "chance_sd_bg_only": 0.680336051416632
+  },
+  {
+   "bg": 0.05,
+   "K": 4,
+   "sigma": 0.2,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.6456483952025515,
+   "jit_null": 0.6726077416640097,
+   "jit_excess": -0.025439150768974794,
+   "chance_sd_bg_only": 0.680336051416632
+  },
+  {
+   "bg": 0.05,
+   "K": 4,
+   "sigma": 0.5,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.6567599778986202,
+   "jit_null": 0.6721968042921942,
+   "jit_excess": -0.020089935722246377,
+   "chance_sd_bg_only": 0.680336051416632
+  },
+  {
+   "bg": 0.05,
+   "K": 4,
+   "sigma": 1.0,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.6919841147438279,
+   "jit_null": 0.6707517083712382,
+   "jit_excess": 0.01611097531139416,
+   "chance_sd_bg_only": 0.680336051416632
+  },
+  {
+   "bg": 0.05,
+   "K": 6,
+   "sigma": 0.05,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.4299992990972496,
+   "jit_null": 0.5947638731868402,
+   "jit_excess": -0.1640100328796697,
+   "chance_sd_bg_only": 0.595951859896096
+  },
+  {
+   "bg": 0.05,
+   "K": 6,
+   "sigma": 0.2,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.4608082792791729,
+   "jit_null": 0.5960505735270792,
+   "jit_excess": -0.1343036694831867,
+   "chance_sd_bg_only": 0.595951859896096
+  },
+  {
+   "bg": 0.05,
+   "K": 6,
+   "sigma": 0.5,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.5651491944867031,
+   "jit_null": 0.5974585573843201,
+   "jit_excess": -0.03252970834302715,
+   "chance_sd_bg_only": 0.595951859896096
+  },
+  {
+   "bg": 0.05,
+   "K": 6,
+   "sigma": 1.0,
+   "n": 20,
+   "undefined": 0,
+   "jit_obs": 0.6825235458316334,
+   "jit_null": 0.5945192089165063,
+   "jit_excess": 0.08704084840023746,
+   "chance_sd_bg_only": 0.595951859896096
+  }
+ ]
+}

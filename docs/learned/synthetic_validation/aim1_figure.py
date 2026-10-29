@@ -52,7 +52,7 @@ SERIES = [
 PARAMS = [  # (y label, truth key, coordination-rates key, assessor key)
     ("participants per event", "k", "k", "part"),
     ("coordinated events per min", "per_min", "lam", "per_min"),
-    ("coordinated share of onsets", "share", "share", None),
+    ("coordinated onset rate", "share", "share", None),
     ("jitter SD", "jitter", None, "jit"),
 ]
 YLIM = (0.05, 30)

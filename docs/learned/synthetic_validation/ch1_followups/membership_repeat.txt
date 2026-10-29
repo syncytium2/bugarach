@@ -1,0 +1,21 @@
+33 cells, 10 per event, 45 events; verdict at alpha 0.05 (alpha/2 per statistic); assess_assemblies' default n_surrogates = 1000
+
+Task 4: M = 1000 (reuse 0.045), 1000 recordings
+  share with >= 1 repeated assembly: 0.621 [0.591, 0.651] (birthday 0.634); repeats per recording: 0: 379, 1: 375, 2: 163, 3: 68, 4: 14, 5+: 1
+   200 surrogates, all              (n 1000): both-null rejection 0.094 [0.077, 0.114] | any flag 0.211 [0.187, 0.237]
+   200 surrogates, >= 1 repeat      (n  621): both-null rejection 0.140 [0.115, 0.170] | any flag 0.308 [0.273, 0.345]
+   200 surrogates, 0 repeats        (n  379): both-null rejection 0.018 [0.009, 0.038] | any flag 0.053 [0.034, 0.080]
+   200 surrogates, exactly 1 repeat (n  375): both-null rejection 0.061 [0.041, 0.090] | any flag 0.179 [0.143, 0.221]
+   200 surrogates, >= 2 repeats     (n  246): both-null rejection 0.260 [0.209, 0.318] | any flag 0.504 [0.442, 0.566]
+  1000 surrogates, all              (n 1000): both-null rejection 0.092 [0.076, 0.112] | any flag 0.218 [0.194, 0.245]
+  1000 surrogates, >= 1 repeat      (n  621): both-null rejection 0.137 [0.112, 0.166] | any flag 0.319 [0.283, 0.357]
+  1000 surrogates, 0 repeats        (n  379): both-null rejection 0.018 [0.009, 0.038] | any flag 0.053 [0.034, 0.080]
+  1000 surrogates, exactly 1 repeat (n  375): both-null rejection 0.051 [0.033, 0.078] | any flag 0.189 [0.153, 0.232]
+  1000 surrogates, >= 2 repeats     (n  246): both-null rejection 0.268 [0.217, 0.327] | any flag 0.516 [0.454, 0.578]
+
+Task 8: which statistic rejects (p < alpha/2 = 0.025), 1000 surrogates; shares of recordings
+  arm (reuse)      n | margin: disp only / eig only / both / either | uniform: disp only / eig only / both / either | verdicts
+  M1000   (0.045) 1000 | 0.086 / 0.021 / 0.061 / 0.168 | 0.054 / 0.078 / 0.010 / 0.142 | {'no-assembly': 782, 'uniform-only': 50, 'margin-only': 76, 'structure-beyond-rate': 92}
+  M150    (0.300)  400 | 0.310 / 0.005 / 0.588 / 0.902 | 0.155 / 0.203 / 0.393 / 0.750 | {'no-assembly': 31, 'uniform-only': 8, 'margin-only': 69, 'structure-beyond-rate': 292}
+  M45     (1.000)  400 | 0.000 / 0.000 / 1.000 / 1.000 | 0.000 / 0.000 / 1.000 / 1.000 | {'no-assembly': 0, 'uniform-only': 0, 'margin-only': 0, 'structure-beyond-rate': 400}
+  random  (-)  400 | 0.022 / 0.015 / 0.010 / 0.048 | 0.020 / 0.018 / 0.000 / 0.037 | {'no-assembly': 372, 'uniform-only': 9, 'margin-only': 13, 'structure-beyond-rate': 6}

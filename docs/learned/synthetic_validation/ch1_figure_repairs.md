@@ -1,7 +1,7 @@
 # Chapter 1 figure repairs (2026-10-29)
 
 These are repairs to the figures the Chapter 1 (Aim 0) review found defective
-(`docs/reviews/chapter-1-aim0_2026-10-29-roles/`, roles 03, 04, 08 and 10). Every figure was
+(`docs/reviews/chapter-1-aim0-2026-10-29-round1-roles/`, roles 03, 04, 08 and 10). Every figure was
 redrawn from its existing record, and no simulation was rerun. File names are unchanged, so links
 from the chapter and from the goal page still work. Run all commands from the repository root
 with `PYTHONPATH=src`. The `--out` flag points the darkroom copy somewhere else; without it, the

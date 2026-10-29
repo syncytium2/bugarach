@@ -94,7 +94,7 @@ Numbers below are for events of 10 or more cells, per-condition medians unless m
 - **A fixed K does not transfer across backgrounds, so K should be set per recording from its own
   null**, as ADR-0008's event floor is set per window. At 0.05 Hz per cell, chance alone gives the
   assessor 7.97 clusters per minute at K = 3 cells and 3.85 at K = 4, against 0.33 or 1 planted
-  events per minute (measured on background-only recordings, Figure 2 H; on the recordings with
+  events per minute (measured on background-only recordings, Figure 1.10 of the dissertation chapter; on the recordings with
   events, the same excess is Figure 1 F). Predicted from the assessor's clustering rule against
   ADR-0008's budget of one chance call per hour, the smallest safe K is 5 at 0.01 Hz and 8 at
   0.05 Hz. ADR-0008's own floor, which counts in a sliding 2 s window, gives 6 and 12 cells, and
@@ -146,11 +146,11 @@ triple counts.
 
 ![Figure 2](../learned/synthetic_validation/synth_recovery_plot_one-source-predicted-against-measured_20261023.png)
 
-**Figure 2, the full prediction matches the coordination-rates tool and the assessor's chance clusters.** One point per condition and window. A–C, E–G: the
-coordination-rates tool's three estimates as ratios to planted. Coloured points use the full
-prediction (with the at-most-one-event term); grey points are the same measurements placed at
-the prediction for a Poisson event train. D, H: chance clusters per minute on 100 background-only
-recordings per background, pooled, with exact Poisson 95 % intervals (about the size of the markers).
+**Figure 2, the full prediction matches the coordination-rates tool.** One point per condition and window. A–C (0.01 Hz), D–F (0.05 Hz): the
+coordination-rates tool's three estimates as ratios to planted. Coloured points are the
+measurements placed at the full prediction (the hard-core form, with the at-most-one-event term);
+grey points are the same measurements placed at the prediction for a Poisson event train. The
+chance-cluster panels were moved to the chapter's Figure 1.10 (2026-10-29).
 The at-most-one-event term shrinks the participant residual from about 0.05 to 0.007–0.016.
 
 The residual below is |condition median of recovered ÷ planted − predicted ÷ planted|. The tool

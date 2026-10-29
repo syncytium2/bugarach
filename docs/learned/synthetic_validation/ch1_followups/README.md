@@ -2,7 +2,7 @@
 
 Written 2026-10-29 for Chapter 1 (Aim 0) of the synthetic-validation goal
 ([goal page](../../../goals/synthetic-validation.md)). The review is in
-[`docs/reviews/chapter-1-aim0_2026-10-29-roles/`](../../../reviews/chapter-1-aim0_2026-10-29-roles/)
+[`docs/reviews/chapter-1-aim0-2026-10-29-round1-roles/`](../../../reviews/chapter-1-aim0-2026-10-29-round1-roles/)
 (roles 1, 4, 6 and 7). **Synthetic only.** Aim 0 is theory checked by simulation, so nothing here
 reads a recording. Task 4 uses lab-like parameter values, and its event trains resample the gap
 lists in `runs/2026-09-25-real-intervals/gaps.csv`, exactly as `theory.py --check-real` does. It
@@ -326,7 +326,7 @@ The table gives Table 1.2's method / exact 5 %:
 ## Round 2 follow-ups
 
 Demanded by the round-2 review,
-[`docs/reviews/chapter-1-aim0_2026-10-29-round2-roles/`](../../../reviews/chapter-1-aim0_2026-10-29-round2-roles/)
+[`docs/reviews/chapter-1-aim0-2026-10-29-round2-roles/`](../../../reviews/chapter-1-aim0-2026-10-29-round2-roles/)
 (roles 1, 4, 6, 7 and 11). Written 2026-10-29. **Synthetic only.** As before, no existing script or
 record was edited. The new scripts import `theory`, `event_train`, `aim1_one_source`, `order_limit`
 and the shipped `bugarach.assess` and `bugarach.simulate`. Rerun from the repository root with the
@@ -647,3 +647,456 @@ calibration, so no pooled Gaussian conversion can be extracted.
 - **Per recording, the joint fit is the better estimator from 0.5 s at 0.05 Hz.** Elsewhere the
   correlogram (pooled, or Gaussian at 0.01 Hz) is as good. The joint fit has no pooled
   counterpart here.
+
+## Round 3 follow-ups
+
+These answer the round-3 blind review,
+[`docs/reviews/chapter-1-aim0-2026-10-29-round3-roles/`](../../../reviews/chapter-1-aim0-2026-10-29-round3-roles/)
+(roles 4, 6 and 7). Written 2026-10-29. **Synthetic only.** Task 1 reads `windows.csv` for two
+parameter values per stream, the baseline window length and the events per window. No recording's
+onsets are analysed, and nothing here is a claim about the lab's recordings.
+
+As before, no existing script or record was edited. The new scripts import `theory`,
+`event_train`, `aim1_one_source`, `order_limit`, `membership_limit`, `kendall_w`,
+`realistic_counts`, `order_rounding` and the shipped `bugarach.assess`, `bugarach.assembly`,
+`bugarach.simulate` and `tools/measure_coordination_rates`. Rerun them from the repository root
+with the worktree's venv python and `PYTHONPATH=src`. Wall times are on the lab workstation:
+
+    python .../ch1_followups/window_counts.py --workers 32 > .../window_counts.txt          # task 1 (190 s)
+    python .../ch1_followups/chance_bursty.py --workers 12 > .../chance_bursty.txt          # task 2 (7 s)
+    python .../ch1_followups/order_rounding_cells.py --workers 14 > .../order_rounding_cells.txt  # task 3 (about 1 min)
+    python .../ch1_followups/membership_repeat.py --workers 40 > .../membership_repeat.txt  # tasks 4 and 8 (127 s)
+    python .../ch1_followups/dependence_null.py > .../dependence_null.txt                   # task 5 (20 s; reads records)
+    python .../ch1_followups/assessor_null.py --workers 44 > .../assessor_null.txt          # task 6 (455 s)
+    python .../ch1_followups/pooled_path.py > .../pooled_path.txt                           # task 7 (seconds; reads records)
+
+| file | what |
+|---|---|
+| `window_counts.py` → `.txt`, `.json` | R3 task 1: 20-minute recordings with E = 1, 2, 4, 8, 16 events fixed per recording; the joint fit and the tool per recording |
+| `chance_bursty.py` → `.txt`, `.json` | R3 task 2: chance clusters per hour on the bursty background, beside the flat background and the formula |
+| `order_rounding_cells.py` → `.txt`, `.json` | R3 task 3: order power and null mean with frame rounding at σ 0.105/0.131 s, 7/13 cells; tie-corrected exact null mean |
+| `membership_repeat.py` → `.txt`, `.json` | R3 tasks 4 and 8: the assembly test given a repeated assembly, and which statistic rejects, at 200 and the shipped 1000 surrogates |
+| `dependence_null.py` → `.txt`, `.json` | R3 task 5: nulls for the condition-window counts that keep the three windows' dependence |
+| `assessor_null.py` → `.txt`, `.json` | R3 task 6: the assessor's `jit_null` and `jit_excess` at the shipped 1000 surrogates, on the 240 Aim 1a recordings |
+| `pooled_path.py` → `.txt`, `.json` | R3 task 7: the tool's shipped pooled reporting path beside the per-recording path |
+
+### R3 task 1: a 20-minute window, with the count fixed per recording (role 4, blocking)
+
+**The parameter values.** These are read from `windows.csv`, 66 windows per stream:
+
+| stream | window length | events per window: mean | quantiles 0/10/25/50/75/90/100 % | windows with 0 events | per hour |
+|---|---|---|---|---|---|
+| fast | 17–20 min (median 20) | 3.21 | 0 / 0 / 0 / 1 / 4 / 9 / 23 | 28 | 9.72 |
+| slow | 17–20 min (median 20) | 7.29 | 0 / 0 / 0 / 2 / 7.75 / 27.5 / 49 | 25 | 22.05 |
+| combined | 17–20 min (median 20) | 8.36 | 0 / 0 / 0 / 3 / 11 / 29 / 52 | 21 | 25.30 |
+
+These match the reviewer's figures. The per-hour rates match the 9.7 and 22.0 used in round 2.
+Round 2's 45-minute recordings at 7.3 and 16.5 events were therefore realistic in rate, but not
+in window length or count per window.
+
+**How the recordings were made.**
+- Length T = 1200 s, with a 5 s margin; 33 cells; b = 0.0096 Hz; 0.1 s frame.
+- σ is 0.105 s for the fast list and 0.131 s for the slow list; k = 7 and 13 cells per event.
+- E = 1, 2, 4, 8 or 16 events, **fixed** per recording; 40 recordings per (stream, k, E).
+- The train is round 2's: a stationary renewal train of resampled list gaps, thinned with
+  p_E = min(1, E ÷ the list's expected count). It is then conditioned on exactly E events by
+  redrawing until the count is E (2.8–20 draws on average).
+- On the fast list, E = 16 exceeds the list's own 11.8 events per window. There p = 1, and the
+  conditioning alone sets the count.
+
+**How they were fitted.** The general form is given `thinned_train(gaps, p_E)` with
+`n_events = E` ("true"). The 20 s hard core is fitted in `theory.py`'s form ("page"). Conditioning
+on the count beyond the fixed-count term is not modelled; that is an approximation. The tool's
+estimate is `solve()` on each recording's own f2, f3 at each window.
+
+**Joint fit, general form given the true train**, fitted ÷ planted, median [IQR]. For σ, the
+bracket gives (recordings at the 0.005 s floor; recordings within 0.8–1.25 of planted, of 40).
+For participants and rate it gives the number within 0.8–1.25, of 40. No σ fit reached the 5 s
+bound.
+
+| stream, k | E | σ | participants | rate |
+|---|---|---|---|---|
+| fast, 7 | 1 | 0.05 [0.05, 1.78] (22; 1) | 0.89 [0.66, 1.22] (13) | 1.67 [0.60, 2.89] (4) |
+| fast, 7 | 2 | 0.85 [0.05, 3.30] (19; 0) | 1.14 [0.92, 1.41] (19) | 0.76 [0.36, 1.49] (7) |
+| fast, 7 | 4 | 0.11 [0.05, 1.32] (19; 3) | 0.97 [0.88, 1.06] (30) | 1.07 [0.81, 1.29] (19) |
+| fast, 7 | 8 | 0.79 [0.26, 2.12] (8; 4) | 1.01 [0.97, 1.09] (40) | 1.01 [0.85, 1.16] (25) |
+| fast, 7 | 16 | 0.41 [0.05, 1.61] (11; 2) | 0.97 [0.92, 1.05] (40) | 1.00 [0.93, 1.09] (38) |
+| fast, 13 | 1 | 0.30 [0.05, 1.84] (17; 5) | 1.00 [0.93, 1.08] (30) | 1.01 [0.66, 1.24] (16) |
+| fast, 13 | 2 | 0.63 [0.05, 1.23] (14; 9) | 0.97 [0.91, 1.06] (40) | 1.09 [0.84, 1.21] (23) |
+| fast, 13 | 4 | 0.84 [0.05, 1.70] (12; 7) | 0.98 [0.94, 1.03] (39) | 1.02 [0.95, 1.12] (35) |
+| fast, 13 | 8 | 0.99 [0.39, 1.42] (5; 7) | 1.00 [0.97, 1.02] (39) | 0.99 [0.94, 1.05] (38) |
+| fast, 13 | 16 | 0.73 [0.26, 1.66] (4; 5) | 0.98 [0.95, 1.07] (39) | 1.04 [0.95, 1.08] (39) |
+| slow, 7 | 1 | 1.04 [0.04, 3.00] (11; 4) | 1.00 [0.75, 1.88] (12) | 1.27 [0.32, 2.54] (3) |
+| slow, 7 | 2 | 0.87 [0.04, 2.40] (13; 3) | 1.10 [0.89, 1.30] (25) | 0.87 [0.55, 1.55] (9) |
+| slow, 7 | 4 | 0.85 [0.04, 1.80] (14; 6) | 1.00 [0.89, 1.07] (36) | 1.04 [0.83, 1.22] (20) |
+| slow, 7 | 8 | 0.87 [0.04, 1.36] (11; 8) | 1.02 [0.94, 1.05] (39) | 1.02 [0.86, 1.12] (31) |
+| slow, 7 | 16 | 1.15 [0.62, 1.43] (5; 13) | 1.00 [0.96, 1.05] (40) | 1.02 [0.95, 1.06] (40) |
+| slow, 13 | 1 | 0.77 [0.04, 1.70] (16; 3) | 1.06 [0.91, 1.23] (26) | 0.84 [0.60, 1.30] (10) |
+| slow, 13 | 2 | 0.89 [0.04, 1.95] (11; 5) | 1.04 [0.98, 1.09] (40) | 0.99 [0.90, 1.14] (34) |
+| slow, 13 | 4 | 1.12 [0.71, 1.73] (2; 9) | 1.00 [0.98, 1.04] (40) | 1.02 [0.91, 1.07] (37) |
+| slow, 13 | 8 | 0.93 [0.57, 1.48] (2; 8) | 1.00 [0.98, 1.04] (40) | 0.98 [0.93, 1.02] (40) |
+| slow, 13 | 16 | 1.04 [0.70, 1.41] (0; 12) | 1.02 [1.00, 1.05] (40) | 0.97 [0.92, 0.99] (40) |
+
+The fit returned an answer for 799 of 800 recordings; the exception is one fast, k = 7, E = 1
+recording with f2 ≤ 0 at every window. Under the true train, k reached a bound in 4 recordings
+and λ in 1, all at E = 1.
+
+**The 20 s hard core ("page")** is within 0.03 of the true train in participants and rate at
+every E ≤ 8. It is also nearly the same in σ on the slow list. There is one exception: **the fast
+list at E = 16, where the train is not thinned.** There the hard core reads:
+- σ at 1.32 (k = 7) and 1.45 (k = 13) of planted, against 0.41 and 0.73 under the true train;
+- rate at 0.92 and 0.96, against 1.00 and 1.04.
+
+This is round 1's dense-train bias returning. All rows are in `window_counts.txt`.
+
+**The coordination-rates tool per recording**, participants ÷ planted, median [IQR] (within
+0.8–1.25, of 40). Refusals, where f2 or f3 is not positive, are shown where there are any. The
+table gives the 1 s window; the 2 and 4 s windows, and the rate, are in `window_counts.txt`.
+
+| stream, k | E = 1 | 2 | 4 | 8 | 16 |
+|---|---|---|---|---|---|
+| fast, 7 | 0.88 [0.78, 1.16] (18; refused 1) | 0.92 [0.85, 1.05] (34) | 0.94 [0.89, 1.00] (38) | 0.95 [0.90, 0.97] (40) | 0.92 [0.91, 0.94] (40) |
+| fast, 13 | 0.92 [0.89, 0.97] (40) | 0.95 [0.91, 0.99] (40) | 0.93 [0.90, 0.95] (40) | 0.93 [0.91, 0.95] (40) | 0.92 [0.90, 0.93] (40) |
+| slow, 7 | 0.98 [0.76, 1.15] (21) | 0.97 [0.90, 1.11] (37) | 0.94 [0.88, 1.00] (39) | 0.92 [0.89, 0.97] (40) | 0.90 [0.88, 0.92] (40) |
+| slow, 13 | 0.97 [0.87, 1.03] (35) | 0.93 [0.90, 0.96] (40) | 0.91 [0.89, 0.94] (40) | 0.91 [0.89, 0.93] (40) | 0.90 [0.89, 0.91] (40) |
+
+The tool refuses only at E = 1 with 7 cells:
+- fast list: 1, 3 and 4 of 40 at 1, 2 and 4 s;
+- slow list: 0, 0 and 5 of 40.
+
+At E = 0, which is 28 of the 66 fast windows and 25 of the 66 slow ones in the parameter table,
+there is nothing to estimate.
+
+- **When participants become readable per recording (within 0.8–1.25 in at least 38 of 40):**
+  - **With 13 cells, from E = 2** for the joint fit, on both lists (39–40 of 40).
+  - **With 7 cells, from E = 8.** At E = 4 it is 30 (fast) and 36 (slow) of 40.
+  - The tool's 1 s solve gets there one step earlier: from E = 1 at 13 cells on the fast list,
+    E = 2 at 13 cells on the slow list, and E = 4 at 7 cells (38 and 39 of 40).
+  - But the tool's participants sit at 0.90–0.95 of planted throughout, the low bias the
+    hard-core form predicts. The joint fit's median is 0.97–1.02 from E = 4.
+- **At a realistic median window (1 fast or 2 slow events), therefore:**
+  - 7-cell events are not readable per recording: 12–25 of 40 in the band for the joint fit,
+    18–37 for the tool.
+  - 13-cell events are borderline to readable: the joint fit has 30 of 40 at E = 1 (fast), and
+    40 of 40 at E = 2 (slow).
+- **Rate needs more events than participants:** within the band in at least 35 of 40 from E = 4
+  with 13 cells, and only at E = 16 with 7 cells.
+- **Jitter is not recoverable per recording at any E tested.** At best, 12–13 of 40 recordings
+  land within 0.8–1.25 (slow list, E = 16). At E ≤ 2, 11–22 of 40 sit at the 0.005 s floor. This
+  is worse than round 2's 45-minute result.
+
+### R3 task 2: chance clusters on an over-dispersed background (role 4)
+
+**The bursty background.** It is invoked as
+`simulate_coordination(..., bg_burst_shape=(1.547, 1.388), bg_burst_bin_sec=(300.0, 60.0))`
+(`src/bugarach/simulate.py`, documented in `docs/generator.md`). Each cell's rate is multiplied,
+per 300 s bin and per 60 s bin, by independent Gamma(shape, 1/shape) draws with mean 1.
+**The draws are made per cell, so bursts are not shared across cells.** Note that
+`bench.MEASURED_BURST_SHAPE` is (1.770, 1.439), not the (1.547, 1.388) in `generator.md`; the
+documented pair was used, as asked.
+
+An extra arm, not asked for, adds `bg_rate_shape = bench.MEASURED_RATE_SHAPE` (0.291): Gamma
+heterogeneity of the cells' own rates, mean kept at b. The flat formula also assumes equal rates.
+
+**How it was run.** Background only, 33 cells, 45 min, b = 0.0096 Hz, **400 recordings per arm**
+(100 were asked for; 400 cost seconds and give K = 5 and 6 a usable count). Clusters come from
+the shipped `_coact_count` and `_clusters`. The prediction is 60 q (1 − q)² per minute.
+
+Variance ÷ mean of each cell's counts, pooled over cells with at least one onset, at
+30/60/120/300 s:
+- flat: 1.00 / 1.00 / 1.00 / 1.00;
+- bursty: **1.50 / 2.02 / 2.29 / 3.53**;
+- bursty + rate: 3.20 / 5.45 / 6.68 / 11.90.
+
+`generator.md` gives 1.87/2.76/3.04/4.44 for the bursty mode, but on cells with 10 or more
+events. At b = 0.0096 Hz the Gamma-mixed Poisson is less over-dispersed, because the extra
+variance grows with the mean count.
+
+**Chance clusters per hour.** The table gives the mean, with the exact Poisson 95 % CI of the
+pooled count:
+
+| K | flat formula | flat background | bursty | bursty + rate heterogeneity |
+|---|---|---|---|---|
+| 3 | 13.72 | 14.14 [13.72, 14.57] | 13.42 [13.01, 13.84] | 11.26 [10.88, 11.65] |
+| 4 | 0.983 | 0.990 [0.881, 1.109] | 0.990 [0.881, 1.109] | 0.787 [0.690, 0.894] |
+| 5 | 0.054 | 0.067 [0.041, 0.103] | 0.070 [0.043, 0.107] | 0.037 [0.018, 0.066] |
+| 6 | 0.0024 | 0 [0, 0.012] | 0.010 [0.002, 0.029] | 0.003 [0.000, 0.019] |
+
+**Where the smallest K under 1 per hour changes (flat formula).** K = 3 gives exactly 1 chance
+cluster per hour at b = 0.00382 Hz, **K = 4 at b = 0.00964 Hz**, and K = 5 at b = 0.01793 Hz.
+
+- **Temporal burstiness of this kind does not change the chance-cluster rate.** The bursty and
+  flat backgrounds agree with each other, and with the formula, within about 5 % at K = 3 and
+  within their CIs at K = 4 and 5. At K = 6 the bursty arm has 3 clusters in 300 hours against an
+  expected 0.7, too few to say more.
+  - The reason is that the generator draws each cell's bursts independently. Coincidences across
+    cells then depend only on each cell's marginal rate per 1 s bin, which the mode leaves
+    unchanged.
+  - A burst shared across cells (population bursts) would raise the rate. That is a different
+    model, and it was not run here.
+- **Unequal cell rates lower it**, by about 20 % at K = 3–4 here. There are two reasons. A cell's
+  chance of at least one onset in a bin is concave in its rate. And a count over cells with unequal
+  probabilities is less variable than a binomial with the same mean, so its upper tail is thinner. So the flat formula is, if anything, conservative for this
+  generator.
+- **The chapter's K = 4 at b = 0.0096 Hz sits exactly on the threshold.** The flat formula gives
+  0.98 per hour there, and the K = 4 threshold is crossed at 0.00964 Hz. Any background a few
+  percent busier gives more than 1 chance cluster per hour at K = 4, so K = 5 becomes the smallest
+  K under 1 per hour.
+
+### R3 task 3: frame rounding at the chapter's cells (role 4)
+
+This extends `order_rounding.py`, and imports its `draw`, `rounded`, `f_and_ties`, `run_many`
+and `exact_power`. The grid is σ = 0.105 and 0.131 s; 7 and 13 of 33 cells; r = 1 and 2.5;
+M = 1 and 2 templates; E = 2, 3, 5. There are 1000 recordings per point and a 2000-recording
+null per (σ, k, E), rounded the same way as each test. The test is the exact-size randomized
+5 % test.
+
+**The tie-corrected exact null mean.** The `kendall_w` reduction carries over to tied onsets:
+- The denominator ΣE C(k, 2) is still fixed.
+- The label-swap argument still gives tied scores zero weight.
+- Within a shared event, x = sign(t₂ − t₁) is still the sign of y = u₁ − u₂, and x = y = 0 on a
+  tie.
+
+So E[F] = E[x · sign(y + S)], with S the sum of the other E − 1 events' contributions. With
+ties, the laws of (x, y) and of u depend on σ ÷ frame and are no longer the rank lattice. Here
+they are estimated from 400 000 quantized model events per (σ, k) and then convolved exactly.
+Run on untied events, the same code reproduces `F_exact` to within 0.0006.
+
+**Null mean F** (SE about 0.002):
+
+| σ, k | E | simulated unrounded / F_exact | simulated rounded / tie-corrected | tied pairs |
+|---|---|---|---|---|
+| 0.105, 7 | 2 / 3 / 5 | 0.866 / 0.865; 0.770 / 0.768; 0.637 / 0.639 | **0.689 / 0.686; 0.642 / 0.638; 0.559 / 0.559** | 26 % |
+| 0.105, 13 | 2 / 3 / 5 | 0.745 / 0.743; 0.611 / 0.611; 0.479 / 0.478 | 0.625 / 0.625; 0.545 / 0.545; 0.442 / 0.442 | 26 % |
+| 0.131, 7 | 2 / 3 / 5 | 0.864 / 0.865; 0.768 / 0.768; 0.635 / 0.639 | 0.721 / 0.722; 0.665 / 0.665; 0.575 / 0.577 | 21 % |
+| 0.131, 13 | 2 / 3 / 5 | 0.746 / 0.743; 0.612 / 0.611; 0.478 / 0.478 | 0.651 / 0.651; 0.560 / 0.561; 0.454 / 0.452 | 21 % |
+
+**Power (exact 5 %), unrounded → rounded, beside the mean shifts.** The table shows the
+one-template case; M = 2 and r = 1 at 0.131 s are in `order_rounding_cells.txt`.
+
+| σ, k, r | E | power | signal mean F shift | null mean F shift |
+|---|---|---|---|---|
+| 0.105, 7, 2.5 | 2 / 3 / 5 | 0.06→0.66 / 0.18→0.73 / 0.69→0.92 | −0.066 / −0.053 / −0.034 | −0.178 / −0.128 / −0.078 |
+| 0.105, 13, 2.5 | 2 / 3 / 5 | 0.31→0.92 / 0.90→0.99 / 1.00→1.00 | −0.047 / −0.030 / −0.020 | −0.119 / −0.066 / −0.037 |
+| 0.131, 7, 2.5 | 2 / 3 / 5 | 0.07→0.56 / 0.20→0.65 / 0.74→0.90 | −0.053 / −0.040 / −0.026 | −0.143 / −0.102 / −0.060 |
+| 0.131, 13, 2.5 | 2 / 3 / 5 | 0.29→0.85 / 0.93→0.99 / 1.00→1.00 | −0.037 / −0.022 / −0.014 | −0.095 / −0.053 / −0.024 |
+| 0.105, 7, 1 | 2 / 3 / 5 | 0.06→0.24 / 0.10→0.32 / 0.29→0.46 | −0.129 / −0.101 / −0.063 | −0.178 / −0.128 / −0.078 |
+| 0.105, 13, 1 | 2 / 3 / 5 | 0.12→0.35 / 0.35→0.53 / 0.78→0.89 | −0.089 / −0.052 / −0.032 | −0.119 / −0.066 / −0.037 |
+| 0.105, 13, 2.5, M = 2 | 2 / 3 / 5 | 0.17→0.63 / 0.36→0.60 / 0.69→0.87 | −0.043 / −0.025 / −0.015 | −0.119 / −0.066 / −0.037 |
+
+- **Rounding raises power at every one of the 48 points, or leaves it saturated.** It never
+  lowers it. The gain is largest at E = 2 (for example 0.06 → 0.66 with 7 cells at r = 2.5,
+  σ = 0.105 s).
+- **The reason is that the null falls more than the signal.** An order-free event's onsets all sit
+  within about ±σ, so 21–26 % of null pairs tie, against 8–10 % of signal pairs at r = 2.5. The
+  null mean drops 2–3 times as far as the signal mean. At r = 1, 15–19 % of signal pairs tie and
+  the two shifts are closer, so the gain is smaller.
+- **Do not use the untied exact null mean with tied onsets.** `F_exact` is off by up to 0.18
+  (0.865 against 0.689 at σ = 0.105 s, 7 cells, E = 2). **The tie-corrected mean matches the
+  rounded simulation in all 12 cases**: at most 0.004 apart, which is 2.1 SE at worst.
+- **A test whose null is rounded the same way is still valid.** This is the generator's model of
+  rounding: a uniform frame phase, and onsets i.i.d. Gaussian under the null. A null that keeps
+  real event shapes would be needed before reading the power gain as real.
+
+### R3 task 4: membership detection given a repeat (role 4)
+
+This uses `membership_limit.py`'s model at M = 1000 (reuse E/M = 0.045): 33 cells, 10 per event,
+45 events, with each event's assembly index kept. There are 1000 recordings. The p-values come
+from the shipped `pvalues_margin` and `pvalues_uniform`, read by `AssemblyResult.verdict`, at 200
+surrogates (as before) and at the shipped 1000, on the same membership matrices. "Both-null
+rejection" is the verdict `structure-beyond-rate`.
+
+- **Share with at least one repeated assembly:** 0.621 [0.591, 0.651]. The birthday formula
+  gives 0.634.
+- **Repeats per recording:** 0 in 379, 1 in 375, 2 in 163, 3 in 68, 4 in 14, 5 or more in 1.
+
+| recordings | n | both-null rejection, 200 / 1000 surrogates | any flag, 200 / 1000 |
+|---|---|---|---|
+| all | 1000 | 0.094 [0.077, 0.114] / 0.092 [0.076, 0.112] | 0.211 / 0.218 |
+| ≥ 1 repeat | 621 | **0.140 [0.115, 0.170] / 0.137 [0.112, 0.166]** | 0.308 / 0.319 |
+| 0 repeats | 379 | **0.018 [0.009, 0.038] / 0.018 [0.009, 0.038]** | 0.053 / 0.053 |
+| exactly 1 repeat | 375 | 0.061 / 0.051 | 0.179 / 0.189 |
+| ≥ 2 repeats | 246 | 0.260 [0.209, 0.318] / 0.268 [0.217, 0.327] | 0.504 / 0.516 |
+
+Random participation (task 8's size arm, 400 recordings, 1000 surrogates) gives a both-null
+rejection rate of 0.015 and any flag of 0.070.
+
+- **Without a repeat, the test is at its false-positive rate** (0.018 both-null against 0.015 for
+  random participation). As expected, it sees nothing when no assembly recurs.
+- **With one repeat it rejects 5–6 % of the time; with two or more, 26–27 %.** At reuse 0.045,
+  detection is driven by the recordings that happen to hold several repeats.
+- **The surrogate count does not matter here.** 200 and 1000 give the same rates within 0.01.
+
+### R3 task 5: nulls that keep the windows' dependence (role 4)
+
+The chapter reads its counts over 48 condition-windows against independent windows:
+Binomial(48, 0.118) for "beyond 2 SE", and Binomial(48, ½) for "measured above predicted". Here
+the null "the prediction is exact" keeps the three windows' dependence. Each null replays the
+per-recording values (measured ÷ planted, all three windows of a recording kept together, from
+`aim1_one_source.json` and `aim1_one_source_heldout.json`) against the matching `theory_check`
+record's prediction. There are 20 000 replicate experiments, each scored exactly as the record
+was. Two nulls are used:
+- **MVN:** each condition's 3-window vector is drawn from a normal with the prediction as mean
+  and the condition's own sample covariance; 5 recordings are drawn per condition.
+- **BOOT:** each recording's vector is standardized within its condition. Each condition then
+  draws 5 distinct vectors from the pool of 80, rescales them by its own SD and centres them on
+  the prediction. This keeps the empirical shape as well as the covariance. Its limit is that a
+  vector standardized within 5 recordings cannot exceed 1.79 SD, so the tails are lighter than
+  the population's.
+
+The mean correlation between windows within a condition is 0.49–0.77 for 1 s with 2 s, 0.24–0.57
+for 1 s with 4 s, and 0.46–0.79 for 2 s with 4 s.
+
+| count in the chapter | observed | binomial (independent): mean ± SD, P | MVN: mean ± SD, P | BOOT: mean ± SD, P |
+|---|---|---|---|---|
+| held-out, hard core, 0.01 Hz, participants beyond 2 SE | 17 of 48 | 5.7 ± 2.2, **< 0.0001** | 5.7 ± 2.8, **0.0005** | 6.9 ± 2.9, **0.002** |
+| held-out, general, 0.01 Hz, participants beyond 2 SE | 12 of 48 | 5.7 ± 2.2, 0.009 | 5.6 ± 2.8, **0.026** | 6.9 ± 2.9, **0.070** |
+| original, general, 0.01 Hz, rate above predicted | 35 of 48 | SD 3.5, two-sided 0.002 | SD 4.1, **0.011** | SD 4.1, **0.042** |
+| held-out, general, 0.01 Hz, rate above predicted | 18 of 48 | SD 3.5, 0.11 | SD 4.5, **0.23** | SD 4.1, **0.64** |
+| original, hard core, 0.01 Hz, rate above predicted | 43 of 48 | SD 3.5, < 0.0001 | SD 4.2, < 0.0001 | SD 4.1, < 0.0001 |
+| original, hard core, 0.01 Hz, participants above | 14 of 48 | SD 3.5, 0.006 | SD 4.3, 0.024 | SD 4.5, 0.043 |
+
+The other rows, the 0.05 Hz rows and the per-condition sign counts are in `dependence_null.txt`.
+
+- **Dependence widens the counts' spread by about 25–30 %** (SD 2.7–2.8 against 2.2 for "beyond
+  2 SE", and 4.1–4.7 against 3.5 for signs). The mean of the "beyond 2 SE" count stays at 5.7
+  under MVN. Under BOOT it is 6.1–7.0, because the per-recording values are not normal.
+- **The 17 of 48 holds under every null** (P ≤ 0.002). The hard-core form's participant miss on
+  the held-out record is real.
+- **The weaker findings soften:**
+  - The general form's 12 of 48 goes from p = 0.009 to 0.026 (MVN) and 0.070 (BOOT).
+  - The 35 of 48 rate sign count goes from 0.002 to 0.011 and 0.042.
+  - The chapter should quote these with the dependence-aware p, or as "suggestive".
+- **The per-condition sign counts (one sign per condition) need no correction.** Their p-values
+  are unchanged under MVN, for example 12 of 16 at p = 0.077 against 0.074. This confirms that
+  the chapter's one-sign-per-condition tests were already the right unit.
+
+### R3 task 6: the assessor's own jitter null (roles 6 and 7)
+
+**How it was run.** The 240 Aim 1a recordings were regenerated through `aim1_one_source`'s seed
+path, as `assessor_jitter.py` does. `assess_coactivity` was then run at its **shipped settings**:
+`n_surrogates` = 1000 (the signature default, and the MATLAB default), the default `rng_seed`,
+the whole 45 min, K = 3, 4, 6. `jit_obs` matches the record exactly (0 difference over 708
+recording-K pairs).
+
+**The readings.** Events of 10+ cells, pooled as Figure 1.1 D/H (20 recordings per cell). Each
+cell gives the median `jit_obs` / `jit_null` / `jit_excess` in seconds. `jit_defined` was True
+everywhere.
+
+| b, K | chance-cluster SD, background only (R2 task 3) | σ = 0.05 | 0.2 | 0.5 | 1.0 s |
+|---|---|---|---|---|---|
+| 0.01, 3 | 0.380 | 0.158 / 0.439 / −0.276 | 0.258 / 0.440 / −0.188 | 0.473 / 0.440 / +0.024 | 0.705 / 0.440 / +0.257 |
+| 0.01, 4 | 0.374 | 0.068 / 0.404 / −0.330 | 0.226 / 0.406 / −0.171 | 0.486 / 0.408 / +0.082 | 0.725 / 0.408 / +0.293 |
+| 0.01, 6 | 0.475 (1 cluster) | 0.068 / 0.403 / −0.339 | 0.229 / 0.388 / −0.128 | 0.485 / 0.374 / +0.112 | 0.711 / 0.367 / +0.294 |
+| 0.05, 3 | 0.733 | 0.715 / 0.727 / −0.014 | 0.711 / 0.728 / −0.020 | 0.717 / 0.728 / −0.011 | 0.733 / 0.727 / +0.005 |
+| 0.05, 4 | 0.680 | 0.644 / 0.671 / −0.022 | 0.646 / 0.673 / −0.025 | 0.657 / 0.672 / −0.020 | 0.692 / 0.671 / +0.016 |
+| 0.05, 6 | 0.596 | 0.430 / 0.595 / −0.164 | 0.461 / 0.596 / −0.134 | 0.565 / 0.597 / −0.033 | 0.683 / 0.595 / +0.087 |
+
+- **At 0.05 Hz, `jit_null` is the background-only chance-cluster SD.** It agrees within
+  0.006–0.009 s at every K and σ, and does not depend on σ.
+- **At 0.01 Hz, `jit_null` runs 0.03–0.06 s above the background-only value at K = 3–4**
+  (0.40–0.44 against 0.37–0.38). The likely reason is that the shifted copies also carry the
+  planted onsets, which, scattered by the shift, add to the background.
+- **`jit_excess` does not rescue the flat reading at 0.05 Hz.** Because `jit_null` is constant
+  in σ, `jit_excess` is just `jit_obs` minus a constant. At K = 3 and 4 it moves only 0.02–0.04 s
+  as σ goes from 0.05 to 1 s, the same flat curve as `jit_obs`, shifted to about 0.
+  - At K = 6 it rises from −0.16 to +0.09 s, which is as much as `jit_obs` already rises (0.43 →
+    0.68).
+  - At 0.01 Hz it crosses 0 near σ = 0.5 s and is negative below. It reads as "tighter or looser
+    than chance", not as a jitter.
+  - **The tool offers no other null-corrected jitter reading.**
+- **What `adapt.generator_params` does with it** (`src/bugarach/adapt.py`, the "tightness"
+  block, about lines 220–224):
+  - When `jit_defined` is True and `jit_obs` is finite, it sets the generator's `jitter_sec`
+    **to `jit_obs` itself**. `jit_null` and `jit_excess` appear only in the note text.
+  - Otherwise it sweeps the jitter.
+  - So at a busy background (0.05 Hz, K = 3–4) it would plant about 0.65–0.73 s of jitter
+    whatever the true σ was. That is the chance clusters' SD, not the events'.
+
+### R3 task 7: the tool's shipped pooled reporting path (role 6)
+
+There is no new simulation; the readings are computed from the run records' per-recording
+cumulants. Per condition-window, three readings are compared with the prediction:
+- **per-rec:** `solve()` per recording, then the median of 5. This is `theory.check`'s "meas",
+  the reading the chapter validates; it matches the record exactly.
+- **pooled:** `solve()` on the condition's mean f2 and f3, a ratio of means. This is
+  `theory.check`'s "pooled" column.
+- **shipped:** `measure_coordination_rates.per_recording()` as `summarize()` calls it. k comes
+  from the window-weighted pooled f3/f2, and λ from each recording's own f2 at that k, then the
+  median. With equal-length recordings the pooled k equals the pooled `solve()`'s k, so the
+  participant readings of pooled and shipped are identical.
+
+Events of 10+ cells, 48 condition-windows per background. Each cell gives the median |residual|,
+the median signed residual, and above of 48 (sign p).
+
+| record, form, b, quantity | per-rec (chapter) | pooled | shipped |
+|---|---|---|---|
+| original, hard core, 0.01, participants | 0.0073, −0.0063, 14 (0.006) | 0.0077, −0.0065, 11 (< 0.001) | = pooled |
+| original, hard core, 0.01, rate | 0.0324, +0.0298, 43 (< 0.001) | 0.0240, +0.0217, 39 (< 0.001) | 0.0219, +0.0211, 37 (< 0.001) |
+| original, general, 0.01, participants | 0.0065, −0.0023, 19 (0.19) | 0.0055, −0.0027, 19 (0.19) | = pooled |
+| original, general, 0.01, rate | 0.0196, +0.0129, 35 (0.002) | 0.0171, **+0.0048**, 31 (0.06) | 0.0160, +0.0048, 29 (0.19) |
+| held-out, hard core, 0.01, participants | 0.0115, −0.0090, 16 (0.029) | 0.0089, −0.0066, 12 (0.001) | = pooled |
+| held-out, hard core, 0.01, rate | 0.0236, +0.0165, 33 (0.013) | 0.0203, +0.0172, 30 (0.11) | 0.0233, +0.0176, 35 (0.002) |
+| held-out, general, 0.01, participants | 0.0096, −0.0054, 18 (0.11) | 0.0062, −0.0034, 17 (0.06) | = pooled |
+| held-out, general, 0.01, rate | 0.0141, −0.0035, 18 (0.11) | 0.0102, −0.0047, 19 (0.19) | 0.0111, −0.0026, 20 (0.31) |
+| original, general, 0.05, rate | 0.0587, +0.0124, 27 (0.47) | 0.0530, −0.0008, 24 (1.0) | 0.0443, +0.0040, 26 (0.67) |
+| held-out, general, 0.05, rate | 0.0504, +0.0048, 26 (0.67) | 0.0620, +0.0036, 25 (0.89) | 0.0549, +0.0018, 26 (0.67) |
+
+The remaining 0.05 Hz rows are in `pooled_path.txt`.
+
+**Median of ratios minus ratio of means, for rate.** This involves no prediction. The table gives
+the median [IQR] over the 48 condition-windows.
+
+| record, b | per-rec − pooled | per-rec − shipped |
+|---|---|---|
+| original, 0.01 | +0.0061 [−0.0010, +0.0170] | +0.0031 [−0.0075, +0.0177] |
+| original, 0.05 | +0.0077 [−0.0220, +0.0193] | +0.0051 [−0.0242, +0.0391] |
+| held-out, 0.01 | −0.0009 [−0.0086, +0.0089] | −0.0031 [−0.0158, +0.0084] |
+| held-out, 0.05 | −0.0082 [−0.0474, +0.0375] | −0.0027 [−0.0362, +0.0341] |
+
+For participants the gap is −0.001 (IQR within ±0.011).
+
+- **On the shipped path the prediction does about as well or better.** Participant |residuals|
+  are within 0.004 of the per-recording ones, often smaller, and of the same sign.
+  - The hard-core form's low participant bias at 0.01 Hz is, if anything, more one-sided on the
+    pooled path: 11 and 12 of 48 above, against 14 and 16.
+  - The general form's original-record rate bias falls from +0.013 to +0.005, as `derivation.md`
+    §7.2 reported (+0.005).
+- **The median-of-ratio versus ratio-of-means gap is not a stable +0.008.** On the original
+  record it is +0.006 (0.01 Hz) and +0.008 (0.05 Hz), consistent with §7.2. On the held-out record
+  it is −0.001 and −0.008. Its IQR spans zero in every case. So it is noise at five recordings,
+  not a fixed bias of the median.
+- **The validation therefore transfers to the shipped reporting path** for these simulated
+  conditions. The one caveat: the shipped path reports a single pooled participant count, so it
+  has no per-recording spread to compare.
+
+### R3 task 8: which assembly statistic rejects, at the shipped surrogate count (roles 6 and 7)
+
+**How it was run.** Same model and script as task 4 (`membership_repeat.py`), at the shipped
+1000 surrogates (`assess_assemblies`' default). `AssemblyResult.verdict` tests each null with two
+statistics: the pair co-participation dispersion and the leading eigenvalue (`stat_eigen`), each
+at α/2 = 0.025 (Bonferroni). The table gives the share of recordings in which, per null, only the
+dispersion, only the eigenvalue, or both are below 0.025.
+
+| arm (reuse E/M) | n | margin null: disp only / eig only / both / either | uniform null: disp only / eig only / both / either | verdicts: none / uniform-only / margin-only / both |
+|---|---|---|---|---|
+| M = 1000 (0.045) | 1000 | 0.086 / 0.021 / 0.061 / 0.168 | 0.054 / 0.078 / 0.010 / 0.142 | 782 / 50 / 76 / 92 |
+| M = 150 (0.3) | 400 | 0.310 / 0.005 / 0.588 / 0.902 | 0.155 / 0.203 / 0.393 / 0.750 | 31 / 8 / 69 / 292 |
+| M = 45 (1) | 400 | 0 / 0 / 1.000 / 1.000 | 0 / 0 / 1.000 / 1.000 | 0 / 0 / 0 / 400 |
+| random participation | 400 | 0.022 / 0.015 / 0.010 / 0.048 | 0.020 / 0.018 / 0.000 / 0.037 | 372 / 9 / 13 / 6 |
+
+- **Under the margin null, the dispersion statistic carries low reuse.** At reuse 0.045, the
+  dispersion rejects in 0.147 of recordings (alone or with the eigenvalue), against 0.082 for the
+  eigenvalue. At 0.3, the dispersion rejects in 0.90 and the eigenvalue adds almost nothing alone
+  (0.005).
+- **Under the uniform null, the eigenvalue carries more of it.** At 0.045 it rejects alone in
+  0.078 against 0.054 for the dispersion. At 0.3, both statistics contribute (0.20 eigenvalue
+  only, 0.16 dispersion only).
+  - So at low reuse, the both-null verdict usually rests on the dispersion for the margin null
+    and on the eigenvalue for the uniform null.
+  - The two statistics rarely agree within the uniform null (0.010 both).
+- **At reuse 1, both statistics reject under both nulls in every recording.**
+- **Size holds.** Under random participation, each null rejects ("either") in 0.048 and 0.037 of
+  recordings, and both-null in 0.015. That is consistent with the Bonferroni design.
+- Detection at reuse 0.045 is 0.092 both-null (0.218 any flag) at 1000 surrogates, against
+  membership_limit.json's 8 of 60 (0.13) and 16 of 60 at 200. Within noise.

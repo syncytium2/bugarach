@@ -63,7 +63,7 @@ INK = "#222222"
 EV1 = "#eb6834"      # event 1 in the data figure (split by a 1 s border)
 EV2 = "#2a78d6"      # event 2 in the data figure (caught whole)
 # participants per event, light to dark, as in the chapter's existing figures
-K_COL = {5: "#86b6ef", 10: "#2a78d6", 20: "#0d366b"}
+K_COL = {5: "#9cc5f3", 10: "#3b8ee6", 20: "#0a2550"}
 BG_COL = {0.0096: "#2ca58d", 0.01: "#2a78d6", 0.05: "#d0453b"}
 
 
@@ -150,9 +150,9 @@ def fig_data(out):
 
     raster_xy = [(o, r + 1) for r, tr in enumerate(trains) for o in tr[(tr >= t0) & (tr < t1)]]
 
-    fig = plt.figure(figsize=(10.5, 13.2))
+    fig = plt.figure(figsize=(10.5, 13.8))
     gs = fig.add_gridspec(8, 2, width_ratios=[3.0, 1.15],
-                          height_ratios=[0.32, 3.4, 0.62, 0.62, 0.62, 0.95, 0.95, 1.05],
+                          height_ratios=[0.32, 3.4, 0.62, 0.62, 0.62, 0.95, 0.95, 1.45],
                           hspace=0.28, wspace=0.3, left=0.15, right=0.985, top=0.98,
                           bottom=0.01)
     lane = fig.add_subplot(gs[0, 0])
@@ -257,6 +257,8 @@ def fig_data(out):
                Patch(color=EV1, label=f"count from event 1's\n{evs[0].n_part} cells"),
                Patch(color=EV2, label=f"count from event 2's\n{evs[1].n_part} cells"),
                Patch(color=GREY, label="count from other\nonsets (on top)"),
+               Patch(facecolor="#f4f4f4", edgecolor="#dddddd",
+                     label="alternate windows\nor bins shaded"),
                Line2D([], [], color=INK, ls="--", lw=1.2, label=f"threshold K = {K} cells"),
                Line2D([], [], color=INK, lw=1.2,
                       label=f"expected onsets per frame,\nGaussian SD σ = {d['sigma']:g} s")]
@@ -273,7 +275,8 @@ def _stack(ax, edges, n_all, n_ev, cols, label_counts=True):
     """One bar per window or bin: each event's share in its color, the rest in grey on top."""
     for b in range(len(n_all)):
         lo, w = edges[b], edges[b + 1] - edges[b]
-        ax.axvspan(lo, lo + w, color="#f1f1f1" if b % 2 else "white", lw=0, zorder=0)
+        ax.axvspan(lo, lo + w, color="#f4f4f4" if b % 2 else "white", lw=0, zorder=0,
+                   ymin=0, ymax=1)   # full height of the panel, no edge
         base = 0
         for i in range(2):
             if n_ev[i][b]:
@@ -457,6 +460,7 @@ def fig_sharing(out):
                 a2.plot(sig / w, full, marker="_", ms=13, mew=2.2, color="#e0a100", zorder=2)
     a2.set_xscale("log"); a2.set_xlim(x[0], x[-1]); a2.set_ylim(0, 1.12)
     a2.axhline(1, color="#888", lw=0.8, ls=":")
+    a2.text(1.9, 1.015, "no bias", ha="right", va="bottom", fontsize=10, color="#555")
     a2.set_xticks([0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2])
     a2.set_xticklabels(["0.01", "0.02", "0.05", "0.1", "0.2", "0.5", "1", "2"])
     a2.set_xlabel("jitter SD ÷ window, σ/w")
@@ -529,6 +533,12 @@ def fig_chance(out):
     ax.axhline(budget, color=INK, ls="--", lw=1.2)
     ax.text(4.6, budget * 1.25, "one chance cluster per hour", ha="left", va="bottom",
             fontsize=10.5)
+    # 0.0096 and 0.01 Hz are one line at this scale but labeled 4 and 5: say why (role 8 F4)
+    ph4 = theory.chance_clusters_per_min(N, 0.0096, 4) * 60
+    ax.annotate(f"0.0096 Hz sits on the budget line at K = 4\n({ph4:.2f} per hour), so K = 5 is "
+                "the safe\nchoice there, as at 0.01 Hz", (4, ph4 / 60), xytext=(2.65, 3e-6),
+                fontsize=10, color=BG_COL[0.0096], ha="left", va="center",
+                arrowprops=dict(arrowstyle="-", color=BG_COL[0.0096], lw=0.9, shrinkB=5))
     measured_K = sorted({c["K"] for c in tc["chance"]})
     for K in Ks:
         if K not in measured_K:
@@ -565,9 +575,9 @@ def fig_order(out):
     5 % test in ch1_followups/order_power.json (order_power.py beside it)."""
     op = json.loads(ORDER_POWER.read_text())
     Es, n_cells, reps = op["Es"], op["N"], op["reps"]
-    fig, axes = plt.subplots(1, 2, figsize=(10.5, 5.6), sharey=True,
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 5.0), sharey=True,
                              gridspec_kw=dict(wspace=0.08, left=0.085, right=0.985,
-                                              top=0.93, bottom=0.34))
+                                              top=0.93, bottom=0.22))
     for ax, k in zip(axes, op["ks"]):
         rows = sorted((r for r in op["rows"] if r["k"] == k), key=lambda r: r["E"])
         for rr in op["rs"]:
@@ -594,18 +604,13 @@ def fig_order(out):
                  va="bottom", ha="right")
     handles = [Line2D([], [], color=c, lw=2, label=f"r = {rr:g}") for rr, c in R_COL.items()]
     handles += [Line2D([], [], color="#555", lw=2, ls="-", marker="o", ms=6,
-                       label="one latency template (M = 1)"),
+                       label="one template"),
                 Line2D([], [], color="#555", lw=2, ls="--", marker="s", ms=6, mfc="white",
-                       label="two templates (M = 2)"),
-                Line2D([], [], color=INK, ls="-.", lw=1.2, label="power 0.8"),
-                Line2D([], [], color=INK, ls=":", lw=1.2, label="test size 0.05")]
-    fig.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.06, 0.0), ncol=3,
-               frameon=False, fontsize=10.5, columnspacing=1.5)
-    fig.text(0.985, 0.025,
-             "r = δ/σ: a template's spread of latencies\nover the onset jitter (σ = "
-             f"{op['sigma_sec']:g} s).\nTest: exact-size 5 %, randomized at the\n"
-             "threshold, against 3,000 order-free\nrecordings of the same size.",
-             ha="right", va="bottom", fontsize=10.5, color="#333")
+                       label="two templates")]
+    # one row; the reference lines are labeled in panel B, and the test and r are defined in
+    # the caption (round 3, role 9 F10)
+    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=5,
+               frameon=False, fontsize=10.5, columnspacing=1.5, handlelength=2.4)
     title = "Power to detect order against the number of events"
     return save(fig, name("order-power-against-event-count", "recovery"), title, out)
 
@@ -673,16 +678,20 @@ def fig_regime(out):
                       label="resolved on both records"),
                Line2D([], [], color=JF_COL, mec=JF_COL, markerfacecoloralt="white",
                       fillstyle="left", marker="o", ls="none", ms=12, mew=2,
-                      label="first experiment only (left half)"),
-               Line2D([], [], color=JF_COL, mec=JF_COL, markerfacecoloralt="white",
-                      fillstyle="right", marker="o", ls="none", ms=12, mew=2,
-                      label="held-out record only (right half)"),
+                      label="first experiment only\n(left half filled)"),
                Line2D([], [], color="white", mec="#888", marker="o", ls="none", ms=12, mew=2,
                       label="resolved on neither"),
                Line2D([], [], ls="none", label="numbers: range of the four ratios,\n"
-                                               "first experiment over held-out"),
-               Patch(facecolor="#bbbbbb", alpha=0.6, edgecolor="#888",
-                     label="realistic parameter values")]
+                                               "first experiment over held-out")]
+    # no point is resolved on the held-out record only, so that key entry is drawn only if one is
+    if any((not all(lo_ok <= q <= hi_ok for q in first[c])) and all(lo_ok <= q <= hi_ok
+                                                                    for q in held[c])
+           for c in first):
+        handles.insert(2, Line2D([], [], color=JF_COL, mec=JF_COL, markerfacecoloralt="white",
+                                 fillstyle="right", marker="o", ls="none", ms=12, mew=2,
+                                 label="held-out record only\n(right half filled)"))
+    handles += [Patch(facecolor=col, alpha=0.35, edgecolor=col, lw=1.5, label=lab_name)
+                for lab_name, _, _, col, _ in LAB]
     fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=3,
                frameon=False, fontsize=10.5, columnspacing=1.6, handletextpad=0.5)
     title = "Realistic parameter values against the tested grid, on both records"
@@ -887,13 +896,19 @@ def fig_jointfit(out):
                     t = ", ".join(s for s in (f"{above} above" if above else "",
                                               f"{below} below" if below else "") if s)
                     if t:
-                        # beside the marker, or below it at 0.01 Hz, wherever it clears the rest
-                        left = sig < 0.1 or bg == 0.05
-                        ax.text(sig * f / (1.1 if left else 1), med if left else q1 - 0.05,
-                                t.replace(", ", "\n") + "\nthe curve",
-                                ha="right" if left else "center",
-                                va="center" if left else "top", fontsize=9.5, color="#555",
-                                linespacing=1.05)
+                        # placed where it clears the other marks and the y = 1 line: above
+                        # and left of the 0.05 s marker, beside the 0.05 Hz markers, and
+                        # below the 0.01 Hz marker at 1 s
+                        txt = t.replace(", ", "\n") + "\nthe curve"
+                        if sig < 0.1:
+                            ax.text(sig * f / 1.08, q3 + 0.12, txt, ha="right", va="bottom",
+                                    fontsize=9.5, color="#555", linespacing=1.05)
+                        elif bg == 0.05:
+                            ax.text(sig * f / 1.1, med, txt, ha="right", va="center",
+                                    fontsize=9.5, color="#555", linespacing=1.05)
+                        else:
+                            ax.text(sig * f, q1 - 0.05, txt, ha="center", va="top",
+                                    fontsize=9.5, color="#555", linespacing=1.05)
                 elif r["joint_at_bound"]:
                     ax.text(sig * f, q3 + 0.05, f"{r['joint_at_bound']} at\nthe bound",
                             ha="center", va="bottom", fontsize=9.5, color=col,
@@ -927,9 +942,9 @@ def fig_jointfit(out):
             med = np.median(d["ratio"])
             axC.plot([x0 - 0.36, x0 + 0.36], [med, med], color=INK, lw=2, zorder=4)
             within = int(np.sum((d["ratio"] >= 0.8) & (d["ratio"] <= 1.25)))
-            t = f"{within} of {d['ratio'].size}\nwithin"
+            t = f"{within} of {d['ratio'].size}\nin band"
             if d["at_bound"]:
-                t += f"\n{d['at_bound']} at\nbound"
+                t += f" ·\n{d['at_bound']} at\nbound"
             axC.text(x0, 6.2, t, ha="center", va="bottom", fontsize=9.5,
                      color=FORM_COL[form], linespacing=1.05)
         ticks.append(gi * 2.6 + 0.5)
@@ -1025,9 +1040,19 @@ def fig_schematic(out):
     T, ev, trains = _toy_trains()
     w = 2.0
     wlo, whi = ev[0] - w / 2, ev[0] + w / 2
-    rng = np.random.default_rng(11)
-    shifts = rng.uniform(5, T - 5, 4)
-    shifted = [np.sort((t + s) % T) for t, s in zip(trains, shifts)]
+    # the tool's own surrogate (tools/measure_coordination_rates.shifted): each cell moved
+    # circularly by a DISTINCT offset, a random permutation of multiples of SURR_SPACING windows,
+    # centred; on the 0.1 s frame grid the tool works in
+    import copy
+    import measure_coordination_rates as mcr_tool
+    dt = 0.1
+    L, wf = int(round(T / dt)), int(round(w / dt))
+    spacing = mcr_tool.SURR_SPACING * wf
+    rng = np.random.RandomState(5)
+    frames = [np.floor(t / dt + 0.5).astype(int) % L for t in trains]
+    probe = mcr_tool.shifted([np.zeros(1, int)] * 4, L, spacing, copy.deepcopy(rng))
+    shifts = np.array([((int(p[0]) + L // 2) % L - L // 2) * dt for p in probe])
+    shifted = [np.sort(f * dt) for f in mcr_tool.shifted(frames, L, spacing, rng)]
     ga = outer[0].subgridspec(4, 1, height_ratios=[0.35, 1, 0.35, 1], hspace=0.12)
     lane1 = fig.add_subplot(ga[0]); ras1 = fig.add_subplot(ga[1], sharex=lane1)
     lane2 = fig.add_subplot(ga[2], sharex=lane1); ras2 = fig.add_subplot(ga[3], sharex=lane1)
@@ -1058,12 +1083,13 @@ def fig_schematic(out):
         raster.set_xlim(0, T)
     sec = ras2.secondary_yaxis("right")
     sec.set_yticks([1, 2, 3, 4])
-    sec.set_yticklabels([f"shift {s:.0f} s" for s in shifts], fontsize=10)
+    sec.set_yticklabels([f"shift {s:+.1f} s".replace("-", "−") for s in shifts], fontsize=10)
     sec.tick_params(length=0); sec.spines["right"].set_visible(False)
     ras1.tick_params(labelbottom=False)
     minutes_axis(ras2, 0, T)
-    ras2.set_xlabel("time (toy recording, 60 s; each cell's surrogate train is its own train "
-                    "shifted circularly)", fontsize=10.5)
+    ras2.set_xlabel(f"time (toy recording, 60 s); surrogate: each cell's train shifted "
+                    f"circularly by a distinct multiple of {mcr_tool.SURR_SPACING} windows "
+                    f"({spacing * dt:g} s), centered", fontsize=10.5)
     letter(lane1, "A", x=-0.06, y=0.85)
 
     # B: membership matrix, a margin-preserving swap, and a uniform-null draw
@@ -1162,9 +1188,190 @@ def fig_schematic(out):
     return save(fig, name("surrogate-nulls-and-order-schematic", "recovery"), title, out)
 
 
+# --------------------------------------------------------------------------- I. assessor jitter
+
+ASSESSOR_JITTER = SV / "ch1_followups" / "assessor_jitter.json"
+AJ_PANELS = ((0.01, 4), (0.05, 3), (0.05, 4), (0.05, 6))
+
+
+def fig_assessor_jitter(out):
+    """The assessor's jitter reading against planted jitter, measured and predicted as a mixture
+    of chance and event clusters (ch1_followups/assessor_jitter.py and its record).
+
+    Measured: the median over recordings of jit_obs, events of 10+ cells (20 recordings per
+    planted jitter, pooled as Figure 1.1 D/H pools), with quartile bars. The chance-only level is
+    the median jit_obs of the background-only recordings (the record's summary). The two curves
+    are computed on a fine jitter grid with assessor_jitter.py's own functions: event-only is the
+    median SD of its truncated-Gaussian event clusters (k = 10 and 20 pooled); the mixture pools
+    the four conditions (k 10, 20; E 15, 45) with equal weight, each a mixture of the record's
+    chance-cluster SDs (weight c / (c + e)) and model event clusters, as the script pools it. The
+    record's own pooled mixture at the four planted values is checked against the curve."""
+    sys.path.insert(0, str(SV / "ch1_followups"))
+    import assessor_jitter as aj
+    rec = json.loads(ASSESSOR_JITTER.read_text())
+    a1 = aj.a1
+    rng = np.random.default_rng(20261029)
+    grid = np.geomspace(0.03, 1.5, 15)
+    E_per_min = {E: E / (a1.DURATION / 60) for E in a1.N_EVENTS}
+    fig, axes = plt.subplots(2, 2, figsize=(10.5, 10.2), sharex=True, sharey=True,
+                             gridspec_kw=dict(hspace=0.28, wspace=0.08, left=0.1, right=0.985,
+                                              top=0.95, bottom=0.22))
+    for ax, (bg, K), let in zip(axes.ravel(), AJ_PANELS, "ABCD"):
+        chance_sd = np.array([v for x in rec["bg"] if x["bg"] == bg for v in x["res"][str(K)]["sd"]])
+        c = theory.chance_clusters_per_min(a1.N_ROI, bg, K)
+        shares = {E: c / (c + e) for E, e in E_per_min.items()}
+        ev_only, mix = [], []
+        for sig in grid:
+            msd = {k: aj.event_sd_model(k, sig, bg, K, rng, n=3000) for k in (10, 20)}
+            ev_only.append(float(np.median(np.concatenate(list(msd.values())))))
+            pooled = []
+            for k in (10, 20):
+                for E in a1.N_EVENTS:
+                    nc = rng.binomial(10000, shares[E])
+                    pooled.append(np.concatenate([rng.choice(chance_sd, nc) if nc else np.zeros(0),
+                                                  rng.choice(msd[k], 10000 - nc)]))
+            mix.append(float(np.median(np.concatenate(pooled))))
+        ax.plot(grid, grid, color="#888", ls=":", lw=1, zorder=0)
+        chance_lvl = next(b["jit_obs_median"] for b in rec["summary"]["background"]
+                          if b["bg"] == bg and b["K"] == K)
+        ax.axhline(chance_lvl, color=INK, ls="--", lw=1.3, zorder=1)
+        ax.plot(grid, ev_only, color="#2a78d6", ls=(0, (1.2, 1.6)), lw=2.2, zorder=2)
+        ax.plot(grid, mix, color="#7b3fb5", lw=2.2, zorder=3)
+        for sig in sorted({e["jit"] for e in rec["ev"]}):
+            jo = np.array([e["res"][str(K)]["jit_obs"] for e in rec["ev"]
+                           if e["bg"] == bg and e["jit"] == sig and e["k"] >= 10])
+            jo = jo[np.isfinite(jo)]
+            q1, med, q3 = np.percentile(jo, [25, 50, 75])
+            ax.errorbar(sig, med, yerr=[[med - q1], [q3 - med]], fmt="o", color="#eb6834",
+                        ms=8, mec="white", mew=0.8, elinewidth=1.4, capsize=0, zorder=4)
+            stored = next(p["mixture"] for p in rec["summary"]["pooled"]
+                          if p["bg"] == bg and p["K"] == K and p["sigma"] == sig)
+            assert abs(np.interp(np.log(sig), np.log(grid), mix) - stored) < 0.05, (bg, K, sig)
+        lo_s, hi_s = min(shares.values()), max(shares.values())
+        ax.text(0.97, 0.03, f"background {bg:g} Hz per cell, K = {K} cells\n"
+                f"chance share c/(c + e): {lo_s:.2f}–{hi_s:.2f}\n(45 and 15 events)",
+                transform=ax.transAxes, ha="right", va="bottom", fontsize=10.5,
+                bbox=dict(facecolor="white", edgecolor="none", pad=1, alpha=0.85))
+        ax.set_xscale("log"); ax.set_yscale("log")
+        ax.set_xlim(0.03, 1.5); ax.set_ylim(0.03, 1.5)
+        ticks = [0.05, 0.1, 0.2, 0.5, 1]
+        ax.set_xticks(ticks); ax.set_xticklabels([f"{t:g}" for t in ticks])
+        ax.set_yticks(ticks); ax.set_yticklabels([f"{t:g}" for t in ticks])
+        ax.minorticks_off()
+        style(ax); letter(ax, let)
+    for ax in axes[1]:
+        ax.set_xlabel("planted jitter SD σ (s)")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("assessor's jitter reading (s)")
+    handles = [Line2D([], [], color="#eb6834", marker="o", ls="none", ms=8,
+                      label="measured: median over 20 recordings, events of 10 or 20 cells "
+                            "(bars: quartiles)"),
+               Line2D([], [], color="#7b3fb5", lw=2.2,
+                      label="mixture prediction: chance and event clusters, weighted c/(c + e)"),
+               Line2D([], [], color=INK, ls="--", lw=1.3,
+                      label="chance clusters only (background-only recordings)"),
+               Line2D([], [], color="#2a78d6", ls=(0, (1.2, 1.6)), lw=2.2,
+                      label="event clusters only (Gaussian truncated at ±1.5 s, plus caught "
+                            "background)"),
+               Line2D([], [], color="#888", ls=":", lw=1, label="reading = planted")]
+    fig.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.09, 0.0), ncol=1,
+               frameon=False, fontsize=10.5)
+    title = "The assessor's jitter reading as a mixture of chance and event clusters"
+    return save(fig, name("assessor-jitter-reading-as-mixture", "recovery"), title, out)
+
+
+# --------------------------------------------------------------------------- J. real intervals
+
+REAL_INTERVALS = SV / "separation" / "real_intervals" / "intervals_results.json"
+W_COL = {1.0: "#1b9e77", 2.0: "#d95f02", 4.0: "#7570b3"}
+S_MARK = {"fast": "o", "slow": "s"}
+
+
+def _interval_rows():
+    """Two records of the coordination-rates tool on event trains built from the measured interval
+    lists: (label, rows), each row with stream, k, w, measured (pooled solve()), its SE, and the
+    hard-core and general predictions, all as ratios to planted."""
+    real = json.loads(REAL_INTERVALS.read_text())["real"]
+    a = [dict(stream=r["stream"], k=r["k"], w=r["w"], meas=r["pooled"], se=r["pooled_se"],
+              hard=r["pred"]["page"], gen=r["pred"]["general"]) for r in real]
+    rc = json.loads(REALISTIC_COUNTS.read_text())
+    b = [dict(stream=s, k=r["k"], w=r["w"], meas=r["pooled"], se=r["pooled_se"],
+              hard=r["predicted"]["page"], gen=r["predicted"]["general"])
+         for s in ("fast", "slow") for r in rc[s]["windows"]]
+    lab = json.loads(LAB_VALUES.read_text())
+    ev_a = {s: lab[s]["events_per_recording_mean"] for s in ("fast", "slow")}
+    ev_b = {s: float(np.mean(rc[s]["events_per_recording"])) for s in ("fast", "slow")}
+    return [(f"one event per mean interval: {ev_a['fast']:.1f} (fast) and {ev_a['slow']:.1f} "
+             "(slow) events per recording", a),
+            (f"tabulated event counts: {ev_b['fast']:.1f} (fast) and {ev_b['slow']:.1f} (slow) "
+             "events per recording", b)]
+
+
+def fig_intervals(out):
+    """Measured against predicted rate and participants on event trains drawn from the measured
+    interval lists (separation/real_intervals/intervals.py; ch1_followups/realistic_counts.py).
+    Each measurement is drawn twice, at its hard-core prediction (open) and its general-form
+    prediction (filled), joined by a thin line; the vertical bar is +-1 bootstrap SE of the
+    measurement. Adapted from intervals.py's panels D and E; its residual, term-by-term and
+    joint-fit panels are not measured-against-predicted and are left out."""
+    recs = _interval_rows()
+    fig, axes = plt.subplots(2, 2, figsize=(10.5, 11.0),
+                             gridspec_kw=dict(hspace=0.5, wspace=0.3, left=0.1, right=0.985,
+                                              top=0.94, bottom=0.19))
+    for i, (head, rows) in enumerate(recs):
+        for j, (q, lab) in enumerate((("lam", "event rate"), ("k", "participants"))):
+            ax = axes[i, j]
+            for r in rows:
+                col, mk = W_COL[r["w"]], S_MARK[r["stream"]]
+                ms = 8 if r["k"] == 13 else 5.5
+                ax.plot([r["hard"][q], r["gen"][q]], [r["meas"][q]] * 2, color=col, lw=0.8,
+                        alpha=0.7, zorder=1)
+                ax.errorbar(r["gen"][q], r["meas"][q], yerr=r["se"][q], fmt=mk, ms=ms, color=col,
+                            mfc=col, mec=col, elinewidth=0.9, capsize=0, zorder=3)
+                ax.plot(r["hard"][q], r["meas"][q], mk, ms=ms, mfc="white", mec=col, mew=1.3,
+                        zorder=2)
+            vals = [v for r in rows for v in (r["hard"][q], r["gen"][q], r["meas"][q] - r["se"][q],
+                                               r["meas"][q] + r["se"][q])]
+            lo, hi = min(vals), max(vals)
+            pad = 0.07 * (hi - lo)
+            ax.plot([lo - pad, hi + pad], [lo - pad, hi + pad], color="#666", lw=0.9, zorder=0)
+            ax.set_xlim(lo - pad, hi + pad); ax.set_ylim(lo - pad, hi + pad)
+            ax.set_aspect("equal", adjustable="box")
+            slow = [r for r in rows if r["stream"] == "slow"]
+            above = sum(r["meas"][q] > r["gen"][q] for r in slow)
+            side = "above" if above * 2 > len(slow) else "below"
+            n_side = above if side == "above" else len(slow) - above
+            ax.set_xlabel(f"predicted {lab} ÷ planted\n(slow stream: {n_side} of {len(slow)} "
+                          f"{side} the general form)")
+            ax.set_ylabel(f"measured {lab} ÷ planted\n(pooled over 40 recordings, ±1 SE)")
+            style(ax); letter(ax, "ABCD"[2 * i + j], x=-0.04, y=1.03)
+        fig.text(0.5, axes[i, 0].get_position().y1 + 0.022, head, ha="center", va="bottom",
+                 fontsize=11.5)
+    handles = [Line2D([], [], color=c, marker="o", ls="none", ms=7, label=f"{w:g} s window")
+               for w, c in W_COL.items()]
+    handles += [Line2D([], [], color="#555", marker="o", ls="none", ms=7, mfc="white",
+                       label="at its hard-core prediction (open)"),
+                Line2D([], [], color="#555", marker="o", ls="none", ms=7,
+                       label="at its general-form prediction (filled)"),
+                Line2D([], [], color="#555", lw=0.8, label="joins one measurement's two "
+                                                           "predictions"),
+                Line2D([], [], color="#555", marker="o", ls="none", ms=7, mfc="#bbb",
+                       label="fast stream (σ 0.105 s)"),
+                Line2D([], [], color="#555", marker="s", ls="none", ms=7, mfc="#bbb",
+                       label="slow stream (σ 0.131 s)"),
+                Line2D([], [], color="#555", marker="o", ls="none", ms=8, mfc="#bbb",
+                       label="large: 13 cells per event; small: 7"),
+                Line2D([], [], color="#666", lw=0.9, label="measured = predicted")]
+    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=3,
+               frameon=False, fontsize=10.5, columnspacing=1.3)
+    title = "The coordination-rates tool on event trains built from measured intervals"
+    return save(fig, name("coordination-rates-on-real-intervals", "recovery"), title, out)
+
+
 # --------------------------------------------------------------------------- main
 
-FIGS = ["data", "sharing", "chance", "order", "regime", "residuals", "jointfit", "schematic"]
+FIGS = ["data", "sharing", "chance", "order", "regime", "residuals", "jointfit", "schematic",
+        "assessor", "intervals"]
 
 
 def main(argv=None):
@@ -1190,6 +1397,10 @@ def main(argv=None):
         fig_jointfit(a.out)
     if "schematic" in todo:
         fig_schematic(a.out)
+    if "assessor" in todo:
+        fig_assessor_jitter(a.out)
+    if "intervals" in todo:
+        fig_intervals(a.out)
 
 
 if __name__ == "__main__":

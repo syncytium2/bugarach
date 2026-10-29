@@ -1,7 +1,7 @@
 """Figures 2-4 for Aim 0: predictions against simulation.
 
 Figure 2: the coordination-rates tool's estimates, predicted against measured, one point per
-condition and window, and the assessor's chance clusters on background-only recordings.
+condition and window (its chance-cluster panels are now the chapter's Figure 1.9).
 Figure 3: assembled against random participation as the number of assemblies grows.
 Figure 4: the order indicator against its closed forms and fits.
 Reads theory_check.json, membership_limit.json and order_limit.json beside this file (run
@@ -49,7 +49,7 @@ def style(ax):
 
 def letter(ax, c):
     """Panel letter outside the plot area, above its top-left corner, as in Figure 1."""
-    ax.text(-0.02, 1.03, c, transform=ax.transAxes, fontsize=13, fontweight="bold",
+    ax.text(-0.02, 1.03, c, transform=ax.transAxes, fontsize=15, fontweight="bold",
             va="bottom", ha="right")
 
 
@@ -76,13 +76,16 @@ def save(fig, fname, title, dests):
 
 
 def fig2(dests):
+    """Predicted against measured for the coordination-rates tool, 2 x 3. The chance-cluster
+    panels that were D and H are the chapter's Figure 1.9 (ch1_new_figures.py, chance) and were
+    dropped here (chapter review round 3, role 9 F7)."""
     tc = json.loads((HERE / "theory_check.json").read_text())
     cr = tc["coord_rates"]
     quant = [("k", "participants per event"), ("lam", "coordinated events per min"),
-             ("share", "coordinated share of onsets")]
+             ("share", "coordinated onset rate per cell")]
     lim = (0.15, 2.6)
-    fig, axes = plt.subplots(2, 4, figsize=(13, 7.4))
-    L = "ABCDEFGH"
+    fig, axes = plt.subplots(2, 3, figsize=(11, 7.6))
+    L = "ABCDEF"
     for i, bg in enumerate((0.01, 0.05)):
         rows = [r for r in cr if r["bg"] == bg]
         for j, (q, lab) in enumerate(quant):
@@ -97,7 +100,7 @@ def fig2(dests):
             ax.set_xlim(*lim); ax.set_ylim(*lim)
             ax.set_xlabel("predicted ÷ planted")
             ax.set_ylabel(lab + "\nmeasured ÷ planted", fontsize=11)
-            style(ax); letter(ax, L[i * 4 + j])
+            style(ax); letter(ax, L[i * 3 + j])
             off = [r for r in rows if np.isfinite(r["meas"][q]) and not (lim[0] <= r["meas"][q] <= lim[1])]
             if off:
                 ks = sorted({r["k"] for r in off})
@@ -107,43 +110,16 @@ def fig2(dests):
                 # narrow, in the empty lower-right corner (below the identity line, right of x = 1.4)
                 ax.text(0.98, 0.02, f"{len(off)} off scale:\n{where}\n({', '.join(str(x) for x in ks)}-cell)",
                         transform=ax.transAxes, ha="right", va="bottom", fontsize=10.5, color="#444")
-        ax = axes[i, 3]
-        ch = [c for c in tc["chance"] if c["bg"] == bg]
-        lo_ax, hi_ax = 1e-3, 20
-        ax.plot([lo_ax, hi_ax], [lo_ax, hi_ax], color="#888", ls=":", lw=1, zorder=0)
-        tiny = [c for c in ch if c["predicted"] < lo_ax and c["pooled_rate"] < lo_ax]
-        if tiny:
-            def sci(v):
-                e = int(np.floor(np.log10(v)))
-                return f"{v / 10 ** e:.0f} × 10$^{{{e}}}$"
-            ax.text(0.03, 0.97, "\n".join(f"K = {c['K']}: {sci(c['predicted'])} per min\npredicted, "
-                                          f"{c['pooled_count']} measured\n(not testable at this size)"
-                                          for c in tiny),
-                    transform=ax.transAxes, ha="left", va="top", fontsize=11, color="#333")
-        shown = sorted([c for c in ch if c not in tiny], key=lambda c: c["K"])
-        for n_, c in enumerate(shown):
-            x, y = c["predicted"], c["pooled_rate"]
-            ax.errorbar(x, y, yerr=[[y - c["pooled_rate_ci"][0]], [c["pooled_rate_ci"][1] - y]],
-                        fmt="o", color="#6250d6", ms=7, capsize=3, zorder=2)
-            # alternate sides so each label sits by its own point
-            ax.annotate(f"K = {c['K']}", (x, y), textcoords="offset points",
-                        xytext=(-10, 8) if n_ % 2 == 0 else (10, -14),
-                        ha="right" if n_ % 2 == 0 else "left", fontsize=11, color="#333")
-        ax.set_xscale("log"); ax.set_yscale("log"); ax.set_xlim(lo_ax, hi_ax); ax.set_ylim(lo_ax, hi_ax)
-        ax.set_xlabel("predicted (per min)")
-        ax.set_ylabel("chance clusters, background only\nmeasured (per min)", fontsize=11)
-        style(ax); letter(ax, L[i * 4 + 3])
         fig.text(0.012, 0.71 - 0.43 * i, f"background {bg:g} Hz per cell", rotation=90,
                  fontsize=12, va="center")
     handles = [Line2D([], [], color=c, marker=m, ls="none", ms=7,
-                      label=f"full prediction, {kk} cells per event") for kk, (c, m) in K_STYLE.items()]
+                      label=f"measured, placed at the hard-core prediction, {kk} cells per event")
+               for kk, (c, m) in K_STYLE.items()]
     handles += [Line2D([], [], color=GREY, marker="o", ls="none", ms=5,
-                       label="same measurements, Poisson-train prediction"),
-                Line2D([], [], color="#888", ls=":", label="prediction = measurement"),
-                Line2D([], [], color="#6250d6", marker="o", ls="none", ms=7,
-                       label="chance clusters (95 % interval about the marker size)")]
-    fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False, fontsize=11)
-    fig.tight_layout(rect=(0.03, 0, 1, 0.88))
+                       label="same measurements, placed at the Poisson-train prediction"),
+                Line2D([], [], color="#888", ls=":", label="prediction = measurement")]
+    fig.legend(handles=handles, loc="upper center", ncol=2, frameon=False, fontsize=10.5)
+    fig.tight_layout(rect=(0.03, 0, 1, 0.86))
     save(fig, name("one source predicted against measured"),
          "Figure 2, predicted against measured (Aim 0)", dests)
 
@@ -161,7 +137,7 @@ def fig3(dests):
             label=f"simulated (mean of {m['reps_mean']})")
     ax.set_xscale("log"); ax.set_yscale("log"); ax.set_xlim(*xl)
     ax.set_xlabel("reuse: events per assembly, E/M")
-    ax.set_ylabel("pair-count variance ÷ random")
+    ax.set_ylabel("pair co-participation variance\n÷ random")
     style(ax); letter(ax, "A")
     ax.legend(frameon=False, fontsize=11, loc="upper left")
     ax = axes[1]
@@ -173,7 +149,7 @@ def fig3(dests):
     re_ = 100 * m["random_flagged"]
     ax.axhline(re_, color="#888", ls="--", lw=0.8, label=f"random participation, either ({re_:.0f} %)")
     ax.axhline(rb, color="#888", ls=":", lw=1, label=f"random participation, both ({rb:.0f} %)")
-    ax.text(0.62, 0.62, "M = 1\n(rightmost):\nuniform null\nonly",
+    ax.text(0.62, 0.62, f"at M = 1\n(E/M = {m['E']}):\nuniform null\nonly",
             transform=ax.transAxes, ha="left", va="top", fontsize=11, color="#444")
     ax.legend(frameon=False, fontsize=11, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2)
     ax.set_xscale("log"); ax.set_xlim(*xl); ax.set_ylim(-4, 105)
@@ -203,7 +179,7 @@ def fig4(dests):
     ax.set_yticks([0.05, 0.1, 0.2, 0.4, 0.8]); plain_log(ax, "y")
     ax.set_xlabel("r = template spread ÷ jitter"); ax.set_ylabel("order indicator F")
     style(ax); letter(ax, "A")
-    ax.legend(frameon=False, fontsize=10.5, loc="upper center", bbox_to_anchor=(0.45, -0.2))
+    ax.legend(frameon=False, fontsize=12, loc="upper center", bbox_to_anchor=(0.45, -0.2))
     ax = axes[1]
     f0 = o["many"][0]["F_0"]
     MM = np.geomspace(2, 300, 200)
@@ -219,7 +195,7 @@ def fig4(dests):
     ax.set_yticks([0.05, 0.1, 0.2, 0.4, 0.8]); plain_log(ax, "y")
     ax.set_xlabel("latency templates M (r = 2.5, 2000 events)"); ax.set_ylabel("order indicator F")
     style(ax); letter(ax, "B")
-    ax.legend(frameon=False, fontsize=10.5, loc="upper center", bbox_to_anchor=(0.45, -0.2))
+    ax.legend(frameon=False, fontsize=12, loc="upper center", bbox_to_anchor=(0.45, -0.2))
     ax = axes[2]
     # Score sort: derived, nothing fitted (kendall_w/derivation.md). The exact finite-n̄ mean is the
     # lattice convolution kendall_w.F_exact over integer event counts E; the asymptote is c(N,k)/√n̄,
@@ -264,7 +240,7 @@ def fig4(dests):
     ax.set_xticks([0.3, 1, 3, 10, 30]); ax.set_yticks([0.05, 0.1, 0.2, 0.4, 0.8]); plain_log(ax)
     ax.set_xlabel("events a pair of cells shares, n̄"); ax.set_ylabel("order indicator F, no order")
     style(ax); letter(ax, "C")
-    ax.legend(frameon=False, fontsize=10.5, loc="upper center", bbox_to_anchor=(0.45, -0.2), ncol=1)
+    ax.legend(frameon=False, fontsize=12, loc="upper center", bbox_to_anchor=(0.45, -0.2), ncol=1)
     for a_ in axes:
         a_.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
     fig.tight_layout()

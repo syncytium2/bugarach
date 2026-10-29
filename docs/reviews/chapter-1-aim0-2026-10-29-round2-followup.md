@@ -2,7 +2,7 @@
 
 **Artifact reviewed:** the blob `cdc8fbf6afea9df5c496b218e3e5c99fc2a8c881`, committed in ca33ab6a. It was compared with the round-1 blob a3d06b04.
 
-**Findings ruled:** every row of the eleven reports in `docs/reviews/chapter-1-aim0_2026-10-29-roles/`, 192 findings in all. Role 9's item 17 has no severity ("no change required"), so it is listed but not counted.
+**Findings ruled:** every row of the eleven reports in `docs/reviews/chapter-1-aim0-2026-10-29-round1-roles/`, 192 findings in all. Role 9's item 17 has no severity ("no change required"), so it is listed but not counted.
 
 **Sources used besides the blob:**
 - `docs/learned/synthetic_validation/ch1_figure_repairs.md`, the author's log of the figure repairs.

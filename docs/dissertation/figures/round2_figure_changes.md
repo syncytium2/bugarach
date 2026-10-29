@@ -1,7 +1,7 @@
 # Round-2 figure changes, Chapter 1
 
 These are the changes made after the round-2 committee review of `chapter-1-aim0.md`
-(`docs/reviews/chapter-1-aim0_2026-10-29-round2-roles/`). The sources are role 9, findings 1–4;
+(`docs/reviews/chapter-1-aim0-2026-10-29-round2-roles/`). The sources are role 9, findings 1–4;
 role 10, findings 2, 5, 6, 7, 11 and 18; role 8, findings F7 and F11; role 1, finding 1; and role 4,
 finding 9. Figure numbers are the chapter's. Run every command from the repository root. Existing file names are kept; the
 three new files were named with `tools/naming/artifact_name.py build` and pass `check`.
@@ -30,3 +30,28 @@ All eight PNGs were checked by eye at about 900 px wide after the change.
   `realistic_counts.json`. Fast stream: 4 and 2 of 40 within (hard-core, general) for 7 cells, 8
   and 8 for 13 cells. Slow stream: 17 and 18, and 16 and 16.
 - **Captions** for the two new figures are drafted in `README.md` as Figures 1.X and 1.Y.
+
+## Round 3
+
+These changes answer the round-3 review: role 9 (F1, F2, F7, F10), role 8 (F4, F6, F18, F19), role
+7, and role 10's layout minors. Figure numbers are the chapter's final ones. Every PNG was checked
+by eye at about 900 px wide. The new files were named with `tools/naming/artifact_name.py build`
+and pass `check`. `NEW = PYTHONPATH=src python docs/dissertation/figures/ch1_new_figures.py`.
+
+| figure | file | change | regenerate |
+|---|---|---|---|
+| new (§1.4.5), real intervals | `docs/dissertation/figures/synth_recovery_plot_coordination-rates-on-real-intervals_20261029.png` | New (role 9 F1), adapted from `separation/real_intervals/intervals.py` panels D and E; its residual, term-by-term and joint-fit panels are dropped. Measured against predicted rate and participants. Each measurement is drawn open at its hard-core prediction (the old "page" form, relabeled) and filled at its general-form prediction, joined by a line, with ±1 bootstrap SE. A, B: one event per mean interval (`intervals_results.json`). C, D: the tabulated counts, 7.3 and 16.5 events per recording (`ch1_followups/realistic_counts.json`). The x-label counts the slow-stream points on one side of the general form: 6 of 6 above in rate and 6 of 6 below in participants. | `$NEW --only intervals` |
+| new (§1.5.2), assessor jitter | `docs/dissertation/figures/synth_recovery_plot_assessor-jitter-reading-as-mixture_20261029.png` | New (role 9 F2), four panels: 0.01 Hz K 4; 0.05 Hz K 3, 4, 6. Measured median jit_obs (10+ cells, 20 recordings, quartile bars) comes from `assessor_jitter.json`. The mixture (solid) and event-only (dotted, ceiling about 0.74 s) curves are computed on a 15-point jitter grid with `assessor_jitter.py`'s own `event_sd_model` and its pooling rule. The code asserts they agree with the record's stored mixture within 0.05 s at the four planted values. Chance-only (dashed) is the record's background jit_obs median. Identity line. Chance share c/(c + e) over 45 and 15 events printed in each panel. | `$NEW --only assessor` |
+| 1.2, data raster | `docs/dissertation/figures/synth_raster_plot_data-and-what-each-tool-sees_20261029.png` | The alternate-window stripes are lighter (they already ran full panel height) and have a key entry, "alternate windows or bins shaded". The key row is taller so it no longer meets the x-label. There was no "coordinated share" label here. The half-window offset is stated in the caption (not drawn), and so are B's two orange shades. | `$NEW --only data` |
+| 1.1 (aim1_figure.py) | `docs/learned/synthetic_validation/synth_recovery_plot_one-source-jitter_20261023.png` | Panels C and G: "coordinated share of onsets" → "coordinated onset rate" (the label reads "… recovered ÷ planted"). Regenerated after the edit. | `PYTHONPATH=src python docs/learned/synthetic_validation/aim1_figure.py` (also writes the darkroom copy unless `--out`) |
+| 1.3, schematic | `docs/dissertation/figures/synth_recovery_plot_surrogate-nulls-and-order-schematic_20261029.png` | Panel A now uses the tool's surrogate, `measure_coordination_rates.shifted`, with `SURR_SPACING`: distinct offsets in multiples of two windows, centered (−6, −2, +2, +6 s), labeled beside each cell. It replaces independent uniform shifts (role 7). | `$NEW --only schematic` |
+| 1.4, parameter map | `docs/dissertation/figures/synth_recovery_plot_realistic-values-against-tested-grid_20261029.png` | The unused "held-out record only" key entry is dropped; it is drawn only if such a point exists (role 8 F18). The box swatches are orange and violet, one per stream. | `$NEW --only regime` |
+| 1.5, window sharing | `docs/dissertation/figures/synth_recovery_plot_window-sharing-and-participant-bias_20261029.png` | The dotted k̂/k = 1 line is labeled "no bias". The 5, 10 and 20-cell shades have more contrast. | `$NEW --only sharing` |
+| 1.6 (aim0_figures.py) | `docs/learned/synthetic_validation/synth_recovery_plot_one-source-predicted-against-measured_20261023.png` | The chance-cluster panels D and H are dropped and the figure is re-gridded 2 × 3 (A–F; role 9 F7). Legend: "full prediction" → "measured, placed at the hard-core prediction" (gray: "… placed at the Poisson-train prediction"). The share label is now "coordinated onset rate per cell". The "(not testable at this size)" note went with the chance panels. | `PYTHONPATH=src python docs/learned/synthetic_validation/aim0_figures.py` (redraws 1.6, 1.12, 1.13) |
+| 1.7, residuals | `…participant-residuals-two-records_20261029.png` | No change to the figure. The caption now explains the categorical σ/w axis and the gray dividers. | — |
+| 1.8, joint fit | `docs/dissertation/figures/synth_recovery_plot_joint-fit-against-correlogram_20261029.png` | C counts read "4 of 40 in band · 18 at bound" (role 8 F19). In A/B the "N below the curve" notes at 0.05 s sit above the marker, off the y = 1 line. | `$NEW --only jointfit` |
+| 1.9, chance clusters | `docs/dissertation/figures/synth_recovery_plot_chance-clusters-against-threshold_20261029.png` | Annotated: 0.0096 Hz sits on the budget line at K = 4 (0.98 per hour), so K = 5 is the safe choice there, as at 0.01 Hz (role 8 F4). | `$NEW --only chance` |
+| 1.12 (aim0_figures.py) | `docs/learned/synthetic_validation/synth_assembly-membership_plot_assemblies-converge-to-random_20261023.png` | "M = 1 (rightmost)" → "at M = 1 (E/M = 45)". y-label "pair co-participation variance ÷ random". | as 1.6 |
+| 1.13 (aim0_figures.py) | `docs/learned/synthetic_validation/synth_recovery_plot_order-indicator-closed-forms_20261023.png` | Legend text 10.5 → 12 pt and panel letters 13 → 15 pt. The letters change in 1.6 and 1.12 too, since they share `letter()`. | as 1.6 |
+| 1.14, order power | `docs/dissertation/figures/synth_recovery_plot_order-power-against-event-count_20261029.png` | The in-figure methods text is removed and the legend is one row (r = 1, 2.5, 5; one template; two templates); the reference lines stay labeled in B (role 9 F10). σ = 0.2 s, r = δ/σ and the test are in the README caption. | `$NEW --only order` |
+| 1.10, floor | — | Not redrawn: panel D's slow stream keeps its dashing, with ✖ markers. The caption must say so (see the report). | — |
