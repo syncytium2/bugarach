@@ -115,3 +115,12 @@ The chapter and the goal page were outside this pass, so their captions still ne
 - **Fig 1.3:** its on-figure note "M = 1 (rightmost)" was not asked for and is unchanged.
 - **Darkroom copies:** they were not refreshed, because these runs wrote their darkroom copy to
   a scratch folder. Rerun without `--out` to refresh them.
+
+## Round 2
+
+The round-2 figure changes (Figures 1.4, 1.9, 1.10, 1.11 and 1.14 in the chapter's final
+numbering, and three new figures: the mechanisms schematic, participant residuals on both records,
+and the joint fit against the correlogram tool) are logged in
+[`docs/dissertation/figures/round2_figure_changes.md`](../../dissertation/figures/round2_figure_changes.md).
+The chapter's figure numbers changed when its sections were reordered; the README there keeps the
+working numbers.

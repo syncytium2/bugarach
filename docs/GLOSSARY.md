@@ -694,6 +694,13 @@ Added 2026-10-23 with [`goals/synthetic-validation.md`](goals/synthetic-validati
   would not have it.
 - **joint fit** — jitter, participants and event rate fitted together to the coordination-rates
   tool's pair and triple counts at its three windows.
+- **coordinated onset rate per cell** — λk/N, the rate of coordinated onsets per cell, which the
+  coordination-rates tool reports. Plotted as a ratio to planted, it is labeled "coordinated
+  share" in the Chapter 1 figures; as a bare quantity it is a rate, not a share.
+- **chance cluster** — an assessor cluster whose gathered onsets are mostly background. Predicted
+  at 60 q (1 − q)² per minute (`theory.chance_clusters_per_min`); at 0.05 Hz they make up most
+  clusters, and their spread sets the assessor's jitter reading
+  (`learned/synthetic_validation/ch1_followups/assessor_jitter.py`).
 - **order indicator F** — net agreement of pair lead signs with an order of the ROIs, as a share
   of pair co-participations (`learned/synthetic_validation/order_limit.py`); not Kreuz's
   Synfire Indicator, which is normalized by all spikes. **Score sort**: order by each ROI's net

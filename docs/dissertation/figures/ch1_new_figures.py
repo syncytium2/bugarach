@@ -1,18 +1,23 @@
 """New figures for Chapter 1 (Aim 0): the data, the tools and the theory, drawn.
 
 The committee review of the chapter (docs/reviews/chapter-1-aim0_2026-10-29-roles/, roles 8
-and 9) found no figure in its first ~3,100 words. These five fill that gap:
+and 9) found no figure in its first ~3,100 words. The first five fill that gap; the last two
+answer the round-2 review (docs/reviews/chapter-1-aim0_2026-10-29-round2-roles/, role 9):
 
-  data      what one simulated recording looks like, and what each tool sees of it
-  sharing   window sharing g2, g3 (Gaussian and uniform jitter) and the participant bias k-hat/k
-  chance    chance clusters per minute against the assessor's threshold K
-  order     power to detect order against events per recording (exact-size 5 % test)
-  regime    realistic parameter values (the bench levels) against the tested grid
+  data       what one simulated recording looks like, and what each tool sees of it
+  sharing    window sharing g2, g3 (Gaussian and uniform jitter) and the participant bias k-hat/k
+  chance     chance clusters per minute against the assessor's threshold K
+  order      power to detect order against events per recording (exact-size 5 % test)
+  regime     realistic parameter values (fast and slow streams) against the tested grid, both records
+  residuals  participant residuals per condition-window, first experiment and held-out record
+  jointfit   the joint fit against the correlogram tool, and per recording at realistic values
 
 Every computed curve comes from the repository's own code: theory.py (g2, g3, the
 chance-cluster rate), bugarach.simulate.simulate_coordination (the raster), the tools' own
-binning (bugarach.assess, bugarach.detectors.count), and the run records theory_check.json and
-aim1_one_source.json beside theory.py, and ch1_followups/order_power.json. Nothing here is
+binning (bugarach.assess, bugarach.detectors.count), bugarach.event_floor.floor_of (the first K
+under one chance cluster per hour), and the run records theory_check.json and
+aim1_one_source.json beside theory.py, and ch1_followups/ (order_power, theory_check_heldout,
+correlogram_vs_joint, realistic_counts or lab_values). Nothing here is
 re-derived, except the uniform-jitter window sharing, which has no repository code and is
 computed by numerical integration over the range of n uniform onsets (see `g_uniform`).
 
@@ -26,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
@@ -476,27 +482,38 @@ def fig_sharing(out):
 # --------------------------------------------------------------------------- C. chance clusters
 
 def fig_chance(out):
+    """Chance clusters per minute against the assessor's threshold K. The first K under one per
+    hour is bugarach.event_floor.floor_of at the estate's FA_PER_HOUR, the same rule the event
+    floor uses, applied to the predicted rate."""
+    from bugarach.event_floor import FA_PER_HOUR, floor_of
     tc = json.loads((SV / "theory_check.json").read_text())
     aim = json.loads((SV / "aim1_one_source.json").read_text())
     n_rec = {bg: sum(1 for r in aim["chance_arm"] if r["bg_rate"] == bg) for bg in (0.01, 0.05)}
     minutes = aim["duration_sec"] / 60.0
     N = aim["n_roi"]
     Ks = np.arange(3, 11)
-    budget = 1.0 / 60.0
-    fig, ax = plt.subplots(figsize=(10, 5.8))
-    fig.subplots_adjust(left=0.105, right=0.6, top=0.97, bottom=0.12)
-    handles = []
+    budget = FA_PER_HOUR / 60.0              # per minute
+    y_lo = 1e-8
+    fig, ax = plt.subplots(figsize=(10, 6.2))
+    fig.subplots_adjust(left=0.1, right=0.985, top=0.97, bottom=0.2)
+    # direct labels at each line's right end; 0.01 and 0.0096 Hz end together, so one goes
+    # above and one below
+    dy = {0.0096: -11, 0.01: 11, 0.05: 0}
     for bg, col in BG_COL.items():
-        pred = np.array([theory.chance_clusters_per_min(N, bg, int(K)) for K in Ks])
-        safe = int(Ks[np.argmax(pred < budget)])
-        ax.plot(Ks, pred, color=col, lw=2, marker="o", mfc="white", mec=col, ms=7, mew=1.5,
-                zorder=2)
-        meas = " (realistic value), predicted only" if bg not in n_rec else ", predicted"
-        handles.append(Line2D([], [], color=col, lw=2, marker="o", mfc="white", mec=col,
-                              label=f"{bg:g} Hz per cell{meas};\n"
-                                    f"  first K under one per hour: {safe} cells"
-                                    f"\n  ({pred[safe - Ks[0]] * 60:.2f} per hour at that K)"))
-    for i, (bg, col) in enumerate(((0.01, BG_COL[0.01]), (0.05, BG_COL[0.05]))):
+        per_hour = [theory.chance_clusters_per_min(N, bg, K) * 60 for K in range(0, N + 1)]
+        safe = floor_of(per_hour, FA_PER_HOUR)
+        pred = np.array([per_hour[int(K)] / 60 for K in Ks])
+        vis = pred >= y_lo
+        ax.plot(Ks[vis], pred[vis], color=col, lw=2, marker="o", mfc="white", mec=col, ms=7,
+                mew=1.5, zorder=2)
+        xe, ye = Ks[vis][-1], pred[vis][-1]
+        real = ", realistic" if bg == 0.0096 else ""
+        ax.annotate(f"{bg:g} Hz{real}: first K under\none per hour: {safe} cells "
+                    f"({per_hour[safe]:.2f} per hour)",
+                    (xe, ye), textcoords="offset points", xytext=(12, dy[bg]), color=col,
+                    fontsize=10.5, va="center", ha="left")
+    for bg in (0.01, 0.05):
+        col = BG_COL[bg]
         for c in (c for c in tc["chance"] if c["bg"] == bg):
             x = c["K"] + (0.1 if bg == 0.05 else -0.1)
             if c["pooled_count"] == 0:
@@ -509,27 +526,30 @@ def fig_chance(out):
                 y = c["pooled_rate"]
                 ax.errorbar(x, y, yerr=[[y - c["pooled_rate_ci"][0]], [c["pooled_rate_ci"][1] - y]],
                             fmt="o", color=col, ms=7, capsize=3, zorder=3)
-        handles.append(Line2D([], [], color=col, marker="o", ls="none", ms=7,
-                              label=f"{bg:g} Hz, measured: {n_rec[bg]} background-only\n"
-                                    f"  recordings, {n_rec[bg] * minutes:,.0f} min; 95 % interval"))
     ax.axhline(budget, color=INK, ls="--", lw=1.2)
-    ax.text(10.25, budget * 1.25, "one per hour", ha="right", va="bottom", fontsize=10.5)
+    ax.text(4.6, budget * 1.25, "one chance cluster per hour", ha="left", va="bottom",
+            fontsize=10.5)
     measured_K = sorted({c["K"] for c in tc["chance"]})
     for K in Ks:
         if K not in measured_K:
-            ax.axvspan(K - 0.5, K + 0.5, color="#f3f3f3", zorder=0, lw=0)
-    ax.set_yscale("log"); ax.set_ylim(1e-7, 30); ax.set_xlim(2.5, 10.5)
+            ax.axvspan(K - 0.5, K + 0.5, color="#f0f0f0", zorder=0, lw=0)
+    ax.set_yscale("log"); ax.set_ylim(y_lo, 30); ax.set_xlim(2.5, 13.6)
     ax.set_xticks(Ks)
-    ax.set_xlabel("assessor's threshold K (cells in one 1 s bin, of 33)")
+    ax.spines["bottom"].set_bounds(2.5, 10.5)
+    ax.set_xlabel("assessor's threshold K (cells in one 1 s bin, of 33)", x=0.36)
     ax.set_ylabel("chance clusters per minute\n(background only)")
     for sp in ("top", "right"):
         ax.spines[sp].set_visible(False)
     ax.grid(True, axis="y", color="#e5e5e5", lw=0.6)
-    handles += [Line2D([], [], color=INK, ls="--", label="budget: one chance cluster per hour"),
-                Patch(color="#f3f3f3", label=f"K not measured (only K = "
-                                             f"{', '.join(str(k) for k in measured_K)} were)")]
-    ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(1.02, 1.0), frameon=False,
-              fontsize=10.5, labelspacing=0.9)
+    handles = [Line2D([], [], color="#555", lw=2, marker="o", mfc="white", mec="#555",
+                      label="predicted"),
+               Line2D([], [], color="#555", marker="o", ls="none", ms=7,
+                      label=f"measured, {n_rec[0.01]} background-only recordings "
+                            f"({n_rec[0.01] * minutes:,.0f} min) each,\n95 % interval "
+                            "(intervals smaller than markers)"),
+               Patch(facecolor="#f0f0f0", edgecolor="#cccccc", label="K not measured")]
+    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=3,
+               frameon=False, fontsize=10.5, columnspacing=1.6, handlelength=1.8)
     title = "Chance clusters against the assessor's threshold"
     return save(fig, name("chance-clusters-against-threshold", "recovery"), title, out)
 
@@ -557,7 +577,7 @@ def fig_order(out):
                 ax.plot([r["E"] for r in rows], p, color=R_COL[rr], ls=ls, lw=2,
                         marker="o" if M == 1 else "s", ms=6,
                         mfc=R_COL[rr] if M == 1 else "white", mec=R_COL[rr], mew=1.5)
-        ax.axhline(0.8, color=INK, ls="--", lw=1.2)
+        ax.axhline(0.8, color=INK, ls="-.", lw=1.2)
         ax.axhline(0.05, color=INK, ls=":", lw=1.2)
         ax.set_xticks(Es); ax.set_xlim(0.7, max(Es) + 0.3); ax.set_ylim(0, 1.04)
         ax.set_xlabel(f"events per recording, E ({k} of {n_cells} cells per event)")
@@ -577,7 +597,7 @@ def fig_order(out):
                        label="one latency template (M = 1)"),
                 Line2D([], [], color="#555", lw=2, ls="--", marker="s", ms=6, mfc="white",
                        label="two templates (M = 2)"),
-                Line2D([], [], color=INK, ls="--", lw=1.2, label="power 0.8"),
+                Line2D([], [], color=INK, ls="-.", lw=1.2, label="power 0.8"),
                 Line2D([], [], color=INK, ls=":", lw=1.2, label="test size 0.05")]
     fig.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.06, 0.0), ncol=3,
                frameon=False, fontsize=10.5, columnspacing=1.5)
@@ -592,66 +612,568 @@ def fig_order(out):
 
 # --------------------------------------------------------------------------- E. regime map
 
-LAB = (("fast bench level", 0.105, 7, "#eb6834"), ("slow bench level", 0.131, 13, "#8e44ad"))
+LAB = (("fast stream, realistic values", 0.105, 7, "#eb6834", "fast"),
+       ("slow stream, realistic values", 0.131, 13, "#8e44ad", "slow"))
+HELDOUT = SV / "ch1_followups" / "theory_check_heldout.json"
+LAB_VALUES = SV / "ch1_followups" / "lab_values.json"
+JF_COL = "#2a78d6"
+
+
+def _jf_ranges(path):
+    """{(sigma, k): [recovered / planted jitter per condition]} from a check() record's joint fit
+    (median of each condition's recordings, four conditions per point)."""
+    jf = json.loads(path.read_text())["joint_fit"]
+    out = {}
+    for r in jf:
+        out.setdefault((r["sigma"], r["k"]), []).append(r["sigma_q"][1] / r["sigma"])
+    return out
 
 
 def fig_regime(out):
-    tc = json.loads((SV / "theory_check.json").read_text())
-    jf = tc["joint_fit"]
-    fig, ax = plt.subplots(figsize=(9.6, 5.8))
-    fig.subplots_adjust(left=0.1, right=0.6, top=0.97, bottom=0.12)
+    """The tested grid, judged on both records: the first experiment (theory_check.json) and the
+    held-out rerun on fresh seeds (ch1_followups/theory_check_heldout.json). A point is resolved on
+    a record when all four of its condition medians fall within 0.8-1.25 of planted. Left half of
+    the marker: first experiment; right half: held-out record."""
+    first, held = _jf_ranges(SV / "theory_check.json"), _jf_ranges(HELDOUT)
+    strips, _ = _lab_strips()      # the same per-recording record as fig_jointfit C
     lo_ok, hi_ok = 0.8, 1.25
-    for sig in sorted({r["sigma"] for r in jf}):
-        for k in sorted({r["k"] for r in jf}):
-            ratios = [r["sigma_q"][1] / r["sigma"] for r in jf
-                      if r["sigma"] == sig and r["k"] == k]
-            ok = all(lo_ok <= q <= hi_ok for q in ratios)
-            ax.plot(sig, k, marker="o", ms=13, ls="none",
-                    color="#2a78d6" if ok else "white", mec="#2a78d6" if ok else "#888",
-                    mew=2, zorder=3)
-            ax.text(sig * 1.1, k - 1.25, f"{min(ratios):.2f}–{max(ratios):.2f}", fontsize=10,
-                    color="#444", ha="left", va="center")
-    for lab, sig, k, col in LAB:
+    fig, ax = plt.subplots(figsize=(10, 6.4))
+    fig.subplots_adjust(left=0.085, right=0.985, top=0.97, bottom=0.2)
+    for (sig, k) in sorted(first):
+        ok = [all(lo_ok <= q <= hi_ok for q in rec[(sig, k)]) for rec in (first, held)]
+        if all(ok):
+            kw = dict(color=JF_COL, mec=JF_COL)
+        elif not any(ok):
+            kw = dict(color="white", mec="#888")
+        else:
+            kw = dict(color=JF_COL, mec=JF_COL, markerfacecoloralt="white",
+                      fillstyle="left" if ok[0] else "right")
+        ax.plot(sig, k, marker="o", ms=15, ls="none", mew=2, zorder=3, **kw)
+        r1, r2 = first[(sig, k)], held[(sig, k)]
+        ax.text(sig * 1.09, k - 1.55, f"{min(r1):.2f}–{max(r1):.2f}\n{min(r2):.2f}–{max(r2):.2f}",
+                fontsize=10, color="#444", ha="left", va="center", linespacing=1.15)
+    for lab_name, sig, k, col, stream in LAB:
         ax.add_patch(Rectangle((sig / 1.1, k - 1), sig * 1.1 - sig / 1.1, 2, facecolor=col,
                                alpha=0.25, edgecolor=col, lw=2, zorder=2))
-        ax.text(sig / 1.17, k, f"{lab}\nσ {sig:g} s\n~{k} cells", ha="right", va="center",
-                fontsize=10.5, color=col)
-    ax.set_xscale("log"); ax.set_xlim(0.03, 1.8); ax.set_ylim(2, 24.5)
+        d = strips[(stream, k, "general")]
+        within = int(np.sum((d["ratio"] >= lo_ok) & (d["ratio"] <= hi_ok)))
+        ax.annotate(f"{lab_name}\nσ {sig:g} s, ~{k} cells\nsimulated there:\n"
+                    f"{within} of {d['ratio'].size} recordings\n"
+                    f"within {lo_ok}–{hi_ok}", (sig / 1.1, k), xytext=(0.04, k + 0.6),
+                    ha="right", va="center", fontsize=10, color=col,
+                    arrowprops=dict(arrowstyle="-", color=col, lw=1, shrinkA=2, shrinkB=0))
+    ax.set_xscale("log"); ax.set_xlim(0.012, 1.8); ax.set_ylim(2, 23)
     ax.set_xticks([0.05, 0.1, 0.2, 0.5, 1.0])
     ax.set_xticklabels(["0.05", "0.1", "0.2", "0.5", "1"])
     ax.set_yticks([5, 7, 10, 13, 20])
     ax.set_xlabel("planted jitter σ (s)")
     ax.set_ylabel("cells per event, k (of 33)")
     style(ax)
-    handles = [Line2D([], [], color="#2a78d6", marker="o", ls="none", ms=11, mew=2,
-                      label="resolved by the joint fit"),
-               Line2D([], [], color="white", mec="#888", marker="o", ls="none", ms=11, mew=2,
-                      label="not resolved"),
-               Line2D([], [], ls="none", label="resolved: recovered ÷ planted\n"
-                      f"jitter within {lo_ok}–{hi_ok} in all four\nconditions (15 and 45 events,\n"
-                      "0.01 and 0.05 Hz), each the median\nof 5 recordings; the numbers\n"
-                      "give the range of the four"),
-               Patch(facecolor=LAB[0][3], alpha=0.35, edgecolor=LAB[0][3],
-                     label="realistic parameter values,\nfast bench level: σ 0.105 s,\n"
-                           "7 cells (0.20 of 33)"),
-               Patch(facecolor=LAB[1][3], alpha=0.35, edgecolor=LAB[1][3],
-                     label="realistic parameter values,\nslow bench level: σ 0.131 s,\n"
-                           "13 cells (0.38 of 33)")]
-    ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(1.02, 1.0), frameon=False,
-              fontsize=10.5, labelspacing=1.0, handletextpad=0.6)
-    title = "Realistic parameter values against the tested grid"
+    handles = [Line2D([], [], color=JF_COL, marker="o", ls="none", ms=12, mew=2,
+                      label="resolved on both records"),
+               Line2D([], [], color=JF_COL, mec=JF_COL, markerfacecoloralt="white",
+                      fillstyle="left", marker="o", ls="none", ms=12, mew=2,
+                      label="first experiment only (left half)"),
+               Line2D([], [], color=JF_COL, mec=JF_COL, markerfacecoloralt="white",
+                      fillstyle="right", marker="o", ls="none", ms=12, mew=2,
+                      label="held-out record only (right half)"),
+               Line2D([], [], color="white", mec="#888", marker="o", ls="none", ms=12, mew=2,
+                      label="resolved on neither"),
+               Line2D([], [], ls="none", label="numbers: range of the four ratios,\n"
+                                               "first experiment over held-out"),
+               Patch(facecolor="#bbbbbb", alpha=0.6, edgecolor="#888",
+                     label="realistic parameter values")]
+    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=3,
+               frameon=False, fontsize=10.5, columnspacing=1.6, handletextpad=0.5)
+    title = "Realistic parameter values against the tested grid, on both records"
     return save(fig, name("realistic-values-against-tested-grid", "recovery"), title, out)
 
 
+# --------------------------------------------------------------------------- F. residuals
+
+REC_COL = {"first experiment": "#2a78d6", "held-out record": "#eb6834"}
+K_MARK = {10: "o", 20: "s"}
+
+
+def _resid_rows(path, bg):
+    """Condition-windows with events of 10+ cells: signed residual (measured - predicted) / planted
+    and its SE, in theory.summary's convention: 1.2533 SD / sqrt(n) for a median of n."""
+    cr = json.loads(path.read_text())["coord_rates"]
+    rows = []
+    for r in cr:
+        m = r["meas"]["k"]
+        if r["bg"] != bg or r["k"] < 10 or m is None or not np.isfinite(m):
+            continue
+        se = 1.2533 * max(r["meas_sd"]["k"], 1e-9) / np.sqrt(r["n"] - r["n_nan"])
+        rows.append(dict(sigma=r["sigma"], w=r["w"], k=r["k"], E=r["n_events"],
+                         res=m - r["exact"]["k"], se=se))
+    return rows
+
+
+def fig_residuals(out):
+    """Participant residuals on both records, per condition-window, ordered by sigma / w.
+    Counts beyond 2 SE and the sign tests are theory.summary's (one sign per condition: the
+    three windows reuse the same recordings)."""
+    from scipy import stats
+    recs = {"first experiment": SV / "theory_check.json", "held-out record": HELDOUT}
+    fig, axes = plt.subplots(2, 1, figsize=(11, 10),
+                             gridspec_kw=dict(hspace=0.62, left=0.1, right=0.985, top=0.885,
+                                              bottom=0.13))
+    for ax, bg, let in zip(axes, (0.01, 0.05), "AB"):
+        data = {lab: _resid_rows(p, bg) for lab, p in recs.items()}
+        key = lambda r: (r["sigma"] / r["w"], r["sigma"], r["k"], r["E"])  # noqa: E731
+        order = sorted({key(r) for r in data["first experiment"]})
+        pos = {c: i for i, c in enumerate(order)}
+        notes = []
+        for j, (lab, rows) in enumerate(data.items()):
+            col = REC_COL[lab]
+            for r in rows:
+                x = pos[key(r)] + (-0.18 if j == 0 else 0.18)
+                ax.errorbar(x, r["res"], yerr=2 * r["se"], fmt=K_MARK[r["k"]], color=col, ms=5,
+                            mec=col, mfc=col if r["E"] == 45 else "white", mew=1.2,
+                            elinewidth=1, capsize=0, zorder=3)
+            nz = sum(abs(r["res"]) > 2 * r["se"] for r in rows)
+            byc = defaultdict(list)
+            for r in rows:
+                byc[(r["sigma"], r["k"], r["E"])].append(r["res"])
+            below = sum(np.mean(v) < 0 for v in byc.values())
+            p = stats.binomtest(below, len(byc)).pvalue
+            med = np.median([r["res"] for r in rows])
+            notes.append((col, f"{lab}: {nz} of {len(rows)} beyond 2 SE; median {med:+.3f}; "
+                               f"below predicted in {below} of {len(byc)} conditions "
+                               f"(sign test p = {p:.2f})"))
+        # group separators and sigma / w ticks
+        groups = defaultdict(list)
+        for c, i in pos.items():
+            groups[round(c[0], 6)].append(i)
+        for gi, (sw, idx) in enumerate(sorted(groups.items())):
+            if gi:
+                ax.axvline(min(idx) - 0.5, color="#dddddd", lw=0.8, zorder=0)
+        ax.set_xticks([np.mean(idx) for _, idx in sorted(groups.items())])
+        ax.set_xticklabels([f"{sw:g}" for sw, _ in sorted(groups.items())])
+        ax.set_xlim(-0.7, len(order) - 0.3)
+        ax.axhline(0, color=INK, lw=1.1, zorder=1)
+        ax.set_ylabel("participants: (measured −\npredicted) ÷ planted")
+        ax.set_xlabel("jitter SD ÷ window, σ/w (condition-windows of 10 and 20 cells, "
+                      "15 and 45 events)", fontsize=11)
+        for sp in ("top", "right"):
+            ax.spines[sp].set_visible(False)
+        ax.grid(True, axis="y", color="#e5e5e5", lw=0.6)
+        lo = min(r["res"] - 2 * r["se"] for rows in data.values() for r in rows)
+        hi = max(r["res"] + 2 * r["se"] for rows in data.values() for r in rows)
+        pad = 0.05 * (hi - lo)
+        ax.set_ylim(lo - pad, hi + pad)
+        n_lines = len(notes) + (1 if bg == 0.01 else 0)
+        y_top = 1.03 + 0.075 * n_lines
+        ax.text(0.0, y_top, f"background {bg:g} Hz per cell", transform=ax.transAxes,
+                fontsize=11.5, va="bottom", fontweight="bold")
+        for i, (col, t) in enumerate(notes):
+            ax.text(0.0, y_top - 0.075 * (i + 1), t, transform=ax.transAxes, ha="left",
+                    va="bottom", fontsize=10.5, color=col)
+        letter(ax, let, x=-0.07, y=y_top)
+        if bg == 0.01:
+            # one sign per condition, both records together (theory.summary's per-condition rule)
+            tot_b = tot_n = 0
+            for p_ in recs.values():
+                byc = defaultdict(list)
+                for r in _resid_rows(p_, bg):
+                    byc[(r["sigma"], r["k"], r["E"])].append(r["res"])
+                tot_b += sum(np.mean(v) < 0 for v in byc.values()); tot_n += len(byc)
+            pb = stats.binomtest(tot_b, tot_n).pvalue
+            ax.text(0.0, y_top - 0.075 * (len(notes) + 1), f"both records: below predicted "
+                    f"in {tot_b} of {tot_n} conditions (sign test p = {pb:.3f})",
+                    transform=ax.transAxes, ha="left", va="bottom", fontsize=10.5, color=INK)
+    handles = [Line2D([], [], color=c, marker="o", ls="none", ms=6, label=lab)
+               for lab, c in REC_COL.items()]
+    handles += [Line2D([], [], color="#555", marker="o", ls="none", ms=6, label="10 cells"),
+                Line2D([], [], color="#555", marker="s", ls="none", ms=6, label="20 cells"),
+                Line2D([], [], color="#555", marker="o", ls="none", ms=6, label="45 events"),
+                Line2D([], [], color="#555", marker="o", mfc="white", ls="none", ms=6,
+                       label="15 events"),
+                Line2D([], [], color="#555", lw=1, label="±2 SE (1.2533 SD / √n, n = 5)"),
+                Line2D([], [], color=INK, lw=1.1, label="zero: measured = predicted")]
+    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=4,
+               frameon=False, fontsize=10.5, columnspacing=1.5)
+    title = "Participant residuals on the first experiment and the held-out record"
+    return save(fig, name("participant-residuals-two-records", "recovery"), title, out)
+
+
+# --------------------------------------------------------------------------- G. joint fit
+
+CVJ = SV / "ch1_followups" / "correlogram_vs_joint.json"
+METH_COL = {"correlogram": "#8a8a8a", "joint": "#7b3fb5"}
+FORM_COL = {"page": "#7b3fb5", "general": "#178f6a"}   # hard-core in the joint fit's violet, as in A, B
+
+
+REALISTIC_COUNTS = SV / "ch1_followups" / "realistic_counts.json"
+
+
+def _lab_strips():
+    """Per-recording fitted / planted jitter at the realistic values, per (stream, k, form), and
+    a label for the event counts.
+
+    From ch1_followups/realistic_counts.json when it exists: the round-2 rerun at the tabulated
+    event counts (9.7 and 22.0 per hour, the measured interval lists thinned), where "general" is
+    the general form given the true train and "page" the hard-core form theory.check runs.
+    Otherwise from ch1_followups/lab_values.json (lam = 1 / mean interval, 25.5 and 53.6 events
+    per recording)."""
+    if REALISTIC_COUNTS.exists():
+        rc = json.loads(REALISTIC_COUNTS.read_text())
+        strips = {}
+        for stream in ("fast", "slow"):
+            sig = rc[stream]["sigma"]
+            for k in rc[stream]["ks"]:
+                for form, key in (("page", "page"), ("general", "true")):
+                    s_ = np.array([f["sigma"] for f in rc[stream]["fits"][str(k)][key]])
+                    # at bound: within 2 % of the fit's sigma limits, 0.005 s and 5 s (as the
+                    # run's own summary counts it)
+                    nb = int(np.sum((s_ <= 0.005 * 1.02) | (s_ >= 5.0 / 1.02)))
+                    fs = next(f for f in rc[stream]["fit_summary"]
+                              if f["k"] == k and f["form"] == key)
+                    assert nb == fs["sigma_lo"] + fs["sigma_hi"], (stream, k, key, nb)
+                    strips[(stream, k, form)] = dict(ratio=s_ / sig, at_bound=nb, sigma=sig)
+        ev = {s: np.mean(rc[s]["events_per_recording"]) for s in ("fast", "slow")}
+        src = (f"tabulated event counts, {ev['fast']:.1f} (fast) and {ev['slow']:.1f} (slow) "
+               "events per recording")
+        return strips, src
+    lab = json.loads(LAB_VALUES.read_text())
+    strips = {}
+    for stream in ("fast", "slow"):
+        sig = lab[stream]["sigma"]
+        for k in lab[stream]["ks"]:
+            for form in ("page", "general"):
+                fits = [f for f in lab[stream]["fits"] if f["k"] == k and f["form"] == form]
+                strips[(stream, k, form)] = dict(
+                    ratio=np.array([f["sigma"] / sig for f in fits]),
+                    at_bound=sum(bool(f["sigma_at_bound"]) for f in fits), sigma=sig)
+    counts = {s: lab[s]["events_per_recording_mean"] for s in ("fast", "slow")}
+    src = (f"{counts['fast']:.1f} (fast) and {counts['slow']:.1f} (slow) events per "
+           "45-minute recording")
+    return strips, src
+
+
+def fig_jointfit(out):
+    """The joint fit against the correlogram tool on the 240 first-experiment recordings
+    (ch1_followups/correlogram_vs_joint.json, events of 10+ cells), and the joint fit per
+    recording at the realistic values (see _lab_strips for which record)."""
+    cv = json.loads(CVJ.read_text())
+    h_lo, h_hi = cv["calibration"]["hwhm"][0], cv["calibration"]["hwhm"][-1]
+    fig = plt.figure(figsize=(11, 10.4))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1, 1.1], hspace=0.45, wspace=0.08, left=0.1,
+                          right=0.985, top=0.95, bottom=0.13)
+    axA = fig.add_subplot(gs[0, 0])
+    axB = fig.add_subplot(gs[0, 1], sharey=axA)
+    axC = fig.add_subplot(gs[1, :])
+    for ax, bg, let in ((axA, 0.01, "A"), (axB, 0.05, "B")):
+        ax.axhspan(0.8, 1.25, color="#eeeeee", zorder=0, lw=0)
+        ax.axhline(1, color=INK, lw=0.9, ls=":", zorder=1)
+        rows = sorted((r for r in cv["summary"] if r["bg"] == bg and r["cells"] == "10+"),
+                      key=lambda r: r["sigma"])
+        for r in rows:
+            sig = r["sigma"]
+            recs = [p for p in cv["per_recording"] if p["bg"] == bg and p["sigma"] == sig
+                    and p["k"] >= 10]
+            off = [p for p in recs if p["corr_sigma"] is None]
+            below = sum(p["hwhm"] is not None and p["hwhm"] < h_lo for p in off)
+            above = sum(p["hwhm"] is not None and p["hwhm"] > h_hi for p in off)
+            assert below + above == r["correlogram_off"], "an off-curve recording had no width"
+            for meth, f, key, mk in (("correlogram", 1 / 1.09, "correlogram_ratio_q", "s"),
+                                     ("joint", 1.09, "joint_ratio_q", "o")):
+                q1, med, q3 = r[key]
+                col = METH_COL[meth]
+                ax.errorbar(sig * f, med, yerr=[[med - q1], [q3 - med]], fmt=mk, color=col,
+                            ms=8, mec=col, elinewidth=1.4, capsize=3, zorder=3)
+                if meth == "correlogram":
+                    t = ", ".join(s for s in (f"{above} above" if above else "",
+                                              f"{below} below" if below else "") if s)
+                    if t:
+                        # beside the marker, or below it at 0.01 Hz, wherever it clears the rest
+                        left = sig < 0.1 or bg == 0.05
+                        ax.text(sig * f / (1.1 if left else 1), med if left else q1 - 0.05,
+                                t.replace(", ", "\n") + "\nthe curve",
+                                ha="right" if left else "center",
+                                va="center" if left else "top", fontsize=9.5, color="#555",
+                                linespacing=1.05)
+                elif r["joint_at_bound"]:
+                    ax.text(sig * f, q3 + 0.05, f"{r['joint_at_bound']} at\nthe bound",
+                            ha="center", va="bottom", fontsize=9.5, color=col,
+                            linespacing=1.05)
+        ax.set_xscale("log"); ax.set_xlim(0.019, 1.9)
+        ax.set_xticks([0.05, 0.1, 0.2, 0.5, 1.0])
+        ax.set_xticklabels(["0.05", "0.1", "0.2", "0.5", "1"])
+        ax.minorticks_off()
+        ax.set_xlabel("planted jitter σ (s)")
+        ax.set_ylim(0, 2.1)
+        ax.text(0.0, 1.03, f"background {bg:g} Hz per cell", transform=ax.transAxes,
+                fontsize=11, va="bottom")
+        style(ax); letter(ax, let, x=-0.03, y=1.03)
+    axB.tick_params(labelleft=False)
+    axA.set_ylabel("recovered ÷ planted jitter\n(median, interquartile range)")
+
+    # C: per-recording ratio at the realistic values
+    strips, src = _lab_strips()
+    rng = np.random.default_rng(0)
+    axC.axhspan(0.8, 1.25, color="#eeeeee", zorder=0, lw=0)
+    axC.axhline(1, color=INK, lw=0.9, ls=":", zorder=1)
+    ticks, labels = [], []
+    groups = sorted({(s, k) for s, k, _ in strips}, key=lambda g: (g[0] != "fast", g[1]))
+    for gi, (stream, k) in enumerate(groups):
+        for fi, form in enumerate(("page", "general")):
+            d = strips[(stream, k, form)]
+            x0 = gi * 2.6 + fi
+            xs = x0 + rng.uniform(-0.28, 0.28, d["ratio"].size)
+            axC.plot(xs, d["ratio"], "o", ms=4.5, color=FORM_COL[form], alpha=0.75, mew=0,
+                     zorder=3)
+            med = np.median(d["ratio"])
+            axC.plot([x0 - 0.36, x0 + 0.36], [med, med], color=INK, lw=2, zorder=4)
+            within = int(np.sum((d["ratio"] >= 0.8) & (d["ratio"] <= 1.25)))
+            t = f"{within} of {d['ratio'].size}\nwithin"
+            if d["at_bound"]:
+                t += f"\n{d['at_bound']} at\nbound"
+            axC.text(x0, 6.2, t, ha="center", va="bottom", fontsize=9.5,
+                     color=FORM_COL[form], linespacing=1.05)
+        ticks.append(gi * 2.6 + 0.5)
+        labels.append(f"{stream} stream, σ {d['sigma']:g} s\n{k} cells per event")
+    axC.set_yscale("log"); axC.set_ylim(0.03, 17)
+    axC.set_yticks([0.05, 0.1, 0.2, 0.5, 0.8, 1.25, 2, 5])
+    axC.set_yticklabels(["0.05", "0.1", "0.2", "0.5", "0.8", "1.25", "2", "5"])
+    axC.minorticks_off()
+    axC.set_xticks(ticks); axC.set_xticklabels(labels)
+    axC.set_xlim(-0.6, (len(groups) - 1) * 2.6 + 1.6)
+    axC.set_ylabel("fitted ÷ planted jitter\n(one point per recording)")
+    axC.text(0.0, 1.03, f"realistic values (0.0096 Hz per cell), {src}",
+             transform=axC.transAxes, fontsize=11, va="bottom")
+    style(axC); letter(axC, "C", x=-0.03, y=1.03)
+    handles = [Line2D([], [], color=METH_COL["correlogram"], marker="s", ls="none", ms=7,
+                      label="A, B: correlogram tool (shipped calibration)"),
+               Line2D([], [], color=METH_COL["joint"], marker="o", ls="none", ms=7,
+                      label="A, B: joint fit"),
+               Line2D([], [], color=FORM_COL["page"], marker="o", ls="none", ms=6,
+                      label="C: joint fit, hard-core form"),
+               Line2D([], [], color=FORM_COL["general"], marker="o", ls="none", ms=6,
+                      label="C: joint fit, general form"),
+               Line2D([], [], color=INK, lw=2, label="C: median of 40 recordings"),
+               Patch(facecolor="#eeeeee", label="within 0.8–1.25 of planted"),
+               Line2D([], [], color=INK, lw=0.9, ls=":", label="recovered = planted")]
+    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=3,
+               frameon=False, fontsize=10.5, columnspacing=1.4)
+    title = "The joint fit against the correlogram tool, and at realistic values"
+    return save(fig, name("joint-fit-against-correlogram", "recovery"), title, out)
+
+
+# --------------------------------------------------------------------------- H. schematic
+
+SWAP_COL = "#eb6834"
+
+
+def _toy_trains(seed=8):
+    """Panel A's toy: 4 cells, 60 s, Poisson background (0.05 Hz per cell) and two events of all
+    4 cells at 17 s and 41 s, jitter SD 0.2 s. Illustrative values, not a run."""
+    rng = np.random.default_rng(seed)
+    T, ev = 60.0, (17.0, 41.0)
+    trains = []
+    for _ in range(4):
+        bg = rng.uniform(0, T, rng.poisson(0.05 * T))
+        on = np.array([e + rng.normal(0, 0.2) for e in ev])
+        trains.append(np.sort(np.concatenate([bg, on])))
+    return T, ev, trains
+
+
+def _count_in(trains, lo, hi):
+    return int(sum(np.sum((t >= lo) & (t < hi)) for t in trains))
+
+
+def _tiles(ax, m, outline=(), row_ref=None):
+    """A membership matrix as gridded tiles: rows cells, columns events, filled = joined. Row
+    sums to the right, column sums below; a row sum that differs from row_ref is in color."""
+    nr, nc = m.shape
+    for i in range(nr):
+        for j in range(nc):
+            ax.add_patch(Rectangle((j, i), 1, 1, facecolor=INK if m[i, j] else "white",
+                                   edgecolor="#999999", lw=1))
+    for (i, j) in outline:
+        ax.add_patch(Rectangle((j + 0.06, i + 0.06), 0.88, 0.88, fill=False,
+                               edgecolor=SWAP_COL, lw=2.6, zorder=3))
+    for i, rs in enumerate(m.sum(1)):
+        changed = row_ref is not None and rs != row_ref[i]
+        ax.text(nc + 0.3, i + 0.5, f"{rs}", va="center", ha="left", fontsize=11,
+                color=SWAP_COL if changed else INK, fontweight="bold" if changed else None)
+    for j, cs in enumerate(m.sum(0)):
+        ax.text(j + 0.5, nr + 0.3, f"{cs}", va="top", ha="center", fontsize=11, color=INK)
+    ax.set_xlim(-0.1, nc + 1.1); ax.set_ylim(nr + 1.1, -0.1)
+    ax.set_aspect("equal")
+    ax.set_xticks([j + 0.5 for j in range(nc)])
+    ax.set_xticklabels([f"e{j + 1}" for j in range(nc)], fontsize=10)
+    ax.xaxis.tick_top()
+    ax.set_yticks([i + 0.5 for i in range(nr)])
+    ax.set_yticklabels([f"cell {i + 1}" for i in range(nr)], fontsize=10)
+    ax.tick_params(length=0)
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+
+
+def fig_schematic(out):
+    """Three mechanisms the chapter explains in words, drawn on toy values: the coordination-rates
+    tool's time-shift surrogate (A), the assembly test's two nulls (B), and the score sort and F
+    (C), whose numbers come from order_limit.py's own functions."""
+    import order_limit                                    # beside theory.py
+    fig = plt.figure(figsize=(11, 13.2))
+    outer = fig.add_gridspec(3, 1, height_ratios=[1.35, 1.0, 1.0], hspace=0.42, left=0.1,
+                             right=0.9, top=0.97, bottom=0.03)
+
+    # A: original and time-shifted trains, each raster with its lane above
+    T, ev, trains = _toy_trains()
+    w = 2.0
+    wlo, whi = ev[0] - w / 2, ev[0] + w / 2
+    rng = np.random.default_rng(11)
+    shifts = rng.uniform(5, T - 5, 4)
+    shifted = [np.sort((t + s) % T) for t, s in zip(trains, shifts)]
+    ga = outer[0].subgridspec(4, 1, height_ratios=[0.35, 1, 0.35, 1], hspace=0.12)
+    lane1 = fig.add_subplot(ga[0]); ras1 = fig.add_subplot(ga[1], sharex=lane1)
+    lane2 = fig.add_subplot(ga[2], sharex=lane1); ras2 = fig.add_subplot(ga[3], sharex=lane1)
+    for lane, src, show_ev in ((lane1, trains, True), (lane2, shifted, False)):
+        if show_ev:
+            for e in ev:
+                lane.plot(e, 0.3, marker="v", ms=10, color=EV2, ls="none")
+        n_w = _count_in(src, wlo, whi)
+        lane.annotate("", xy=(wlo, 0.78), xytext=(whi, 0.78),
+                      arrowprops=dict(arrowstyle="|-|", color=SWAP_COL, lw=1.4,
+                                      mutation_scale=4))
+        lane.text(whi + 0.6, 0.78, f"window w = {w:g} s: {n_w} onset{'s' if n_w != 1 else ''}",
+                  va="center", fontsize=10.5, color=SWAP_COL)
+        lane.set_ylim(0, 1.1); lane.axis("off")
+    lane1.text(-0.01, 0.3, "planted\nevents", transform=lane1.get_yaxis_transform(),
+               ha="right", va="center", fontsize=10)
+    for ras, src, lab in ((ras1, trains, "recording"), (ras2, shifted, "surrogate")):
+        raster = ras
+        for r, t in enumerate(src):
+            raster.plot(t, np.full(t.size, r + 1), color="black", marker="|", ls="none",
+                        ms=13, mew=1.8)
+        raster.set_ylim(0.4, 4.6); raster.invert_yaxis()
+        raster.set_yticks([1, 2, 3, 4])
+        raster.set_yticklabels([f"cell {i}" for i in range(1, 5)], fontsize=10)
+        raster.set_ylabel(lab, fontsize=11)
+        for sp in ("top", "right"):
+            raster.spines[sp].set_visible(False)
+        raster.set_xlim(0, T)
+    sec = ras2.secondary_yaxis("right")
+    sec.set_yticks([1, 2, 3, 4])
+    sec.set_yticklabels([f"shift {s:.0f} s" for s in shifts], fontsize=10)
+    sec.tick_params(length=0); sec.spines["right"].set_visible(False)
+    ras1.tick_params(labelbottom=False)
+    minutes_axis(ras2, 0, T)
+    ras2.set_xlabel("time (toy recording, 60 s; each cell's surrogate train is its own train "
+                    "shifted circularly)", fontsize=10.5)
+    letter(lane1, "A", x=-0.06, y=0.85)
+
+    # B: membership matrix, a margin-preserving swap, and a uniform-null draw
+    obs = np.array([[1, 1, 1, 0], [1, 1, 1, 0], [1, 1, 0, 0],
+                    [0, 0, 1, 1], [0, 0, 0, 1], [0, 1, 0, 1]])
+    swap = obs.copy()
+    sw = [(2, 1), (2, 2), (3, 1), (3, 2)]                 # a checkerboard 2 x 2: 10/01 -> 01/10
+    for (i, j) in sw:
+        swap[i, j] = 1 - swap[i, j]
+    assert (swap.sum(0) == obs.sum(0)).all() and (swap.sum(1) == obs.sum(1)).all()
+    rng = np.random.default_rng(5)
+    uni = np.zeros_like(obs)
+    for j, cs in enumerate(obs.sum(0)):
+        uni[rng.choice(obs.shape[0], cs, replace=False), j] = 1
+    gb = outer[1].subgridspec(1, 3, wspace=0.35)
+    labels = ("recording: who joined\neach event",
+              "margin-preserving null: one swap;\nrow and column sums kept",
+              "uniform null: random participants;\ncolumn sums kept only")
+    axb = []
+    for g, m, out_, lab in zip(gb, (obs, swap, uni), ((), sw, ()), labels):
+        ax = fig.add_subplot(g)
+        _tiles(ax, m, outline=out_, row_ref=obs.sum(1))
+        ax.set_xlabel(lab, fontsize=10.5)
+        axb.append(ax)
+    letter(axb[0], "B", x=-0.25, y=1.08)
+    fig.text(0.5, outer[1].get_position(fig).y0 - 0.052,
+             "filled tile: the cell joined the event · right: the cell's event count (row sum) · "
+             "below: the event's size (column sum)\norange: the swapped tiles, and row sums the "
+             "uniform null changed", ha="center", va="top", fontsize=10, color="#333")
+
+    # C: who leads whom, net lead counts, the score-sort order, and F
+    events = [(np.array([0, 1, 2, 3]), np.array([0.0, 0.1, 0.2, 0.3])),
+              (np.array([0, 1, 3]), np.array([0.1, 0.0, 0.3])),
+              (np.array([1, 2, 3]), np.array([0.0, 0.2, 0.1]))]
+    n, d = order_limit.pair_matrices(events, 4)
+    order = order_limit.score_order(d)
+    F = order_limit.f_of(order, n, d)
+    pos = {c: i for i, c in enumerate(order)}
+    agree = disagree = 0
+    for cells, t in events:
+        for a_ in range(len(cells)):
+            for b_ in range(a_ + 1, len(cells)):
+                i, j = cells[a_], cells[b_]
+                lead_i = t[a_] < t[b_]
+                if lead_i == (pos[i] < pos[j]):
+                    agree += 1
+                else:
+                    disagree += 1
+    co = int(n[np.triu_indices(4, 1)].sum())
+    assert agree + disagree == co and abs((agree - disagree) / co - F) < 1e-12
+    axc = fig.add_subplot(outer[2]); axc.axis("off")
+    letter(axc, "C", x=-0.06, y=0.97)
+    x_col = [0.0, 0.12, 0.25, 0.38, 0.51]
+    head = ["pair", "event 1", "event 2", "event 3", "net"]
+    y0, dy = 0.92, 0.095
+    for x, h in zip(x_col, head):
+        axc.text(x, y0, h, transform=axc.transAxes, fontsize=11, fontweight="bold", va="top")
+    ev_txt = ["order 1, 2, 3, 4", "order 2, 1, 4", "order 2, 4, 3"]
+    for x, t in zip(x_col[1:4], ev_txt):
+        axc.text(x, y0 - 0.06, t, transform=axc.transAxes, fontsize=9, color="#555", va="top")
+    r = 0
+    for i in range(4):
+        for j in range(i + 1, 4):
+            y = y0 - 0.15 - dy * r
+            axc.text(x_col[0], y, f"{i + 1}–{j + 1}", transform=axc.transAxes, fontsize=11,
+                     va="top")
+            for e_i, (cells, t) in enumerate(events):
+                if i in cells and j in cells:
+                    ti, tj = t[list(cells).index(i)], t[list(cells).index(j)]
+                    s = f"{i + 1} leads" if ti < tj else f"{j + 1} leads"
+                else:
+                    s = "–"
+                axc.text(x_col[1 + e_i], y, s, transform=axc.transAxes, fontsize=11, va="top")
+            net = int(d[i, j])
+            axc.text(x_col[4], y, f"{net:+d}".replace("-", "−") if net else "0", transform=axc.transAxes,
+                     fontsize=11, va="top")
+            r += 1
+    axc.text(x_col[0], y0 - 0.15 - dy * r - 0.01,
+             "net: the first cell's leads minus the second's, over the events they share",
+             transform=axc.transAxes, fontsize=9.5, color="#555", va="top")
+    xr = 0.6
+    axc.text(xr, y0, "net lead count per cell (wins − losses)", transform=axc.transAxes,
+             fontsize=11, fontweight="bold", va="top")
+    for c in range(4):
+        axc.text(xr, y0 - 0.1 - 0.08 * c, f"cell {c + 1}:  {int(d[c].sum()):+d}".replace("-", "−"),
+                 transform=axc.transAxes, fontsize=11, va="top")
+    yo = y0 - 0.1 - 0.08 * 4 - 0.04
+    axc.text(xr, yo, "score-sort order:  " + " → ".join(str(c + 1) for c in order),
+             transform=axc.transAxes, fontsize=11, fontweight="bold", va="top")
+    axc.text(xr, yo - 0.1,
+             f"pair co-participations: 6 + 3 + 3 = {co}\n"
+             f"agree with the order: {agree}; disagree: {disagree}\n"
+             f"F = ({agree} − {disagree}) ÷ {co} = {F:.2f}",
+             transform=axc.transAxes, fontsize=11, va="top", linespacing=1.4)
+    title = "Three mechanisms on toy values: surrogate, assembly nulls, score sort and F"
+    return save(fig, name("surrogate-nulls-and-order-schematic", "recovery"), title, out)
+
+
 # --------------------------------------------------------------------------- main
+
+FIGS = ["data", "sharing", "chance", "order", "regime", "residuals", "jointfit", "schematic"]
+
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", type=Path, default=HERE, help="folder for the PNGs")
     ap.add_argument("--only", nargs="*", default=None,
-                    choices=["data", "sharing", "chance", "order", "regime"])
+                    choices=FIGS)
     a = ap.parse_args(argv)
-    todo = a.only or ["data", "sharing", "chance", "order", "regime"]
+    todo = a.only or FIGS
     if "data" in todo:
         fig_data(a.out)
     if "sharing" in todo:
@@ -662,6 +1184,12 @@ def main(argv=None):
         fig_order(a.out)
     if "regime" in todo:
         fig_regime(a.out)
+    if "residuals" in todo:
+        fig_residuals(a.out)
+    if "jointfit" in todo:
+        fig_jointfit(a.out)
+    if "schematic" in todo:
+        fig_schematic(a.out)
 
 
 if __name__ == "__main__":

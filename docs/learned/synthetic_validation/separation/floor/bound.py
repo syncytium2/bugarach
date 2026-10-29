@@ -761,6 +761,7 @@ def make_figure(results):
             return [results[(s, k, b, g_, False)][sizekey] > SIZE_MAX for k in KS]
 
         daggers = {}     # k -> [(color, y of the 80 % point)] for size-inflated entries
+        tops = {}        # k -> highest point drawn at k by any series, so a † clears them all
 
         def plotpair(v50, v80, color, marker, flags, dodge=0.0):
             any80 = np.array(v80, float) == 0
@@ -768,6 +769,9 @@ def make_figure(results):
                                                 (v50, 1.2, "--", 5.5, "white", 2, any80)):
                 v = np.array(v, float)
                 pos = np.where(np.isfinite(v) & (v > 0), v, np.nan)
+                for kk, y in zip(ks, pos):
+                    if np.isfinite(y):
+                        tops[kk] = max(tops.get(kk, 0.0), y)
                 ax.plot(ks, pos, color=color, marker=marker, lw=lw, ls=ls, ms=ms, mfc=mfc, zorder=z)
                 # 'any': reached already at Δ = 0. A filled glyph (80 %) implies 50 % too, so the
                 # open one is drawn only where 80 % is not 'any'; series are dodged sideways.
@@ -790,12 +794,13 @@ def make_figure(results):
                  size_flags("size_identity_max", g), dodge=0.4)
         plotpair([labelled_bound(k, s, 0.5) for k in KS], [labelled_bound(k, s, 0.8) for k in KS],
                  C["lab"], "D", [False] * len(KS))
-        # one row of daggers per k, above the highest flagged point, each in its series' color
+        # one row of daggers per k, above the highest marker at that k (flagged or not), each
+        # in its series' color
         for kk, lst in daggers.items():
-            ytop = max(y for _, y in lst)
+            ytop = max([y for _, y in lst] + [tops.get(kk, 0.0)])
             for n_, (colr, _) in enumerate(lst):
                 ax.annotate("†", (kk, ytop), textcoords="offset points",
-                            xytext=(-3 * (len(lst) - 1) + 7 * n_, 6), fontsize=12, color=colr,
+                            xytext=(-3 * (len(lst) - 1) + 7 * n_, 7), fontsize=12, color=colr,
                             fontweight="bold", ha="center", va="bottom")
         for y, ls in ((7.1, ":"), (3.8, ":"), (2.5, "-"), (0.1, "-.")):
             ax.axhline(y, color="#9a9a9a", lw=1, ls=ls, zorder=0)
@@ -828,11 +833,16 @@ def make_figure(results):
                     arrowprops=dict(arrowstyle="-", color="#bbbbbb", lw=0.8))
 
     ax = axs[3]
-    for (s, k, g, ls) in ((0.105, 7, 0.4, "-"), (0.131, 13, 3.2, "--")):
+    # stream by marker (and line style): A-C already spend solid/dashed on 80/50 % power and
+    # o/s/^/D/v on the methods, so D's two streams take markers not used there
+    D_MARK = {"fast": "P", "slow": "X"}
+    for (s, k, g, ls, stream) in ((0.105, 7, 0.4, "-", "fast"), (0.131, 13, 3.2, "--", "slow")):
         r = results[(s, k, b, g, False)]
         d = np.array(r["deltas"])
-        ax.plot(d, np.maximum.accumulate(r["power_pooled"]), color=C["pooled"], ls=ls, lw=2)
-        ax.plot(d, np.maximum.accumulate(r["power_identity"]), color=C["idg"], ls=ls, lw=2)
+        for key, colr in (("power_pooled", C["pooled"]), ("power_identity", C["idg"])):
+            ax.plot(d, np.maximum.accumulate(r[key]), color=colr, ls=ls, lw=2,
+                    marker=D_MARK[stream], ms=10, markevery=(1 if stream == "fast" else 3, 4),
+                    mew=0)
     for y, t in ((0.05, "5 % false alarm"), (0.5, "50 % power"), (0.8, "80 % power")):
         ax.axhline(y, color="#9a9a9a", lw=1, ls=":", zorder=0)
         ax.text(1.47, y + 0.015, t, fontsize=10.5, ha="right", color="#444444")
@@ -849,15 +859,17 @@ def make_figure(results):
                 label="cell identity, within-cell minimum interval\n0.1 s (model as stated)"),
          Line2D([], [], color=C["idg"], marker="^", lw=2,
                 label="cell identity, measured within-cell minimum\ninterval (0.4 s fast, 3.2 s slow; 0.4 s in C)"),
-         Line2D([], [], color=C["lab"], marker="D", lw=2, label="membership known (oracle t test)"),
+         Line2D([], [], color=C["lab"], marker="D", lw=2, label="membership-known test"),
          Line2D([], [], color="0.3", marker="o", lw=2, label="solid, filled: 80 % power"),
          Line2D([], [], color="0.3", marker="o", lw=1.2, ls="--", mfc="white", label="dashed, open: 50 % power"),
          Line2D([], [], color="0.3", marker="v", ls="none", ms=8,
                 label="resolves at every separation tested\n(shared cells alone), drawn at the axis floor"),
          Line2D([], [], color="none", marker="$†$", ms=10, mec="0.3", mfc="0.3", ls="none",
                 label="test size above 7.5 % (mostly σ = 0.5 s, few cells):\nanti-conservative, value optimistic"),
-         Line2D([], [], color="0.3", lw=2, ls="-", label="D: fast stream (σ 0.105 s, 7 cells,\nminimum interval 0.4 s)"),
-         Line2D([], [], color="0.3", lw=2, ls="--", label="D: slow stream (σ 0.131 s, 13 cells,\nminimum interval 3.2 s)")]
+         Line2D([], [], color="0.3", lw=2, ls="-", marker="P", ms=10, mew=0,
+                label="D: fast stream (σ 0.105 s, 7 cells,\nminimum interval 0.4 s)"),
+         Line2D([], [], color="0.3", lw=2, ls="--", marker="X", ms=10, mew=0,
+                label="D: slow stream (σ 0.131 s, 13 cells,\nminimum interval 3.2 s)")]
     fig.legend(handles=h, loc="upper left", fontsize=10.5, frameon=False,
                bbox_to_anchor=(0.475, 0.47), labelspacing=0.55)
     fig.savefig(os.path.join(HERE, "synth_recovery_plot_separation-floor-any-method_20261025.png"), dpi=150,

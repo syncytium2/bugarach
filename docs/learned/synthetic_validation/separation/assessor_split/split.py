@@ -485,7 +485,8 @@ def report(pred, sim, chk, n_pairs):
     print("\n".join(lines))
 
 
-# Which K each tool is plotted at: the assessor at its own one-per-hour chance K (5, 8), the count
+# Which K each tool is plotted at: the assessor at 5 (its one-per-hour chance K at 0.01 Hz, not at
+# 0.0096 Hz, where that K is 4; kept so the run need not be repeated) and 8 (0.05 Hz), the count
 # detector at its shipped setting, the ADR-0008 floor plus k_offset 0 (6, 12).
 PLOT_K = {("assessor", 0.0096): 5, ("assessor", 0.05): 8, ("count", 0.0096): 6, ("count", 0.05): 12}
 # colour per (tool, k); marker and line also separate the tools, so no pair rests on colour alone
@@ -508,7 +509,7 @@ def plot(res):
         for row in (0, 1):
             ax = axes[row, col]
             ax.axvline(2 * s, color="0.55", ls=":", lw=1.2)
-            ax.axvline(3.8, color="#c0392b", ls="-.", lw=1.0)
+            ax.axvline(3.8, color="0.25", ls="-.", lw=1.1)
             for (tool, k), (colr, mk, ls) in STYLE.items():
                 K = PLOT_K[(tool, b)]
                 ci = combos.index((b, K))
@@ -559,14 +560,15 @@ def plot(res):
           Line2D([], [], color="0.3", ls="none", marker="o", mfc="white",
                  label="open: simulated, binned by realized separation\n(bins of ≥ 20 pairs)"),
           Line2D([], [], color="0.55", ls=":", label="2 × jitter SD: onset clouds unimodal below"),
-          Line2D([], [], color="#c0392b", ls="-.", label="3.8 s: 5th percentile of real fast-stream gaps")]
+          Line2D([], [], color="0.25", ls="-.", label="3.8 s: 5th percentile of real fast-stream gaps")]
     fig.legend(handles=h1, loc="upper left", fontsize=11, frameon=False,
                bbox_to_anchor=(0.06, 0.235))
     fig.legend(handles=h2, loc="upper left", fontsize=11, frameon=False,
                bbox_to_anchor=(0.43, 0.235))
     fig.text(0.075, 0.025,
-             "K, the cells a cluster needs: assessor 5 at 0.0096 Hz and 8 at 0.05 Hz (its one-per-hour "
-             "chance K);\ncount detector 6 and 12, the event floor (the count chance first exceeds).",
+             "K, the cells a cluster needs: assessor 5 at 0.0096 Hz (its one-per-hour chance K at "
+             "0.01 Hz; at 0.0096 Hz it is 4)\nand 8 at 0.05 Hz (its one-per-hour chance K); "
+             "count detector 6 and 12, the event floor (the count chance first exceeds).",
              fontsize=11, va="bottom", ha="left")
     fig.tight_layout(rect=(0, 0.235, 1, 1))
     fig.savefig(HERE / "synth_recovery_plot_assessor-split-against-separation_20261025.png", dpi=150, metadata={
