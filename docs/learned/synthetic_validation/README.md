@@ -97,7 +97,7 @@ NeurIPS 2020) is a Neyman–Scott process with per-neuron offsets.
 - Greiner's relation via Kruskal 1958 (*JASA* 53:814; ⚠ neither opened).
 - Sorting by net wins comes within a factor of 5 of the fewest disagreements when each pair's
   weights sum to 1 (Coppersmith, Fleischer & Rudra, SODA 2006, *ACM Trans Algorithms* 6(3), 2010;
-  ⚠ abstract). Borda counting is optimal up to constants for top-k recovery from noisy pairwise
+  ⚠ abstract). Copeland counting (by wins; abstract read 2026-10-29, arXiv copy on the 01-lit shelf) is optimal up to constants for top-k recovery from noisy pairwise
   comparisons (Shah & Wainwright 2018, *JMLR* 18(199); ⚠ abstract).
 - ⚠ Not searched: hippocampal replay and cortical sequence rank-order methods (Lee & Wilson 2002,
   *Neuron* 36:1183; Luczak et al. 2007, *PNAS* 104:347).

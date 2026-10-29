@@ -388,7 +388,7 @@ interchangeable within events) and also moves background onsets.
   Havenith & Nikolić 2006 rank units by summed pairwise delays the same way, and an independent
   survey reached it unprompted ([`prior_art/`](../learned/synthetic_validation/prior_art/README.md)).
   Sorting by net wins comes within a factor of 5 of the fewest disagreements (Coppersmith,
-  Fleischer & Rudra 2010), and Borda counting is optimal up to constants for top-k ranking from
+  Fleischer & Rudra 2010), and Copeland counting (by wins) is optimal up to constants for top-k ranking from
   noisy comparisons (Shah & Wainwright 2018). Mariani et al. 2025 replaced annealing with a direct
   shift for latency correction (9.7 s against 861.8 s for annealing on one 183-train dataset);
   Kreuz's 2026 review still sorts by annealing. Kreuz's lab has applied the Synfire Indicator to

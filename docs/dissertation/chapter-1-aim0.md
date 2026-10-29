@@ -432,7 +432,10 @@ indicator falls with spike count is **consistent with** the no-order bias, but n
 by non-coincident spikes and cross-event coincidences predict a fall too, and Kreuz et al. (2017,
 sec. 3.1) warn that the indicator is not sufficient to compare datasets with very different numbers
 of trains and spikes. Ranking by net lead count is the textbook Borda or Copeland ranking; it comes
-within a factor of 5 of the fewest disagreements (Coppersmith, Fleischer & Rudra 2010 ⚠), and a
+within a factor of 5 of the fewest disagreements (Coppersmith, Fleischer & Rudra 2010 ⚠), and
+Copeland counting, which ranks items by the number of pairwise comparisons won, reaches the
+information-theoretic limit for recovering the top k items up to constant factors (Shah & Wainwright
+2018). A
 search of the Kreuz group's papers, code and website found no ranking sort and no analytical null
 ([`kreuz_sort/`](../learned/synthetic_validation/kreuz_sort/README.md)).
 
@@ -649,7 +652,7 @@ The separation scripts and their run times are listed in
 - Peyrache A, Khamassi M, Benchenane K, Wiener SI, Battaglia FP (2009). *Nat Neurosci* 12:919.
 - Peyrache A, Benchenane K, Khamassi M, Wiener SI, Battaglia FP (2010). *J Comput Neurosci* 29:309.
 - Schneider G, Havenith MN, Nikolić D (2006). *Neural Comput* 18:2387.
-- Shah NB, Wainwright MJ (2018). *JMLR* 18(199). ⚠
+- Shah NB, Wainwright MJ (2018). Simple, robust and optimal ranking from pairwise comparisons. *JMLR* 18(199). Read as arXiv 1512.08949.
 - Skillings JH, Mack GA (1981). *Technometrics* 23:171.
 - Staude B, Rotter S, Grün S (2008). *Neural Comput* 20:1973.
 - Staude B, Rotter S, Grün S (2010). *J Comput Neurosci* 29:327.
