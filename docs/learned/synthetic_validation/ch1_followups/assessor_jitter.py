@@ -71,17 +71,17 @@ N_BG = 40
 
 def clusters_detail(trains, counts, K, bin_width, n_bins, merge_bins, wm):
     """`assess._clusters`' loop, also returning each cluster's centre, gathered onsets and cells."""
-    fire = np.flatnonzero(counts >= K)
+    hit = np.flatnonzero(counts >= K)
     out = []
-    if fire.size == 0:
+    if hit.size == 0:
         return out
-    groups, cur = [], [int(fire[0])]
-    for q in range(1, fire.size):
-        if fire[q] - fire[q - 1] <= merge_bins:
-            cur.append(int(fire[q]))
+    groups, cur = [], [int(hit[0])]
+    for q in range(1, hit.size):
+        if hit[q] - hit[q - 1] <= merge_bins:
+            cur.append(int(hit[q]))
         else:
             groups.append(cur)
-            cur = [int(fire[q])]
+            cur = [int(hit[q])]
     groups.append(cur)
     for g in groups:
         tc = float(np.mean((np.asarray(g, float) + 0.5) * bin_width))
