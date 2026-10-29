@@ -588,8 +588,7 @@ events than a baseline window holds. That is the question Chapter 2 starts from.
 5. **Sources.** Every cited paper except Kish's 1965 book is now held and was checked against the
    claim it supports; reading them corrected three attributions (Thomas 1949 has no spatial scatter
    law, Diggle & Gratton 1984 is about simulation-based inference rather than minimum contrast, and
-   Kruskal 1958 does not name Greiner). The Kendall & Babington Smith scan has no text layer and has
-   not been read.
+   Kruskal 1958 does not name Greiner).
 6. **Order, without background.** The order results assume known events, no background onsets and
    no frame grid; rounding onsets to 0.1 s lowers F about 9 % at δ = σ = 0.1 s. The comparison with
    Kreuz's indicator on the same trains has not been run.
@@ -654,7 +653,7 @@ The separation scripts and their run times are listed in
 - Durbin J (1951). Incomplete blocks in ranking experiments. *Br J Stat Psychol* 4:85–90.
 - Grün S, Diesmann M, Grammont F, Riehle A, Aertsen A (1999). *J Neurosci Methods* 94:67–79.
 - Grün S, Abeles M, Diesmann M (2008). *LNCS* 5286:96.
-- Kendall MG, Babington Smith B (1939). The problem of m rankings. *Ann Math Stat* 10:275–287. (Held as an image scan; not yet read.)
+- Kendall MG, Babington Smith B (1939). The problem of m rankings. *Ann Math Stat* 10:275–287.
 - Kish L (1965). *Survey Sampling*. Wiley. ⚠
 - Kreuz T, Satuvuori E, Pofahl M, Mulansky M (2017). *New J Phys* 19:043028.
 - Kruskal WH (1958). Ordinal measures of association. *JASA* 53:814–861.
