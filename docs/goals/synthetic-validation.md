@@ -85,7 +85,8 @@ simulated recordings (33 cells, 45 min each); 5-cell events are quoted in the te
 a median over participation, event count and the 5 recordings per condition; bars are the
 interquartile range. A–C, E–G: recovered ÷ planted. D, H: recovered jitter in seconds against the
 identity line, so an estimator that returns a constant draws as a flat line. In A–C and E–G the
-series are offset sideways for legibility; in D and H they sit at the planted jitter. The violet
+series are offset sideways for legibility; in D and H they are dodged a little about the planted
+jitter so every series shows (redrawn 2026-10-29; the panels say so), and the offset is not bias. The violet
 joint fit is Aim 0's (*Aim 0, the predictions*, third bullet).
 
 Numbers below are for events of 10 or more cells, per-condition medians unless marked pooled;
@@ -309,8 +310,10 @@ omitted; rounded onsets tie, and a review agent's test found that lowers F about
 template, 200 events; solid, (2/π) arctan r; dashed, the same with the no-order bias of 200
 events added. B: M templates at r = 2.5, 2000 events; solid, the many-template signal, an
 asymptotic form that at M = 2 already sits well below the one-template value at M = 1 (diamond);
-dashed, with the no-order bias added. C: no order planted, under both sorts. All three panels
-share one log axis.
+dashed, with the no-order bias added. C: no order planted. Blue lines are derived: the exact mean
+under the score sort and its asymptote 0.376/√n̄; the local search's 0.50/√n̄ is fitted; open points
+are a separate 200-recording check at small n̄. All three panels share one log axis (redrawn
+2026-10-29 for the Chapter 1 review; it had labeled the derived line "fitted").
 
 - **One template**: F = (2/π) arctan r, equivalently (2/π) arcsin(r/√(1 + r²)): the population
   Kendall rank correlation between template and observed latencies under a normal model
@@ -456,9 +459,13 @@ gaps.
 
 ![Figure 6](../learned/synthetic_validation/separation/floor/synth_recovery_plot_separation-floor-any-method_20261025.png)
 
-**Figure 6, the data's floor lies well below the tools'.** The separation any test resolves at 50 %
-and 80 % power, against cells per event, at σ = 0.105, 0.131 and 0.5 s (a–c), with and without
-cell identity. Panel d shows the power curves at the lab's two streams.
+**Figure 6, likelihood-ratio tests separate events far closer than the tools' bins.** The separation
+at which a test calls a pair two at 80 % (filled) and 50 % (open) power, against cells per event, at
+σ = 0.105, 0.131 and 0.5 s (A–C), with and without cell identity, and for an oracle that knows each
+onset's event. Down-pointing triangles: resolved every separation tried. †: false-alarm rate above
+7.5 %, value optimistic. The gray line marks the assessor's half-split point, 2.5 s. D: power curves
+at the two realistic parameter sets. These are attainable tests, so the values bound the best
+achievable separation from above (redrawn 2026-10-29 for the Chapter 1 review).
 
 ### What membership and order change for the generator
 
