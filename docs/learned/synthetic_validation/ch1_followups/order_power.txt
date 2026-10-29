@@ -1,0 +1,33 @@
+power against an order-free null (one-sided 5 %, F > 95th percentile of 300 null recordings), 300 recordings per point, 33 cells, score sort
+   7 cells/event, E 1: null F 1.000 +- 0.000; threshold 1.000, realized size 0.000 | r=1,M=1: 0.00 r=1,M=2: 0.00 r=2.5,M=1: 0.00 r=2.5,M=2: 0.00 r=5,M=1: 0.00 r=5,M=2: 0.00
+      3000-recording null: threshold 1.000, realized size 0.000 | r=1,M=1: 0.00 r=1,M=2: 0.00 r=2.5,M=1: 0.00 r=2.5,M=2: 0.00 r=5,M=1: 0.00 r=5,M=2: 0.00
+      exact 5 % (randomized at F = 1.000, gamma 0.05) | r=1,M=1: 0.05 r=1,M=2: 0.05 r=2.5,M=1: 0.05 r=2.5,M=2: 0.05 r=5,M=1: 0.05 r=5,M=2: 0.05
+   7 cells/event, E 2: null F 0.864 +- 0.112; threshold 1.000, realized size 0.000 | r=1,M=1: 0.00 r=1,M=2: 0.00 r=2.5,M=1: 0.00 r=2.5,M=2: 0.00 r=5,M=1: 0.00 r=5,M=2: 0.00
+      3000-recording null: threshold 1.000, realized size 0.000 | r=1,M=1: 0.00 r=1,M=2: 0.00 r=2.5,M=1: 0.00 r=2.5,M=2: 0.00 r=5,M=1: 0.00 r=5,M=2: 0.00
+      exact 5 % (randomized at F = 1.000, gamma 0.25) | r=1,M=1: 0.05 r=1,M=2: 0.06 r=2.5,M=1: 0.08 r=2.5,M=2: 0.05 r=5,M=1: 0.06 r=5,M=2: 0.06
+   7 cells/event, E 3: null F 0.783 +- 0.104; threshold 0.937, realized size 0.013 | r=1,M=1: 0.04 r=1,M=2: 0.03 r=2.5,M=1: 0.12 r=2.5,M=2: 0.02 r=5,M=1: 0.12 r=5,M=2: 0.07
+      3000-recording null: threshold 0.937, realized size 0.023 | r=1,M=1: 0.04 r=1,M=2: 0.03 r=2.5,M=1: 0.12 r=2.5,M=2: 0.02 r=5,M=1: 0.12 r=5,M=2: 0.07
+      exact 5 % (randomized at F = 0.937, gamma 0.71) | r=1,M=1: 0.08 r=1,M=2: 0.06 r=2.5,M=1: 0.20 r=2.5,M=2: 0.07 r=5,M=1: 0.24 r=5,M=2: 0.13
+   7 cells/event, E 5: null F 0.638 +- 0.085; threshold 0.771, realized size 0.030 | r=1,M=1: 0.26 r=1,M=2: 0.12 r=2.5,M=1: 0.67 r=2.5,M=2: 0.24 r=5,M=1: 0.78 r=5,M=2: 0.29
+      3000-recording null: threshold 0.771, realized size 0.043 | r=1,M=1: 0.26 r=1,M=2: 0.12 r=2.5,M=1: 0.67 r=2.5,M=2: 0.24 r=5,M=1: 0.78 r=5,M=2: 0.29
+      exact 5 % (randomized at F = 0.771, gamma 0.21) | r=1,M=1: 0.27 r=1,M=2: 0.13 r=2.5,M=1: 0.68 r=2.5,M=2: 0.26 r=5,M=1: 0.80 r=5,M=2: 0.30
+  13 cells/event, E 1: null F 1.000 +- 0.000; threshold 1.000, realized size 0.000 | r=1,M=1: 0.00 r=1,M=2: 0.00 r=2.5,M=1: 0.00 r=2.5,M=2: 0.00 r=5,M=1: 0.00 r=5,M=2: 0.00
+      3000-recording null: threshold 1.000, realized size 0.000 | r=1,M=1: 0.00 r=1,M=2: 0.00 r=2.5,M=1: 0.00 r=2.5,M=2: 0.00 r=5,M=1: 0.00 r=5,M=2: 0.00
+      exact 5 % (randomized at F = 1.000, gamma 0.05) | r=1,M=1: 0.05 r=1,M=2: 0.05 r=2.5,M=1: 0.05 r=2.5,M=2: 0.05 r=5,M=1: 0.05 r=5,M=2: 0.05
+  13 cells/event, E 2: null F 0.739 +- 0.086; threshold 0.872, realized size 0.030 | r=1,M=1: 0.14 r=1,M=2: 0.07 r=2.5,M=1: 0.33 r=2.5,M=2: 0.17 r=5,M=1: 0.48 r=5,M=2: 0.26
+      3000-recording null: threshold 0.885, realized size 0.036 | r=1,M=1: 0.10 r=1,M=2: 0.05 r=2.5,M=1: 0.22 r=2.5,M=2: 0.12 r=5,M=1: 0.35 r=5,M=2: 0.22
+      exact 5 % (randomized at F = 0.885, gamma 0.75) | r=1,M=1: 0.13 r=1,M=2: 0.06 r=2.5,M=1: 0.30 r=2.5,M=2: 0.16 r=5,M=1: 0.45 r=5,M=2: 0.25
+  13 cells/event, E 3: null F 0.615 +- 0.072; threshold 0.718, realized size 0.050 | r=1,M=1: 0.40 r=1,M=2: 0.25 r=2.5,M=1: 0.91 r=2.5,M=2: 0.42 r=5,M=1: 0.99 r=5,M=2: 0.52
+      3000-recording null: threshold 0.726, realized size 0.048 | r=1,M=1: 0.36 r=1,M=2: 0.21 r=2.5,M=1: 0.89 r=2.5,M=2: 0.39 r=5,M=1: 0.98 r=5,M=2: 0.49
+      exact 5 % (randomized at F = 0.726, gamma 0.10) | r=1,M=1: 0.36 r=1,M=2: 0.21 r=2.5,M=1: 0.89 r=2.5,M=2: 0.39 r=5,M=1: 0.98 r=5,M=2: 0.49
+  13 cells/event, E 5: null F 0.479 +- 0.059; threshold 0.574, realized size 0.047 | r=1,M=1: 0.86 r=1,M=2: 0.37 r=2.5,M=1: 1.00 r=2.5,M=2: 0.68 r=5,M=1: 1.00 r=5,M=2: 0.78
+      3000-recording null: threshold 0.579, realized size 0.045 | r=1,M=1: 0.83 r=1,M=2: 0.35 r=2.5,M=1: 1.00 r=2.5,M=2: 0.66 r=5,M=1: 1.00 r=5,M=2: 0.75
+      exact 5 % (randomized at F = 0.579, gamma 0.58) | r=1,M=1: 0.85 r=1,M=2: 0.36 r=2.5,M=1: 1.00 r=2.5,M=2: 0.67 r=5,M=1: 1.00 r=5,M=2: 0.77
+
+Table 1.2's method repeated: 7 cells/event, 5 events, r = 2.5, one template (order_limit.json has 0.43 there)
+  seed 100: threshold 0.7524, realized size 0.047, power 0.73
+  seed 101: threshold 0.7914, realized size 0.050, power 0.56
+  seed 102: threshold 0.7714, realized size 0.043, power 0.66
+  seed 103: threshold 0.7714, realized size 0.040, power 0.61
+  seed 104: threshold 0.7905, realized size 0.047, power 0.52
+  seed 105: threshold 0.7714, realized size 0.047, power 0.63

@@ -1,0 +1,77 @@
+GRANT 11 MISMATCH — missing none; holds Edit, Write, Bash, PowerShell, Agent, Artifact, Skill, ToolSearch, mcp__claude_ai_Claude_Docs__batch, mcp__claude_ai_Claude_Docs__update (and NotebookEdit and other write-capable MCP tools can be loaded through ToolSearch)
+
+This is a run finding, not a finding about the chapter. The harness gave this reviewer editing and execution tools that its grant forbids. I used only Read and Grep, made no edits, and wrote nothing to the repository or to the scratch folder. The run record's `roles:` line should say this role ran on a fallback path.
+
+# Role 11: argument order ("Start With the Problem")
+Artifact: `docs/dissertation/chapter-1-aim0.md` (the draft as it stands; I opened nothing under `docs/reviews/chapter-1-aim0_2026-10-29*` and read no git history). Unit of analysis: each numbered section and subsection.
+
+## The arc I judge against
+A dissertation chapter has its own conventions: **Introduction (problem → gap → question → contributions, with a roadmap) → Background and prior work (ending in the gap) → Methods → Results → Discussion (position against prior work, limitations, what comes next) → Conclusion.**
+
+Inside Results I apply the role's default analysis arc to each result: **problem → method → what the method gets wrong → fix → evidence → residual risk.**
+
+The chapter's one stated deviation is "a theory chapter checked by simulation" (derive, then test). That is legitimate and I accept it. The deviations below are the ones the chapter does not state.
+
+## The spine (one claim per unit)
+- **1.1 The problem:** Calcium onsets form unlabeled multichannel event times. The dissertation assumes they mix two or more sources and wants tools that measure each source. This chapter deliberately takes one source.
+- **1.1 What brute force found:** A 240-recording simulation grid found failures it could not explain: a fixed assessor threshold fails across backgrounds, and the assessor reads jitter only at the quieter background. A grid cannot say why.
+- **1.1 Question and answer:** We can derive what each tool should return and use simulation only to check. For one source this mostly works, and it fails in places that can be measured.
+- **1.1 Contributions:** Seven derived results. Their novelty status is deferred to 1.9.1.
+- **1.2.1:** The generative model is a hard-core Neyman–Scott/Thomas process. The realistic parameter values come from the lab's recordings.
+- **1.2.2:** Three population-count tools (coordination-rates tool, assessor, count detector) see only counts. The correlogram tool, the assembly test and the order indicator are also introduced.
+- **1.2.3:** Prior work covers the bin-width coincidence theory of the Grün lab, CuBIC, cluster-process fitting, assemblies and order indicators. No gap is stated.
+- **1.3:** How the grid, the residual and the held-out rerun were set up.
+- **1.4.1:** The closed form g_n for the chance that one window holds all of an event's onsets. It is numerically close to the uniform-jitter case.
+- **1.4.2:** The expected excess pair and triple counts, including the at-most-one-event term.
+- **1.4.3:** Because the tool assumes g = 1, it undercounts participants as σ approaches w. This explains the undercount the grid saw at 1 s jitter.
+- **1.4.4:** The full prediction matches participants to about 1–2 %, with a small residual bias. Rate and share are predicted less well.
+- **1.4.5:** A general event-train form removes the bias. It matters a great deal on realistic interval trains.
+- **1.4.6:** The joint fit recovers σ, k and λ. It beats the correlogram tool from about 0.5 s up, but cannot read jitter per recording at realistic values.
+- **1.5:** A closed-form chance-cluster rate explains failure 1. The safe threshold has to be set per background, and it loses spread-out events.
+- **1.6.1:** The membership excess variance is 1 + (E − 1)/M (Kish's form). Detection outlasts the variance.
+- **1.6.2:** For order, a latency template reads as extra jitter. F has closed forms and a large no-order bias with few events, and power needs several events. The section ends by setting this against the Synfire Indicator.
+- **1.7:** Likelihood tests separate events at 0.26–0.76 s, while the binning tools merge pairs closer than 2.5 bin widths. The tools set the limit, not the data.
+- **1.8:** Theory explains both failures and supplies the joint fit, but it does not predict detection, the rolling detectors and some other quantities. Realistic values sit between the tested grid points (Figure 1.11).
+- **1.9.1:** A table of what is old and what is new.
+- **1.9.2:** Two sources with the same jitter look like one blended source to pairs and triples. This is where Chapter 2 starts.
+- **1.9.3:** How the derivations were checked: simulation, rederivation and review by agents.
+- **1.9.4:** Limitations.
+- **1.9.5:** Next steps.
+- **1.10:** Conclusion, restating the above.
+
+## The cold open
+The reader first sees the title, a one-line note about how the chapter was made, and then a statement of a need ("downstream analysis rests on knowing which onsets belong…"). The actual problem, failures that the grid cannot explain, arrives in the fourth paragraph with Figure 1.1. For a dissertation introduction that is acceptable: the first figure shows the problem, which is what this role asks for. The cold open passes on position. It fails on correspondence: the problems it poses do not map onto the body's units (findings 1–3).
+
+## Findings
+
+| # | Location | Issue | Severity | Suggested fix | Verified against a source |
+|---|---|---|---|---|---|
+| 1 | 1.1 "Theory explains both failures above"; 1.8 "the assessor reads jitter poorly because the information about jitter is in how the pair and triple counts change across windows"; 1.8 "It does not predict … the assessor's participants and jitter" | The cold open poses two failures, but only failure 1 gets a unit in the spine (1.5, "This explains the first failure"). Failure 2 (assessor jitter) is never derived. 1.8 explains it in one sentence and, two paragraphs later, says the assessor's jitter is *not* predicted. The opening promise is half unanswered, and 1.8 contradicts it. (Whether the explanation is supported is role 4's question. My point is that no unit in the spine discharges the problem the chapter opens on.) | blocking | Choose one. (a) Recast the cold open: failure 2 is *answered by an alternative* (the joint fit reads jitter from how counts change across windows), not *explained*. Change 1.1's "explains both failures" to match, and have 1.4.6 open by naming failure 2 as its motivation. (b) Add a short derivation unit for the assessor's jitter read at the busier background. | yes: the goal page (`docs/goals/synthetic-validation.md` l.133) also lists "the assessor's participants and jitter" as not predicted |
+| 2 | 1.1 bullets vs 1.4.1–1.4.4; 1.4.3 "This is the undercount the first experiment saw at 1 s jitter" | The longest results section (1.4.1–1.4.4) answers a problem the cold open never names: the participant undercount. It is visible in Figure 1.1 A and E, but neither bullet mentions it. The reader learns why 1.4 exists only in its third subsection. | major | Add the undercount to the cold open as an observed failure ("at 1 s jitter the 1 s window read 0.34–0.42 of planted participants"). Then 1.1 sets up three observations that map onto 1.4, 1.4.6 and 1.5. | no |
+| 3 | 1.1 bullet order (threshold, then jitter) vs body order (1.4 coordination-rates tool, including the joint fit that answers jitter, then 1.5 threshold) | The cold open's order and the body's order are reversed, and neither section points back to the failure it answers. 1.4.6 never mentions the assessor or failure 2. | major | Either reorder the cold-open bullets to match the body (undercount, jitter, threshold), or open each results section with one sentence naming the Figure 1.1 failure it addresses. | no |
+| 4 | 1.4.1 to 1.4.3 | Motivation follows what it motivates. 1.4.1 builds g_n with no stated reason. The reason (the tool assumes g = 1, so it undercounts) is in 1.4.3. In the role's arc, 1.4.3 is "what the method gets wrong" and should open 1.4. | major | Open 1.4 with 1.4.3's observation and the approximation k̂ = 2 + (k − 2)g₃/g₂ as the problem statement. Then derive g_n (1.4.1) and the exact forms (1.4.2) as the means to predict it, then test (1.4.4). | no |
+| 5 | Figure 1.1 caption "the joint fit tracks the planted value from 0.2 s up"; "The joint fit (violet) is introduced in 1.4.6" | The first figure, which is the problem slide, shows and headlines the fix (joint fit) before the reader knows there is a problem, and 30 pages before the fix is defined. The caption's bold title leads with the remedy. | major | Plot only the shipped tools in Figure 1.1. Move the joint-fit overlay to a 1.4.6 figure, or at least retitle the caption so it states the problem only and defers the violet series to 1.4.6. | no |
+| 6 | 1.6 opening and 1.9.2 "or cell-by-cell structure, which 1.6 shows needs more events than a few" | The reason 1.6 belongs in a one-source chapter appears only after it, in the Discussion. The reason is that pair and triple counts cannot separate same-jitter sources (1.9.2), so separating sources needs cell-by-cell structure. As written, 1.6 opens with "a source may also have structure", which is a topic, not a problem. | major | State the two-source blend prediction (currently 1.9.2) at the head of 1.6 as its motivation. Keep 1.9.2 as the bridge to Chapter 2, pointing back. | no |
+| 7 | 1.6.2 last part "An earlier analysis of real recordings found Kreuz's indicator falling as event counts rose" | This observation is the motivating problem for the no-order bias derivation, and it sits after the derivation, the bias numbers and the power table. Here the evidence leads and the motivation trails. | major | Open 1.6.2 (or its "No order" bullet) with that observation and the 2017 finite-size warning. Keep the four-way comparison table where it is. | no |
+| 8 | 1.8 Figure 1.11 "1.4.6 simulates them directly" | Figure 1.11 shows that realistic values fall between tested grid points. That is the reason the realistic-value simulations in 1.4.5 and 1.4.6 exist, but it appears afterwards, in a synthesis section. The reader meets the realistic-value results before knowing why they were run. | major | Move Figure 1.11 into 1.3, as the motivation for the realistic-value follow-up, or to the head of 1.4.6's "At realistic values" paragraph. In 1.8, refer back to it. | no |
+| 9 | 1.2.3 (ends without a gap) vs 1.1 "Which of these was already known is set out in 1.9.1" | By dissertation convention the gap closes the background. Here prior work is listed without saying what is missing, and the novelty table waits until 1.9.1. The reader cannot judge contributions 1–7 while reading 1.4–1.7. 1.4.1 does this inline for g_n only. | major | End 1.2.3 with a short gap paragraph, or move the 1.9.1 table there, keeping a brief "what is old and new" recap in the Discussion. Alternatively, tag each contribution in 1.1 with its status (new / known in form / not searched). | no |
+| 10 | 1.7 placed after 1.6 | 1.7 is about the binning tools (the assessor and the count detector). The count detector, introduced in 1.2.2, appears in no result before 1.7. Placing 1.7 after 1.6 ("structure the population count cannot see") interrupts the move from population counts to cell identity, and separates 1.6 from 1.9.2, which 1.6 feeds. | minor | Order the results as population-count tools (1.4, 1.5, then 1.7), then the limit of counts (the two-source blend), then cell-by-cell structure (1.6), then Chapter 2. Or state why 1.7 comes last. | no |
+| 11 | 1.8 as a standalone section; 1.8, 1.10 and 1.1 "Question and answer" | Three summaries of the same answer. 1.8 is Discussion material sitting outside the Discussion. It also introduces new entities (CoactDetect, LoCo, "six ported detectors") and the only explanation of failure 2 (finding 1). | minor | Fold 1.8 into 1.9 as "What the theory replaces". Move the rolling-detector scope statement to 1.2.2 or 1.3. Make 1.10 the only closing summary. | no |
+| 12 | 1.9.3 "Rederivation" and "Review" | This is validation method, and it is placed after the results it validates. A committee judging 1.4–1.7 would want to know the derivations were rederived (and that the check was not independent) before reading them. | minor | Move the rederivation paragraph to 1.3. Leave the review provenance in "About this chapter". | no |
+| 13 | 1.1 Contributions; no roadmap | There is no sentence mapping sections to contributions, which dissertation convention expects. Contributions 1–3 are in 1.4, 4 in 1.5, 5–6 in 1.6 and 7 in 1.7, but the reader has to infer this. | minor | Add a section pointer to each contribution, or add a two-line roadmap. | no |
+| 14 | Figure 1.3 B (in 1.4.1); Figure 1.4 D, H ("discussed in 1.5"); Figure 1.5 caption ("The smallest threshold under it is 5 cells … so one fixed threshold cannot serve both backgrounds") | Several figures arrive before the claims they support. 1.3 B plots k̂ and the at-most-one-event term from 1.4.2 and 1.4.3. Figure 1.4 carries assessor panels a full section early. The Figure 1.5 caption states the section's conclusion before the test numbers. | minor | Place 1.3 B (or the whole figure) after 1.4.3. Drop panels D and H from Figure 1.4, since Figure 1.5 covers them. Keep the Figure 1.5 caption descriptive and leave the conclusion to the text. | no |
+| 15 | 1.6.2 "The earlier record's power at 10 and 25 events used a 300-recording null without randomization … it is not quoted here" | This housekeeping about the record has no job in the argument and interrupts the results. | minor | Move it to a footnote or to "About this chapter". | no |
+| 16 | 1.3 "the joint fit was re-specified, and the event-train form was judged…" | These are forward references to things defined in 1.4.5 and 1.4.6. They are tolerable in Methods, but the reader cannot evaluate them yet. | minor | Add section pointers, e.g. "(1.4.6)" and "(1.4.5)". | no |
+
+## Order-level verdict
+Each section is mostly well built inside, and the macro order (Introduction, Background, Methods, Results, Discussion, Conclusion) follows dissertation convention. The defect is the **correspondence between the opening problem and the body**:
+- The cold open names two failures.
+- The body answers a third failure that the cold open never names (1.4).
+- It answers the two named failures in reverse order, and does not point back to them.
+- One of the two named failures has no answering unit, and 1.8 contradicts the claim that it was explained.
+
+Inside the results, motivation repeatedly trails what it motivates: 1.4.3 comes after 1.4.1, the Kreuz observation comes at the end of 1.6.2, the two-source blend sits in 1.9.2 after 1.6, and Figure 1.11 comes after 1.4.6.
+
+**Before I sign off:** finding 1 must be resolved, and findings 2–9 addressed, either by reordering as suggested or by stating the deviation explicitly. Findings 10–16 are the author's call.
+
+What I checked: the full chapter, reduced to its spine as above, and every forward and back reference between sections and figures. I used two greps (chapter and goal page) to confirm finding 1. I did not check whether individual claims are supported (role 4), whether each section is readable on its own (role 8), or mechanical figure checks (role 10).

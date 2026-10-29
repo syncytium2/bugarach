@@ -1,0 +1,9 @@
+assess_coactivity at shipped settings, n_surrogates = 1000 (signature default); 240 regenerated Aim 1a recordings; jit_obs vs record: max |diff| 0.00e+00 over 708
+
+events of 10+ cells pooled (20 recordings per cell): median jit_obs / jit_null / jit_excess (s) [recordings with jit_defined False]; background-only chance-cluster SD median (assessor_jitter)
+  b 0.01 K 3 (chance-cluster SD alone 0.380): | sigma 0.05: 0.158 / 0.439 / -0.276 [0] | sigma 0.2: 0.258 / 0.440 / -0.188 [0] | sigma 0.5: 0.473 / 0.440 / +0.024 [0] | sigma 1.0: 0.705 / 0.440 / +0.257 [0]
+  b 0.01 K 4 (chance-cluster SD alone 0.374): | sigma 0.05: 0.068 / 0.404 / -0.330 [0] | sigma 0.2: 0.226 / 0.406 / -0.171 [0] | sigma 0.5: 0.486 / 0.408 / +0.082 [0] | sigma 1.0: 0.725 / 0.408 / +0.293 [0]
+  b 0.01 K 6 (chance-cluster SD alone 0.475): | sigma 0.05: 0.068 / 0.403 / -0.339 [0] | sigma 0.2: 0.229 / 0.388 / -0.128 [0] | sigma 0.5: 0.485 / 0.374 / +0.112 [0] | sigma 1.0: 0.711 / 0.367 / +0.294 [0]
+  b 0.05 K 3 (chance-cluster SD alone 0.733): | sigma 0.05: 0.715 / 0.727 / -0.014 [0] | sigma 0.2: 0.711 / 0.728 / -0.020 [0] | sigma 0.5: 0.717 / 0.728 / -0.011 [0] | sigma 1.0: 0.733 / 0.727 / +0.005 [0]
+  b 0.05 K 4 (chance-cluster SD alone 0.680): | sigma 0.05: 0.644 / 0.671 / -0.022 [0] | sigma 0.2: 0.646 / 0.673 / -0.025 [0] | sigma 0.5: 0.657 / 0.672 / -0.020 [0] | sigma 1.0: 0.692 / 0.671 / +0.016 [0]
+  b 0.05 K 6 (chance-cluster SD alone 0.596): | sigma 0.05: 0.430 / 0.595 / -0.164 [0] | sigma 0.2: 0.461 / 0.596 / -0.134 [0] | sigma 0.5: 0.565 / 0.597 / -0.033 [0] | sigma 1.0: 0.683 / 0.595 / +0.087 [0]

@@ -1,0 +1,11 @@
+power, one template, r = 2.5, 13 cells per event, 33 cells, score sort; 2000 recordings per point. Table 1.2's method (300-draw null) | exact 5 % (randomized, 3000-draw null)
+  sigma 0.105 s, E 3: unrounded 0.873 | 0.909   rounded 0.985 | 0.992   (mean F 0.797 -> 0.768; null mean F 0.611 -> 0.546; tied pairs 9.9 % signal, 25.9 % null)
+  sigma 0.105 s, E 5: unrounded 1.000 | 1.000   rounded 1.000 | 1.000   (mean F 0.759 -> 0.740; null mean F 0.478 -> 0.443; tied pairs 10.0 % signal, 25.9 % null)
+  sigma 0.200 s, E 3: unrounded 0.934 | 0.918   rounded 0.983 | 0.970   (mean F 0.799 -> 0.785; null mean F 0.610 -> 0.580; tied pairs 5.2 % signal, 13.9 % null)
+  sigma 0.200 s, E 5: unrounded 1.000 | 1.000   rounded 1.000 | 1.000   (mean F 0.759 -> 0.751; null mean F 0.479 -> 0.464; tied pairs 5.2 % signal, 14.0 % null)
+
+mean F with many events: 33 cells, 10 per event, 200 events, one template, 200 recordings (paired draws)
+  delta 0.100 s, sigma 0.100 s (r = 1): F 0.5037 -> 0.4776, change -5.18 % (SE 0.08 %); (2/pi) arctan r = 0.5000; tied pairs 19.6 %
+  delta 0.263 s, sigma 0.105 s (r = 2.5): F 0.7525 -> 0.7367, change -2.11 % (SE 0.05 %); (2/pi) arctan r = 0.7578; tied pairs 9.9 %
+  delta 0.200 s, sigma 0.200 s (r = 1): F 0.5029 -> 0.4963, change -1.31 % (SE 0.06 %); (2/pi) arctan r = 0.5000; tied pairs 9.9 %
+  delta 0.500 s, sigma 0.200 s (r = 2.5): F 0.7538 -> 0.7494, change -0.59 % (SE 0.03 %); (2/pi) arctan r = 0.7578; tied pairs 5.2 %

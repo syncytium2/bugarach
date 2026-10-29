@@ -85,7 +85,8 @@ simulated recordings (33 cells, 45 min each); 5-cell events are quoted in the te
 a median over participation, event count and the 5 recordings per condition; bars are the
 interquartile range. A–C, E–G: recovered ÷ planted. D, H: recovered jitter in seconds against the
 identity line, so an estimator that returns a constant draws as a flat line. In A–C and E–G the
-series are offset sideways for legibility; in D and H they sit at the planted jitter. The violet
+series are offset sideways for legibility; in D and H they are dodged a little about the planted
+jitter so every series shows (redrawn 2026-10-29; the panels say so), and the offset is not bias. The violet
 joint fit is Aim 0's (*Aim 0, the predictions*, third bullet).
 
 Numbers below are for events of 10 or more cells, per-condition medians unless marked pooled;
@@ -93,7 +94,7 @@ Numbers below are for events of 10 or more cells, per-condition medians unless m
 - **A fixed K does not transfer across backgrounds, so K should be set per recording from its own
   null**, as ADR-0008's event floor is set per window. At 0.05 Hz per cell, chance alone gives the
   assessor 7.97 clusters per minute at K = 3 cells and 3.85 at K = 4, against 0.33 or 1 planted
-  events per minute (measured on background-only recordings, Figure 2 H; on the recordings with
+  events per minute (measured on background-only recordings, Figure 1.10 of the dissertation chapter; on the recordings with
   events, the same excess is Figure 1 F). Predicted from the assessor's clustering rule against
   ADR-0008's budget of one chance call per hour, the smallest safe K is 5 at 0.01 Hz and 8 at
   0.05 Hz. ADR-0008's own floor, which counts in a sliding 2 s window, gives 6 and 12 cells, and
@@ -145,11 +146,11 @@ triple counts.
 
 ![Figure 2](../learned/synthetic_validation/synth_recovery_plot_one-source-predicted-against-measured_20261023.png)
 
-**Figure 2, the full prediction matches the coordination-rates tool and the assessor's chance clusters.** One point per condition and window. A–C, E–G: the
-coordination-rates tool's three estimates as ratios to planted. Coloured points use the full
-prediction (with the at-most-one-event term); grey points are the same measurements placed at
-the prediction for a Poisson event train. D, H: chance clusters per minute on 100 background-only
-recordings per background, pooled, with exact Poisson 95 % intervals (about the size of the markers).
+**Figure 2, the full prediction matches the coordination-rates tool.** One point per condition and window. A–C (0.01 Hz), D–F (0.05 Hz): the
+coordination-rates tool's three estimates as ratios to planted. Coloured points are the
+measurements placed at the full prediction (the hard-core form, with the at-most-one-event term);
+grey points are the same measurements placed at the prediction for a Poisson event train. The
+chance-cluster panels were moved to the chapter's Figure 1.10 (2026-10-29).
 The at-most-one-event term shrinks the participant residual from about 0.05 to 0.007–0.016.
 
 The residual below is |condition median of recovered ÷ planted − predicted ÷ planted|. The tool
@@ -198,8 +199,10 @@ background (16 conditions × 3 windows); the three windows reuse the same record
 
 **What is old and what is new** (searched 2026-10-24, verdicts in [`prior_art/`](../learned/synthetic_validation/prior_art/README.md)). Window
 sharing for two onsets with uniform jitter is Grün et al. 1999's fission probability. Reading
-group size and jitter across bin widths is Grün, Abeles & Diesmann 2008 and Louis & Grün
-2009/2010, by a slope-change rule with uniform jitter; the cumulant route is CuBIC's (Staude,
+group size and jitter across bin widths is Grün, Abeles & Diesmann 2008 and Louis, Borgelt & Grün
+2010, by a slope-change rule with uniform jitter (that paper, read 2026-10-29, also gives the full
+population-count distribution for uniform jitter, so the n-onset form is new only for Gaussian
+jitter); the cumulant route is CuBIC's (Staude,
 Rotter & Grün 2010). Not found in any source read, nor in Grün's Elephant code: g_n for Gaussian
 jitter and n onsets with the size correction built on it, the at-most-one-event term, and a formal
 fit that also recovers the event rate. The full chain, with what was and was not opened, is in the
@@ -260,7 +263,7 @@ and perfect readout (every member seen, no background cell joining). Two events 
 assembly with probability 1/M, and the variance of pair co-participation counts across cell pairs
 is **1 + (E − 1)/M** times its value under random participation. For unequal use, 1/M becomes
 Σ p_m², p_m the share of events that use assembly m. This has the form of Kish's design effect
-(1965; ⚠ analogy, book not opened). Real readout dilutes the excess; no correction is derived yet.
+deft² = 1 + roh(b̄ − 1), with E as the cluster size and 1/M as roh (Kish 1995, pp. 63–64; read 2026-10-29). Real readout dilutes the excess; no correction is derived yet.
 
 ![Figure 3](../learned/synthetic_validation/synth_assembly-membership_plot_assemblies-converge-to-random_20261023.png)
 
@@ -307,12 +310,15 @@ omitted; rounded onsets tie, and a review agent's test found that lowers F about
 template, 200 events; solid, (2/π) arctan r; dashed, the same with the no-order bias of 200
 events added. B: M templates at r = 2.5, 2000 events; solid, the many-template signal, an
 asymptotic form that at M = 2 already sits well below the one-template value at M = 1 (diamond);
-dashed, with the no-order bias added. C: no order planted, under both sorts. All three panels
-share one log axis.
+dashed, with the no-order bias added. C: no order planted. Blue lines are derived: the exact mean
+under the score sort and its asymptote 0.376/√n̄; the local search's 0.50/√n̄ is fitted; open points
+are a separate 200-recording check at small n̄. All three panels share one log axis (redrawn
+2026-10-29 for the Chapter 1 review; it had labeled the derived line "fitted").
 
 - **One template**: F = (2/π) arctan r, equivalently (2/π) arcsin(r/√(1 + r²)): the population
   Kendall rank correlation between template and observed latencies under a normal model
-  (Greiner's relation, via Kruskal 1958; ⚠ neither opened). This is the one exact form. The score
+  (τ = (2/π) arcsin ρ for the bivariate normal, Kruskal 1958 sec. 9; read 2026-10-29, and it does not
+  name Greiner). This is the one exact form. The score
   sort sits on it at r = 1 and 2.5 (0.503 and 0.753) and 2 % below at r = 5, where the sort
   itself misorders cells. At r = 0.25 it reads 0.176
   against the closed form's 0.156; the 0.02 excess is the no-order bias.
@@ -388,7 +394,7 @@ interchangeable within events) and also moves background onsets.
   Havenith & Nikolić 2006 rank units by summed pairwise delays the same way, and an independent
   survey reached it unprompted ([`prior_art/`](../learned/synthetic_validation/prior_art/README.md)).
   Sorting by net wins comes within a factor of 5 of the fewest disagreements (Coppersmith,
-  Fleischer & Rudra 2010), and Borda counting is optimal up to constants for top-k ranking from
+  Fleischer & Rudra 2010), and Copeland counting (by wins) is optimal up to constants for top-k ranking from
   noisy comparisons (Shah & Wainwright 2018). Mariani et al. 2025 replaced annealing with a direct
   shift for latency correction (9.7 s against 861.8 s for annealing on one 183-train dataset);
   Kreuz's 2026 review still sorts by annealing. Kreuz's lab has applied the Synfire Indicator to
@@ -453,9 +459,13 @@ gaps.
 
 ![Figure 6](../learned/synthetic_validation/separation/floor/synth_recovery_plot_separation-floor-any-method_20261025.png)
 
-**Figure 6, the data's floor lies well below the tools'.** The separation any test resolves at 50 %
-and 80 % power, against cells per event, at σ = 0.105, 0.131 and 0.5 s (a–c), with and without
-cell identity. Panel d shows the power curves at the lab's two streams.
+**Figure 6, likelihood-ratio tests separate events far closer than the tools' bins.** The separation
+at which a test calls a pair two at 80 % (filled) and 50 % (open) power, against cells per event, at
+σ = 0.105, 0.131 and 0.5 s (A–C), with and without cell identity, and for an oracle that knows each
+onset's event. Down-pointing triangles: resolved every separation tried. †: false-alarm rate above
+7.5 %, value optimistic. The gray line marks the assessor's half-split point, 2.5 s. D: power curves
+at the two realistic parameter sets. These are attainable tests, so the values bound the best
+achievable separation from above (redrawn 2026-10-29 for the Chapter 1 review).
 
 ### What membership and order change for the generator
 
@@ -641,10 +651,13 @@ in for a stranger's data.
   only stated reason for annealing is a travelling-salesman analogy. A draft note asking him is
   with Tony. The wider search ([`prior_art/`](../learned/synthetic_validation/prior_art/README.md)) found the score sort and the 1/√ scaling
   textbook (Borda ranking, Kendall's W), so the question for him is why his group anneals.
-- **Has anyone asked the Grün lab** about the joint fit? Louis & Grün 2009 and Louis, Borgelt &
-  Grün 2010 are its closest precedent (*Aim 0, the predictions*). Louis et al. 2010 could not be
-  opened: whether it has an n-onset closed form, a formal fit, or the event rate is the question
-  for them ([`prior_art/`](../learned/synthetic_validation/prior_art/README.md)).
+- **Has anyone asked the Grün lab** about the joint fit? Louis, Borgelt & Grün 2010 is its closest
+  precedent (*Aim 0, the predictions*). **Read 2026-10-29**: it has the full population-count
+  distribution for **uniform** jitter (binomial given the jitter window's overlap with a bin), reads
+  size and jitter from a slope change across bin widths rather than by a fit, does not estimate the
+  event rate, and neglects two events sharing a bin. Its Fig. 6 separates groups of different sizes
+  from the full count distribution, which bears on the two-source prediction. The question for them
+  is now narrower: whether the Gaussian case or a formal fit appeared later.
 
 ## Open work a session can do without a ruling
 
@@ -670,6 +683,7 @@ learned models.
 | Aim 0 and Aim 1 scripts, records and figures | [`docs/learned/synthetic_validation/`](../learned/synthetic_validation/README.md) |
 | Figures for reading | also in the darkroom, `bugarach/2026-10-23-synthetic-validation/` (claimed in `docs/SESSIONS.md`) |
 | The murderboard of Aim 0 | [run record](../reviews/synthetic-validation-aim0_2026-10-23.md) and its role reports |
+| Aim 0 written up as a dissertation chapter (first draft, not yet reviewed) | [`dissertation/chapter-1-aim0.md`](../dissertation/chapter-1-aim0.md) |
 
 ## Keeping this page true
 

@@ -1,0 +1,723 @@
+{
+ "original,hard-core,0.01,k": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 7,
+   "above": 14,
+   "cond_below": 12
+  },
+  "mean_window_corr": [
+   0.526687866963073,
+   0.2739125748141079,
+   0.614758459186926
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.6592,
+    "beyond_sd": 2.7067979902460397,
+    "p_beyond": 0.3503,
+    "above_mean": 24.0188,
+    "above_sd": 4.346544208908958,
+    "p_above_two": 0.0244,
+    "cond_below_sd": 1.9882267218554328,
+    "p_cond_two": 0.074
+   },
+   "BOOT": {
+    "beyond_mean": 7.0073,
+    "beyond_sd": 2.691811046488962,
+    "p_beyond": 0.55285,
+    "above_mean": 23.2665,
+    "above_sd": 4.467603132553293,
+    "p_above_two": 0.0433,
+    "cond_below_sd": 2.011129593039693,
+    "p_cond_two": 0.1029
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.3386434034367249,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.00551520148550111,
+   "p_cond_two": 0.076812744140625
+  }
+ },
+ "original,hard-core,0.01,lam": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 17,
+   "above": 43,
+   "cond_below": 2
+  },
+  "mean_window_corr": [
+   0.48989395376188277,
+   0.23819468038913819,
+   0.462473851049815
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.69365,
+    "beyond_sd": 2.5313237006554496,
+    "p_beyond": 5e-05,
+    "above_mean": 23.9898,
+    "above_sd": 4.167540756849296,
+    "p_above_two": 0.0,
+    "cond_below_sd": 2.007899160814606,
+    "p_cond_two": 0.0036
+   },
+   "BOOT": {
+    "beyond_mean": 7.015,
+    "beyond_sd": 2.633358122246194,
+    "p_beyond": 0.00115,
+    "above_mean": 26.29775,
+    "above_sd": 4.103193261046815,
+    "p_above_two": 0.0,
+    "cond_below_sd": 1.9723194410389004,
+    "p_cond_two": 0.0151
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 1.925877549041863e-05,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 1.3680484300948594e-08,
+   "p_cond_two": 0.004180908203125
+  }
+ },
+ "original,hard-core,0.05,k": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 10,
+   "above": 17,
+   "cond_below": 9
+  },
+  "mean_window_corr": [
+   0.5831194801513274,
+   0.31839262270635693,
+   0.6669884639916293
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.63335,
+    "beyond_sd": 2.689445626425639,
+    "p_beyond": 0.0854,
+    "above_mean": 23.98735,
+    "above_sd": 4.447447580073317,
+    "p_above_two": 0.1485,
+    "cond_below_sd": 1.9972879211570875,
+    "p_cond_two": 0.8053
+   },
+   "BOOT": {
+    "beyond_mean": 6.13185,
+    "beyond_sd": 2.6395767799971273,
+    "p_beyond": 0.10675,
+    "above_mean": 23.592,
+    "above_sd": 4.389673791980448,
+    "p_above_two": 0.1642,
+    "cond_below_sd": 2.012310025816102,
+    "p_cond_two": 0.6726
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.05167262437577333,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.05946337525377034,
+   "p_cond_two": 0.803619384765625
+  }
+ },
+ "original,hard-core,0.05,lam": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 7,
+   "above": 30,
+   "cond_below": 5
+  },
+  "mean_window_corr": [
+   0.7419545551860317,
+   0.4383471686827793,
+   0.732077303532713
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.66575,
+    "beyond_sd": 2.757576279543324,
+    "p_beyond": 0.35645,
+    "above_mean": 24.0311,
+    "above_sd": 4.5517724888223485,
+    "p_above_two": 0.2306,
+    "cond_below_sd": 1.987798077647727,
+    "p_cond_two": 0.2109
+   },
+   "BOOT": {
+    "beyond_mean": 6.4622,
+    "beyond_sd": 2.801869226070339,
+    "p_beyond": 0.4649,
+    "above_mean": 22.4917,
+    "above_sd": 4.307415827384211,
+    "p_above_two": 0.1083,
+    "cond_below_sd": 1.9956222488236595,
+    "p_cond_two": 0.0883
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.3386434034367249,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.11140289106101878,
+   "p_cond_two": 0.210113525390625
+  }
+ },
+ "original,general,0.01,k": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 6,
+   "above": 19,
+   "cond_below": 9
+  },
+  "mean_window_corr": [
+   0.526687866963073,
+   0.2739125748141079,
+   0.614758459186926
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.64955,
+    "beyond_sd": 2.6971901670998286,
+    "p_beyond": 0.4888,
+    "above_mean": 23.96855,
+    "above_sd": 4.326784128830557,
+    "p_above_two": 0.3076,
+    "cond_below_sd": 1.983698388742603,
+    "p_cond_two": 0.8142
+   },
+   "BOOT": {
+    "beyond_mean": 7.01865,
+    "beyond_sd": 2.6850702369770514,
+    "p_beyond": 0.69905,
+    "above_mean": 23.21705,
+    "above_sd": 4.450274069930974,
+    "p_above_two": 0.4034,
+    "cond_below_sd": 1.998928713086087,
+    "p_cond_two": 0.9128
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.508578020596772,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.19341265286193737,
+   "p_cond_two": 0.803619384765625
+  }
+ },
+ "original,general,0.01,lam": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 5,
+   "above": 35,
+   "cond_below": 5
+  },
+  "mean_window_corr": [
+   0.48989395376188277,
+   0.23819468038913819,
+   0.462473851049815
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.678,
+    "beyond_sd": 2.533380350440889,
+    "p_beyond": 0.6546,
+    "above_mean": 24.0208,
+    "above_sd": 4.132380350354986,
+    "p_above_two": 0.0105,
+    "cond_below_sd": 1.9902465148820134,
+    "p_cond_two": 0.2039
+   },
+   "BOOT": {
+    "beyond_mean": 7.0273,
+    "beyond_sd": 2.6431145851059883,
+    "p_beyond": 0.8306,
+    "above_mean": 26.28685,
+    "above_sd": 4.111212361031718,
+    "p_above_two": 0.0416,
+    "cond_below_sd": 1.9816687658385295,
+    "p_cond_two": 0.4457
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.6853041429306241,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.0020881073339964478,
+   "p_cond_two": 0.210113525390625
+  }
+ },
+ "original,general,0.05,k": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 7,
+   "above": 19,
+   "cond_below": 9
+  },
+  "mean_window_corr": [
+   0.5831194801513274,
+   0.31839262270635693,
+   0.6669884639916293
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.6468,
+    "beyond_sd": 2.722526356162599,
+    "p_beyond": 0.3507,
+    "above_mean": 23.9994,
+    "above_sd": 4.4192306615518495,
+    "p_above_two": 0.3122,
+    "cond_below_sd": 1.9862142224594002,
+    "p_cond_two": 0.8024
+   },
+   "BOOT": {
+    "beyond_mean": 6.15015,
+    "beyond_sd": 2.660790291905771,
+    "p_beyond": 0.4172,
+    "above_mean": 23.6416,
+    "above_sd": 4.34778672890012,
+    "p_above_two": 0.3427,
+    "cond_below_sd": 1.993695904595282,
+    "p_cond_two": 0.6556
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.3386434034367249,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.19341265286193737,
+   "p_cond_two": 0.803619384765625
+  }
+ },
+ "original,general,0.05,lam": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 7,
+   "above": 27,
+   "cond_below": 5
+  },
+  "mean_window_corr": [
+   0.7419545551860317,
+   0.4383471686827793,
+   0.732077303532713
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.66985,
+    "beyond_sd": 2.781231917244587,
+    "p_beyond": 0.35685,
+    "above_mean": 24.03675,
+    "above_sd": 4.6186036242028825,
+    "p_above_two": 0.5937,
+    "cond_below_sd": 2.0027153966552516,
+    "p_cond_two": 0.2166
+   },
+   "BOOT": {
+    "beyond_mean": 6.4879,
+    "beyond_sd": 2.8222072195358017,
+    "p_beyond": 0.46735,
+    "above_mean": 22.45305,
+    "above_sd": 4.3026382252636575,
+    "p_above_two": 0.3498,
+    "cond_below_sd": 1.9966712273181082,
+    "p_cond_two": 0.0869
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.3386434034367249,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.470879013621712,
+   "p_cond_two": 0.210113525390625
+  }
+ },
+ "held-out,hard-core,0.01,k": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 17,
+   "above": 16,
+   "cond_below": 12
+  },
+  "mean_window_corr": [
+   0.7650325704100372,
+   0.4731696107864649,
+   0.6369832740188583
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.66245,
+    "beyond_sd": 2.7614144921579595,
+    "p_beyond": 0.0005,
+    "above_mean": 23.9522,
+    "above_sd": 4.621451629087986,
+    "p_above_two": 0.1063,
+    "cond_below_sd": 2.001644173548336,
+    "p_cond_two": 0.0794
+   },
+   "BOOT": {
+    "beyond_mean": 6.94135,
+    "beyond_sd": 2.929387338250099,
+    "p_beyond": 0.0022,
+    "above_mean": 21.71395,
+    "above_sd": 4.556898659998925,
+    "p_above_two": 0.2545,
+    "cond_below_sd": 1.99201826296849,
+    "p_cond_two": 0.14
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 1.925877549041863e-05,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.029304946720529308,
+   "p_cond_two": 0.076812744140625
+  }
+ },
+ "held-out,hard-core,0.01,lam": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 12,
+   "above": 33,
+   "cond_below": 6
+  },
+  "mean_window_corr": [
+   0.7072217935937686,
+   0.4443875008476755,
+   0.6837157595634609
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.67025,
+    "beyond_sd": 2.714261398152359,
+    "p_beyond": 0.02535,
+    "above_mean": 24.00805,
+    "above_sd": 4.533804715412873,
+    "p_above_two": 0.0591,
+    "cond_below_sd": 1.9926853012957164,
+    "p_cond_two": 0.4521
+   },
+   "BOOT": {
+    "beyond_mean": 6.9235,
+    "beyond_sd": 2.9212065572293926,
+    "p_beyond": 0.06765,
+    "above_mean": 20.581,
+    "above_sd": 4.163704960729086,
+    "p_above_two": 0.0051,
+    "cond_below_sd": 1.9575048652557674,
+    "p_cond_two": 0.1332
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.008713144314941218,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.01328328156224501,
+   "p_cond_two": 0.454498291015625
+  }
+ },
+ "held-out,hard-core,0.05,k": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 1,
+  "observed": {
+   "beyond": 11,
+   "above": 14,
+   "cond_below": 11
+  },
+  "mean_window_corr": [
+   0.7151663561959765,
+   0.49340463052244027,
+   0.7419161446342583
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.6783,
+    "beyond_sd": 2.7551604508630714,
+    "p_beyond": 0.05195,
+    "above_mean": 23.99305,
+    "above_sd": 4.648204136814561,
+    "p_above_two": 0.0418,
+    "cond_below_sd": 2.0007454510756735,
+    "p_cond_two": 0.209
+   },
+   "BOOT": {
+    "beyond_mean": 6.5924,
+    "beyond_sd": 2.825555209158016,
+    "p_beyond": 0.09055,
+    "above_mean": 21.12965,
+    "above_sd": 4.591943039444196,
+    "p_above_two": 0.1446,
+    "cond_below_sd": 2.0142376200438714,
+    "p_cond_two": 0.3586
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.02231880065563662,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.00551520148550111,
+   "p_cond_two": 0.210113525390625
+  }
+ },
+ "held-out,hard-core,0.05,lam": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 1,
+  "observed": {
+   "beyond": 10,
+   "above": 28,
+   "cond_below": 7
+  },
+  "mean_window_corr": [
+   0.69272286813266,
+   0.5670189952480942,
+   0.7919011125211367
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.63495,
+    "beyond_sd": 2.8431828111291053,
+    "p_beyond": 0.09725,
+    "above_mean": 23.98155,
+    "above_sd": 4.710542388886868,
+    "p_above_two": 0.4568,
+    "cond_below_sd": 1.9942038254651906,
+    "p_cond_two": 0.8016
+   },
+   "BOOT": {
+    "beyond_mean": 6.37235,
+    "beyond_sd": 2.8539455982026007,
+    "p_beyond": 0.1374,
+    "above_mean": 20.70615,
+    "above_sd": 4.601434795528456,
+    "p_above_two": 0.1458,
+    "cond_below_sd": 2.0125344320035867,
+    "p_cond_two": 0.5281
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.05167262437577333,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.31232680747326935,
+   "p_cond_two": 0.803619384765625
+  }
+ },
+ "held-out,general,0.01,k": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 12,
+   "above": 18,
+   "cond_below": 9
+  },
+  "mean_window_corr": [
+   0.7650325704100372,
+   0.4731696107864649,
+   0.6369832740188583
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.6317,
+    "beyond_sd": 2.7676262590891856,
+    "p_beyond": 0.02555,
+    "above_mean": 23.9961,
+    "above_sd": 4.5727108797736165,
+    "p_above_two": 0.2357,
+    "cond_below_sd": 1.989244758696124,
+    "p_cond_two": 0.8075
+   },
+   "BOOT": {
+    "beyond_mean": 6.9264,
+    "beyond_sd": 2.9257448692597925,
+    "p_beyond": 0.0698,
+    "above_mean": 21.70955,
+    "above_sd": 4.6043771345861755,
+    "p_above_two": 0.492,
+    "cond_below_sd": 1.989577537443565,
+    "p_cond_two": 1.0
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.008713144314941218,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.11140289106101878,
+   "p_cond_two": 0.803619384765625
+  }
+ },
+ "held-out,general,0.01,lam": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 0,
+  "observed": {
+   "beyond": 3,
+   "above": 18,
+   "cond_below": 8
+  },
+  "mean_window_corr": [
+   0.7072217935937686,
+   0.4443875008476755,
+   0.6837157595634609
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.6841,
+    "beyond_sd": 2.7153466058682088,
+    "p_beyond": 0.8867,
+    "above_mean": 24.0012,
+    "above_sd": 4.5407266555035,
+    "p_above_two": 0.2268,
+    "cond_below_sd": 1.993057876103953,
+    "p_cond_two": 1.0
+   },
+   "BOOT": {
+    "beyond_mean": 6.92275,
+    "beyond_sd": 2.921914173534192,
+    "p_beyond": 0.95085,
+    "above_mean": 20.51765,
+    "above_sd": 4.133568491932848,
+    "p_above_two": 0.6353,
+    "cond_below_sd": 1.958899072821262,
+    "p_cond_two": 0.6075
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.9341411140010356,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.11140289106101878,
+   "p_cond_two": 1.0
+  }
+ },
+ "held-out,general,0.05,k": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 1,
+  "observed": {
+   "beyond": 7,
+   "above": 19,
+   "cond_below": 10
+  },
+  "mean_window_corr": [
+   0.7151663561959765,
+   0.49340463052244027,
+   0.7419161446342583
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.6703,
+    "beyond_sd": 2.75731715803605,
+    "p_beyond": 0.35145,
+    "above_mean": 24.02605,
+    "above_sd": 4.6321346480321575,
+    "p_above_two": 0.3281,
+    "cond_below_sd": 2.006227753147683,
+    "p_cond_two": 0.4534
+   },
+   "BOOT": {
+    "beyond_mean": 6.67905,
+    "beyond_sd": 2.8327267954216837,
+    "p_beyond": 0.4991,
+    "above_mean": 21.1551,
+    "above_sd": 4.553651720322932,
+    "p_above_two": 0.7188,
+    "cond_below_sd": 1.9870599160568863,
+    "p_cond_two": 0.67
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.3386434034367249,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.19341265286193737,
+   "p_cond_two": 0.454498291015625
+  }
+ },
+ "held-out,general,0.05,lam": {
+  "n_condition_windows": 48,
+  "n_conditions": 16,
+  "n_nan_recordings": 1,
+  "observed": {
+   "beyond": 5,
+   "above": 26,
+   "cond_below": 8
+  },
+  "mean_window_corr": [
+   0.69272286813266,
+   0.5670189952480942,
+   0.7919011125211367
+  ],
+  "nulls": {
+   "MVN": {
+    "beyond_mean": 5.6827,
+    "beyond_sd": 2.810768704465026,
+    "p_beyond": 0.6344,
+    "above_mean": 24.04265,
+    "above_sd": 4.667036637685631,
+    "p_above_two": 0.7583,
+    "cond_below_sd": 2.0000474738115592,
+    "p_cond_two": 1.0
+   },
+   "BOOT": {
+    "beyond_mean": 6.33455,
+    "beyond_sd": 2.843048768048132,
+    "p_beyond": 0.72125,
+    "above_mean": 20.68115,
+    "above_sd": 4.520838935142458,
+    "p_above_two": 0.29,
+    "cond_below_sd": 1.983225330112542,
+    "p_cond_two": 0.8807
+   }
+  },
+  "binomial": {
+   "beyond_mean": 5.6784,
+   "beyond_sd": 2.237553413887588,
+   "p_beyond": 0.6853041429306241,
+   "above_sd": 3.4641016151377544,
+   "p_above_two": 0.6654658120766188,
+   "p_cond_two": 1.0
+  }
+ },
+ "runtime_sec": 20.32442545890808
+}

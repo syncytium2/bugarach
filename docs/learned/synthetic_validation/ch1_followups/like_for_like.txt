@@ -1,0 +1,41 @@
+null rate of |z| > 2 for a median of 5 (simulated as theory.summary): 0.1183
+
+=== original Aim 1a record (aim1_one_source.json): events of 10+ cells; residual = measured/planted - predicted/planted (hard-core record's prediction equals the general record's 'page' column: True)
+       form    bg   qty | med|res|  med res  worst |     above      p | >2SE  exp  P(>=) | cond below     p
+  hard-core  0.01     k |   0.0073  -0.0063  0.037 |  14 of 48   0.006 |    7  5.7  0.338 |  12 of 16   0.077
+    general  0.01     k |   0.0065  -0.0023  0.041 |  19 of 48   0.193 |    6  5.7  0.508 |   9 of 16   0.804
+  hard-core  0.01   lam |   0.0324  +0.0298  0.182 |  43 of 48   0.000 |   17  5.7  0.000 |   2 of 16   0.004
+    general  0.01   lam |   0.0196  +0.0129  0.176 |  35 of 48   0.002 |    5  5.7  0.685 |   5 of 16   0.210
+  hard-core  0.01 share |   0.0175  +0.0136  0.071 |  41 of 48   0.000 |   18  5.7  0.000 |   2 of 16   0.004
+    general  0.01 share |   0.0068  +0.0027  0.065 |  30 of 48   0.111 |    6  5.7  0.508 |   3 of 16   0.021
+  hard-core  0.05     k |   0.0161  -0.0052  0.106 |  17 of 48   0.059 |   10  5.7  0.052 |   9 of 16   0.804
+    general  0.05     k |   0.0146  -0.0028  0.108 |  19 of 48   0.193 |    7  5.7  0.338 |   9 of 16   0.804
+  hard-core  0.05   lam |   0.0553  +0.0272  0.384 |  30 of 48   0.111 |    7  5.7  0.338 |   5 of 16   0.210
+    general  0.05   lam |   0.0587  +0.0124  0.441 |  27 of 48   0.471 |    7  5.7  0.338 |   5 of 16   0.210
+  hard-core  0.05 share |   0.0238  +0.0045  0.284 |  29 of 48   0.193 |    6  5.7  0.508 |   6 of 16   0.454
+    general  0.05 share |   0.0175  -0.0029  0.289 |  22 of 48   0.665 |    6  5.7  0.508 |   8 of 16   1.000
+  joint fit, per-condition median ratio to planted (events of 10+ cells, sigma >= 0.2 s); sigma 0.05 s; 5-cell events
+    hard_core bg 0.01: sigma 0.91-1.13, k 0.94-1.02, rate 0.96-1.14 (at sigma bound 0); 0.05 s reads 0.075 s, 1 of 20 at bound; 5-cell sigma ratio 0.37-2.47
+    hard_core bg 0.05: sigma 0.88-1.12, k 0.96-1.14, rate 0.73-1.08 (at sigma bound 0); 0.05 s reads 0.039 s, 4 of 20 at bound; 5-cell sigma ratio 0.10-3.56
+    general   bg 0.01: sigma 0.91-1.12, k 0.94-1.02, rate 0.96-1.14 (at sigma bound 0); 0.05 s reads 0.074 s, 1 of 20 at bound; 5-cell sigma ratio 0.36-2.45
+    general   bg 0.05: sigma 0.88-1.12, k 0.96-1.14, rate 0.73-1.07 (at sigma bound 0); 0.05 s reads 0.039 s, 4 of 20 at bound; 5-cell sigma ratio 0.10-3.52
+
+=== HELD-OUT record (ch1_followups/aim1_one_source_heldout.json): events of 10+ cells; residual = measured/planted - predicted/planted (hard-core record's prediction equals the general record's 'page' column: True)
+       form    bg   qty | med|res|  med res  worst |     above      p | >2SE  exp  P(>=) | cond below     p
+  hard-core  0.01     k |   0.0115  -0.0090  0.056 |  16 of 48   0.029 |   17  5.7  0.000 |  12 of 16   0.077
+    general  0.01     k |   0.0096  -0.0054  0.055 |  18 of 48   0.111 |   12  5.7  0.009 |   9 of 16   0.804
+  hard-core  0.01   lam |   0.0236  +0.0165  0.134 |  33 of 48   0.013 |   12  5.7  0.009 |   6 of 16   0.454
+    general  0.01   lam |   0.0141  -0.0035  0.110 |  18 of 48   0.111 |    3  5.7  0.934 |   8 of 16   1.000
+  hard-core  0.01 share |   0.0112  +0.0072  0.067 |  30 of 48   0.111 |    8  5.7  0.202 |   5 of 16   0.210
+    general  0.01 share |   0.0084  -0.0042  0.071 |  17 of 48   0.059 |    5  5.7  0.685 |  10 of 16   0.454
+  hard-core  0.05     k |   0.0209  -0.0103  0.132 |  14 of 48   0.006 |   10  5.7  0.052 |  11 of 16   0.210
+    general  0.05     k |   0.0170  -0.0060  0.131 |  19 of 48   0.193 |    6  5.7  0.508 |  10 of 16   0.454
+  hard-core  0.05   lam |   0.0471  +0.0247  0.619 |  28 of 48   0.312 |   10  5.7  0.052 |   6 of 16   0.454
+    general  0.05   lam |   0.0504  +0.0048  0.613 |  26 of 48   0.665 |    5  5.7  0.685 |   7 of 16   0.804
+  hard-core  0.05 share |   0.0296  +0.0121  0.195 |  29 of 48   0.193 |    4  5.7  0.835 |   7 of 16   0.804
+    general  0.05 share |   0.0202  -0.0003  0.199 |  24 of 48   1.000 |    4  5.7  0.835 |   8 of 16   1.000
+  joint fit, per-condition median ratio to planted (events of 10+ cells, sigma >= 0.2 s); sigma 0.05 s; 5-cell events
+    hard_core bg 0.01: sigma 0.86-1.22, k 0.98-1.06, rate 0.94-1.04 (at sigma bound 0); 0.05 s reads 0.041 s, 3 of 20 at bound; 5-cell sigma ratio 0.66-1.31
+    hard_core bg 0.05: sigma 0.86-1.36, k 0.89-1.16, rate 0.87-1.45 (at sigma bound 0); 0.05 s reads 0.030 s, 7 of 20 at bound; 5-cell sigma ratio 0.10-3.71
+    general   bg 0.01: sigma 0.86-1.21, k 0.98-1.06, rate 0.94-1.03 (at sigma bound 0); 0.05 s reads 0.040 s, 3 of 20 at bound; 5-cell sigma ratio 0.66-1.26
+    general   bg 0.05: sigma 0.86-1.37, k 0.89-1.16, rate 0.87-1.44 (at sigma bound 0); 0.05 s reads 0.029 s, 7 of 20 at bound; 5-cell sigma ratio 0.12-3.67

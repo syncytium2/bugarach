@@ -31,7 +31,8 @@ New J Phys 19:043028) in four ways, the same four the goal page tables:
   * the null: order-free simulation and the fitted c / sqrt(n_bar) here, order-swapping
     surrogates there (synfire_scan.py adds its own relabel null).
 None of the numbers below is PySpike's. Omitted: the 0.1 s frame grid. Rounded onsets tie, and a
-tie counts 0 here as in PySpike; at delta = sigma = 0.1 s that lowered F about 9 % (same test).
+tie counts 0 here as in PySpike; at delta = sigma = 0.1 s that lowers F by 5.2 % of its value
+(ch1_followups/order_rounding.py; an earlier unkept test said about 9 %, which did not reproduce).
 
 Predictions:
   one template:   F = (2/pi) arctan(r): the population Kendall tau between template and observed
@@ -45,7 +46,8 @@ Predictions:
                   M; it assumes the order agrees with every pair's net sign, which it cannot, so
                   it runs high at moderate M). The no-order bias adds in quadrature.
   no order:       F_0 ~ c / sqrt(n_bar), n_bar = mean co-participations per pair: the 1/sqrt(n)
-                  scaling of a mean of random signs. c is FITTED, depends on N and k, and is larger
+                  scaling of a mean of random signs. Under the score sort c is now derived exactly
+                  (kendall_w/derivation.md, c = sqrt(4(k+1)/(3 pi N))); it depends on N and k and is larger
                   under a search than under the score sort. Kreuz et al. 2017 (sec. 2.5, 3.1)
                   already note the finite-size effect and that the null would be binomial if
                   pairs were independent; the content here is the scaling with a fitted constant.
