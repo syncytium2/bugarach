@@ -6,8 +6,8 @@
 > number below is quoted from those records, which recompute it; none was computed for this
 > chapter. Before this goes to a reader outside the lab, three things are owed, listed in
 > *1.10, Limitations*: human review of the derivations (so far they were checked only by Claude
-> review agents and by two more Claude sessions that rederived them), the one source still marked
-> ⚠ below (Kish's book), and the two-source test that the dissertation's premise needs.
+> review agents and by two more Claude sessions that rederived them) and the two-source test that the
+> dissertation's premise needs. Every cited source has now been read against the claim it supports.
 
 ## 1.1 Introduction
 
@@ -360,9 +360,8 @@ counts across cell pairs is
 
 times its value under random participation. With unequal use, 1/M becomes Σ p_m², where p_m is the
 share of events using assembly m. This has the form of Kish's design effect for clustered samples,
-1 + (b̄ − 1)ρ, with b̄ the mean cluster size and ρ the intraclass correlation (Kish 1965 ⚠; stated,
-with its weighting factor, in Kish 1987, as given by Gabler, Häder & Lahiri 1999): here E plays b̄
-and 1/M plays ρ.
+deft² = 1 + roh(b̄ − 1), with b̄ the mean cluster size and roh his "ratio of homogeneity", the
+intraclass correlation (Kish 1995, pp. 63–64): here E plays b̄ and 1/M plays roh.
 
 The formula answers the question of whether assembled participation converges to random as sources
 multiply: **only if the total number of events is held fixed**, and then almost by definition, since
@@ -588,8 +587,7 @@ events than a baseline window holds. That is the question Chapter 2 starts from.
    derivation in [`theory.py`](../learned/synthetic_validation/theory.py),
    [`kendall_w/`](../learned/synthetic_validation/kendall_w/derivation.md) and
    [`separation/`](../learned/synthetic_validation/separation/README.md) needs a human reader.
-5. **Sources.** Every cited paper except Kish's 1965 book is now held (its design-effect formula is
-   cited through Gabler, Häder & Lahiri 1999, who attribute it to Kish 1987) and was checked against the
+5. **Sources.** Every cited paper is now held and was checked against the
    claim it supports; reading them corrected three attributions (Thomas 1949 has no spatial scatter
    law, Diggle & Gratton 1984 is about simulation-based inference rather than minimum contrast, and
    Kruskal 1958 does not name Greiner).
@@ -648,8 +646,6 @@ The separation scripts and their run times are listed in
 
 ## References
 
-⚠ marks a source read as abstract or documentation only, or not opened.
-
 - Cecchini G, et al. (2021). *PLoS Comput Biol* 17:e1008963.
 - Chapin JK, Nicolelis MAL (1999). *J Neurosci Methods* 94:121.
 - Coppersmith D, Fleischer L, Rudra A (2006). Ordering by weighted number of wins gives a good ranking for weighted tournaments. *Proc. SODA 2006*; journal version *ACM Trans Algorithms* 6(3), 2010.
@@ -658,8 +654,7 @@ The separation scripts and their run times are listed in
 - Grün S, Diesmann M, Grammont F, Riehle A, Aertsen A (1999). *J Neurosci Methods* 94:67–79.
 - Grün S, Abeles M, Diesmann M (2008). *LNCS* 5286:96.
 - Kendall MG, Babington Smith B (1939). The problem of m rankings. *Ann Math Stat* 10:275–287.
-- Gabler S, Häder S, Lahiri P (1999). A model based justification of Kish's formula for design effects for weighting and clustering. *Survey Methodology* 25:105–106.
-- Kish L (1965). *Survey Sampling*. Wiley. ⚠ Not held; borrowable copies were unavailable, and the formula is cited through Gabler et al.
+- Kish L (1995). Methods for design effects. *J Off Stat* 11:55–77.
 - Kreuz T, Satuvuori E, Pofahl M, Mulansky M (2017). *New J Phys* 19:043028.
 - Kruskal WH (1958). Ordinal measures of association. *JASA* 53:814–861.
 - Kuhn A, Aertsen A, Rotter S (2003). *Neural Comput* 15:67.

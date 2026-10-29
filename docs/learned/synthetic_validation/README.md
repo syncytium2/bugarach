@@ -78,7 +78,7 @@ opened, or read as abstract only.
   quadrat-variance ecology, physics counting statistics, composite and Palm likelihood for
   cluster processes (Guan 2006; Tanaka, Ogata & Stoyan 2008).
 
-**Membership.** Kish's design effect (1965; ⚠ book not opened) has the form of 1 + (E − 1)/M.
+**Membership.** Kish's design effect, deft² = 1 + roh(b̄ − 1) (Kish 1995, *J Off Stat* 11:55, pp. 63–64; read 2026-10-29), has the form of 1 + (E − 1)/M, with E as the cluster size and 1/M as roh.
 The detectability threshold for planted low-rank structure (plan item 6) is random-matrix theory:
 Baik, Ben Arous & Péché 2005 (*Ann Probab* 33:1643) and Baik & Silverstein 2006 (*J Multivariate
 Anal* 97:1382; ⚠ neither opened). The PCA assembly method with a Marchenko–Pastur null comes from

@@ -262,7 +262,7 @@ and perfect readout (every member seen, no background cell joining). Two events 
 assembly with probability 1/M, and the variance of pair co-participation counts across cell pairs
 is **1 + (E − 1)/M** times its value under random participation. For unequal use, 1/M becomes
 Σ p_m², p_m the share of events that use assembly m. This has the form of Kish's design effect
-(1965; ⚠ analogy, book not opened). Real readout dilutes the excess; no correction is derived yet.
+deft² = 1 + roh(b̄ − 1), with E as the cluster size and 1/M as roh (Kish 1995, pp. 63–64; read 2026-10-29). Real readout dilutes the excess; no correction is derived yet.
 
 ![Figure 3](../learned/synthetic_validation/synth_assembly-membership_plot_assemblies-converge-to-random_20261023.png)
 
