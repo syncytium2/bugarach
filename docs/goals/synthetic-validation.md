@@ -198,8 +198,10 @@ background (16 conditions × 3 windows); the three windows reuse the same record
 
 **What is old and what is new** (searched 2026-10-24, verdicts in [`prior_art/`](../learned/synthetic_validation/prior_art/README.md)). Window
 sharing for two onsets with uniform jitter is Grün et al. 1999's fission probability. Reading
-group size and jitter across bin widths is Grün, Abeles & Diesmann 2008 and Louis & Grün
-2009/2010, by a slope-change rule with uniform jitter; the cumulant route is CuBIC's (Staude,
+group size and jitter across bin widths is Grün, Abeles & Diesmann 2008 and Louis, Borgelt & Grün
+2010, by a slope-change rule with uniform jitter (that paper, read 2026-10-29, also gives the full
+population-count distribution for uniform jitter, so the n-onset form is new only for Gaussian
+jitter); the cumulant route is CuBIC's (Staude,
 Rotter & Grün 2010). Not found in any source read, nor in Grün's Elephant code: g_n for Gaussian
 jitter and n onsets with the size correction built on it, the at-most-one-event term, and a formal
 fit that also recovers the event rate. The full chain, with what was and was not opened, is in the
@@ -312,7 +314,8 @@ share one log axis.
 
 - **One template**: F = (2/π) arctan r, equivalently (2/π) arcsin(r/√(1 + r²)): the population
   Kendall rank correlation between template and observed latencies under a normal model
-  (Greiner's relation, via Kruskal 1958; ⚠ neither opened). This is the one exact form. The score
+  (τ = (2/π) arcsin ρ for the bivariate normal, Kruskal 1958 sec. 9; read 2026-10-29, and it does not
+  name Greiner). This is the one exact form. The score
   sort sits on it at r = 1 and 2.5 (0.503 and 0.753) and 2 % below at r = 5, where the sort
   itself misorders cells. At r = 0.25 it reads 0.176
   against the closed form's 0.156; the 0.02 excess is the no-order bias.
@@ -641,10 +644,13 @@ in for a stranger's data.
   only stated reason for annealing is a travelling-salesman analogy. A draft note asking him is
   with Tony. The wider search ([`prior_art/`](../learned/synthetic_validation/prior_art/README.md)) found the score sort and the 1/√ scaling
   textbook (Borda ranking, Kendall's W), so the question for him is why his group anneals.
-- **Has anyone asked the Grün lab** about the joint fit? Louis & Grün 2009 and Louis, Borgelt &
-  Grün 2010 are its closest precedent (*Aim 0, the predictions*). Louis et al. 2010 could not be
-  opened: whether it has an n-onset closed form, a formal fit, or the event rate is the question
-  for them ([`prior_art/`](../learned/synthetic_validation/prior_art/README.md)).
+- **Has anyone asked the Grün lab** about the joint fit? Louis, Borgelt & Grün 2010 is its closest
+  precedent (*Aim 0, the predictions*). **Read 2026-10-29**: it has the full population-count
+  distribution for **uniform** jitter (binomial given the jitter window's overlap with a bin), reads
+  size and jitter from a slope change across bin widths rather than by a fit, does not estimate the
+  event rate, and neglects two events sharing a bin. Its Fig. 6 separates groups of different sizes
+  from the full count distribution, which bears on the two-source prediction. The question for them
+  is now narrower: whether the Gaussian case or a formal fit appeared later.
 
 ## Open work a session can do without a ruling
 

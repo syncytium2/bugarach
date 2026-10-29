@@ -6,8 +6,8 @@
 > number below is quoted from those records, which recompute it; none was computed for this
 > chapter. Before this goes to a reader outside the lab, three things are owed, listed in
 > *1.10, Limitations*: human review of the derivations (so far they were checked only by Claude
-> review agents and by two more Claude sessions that rederived them), reading the sources marked
-> ⚠ below, and the two-source test that the dissertation's premise needs.
+> review agents and by two more Claude sessions that rederived them), the one source still marked
+> ⚠ below (Kish's book), and the two-source test that the dissertation's premise needs.
 
 ## 1.1 Introduction
 
@@ -84,8 +84,10 @@ duration. Frame interval is optional. In the lab's recordings the frame is 0.1 s
 lasts about 45 minutes.
 
 The generative model for one source of coordinated events is a cluster process of the
-Neyman–Scott type (Neyman & Scott 1952 ⚠) with Gaussian scatter, the case now called the Thomas
-process (Thomas 1949 ⚠). Each cell carries independent Poisson background onsets at rate b. On top
+Neyman–Scott type (Neyman & Scott 1952): cluster centers placed at random, and the members of each
+cluster scattered about its center by a probability law. With Gaussian scatter it is now called the
+Thomas process, although Thomas (1949) gave only the count distribution of clustered plants in
+sampling quadrats, with no spatial scatter law; the name is a later convention. Each cell carries independent Poisson background onsets at rate b. On top
 of that, E coordinated events occur in a recording of duration T (rate λ = E/T). Each event is
 joined by k of the N cells; each participant's onset is the event time plus independent Gaussian
 jitter of standard deviation σ, rounded to the frame. Two departures from the textbook process
@@ -133,17 +135,26 @@ are needed for structure the population count cannot see: the repository's **ass
 
 ### 1.2.3 Prior work
 
-**Coincidence detection across bin widths.** Grün et al. (1999) derived the chance that two
-uniformly jittered onsets fall in one analysis bin ("fission probability") and read the coincidence
-width from how detection changes with the bin. Pazienti et al. (2008 ⚠) estimated synchronization
-precision from how detection decays with dither width. Louis & Grün (2009) and Louis, Borgelt &
-Grün (2010 ⚠) fitted group size and jitter together by following the population count's
-distribution across bin widths, building on the complexity distribution of Grün, Abeles & Diesmann
-(2008). This is the closest precedent for the joint fit.
+**Coincidence detection across bin widths.** Grün et al. (1999, eq. 5) derived the chance that two
+uniformly jittered onsets are split by a bin border (the "fission probability") and showed how
+detection depends on the analysis bin width. Pazienti et al. (2008) derived how dithering interacts
+with jittered coincidences and estimated synchronization precision from how detection decays with
+the dither interval, at a single tolerated spread. Louis, Borgelt & Grün (2010), building on the
+complexity distribution of Grün, Abeles & Diesmann (2008), gave the full distribution of the
+population count for groups with **uniform** jitter: given how far the jitter window overlaps a bin,
+each member is captured independently, so the group's contribution is binomial. They then read group
+size and jitter from where one feature of the observed-minus-independent distribution (its second
+maximum) changes slope as the bin widens, the slope change sitting at bin width 2s + 1 for jitter
+±s. This is the closest precedent for the joint fit, and it differs in three ways: the jitter is
+uniform rather than Gaussian, the reading is a slope-change rule rather than a fit, and the event
+rate is not estimated. They also neglect two events sharing a bin, as an approximation for low
+rates, which is the case the at-most-one-event term and the event-train form treat.
 
-**Cluster processes.** In spatial statistics the scatter and parent rate of a Thomas process are
-fitted by minimum contrast on its pair-count curve across scales (Diggle & Gratton 1984;
-Waagepetersen 2007 ⚠). PP-Seq (Williams, Degleris, Wang & Linderman 2020) is a Neyman–Scott model
+**Cluster processes.** In spatial statistics the clustering parameters of a Neyman–Scott process
+are fitted by minimum contrast on its K-function, the pair-count curve across scales, which has a
+closed form for the Thomas process (Waagepetersen 2007). Fitting a model that can be simulated but
+not written down, by matching simulated summaries, goes back at least to Diggle & Gratton (1984),
+which is the situation Aim 1's brute-force grid is in. PP-Seq (Williams, Degleris, Wang & Linderman 2020) is a Neyman–Scott model
 of neural sequences with per-neuron offsets, and Wang et al. (2024) give Bayesian inference for
 the class.
 
@@ -395,8 +406,8 @@ the no-order bias of 200 events added. B: M templates at r = 2.5, 2000 events; s
 many-template asymptote; dashed, with the bias added. C: no order planted, under both sorts.
 
 - **One template**: F = (2/π) arctan r, with r = δ/σ. This is the population Kendall rank
-  correlation between template and observed latencies under a normal model (Greiner's relation, via
-  Kruskal 1958 ⚠). The score sort sits on it at r = 1 and 2.5 (0.503 and 0.753).
+  correlation between template and observed latencies under a normal model: for a bivariate normal
+  pair with correlation ρ, τ = (2/π) arcsin ρ (Kruskal 1958, sec. 9), and here ρ = r/√(1 + r²). The score sort sits on it at r = 1 and 2.5 (0.503 and 0.753).
 - **M templates**: the signal falls as 1/√M from √(2/π) · √((2/π) arcsin(r²/(1 + r²))), 0.65 at
   r = 2.5. This form is asymptotic and runs up to 10 % high at M = 2–16.
 - **No order**: under the score sort the mean of F is exact for every N, k and E, and for n̄ ≳ 2 it
@@ -432,7 +443,7 @@ indicator falls with spike count is **consistent with** the no-order bias, but n
 by non-coincident spikes and cross-event coincidences predict a fall too, and Kreuz et al. (2017,
 sec. 3.1) warn that the indicator is not sufficient to compare datasets with very different numbers
 of trains and spikes. Ranking by net lead count is the textbook Borda or Copeland ranking; it comes
-within a factor of 5 of the fewest disagreements (Coppersmith, Fleischer & Rudra 2010 ⚠), and
+within a factor of 5 of the fewest disagreements (Coppersmith, Fleischer & Rudra 2006), and
 Copeland counting, which ranks items by the number of pairwise comparisons won, reaches the
 information-theoretic limit for recovering the top k items up to constant factors (Shah & Wainwright
 2018). A
@@ -504,14 +515,15 @@ dropped*. No human has yet reviewed the derivations.
 | result | status |
 |---|---|
 | Window sharing, two onsets, uniform jitter | Grün et al. 1999 ("fission probability") |
-| Reading group size and jitter across bin widths | Grün, Abeles & Diesmann 2008; Louis & Grün 2009/2010, by a slope-change rule with uniform jitter |
+| Reading group size and jitter across bin widths | Grün, Abeles & Diesmann 2008; Louis, Borgelt & Grün 2010, by a slope-change rule with uniform jitter |
+| The full population-count distribution for jittered groups, all orders | Louis, Borgelt & Grün 2010, for uniform jitter |
 | The cumulant route to participation | CuBIC (Staude, Rotter & Grün 2010) |
-| Fitting a Thomas process's scatter and rate by pair counts across scales | spatial statistics (Diggle & Gratton 1984; Waagepetersen 2007) |
-| g_n for Gaussian jitter and n onsets, and k̂ built on it | not found in the sources read |
+| Fitting a cluster process's parameters by pair counts across scales | spatial statistics: minimum contrast on the K-function (Waagepetersen 2007) |
+| g_n for Gaussian jitter and n onsets, and k̂ built on it | not found; the uniform-jitter analogue is in Louis, Borgelt & Grün 2010 |
 | The at-most-one-event term, and the general event-train form with the surrogate's dependence | not found |
-| A formal fit across windows that also recovers the event rate | not found; Louis, Borgelt & Grün 2010 could not be opened and is the question to put to that group |
+| A formal fit across windows that also recovers the event rate | not found; Louis, Borgelt & Grün 2010 read size and jitter from a slope change and do not estimate the rate |
 | The membership variance ratio | the form of Kish's design effect |
-| One-template F = (2/π) arctan r | Greiner's relation (Kruskal 1958) |
+| One-template F = (2/π) arctan r | τ = (2/π) arcsin ρ for the bivariate normal (Kruskal 1958) |
 | The score sort | Borda/Copeland ranking; Schneider, Havenith & Nikolić 2006 rank units by summed pairwise delays |
 | The exact no-order mean of F, c/√n̄ | the covariance is Durbin's and Skillings–Mack's; its use as an analytical null for an order indicator was not found |
 
@@ -552,10 +564,13 @@ above the data's own floor.
 
 The dissertation's premise is that two or more sources are mixed in one recording. On that the
 chapter has a prediction and no test: two sources with the same jitter look, to pair and triple
-counts, like one source whose participation blends the two, so population-count tools cannot tell
-them apart. If that holds, separating sources needs either different jitters (which the joint fit
-across windows might resolve) or cell-by-cell structure (membership or order), which *1.6* shows
-needs more events than a baseline window holds. That is the question Chapter 2 starts from.
+counts, like one source whose participation blends the two, so pair-and-triple tools cannot tell
+them apart. The full population-count distribution carries more. Louis, Borgelt & Grün (2010,
+Fig. 6) separated two and three groups of different sizes from it, and noted that the groups become
+inseparable as their sizes converge. So separating sources may need higher orders of the population
+count than the coordination-rates tool uses, different jitters (which the joint fit across windows
+might resolve), or cell-by-cell structure (membership or order), which *1.6* shows needs more
+events than a baseline window holds. That is the question Chapter 2 starts from.
 
 ### Limitations
 
@@ -570,9 +585,11 @@ needs more events than a baseline window holds. That is the question Chapter 2 s
    derivation in [`theory.py`](../learned/synthetic_validation/theory.py),
    [`kendall_w/`](../learned/synthetic_validation/kendall_w/derivation.md) and
    [`separation/`](../learned/synthetic_validation/separation/README.md) needs a human reader.
-5. **Unread sources.** References marked ⚠ were read as abstract or software documentation only, or
-   not opened. They must be read, or the claims that rest on them withdrawn, before a committee
-   sees this chapter.
+5. **Sources.** Every cited paper except Kish's 1965 book is now held and was checked against the
+   claim it supports; reading them corrected three attributions (Thomas 1949 has no spatial scatter
+   law, Diggle & Gratton 1984 is about simulation-based inference rather than minimum contrast, and
+   Kruskal 1958 does not name Greiner). The Kendall & Babington Smith scan has no text layer and has
+   not been read.
 6. **Order, without background.** The order results assume known events, no background onsets and
    no frame grid; rounding onsets to 0.1 s lowers F about 9 % at δ = σ = 0.1 s. The comparison with
    Kreuz's indicator on the same trains has not been run.
@@ -632,36 +649,35 @@ The separation scripts and their run times are listed in
 
 - Cecchini G, et al. (2021). *PLoS Comput Biol* 17:e1008963.
 - Chapin JK, Nicolelis MAL (1999). *J Neurosci Methods* 94:121.
-- Coppersmith D, Fleischer L, Rudra A (2010). *ACM Trans Algorithms* 6(3). ⚠
-- Diggle PJ, Gratton RJ (1984). *J R Stat Soc B* 46:193. ⚠
-- Durbin J (1951). *Br J Stat Psychol* 4:85.
-- Grün S, Diesmann M, Grammont F, Riehle A, Aertsen A (1999). *J Neurosci Methods* 94:67.
+- Coppersmith D, Fleischer L, Rudra A (2006). Ordering by weighted number of wins gives a good ranking for weighted tournaments. *Proc. SODA 2006*; journal version *ACM Trans Algorithms* 6(3), 2010.
+- Diggle PJ, Gratton RJ (1984). Monte Carlo methods of inference for implicit statistical models. *J R Stat Soc B* 46:193–227.
+- Durbin J (1951). Incomplete blocks in ranking experiments. *Br J Stat Psychol* 4:85–90.
+- Grün S, Diesmann M, Grammont F, Riehle A, Aertsen A (1999). *J Neurosci Methods* 94:67–79.
 - Grün S, Abeles M, Diesmann M (2008). *LNCS* 5286:96.
-- Kendall MG, Babington Smith B (1939). *Ann Math Stat* 10:275.
+- Kendall MG, Babington Smith B (1939). The problem of m rankings. *Ann Math Stat* 10:275–287. (Held as an image scan; not yet read.)
 - Kish L (1965). *Survey Sampling*. Wiley. ⚠
 - Kreuz T, Satuvuori E, Pofahl M, Mulansky M (2017). *New J Phys* 19:043028.
-- Kruskal WH (1958). *JASA* 53:814. ⚠
+- Kruskal WH (1958). Ordinal measures of association. *JASA* 53:814–861.
 - Kuhn A, Aertsen A, Rotter S (2003). *Neural Comput* 15:67.
 - Lopes-dos-Santos V, Conde-Ocazionez S, Nicolelis MAL, Ribeiro ST, Tort ABL (2011). *PLoS ONE* 6:e20996.
 - Lopes-dos-Santos V, Ribeiro S, Tort ABL (2013). *J Neurosci Methods* 220:149.
-- Louis S, Grün S (2009). *BMC Neurosci* 10(Suppl 1):P253.
-- Louis S, Borgelt C, Grün S (2010). *Neural Netw* 23:705. ⚠
+- Louis S, Borgelt C, Grün S (2010). Complexity distribution as a measure for assembly size and temporal precision. *Neural Netw* 23:705–712.
 - Mariani B, et al. (2025). *J Neurosci Methods* 416:110378.
-- Neyman J, Scott EL (1952). *ApJ* 116:144. ⚠
-- Pazienti A, Maldonado PE, Diesmann M, Grün S (2008). *Brain Res* 1225:39. ⚠
+- Neyman J, Scott EL (1952). A theory of the spatial distribution of galaxies. *ApJ* 116:144.
+- Pazienti A, Maldonado PE, Diesmann M, Grün S (2008). Effectiveness of systematic spike dithering depends on the precision of cortical synchronization. *Brain Res* 1225:39–46.
 - Peyrache A, Khamassi M, Benchenane K, Wiener SI, Battaglia FP (2009). *Nat Neurosci* 12:919.
 - Peyrache A, Benchenane K, Khamassi M, Wiener SI, Battaglia FP (2010). *J Comput Neurosci* 29:309.
 - Schneider G, Havenith MN, Nikolić D (2006). *Neural Comput* 18:2387.
 - Shah NB, Wainwright MJ (2018). Simple, robust and optimal ranking from pairwise comparisons. *JMLR* 18(199). Read as arXiv 1512.08949.
-- Skillings JH, Mack GA (1981). *Technometrics* 23:171.
+- Skillings JH, Mack GA (1981). On the use of a Friedman-type statistic in balanced and unbalanced block designs. *Technometrics* 23:171–177.
 - Staude B, Rotter S, Grün S (2008). *Neural Comput* 20:1973.
 - Staude B, Rotter S, Grün S (2010). *J Comput Neurosci* 29:327.
-- Thomas M (1949). *Biometrika* 36:18. ⚠
-- Waagepetersen RP (2007). *Biometrics* 63:252. ⚠
+- Thomas M (1949). A generalization of Poisson's binomial limit for use in ecology. *Biometrika* 36:18–25.
+- Waagepetersen RP (2007). An estimating function approach to inference for inhomogeneous Neyman–Scott processes. *Biometrics* 63:252–258.
 - Wang Y, Degleris A, Williams AH, Linderman SW (2024). *JASA* 119:2382.
 - Williams AH, Degleris A, Wang Y, Linderman SW (2020). *NeurIPS*.
 
-*The repository's records give these as short citations. Full author lists and the volume and page
-numbers for Durbin 1951, Kendall & Babington Smith 1939, Schneider et al. 2006 and Skillings & Mack
-1981 were filled in from memory while drafting, and the entries marked "et al." are incomplete. All
-need checking against the sources.*
+*Volumes, pages and author lists for Durbin, Kendall & Babington Smith, Grün et al. 1999, Pazienti
+et al., Schneider et al. and Skillings & Mack were checked against Crossref. The entries marked
+"et al." are still incomplete. The PDFs are in the lab's literature library under
+`01-lit/bugarach/synthetic_validation/`.*
