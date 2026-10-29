@@ -670,6 +670,7 @@ learned models.
 | Aim 0 and Aim 1 scripts, records and figures | [`docs/learned/synthetic_validation/`](../learned/synthetic_validation/README.md) |
 | Figures for reading | also in the darkroom, `bugarach/2026-10-23-synthetic-validation/` (claimed in `docs/SESSIONS.md`) |
 | The murderboard of Aim 0 | [run record](../reviews/synthetic-validation-aim0_2026-10-23.md) and its role reports |
+| Aim 0 written up as a dissertation chapter (first draft, not yet reviewed) | [`dissertation/chapter-1-aim0.md`](../dissertation/chapter-1-aim0.md) |
 
 ## Keeping this page true
 
