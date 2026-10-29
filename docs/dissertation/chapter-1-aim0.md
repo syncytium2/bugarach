@@ -1,13 +1,14 @@
 # Chapter 1. Predict first, simulate to check: an analytical baseline for finding coordinated events in multichannel event times
 
-> **Draft for the author, not yet for a committee.** Written from the Aim 0 record on the goal
-> page ([`goals/synthetic-validation.md`](../goals/synthetic-validation.md)) and the scripts and
-> derivations in [`learned/synthetic_validation/`](../learned/synthetic_validation/README.md). Every
-> number below is quoted from those records, which recompute it; none was computed for this
-> chapter. Before this goes to a reader outside the lab, three things are owed, listed in
-> *1.10, Limitations*: human review of the derivations (so far they were checked only by Claude
-> review agents and by two more Claude sessions that rederived them) and the two-source test that the
-> dissertation's premise needs. Every cited source has now been read against the claim it supports.
+> **An exercise, not a submission.** Tony set this up to test how far he and Claude can take a
+> piece of research together: Aim 0 written up as if it were a dissertation's first chapter, from
+> the record on the goal page ([`goals/synthetic-validation.md`](../goals/synthetic-validation.md))
+> and the scripts and derivations in
+> [`learned/synthetic_validation/`](../learned/synthetic_validation/README.md). Every number below is
+> quoted from those records, which recompute it; none was computed for this chapter. Every cited
+> source was obtained (Tony pulled the paywalled ones through the university) and read against the
+> claim it supports. Still open, as in *1.10, Limitations*: no human has reviewed the derivations,
+> and the two-source test has not been run.
 
 ## 1.1 Introduction
 
@@ -583,7 +584,7 @@ events than a baseline window holds. That is the question Chapter 2 starts from.
 3. **The Palm form for real event trains is untested on real data**, and real gaps should be
    measured down to one frame, not through a list that merged events under 2 s.
 4. **Review.** The derivations were checked by simulation, by two Claude sessions that rederived
-   them, and by Claude review agents; no human has reviewed them. Before submission, each
+   them, and by Claude review agents; no human has reviewed them. Each
    derivation in [`theory.py`](../learned/synthetic_validation/theory.py),
    [`kendall_w/`](../learned/synthetic_validation/kendall_w/derivation.md) and
    [`separation/`](../learned/synthetic_validation/separation/README.md) needs a human reader.
