@@ -52,9 +52,10 @@ bin widths, about 2.5 and 5 s, not by the data, whose own floor is under 1 s.
 
 ### Contributions
 
-1. A closed form for **window sharing**, the chance g_n(w, σ) that n Gaussian-jittered onsets of
-   one event fall in one window of width w, and from it the bias of the coordination-rates tool's
-   participant estimate, k̂ = 2 + (k − 2) g₃/g₂.
+1. A closed form for **window sharing** under Gaussian jitter, the chance g_n(w, σ) that n onsets
+   of one event fall in one window of width w, and from it the bias of the coordination-rates tool's
+   participant estimate, k̂ = 2 + (k − 2) g₃/g₂. The uniform-jitter counterpart is Louis, Borgelt &
+   Grün's (2010); the Gaussian case, which the lab's jitter estimates assume, is the new part.
 2. The **at-most-one-event term**, which corrects the tool's expected pair and triple counts for an
    event train whose events cannot share a window, and its generalization to any stationary event
    train through the train's pair correlation.
@@ -63,18 +64,21 @@ bin widths, about 2.5 and 5 s, not by the data, whose own floor is under 1 s.
 4. A closed form for the cluster-finding tool's **chance-cluster rate** at any threshold, and from
    it the smallest threshold safe against chance at a given background.
 5. The **membership limit**: with M assemblies, pair co-participation variance is 1 + (E − 1)/M
-   times its value under random participation, so assemblies converge to random only when the
-   number of events is fixed.
-6. The **order indicator's** exact one-template form, (2/π) arctan(δ/σ), and its exact no-order
-   mean under a ranking sort, c/√n̄ with c = √(4(k + 1)/(3πN)), and the power that follows at the
-   lab's event counts.
+   times its value under random participation (the shape of Kish's design effect), so assemblies
+   converge to random only when the number of events is fixed.
+6. For an **order indicator**: its one-template value, (2/π) arctan(δ/σ), which is Kruskal's
+   τ–correlation relation for the normal applied to latencies; its exact no-order mean under a
+   ranking sort, c/√n̄ with c = √(4(k + 1)/(3πN)), built on Durbin's rank-sum covariance; and the
+   power that follows at the lab's event counts.
 7. The **minimum separation** of two events: the floor for any method, and the split probability of
    the two binning tools, each checked by simulation.
 
-What is old and what is new is set out in *1.9*. In short, window sharing for two onsets and
-uniform jitter, reading jitter across bin widths, and the cumulant route are prior work; the
-n-onset Gaussian form, the at-most-one-event term, the formal fit with event rate, and the
-analytical no-order null for this indicator were not found in the sources read.
+What is old and what is new is set out in *1.9*. In short, prior work has window sharing for two
+onsets (Grün et al. 1999), the full population-count distribution for uniform jitter and a
+slope-change rule for reading group size and jitter across bin widths (Louis, Borgelt & Grün 2010),
+and the cumulant route (Staude, Rotter & Grün 2010). Not found in the sources read: the n-onset form
+for Gaussian jitter, the at-most-one-event term and its event-train generalization, a formal fit
+that also recovers the event rate, and an analytical no-order null for this order indicator.
 
 ## 1.2 Background
 
@@ -185,7 +189,11 @@ s = σ√2 and a = w/s,
 
 with Φ and φ the standard normal distribution and density. For three onsets g₃ is a
 one-dimensional integral over the distribution of the range of three normals; it depends only on
-w/σ and is tabulated once. Rounding onsets to the 0.1 s frame adds nothing in expectation, because
+w/σ and is tabulated once. For uniform jitter the same quantity is piecewise linear in w: Grün et
+al.'s (1999) fission probability is the chance that two onsets a given distance apart are split by a bin border, the complement of two-onset sharing, and Louis, Borgelt & Grün (2010)
+condition on the jitter window's overlap with the bin to get every n at once. Gaussian jitter has no
+such edge, so g_n stays smooth in w, which is what lets the joint fit below read σ from a few
+windows. Rounding onsets to the 0.1 s frame adds nothing in expectation, because
 event times are continuous and the windows sit on the frame grid. (An early version added a
 frame-rounding term, which biased jitter low at 0.05 s; it was dropped.)
 
@@ -231,7 +239,11 @@ hard-core form is unchanged.
 
 The tool reports a pair and a triple count at each of its three windows. Fitting those six numbers
 against the exact forms above for (σ, k, λ) gives jitter, participants and rate at once. The
-dependence on w enters only through g₂ and g₃, which is what makes σ identifiable. The fit replaces
+dependence on w enters only through g₂ and g₃, which is what makes σ identifiable. Louis, Borgelt &
+Grün (2010) read the same two quantities, group size and jitter, from where a feature of the count
+distribution changes slope as the bin widens, which needs a sweep of many bin widths and a sharp
+jitter edge; the joint fit uses three windows and a scaled least-squares match, and also
+returns the event rate. The fit replaces
 an earlier one-parameter fit of the pair count across windows, which ignored the at-most-one-event
 term; its readings were partly model error. On real event trains the fit takes the stream's own
 train (`fit_joint(..., train=EventTrain.palm(gaps, λ))`).
@@ -604,7 +616,9 @@ In the order the results already owe them:
    0.0096 Hz), rerun the joint fit, and compare its jitter with the correlogram tool's on the same
    recordings.
 2. Test the two-source prediction by simulation, and that a latency template reads as jitter in the
-   joint fit.
+   joint fit. Include the full population-count distribution, not only pairs and triples: Louis,
+   Borgelt & Grün (2010, Fig. 6) separated groups of different sizes from it, so higher orders may
+   tell two sources apart where the coordination-rates tool cannot.
 3. Model planted-event detection (the chance an event reaches K) for the assessor and the count
    detector, and the dilution of the membership excess by real readout.
 4. Compare the order indicator with Kreuz's on the same simulated trains, and run the Synfire scan on
@@ -626,8 +640,11 @@ a percent or two, explain why a fixed threshold and a fixed window fail, and yie
 recovers jitter where the existing tools cannot. For structure in membership and order, closed forms
 say how much reuse and how many events detection needs, and the answer at the lab's scale is
 sobering: a baseline window holds enough events for one latency template at best. For separation,
-the tools, not the data, set the limit. The chapters that follow use simulation where theory runs
-out: two sources, detection at a threshold, and the rolling detectors.
+the tools, not the data, set the limit. Reading the prior work sharpened the claims: the n-onset
+form is new only for Gaussian jitter, and the same paper that has the uniform case shows the full
+count distribution separating groups of different sizes, which is where the two-source question
+should start. The chapters that follow use simulation where theory runs out: two sources, detection
+at a threshold, and the rolling detectors.
 
 ## Reproducing this chapter
 
