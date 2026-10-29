@@ -45,13 +45,19 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 
 ## Where the shelf is
 
-`<darkroom>/bugarach/archive/2026-08/lit/<topic>/<first-author>_<year>_<slug>.pdf` — resolve the darkroom with
-`bugarach.paths.darkroom()` or `python -m bugarach.paths`. **Never hardcode it**: the path carries
-a person's name and this repo is public (SAP004).
+**Since 2026-10-29 the shelf is `01-lit/bugarach/<topic>/<first-author>_<year>_<slug>.pdf`**, inside
+`01-lit`, the master literature library at the top of Tony's Dropbox, beside `darkroom/` (Tony: *"01-lit
+is the master"*). Resolve it as `bugarach.paths.darkroom().parent / "01-lit"`. **Never hardcode it**:
+the path carries a person's name and this repo is public (SAP004). The murderboard's `fetch_paper.py`
+uses the same library (`MURDERBOARD_LIT` set to `01-lit`), so its `--have` search now covers this
+shelf's papers too.
 
-Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-12 the shelf
-holds **40 PDFs** — twelve of them papers on surrogate methods, a topic the shelf held nothing on
-before 2026-09-10.
+The shelf was `<darkroom>/bugarach/archive/2026-08/lit/` until then. All of its 148 files were copied
+and checked identical by MD5; that copy stays in place, with a `MOVED.md`, so the links in dated
+records still resolve. Shelve new papers in `01-lit`, not there.
+
+Topics: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`, `recombination/`, `synchrony/`,
+`optimization/`, each with a `README.md` that says which decision each paper bears on.
 
 **Check the shelf before fetching, and shelve what you fetch.** Both halves, because on 2026-09-12
 only the first half was running: a single blind review round had two roles hunting the same unshelved
