@@ -1,0 +1,49 @@
+{
+ "dataset": {
+  "role": "senktide_ttx",
+  "name": "2026-09-23_revised_2v_long_senktide_ttx_STEPS_AND_PINS_EXCLUDED",
+  "recordings": 66,
+  "use": "input"
+ },
+ "drop_pinned": false,
+ "streams": {
+  "fast": {
+   "pooled_auc_timing_z": 0.45809024271740406,
+   "pooled_auc_activity_z": 0.5054723944388697,
+   "pooled_auc_all_z": 0.48921448982013466,
+   "pooled_auc_timing": 0.8078727942265642,
+   "pooled_auc_activity": 0.5694696842392589,
+   "pooled_auc_all": 0.8074756859781708,
+   "coef_all": {
+    "log_since": -0.628,
+    "no_prev": -0.772,
+    "r5": -0.171,
+    "r30": -0.066,
+    "r60": -0.018,
+    "d5": -0.047,
+    "mx2": -0.0
+   },
+   "n_steps": 72277,
+   "prevalence": 0.021293080786418915
+  },
+  "slow": {
+   "pooled_auc_timing_z": 0.5276194078877523,
+   "pooled_auc_activity_z": 0.5856220532796852,
+   "pooled_auc_all_z": 0.576249082948444,
+   "pooled_auc_timing": 0.8575431666901037,
+   "pooled_auc_activity": 0.7358571461444484,
+   "pooled_auc_all": 0.8611212486226856,
+   "coef_all": {
+    "log_since": -0.786,
+    "no_prev": -0.923,
+    "r5": -0.512,
+    "r30": -0.085,
+    "r60": 0.018,
+    "d5": 0.031,
+    "mx2": 0.03
+   },
+   "n_steps": 70121,
+   "prevalence": 0.05366438014289585
+  }
+ }
+}
