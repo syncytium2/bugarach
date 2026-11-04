@@ -929,6 +929,11 @@ def main(argv=None) -> int:
                          f"Still proportional to the ROI count, so ink density reads the "
                          f"same down the page; a larger value lets the raster dominate a "
                          f"page with few detector lanes")
+    ap.add_argument("--title-treatment", default=None, metavar="TEXT",
+                    help="the treatment as the page TITLE says it, e.g. \"APV+CNQX then gabazine\" for a sequence "
+                         "cohort (default: treatment 1). The header only; pages, names and contents unchanged")
+    ap.add_argument("--no-figure-number", action="store_true",
+                    help="leave 'Figure N.' off the title (default: every page numbered)")
     ap.add_argument("--note", default=None,
                     help="one extra line for the header — a caveat this page must "
                          "carry that the files it reads cannot tell it")
@@ -1049,13 +1054,17 @@ def main(argv=None) -> int:
         total_red += red
         html = dest / names[(group, treatment, stream)]
 
-        items = [pn.pane.HTML(header_html(group, treatment, spec["members"],
+        # --title-treatment / --no-figure-number change the HEADER only (Tony 2026-11-04, on the pilot pages: the
+        # title said only treatment 1, "APV+CNQX", for an APV+CNQX-then-gabazine cohort, and "Figure 1" on a
+        # one-page deliverable is noise). Defaults: the header exactly as before.
+        items = [pn.pane.HTML(header_html(group, a.title_treatment or treatment, spec["members"],
                                           spec["ext"], folder, stream=stream,
                                           unscanned=a.unscanned, ran=ran,
                                           not_run=not_run, excluded=a.exclude,
                                           detections=a.detections, note=a.note,
                                           removed=removed, roi_px=a.roi_px,
-                                          floors=floors, figure=figure))]
+                                          floors=floors,
+                                          figure=None if a.no_figure_number else figure))]
         for sl, panels in blocks:
             # THE ID, ROTATED, IN ITS OWN COLUMN — an HTML block and not the
             # raster's y-label. As a y-label it is clipped to the plot's height:
