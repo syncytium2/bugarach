@@ -81,6 +81,7 @@
     ensureStyle();
     var ROW_PX = Math.max(1, Math.min(MAX_LANE_PX, Math.floor(MAX_RASTER_PX / row.n_roi)));
     var marks = [];
+    var spans = [];            // the view's width, in seconds, when each mark was placed
     var real = null;
     var view = [0, row.duration_sec];
     var history = [];
@@ -99,7 +100,8 @@
     var canvas = el("canvas", {style: "display: block; width: 100%; border: 1px solid #b5b5b5; background: #fff; cursor: crosshair; touch-action: none;"});
     var status = el("div", {style: "font-size: 15px; font-weight: 600; margin: 6px 0 2px;"});
     var help = el("div", {style: "font-size: 14px; color: " + MUTED + "; margin-bottom: 14px;"},
-                  "Click a coordinated event to mark it; click a mark to remove it. Shortcuts: drag across " +
+                  "Click a coordinated event to mark it; click a mark to remove it. If two events sit close " +
+                  "together, mark both (zoom in to place them). Shortcuts: drag across " +
                   "a stretch to zoom into it, Shift-drag to slide, Ctrl + mouse wheel to zoom at the cursor, " +
                   "double-click for the whole row.");
 
@@ -222,7 +224,11 @@
 
     function emit() {
       if (onChange) onChange({row: row.id, real: real,
-                              marks: marks.slice().sort(function (p, q) { return p - q; })});
+                              marks: order().map(function (i) { return marks[i]; }),
+                              spans: order().map(function (i) { return spans[i]; })});
+    }
+    function order() {
+      return marks.map(function (_, i) { return i; }).sort(function (p, q) { return marks[p] - marks[q]; });
     }
     function hitMark(x) {
       for (var i = 0; i < marks.length; i++) if (Math.abs(tToX(marks[i]) - x) <= MARK_HIT_PX) return i;
@@ -230,11 +236,12 @@
     }
     function toggleAt(x) {
       var i = hitMark(x);
-      if (i >= 0) marks.splice(i, 1);
+      if (i >= 0) { marks.splice(i, 1); spans.splice(i, 1); }
       else {
         var t = Math.round(xToT(x) * 10) / 10;
         if (t < 0 || t > row.duration_sec) return;
         marks.push(t);
+        spans.push(Math.round((view[1] - view[0]) * 10) / 10);
       }
       draw(); emit();
     }
@@ -325,7 +332,7 @@
       pointAtSlider: function (v) { return at(slider, (1 - v) / 2, 0.5); },
       pointAtCanvas: function () { return at(canvas, 0.5, 0.5); },
       boxPreview: function (t0, t1) { draw([tToX(t0), tToX(t1)]); },
-      reset: function () { marks = []; real = null; history = []; slider.value = "0";
+      reset: function () { marks = []; spans = []; real = null; history = []; slider.value = "0";
         slider.classList.remove("rs-set"); view = [0, row.duration_sec]; draw(); emit(); }
     };
   }
@@ -378,7 +385,7 @@
         moveTo(sheet.pointAtSlider(0)); }],
       [24600, function () { press(); moveTo(sheet.pointAtSlider(0.45)); sheet.setReal(0.45); }],
       [26200, function () { moveTo(sheet.pointAtSlider(-0.2)); sheet.setReal(-0.2); }],
-      [27800, function () { caption.textContent = "Then Next. Some rows have no coordinated events at all. Take your time."; }],
+      [27800, function () { caption.textContent = "If two events sit close together, mark both. Then Next. Some rows have none at all."; }],
       [30000, function () { cursor.style.display = "none"; if (onDone) onDone(); }]
     ];
     steps.forEach(function (s) { timers.push(setTimeout(s[1], s[0])); });
@@ -394,7 +401,8 @@
   /* One line a Qualtrics export can carry and the scorer can read without a column map. */
   function encode(state) {
     return "row=" + state.row + ";real=" + (state.real == null ? "" : state.real.toFixed(2)) + ";marks=" +
-      state.marks.map(function (m) { return m.toFixed(1); }).join(",");
+      state.marks.map(function (m) { return m.toFixed(1); }).join(",") +
+      ";spans=" + (state.spans || []).map(function (w) { return w.toFixed(1); }).join(",");
   }
 
   global.RaterSheet = {mount: mount, demo: demo, encode: encode};
