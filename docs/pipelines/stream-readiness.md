@@ -125,8 +125,14 @@ None of these needs a ruling unless it says so.
    neighbouring events planted 0.5 to 5 s apart, every detector scored at each separation.
    **First run 2026-11-11** (`tools/measure_separation_axis.py`;
    [record](../learned/runs/2026-11-11-separation-axis/README.md)): at the shipped settings no
-   detector on any stream separates events 2 s apart or closer. Owed: the search with close
-   events present, so merge gaps are priced, and a score per pair.
+   detector on any stream separates events 2 s apart or closer. **Searched the same day**
+   (`tools/search_close_events.py`;
+   [record](../learned/runs/2026-11-11-close-events-search/README.md)): count (sliding) in a
+   0.5 s window with no merge gap splits 0.88 to 0.97 of pairs 1 s apart on every stream, at
+   the 2 s floor's count and with no false call on recordings with nothing planted. No
+   setting that keeps the 2 s window splits close pairs. Owed: whether a 0.5 s window holds a
+   real event (first check on the revised export), the picks' scores on the whole bench and
+   its other budgets, and a stricter per-event tolerance. Nothing is adopted.
 3. **Treatment recordings**
    ([ADR-0013](../adr/0013-the-bench-simulates-treatment-periods.md)): a rate course as a
    generator input, courses at set multiples of the baseline rate, a null twin for each, and

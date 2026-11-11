@@ -15,6 +15,15 @@ low participation. Tony: *"Treat like a phd project (except we have days not yea
 
 ## Where it stands
 
+- 2026-11-11: **the detectors can be set to separate close events from 1 s apart, on every
+  stream** ([record](../learned/runs/2026-11-11-close-events-search/README.md)). With close-event
+  test sets and a per-pair score (`bugarach.close_events`), a search of each detector's own
+  settings found that count (sliding) in a 0.5 s window with no merge gap splits 0.88 to 0.97 of
+  pairs 1 s apart, where the shipped settings split none below 5 s. It needs the narrower
+  window: no setting at 2 s splits close pairs. The count that makes a call is still the 2 s
+  floor's. CoactDetect at the same setting makes the same calls as count (sliding). At 0.5 s
+  nothing admissible splits more than 0.37. One generator, Gaussian jitter; whether a 0.5 s
+  window holds a real event is the first check on the revised export. Nothing is adopted.
 - 2026-11-11: **the separation axis ran on all three streams**
   ([ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md);
   [record](../learned/runs/2026-11-11-separation-axis/README.md)). At the shipped settings,
