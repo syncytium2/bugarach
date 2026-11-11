@@ -15,6 +15,13 @@ low participation. Tony: *"Treat like a phd project (except we have days not yea
 
 ## Where it stands
 
+- 2026-11-11: **the separation axis ran on all three streams**
+  ([ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md);
+  [record](../learned/runs/2026-11-11-separation-axis/README.md)). At the shipped settings,
+  CoactDetect, LoCo, binned SCE and count (sliding) all join planted events 2 s apart or closer:
+  recall is 0.47 to 0.72 there against 0.90 to 1.00 at 10 s (CoactDetect on slow, 0.78). Those
+  settings were searched on a bench with no events that close, so this is what their merge gaps
+  were bound to give; the search with close events present is next.
 - 2026-11-11: **this goal is the recovery and evaluation stages of one route**
   ([ADR-0020](../adr/0020-one-route-from-a-folder-to-calls-per-stream.md);
   [`pipelines/stream-readiness.md`](../pipelines/stream-readiness.md)), and its conditions now

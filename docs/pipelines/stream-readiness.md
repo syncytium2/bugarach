@@ -123,8 +123,10 @@ None of these needs a ruling unless it says so.
 2. **The separation axis on all three streams**
    ([ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md)):
    neighbouring events planted 0.5 to 5 s apart, every detector scored at each separation.
-   `tools/measure_close_events.py` is this test on the fast stream; slow, combined and the four
-   map detectors are owed. Merge gaps are then searched with close events present.
+   **First run 2026-11-11** (`tools/measure_separation_axis.py`;
+   [record](../learned/runs/2026-11-11-separation-axis/README.md)): at the shipped settings no
+   detector on any stream separates events 2 s apart or closer. Owed: the search with close
+   events present, so merge gaps are priced, and a score per pair.
 3. **Treatment recordings**
    ([ADR-0013](../adr/0013-the-bench-simulates-treatment-periods.md)): a rate course as a
    generator input, courses at set multiples of the baseline rate, a null twin for each, and
