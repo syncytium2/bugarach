@@ -1,0 +1,22 @@
+real fast-stream gaps: 40 recordings per k, sigma 0.105 s, lam = 1 / mean gap = 0.00994 Hz (planted 0.00944 Hz); 6.3 % of gaps under 4 s
+  ratio to planted: measured (SE) | page | general (renewal) | palm (planted gaps)
+  k  7 w 1 s rate        : 1.005 (0.009) | page 1.017 | general 1.003 | palm 1.007
+  k  7 w 1 s participants: 0.933 (0.004) | page 0.931 | general 0.933 | palm 0.931
+  k  7 w 2 s rate        : 1.026 (0.014) | page 1.064 | general 1.045 | palm 1.052
+  k  7 w 2 s participants: 0.940 (0.005) | page 0.934 | general 0.937 | palm 0.933
+  k  7 w 4 s rate        : 0.989 (0.023) | page 1.158 | general 1.029 | palm 1.037
+  k  7 w 4 s participants: 0.966 (0.010) | page 0.902 | general 0.957 | palm 0.952
+  k 13 w 1 s rate        : 1.006 (0.005) | page 1.030 | general 1.015 | palm 1.019
+  k 13 w 1 s participants: 0.928 (0.003) | page 0.923 | general 0.926 | palm 0.924
+  k 13 w 2 s rate        : 1.026 (0.007) | page 1.066 | general 1.046 | palm 1.052
+  k 13 w 2 s participants: 0.941 (0.004) | page 0.932 | general 0.935 | palm 0.931
+  k 13 w 4 s rate        : 0.998 (0.020) | page 1.148 | general 1.027 | palm 1.034
+  k 13 w 4 s participants: 0.967 (0.011) | page 0.904 | general 0.957 | palm 0.953
+  joint fit across windows, fitted / planted, median [IQR] over recordings
+  k  7 page   : sigma 1.62 [1.07, 2.04]; k 1.06 [1.01, 1.10]; lam 0.90 [0.82, 0.94] (usable 40/40, at the sigma bound 4)
+  k  7 general: sigma 1.06 [0.39, 1.53]; k 1.01 [0.97, 1.04]; lam 0.98 [0.86, 1.02] (usable 40/40, at the sigma bound 8)
+  k  7 palm   : sigma 1.10 [0.50, 1.58]; k 1.02 [0.98, 1.05]; lam 0.97 [0.85, 1.01] (usable 40/40, at the sigma bound 6)
+  k 13 page   : sigma 1.43 [1.08, 1.93]; k 1.04 [1.01, 1.11]; lam 0.92 [0.86, 0.96] (usable 40/40, at the sigma bound 0)
+  k 13 general: sigma 0.88 [0.40, 1.48]; k 0.99 [0.97, 1.05]; lam 0.98 [0.90, 1.03] (usable 40/40, at the sigma bound 2)
+  k 13 palm   : sigma 0.90 [0.41, 1.52]; k 1.00 [0.97, 1.06]; lam 0.97 [0.90, 1.02] (usable 40/40, at the sigma bound 1)
+

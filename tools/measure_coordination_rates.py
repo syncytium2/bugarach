@@ -99,6 +99,7 @@ DT = 0.1                    # s, one frame
 WINDOWS = (1.0, 2.0, 4.0)   # s; the answer should not depend on w once w is well above the jitter
 PRIMARY_W = 1.0
 N_SURR = 20
+SURR_SPACING = 2            # windows between two cells' surrogate offsets (see `shifted`)
 STRETCH_SEC = 300.0         # the probe's length on both benches
 STRETCH_STEP = 30.0
 PROBE_PCT = 99.0
@@ -161,7 +162,7 @@ def shifted(trains, L: int, spacing: int, rng) -> list[np.ndarray]:
 def excess_cumulants(trains, L: int, wf: int, n_surr: int, rng):
     """Real (f2, f3) minus the mean over shift surrogates (cells ≥ 2 windows apart)."""
     f2, f3 = population_cumulants(trains, L, wf)
-    s = np.array([population_cumulants(shifted(trains, L, 2 * wf, rng), L, wf)
+    s = np.array([population_cumulants(shifted(trains, L, SURR_SPACING * wf, rng), L, wf)
                   for _ in range(n_surr)])
     return f2 - s[:, 0].mean(), f3 - s[:, 1].mean()
 
