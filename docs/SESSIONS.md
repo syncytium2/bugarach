@@ -3387,4 +3387,4 @@ session's work is not a sweep.
 ### darkroom/bugarach/2026-11-12-baseline-characterization-3x-and-4x/ — onset-timing statistics of the baselines at both thresholds, all recordings and by group (065/tracked-cohorts-default)
 - **Claimed:** 2026-11-12, before the write. Tony: step one for 3x and 4x, DI and MALE against all, baseline only.
 - **Writes:** two `.png` figures (fast, slow) from `docs/learned/runs/2026-11-12-baseline-characterization-3x-4x/characterize.py`. Darkroom only.
-- **Released:** 2026-11-12, at write. Two `.png` figures. Holds nothing.
+- **Released:** 2026-11-12, at write. Two `.png` figures, and one page per stream (`report_roi_<stream>_baseline_...`, `.html` and `.png`) from `page.py` beside that script. Holds nothing.

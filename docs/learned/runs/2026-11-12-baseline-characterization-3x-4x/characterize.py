@@ -59,7 +59,13 @@ def _one(args):
             "window_sec": [float(lo), float(hi)], "window_label": label, "window_source": source,
             "n_roi": len(trains), "n_onsets": int(sum(len(t) for t in trains)),
             "roi_rates_hz": [len(t) / T for t in trains], "rate_hz": m["rate"],
-            "cum": m["cum"], "obs": obs.tolist(), "exp": exp.tolist()}
+            "cum": m["cum"], "obs": obs.tolist(), "exp": exp.tolist(),
+            # this recording's own correlogram: pairs expected by chance at zero lag (how much
+            # there is to read a peak from), the peak over chance, and its half-width
+            "corr_expected_pairs_at_zero_lag": float(exp[0]),
+            "corr_excess_at_zero_lag": (float(obs[0] / exp[0] - 1.0) if exp[0] > 0 else None),
+            "corr_half_width_sec": (lambda h: None if not np.isfinite(h) else float(h))(
+                mjc.hwhm(obs, exp))}
 
 
 def pool(recs):
