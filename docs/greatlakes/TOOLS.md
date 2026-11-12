@@ -67,17 +67,18 @@ Read-only for bugarach. Each is documented where it lives.
 
 ## bugarach's own, for the cluster
 
-None exists yet. Owed, in the order the first run needs them:
+In `tools/greatlakes/`. None has run on the cluster yet.
 
-1. **An environment recipe**: the module line and the commands that build bugarach's Python
-   environment from `pyproject.toml`, pinned.
-2. **A job script for one search**
-   (`tools/search_all_settings.py --bench <stream> --sliding --out <dir>`), with cores,
-   memory and wall time from a timed run.
-3. **An array over the benches**, one task per bench, writing to turbo.
-4. **A verdict check** that opens each search's output and writes PASS, FAIL or
-   FAILED-TO-RUN.
-5. **A run sheet** for Tony: login, environment, one test job, the array, the status command.
+| script | what it does |
+|---|---|
+| `env_check.sh` | asks a login node what it has: Python modules, `uv`, whether it reaches PyPI and GitHub, home space, Slurm accounts. Changes nothing |
+| `setup_env.sh` | builds the Python environment once, with `uv` and its own Python 3.14, in the home directory; ends with `ENVIRONMENT: READY` after simulating one recording |
+| `submit_search_sets.sh` | submits one detector-settings search per bench set as a job array, and the verdict job that runs when they end. Takes the account and the output folder from two environment variables, which are not in this repository |
+| `search_sets.sbatch` | one search: `tools/search_all_settings.py --bench <set> --sliding` on a whole `standard` node |
+| `verdict_search_sets.py` | opens each search's output and writes `run_record/VERDICT_set_searches.txt`: PASS, FAIL or FAILED-TO-RUN per set |
+
+A search does not resume part-way. It keeps each recording's floor in its output folder, so a
+rerun after a reboot skips that stage; the rest is run again.
 
 ## On a workstation, not the cluster
 

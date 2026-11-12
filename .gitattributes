@@ -6,3 +6,4 @@
 # rather than "the check could not run". Pin the line endings instead.
 # (Convention adopted from syncytium2/murderboard.)
 *.sh text eol=lf
+*.sbatch text eol=lf
