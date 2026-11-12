@@ -269,6 +269,9 @@ def figure(R, out: Path) -> Path:
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", type=Path, required=True, help="folder for the summary JSON")
+    ap.add_argument("--benches", nargs="+", default=None,
+                    help="benches to search: streams (fast, slow, combined) or bench sets "
+                         "(fast_di; bugarach.bench_sets). Default: the three streams")
     ap.add_argument("--seeds", type=int, default=12,
                     help="selection recordings per stream, separation and background")
     ap.add_argument("--heldout-seeds", type=int, default=24,
@@ -292,14 +295,15 @@ def main(argv=None):
     from bugarach import stream_profile as sp
 
     bench.use_spacing("realistic")
-    profiles = sp.profiles()
+    profiles = ({n: sp.profile(n) for n in a.benches} if a.benches else sp.profiles())
     cands = {det: list(enumerate(candidates(det))) for det in DETECTORS}
 
     t0 = time.time()
     # The fast stream plants about half as many events per recording, so it gets twice the
     # seeds, as every bench run under realistic spacing does (bench.seed_factor; ADR-0010).
     def seeds(first, n, stream):
-        return range(first, first + n * bench.seed_factor(stream))
+        return range(first, first + n * bench.seed_factor(
+            profiles[stream].module.MEASURED_STREAM))
 
     planted = [(s, sep, regime, sd, cands) for s, p in profiles.items()
                for sep in SELECT_SEPARATIONS_SEC for regime in p.regimes
