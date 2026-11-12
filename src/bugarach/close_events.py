@@ -49,10 +49,24 @@ Eight times the bench's scoring tolerance, so no call on a neighbour can reach i
 
 def make(stream: str, separation_sec: float, regime: str, seed: int, *,
          close_share: float = CLOSE_SHARE):
-    """One test recording and its truth: ``(slice, ground truth)``. No decoys (ADR-0019)."""
-    return sp.profile(stream).simulate(
-        regime, seed, gap_source=ri.as_gap_distribution([float(separation_sec)]),
-        gap_mix=1.0 - float(close_share), n_distractors=0)
+    """One test recording and its truth: ``(slice, ground truth)``. No decoys (ADR-0019).
+
+    On a bench set (:mod:`bugarach.bench_sets`) the gaps that are not set to the separation are
+    drawn from the set's own measured gaps. A set plants events at its recordings' real rate,
+    several times a stream bench's, and that many do not fit at the stream bench's 120 s
+    spacing, which is what ``gap_mix`` leaves the rest at.
+    """
+    p = sp.profile(stream)
+    own = getattr(p.module, "SET_GAPS_SEC", None)
+    if own is None:
+        return p.simulate(
+            regime, seed, gap_source=ri.as_gap_distribution([float(separation_sec)]),
+            gap_mix=1.0 - float(close_share), n_distractors=0)
+    own = np.asarray(own, dtype=float)
+    n_close = int(round(own.size * float(close_share) / (1.0 - float(close_share))))
+    mixed = np.concatenate([np.full(n_close, float(separation_sec)), own])
+    return p.simulate(regime, seed, gap_source=ri.as_gap_distribution(mixed), gap_mix=0.0,
+                      n_distractors=0)
 
 
 @dataclass(frozen=True)

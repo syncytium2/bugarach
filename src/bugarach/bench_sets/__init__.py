@@ -168,6 +168,7 @@ def _apply(mod, rec: dict) -> None:
     mod.SET = str(rec["set"])
     mod.SET_GROUP = str(rec["group"])
     mod.SET_RECORDINGS = tuple(rec["recordings"])
+    mod.SET_GAPS_SEC = tuple(float(g) for g in rec["gaps_sec"])
     mod.MEASURED_STREAM = stream
     mod.MEASURED_RECORD = f"docs/learned/bench_sets/{rec['set']}.json"
     mod.MEASURED_DATASET = dict(rec["dataset"])
