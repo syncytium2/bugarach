@@ -10,8 +10,8 @@ per-ROI onset rates. The functions are those of the measuring tools
 (`tools/measure_jitter_correlogram.py`, `tools/measure_coordination_rates.py`); nothing is
 re-derived here.
 
-Reads the default folder (4 x sigma_est) and `tracked_cohorts_3x`, the fast and slow streams the
-export carries (ADR-0023), and each recording's **baseline analysis window only**
+Reads the default folder (4 x sigma_est) and `tracked_cohorts_3x`, the three streams the export
+carries (fast, slow and combined; ADR-0023), and each recording's **baseline analysis window only**
 (`assess_folder.generation_window`). The window read is written into the record per recording.
 Recordings are pooled three ways: all of them, DI and MALE. That split describes the data for
 building synthetic recordings; it tests nothing between the groups (ADR-0017).
@@ -32,7 +32,7 @@ sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "tools"))
 
 ROLES = {"4x": "tracked_cohorts", "3x": "tracked_cohorts_3x"}
-STREAMS = ("fast", "slow")
+STREAMS = ("fast", "slow", "combined")
 SEED = 20261112
 
 
@@ -100,7 +100,7 @@ def measure_all(jobs):
     from bugarach.groups import in_group_order
     from bugarach.io import load_folder
 
-    rec = {"what": "baseline analysis windows only; fast and slow as exported", "by_threshold": {}}
+    rec = {"what": "baseline analysis windows only; fast, slow and combined as exported", "by_threshold": {}}
     with ProcessPoolExecutor(jobs) as ex:
         for thr, role in ROLES.items():
             folder = dataset.current(role)

@@ -286,9 +286,42 @@ def check_folder(folder) -> FolderReport:
             r.notes.append(f"{PART_WIDTH} ({', '.join(sorted(bare))})")
         r.width_defs = sorted({st.width_def for st in s.streams.values()
                                if st.width_def})
+        r.errors.extend(_pooled_stream_errors(s))
         rep.recordings.append(r)
 
     return rep
+
+
+def _pooled_stream_errors(s) -> list[str]:
+    """A stream pooled from others holds exactly their events (contract revision 10).
+
+    The producer states which events a pooled stream holds; this only checks the
+    file against that statement, per ROI and per source stream, on event times.
+    """
+    out = []
+    for name, st in s.streams.items():
+        if st.label is None:
+            continue
+        for src in sorted({str(v) for lab in st.label for v in lab}):
+            if src == name:
+                out.append(f"the '{name}' stream names itself as a source_stream on some "
+                           f"rows and other streams on others")
+                continue
+            if src not in s.streams:
+                out.append(f"the '{name}' stream names source_stream '{src}', and this "
+                           f"recording has no '{src}' stream")
+                continue
+            other = s.streams[src]
+            off = sum(
+                1 for i in range(st.n_rois)
+                if not np.array_equal(np.sort(st.locs[i][st.label[i] == src]),
+                                      np.sort(other.locs[i])))
+            if off:
+                out.append(f"the '{name}' stream's events from '{src}' are not the "
+                           f"'{src}' stream's events in {off} of {st.n_rois} ROI(s). A "
+                           f"pooled stream holds every event of each stream it names, "
+                           f"and no other")
+    return out
 
 
 NOT_CONFORMING = (

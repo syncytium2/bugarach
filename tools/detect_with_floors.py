@@ -167,7 +167,6 @@ def recording_task(args):
     plus = plus_variant(offset)
     variants = VARIANTS + ((plus,) if plus else ())
     from bugarach import event_floor as ef
-    from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detect_folder import _region_index, folder_analysis_windows, with_microscope
     from bugarach.detectors.cicada import cicada_detect
     from bugarach.detectors.coact import coact_detect
@@ -185,8 +184,6 @@ def recording_task(args):
                 mouse=str(meta.get("subject_id") or s.slice_id))
     try:
         s, windows = folder_analysis_windows(s)
-        if has_sources(s) and COMBINED not in s.streams:
-            s.streams[COMBINED] = stream_of(s, COMBINED)
         dt = s.require_dt()
         # The settings were tuned on the bench; rate+context's grid and locust's frame rate belong
         # to this recording's microscope, as in `bugarach detect` (detect_folder.with_microscope).

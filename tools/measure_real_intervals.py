@@ -90,7 +90,6 @@ def floor_key(window_sec: float, slice_id, stream, idx) -> tuple:
 def task(args):
     i, folder, draws, window_sec = args
     from bugarach import event_floor as ef
-    from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detect_folder import _region_index, folder_analysis_windows
     from bugarach.detectors.rate import stream_trains
     from bugarach.io import load_folder
@@ -99,8 +98,6 @@ def task(args):
     meta = getattr(s, "meta", {}) or {}
     group = str(meta.get("group_id") or "").strip() or None
     s, windows = folder_analysis_windows(s)
-    if has_sources(s) and COMBINED not in s.streams:
-        s.streams[COMBINED] = stream_of(s, COMBINED)
     dt = s.require_dt()
     rows, evs, gaps = [], [], []
     for w in windows:

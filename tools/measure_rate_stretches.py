@@ -185,7 +185,6 @@ def floors(trains_sec, lo, hi, dt, spans, key, draws):
 
 def recording_task(args):
     i, folder, draws = args
-    from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detect_folder import folder_analysis_windows
     from bugarach.detectors.rate import stream_trains
     from bugarach.io import load_folder
@@ -196,8 +195,6 @@ def recording_task(args):
                 if meta.get("group_id") else None,
                 mouse=str(meta.get("subject_id") or s.slice_id))
     s, windows = folder_analysis_windows(s)
-    if has_sources(s) and COMBINED not in s.streams:
-        s.streams[COMBINED] = stream_of(s, COMBINED)
     dt = s.require_dt()
     wins = [(float(w.win_start), float(w.win_end), (w.label or "").strip()) for w in windows
             if float(w.win_end) > float(w.win_start)]

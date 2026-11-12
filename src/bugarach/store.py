@@ -111,8 +111,8 @@ class Stream:
     t50rise: list[np.ndarray]
     width_def: str | None = None
     peak: list[np.ndarray] | None = None
-    #: Per-event name of the stream each onset came from, for a stream built from
-    #: others (``bugarach.combined``); ``None`` for every stream a producer shipped.
+    #: Per-event name of the stream each onset came from, for a stream the producer
+    #: pooled from others (the export's ``source_stream`` column); ``None`` otherwise.
     label: list[np.ndarray] | None = None
 
     @property

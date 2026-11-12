@@ -907,10 +907,6 @@ def examples(model: dict, night: Path, dest: Path) -> dict:
                 fig["floor"] = c.get("own_floor")
             if c is not None and c["slice_id"] in slices:
                 sl = slices[c["slice_id"]]
-                if s == "combined":
-                    from bugarach.combined import COMBINED, has_sources, stream_of
-                    if has_sources(sl) and COMBINED not in sl.streams:
-                        sl.streams[COMBINED] = stream_of(sl, COMBINED)
                 if s in sl.streams:
                     t = float(c["onset_sec"])
                     b0, b1 = bounds[(c["slice_id"], s, c["region_idx"])]

@@ -63,42 +63,50 @@ default = "tracked_cohorts"
 use = "input"
 # THE DEFAULT since 2026-11-12 (Tony: "for now this is the default data set"). The baselines
 # of these recordings and of the senktide and TTX study are to become one dataset later.
-name = "export_roi_apv+cnqx-then-gz-then-hik_di+male_thr4x_rigid_blanked_20261112"
+name = "export_roi_apv+cnqx-then-gz-then-hik_di+male_thr4x_rigid_blanked_20261112_v2"
 signal = "roi"
 win = "win20min"
 recordings = 12
 note = """
 Two tracked-ROI cohorts in one folder, built by interface2 on 2026-11-12 in answer to
 `docs/exports/2026-11-11_handoff_to_interface2_tracked_cohorts_for_the_paper.md`: the
-September 2026 DI cohort (5 recordings, 186 ROIs) and the October 2026 MALE cohort
+September 2026 DI cohort (5 recordings, 188 ROIs) and the October 2026 MALE cohort
 (7 recordings, 263 ROIs). Protocol: baseline, APV+CNQX, gabazine, high K+. Rigid motion
-correction, threshold 4 x sigma_est. As shipped: 16,812 fast and 17,953 slow events.
+correction, threshold 4 x sigma_est.
+THREE STREAMS, as the producer ships them (`_v2`, 2026-11-12; ADR-0023): 16,817 fast, 17,953
+slow and 34,770 combined events. `combined` is every fast and every slow event of a ROI,
+nothing de-duplicated, and each row's `source_stream` names where it came from. The folder's
+README states how an event becomes fast or slow.
+`_v2` replaced the two-stream folder of the same day, which had no combined stream and 449
+ROIs. One difference in fast: a ROI with no slow event used to get an empty fast stream (a
+producer bug, ruled by Tony 2026-11-12), so `20260917_411` ROIs 16 and 19 are back with
+3 fast events each. Nothing else in fast or slow differs.
 Not every recording has every period: `20261020_439` ends in APV+CNQX, `20261020_434` has
 no high K+, `20261026_458` has a longer baseline. `regions.csv` is the authority.
 Removed by the producer, on Tony's rulings: events inside his 2026-11-04 review blank windows
-and in the first second of every recording, two ROIs with no events (`20260917_411` ROIs 16
-and 19), and one ROI of each of three duplicate picks (`20260917_411` ROI 21, `20260925_427`
-ROIs 18 and 19; ruled 2026-11-12). `20260917_415` and `20261023_448` are left out.
+and in the first second of every recording, and one ROI of each of three duplicate picks
+(`20260917_411` ROI 21, `20260925_427` ROIs 18 and 19; ruled 2026-11-12). `20260917_415` and `20261023_448` are left out.
 Field steps: reviewed by hand by Tony and removed through the blank windows. The automatic
 scan was not run, so `field_steps_excluded.tsv` holds only its header.
 The folder's README declares no contamination. Open flags that are not rulings: MALE `_455`,
 `_458` and `_465` carry tracking flags (cleared for the before-after analysis on 2026-11-10,
 ruling not final); `20260917_411` ROI 25 has its mask cut by the field edge and stays in.
 Four more MALE recordings are expected, and a later folder will supersede this one.
-Checked on arrival, 2026-11-12: `bugarach check` at 5121c918 reports all 12 CONFORMING.
+Checked on arrival, 2026-11-12: `bugarach check` reports all 12 CONFORMING, and in every file
+the combined events are exactly the fast events plus the slow events.
 """
 
 [tracked_cohorts_3x]
 use = "eval"
-name = "export_roi_apv+cnqx-then-gz-then-hik_di+male_thr3x_rigid_blanked_20261112"
+name = "export_roi_apv+cnqx-then-gz-then-hik_di+male_thr3x_rigid_blanked_20261112_v2"
 signal = "roi"
 win = "win20min"
 recordings = 12
 note = """
 The sibling of `tracked_cohorts` at threshold 3 x sigma_est: the same 12 recordings, periods,
-blank windows and rulings. 451 ROIs (DI 188, MALE 263); 26,235 fast and 22,839 slow events.
-`20260917_411` ROIs 16 and 19 have events at this threshold and are in. Read by name, to
-compare the two thresholds. Checked on arrival, 2026-11-12: all 12 CONFORMING.
+blank windows and rulings, and the same three streams (`_v2`). 451 ROIs (DI 188, MALE 263);
+26,235 fast, 22,839 slow and 49,074 combined events. Read by name, to compare the two
+thresholds. Checked on arrival, 2026-11-12: all 12 CONFORMING.
 """
 
 [senktide_ttx]

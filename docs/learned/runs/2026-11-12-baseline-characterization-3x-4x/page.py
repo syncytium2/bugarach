@@ -244,10 +244,10 @@ def main(argv=None) -> int:
     matplotlib.use("Agg")
     from bugarach import paths
 
-    out = a.out or paths.darkroom() / "2026-11-12-baseline-characterization-3x-and-4x"
+    out = a.out or paths.darkroom() / "2026-11-12-baseline-characterization-three-streams"
     out.mkdir(parents=True, exist_ok=True)
     rec = json.loads((HERE / "baseline_characterization.json").read_text(encoding="utf-8"))
-    for stream in ("fast", "slow"):
+    for stream in rec["by_threshold"]["4x"]["streams"]:
         name = subprocess.run(
             [sys.executable, str(REPO / "tools/naming/artifact_name.py"), "build", "--type", "report",
              "--signal", "roi", "--stream", stream, "--treatment", "baseline", "--groups", "di+male",

@@ -372,12 +372,12 @@ def _real(args):
     assert abs(dt - DT) < 1e-9, f"{s.slice_id}: frame interval {dt}, this tool assumes {DT}"
     lo, hi = w
     L = int(round((hi - lo) / DT))
-    from bugarach.combined import COMBINED, has_sources, stream_of
+    from bugarach.combined import COMBINED
 
     trains = {}
     for stream in ("fast", "slow", COMBINED):
-        if stream in s.streams or (stream == COMBINED and has_sources(s)):
-            st = stream_of(s, stream)
+        if stream in s.streams:
+            st = s.streams[stream]
             trains[stream] = [np.minimum(_frames(v, lo, hi), L - 1) for v in (st.t50rise or st.locs)]
     rng = np.random.RandomState(seed + i)
     meta = getattr(s, "meta", {}) or {}
