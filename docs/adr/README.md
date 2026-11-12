@@ -46,6 +46,7 @@ two never disagree, and cross-reference them.
 | [0017](0017-group-and-treatment-comparisons-default-to-fireflies.md) | Group and treatment comparisons default to fireflies; an exception is flagged and confirmed | Accepted |
 | [0018](0018-the-dataset-is-reported-not-confirmed.md) | The dataset an analysis reads is reported, not confirmed per session | Accepted |
 | [0019](0019-the-decoys-are-retired-negatives-are-rate-matched.md) | The decoys are retired; negatives are rate-matched and carry no coordination | Accepted |
+| [0023](0023-bugarach-does-not-combine-streams-the-export-is-final.md) | bugarach does not combine data streams; the export is final (0020 to 0022 are in open pull requests) | Accepted |
 
 **The habit lapsed for 25 days and restarted on 2026-09-23.** After ADR-0005 on 2026-08-29
 no ADR was written, and nothing decided to stop. Rulings went instead into bench-constant
