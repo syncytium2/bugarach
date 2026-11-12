@@ -7,7 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=36
 #SBATCH --mem=64G
-#SBATCH --time=06:00:00
+#SBATCH --time=08:00:00
 set -euo pipefail
 : "${BUGARACH_REPO:?}" "${BUGARACH_GL_OUT:?}" "${BUGARACH_SETS:?}"
 VENV="${BUGARACH_VENV:-$HOME/bugarach-venv}"
