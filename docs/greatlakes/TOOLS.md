@@ -44,8 +44,8 @@ no update date. **interface2** is what the lab's other repository verified at a 
 
 **What ARC's pages do not say, and the first run sheet has to find out:**
 
-- **Which Python versions are installed today.** bugarach needs Python 3.11 or later
-  (`pyproject.toml`); ARC's own example is 3.9.1. If no module is new enough, `uv` can bring its
+- **Which Python versions are installed today.** bugarach needs Python 3.14 or later
+  (`pyproject.toml`); ARC's own example is 3.9.1, so a module that new is unlikely. `uv` can bring its
   own Python, which depends on the next point.
 - **Whether a login node can reach PyPI.** ARC says only that compute nodes cannot be reached
   from the internet. interface2 clones from GitHub on a login node, so outbound access exists
