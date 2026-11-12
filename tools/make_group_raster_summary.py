@@ -408,6 +408,8 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
             # down the page that "never pooled" exists to prevent. Split, each
             # page is one measurement of six recordings and half the height.
             for sname in sorted(sl.streams):
+                if sname == "combined" and not combined:
+                    continue
                 pages[(ALL_GROUPS if all_groups else group_of(sl), t, sname)].append(
                     (sl, anchor))
 

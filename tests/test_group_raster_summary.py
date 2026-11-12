@@ -65,13 +65,26 @@ MANIFEST = (
 )
 
 
-def _folder(tmp_path: Path, *, manifest: str | None = MANIFEST) -> Path:
+def _three_streams(events: str) -> str:
+    """The same rows with the combined stream beside them, as the producer ships it."""
+    head, *rows = events.strip().splitlines()
+    out = [head + ",source_stream"]
+    out += [f"{r},{r.split(',')[2]}" for r in rows]
+    for r in rows:
+        c = r.split(",")
+        src, c[2], c[4] = c[2], "combined", "per_event_by_source_stream"
+        out.append(",".join(c) + f",{src}")
+    return "".join(line + chr(10) for line in out)
+
+
+def _folder(tmp_path: Path, *, manifest: str | None = MANIFEST,
+            combined: bool = False) -> Path:
     d = tmp_path / "flagged"
     d.mkdir()
     (d / "slices.csv").write_text(SLICES)
     (d / "regions.csv").write_text(REGIONS)
     for sid in ("s1", "s2", "s3", "s4"):
-        (d / f"{sid}.csv").write_text(EVENTS)
+        (d / f"{sid}.csv").write_text(_three_streams(EVENTS) if combined else EVENTS)
     if manifest is not None:
         (d / mod.MANIFEST).write_text(manifest)
     return d
@@ -321,7 +334,7 @@ def test_the_combined_page_draws_fast_in_the_raster_ink_and_slow_in_the_second(t
     fast/slow partition there, and every onset of both streams is drawn once."""
     from bugarach.ui.diagnostic import RASTER_INK
 
-    pages, _, _ = mod.measure(_folder(tmp_path, manifest=None), ("TTX",), steps_excluded=True,
+    pages, _, _ = mod.measure(_folder(tmp_path, manifest=None, combined=True), ("TTX",), steps_excluded=True,
                               combined=True)
     assert ("MALE", "TTX", "combined") in pages
     spec = pages[("MALE", "TTX", "combined")]
@@ -342,7 +355,7 @@ def test_the_combined_page_still_says_no_field_step_scan_was_run(tmp_path):
     """Found rendering the September APV+CNQX+GZ pages (2026-10-05): the combined page's
     slow-ink key took the slot the unscanned warning lived in, so the fast and slow pages
     carried the warning and the combined page silently did not."""
-    d = _folder(tmp_path, manifest=None)
+    d = _folder(tmp_path, manifest=None, combined=True)
     pages, _, _ = mod.measure(d, ("TTX",), unscanned=True, combined=True)
     spec = pages[("MALE", "TTX", "combined")]
     head = mod.header_html("MALE", "TTX", spec["members"], spec["ext"], d,
@@ -351,7 +364,7 @@ def test_the_combined_page_still_says_no_field_step_scan_was_run(tmp_path):
 
 
 def test_the_combined_page_counts_both_streams_removals(tmp_path):
-    d = _folder(tmp_path, manifest=None)
+    d = _folder(tmp_path, manifest=None, combined=True)
     pages, _, _ = mod.measure(d, ("TTX",), steps_excluded=True, combined=True)
     spec = pages[("MALE", "TTX", "combined")]
     head = mod.header_html("MALE", "TTX", spec["members"], spec["ext"], d, stream="combined",
@@ -365,7 +378,7 @@ def test_pages_and_figures_run_fast_slow_combined():
 
 
 def test_without_combined_there_is_no_combined_page(tmp_path):
-    pages, _, _ = mod.measure(_folder(tmp_path), ("TTX",))
+    pages, _, _ = mod.measure(_folder(tmp_path, combined=True), ("TTX",))
     assert not any(k[2] == "combined" for k in pages)
 
 
