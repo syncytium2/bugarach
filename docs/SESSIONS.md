@@ -3372,3 +3372,9 @@ session's work is not a sweep.
   default, `pensub` and the flagged review copy. Checked on WSMIP065 after the move: every declared role resolves
   (the five archives from `deprecated/`), an archive is still refused without `BUGARACH_REPRODUCE`, and the
   flagged copy and `PRE_ARTIFACT_KILLER` resolve by name. Holds nothing.
+
+### darkroom/bugarach/2026-11-12-tracked-cohorts-rasters-4x-and-3x/ — one combined raster page per group at each threshold, aligned at baseline end (065/tracked-cohorts-default)
+- **Claimed:** 2026-11-12, before the write. Tony: the tracked cohorts are the default dataset for now, and the first step is the one-page-per-group raster summaries, combined stream, to see how 3x and 4x differ.
+- **Writes:** `4x/` and `3x/`, two `.html` pages each (DI, MALE), from `tools/make_group_raster_summary.py --streams combined`
+  on the default folder (`tracked_cohorts`) and on `tracked_cohorts_3x`, read by name. Darkroom only.
+- **Released:** 2026-11-12, at write. `4x/` and `3x/` each hold two `.html` pages and a flat `.png` of each. Holds nothing.
