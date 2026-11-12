@@ -8,16 +8,50 @@
 
 ## On the cluster
 
-| what | status | source |
+Two sources. **ARC** is the university's own documentation, read on 2026-11-12; its pages carry
+no update date. **interface2** is what the lab's other repository verified at a terminal
+(`greatlakes/ACCESS.md` there).
+
+| what | value | source |
 |---|---|---|
-| Slurm, partition `standard`: 28 or more cores and about 180 GB per node, 14-day limit | verified 2026-07-30 by interface2 | interface2 `greatlakes/ACCESS.md`, step 2 |
-| partition `largemem` | exists; bugarach has no use for it | same |
-| billing on `standard`: by reserved memory above 7 GB per requested core | measured 2026-08-28 by interface2 | same, "what a job actually costs" |
-| MATLAB, pinned `matlab/R2025b` | verified by interface2; not used by bugarach | same |
-| **Python** (which module, which version) | **unknown** | nobody has asked |
-| **`uv` on a login node** | **unknown** | nobody has asked |
-| outbound access to GitHub and PyPI from a login node | GitHub yes (interface2 clones there); PyPI **unknown** | same, step 3 |
-| the shared research drive ("turbo") mounted on login and compute nodes | verified by interface2 | same |
+| partition `standard`, per node | 36 cores, 187 GB (180 GB requestable) | ARC, [configuration][cfg] |
+| wall time on `standard` | 60 minutes if not asked for; 14 days at most | ARC, [defaults and limits][lim] |
+| memory if not asked for | 768 MB per core | same |
+| limits per account on `standard` | 500 cores and 3,500 GB running; 5,000 jobs queued per user | same. The table was hard to read; confirm on the page |
+| partition `debug` | 4 hours, 8 cores, 40 GB, one job per user | ARC, [policies][pol] |
+| billing | by the share of a node a job takes: the larger of its weighted cores and weighted memory | ARC, [policies][pol]. No weights are published |
+| billing, measured | memory decides once a job asks for more than 7 GB per core | interface2, 2026-08-28 |
+| login nodes | 2 cores and 4 GB at most; for Slurm, files and quick debugging. Idle shells close after 2 hours | ARC, [policies][pol] |
+| job arrays | `--array=0-15`, `--array=0-15%4` to run 4 at a time; indices 0 to 499,999 | ARC, [job arrays][arr] |
+| Slurm output | `slurm-<jobId>.out` beside the submit command unless `--output` and `--error` say otherwise; the folder must exist | ARC, [batch files][bat] |
+| stopping cleanly | `--signal=<sig>@<seconds>` warns a job before its time limit. ARC provides no checkpointing; it is the user's | ARC, [accounting][acc] and [policies][pol] |
+| outages | scheduled ones announced a month ahead on ARC's home page | ARC, [policies][pol] |
+| home directory | 80 GB; for scripts and software builds | ARC, [defaults and limits][lim] |
+| `/scratch` | 10 TB and 1 million files per account; **a file not read for 60 days is deleted**; no backup | ARC, [policies][pol] |
+| the shared research drive ("turbo") | mounted on login and compute nodes | interface2 |
+| Python modules | `module available python` lists them. ARC's examples are `python/3.9.1` and `python3.8-anaconda/2021.05`, and read as written in 2021 | ARC, [Python][py] |
+| a Python environment | `python -m venv <path>`, `pip install --user`, or conda; pick one and keep to it. Install from a login node | ARC, [packages][pkg] |
+| MATLAB, pinned `matlab/R2025b` | present; not used by bugarach | interface2 |
+
+[cfg]: https://documentation.its.umich.edu/node/4976
+[lim]: https://documentation.its.umich.edu/arc-hpc/greatlakes/user-guide/defaults-limits
+[pol]: https://documentation.its.umich.edu/node/5008
+[arr]: https://documentation.its.umich.edu/node/4986
+[bat]: https://documentation.its.umich.edu/node/5078
+[acc]: https://documentation.its.umich.edu/node/5111
+[py]: https://docs.support.arc.umich.edu/python/installations
+[pkg]: https://docs.support.arc.umich.edu/python/pkgs_envs/
+
+**What ARC's pages do not say, and the first run sheet has to find out:**
+
+- **Which Python versions are installed today.** bugarach needs Python 3.11 or later
+  (`pyproject.toml`); ARC's own example is 3.9.1. If no module is new enough, `uv` can bring its
+  own Python, which depends on the next point.
+- **Whether a login node can reach PyPI.** ARC says only that compute nodes cannot be reached
+  from the internet. interface2 clones from GitHub on a login node, so outbound access exists
+  for that at least.
+- **Whether `uv` runs there.** ARC allows software built in the home directory and does not
+  mention it.
 
 ## interface2's helpers, on the cluster in Tony's interface2 checkout
 

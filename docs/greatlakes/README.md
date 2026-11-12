@@ -40,6 +40,8 @@ If a job ever needs an export folder on the cluster, that is a new decision and 
 
 Every workstation and the cluster mount the same volume, so nothing is copied back.
 
+- **Not `/scratch` for anything to keep:** a file there is deleted 60 days after it was last
+  read, and nothing on the cluster is backed up.
 - **Write everything a session must read to turbo:** results, Slurm logs, the status file. A
   log left in the cluster home directory cannot be seen from a workstation.
 - **The folder name contains a space.** Paths are absolute and quoted, always.
@@ -57,6 +59,8 @@ Each of these was earned in interface2 and is taken over as it stands.
    the run's folder), so "how is the run doing" needs no job id.
 3. **Memory and wall time are sized from a measured run,** never guessed. The `standard`
    partition bills on reserved memory once a job asks for more than 7 GB per core.
+   A job that names no wall time gets 60 minutes, and one that names no memory gets 768 MB
+   per core, so both are always stated.
 4. **Jobs survive a reboot.** Nodes are rebooted for patches. A search either resumes from
    what it has written or is short enough to rerun.
 5. **The cluster checkout is read-only.** Clone, pull, run. Never commit there.
@@ -66,12 +70,12 @@ Each of these was earned in interface2 and is taken over as it stands.
 
 ## Not known yet
 
-- **How Python is set up on the cluster.** interface2 runs only MATLAB there. Which Python
-  module exists, and whether `uv` works on a login node, are the first lines of bugarach's
-  first run sheet.
+- **Which Python the cluster has today, and whether a login node reaches PyPI.** ARC documents
+  how to build an environment and gives 2021 versions as examples ([`TOOLS.md`](TOOLS.md)).
+  These are the first lines of bugarach's first run sheet.
 - **How long a search takes on a cluster node.** The one-overnight figure is from a 12-core
-  workstation.
-- **Whether a search resumes after being killed.**
+  workstation; a `standard` node has 36 cores.
+- **Whether a search resumes after being killed.** ARC provides no checkpointing.
 
 ## bugarach does not act in interface2
 
