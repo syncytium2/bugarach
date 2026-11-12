@@ -3383,3 +3383,8 @@ session's work is not a sweep.
 - **Claimed:** 2026-11-12, before the write. Tony: the earlier work merged coordinated events a person can see as separate; 4x, go.
 - **Writes:** `shipped/` and `narrow/` (each `detections.csv`, `detector_settings.csv`, `run.json` from `bugarach detect`), and `pages/` (raster pages per group and stream with both sets of calls in lanes). Fast and slow only (ADR-0023). Darkroom only.
 - **Released:** 2026-11-12, at write. `shipped/` and `narrow/` hold the two detect runs, `pages/` four pages (DI and MALE, fast and slow) as `.html` and `.png`. Holds nothing.
+
+### darkroom/bugarach/2026-11-12-baseline-characterization-3x-and-4x/ — onset-timing statistics of the baselines at both thresholds, all recordings and by group (065/tracked-cohorts-default)
+- **Claimed:** 2026-11-12, before the write. Tony: step one for 3x and 4x, DI and MALE against all, baseline only.
+- **Writes:** two `.png` figures (fast, slow) from `docs/learned/runs/2026-11-12-baseline-characterization-3x-4x/characterize.py`. Darkroom only.
+- **Released:** 2026-11-12, at write. Two `.png` figures. Holds nothing.
