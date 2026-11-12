@@ -24,7 +24,8 @@ that turns onsets into calls or counts calls:
 
 ## Open
 
-1. Does `tools/measure_coordination_rates.py` join close events on the new default? Not
-   checked.
+1. ~~Does `tools/measure_coordination_rates.py` join close events?~~ No: it counts onsets in a
+   sliding window and defines no events. First calls at both settings:
+   [run record](../learned/runs/2026-11-12-coordination-rates-tracked-cohorts/README.md).
 2. Which settings to run on the real baselines, and at which threshold (4 x or 3 x sigma_est).
 3. How this sits with ADR-0022, which keeps the event definition's window at 2 s (PR #924).

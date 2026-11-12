@@ -3378,3 +3378,8 @@ session's work is not a sweep.
 - **Writes:** `4x/` and `3x/`, two `.html` pages each (DI, MALE), from `tools/make_group_raster_summary.py --streams combined`
   on the default folder (`tracked_cohorts`) and on `tracked_cohorts_3x`, read by name. Darkroom only.
 - **Released:** 2026-11-12, at write. `4x/` and `3x/` each hold two `.html` pages and a flat `.png` of each. Holds nothing.
+
+### darkroom/bugarach/2026-11-12-tracked-cohorts-calls-shipped-and-narrow/ — calls on the default folder's fast and slow streams at the shipped settings and at a 0.5 s window, drawn above the rasters (065/tracked-cohorts-default)
+- **Claimed:** 2026-11-12, before the write. Tony: the earlier work merged coordinated events a person can see as separate; 4x, go.
+- **Writes:** `shipped/` and `narrow/` (each `detections.csv`, `detector_settings.csv`, `run.json` from `bugarach detect`), and `pages/` (raster pages per group and stream with both sets of calls in lanes). Fast and slow only (ADR-0023). Darkroom only.
+- **Released:** 2026-11-12, at write. `shipped/` and `narrow/` hold the two detect runs, `pages/` four pages (DI and MALE, fast and slow) as `.html` and `.png`. Holds nothing.
