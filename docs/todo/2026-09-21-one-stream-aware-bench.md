@@ -23,6 +23,15 @@ goes through `make_null_recording` to `NULL_RECORDING`; `pick_operating_point` r
 `bench_slow.py` has to carry its own copies of about nine of them. Two copies of the scoring
 path drift: a fix to one is a bug left in the other, and nothing but a test notices.
 
+## First step landed 2026-11-11 (ADR-0020)
+
+`src/bugarach/stream_profile.py` is the read-only form of the stream profile described below: one
+object per stream that **reads** its bench module and owns no number. It gives the
+synthetic-validation scripts and any new tool one place to ask for a stream's values, and it
+replaces nothing yet. The dozen tools that each carry a `{"fast": "bugarach.bench", ...}` table
+can call `stream_profile.bench_module(stream)` when they are next touched. What is below is
+still owed in full: the scoring path taking the profile, and the three modules becoming one.
+
 ## What done looks like
 
 - A **stream profile** — one object holding every constant that differs by stream (recording
