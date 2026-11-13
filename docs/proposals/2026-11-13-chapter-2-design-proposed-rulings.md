@@ -25,6 +25,20 @@ Abbreviations: **F1**, the harmonic mean of recall and precision; **ROI**, regio
 the two event-detection thresholds the producer ships (4 and 3 times the noise estimate);
 ***J***, the largest shift, in seconds, that a surrogate applies to one cell's event train.
 
+## What Tony has said since the first draft (2026-11-13)
+
+The sections below are the first draft, kept as written. Where one is marked here, this table
+wins. A ruling becomes a decision record in the pull request of the first work that reads it.
+
+| Section | Outcome | Tony's words, or the session's reading where marked |
+|---|---|---|
+| 1 | **One synthetic pool serves tuning and characterizing.** The word "instrument" is dropped | *"surely this is semantics. one can imagine a complicated synthetic data pool that serves the purpose both tuning and characterizing"* |
+| 6 | **Withdrawn.** A catalogue of every way a detector can fail has no end, so no axis is "run until the detectors fail" | *"aren't there an infinit number of gotchas for each detector?"* |
+| 4, 5, 6 | **The pool is drawn from what was measured.** Each synthetic recording takes its parameters from the ranges the model-free tools measured on the real recordings | *"'the pool is drawn from wath was measured' is the key"* |
+| 7, 9 | **Proposed, not ruled:** hold-outs at three levels (new draws, a region of the measured ranges left out of tuning, a simulator variant), and a model-free check that flags a real window whose measured parameters fall outside the ranges the pool covered | Session's proposal, put to Tony after his *"isn't this a fancy way of saying leave one out?"* |
+| 3, 5 | **Proposed, not ruled:** the slow shared change in baseline event rate is added to the simulator as measured background | Tony asked whether it should be modeled (*"i had no idea such a phenomenon existed"*); the session's answer was yes |
+| 10 | **Ruled. Thresholds are not this project's concern.** Each threshold's folder is an independent measure and goes through the procedure by itself. Which threshold to use is the scientist's decision. Nothing here compares, merges or diagnoses across thresholds | *"you must not concern yourself with thresholds. treat the data as independent measures ... it is the scientists decision on which threshold to use. it is encouraging when both thresholds yeild indistringuishable results"* |
+
 ## The frame: a procedure, with the current folder as its worked example
 
 Three facts set what Chapter 2 can deliver.
@@ -58,7 +72,7 @@ it prints for the tracked cohorts are an example and are re-derived when the fol
 | 7 | How is tuning made fair and bounded? | Equal budget; an unbracketed setting is not a proposal; selection and confirmation on different draws |
 | 8 | What is a real difference? | Paired over the same recordings, with the number of draws set from the interval wanted |
 | 9 | What shows a setting generalises? | One column on a generator that differs in two stated ways |
-| 10 | Are 3x and 4x one dataset or two? | Deferred, with the test that decides it |
+| 10 | Are 3x and 4x one dataset or two? | **Ruled 2026-11-13:** independent measures; see the table above |
 
 ## 1. The instrument: one generator, one scorer, and the folder's point on the map
 
@@ -352,12 +366,13 @@ The 3x searches were still running when this was written. The producer ships bot
 and which events a stream holds is the producer's statement
 ([the streams record](../adr/0023-bugarach-does-not-combine-streams-the-export-is-final.md)).
 
-**Proposed.** Each threshold's folder is characterized. If every generator input of the 3x
-record lies inside the mouse-level interval of the 4x record, one set serves both. If not, the
-threshold is a second folder's point on the same map, tuned on its own.
-
-**Ruling asked:** none yet. The proposal is to decide by that test once the 3x records are
-committed.
+**Ruled by Tony, 2026-11-13, and the first draft's proposal is withdrawn.** The draft proposed
+a test for whether one set could serve both thresholds. Tony: thresholds are not this project's
+concern. Each threshold's folder is an independent measure, characterized and tuned by itself.
+Event detection, like coordination, trades false positives against false negatives, most of all
+on the fast stream, and which threshold to use is the scientist's decision. When both thresholds
+give indistinguishable results, that is encouraging; it is not something this project tests for
+or acts on.
 
 ## The order of work if these are accepted
 
