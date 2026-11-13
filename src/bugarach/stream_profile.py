@@ -42,10 +42,18 @@ MODULES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
 
 
 def bench_module(stream: str) -> ModuleType:
-    """The bench module that owns ``stream``'s constants. Refuses a stream it does not know."""
-    if stream not in MODULES:
-        raise ValueError(f"no bench for stream {stream!r}; the benches are {', '.join(STREAMS)}")
-    return importlib.import_module(MODULES[stream])
+    """The bench module that owns ``stream``'s constants. Refuses a stream it does not know.
+
+    ``stream`` may also name a bench set (``fast_di``; :mod:`bugarach.bench_sets`): a stream's
+    bench with one set of recordings' measured values, built from its record."""
+    if stream in MODULES:
+        return importlib.import_module(MODULES[stream])
+    from bugarach import bench_sets
+
+    if stream in bench_sets.names():
+        return bench_sets.load(stream)
+    raise ValueError(f"no bench for stream {stream!r}; the benches are {', '.join(STREAMS)} and the "
+                     f"sets are {', '.join(bench_sets.names()) or 'none'}")
 
 
 @dataclass(frozen=True)
