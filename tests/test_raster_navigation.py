@@ -134,11 +134,20 @@ def _flat(rows):
 
 
 def _settled(page, before):
-    """Wait for the view to differ from ``before`` and for the script to have recorded it."""
+    """Wait for the view to differ from ``before``, for the script to have recorded it, and
+    for nothing more to be waiting to be recorded.
+
+    The last condition is the one that was missing. A slide is eight mouse moves, and on a
+    loaded CI runner two of them could sit more than the script's 120 ms apart. The script
+    then recorded the half-way position, this wait returned on that change of depth with the
+    final range already on screen, and the final view was recorded 50 ms after the depth had
+    been read (CI, 2026-11-13: "assert 5 == 4" and "assert 7 == 6", on two pull requests).
+    """
     page.wait_for_function(
         "b => { const v = bugarachNav.view();"
         " return JSON.stringify(v.x) !== JSON.stringify(b.x)"
-        " && bugarachNav.depth() !== b.depth; }", arg=before, timeout=10_000)
+        " && bugarachNav.depth() !== b.depth && !bugarachNav.pending(); }",
+        arg=before, timeout=10_000)
     return _view(page)
 
 
@@ -233,6 +242,44 @@ def test_the_gestures_in_a_browser(page):
     assert again["x"] == home["x"]
     assert _flat(again["y"]) == pytest.approx(_flat(home["y"]))
     assert again["heights"] == home["heights"]
+
+
+def test_a_slide_with_a_pause_in_it_is_one_step_back(page):
+    """A view is recorded when the button is released, not while it is held.
+
+    The pause is longer than the script's 120 ms. Before 2026-11-13 the half-way position was
+    recorded as a view of its own, so Ctrl+Z after a slow slide went back to the middle of it.
+    That was also what made the walk above fail in CI when the runner stalled mid-drag.
+    """
+    page.evaluate("window.scrollTo(0, 0)")
+    page.evaluate("bugarachNav.reset()")
+    page.wait_for_function("!bugarachNav.pending()", timeout=10_000)
+    x, y, w, h = _raster(page)
+    home = _view(page)
+    _drag(page, x + 0.4 * w, y + 20, x + 0.6 * w, y + 23)
+    zoomed = _settled(page, home)
+
+    x0, x1, yy = x + 0.5 * w, x + 0.3 * w, y + 10
+    page.keyboard.down("Shift")
+    page.mouse.move(x0, yy)
+    page.mouse.down()
+    page.mouse.move((x0 + x1) / 2, yy, steps=4)
+    page.wait_for_timeout(300)
+    halfway = _view(page)
+    assert halfway["x"][0] > zoomed["x"][0], "the slide had not moved the view by the pause"
+    assert halfway["depth"] == zoomed["depth"], "a view was recorded with the button held"
+    page.mouse.move(x1, yy, steps=4)
+    page.mouse.up()
+    page.keyboard.up("Shift")
+    slid = _settled(page, zoomed)
+    assert slid["x"][0] > halfway["x"][0]
+    assert slid["depth"] == zoomed["depth"] + 1
+
+    page.keyboard.press("Control+z")
+    back = _view(page)
+    assert back["x"] == pytest.approx(zoomed["x"], rel=1e-9)
+    assert back["depth"] == zoomed["depth"]
+    page.evaluate("bugarachNav.reset()")
 
 
 #: Set the page's time range and return the labels its one time axis would draw.

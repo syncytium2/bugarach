@@ -153,36 +153,47 @@ NAV_SCRIPT = r"""
       document.getElementById("bugarachNavBack").disabled = stack.length < 2;
     }
 
+    // A VIEW IS RECORDED WHEN THE GESTURE ENDS, NOT WHILE THE BUTTON IS HELD. A slide moves
+    // the range on every mouse move, and a pause of more than the 120 ms below in the middle
+    // of one used to record the half-way position as a view of its own: Ctrl+Z then went
+    // back to the middle of the slide. While a button is down the timer re-arms itself.
+    let held = false;
+    let timer = null;
     function settle() {
+      if (held) { timer = setTimeout(settle, 120); return; }
+      timer = null;
       const now = snapshot();
       if (!same(now, stack[stack.length - 1])) stack.push(now);
       paintBar();
     }
-
-    let timer = null;
     const changed = () => {
       if (quiet) return;
       clearTimeout(timer);
       timer = setTimeout(settle, 120);
     };
+    // capture phase, on the window: the plots sit in shadow roots and stop some events
+    for (const type of ["pointerdown", "mousedown"])
+      window.addEventListener(type, () => { held = true; }, true);
+    for (const type of ["pointerup", "mouseup", "pointercancel"])
+      window.addEventListener(type, () => { held = false; }, true);
     xr.properties.start.change.connect(changed);
     xr.properties.end.change.connect(changed);
 
     function show(view) {
-      clearTimeout(timer);
+      clearTimeout(timer); timer = null;
       quiet = true;
       try { xr.setv({ start: view.x[0], end: view.x[1] }); } finally { quiet = false; }
       paintBar();
     }
 
     function reset() {
-      clearTimeout(timer);
+      clearTimeout(timer); timer = null;
       if (!same(snapshot(), home)) { show(home); stack.push(home); }
       paintBar();
     }
 
     function undo() {
-      clearTimeout(timer);
+      clearTimeout(timer); timer = null;
       // a gesture still inside its debounce has moved the page but is not on the stack
       if (!same(snapshot(), stack[stack.length - 1])) show(stack[stack.length - 1]);
       else if (stack.length > 1) { stack.pop(); show(stack[stack.length - 1]); }
@@ -203,11 +214,13 @@ NAV_SCRIPT = r"""
           && ev.key.toLowerCase() === "z") { ev.preventDefault(); undo(); }
     });
     document.addEventListener("keyup", ev => { if (ev.key === "Shift") drag("BoxZoomTool"); });
-    window.addEventListener("blur", () => drag("BoxZoomTool"));
+    window.addEventListener("blur", () => { held = false; drag("BoxZoomTool"); });
 
     document.getElementById("bugarachNavAll").onclick = reset;
     document.getElementById("bugarachNavBack").onclick = undo;
     window.bugarachNav = { reset, undo, view: snapshot, depth: () => stack.length,
+      // true while a change of view is waiting to be recorded; a test reads the depth after it
+      pending: () => timer !== null,
       rows: () => figs.map(f => [f.y_range.start, f.y_range.end]),
       heights: () => figs.map(f => f.height) };
   }
