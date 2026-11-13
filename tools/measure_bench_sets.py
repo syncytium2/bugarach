@@ -130,6 +130,9 @@ def main(argv=None) -> int:
     ap.add_argument("--boot", type=int, default=200)
     ap.add_argument("--seed", type=int, default=20261112)
     ap.add_argument("--surrogates", type=int, default=1000)
+    ap.add_argument("--suffix", default="",
+                    help="appended to every set's name (``_3x`` gives ``fast_di_3x``), so sets "
+                         "measured on a second folder sit beside the first")
     a = ap.parse_args(argv)
 
     import measure_coordination_rates as mcr
@@ -177,7 +180,7 @@ def main(argv=None) -> int:
                 r["share_hz"] = shares.get(r["slice_id"])
                 r["group"] = meta[r["slice_id"]]["group"]
             for group in (None, *groups):
-                name = ALL if group is None else group.lower()
+                name = (ALL if group is None else group.lower()) + a.suffix
                 mine = [r for r in recs if group is None or _group_of(r) == group]
                 if not mine:
                     continue

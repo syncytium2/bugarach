@@ -89,8 +89,12 @@ def main(argv=None) -> int:
     from bugarach import bench_sets
 
     by_stream: dict[str, list[str]] = {}
+    # A set is scored, and scored on, only if this folder holds its search: sets measured on
+    # another dataset (``fast_di_3x``) keep to their own folder of searches.
+    without = [n for n in bench_sets.names() if not (a.searches / n / "search.json").exists()]
     for name in bench_sets.names():
-        by_stream.setdefault(bench_sets.stream_of(name), []).append(name)
+        if name not in without:
+            by_stream.setdefault(bench_sets.stream_of(name), []).append(name)
 
     tasks, settings, missing = [], {}, []
     for stream, sets in by_stream.items():
@@ -117,8 +121,8 @@ def main(argv=None) -> int:
                 for test_set in sets:
                     for regime in REGIMES:
                         tasks.append((trained_on, test_set, det, c["params"], regime, seeds, nulls))
-    if missing:
-        print(f"no search yet for: {', '.join(missing)}; scoring the rest", file=sys.stderr)
+    if without:
+        print(f"no search here for: {', '.join(without)}; left out", file=sys.stderr)
     if not tasks:
         raise SystemExit(f"no <set>/search.json under {a.searches}")
 
@@ -153,8 +157,9 @@ def main(argv=None) -> int:
 
     a.out.mkdir(parents=True, exist_ok=True)
     record = dict(tool="tools/cross_score_sets.py", spacing="realistic", close_separation_sec=CLOSE_SEC,
-                  seeds_per_background=a.seeds, missing_searches=missing,
-                  sets={n: bench_sets.record(n)["recordings"] for n in bench_sets.names()},
+                  seeds_per_background=a.seeds, sets_without_a_search=without,
+                  sets={n: bench_sets.record(n)["recordings"] for ns in by_stream.values() for n in ns},
+                  datasets={n: bench_sets.record(n)["dataset"] for ns in by_stream.values() for n in ns},
                   settings=settings, table=table, elapsed_min=round((time.time() - t0) / 60, 1))
     (a.out / "cross_score.json").write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
 
