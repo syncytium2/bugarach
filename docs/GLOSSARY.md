@@ -701,6 +701,21 @@ Added 2026-10-23 with [`goals/synthetic-validation.md`](goals/synthetic-validati
   at 60 q (1 − q)² per minute (`theory.chance_clusters_per_min`); at 0.05 Hz they make up most
   clusters, and their spread sets the assessor's jitter reading
   (`learned/synthetic_validation/ch1_followups/assessor_jitter.py`).
+- **Chapter 1's own terms** (added 2026-11-13 with the chapter's revision;
+  `dissertation/chapter-1-aim0.md` defines each where it is first used).
+  **chance floor**: the smallest count of active cells that background alone reaches at most once
+  per hour, from the analytic up-crossing rule (`learned/synthetic_validation/blind_a/theory_floor.py`);
+  the same quantity as the **event floor** above, found by formula rather than by simulation.
+  **false alarm**: a call where nothing was planted, the chapter's word for what scoring calls a
+  false alarm (ADR-0006). **baseline segment**: the lab's analysed stretch of baseline, about
+  20 minutes; the chapter keeps "window" for counting windows. **hard-core form** and **general
+  form**: the coordination-rates prediction with the at-most-one-event term, and with the event
+  train's pair correlation in its place. **held-out rerun**: the first experiment's grid rerun on
+  fresh seeds after model choices were made. **cluster-start factor**: (1 − q)², the share of
+  bins at or over K that start an assessor cluster. **refused**: the coordination-rates tool
+  returned no estimate. **sharp set** and **jittered set**: the chapter's two illustration sets
+  (jitter SD 0.1 and 0.5 s). The chapter calls the 0.0096 and 0.05 Hz backgrounds by their
+  rates, not "quiet" and "busy", which belong to the bench.
 - **order indicator F** — net agreement of pair lead signs with an order of the ROIs, as a share
   of pair co-participations (`learned/synthetic_validation/order_limit.py`); not Kreuz's
   Synfire Indicator, which is normalized by all spikes. **Score sort**: order by each ROI's net

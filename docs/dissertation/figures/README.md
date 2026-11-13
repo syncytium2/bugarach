@@ -1,8 +1,8 @@
 # Chapter 1 figures: the data, the tools and the theory
 
 **Revision of 2026-11-13.** Tony's first read asked for an opening a reader outside the field can
-follow, so a second script, `ch1_intro_figures.py`, draws three new opening figures (Figures 1.1
-to 1.3 in the chapter, first three rows below) and prints every number the chapter quotes from
+follow, so a second script, `ch1_intro_figures.py`, draws three new opening figures (Figures 1.1,
+1.2 and 1.4 in the chapter, first three rows below) and prints every number the chapter quotes from
 them, including Table 1.1. The chapter renumbered the older figures to make room; **the chapter
 is the authority for current figure numbers and captions**, and the draft captions further down
 keep the round-3 numbering.
@@ -20,7 +20,7 @@ redraws a subset, and `--out DIR` writes somewhere else.
 |---|---|---|
 | `synth_raster_plot_coordinated-events-on-a-noisy-background_20261113.png` | Figure 1.1: background alone, four coordinated events alone, and the two together as an analyst receives them | `PYTHONPATH=src python docs/dissertation/figures/ch1_intro_figures.py --only problem` |
 | `synth_raster_plot_three-simple-detectors-found-and-missed_20261113.png` | Figure 1.2: fixed bins, a sliding window and CFAR on one designed recording, with found, missed and false calls; prints Table 1.1 over 200 draws | `... ch1_intro_figures.py --only detectors` |
-| `synth_recovery_plot_sharp-and-jittered-sets-each-tool_20261113.png` | Figure 1.3: a sharp set and a jittered set through the correlogram (HWHM), pair counts against window width, and active-cell counts per bin against chance | `... ch1_intro_figures.py --only twosets` |
+| `synth_recovery_plot_sharp-and-jittered-sets-each-tool_20261113.png` | Figure 1.4: a sharp set and a jittered set through the correlogram (HWHM), pair counts against window width, and active-cell counts per bin against chance | `... ch1_intro_figures.py --only twosets` |
 | `synth_raster_plot_data-and-what-each-tool-sees_20261029.png` | one minute of a simulated 33-cell recording (one-ink raster), two coordinated events enlarged with their onset spread and σ, and what each tool counts | `PYTHONPATH=src python docs/dissertation/figures/ch1_new_figures.py --only data` |
 | `synth_recovery_plot_window-sharing-and-participant-bias_20261029.png` | g₂ and g₃ for Gaussian and uniform jitter; participants reported ÷ planted against σ/w, with measured medians | `... ch1_new_figures.py --only sharing` |
 | `synth_recovery_plot_chance-clusters-against-threshold_20261029.png` | predicted and measured chance clusters per minute against the assessor's threshold K | `... ch1_new_figures.py --only chance` |

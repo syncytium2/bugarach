@@ -283,7 +283,9 @@ def _stack(ax, edges, n_all, n_ev, cols, label_counts=True):
                 ax.bar(lo, n_ev[i][b], width=w, bottom=base, align="edge", color=cols[i],
                        edgecolor="white", lw=0.4, zorder=2)
                 if label_counts:
-                    ax.text(lo + w / 2, n_all[b] + 0.5, str(int(n_ev[i][b])), ha="center",
+                    # alternate windows staggered, so labels of neighbouring windows never touch
+                    ax.text(lo + w / 2, n_all[b] + 0.5 + (2.2 if b % 2 else 0.0),
+                            str(int(n_ev[i][b])), ha="center",
                             va="bottom", fontsize=10.5, color=cols[i], fontweight="bold")
                 base += n_ev[i][b]
         rest = n_all[b] - base

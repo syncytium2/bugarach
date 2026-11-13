@@ -1,0 +1,30 @@
+[problem] 190 background onsets, 40 event onsets (4 events of 10 cells), 120 s
+synth_raster_plot_coordinated-events-on-a-noisy-background_20261113.png
+[detectors] over 200 draws (seeds 1000-1199): share found for events 1, 2, 3 (both), 4, 5; false alarms per busier-stretch minute; per quiet hour
+[detectors]   fixed bins      1.00  0.34  0.00  1.00  0.41   1.82 per min (364 in 200 min)   0.10 per h (1 in 10 h)
+[detectors]   sliding window  1.00  1.00  0.00  1.00  0.66   3.58 per min (717 in 200 min)   0.50 per h (5 in 10 h)
+[detectors]   CFAR            1.00  0.45  0.00  1.00  0.49   0.03 per min (5 in 200 min)   0.00 per h (0 in 10 h)
+[detectors] CFAR threshold near event 2 (lowest over 45.95-47.95 s): 6 cells in 2, 7 cells in 74, 8 cells in 122, 9 cells in 2
+[detectors] CFAR threshold near event 5 (lowest over 211-213 s): 4 cells in 1, 5 cells in 13, 6 cells in 119, 7 cells in 63, 8 cells in 4
+[detectors] CFAR's background estimate in the 0.0096 Hz stretches: median 0.0208 Hz (true 0.0096 Hz), from the events in its reference stretches and the edges of the busier stretch
+[detectors] analytic floor, 2 s window: 6 cells at 0.0096 Hz, 12 at 0.05 Hz; 0.2 s window at 0.0096 Hz: 4 cells; chance calls per hour at the 2 s floor, 0.0096 Hz: 0.33
+[detectors] event 4 left out, a call within 1 s of 151 s anyway (chance hit): fixed bins 0.21, sliding window 0.34, CFAR 0.01
+[detectors] merge gap 0.5 s instead of 3 s, both events of situation 3 found: fixed bins 1.00, sliding window 1.00, CFAR 1.00
+[detectors] draw shown: seed 1015, the first whose every outcome is the most common one (7 of 200 draws are)
+[detectors] fixed: 4 calls; found 3 of 6; false alarms at 139 s
+[detectors] sliding: 10 calls; found 5 of 6; false alarms at 126 s, 130 s, 138 s, 143 s, 156 s
+[detectors] cfar: 3 calls; found 3 of 6; false alarms at none
+[detectors] CFAR threshold in the draw shown: near event 2 [8] cells, in the busier stretch [10, 11, 12] cells
+synth_raster_plot_three-simple-detectors-found-and-missed_20261113.png
+[twosets] sharp (sigma 0.1 s): peak 18.3 x chance (predicted 18.4); level at 2-3 s lag 0.859, at 5-10 s 0.891 (predicted 0.887); HWHM by the correlogram tool 0.177 s (bootstrap SE over recordings 0.003 s), predicted with frame rounding 0.174 s, 2 sqrt(ln 2) sigma = 0.167 s
+[twosets] sharp: excess pairs / (lambda w k(k-1)), measured at w = 0.2 s: 0.481, 0.5 s: 0.770, 1 s: 0.873, 2 s: 0.911, 4 s: 0.902, 8 s: 0.840
+[twosets] sharp: predicted (hard-core form): 0.2 s: 0.482, 0.5 s: 0.765, 1 s: 0.869, 2 s: 0.908, 4 s: 0.900, 8 s: 0.842
+[twosets] sharp: g2: 0.2 s: 0.486, 0.5 s: 0.774, 1 s: 0.887, 2 s: 0.944, 4 s: 0.972, 8 s: 0.986
+[twosets] sharp: share of 1 s bins with >= 5 cells 0.0172, >= 8 0.0147; events reaching >= 5 cells in some 1 s bin 450/450, >= 8 cells 397/450
+[twosets] jittered (sigma 0.5 s): peak 4.6 x chance (predicted 4.6); level at 2-3 s lag 0.903, at 5-10 s 0.881 (predicted 0.884); HWHM by the correlogram tool 0.821 s (bootstrap SE over recordings 0.021 s), predicted with frame rounding 0.835 s, 2 sqrt(ln 2) sigma = 0.833 s
+[twosets] jittered: excess pairs / (lambda w k(k-1)), measured at w = 0.2 s: 0.100, 0.5 s: 0.261, 1 s: 0.471, 2 s: 0.685, 4 s: 0.806, 8 s: 0.807
+[twosets] jittered: predicted (hard-core form): 0.2 s: 0.109, 0.5 s: 0.262, 1 s: 0.468, 2 s: 0.682, 4 s: 0.787, 8 s: 0.786
+[twosets] jittered: g2: 0.2 s: 0.112, 0.5 s: 0.271, 1 s: 0.486, 2 s: 0.718, 4 s: 0.859, 8 s: 0.929
+[twosets] jittered: share of 1 s bins with >= 5 cells 0.0189, >= 8 0.0044; events reaching >= 5 cells in some 1 s bin 442/450, >= 8 cells 119/450
+[twosets] chance (background 0.0096 Hz alone): share of 1 s bins with >= 5 cells 1.51e-05, >= 8 7.79e-10
+synth_recovery_plot_sharp-and-jittered-sets-each-tool_20261113.png

@@ -1,4 +1,4 @@
-# Chapter 1. Predict first, simulate to check: an analytical baseline for finding coordinated events in multichannel event times
+# Chapter 1. Predict first, simulate to check: an analytical reference for finding coordinated events in multichannel event times
 
 *A theory chapter checked by simulation, written by Claude with Tony DeFazio as an exercise; no
 human has reviewed the derivations (see the note at the end). References marked ⚠ were taken from
@@ -17,12 +17,13 @@ knowing which onsets belong to which coordinated event, how many events there we
 generated them.
 
 In this dissertation a **recording** is one continuous imaging session of one field of view: a few
-dozen cells in a brain slice, imaged together every 0.1 s (one **frame**) for tens of minutes. Each
-cell's fluorescence is reduced to the times at which its calcium events begin, its **onsets**, so a
-recording becomes one list of onset times per cell, together with its duration. Nothing else about
-the cells is used: not where they sit, how large their events are, or what kind of cell each is.
-Figure 1.1, the problem, shows a recording of this kind built by simulation, so that which onsets
-are coordinated is known.
+dozen cells in a brain slice, imaged together every 0.1 s (one **frame**) for tens of minutes. A
+**calcium event** is a brief rise in a cell's calcium-reporting fluorescence. Each cell's
+fluorescence is reduced to the times at which its calcium events begin, its **onsets**, so a
+recording becomes one list of onset times per cell (one **channel** per cell), together with its
+duration. Nothing else about the cells is used: not where they sit, how large their events are, or
+what kind of cell each is. Figure 1.1, the problem, shows a recording of this kind built by
+simulation, so that which onsets are coordinated is known.
 
 ![Figure 1.1](figures/synth_raster_plot_coordinated-events-on-a-noisy-background_20261113.png)
 
@@ -36,42 +37,51 @@ random, every cell's onset scattered about the event's time with a standard devi
 the panels they describe. C: A and B together, which is all an analyst receives: no onset is
 labeled background or coordinated, and the event times are not known.
 
-The premise of this dissertation is that a recording mixes **two or more sources** of coordinated
-events. A source is one generating process, with its own **participation** (how many cells join an
-event), **jitter** (how far each participant's onset scatters about the event time), intervals
-between events, membership rule (a fixed set of cells, or a fresh random set each event) and,
-optionally, a **latency template** (a fixed lead or lag for each cell). The goal is a toolset that
-measures those properties from the onset times alone, builds simulated recordings from the
-measurements, and then tests detectors on recordings whose coordinated events are known.
+Getting this wrong is not a local error. Every later step of the dissertation uses the counts:
+Chapter 2 builds simulated data from the participation, jitter and event rate measured here and
+tunes detectors on them, so a mismeasured property is planted into every simulated set, and
+Chapter 4 compares those properties across treatments. Section *1.6.2* gives a concrete case: at a
+busier background, one of the repository's tools reports the spread of chance groupings, about
+0.7 s, as the jitter, whatever the true jitter is.
+
+The working premise of this dissertation, not yet tested, is that a recording mixes **two or more
+sources** of coordinated events. A source is one generating process, with its own
+**participation** (the share of cells that join an event; an event's **participants** are those
+cells, k of the N cells), **jitter** (how far each participant's onset scatters about the event
+time), intervals between events, membership rule (a fixed set of cells, or a fresh random set each
+event) and, optionally, a **latency template** (a fixed lead or lag for each cell). The goal is a
+toolset that measures those properties from the onset times alone, builds simulated recordings
+from the measurements, and then tests detectors on recordings whose coordinated events are known.
 
 The dissertation takes that in four steps. **Chapter 1**, this one, builds and checks the tools
 that measure coordination without first finding the events. **Chapter 2** builds simulated data
 sets from the parameters those tools measure, and works out how detectors are tuned,
 characterized and compared on them. **Chapter 3** applies the result to real recordings, at
-baseline only. **Chapter 4** asks how to assess a treatment that may itself change the properties
-of coordination. The tools are part of bugarach, the open-source toolset this dissertation builds;
-"the repository" below means its code and records.
+**baseline** only: the untreated part of each recording, before any drug is applied. **Chapter 4**
+asks how to assess a treatment that may itself change the properties of coordination. The tools are
+part of bugarach, the open-source toolset this dissertation builds; "the repository" below means
+its code and records.
 
 This chapter takes **one source on purpose**. Before asking whether tools can separate two
 sources, it asks what they return for one, and whether that can be derived rather than simulated.
 
 ### How the chapter proceeds
 
-A reader who has not met this problem needs three things before the results make sense, and the
-chapter gives them in that order. Section *1.2* tries the obvious detectors on Figure 1.1's
-problem: count the active cells in fixed time bins, count them in a window that slides, and let
-the threshold follow the local background. It shows where each succeeds and where it fails, and
-why every detector needs settings that depend on properties of coordination nobody has measured
-yet. Section *1.3* introduces the tools that measure those properties without detecting anything
-(the cross-cell correlogram, pair and triple counts in windows, and counts of active cells in
-bins) and builds the mathematics of each on two simulated sets, one sharp and one jittered.
+A reader who has not met this problem needs three things before the results make sense: why
+simple detectors fail, the tools that measure coordination without detecting it, and the question
+those tools raise. The chapter gives them in that order. Section *1.2* tries the simplest detectors
+on a recording like Figure 1.1's: count the active cells in fixed time bins, count them in a window
+that slides, and let the threshold follow the local background. It shows where each succeeds and
+where it fails, and why every detector needs settings that depend on properties of coordination
+nobody has measured yet. Section *1.3* introduces the tools that measure those properties without
+detecting anything (the cross-cell correlogram, pair and triple counts in windows, and counts of
+active cells in bins) and builds the mathematics of each on two simulated sets, one sharp and one
+jittered.
 
-Section *1.4* then states the chapter's question. A first, brute-force simulation of the tools
-found failures it could not explain. **For each measuring tool and each simple detector, can we
-derive from the planted parameters what it should return, and use simulation only to test the
-derivation and measure what is left over?** This is called **Aim 0**, *predict first, simulate to
-check*. Sections *1.5* to *1.8* answer it tool by tool, *1.9* discusses what the answers replace
-and what they leave to Chapter 2, and *1.10* concludes.
+Section *1.4* shows that a first, brute-force simulation of the tools found failures it could not
+explain, and states the chapter's question: can what each tool returns be derived in advance, with
+simulation used only to check the derivation? Sections *1.5* to *1.8* answer it tool by tool,
+*1.9* discusses what the answers replace and what they leave to Chapter 2, and *1.10* concludes.
 
 ## 1.2 Finding coordinated events: three simple detectors
 
@@ -89,123 +99,146 @@ what lets each call be scored as right or wrong.
 The simplest detector cuts time into consecutive **bins** of fixed width, 2 s here, counts the
 distinct cells with an onset in each bin, and calls an event wherever that count reaches a
 **threshold** K, here 6 cells. A cell counts once per bin however many onsets it has there, so one
-busy cell cannot make an event on its own. Bins called close together are joined into one call if
-the gap between them is at most a **merge gap**, here 3 s, because one event can spill into the
-next bin. This is the repository's **count detector**, and Figure 1.2 C shows its counts.
+busy cell cannot make an event on its own. Called bins are joined into one call when the gap
+between them is at most a **merge gap**, here 3 s, the repository's setting, because one event's
+onsets can spill into a neighboring bin. This is the repository's **count detector**, and
+Figure 1.2 C shows its counts.
 
-It has one obvious weakness. A bin border is fixed in advance, so an event that happens to sit on
+Its weakness is the bin border. Borders are fixed in advance, so an event that happens to sit on
 one has its onsets divided between two bins, and neither half may reach the threshold.
 
 ### 1.2.2 A sliding window
 
 The second detector removes the borders. At every instant t it counts the distinct cells with an
 onset in the last 2 s, the window (t − 2 s, t], and calls an event while that count is at or
-above the threshold (Figure 1.2 D, gray). This is the sliding form of the count detector. The
-window passes over every position, so an event whose
-onsets span less than 2 s is caught whole at some moment, wherever it falls. The cost is that the
-window also passes over every chance grouping of background onsets, so at the same threshold it
-calls chance more often than fixed bins do.
+above the threshold (Figure 1.2 D, gray). This is the sliding form of the count detector, with the
+same 3 s merge gap. The window passes over every position, so an event whose onsets span less than
+2 s is caught whole at some moment, wherever it falls. The cost is that the window also passes
+over every chance grouping of background onsets, so at the same threshold it calls chance more
+often than fixed bins do.
 
 ### 1.2.3 A threshold that follows the background (CFAR)
 
 Both detectors so far use one threshold for the whole recording. The right threshold depends on
-the background. Suppose each of N cells has background onsets at random at rate b. The chance that
-one cell has at least one onset in a window of width w is p = 1 − e^(−bw), and the cells are
+the background. Suppose each of N cells has background onsets at random times at a constant rate b
+(a **Poisson** process; rates are given in hertz, onsets per second, per cell). The chance that
+one cell has at least one onset in a window of width w is a = 1 − e^(−bw), and the cells are
 independent, so the count of active cells in the window follows a binomial distribution with N
-trials and probability p. Background alone lifts the sliding count to K when the count already
-sits at K − 1 and one of the N − K + 1 inactive cells has an onset, so chance calls occur about
+trials and probability a. Background alone lifts the sliding count to K when the count already sits
+at K − 1 and one of the N − K + 1 inactive cells has an onset, so chance calls occur about
 
-  3600 × P(Binomial(N, p) = K − 1) × (N − K + 1) × b
+  3600 × P(Binomial(N, a) = K − 1) × (N − K + 1) × b
 
 times per hour. This chapter allows **at most one chance call per hour**, the same allowance the
-repository's detectors use, and calls the smallest K that meets it the **chance floor**. For 33
-cells and a 2 s window the floor is 6 cells at 0.0096 Hz, a background rate typical of the lab's
-recordings, and 12 cells at 0.05 Hz. At 0.01 and 0.05 Hz the repository's own floor for the count
-detector, found by simulation rather than by this formula, gives the same 6 and 12 cells
-(*1.6.1*). A threshold of 6 cells is therefore right for the quiet background and far too low for
-the busy one.
+repository's detectors use, and calls the smallest K that meets it, for that K and every larger
+one, the **chance floor**. For 33 cells and a 2 s window the floor is 6 cells at 0.0096 Hz, a
+background rate typical of the lab's recordings, and 12 cells at 0.05 Hz. The formula counts every
+up-crossing and so errs toward a higher floor. At 0.01 and 0.05 Hz the repository's own floor for
+the count detector, found by simulating chance on flat Poisson backgrounds rather than by this
+formula, gives the same 6 and 12 cells (*1.6.1*, where it is called the event floor). A threshold
+of 6 cells is therefore right for the lower background and far too low for the busier one. The
+floor also depends on the window: at 0.0096 Hz a 0.2 s window has a floor of 4 cells.
 
 Radar engineers met this problem in the 1960s, with echoes from the ground or the sea in place of
-background onsets. Finn & Johnson (1968) set a radar's detection threshold from an estimate of the
-background made in the **reference cells** around the **cell under test**, so that the rate of
-false alarms stays fixed while the background changes. The family of methods built on that idea is
-called **constant false-alarm rate (CFAR)** detection. **Guard cells** next to the cell under test
-are left out of the estimate, so that an event cannot raise its own threshold; they were routine
-by 1983 (Rohling 1983). Applied
-here, the CFAR detector estimates b from the onsets in 30 s on either side of each instant,
-leaving out the 5 s nearest it on each side, and sets the threshold at that instant to the chance
-floor for the estimate (Figure 1.2 D, violet). It then calls events on the sliding count as
-before.
+background onsets. In radar a **cell** is a slot of range or time, not a biological cell; here
+each cell is an instant of the recording. Constant false-alarm rate (**CFAR**) regulation first set
+a radar's threshold from receiver noise; Finn & Johnson (1968) set it instead from an estimate of
+the background made in the **reference cells** around the **cell under test**, leaving the cell
+under test out, so that the rate of false alarms stays fixed while the background changes. By 1983
+**guard cells** next to the cell under test were also left out (Rohling 1983), so that an event
+cannot raise its own threshold. Applied here, the CFAR detector estimates b from the onsets in the
+30 s on either side of each instant, leaving out the 5 s nearest it on each side, and sets the
+threshold at that instant to the chance floor for the estimate (Figure 1.2 D, violet). It then
+calls events on the sliding count, joining and spanning calls exactly as the sliding detector
+does.
 
-Finn & Johnson also named the method's weakness: a second target in the reference cells raises
-the estimate and hides the first (*masking*). Here, coordinated onsets in the reference windows
-count as background, so a nearby event raises the threshold for its neighbor.
+The method has two known weaknesses. A second target in the reference cells raises the estimate
+and hides the first (**masking**; Finn & Johnson 1968, severe in Rohling 1983, Fig. 3): here, the
+onsets of nearby events count as background. And where the background changes, at a **clutter
+edge**, reference cells on the two sides disagree, so the threshold runs high on the quieter side
+and low on the busier one (Rohling 1983).
 
 ### 1.2.4 What each detector finds
 
 ![Figure 1.2](figures/synth_raster_plot_three-simple-detectors-found-and-missed_20261113.png)
 
 **Figure 1.2. Three simple detectors on one recording: fixed bins, a sliding window and CFAR.** A
-4-minute simulated recording of 33 cells, built to hold five situations. The background is
-0.0096 onsets per second per cell, except from 2 min to 3 min, where it is 0.05 (top lane). A:
-the planted events, numbered by situation, and, in one lane per detector, what that detector did:
-green for a planted event it found, red for one it missed, orange for a call where nothing was
-planted (a **false call**). All marks point down, at the raster they describe; the color is the
-verdict. B: the raster, one mark per onset. C: the fixed-bin detector's count of active cells per
-2 s bin, against its threshold of 6 cells (dashed). D: the sliding count of active cells in the
-last 2 s, against the same fixed threshold (dashed) and against the CFAR threshold (violet), which
-rises with the local background. All three detectors join calls less than 3 s apart. The planted
-events are: 1, 12 cells with jitter SD 0.05 s; 2, 7 cells with jitter SD 0.5 s, centered on a
-border between two fixed bins; 3, two events of 10 cells (jitter SD 0.1 s) 3 s apart; 4, 12 cells
-(jitter SD 0.1 s) in the busier stretch; 5, 5 cells (jitter SD 0.05 s). The recording shown is
-one of 200 independent draws of the same design, the first in which every detector's outcome for
-every situation is its most common one (17 of the 200 draws are). Table 1.1 gives the rates over
-all 200 draws.
+4-minute simulated recording of 33 cells, built to hold five situations. The background lane gives
+the background rate: 0.0096 onsets per second per cell, except from 2 min to 3 min, where it is
+0.05. A: the planted events, numbered by situation, and, in one lane per detector, what that
+detector did: green for a planted event it found, red for one it missed, orange for a call where
+nothing was planted (a **false alarm**). All marks point down, at the raster they describe; the
+color is the verdict. B: the raster, one mark per onset. C: the fixed-bin detector's count of
+active cells per 2 s bin, against its threshold of 6 cells (dashed). D: the sliding count of active
+cells in the last 2 s, against the same fixed threshold (dashed) and against the CFAR threshold
+(violet). All three detectors join calls at most 3 s apart. The planted events are: 1, 12 cells
+with jitter SD 0.05 s; 2, 7 cells with jitter SD 0.5 s, centered on a border between two fixed
+bins; 3, two events of 10 cells (jitter SD 0.1 s) 4 s apart; 4, 12 cells (jitter SD 0.1 s) in the
+busier stretch; 5, 5 cells (jitter SD 0.05 s). Every event other than event 2 sits in the middle of
+a bin. The draw shown is one of 200 independent draws of the same design (Table 1.1).
 
-**Table 1.1. How often each detector finds each planted event, and its false calls**, over 200
+**Table 1.1. How often each detector finds each planted event, and its false alarms**, over 200
 simulated draws of the recording of Figure 1.2. A planted event is found when a call spans it,
-give or take 1 s; one call finds one event at most.
+give or take 1 s; one call finds one event at most. The false alarm columns give the rate and, in
+brackets, the count and the time it was counted over.
 
-| detector | 1: sharp, 12 cells | 2: jittered, 7 cells, on a bin border | 3: two events 3 s apart, both found | 4: 12 cells, busier background | 5: 5 cells | false calls per minute, busier background | false calls per hour, quiet background |
+| detector | 1: sharp, 12 cells (share of draws) | 2: jittered, 7 cells, on a bin border (share) | 3: two events 4 s apart, both found (share) | 4: 12 cells, 0.05 Hz stretch (share) | 5: 5 cells (share) | false alarms, 0.05 Hz stretch | false alarms, 0.0096 Hz stretches |
 |---|---|---|---|---|---|---|---|
-| fixed bins | 1.00 | 0.34 | 0.00 | 1.00 | 0.21 | 1.78 | 0.10 |
-| sliding window | 1.00 | 1.00 | 0.00 | 1.00 | 0.65 | 3.60 | 0.50 |
-| CFAR | 1.00 | 0.44 | 0.00 | 1.00 | 0.42 | 0.02 | 0.00 |
+| fixed bins | 1.00 | 0.34 | 0.00 | 1.00 (0.21 by chance) | 0.41 | 1.82 per min (364 in 200 min) | 0.1 per h (1 in 10 h) |
+| sliding window | 1.00 | 1.00 | 0.00 | 1.00 (0.34 by chance) | 0.66 | 3.58 per min (717 in 200 min) | 0.5 per h (5 in 10 h) |
+| CFAR | 1.00 | 0.45 | 0.00 | 1.00 (0.01 by chance) | 0.49 | 0.03 per min (5 in 200 min) | 0 per h (0 in 10 h) |
+
+"By chance" is the share of draws with event 4 left out in which a call still lands within 1 s of
+its time. The draw in Figure 1.2 is the first of the 200 in which every detector's outcome for every
+situation is its most common one (7 of the 200 draws are).
 
 Each situation shows one property of the problem.
 
 1. **A large, sharp event is easy.** Twelve cells within a fraction of a second stand far above
    anything the background makes, and all three detectors find it in every draw.
-2. **Jitter defeats fixed bins.** Seven onsets spread with an SD of 0.5 s across a bin border fall
-   about half into each bin, and the fixed bins find the event in only 34 % of draws. The sliding
-   window, which has no borders, finds it in every draw. CFAR uses the same sliding count but finds
-   it in only 44 %: events 1 and 3 sit in its reference windows, and their onsets raise its
-   threshold near event 2 to 7 or 8 cells in most draws (8 and 9 in the one drawn), against 6 for
-   the quiet background alone (Figure 1.2 D). That is Finn & Johnson's masking.
-3. **No count separates two events 3 s apart.** Each detector calls them as one event in every
-   draw, because their counts overlap or the merge gap joins them. Section *1.7* derives how far
-   apart two events must be before counts can tell them apart, and how much closer any method could
-   go.
+2. **Jitter across a bin border defeats fixed bins.** Seven onsets spread with an SD of 0.5 s
+   across a border fall about half into each bin, and the fixed bins find the event in only 34 %
+   of draws. The sliding window, which has no borders, finds it in every draw. CFAR uses the same
+   sliding count but finds it in only 45 %: events 1 and 3 sit in its reference stretches, and
+   their onsets raise its threshold near event 2 to 7 or 8 cells in 196 of the 200 draws, against
+   6 for the 0.0096 Hz background alone (Figure 1.2 D). That is masking.
+3. **A merge gap longer than the gap between events joins them.** The two events are 4 s apart,
+   and the counts separate them: the sliding count rises and falls twice (Figure 1.2 D). But the
+   runs of called counts are less than 3 s apart, so the merge gap joins them, and each detector
+   calls one event in every draw. With a merge gap of 0.5 s, all three detectors find both events
+   in every draw. Section *1.7* derives how far apart two events must be before the tools' merge
+   rules stop joining them, and how much closer any method could go.
 4. **A fixed threshold drowns in a busier background.** At 0.05 onsets per second per cell, chance
-   gathers 6 cells into one 2 s stretch often. The fixed-threshold detectors find event 4, but they
-   also make 1.78 and 3.60 false calls per minute there. CFAR raises its threshold to 9–12 cells
-   in that stretch (in the draw shown) and makes 0.02 false calls per minute. Section *1.6.1* derives this failure for
-   the repository's assessor.
-5. **An event smaller than the chance floor cannot be told from chance.** Five cells are one fewer
-   than the threshold, so event 5 is found only when a background onset happens to join it: in
-   65 % of draws by the sliding window, whose window catches more background, and in 21 % and 42 %
-   by the other two. Such an event is not missing because the detector is poor. Counting alone
-   cannot distinguish it from background.
+   gathers 6 cells into one 2 s stretch often. The fixed-threshold detectors make 1.82 and 3.58
+   false alarms per minute there, and so many that a call lands near event 4 by chance in 21 % and
+   34 % of draws with event 4 removed; their "found" is partly luck. CFAR raises its threshold to
+   10–12 cells in that stretch and makes 0.03 false alarms per minute (1.5 per hour), above the
+   one-per-hour allowance. The stretch is 60 s long, shorter than CFAR's 70 s reference span, so
+   at every instant in it the reference stretches still hold some of the lower background and the
+   estimate runs low (the clutter edge); four of the five false alarms fall within 13 s of its ends. Section *1.6.1* derives the
+   fixed threshold's failure for the repository's assessor, a tool introduced in *1.3.4*.
+5. **An event below the chance floor is found only when the background helps.** Five cells are
+   one fewer than the fixed threshold, so event 5 is found only when a background onset happens to
+   join it in the same bin or window: in 66 % of draws by the sliding window, whose window catches
+   more background, and in 41 % by fixed bins. CFAR finds it in 49 %: event 5 sits just after the
+   busier stretch, whose onsets still fall in its reference stretches, so its threshold there is 6
+   cells in 119 draws and 7 or more in 67. The floor belongs to the 2 s window, not to counting:
+   a 0.2 s window, whose floor is 4 cells at this background, would hold all five onsets of an
+   event this sharp, but it would split jittered events like event 2.
+
+CFAR's numbers here belong to this design as much as to CFAR. The recording packs six events into
+4 minutes, about 90 per hour against the lab's 10–22, and puts a busier stretch in the middle; in
+the 0.0096 Hz stretches CFAR's background estimate has a median of 0.021 Hz, twice the true rate.
 
 Every detector here has a window or bin width, a threshold and a merge gap, and each setting
 depends on a property of coordination. The window must be wide compared with the jitter, or it
-splits events. The threshold must sit below the participation, or it misses events, and above the
-chance floor, or it calls the background. The merge gap must be shorter than the interval between
-events, or it joins them. None of these properties is known before the analysis. They must be
-measured first, without a detector, and that is what the tools of *1.3* do. The repository's more
-elaborate detectors, which test each moment against shifted copies of the recording or against
-its recent past, belong to the same families. Chapter 2 characterizes them on simulated data built
-from what the tools measure.
+splits events, and narrow, or it gathers background. The threshold must sit below the number of
+participants, or it misses events, and above the chance floor, or it calls the background. The
+merge gap must be shorter than the gap between events, or it joins them. None of these properties
+is known before the analysis. They must be measured first, without a detector, and that is what
+the tools of *1.3* do. The repository's more elaborate detectors, which test each moment against
+shifted copies of the recording or against its recent past, belong to the same families. Chapter 2
+characterizes them on simulated data built from what the tools measure.
 
 ## 1.3 Measuring coordination without finding events
 
@@ -213,20 +246,21 @@ from what the tools measure.
 
 The input is one list of onset times per channel (a cell, or **region of interest**) and the
 recording's duration; the frame interval is optional. Parameter values called *realistic* here are
-taken from the lab's recordings, which are imaged at a 0.1 s frame and hold two kinds of calcium
-event distinguished by their time course, fast and slow (DeFazio et al. 2026). The dissertation
-calls the onsets of each kind a **stream**: the fast stream and the slow stream are analyzed
-separately. They serve only to choose where to simulate; no statement in this chapter is about the
-recordings themselves. The realistic values are:
+taken from the lab's recordings of arcuate kisspeptin neurons in mouse brain slices, which are
+imaged at a 0.1 s frame and hold two kinds of calcium event distinguished by their time course,
+fast and slow (DeFazio et al. 2026). The dissertation calls the onsets of each kind a **stream**:
+the fast stream and the slow stream are analyzed separately. They serve only to choose where to
+simulate; no statement in this chapter is about the recordings themselves. The realistic values
+are:
 
 - a background rate of 0.0096 Hz per cell, estimated from the fast stream and used for both streams;
 - onset jitter of 0.105 s (fast) and 0.131 s (slow);
 - 7 cells per event (fast) and 13 (slow), of 33;
-- **recording windows** of about 20 minutes (17–20 min), the stretches of baseline the lab analyzes.
-  Per window the fast stream holds a mean of 3.2 coordinated events (median 1, range 0–23, with 28
-  of 66 windows holding none) and the slow stream 7.3 (median 2, range 0–49, 25 of 66 with none);
-  the pooled rates are 9.7 and 22.0 events per hour
-  ([run record](../learned/runs/2026-09-25-real-intervals/README.md));
+- **baseline segments** of about 20 minutes (17–20 min): the stretch of each recording, before
+  any drug is applied, that the lab analyzes. Per segment the fast stream holds a mean of 3.2
+  coordinated events (median 1, range 0–23, with 28 of 66 segments holding none) and the slow
+  stream 7.3 (median 2, range 0–49, 25 of 66 with none); the pooled rates are 9.7 and 22.0 events
+  per hour ([run record](../learned/runs/2026-09-25-real-intervals/README.md));
 - two measured lists of intervals between events, one per stream. They came from a count of
   co-active cells in a sliding 2 s window, which merged events closer than 2 s before the intervals
   were taken, so they understate close pairs.
@@ -234,56 +268,57 @@ recordings themselves. The realistic values are:
 The generative model is a cluster process of the Neyman–Scott type (Neyman & Scott 1952): cluster
 centers placed at random, and the members of each cluster scattered about its center by a
 probability law. Here a cluster is a coordinated event, its center the event time and its members
-the participants' onsets. With Gaussian scatter it is called the Thomas process, although Thomas
-(1949) gave only the count distribution of clustered plants in sampling quadrats, with no scatter
-law. Each of N cells carries independent Poisson background onsets at rate b. On top of that, E
-coordinated events occur in a recording of duration T (rate λ = E/T). Each event is joined by k of
-the N cells, chosen afresh; each participant's onset is the event time plus independent Gaussian
-jitter of standard deviation σ, rounded to the frame. Two departures from the textbook process
-matter: the number of events is fixed, not Poisson, and events are held at least 20 s apart, a
-**hard-core** train, the simulator's default spacing, chosen so that no counting window holds two
-events. Figure 1.1 was drawn from this model, with the event times chosen by hand.
+the participants' onsets; with Gaussian scatter it is called the Thomas process. Each of N cells
+carries independent Poisson background onsets at rate b. On top of that, E coordinated events
+occur in a recording of duration T (rate λ = E/T). Each event is joined by k of the N cells, chosen
+afresh; each participant's onset is the event time plus independent Gaussian jitter of standard
+deviation σ, rounded to the frame. Two departures from the textbook process matter: the number of
+events is fixed, not Poisson, and events are held at least 20 s apart, a **hard-core** train, the
+simulator's default spacing, chosen so that no counting window holds two events. Figures 1.1 and
+1.2 were drawn from this model with the event times chosen by hand. Table 1.2 (*1.4*) collects the
+symbols.
 
-**Table 1.2. Symbols.**
+![Figure 1.3](figures/synth_raster_plot_data-and-what-each-tool-sees_20261029.png)
 
-| symbol | meaning | values in the first experiment |
-|---|---|---|
-| N | cells in a recording | 33 |
-| k | participants per event (cells) | 5, 10, 20 (participation 0.15, 0.3, 0.6) |
-| σ | jitter: SD of a participant's onset about the event time | 0.05, 0.2, 0.5, 1.0 s |
-| b | background rate per cell | 0.01 Hz (near the realistic 0.0096 Hz) and 0.05 Hz |
-| E, λ | coordinated events per recording; per second | 15 or 45 in 45 min (0.0056 or 0.0167 Hz) |
-| w, p | the coordination-rates tool's window; p = λw, events per window | 1, 2, 4 s |
-| f₂, f₃ | excess pair and triple counts per window (*1.3.3*) | |
-| g_n | the chance that all n onsets of one event fall in one window | |
-| K, q | the assessor's threshold (cells); the chance a 1 s bin reaches K by chance | 3, 4, 6 cells |
-| ν_c, ν_e | chance clusters and planted events per minute | |
-| π_K | the chance one event reaches K cells in a bin | |
-| Δ, τ_min | separation of two events; a cell's minimum interval between its own onsets | |
-| M | number of assemblies, or of latency templates | |
-| δ, r | SD of a latency template's offsets; r = δ/σ | |
-| F, n̄ | the order indicator; mean number of events a pair of cells shares | |
+**Figure 1.3. One recording, and what each tool counts in it.** A: one minute of a simulated
+45-minute recording of 33 cells, one mark per onset. The background is 0.0096 onsets per second
+per cell, and there are two coordinated events of 10 cells each with onset jitter σ = 0.2 s.
+Triangles above the raster mark the planted event times. B, C: each event enlarged. Each shows its
+10 cells' onsets, then those onsets per 0.1 s frame against the Gaussian they were drawn from (σ is
+its SD), then the coordination-rates tool's 1, 2 and 4 s windows with the number of the event's
+onsets in each; a window's shade deepens with its share of the event's onsets, so event 1's 1 s
+windows holding 4 and 6 onsets are a lighter and a darker orange. A 1 s window border splits event 1
+into 4 and 6, while event 2 falls inside one window at every width. D–F: what each tool counts in
+the same minute, colored by event, with alternate windows or bins shaded so their edges can be seen.
+The coordination-rates tool counts onsets per window (*1.3.3*), the assessor counts distinct cells
+per 1 s bin, and the count detector counts distinct cells per 2 s bin (*1.3.4*); the threshold of 5
+cells is set for illustration. D shows the windows starting on whole multiples of the width; the
+tool also counts on a grid offset by half a window and averages the two, which is not drawn. This
+minute was picked from the recording because it shows one split event and one whole one. The onsets
+in it are exactly as simulated. In this figure cell 1 is at the top of the raster.
 
-The rest of this section introduces the tools on two simulated sets that differ only in jitter
-(Figure 1.3). Both have 33 cells, a background of 0.0096 Hz per cell and 45 events of 10 cells in
+Figure 1.3 shows what each tool counts in one minute of a simulated recording. The rest of this
+section introduces the tools and their mathematics on two simulated sets that differ only in jitter
+(Figure 1.4). Both have 33 cells, a background of 0.0096 Hz per cell and 45 events of 10 cells in
 each 45-minute recording, 10 recordings per set; the **sharp set** has jitter SD σ = 0.1 s, near
 the realistic value, and the **jittered set** σ = 0.5 s.
 
-![Figure 1.3](figures/synth_recovery_plot_sharp-and-jittered-sets-each-tool_20261113.png)
+![Figure 1.4](figures/synth_recovery_plot_sharp-and-jittered-sets-each-tool_20261113.png)
 
-**Figure 1.3. Two sets, sharp and jittered, through each tool.** Simulated with the repository's
+**Figure 1.4. Two sets, sharp and jittered, through each tool.** Simulated with the repository's
 generator: 33 cells, background 0.0096 onsets per second per cell, 45 events of 10 cells in each
 45-minute recording, events at least 20 s apart, 10 recordings per set. The sharp set (blue) has
 jitter SD 0.1 s and the jittered set (red) 0.5 s. A, B: 12 s of one recording from each set
 around one planted event (triangle). C: the cross-cell correlogram (*1.3.2*): onset pairs between
 two different cells at each lag of one frame, pooled over all pairs and recordings, divided by the
-number expected if the cells were independent at their own rates. The dotted line at 1 is chance.
-Lines are the prediction derived in *1.3.2*; the thick horizontal bars span the peak's
-half-width at half maximum (HWHM). D: the excess pair count in windows of width w, as a share of
-all the pairs the events' onsets form (*1.3.3*), measured by the coordination-rates tool (points)
-and predicted (solid lines; the dotted lines are window sharing g₂ alone). E: the share of 1 s bins
-in which at least K distinct cells are active (*1.3.4*), with the chance level for independent
-cells (dashed). Shares of zero are not drawn.
+number expected if the cells were independent at their own rates (dashed line at 1). Lines are the
+prediction derived in *1.3.2*; dotted lines are the level each set settles to at 5–10 s lag, and
+the thick bars extend one half-width at half maximum (HWHM) either side of zero lag. D: the excess
+pair count in windows of width w, as a share of all the pairs the events' onsets form (*1.3.3*),
+measured by the coordination-rates tool (points) and predicted (solid lines; the dotted lines are
+window sharing g₂ alone). E: the share of 1 s bins in which at least K distinct cells are active
+(*1.3.4*), with the share the 0.0096 Hz background alone would give (dashed). Shares of zero are not
+drawn.
 
 ### 1.3.2 Pairs of cells: the correlogram and its width
 
@@ -293,49 +328,61 @@ j's onset time minus i's. The histogram of those lags, pooled over all pairs of 
 **cross-cell correlogram** (Perkel, Gerstein & Moore 1967 call the two-cell version the
 cross-correlation histogram). If the cells were independent, the lags would fall evenly: in a lag
 bin of width h (here one frame) the expected number of onset pairs is C₀ = Σ_(i≠j) n_i n_j h/T,
-where n_i is cell i's number of onsets. That level, the same at every lag, is **chance**.
+where n_i is cell i's number of onsets. That level, the same at every lag, is what independence
+predicts.
 
 Coordination adds a peak at zero lag. One event of k participants contributes k(k − 1) ordered
 pairs of onsets from different cells. Each onset is the event time plus its own jitter, so the
 event time cancels from the lag, and the lag of two participants is the difference of two
 independent Gaussians of SD σ: a Gaussian of SD σ√2. Over E events the correlogram is therefore
 
-  C(τ) = C₀ + E k(k − 1) h φ(τ; σ√2),
+  C(τ) = C₀ (1 − d) + E k(k − 1) h φ(τ; σ√2),
 
-where φ(τ; s) is the Gaussian density of SD s at lag τ. The correlogram reads three things.
+where φ(τ; s) is the Gaussian density of SD s at lag τ, and d is explained below. The correlogram
+reads three things.
 
 - **Its width is set by the jitter alone.** A Gaussian of SD s falls to half its height at
   s√(2 ln 2), so the peak's **half-width at half maximum** (HWHM) is σ√2 · √(2 ln 2) = 2√(ln 2) σ,
   about 1.67 σ. The participation, the number of events and the background change the peak's
   height, not its width.
-- **Its area above chance counts coordinated pairs**: E k(k − 1), whatever the jitter.
-- **Its height over chance measures how visible the coordination is.** Divided by C₀, which grows
-  with the square of the onset rate per cell, the peak stands at
-  1 + E k(k − 1) φ(0; σ√2) h / C₀. It falls as the jitter widens the peak and as the background
-  raises the chance level.
+- **Its area above the level away from zero counts coordinated pairs**: E k(k − 1), whatever the
+  jitter.
+- **Its height measures how visible the coordination is.** Divided by C₀, which grows with the
+  square of the onset rate per cell, the peak stands at about 1 + E k(k − 1) φ(0; σ√2) h / C₀. It
+  falls as the jitter widens the peak and as the background raises C₀.
+
+**Away from zero lag the correlogram sits below independence**, by the share d. Events held at
+least 20 s apart never put the onsets of two different events close together, which removes pairs
+that independent placement would make, the same hard-core effect *1.3.3* meets in windows. With
+(Ek)² of the onset pairs coordinated, d ≈ (Ek)²(1 − 1/N)/(Σn_i)², which predicts a level of 0.887
+for the sharp set and 0.884 for the jittered; the measured level at 5–10 s lag is 0.891 and 0.881
+(Figure 1.4 C). The width is read above that level, as the repository's correlogram tool reads it.
 
 The onsets are rounded to the frame, so lags come in whole frames. A lag that falls between two
 frames is counted in one or the other, with odds set by how close it is to each, which widens the
-peak slightly. With that included, the prediction for the sharp set is a peak of 18.5 times chance
-and an HWHM of 0.174 s (0.167 s before rounding); the measured correlogram gives 18.2 and 0.176 s
-(Figure 1.3 C). For the jittered set the prediction is 4.8 times chance and 0.835 s, and the
-measurement 4.6 and 0.796 s, 5 % narrower than predicted. Five times the jitter makes the peak
-about five times wider and a quarter as tall.
+peak slightly. With that included, the prediction for the sharp set is a peak of 18.4 times the
+independent level and an HWHM of 0.174 s (0.167 s before rounding); the correlogram tool measures
+18.3 and 0.177 s (bootstrap standard error over the 10 recordings 0.003 s). For the jittered set
+the prediction is 4.6 and 0.835 s, and the measurement 4.6 and 0.821 s (standard error 0.021 s).
+Both widths agree with their predictions within about one standard error. Five times the jitter
+makes the peak about five times wider and a quarter as tall.
 
 The repository's **correlogram tool** measures jitter this way. It counts onset pairs at each
-one-frame lag out to 10 s, divides by the count expected from each pair of cells' totals,
-subtracts the mean excess at 5–10 s lag (slow changes of rate shared across cells), and takes the
-HWHM of what is left. As shipped, it pools the cell pairs of all the recordings it is given before
-taking the width, and converts the width to jitter through a calibration curve made by simulation
-at the fast stream's participation and event rate, rather than through the 1.67 factor, because
-frame rounding, the background and the subtracted shoulder all move the measured width away from
-the ideal. Section *1.5.6* compares it with the joint fit derived later.
+one-frame lag out to 10 s and divides by the count expected from each pair of cells' totals. It
+then subtracts the mean excess at 5–10 s lag, which removes both the hard-core deficit and slow
+changes of rate shared across cells, and takes the HWHM of what is left. As shipped, it pools the
+cell pairs of all the recordings it is given before taking the width. It converts the width to
+jitter through a calibration curve made by simulation at the fast stream's participation and event
+rate, rather than through the 1.67 factor, because frame rounding, the background and the
+subtracted level all move the measured width away from the ideal. Section *1.5.6* compares it with
+the joint fit derived later.
 
 ### 1.3.3 Counting in windows: pairs and triples
 
 The correlogram looks at pairs of cells. The **coordination-rates tool** looks at the whole
 population at once. It cuts time into windows of width w, counts every onset in each window (from
-all cells), and asks how many more pairs of onsets share a window than chance would give.
+all cells), and asks how many more pairs of onsets share a window than chance would give
+(Figure 1.3 D).
 
 For a count X of onsets in a window, the number of ordered pairs is X(X − 1). If every cell were
 independent and Poisson, the mean of X(X − 1) would equal the square of the mean of X, so the
@@ -350,10 +397,10 @@ ordered pairs and triples; cumulants are the combinations of them that add acros
 processes, so the background's contribution drops out and only coordination remains.
 
 An event whose k onsets all fall in one window adds k(k − 1) pairs and k(k − 1)(k − 2) triples to
-that window, so the ratio of excess triples to excess pairs is k − 2 and gives the participation.
-The tool reports **k̂ = 2 + f₃/f₂** participants per event, and from f₂ and k̂ the number of events
-per minute and the **coordinated onset rate per cell**, λk/N: how often an average cell has an
-onset that belongs to an event.
+that window, so the ratio of excess triples to excess pairs is k − 2 and gives the number of
+participants. The tool reports **k̂ = 2 + f₃/f₂** participants per event, and from f₂ and k̂ the
+number of events per minute and the **coordinated onset rate per cell**, λk/N: how often an average
+cell has an onset that belongs to an event.
 
 Jitter breaks the assumption that a window holds all of an event. Let g₂(w, σ) be the share of an
 event's pairs of onsets that fall in the same window, for windows placed at random. Two onsets with
@@ -364,115 +411,235 @@ when |D| ≥ w. So g₂ is the correlogram's peak averaged with that triangular 
 
 and the excess pair count is close to p k(k − 1) g₂, where p = λw is the expected number of events
 per window. g₂ rises from 0 for windows much narrower than the jitter to 1 for windows much wider,
-and is one half when the window is about twice the jitter SD (2.08 σ). Figure 1.3 D shows it for the
-two sets, with the tool's measured excess pairs. For the sharp set, a 0.2 s window holds 0.48 of
-the events' pairs and a 1 s window 0.87; for the jittered set, 0.10 and 0.47. At 4 s and 8 s the
-measured share turns down instead of approaching 1. That is not the jitter: the hard-core train
-never puts two events in one window, which removes pairs that independent events would make, and
-the full prediction (solid lines, derived in *1.5.3*) includes it. The measured shares lie within
-0.02 of the full prediction at every window for both sets.
+and is one half when the window is about twice the jitter SD (2.08 σ). Figure 1.4 D shows it for the
+two sets, with the tool's measured excess pairs. For the sharp set g₂ is 0.49 at a 0.2 s window and
+0.89 at 1 s, and the measured shares are 0.48 and 0.87; for the jittered set g₂ is 0.11 and 0.49,
+and the measured shares 0.10 and 0.47. At 4 s and 8 s the measured share turns down for the sharp
+set, and levels off for the jittered set, instead of approaching 1. That is not the jitter: the
+hard-core train never puts two events in one window, which removes pairs that independent events
+would make, and the full prediction (solid lines, derived in *1.5.3*) includes it. The measured
+shares lie within about 0.02 of the full prediction at every window for both sets.
 
 The same reasoning holds for triples, with g₃ the share of an event's triples that fall in one
-window. Because g₃ falls faster than g₂ as jitter grows, the tool's k̂ falls below the true
-participation when the window is not much wider than the jitter. Section *1.5* derives that
+window. Because g₃ falls faster than g₂ as jitter grows, the tool's k̂ falls below the true number
+of participants when the window is not much wider than the jitter. Section *1.5* derives that
 undercount and tests it.
 
 **Chance from the data themselves.** Real cells are not Poisson and do not share one rate, so the
 tool does not take chance from the formula. It takes it from **surrogates**: copies of the
 recording in which each cell's whole train of onsets is shifted in time, circularly, by its own
-offset (Figure 1.4 A). Shifting keeps each cell's own rate and spacing and destroys the alignment
-between cells. The offsets are distinct multiples of two windows, randomly assigned, so they span
-only about N × 2w (64 s at the 1 s window); independent random shifts were tried and lost planted
-pairs. The tool subtracts the surrogates' pair and triple counts from the recording's, averages
-over two window offsets (0 and w/2) at each of its windows of 1, 2 and 4 s, and solves for
-participants, events per minute and the coordinated onset rate. Per recording it reports
-participants from f₃/f₂ pooled across all the recordings it is given. It needs no event definition
-and no threshold.
+offset (Figure 1.5 A). A test against such copies is a test against a **null**: data built to have
+no coordination. Shifting keeps each cell's own rate and spacing and destroys the alignment between
+cells. The offsets are distinct multiples of two windows, assigned at random and centered on zero,
+so they span only about N × 2w (64 s at the 1 s window). Independent random shifts of up to ±5 s
+were tried and lost 35 % of the planted pairs, because two cells of one event shifted by similar
+amounts stay together. The tool subtracts the surrogates' pair and triple counts from the
+recording's, averages over two window offsets (0 and w/2) at each of its windows of 1, 2 and 4 s,
+and solves for participants, events per minute and the coordinated onset rate. It estimates
+participants once, from f₃/f₂ pooled across all the recordings it is given, and reports that value
+for each recording. It needs no event definition and no threshold.
 
-![Figure 1.4](figures/synth_recovery_plot_surrogate-nulls-and-order-schematic_20261029.png)
+![Figure 1.5](figures/synth_recovery_plot_surrogate-nulls-and-order-schematic_20261029.png)
 
-**Figure 1.4. Three mechanisms the tests rest on, drawn on small illustrative values.** No value
+**Figure 1.5. Three mechanisms the tests rest on, drawn on small illustrative values.** No value
 comes from a run. A: the coordination-rates tool's time-shift surrogate. "Recording": 60 s of four
 cells' onsets (one mark per onset), with background onsets and two coordinated events of all four
 cells, whose planted times are marked in the lane above. "Surrogate": each cell's train is shifted
-circularly by its own offset; offsets are distinct multiples of two windows, so they span only
-about N·2w (here −6, −2, +2 and +6 s for a 2 s window, listed beside each cell). Each cell keeps its
-own onsets and spacing, but the events no longer line up across cells. The 2 s window marked in
-each lane holds 4 onsets in the recording and 1 in the surrogate. B: the assembly test's two nulls,
-on a membership matrix of 6 cells by 4 events (filled tile = the cell joined the event; row sums at
-right are each cell's event count, column sums below are each event's size). The
-margin-preserving null swaps a checkerboard pair of tiles (orange), which keeps every row and
-column sum. The uniform null draws each event's participants at random, which keeps the column sums
-only; the row sums it changed are in orange. C: the score sort and F for 4 cells and 3 events
-(onset orders 1, 2, 3, 4; 2, 1, 4; and 2, 4, 3). For each pair, the table gives who leads in each
-shared event and the net, the first cell's leads minus the second's. A cell's net lead count, wins
-minus losses over all its pairs, is +3, +5, −3 and −5, so the score sort orders the cells 2, 1, 3,
-4. Of the 6 + 3 + 3 = 12 times a pair of cells shares an event, 10 agree with that order and 2
-disagree, so F = (10 − 2) ÷ 12 = 0.67.
+circularly by its own offset; offsets are distinct multiples of two windows, centered on zero, so
+they span only about N·2w (here −6, −2, +2 and +6 s for a 2 s window, listed beside each cell). Each
+cell keeps its own onsets and spacing, but the events no longer line up across cells. The 2 s window
+marked in each lane holds 4 onsets in the recording and 1 in the surrogate. Panels B and C belong
+to *1.8.1* and *1.8.2*. B: the assembly test's two nulls, on a membership matrix of 6 cells by 4
+events (filled tile = the cell joined the event; the numbers beside each row are that cell's event
+count, those under each column that event's size). The margin-preserving null swaps a checkerboard
+pair of tiles (orange), which keeps every row and column count. The uniform null draws each event's
+participants at random, which keeps the column counts only; the row counts it changed are in
+orange. C: the score sort and F for 4 cells and 3 events (onset orders 1, 2, 3, 4; 2, 1, 4; and 2,
+4, 3). For each pair, the table gives who leads in each shared event and the net, the first cell's
+leads minus the second's. A cell's net lead count, wins minus losses over all its pairs, is +3, +5,
+−3 and −5, so the score sort orders the cells 2, 1, 3, 4. Of the 6 + 3 + 3 = 12 times a pair of
+cells shares an event, 10 agree with that order and 2 disagree, so F = (10 − 2) ÷ 12 = 0.67.
 
 ### 1.3.4 Counting cells in bins: the assessor and the count detector
 
 The detectors of *1.2* count **distinct active cells** rather than onsets. With background alone,
 each cell is active in a bin of width B with probability 1 − e^(−bB), independently of the others,
 so the count of active cells in a bin is binomial, and the share of bins in which it reaches K
-falls steeply with K. Coordination adds bins far out in that tail (Figure 1.3 E). For the sets of
-Figure 1.3, chance puts at least 8 cells in a 1 s bin in a share 2 × 10⁻⁸ of bins. The sharp set
-reaches 8 in a share 0.015 of bins, close to one bin per event (45 events in 2,700 one-second bins
-is 0.017). The jittered set reaches 8 in 0.0044, because its events spread over neighboring bins
-and fewer bins hold 8 of their 10 cells. At 5 cells the two sets are level (0.017 and 0.019),
-because an event spread over two bins can put 5 cells in each. A threshold that would catch every
-sharp event therefore misses most jittered ones.
+falls steeply with K. Coordination adds bins far out in that tail (Figure 1.4 E). At the
+0.0096 Hz background alone, at least 8 cells are active in a 1 s bin in a share 8 × 10⁻¹⁰ of
+bins. In the sharp set, 397 of its 450 events (88 %) put at least 8 cells into some 1 s bin; in the
+jittered set only 119 (26 %) do, because its events spread over neighboring bins. At 5 cells the
+two sets are close (450 of 450 sharp events, 442 of 450 jittered). A threshold high enough to sit
+far above chance therefore misses most jittered events.
 
-Two of the repository's tools work on this count.
+Two of the repository's tools work on this count (Figure 1.3 E, F).
 
 - **The assessor** counts distinct active cells per 1 s bin. A **cluster** starts at a bin with at
   least K cells and joins later such bins with at most one bin between them. The cluster's center
   is the mean of its bins' centers. The assessor then takes **each cell's nearest onset within
   ±1.5 s of that center, from every cell**, background cells included, and keeps the cluster if at
   least K cells are gathered. A cluster's jitter is the SD of its gathered onsets; the assessor
-  reports the median over all its clusters (`jit_obs`), the same median on circularly shifted
-  surrogates (`jit_null`), and their difference (`jit_excess`).
+  reports the median over all its clusters (its **jitter reading**), the same median on circularly
+  shifted surrogates (its **null reading**), and the difference of the two (its **excess
+  reading**).
 - **The count detector** is the fixed-bin detector of *1.2.1*: it calls a coordinated event
-  wherever the number of distinct cells active in a 2 s bin reaches a threshold, merging calls less
-  than 3 s apart (with 2 s bins, at most one uncalled bin between them).
+  wherever the number of distinct cells active in a 2 s bin reaches a threshold, joining calls at
+  most 3 s apart (with 2 s bins, at most one uncalled bin between them).
 
-![Figure 1.5](figures/synth_raster_plot_data-and-what-each-tool-sees_20261029.png)
+Two further statistics look at *which* cells are active together, which no count can see: the
+repository's **assembly test**, which asks whether the same groups of cells recur across events
+(*1.8.1*), and an **order indicator**, which asks whether cells keep the same order of onsets
+within events (*1.8.2*). Both are introduced where they are analyzed.
 
-**Figure 1.5. One recording, and what each tool counts in it.** A: one minute of a simulated
-45-minute recording of 33 cells, one mark per onset. The background is 0.0096 onsets per second
-per cell, and there are two coordinated events of 10 cells each with onset jitter σ = 0.2 s.
-Triangles above the raster mark the planted event times. B, C: each event enlarged. Each shows its
-10 cells' onsets, then those onsets per 0.1 s frame against the Gaussian they were drawn from (σ is
-its SD), then the coordination-rates tool's 1, 2 and 4 s windows with the number of the event's
-onsets in each; a window's shade deepens with its share of the event's onsets, so event 1's 1 s
-windows holding 4 and 6 onsets are a lighter and a darker orange. A 1 s window border splits event 1
-into 4 and 6, while event 2 falls inside one window at every width. D–F: what each tool counts in
-the same minute, colored by event, with alternate windows or bins shaded so their edges can be seen.
-The coordination-rates tool counts onsets per window, the assessor counts distinct cells per 1 s
-bin, and the count detector counts distinct cells per 2 s bin; the threshold of 5 cells is set for
-illustration. D shows the windows starting on whole multiples of the width; the tool also counts on
-a grid offset by half a window and averages the two, which is not drawn. This minute was picked from
-the recording because it shows one split event and one whole one. The onsets in it are exactly as
-simulated.
+## 1.4 The first simulation, and the question it raised
 
-### 1.3.5 Which cells, and in what order
+### What brute force found
 
-The tools above see how many cells or onsets fall in a window, never which cells they are. Two
-further statistics look at *which* cells are active together. The repository's **assembly test**
-asks whether the same groups of cells (**assemblies**) recur across events more often than chance,
-using how often each pair of cells shares an event (*1.8.1*; Figure 1.4 B). An **order indicator**
-asks whether cells keep the same order of onsets within events (*1.8.2*; Figure 1.4 C). Both are
-introduced where they are analyzed.
+The first way to characterize the tools is a simulation grid: plant a source at many settings,
+measure each recording without looking at the planted values, and compare. The first such
+experiment found three failures in the coordination-rates tool (*1.3.3*) and the assessor
+(*1.3.4*) that, when it was run, nothing explained (Figure 1.6). Section *1.3* has sketched their
+mechanisms; *1.5* and *1.6* derive them.
 
-### 1.3.6 Prior work
+**The first experiment** simulated one source, with a fresh random set of participants per event, on
+a grid of 4 jitters × 3 participations × 2 event counts × 2 backgrounds = 48 **conditions**, 5
+recordings each: 240 recordings of 33 cells and 45 minutes (Table 1.2 lists the values). Each was
+measured without access to the planted values, with the coordination-rates tool at its windows of
+1, 2 and 4 s and the assessor at K = 3, 4 and 6 cells. A further 200 background-only recordings
+(100 per background) tested the chance-cluster rate. A first run of this grid shared backgrounds
+across conditions (every condition with the same replicate index had the same random draw of
+background, its **seed**), so its errors were correlated; it was rerun with a seed per recording,
+and every number here is from the rerun.
+
+**Table 1.2. Symbols.** Each is also defined where it is first used.
+
+| symbol | meaning | values in the first experiment |
+|---|---|---|
+| N | cells in a recording | 33 |
+| k | participants per event (cells) | 5, 10, 20 (participation 0.15, 0.3, 0.6) |
+| σ | jitter: SD of a participant's onset about the event time | 0.05, 0.2, 0.5, 1.0 s |
+| b | background rate per cell | 0.01 Hz (near the realistic 0.0096 Hz) and 0.05 Hz |
+| E, λ | coordinated events per recording; per second | 15 or 45 in 45 min (0.0056 or 0.0167 Hz) |
+| w, p | a counting window's width (the coordination-rates tool's; the detectors' of *1.2* is 2 s); p = λw, events per window | 1, 2, 4 s |
+| h, B | the correlogram's lag bin; a cell count's bin width | 0.1 s; 1 or 2 s |
+| f₂, f₃ | excess pair and triple counts per window (*1.3.3*) | |
+| g_n | the chance that all n onsets of one event fall in one window | |
+| K, q | a threshold in cells (the detectors' of *1.2*; the assessor's); the chance a 1 s bin reaches K by chance | 3, 4, 6 cells (assessor) |
+| ν_c, ν_e | chance clusters and planted events per minute | |
+| π_K | the chance one event reaches K cells in a bin | |
+| Δ, τ_min | separation of two events; a cell's minimum interval between its own onsets | |
+| M | number of assemblies, or of latency templates | |
+| δ, r | SD of a latency template's offsets; r = δ/σ | |
+| F, n̄ | the order indicator; mean number of events a pair of cells shares | |
+
+![Figure 1.6](../learned/synthetic_validation/synth_recovery_plot_one-source-jitter_20261023.png)
+
+**Figure 1.6. What the first experiment found: participants undercounted at wide jitter, and a flat
+jitter reading at the busier background, with the joint fit derived later.** Events of 10 or more
+cells, 160 of the 240 simulated recordings. Each point is a median over participation, event count
+and the 5 recordings per condition; bars are the interquartile range. A–C (background 0.01 onsets
+per second per cell) and E–G (0.05 Hz): recovered ÷ planted participants, event rate and coordinated
+onset rate per cell (*1.3.3*). D and H: recovered jitter in seconds against the identity line, so an
+estimator that returns a constant draws as a flat line; markers are dodged horizontally for
+visibility. The violet series is not part of the first experiment: it is the joint fit, an
+estimator built afterwards from the theory of *1.5.6*, drawn here for comparison.
+
+1. **Participants are undercounted when jitter approaches the window.** At 1 s jitter the
+   coordination-rates tool's 1 s window read 0.34–0.42 of planted participants, and its 4 s window
+   0.68–0.85 (Figure 1.6 A, E). *1.5* derives this.
+2. **A fixed threshold does not transfer across backgrounds.** On recordings with no coordinated
+   events at all, at 0.05 Hz per cell, chance alone gave the assessor 7.97 clusters per minute at
+   K = 3 and 3.85 at K = 4, against the 0.33 or 1 planted events per minute of the event-bearing
+   recordings (Figure 1.6 F shows the inflated event rate). This is situation 4 of Figure 1.2, in
+   the assessor. *1.6.1* derives this.
+3. **The assessor reads jitter only at the quieter background.** At 0.01 Hz and K = 4 it read 0.07,
+   0.23, 0.49 and 0.72 s for planted 0.05, 0.2, 0.5 and 1 s (Figure 1.6 D). At 0.05 Hz it read
+   0.64–0.73 s whatever was planted at K = 3 or 4, and at K = 6 it rose only from a planted 0.5 s
+   (0.43–0.68 s; Figure 1.6 H). *1.6.2* derives this.
+
+The first experiment held events at least 20 s apart, which hid a fourth limit, the one situation 3
+of Figure 1.2 shows: two events close together are counted as one. *1.7* takes that up.
+
+A grid can find such failures. It cannot say why they happen, or where else they will.
+
+### The question, and the answer in brief
+
+**For each measuring tool and each simple detector, can we derive from the planted parameters what
+it should return, and use simulation only to test the derivation and measure what is left over?**
+This is the chapter's question, labeled **Aim 0** because it comes before the aims of the later
+chapters: *predict first, simulate to check*.
+
+For one source, mostly yes. The undercount follows from window sharing, how often one window holds
+all of an event's onsets (*1.5*). The threshold failure follows from how steeply the rate of chance
+clusters rises with the background (*1.6.1*). The flat jitter reading is the median of the
+assessor's chance clusters, whose share of all clusters that rate predicts (*1.6.2*). The theory
+predicts the coordination-rates tool's participant estimate to a median of 1–2 % of planted (worst
+13 %) for events of 10 or more cells, though not exactly: on the held-out rerun the residuals exceed
+sampling noise (*1.5.4*), and on the slow stream's measured intervals the tool misses the
+prediction in the same direction at every window, for a reason not found (*1.5.5*). It yields an
+estimator of jitter, participation and event rate together, the joint fit (*1.5.6*). For structure
+in which cells take part, and in what order (*1.8*), it derives two quantities: how much extra
+variance reused groups of cells add to the counts of events each pair of cells shares, and the mean
+of the order indicator when no order is present. How many events a test then needs is measured by
+simulation.
+
+It does not replace simulation. It tells simulation where to look, and it is wrong in specific,
+measurable places that this chapter reports. At realistic values, in a 20-minute baseline segment
+like the lab's (*1.3.1*), it shows that participants can be read from one segment when events are
+large (13 cells, two or more events) but not when they are small (7 cells) and few, and that jitter
+cannot be read from one segment by the joint fit (*1.5.7*). The correlogram tool was not tested at
+those values.
+
+### How the predictions are tested
+
+**The residual** for each condition and window is the absolute difference between the condition's
+median recovered ÷ planted ratio and the predicted ÷ planted ratio, unless marked signed. The
+prediction is the tool's estimator applied to the expected excess counts; the measurement is the
+median over recordings of the same estimator applied to each recording's counts. The tool's shipped
+report instead pools f₃/f₂ across recordings; on that path the participant residuals change by at
+most 0.004, and the rate bias is smaller (*1.5.5*). The two can differ even under an exact theory,
+because the estimator is nonlinear; for rate that gap is within ±0.008 and changes sign between
+runs, so it is noise at 5 recordings. The tool **refused** (a count was not positive, so it
+returned no estimate) in 17 of 720 combinations of recording and window (25 on the held-out rerun
+described next), all 5-cell events at 0.05 Hz. The medians exclude those and the predictions
+cannot, so the 5-cell medians at 0.05 Hz carry a selection bias.
+
+**A held-out rerun.** Some model choices were made while looking at the first experiment: a
+frame-rounding term was dropped (it is wrong: the windows sit on the frame grid, so rounding does
+not change which onsets share a window, and it also biased jitter low), the joint fit was
+re-specified, and the correction for the event train (*1.5.5*) was judged partly by how far it
+shrank these residuals. So the whole grid was rerun with fresh seeds and every check repeated on
+that **held-out rerun**. Both runs are reported; where they differ, the held-out value is the one
+to trust.
+
+**Realistic values** fall between the grid's points (Figure 1.12), so they were simulated directly,
+two ways. Events followed **renewal trains**, in which each interval between events is drawn
+independently, here resampled from each stream's measured list, with events then kept at random to
+set the count (this keeps the train's **pair correlation**, how often two events fall a given lag
+apart relative to independent placement). σ was 0.105 or 0.131 s, k 7 or 13 of 33 cells, b
+0.0096 Hz, 40 recordings per combination.
+
+- **45-minute recordings at the pooled rates**: 7.3 events on average on the fast stream (range
+  2–19) and 16.5 on the slow (range 2–35), about 2.25 times a baseline segment.
+- **20-minute segments with a fixed count**: E = 1, 2, 4, 8 or 16 events, which spans the median
+  segment (1–2 events) to its busy tail.
+
+An earlier run at about 3.5 and 3.3 times the pooled rates (25.5 and 53.6 events per 45-minute
+recording) is kept as a check on denser trains. These trains were placed by the follow-up scripts
+rather than through the simulator's own measured-interval option, because the general form
+(*1.5.5*) needs a **stationary** train (one whose statistics do not change over the recording)
+with a known pair correlation, which the simulator's fixed-count placement is not.
+
+### Prior work
 
 **Detectors.** Counting the cells active together in a short window, against a threshold, is how
 synchronous calcium events are found in imaging of hippocampal populations (Malvache et al. 2016).
 The chance that a sliding window ever reaches a given count is the subject of scan statistics
-(Glaz, Naus & Wallenstein 2001 ⚠). Setting the threshold from a local estimate of the background,
-with the cell under test and its neighbors left out, is cell-averaging CFAR (Finn & Johnson 1968);
-Rohling (1983) set out the family's variants, including an ordered-statistic estimate that resists
-a second target in the reference cells. The correlogram is the cross-correlation histogram of
+(Glaz, Naus & Wallenstein 2001 ⚠). Setting the threshold from a local estimate of the background, with
+the cell under test left out, is cell-averaging CFAR (Finn & Johnson 1968, who credit the earlier
+noise-regulated CFAR); leaving out its neighbors too, the guard cells, was routine by 1983. Rohling
+(1983) compared cell-averaging with its greatest-of variant and introduced an ordered-statistic
+estimate that resists a second target in the reference cells. The correlogram is the cross-correlation histogram of
 Perkel, Gerstein & Moore (1967), pooled over pairs of cells.
 
 **Coincidences across bin widths.** Grün et al. (1999, eq. 5) derived the chance that a
@@ -505,7 +672,9 @@ non-Poisson renewal trains (trains whose intervals are drawn independently from 
 center process are textbook point-process theory (Daley & Vere-Jones 2003 ⚠; Møller &
 Waagepetersen 2004 ⚠). In spatial statistics the parameters of a Neyman–Scott process are fitted by
 minimum contrast on Ripley's pair-count function across scales (Diggle 1978 ⚠, 1983 ⚠); the Thomas
-process's version has a closed form used in practice (Waagepetersen 2007). Diggle & Gratton (1984)
+process's version has a closed form used in practice (Waagepetersen 2007). The Thomas process is
+named for Thomas (1949), who gave only the count distribution of clustered plants in sampling
+quadrats, with no scatter law. Diggle & Gratton (1984)
 fitted models that can only be simulated by matching simulated summaries; their spatial example is a
 pairwise-interaction inhibition process (a hard core plus soft repulsion), not a cluster process.
 Neyman–Scott rainfall models are fitted by matching moments of totals at several aggregation
@@ -539,120 +708,10 @@ including the surrogate's dependence on the event train; the assessor's cluster-
 jitter reading; or an analytical no-order mean for an order indicator scored on few events.
 Table 1.9 (*1.9.2*) sets each result against its nearest precedent.
 
-## 1.4 The first simulation, and the question it raised
-
-### What brute force found
-
-The obvious way to characterize the tools is a simulation grid: plant a source at many settings,
-measure each recording without looking at the planted values, and compare. The first such
-experiment found three failures it could not explain (Figure 1.6), in the coordination-rates tool
-(*1.3.3*) and the assessor (*1.3.4*).
-
-**The first experiment** simulated one source, with a fresh random set of participants per event, on
-a grid of 4 jitters × 3 participations × 2 event counts × 2 backgrounds = 48 **conditions**, 5
-recordings each: 240 recordings of 33 cells and 45 minutes (Table 1.2 lists the values). Each was
-measured without access to the planted values, with the coordination-rates tool at its windows of
-1, 2 and 4 s and the assessor at K = 3, 4 and 6 cells. A further 200 background-only recordings
-(100 per background) tested the chance-cluster rate. A first run of this grid shared backgrounds
-across conditions (every condition with the same replicate index had the same background), so its
-errors were correlated; it was rerun with a seed per recording, and every number here is from the
-rerun.
-
-![Figure 1.6](../learned/synthetic_validation/synth_recovery_plot_one-source-jitter_20261023.png)
-
-**Figure 1.6. What the first experiment found: participants undercounted at wide jitter, and a flat
-jitter reading at the busier background.** Events of 10 or more cells, 160 of the 240 simulated
-recordings. Each point is a median over participation, event count and the 5 recordings per
-condition; bars are the interquartile range. A–C (background 0.01 onsets per second per cell) and
-E–G (0.05 Hz): recovered ÷ planted participants, event rate and coordinated onset rate per cell
-(*1.3.3*). D and H: recovered jitter in seconds against the identity line, so an estimator that
-returns a constant draws as a flat line; markers are dodged horizontally for visibility. The violet
-series is the joint fit, an estimator built from the theory in *1.5.6*.
-
-1. **Participants are undercounted when jitter approaches the window.** At 1 s jitter the
-   coordination-rates tool's 1 s window read 0.34–0.42 of planted participants, and its 4 s window
-   0.68–0.85 (Figure 1.6 A, E). *1.5* derives this.
-2. **The assessor reads jitter only at the quieter background.** At 0.01 Hz and K = 4 it read 0.07,
-   0.23, 0.49 and 0.72 s for planted 0.05, 0.2, 0.5 and 1 s (Figure 1.6 D). At 0.05 Hz it read
-   0.64–0.73 s whatever was planted at K = 3 or 4, and at K = 6 it rose only from a planted 0.5 s
-   (0.43–0.68 s; Figure 1.6 H). *1.6.2* derives this.
-3. **A fixed threshold does not transfer across backgrounds.** On recordings with no coordinated
-   events at all, at 0.05 Hz per cell, chance alone gave the assessor 7.97 clusters per minute at
-   K = 3 and 3.85 at K = 4, against the 0.33 or 1 planted events per minute of the event-bearing
-   recordings (Figure 1.6 F shows the inflated event rate). This is situation 4 of Figure 1.2, in
-   the assessor. *1.6.1* derives this.
-
-The first experiment held events at least 20 s apart, which hid a fourth limit, situation 3 of
-Figure 1.2: two events closer than a tool's bins are counted as one. *1.7* takes that up.
-
-A grid can find such failures. It cannot say why they happen, or where else they will.
-
-### The question, and the answer in brief
-
-**For each measuring tool and each simple detector, can we derive from the planted parameters what
-it should return, and use simulation only to test the derivation and measure what is left over?**
-That is Aim 0, *predict first, simulate to check*.
-
-For one source, mostly yes. The undercount follows from window sharing, how often one window holds
-all of an event's onsets (*1.5*). The flat jitter reading is the median of the assessor's chance
-clusters, whose share of all clusters the chance-cluster rate predicts (*1.6.2*). The threshold
-failure follows from how steeply that rate rises with the background (*1.6.1*). The theory predicts
-the coordination-rates tool's participant estimate to a median of 1–2 % of planted (worst 13 %) for
-events of 10 or more cells, and it yields an estimator of jitter, participation and event rate
-together, the joint fit (*1.5.6*). For structure in which cells take part, and in what order
-(*1.8*), it derives two quantities: how much extra variance reused groups of cells add to the
-counts of events each pair of cells shares, and the mean of the order indicator when no order is
-present. How many events a test then needs is measured by simulation.
-
-It does not replace simulation. It tells simulation where to look, and it is wrong in specific,
-measurable places that this chapter reports. At realistic values, in a 20-minute recording window
-like the lab's (*1.3.1*), it shows that participants can be read from one window when events are
-large (13 cells, two or more events) but not when they are small (7 cells) and few, and that jitter
-cannot be read from one window at all (*1.5.7*).
-
-### How the predictions are tested
-
-**The residual** for each condition and window is the absolute difference between the condition's
-median recovered ÷ planted ratio and the predicted ÷ planted ratio, unless marked signed. The
-prediction is the tool's estimator applied to the expected excess counts; the measurement is the
-median over recordings of the same estimator applied to each recording's counts. The tool's shipped
-report instead pools f₃/f₂ across recordings; on that path the participant residuals change by at
-most 0.004, and the rate bias is smaller (*1.5.5*). The two can differ even under an exact theory,
-because the estimator is nonlinear; for rate that gap is within ±0.008 and changes sign between
-records, so it is noise at 5 recordings. The tool **refused** (a count was not positive, so it
-returned no estimate) in 17 of 720 recording-windows (25 on the held-out record described next), all 5-cell
-events at 0.05 Hz. The medians exclude those and the predictions cannot, so the 5-cell medians at
-0.05 Hz carry a selection bias.
-
-**A held-out record.** Some model choices were made while looking at the first experiment: a
-frame-rounding term was dropped (it is wrong: the windows sit on the frame grid, so rounding does
-not change which onsets share a window, and it also biased jitter low), the joint fit was
-re-specified, and the correction for the event train (*1.5.5*) was judged partly by how far it
-shrank these residuals. So the whole grid was rerun with fresh seeds and every check repeated on
-that **held-out record**. Both are reported; where they differ, the held-out value is the one to
-trust.
-
-**Realistic values** fall between the grid's points (Figure 1.12), so they were simulated directly,
-two ways. Events followed **renewal trains**, in which each interval between events is drawn
-independently, here resampled from each stream's measured list, with events then kept at random to
-set the count (this keeps the train's **pair correlation**, how often two events fall a given lag
-apart relative to independent placement). σ was 0.105 or 0.131 s, k 7 or 13 of 33 cells, b
-0.0096 Hz, 40 recordings per combination.
-- **45-minute recordings at the pooled rates**: 7.3 events on average on the fast stream (range
-  2–19) and 16.5 on the slow (range 2–35), about 2.25 times a recording window.
-- **20-minute windows with a fixed count**: E = 1, 2, 4, 8 or 16 events, which spans the median
-  window (1–2 events) to its busy tail.
-
-An earlier run at about 3.5 and 3.3 times the pooled rates (25.5 and 53.6 events per 45-minute
-recording) is kept as a check on denser trains. These trains were placed by the follow-up scripts
-rather than through the simulator's own measured-interval option, because the general form
-(*1.5.5*) needs a **stationary** train (one whose statistics do not change over the recording)
-with a known pair correlation, which the simulator's fixed-count placement is not.
-
 ### Contributions
 
-Each is tagged with its standing against prior work (*1.3.6* gives the precedents, Table 1.9 the
-full comparison).
+Each is tagged with its standing against the prior work above (Table 1.9 gives the full
+comparison).
 
 1. **Window sharing under Gaussian jitter** (*1.5.2*): a closed form for the chance that one counting
    window holds all n onsets of an event, and from it the coordination-rates tool's participant
@@ -662,8 +721,8 @@ full comparison).
    tool's surrogates on that train. *The underlying moment formulas for cluster processes are
    textbook; their application to this tool, and the surrogate term, were not found.*
 3. **A joint fit** (*1.5.6*) that recovers jitter, participation and event rate together from the
-   tool's pair and triple counts at three window widths, for events of 10 or more cells and jitter
-   of 0.2 s or more. *The construction, fitting factorial cumulants across bin widths, is Wu &
+   tool's pair and triple counts at three window widths, on both runs for events of 20 cells from
+   jitter 0.2 s and of 10 cells from 0.5 s. *The construction, fitting factorial cumulants across bin widths, is Wu &
    Müller's (2005) in fluorescence spectroscopy; new here are the jittered-cluster forms it fits.*
 4. **The assessor's chance-cluster rate** (*1.6.1*) at each threshold, and the smallest threshold
    safe against chance at a given background. *Known in form; the factor for where a cluster starts
@@ -685,12 +744,12 @@ detectors and two sets of *1.2* and *1.3* are illustrations, not contributions.
 ## 1.5 The coordination-rates tool: predicted, then tested
 
 This section derives what the coordination-rates tool of *1.3.3* should report for given planted
-values, and tests the derivation against the first experiment and the held-out record. In short:
+values, and tests the derivation against the first experiment and the held-out rerun. In short:
 jitter wide compared with the window makes the tool undercount participants, by an amount window
 sharing predicts (*1.5.1*–*1.5.2*); a correction for how events are spaced in time brings the
 prediction to a median of 1–2 % of planted participants (*1.5.3*–*1.5.5*); fitting all three
-windows at once recovers the jitter as well, for events of 10 or more cells and jitter of 0.2 s or
-more (*1.5.6*); and at realistic values one 20-minute window is enough for participants only when
+windows at once recovers the jitter as well, on both runs for events of 20 cells from 0.2 s and of
+10 cells from 0.5 s (*1.5.6*); and at realistic values one 20-minute segment is enough for participants only when
 events are large or many, and never for jitter (*1.5.7*).
 
 ### 1.5.1 The undercount
@@ -794,24 +853,24 @@ measured lies below predicted in 24 of 32 conditions at 0.01 Hz (16 conditions �
 sign per condition; a sign test, which asks whether measured falls below predicted more often than
 half the time, gives p = 0.007). The median residual is 0.007 of planted at 0.01 Hz and
 0.016 at 0.05 Hz in the first experiment (worst 0.037 and 0.11); without the at-most-one-event term
-it is about 0.05. On the held-out record the same residuals are 0.012 and 0.021 (worst 0.056 and
+it is about 0.05. On the held-out rerun the same residuals are 0.012 and 0.021 (worst 0.056 and
 0.13).
 
 Per background there are 48 condition-windows. If the prediction were exact, about 6 of them would
 sit beyond 2 standard errors, rather than the 2.2 of a normal error, because the error of a
 5-recording median divided by its estimated standard error has heavy tails (simulated). The first
-experiment had 7 and 10. The held-out record has 17 at 0.01 Hz and 10 at 0.05 Hz (Figure 1.9). The
+experiment had 7 and 10. The held-out rerun has 17 at 0.01 Hz and 10 at 0.05 Hz (Figure 1.9). The
 three windows reuse the same recordings, so their counts are not independent; under a null that
 keeps that dependence, 17 of 48 has probability 0.0005–0.002 under exactness.
 
 ![Figure 1.9](figures/synth_recovery_plot_participant-residuals-two-records_20261029.png)
 
-**Figure 1.9. The participant prediction is close, with a small excess on both records.** Each point
+**Figure 1.9. The participant prediction is close, with a small excess on both runs.** Each point
 is one condition-window with events of 10 or 20 cells (15 or 45 events; 1, 2 or 4 s window): the
 coordination-rates tool's reported participants minus the hard-core form's prediction, divided by
 planted participants. The x-axis is categorical: condition-windows are grouped by jitter SD over
 window (σ/w), in increasing order, and gray vertical lines divide the groups; the tick under each
-group gives its σ/w. Within a group, points are dodged by record: blue for the first experiment,
+group gives its σ/w. Within a group, points are dodged by run: blue for the first experiment,
 orange for the held-out rerun on fresh seeds. Circles are 10-cell and squares 20-cell events; filled
 markers are 45 events and open markers 15. Whiskers are ±2 standard errors (SE) of the median of 5
 recordings, 1.2533 × SD ÷ √5. A: background 0.01 Hz per cell; B: 0.05 Hz. The y-axes differ between
@@ -819,8 +878,8 @@ panels. Above each panel are the counts beyond 2 SE (about 5.7 of 48 are expecte
 is exact; the text gives dependence-aware p) and the median signed residual. They also give the
 number of conditions, of 16, in which measured lies below predicted, with a two-sided sign test,
 counting one sign per condition because the three windows reuse the same recordings. At 0.01 Hz,
-measured lies below predicted in 24 of 32 conditions across the two records (p = 0.007), a median
-shortfall of about 0.01 of planted. On the held-out record, 17 of 48 condition-windows lie beyond 2
+measured lies below predicted in 24 of 32 conditions across the two runs (p = 0.007), a median
+shortfall of about 0.01 of planted. On the held-out rerun, 17 of 48 condition-windows lie beyond 2
 SE.
 
 **Rate and coordinated onset rate** are predicted less well. At 0.01 Hz the median rate residual is
@@ -858,13 +917,13 @@ On the first experiment's own trains, the general form changes little and moves 
 
 - **Participants.** The 1 % overprediction disappears as a consistent sign: 18 of 32 conditions
   below predicted on the pooled records (p = 0.60). At 0.01 Hz, 12 condition-windows still sit
-  beyond 2 standard errors on the held-out record, against about 6 expected (p = 0.03–0.07 once the
+  beyond 2 standard errors on the held-out rerun, against about 6 expected (p = 0.03–0.07 once the
   windows' dependence is kept): suggestive, not decisive.
 - **Rate at 0.01 Hz.** The median residual falls from 0.032 to 0.020 (held-out 0.024 to 0.014); its
   signed median, the bias, falls from +0.030 to +0.013, and to +0.005 on the tool's pooled report.
   The surrogate term accounts for all of the reduction. Measured still sat above predicted in 35 of
   48 condition-windows in the first experiment (p = 0.01–0.04 with the dependence kept), but not on
-  the held-out record (18 of 48). **At 0.05 Hz** the general form does not help (0.055 to 0.059).
+  the held-out rerun (18 of 48). **At 0.05 Hz** the general form does not help (0.055 to 0.059).
 
 **On denser trains with realistic intervals** the difference is large. Unlike the hard-core trains,
 these allow intervals shorter than 20 s, so two events can share a window. At 25.5 events per
@@ -890,18 +949,18 @@ same way. **This residual is unexplained.**
 The tool reports a pair and a triple count at each of its three windows. Fitting those six numbers
 against the exact forms above for (σ, k, λ) gives jitter, participants and rate at once; the pair
 and triple counts are each scaled by their mean absolute value. σ enters only through g₂ and g₃,
-which change with w, and that is what makes σ identifiable when σ is a sizable fraction of the
-windows. The fit is bounded below at σ = 0.005 s, a twentieth of the frame. When σ is *not*
-identifiable has not been derived: once σ is much smaller than every window, g_n ≈ 1 throughout and
-the six counts carry little information about σ, and a Fisher-information calculation would predict
-the failure region that simulation finds below. The scaling is ad hoc, and it ignores the strong
+which change with w, and that is what makes σ **identifiable** (recoverable from the counts at
+all) when σ is a sizable fraction of the windows. The fit is bounded below at σ = 0.005 s, a twentieth of the frame. The condition under which σ cannot be
+identified has not been derived: once σ is much smaller than every window, g_n ≈ 1 throughout and
+the six counts carry little information about σ, and a Fisher-information calculation (how sharply
+the expected counts change with σ, against their noise) would predict the failure region that simulation finds below. The scaling is ad hoc, and it ignores the strong
 correlation between counts at nested windows from one recording; Wu & Müller (2005) give the
 variances of factorial cumulants that a properly weighted fit, and an uncertainty for it, would
 need. The fit reports no per-recording uncertainty.
 
 **On the first experiment**, for events of 10 or more cells and planted jitter of 0.2 s or more, the
 condition medians of recovered ÷ planted jitter lie within 0.91–1.13 at 0.01 Hz and 0.88–1.12 at
-0.05 Hz, with participants within 0.94–1.14 and rate within 0.73–1.14. **On the held-out record**
+0.05 Hz, with participants within 0.94–1.14 and rate within 0.73–1.14. **On the held-out rerun**
 they lie within 0.86–1.22 and 0.86–1.36, participants 0.98–1.06 and 0.89–1.16, rate 0.94–1.04 and
 0.87–1.45. Planted 0.05 s is not resolved: it reads 0.041 s at 0.01 Hz (3 of 20 recordings at the
 bound) and 0.030 s at 0.05 Hz (7 of 20), held-out. Events of 5 cells read anywhere from 0.1 to 3.7
@@ -925,7 +984,7 @@ recordings (20 recordings per point), at backgrounds of 0.01 Hz (A) and 0.05 Hz 
 squares are the correlogram tool as shipped (its own calibration) and violet circles the joint fit
 (hard-core form). Markers are medians and bars interquartile ranges. Gray text counts recordings
 whose correlogram width fell above or below the calibration curve; these have no estimate and are
-left out of the median and range, which are therefore censored where the count is large. Violet text
+left out of the median and range, which are therefore censored (biased by what is left out) where the count is large. Violet text
 counts joint fits at the jitter bound (within 2 % of 0.005 or 5 s). The shaded band is 0.8–1.25 of
 planted and the dotted line equality. C: the joint fit per recording at the realistic values,
 background 0.0096 Hz per cell, 40 recordings per strip, for the fast stream (σ 0.105 s) and slow
@@ -956,22 +1015,22 @@ converted directly, per recording.
 
 ### 1.5.7 At realistic values
 
-Realistic jitter, 0.105–0.131 s, lies between the grid's unresolved 0.05 s and resolved 0.2 s
-columns (Figure 1.12). Simulated directly, the joint fit reads participants per recording but not
+Realistic jitter, 0.105–0.131 s, lies between the grid's unresolved 0.05 s column and its 0.2 s
+column, which is resolved on both runs only for 20-cell events (Figure 1.12). Simulated directly, the joint fit reads participants per recording but not
 jitter on the fast stream.
 
 ![Figure 1.12](figures/synth_recovery_plot_realistic-values-against-tested-grid_20261029.png)
 
 **Figure 1.12. Realistic values lie below the jitter the joint fit resolves.** Each circle is a
-combination of planted jitter and cells per event, judged on two records: the first experiment and
-the held-out rerun on fresh seeds. On each record the point counts as resolved when the joint fit's
+combination of planted jitter and cells per event, judged on two runs: the first experiment and
+the held-out rerun on fresh seeds. On each run the point counts as resolved when the joint fit's
 (*1.5.6*) recovered ÷ planted jitter is within 0.8–1.25, a ±25 % convention, in all four conditions
 (15 or 45 events, background 0.01 or 0.05 Hz), each the median of 5 recordings. A filled circle is
-resolved on both records, an open one on neither, and a circle with its left half filled on the
-first experiment only; no point is resolved on the held-out record only. The two lines of numbers
-under each circle give the range of the four ratios, first experiment above and held-out record
+resolved on both runs, an open one on neither, and a circle with its left half filled on the
+first experiment only; no point is resolved on the held-out rerun only. The two lines of numbers
+under each circle give the range of the four ratios, first experiment above and held-out rerun
 below. Two points are resolved on the first experiment only: 10 cells at 0.2 s (held-out 0.98–1.36)
-and 5 cells at 0.5 s (held-out 0.66–1.55). On both records the 20-cell row is resolved from 0.2 s up
+and 5 cells at 0.5 s (held-out 0.66–1.55). On both runs the 20-cell row is resolved from 0.2 s up
 and the 10-cell row from 0.5 s. The orange and violet boxes mark realistic parameter values for the
 fast stream and the slow stream: jitter 0.105 s with 7 cells per event, and 0.131 s with 13 cells.
 The box sizes are nominal. Beside each box is the share of 40 recordings simulated at those values,
@@ -986,7 +1045,8 @@ case (35–40 of 40), and rate with 13 cells (36 and 39 of 40) but not with 7 on
 
 **Table 1.4. The joint fit at the pooled rates**, general form given the true train, 40 recordings
 of 45 minutes each. Median [interquartile range] of fitted ÷ planted; "in band" counts recordings
-within 0.8–1.25. A jitter ratio of 0.05 is the fit's lower bound.
+within 0.8–1.25. The fit's lower bound is a jitter ratio of 0.05 on the fast stream and 0.04 on
+the slow.
 
 | stream, cells | jitter | jitter: at bound; in band | participants (in band) | rate (in band) |
 |---|---|---|---|---|
@@ -995,8 +1055,8 @@ within 0.8–1.25. A jitter ratio of 0.05 is the fit's lower bound.
 | slow, 7 | 1.00 [0.80, 1.34] | 4; 18 | 0.99 [0.94, 1.04] (39) | 1.04 [0.93, 1.18] (30) |
 | slow, 13 | 0.97 [0.76, 1.25] | 1; 16 | 1.00 [0.98, 1.02] (40) | 1.01 [0.98, 1.04] (39) |
 
-**20-minute windows** hold fewer events than that, and the answer depends on the count (Table 1.5).
-With 13 cells per event, participants are readable in one window from two events on (39–40 of 40),
+**20-minute segments** hold fewer events than that, and the answer depends on the count (Table 1.5).
+With 13 cells per event, participants are readable in one segment from two events on (39–40 of 40),
 and the tool's own 1 s estimate from one. With 7 cells the joint fit needs about eight events and
 the tool four. At a median window (one fast or two slow events) 7-cell events are therefore not
 readable, and 13-cell events are borderline to readable. Rate needs at least four events with 13
@@ -1004,7 +1064,7 @@ cells and sixteen with 7. Jitter is not readable per window at any count tried (
 in the band, at 16 slow events). The tool's participant estimate sits at 0.90–0.95 of planted
 throughout, the undercount of *1.5.2*; the joint fit's median is 0.97–1.02 from four events.
 
-**Table 1.5. Participants readable in one 20-minute window.** Recordings of 40 within 0.8–1.25 of
+**Table 1.5. Participants readable in one 20-minute segment.** Recordings of 40 within 0.8–1.25 of
 planted participants, by events per window E.
 
 | stream, cells | joint fit, E = 1 / 2 / 4 / 8 / 16 | tool's 1 s estimate, E = 1 / 2 / 4 / 8 / 16 |
@@ -1040,7 +1100,7 @@ with probability 1 − e^(−b), so a bin reaches K cells with probability
   q = P(Binomial(N, 1 − e^(−b)) ≥ K).
 
 The binomial tail was already in the repository's chance-floor tools, with a Poisson-binomial
-version for unequal rates. The assessor starts a cluster on a bin at or over K whose two preceding
+version (the same count when each cell has its own rate) for unequal rates. The assessor starts a cluster on a bin at or over K whose two preceding
 bins are below it; that **cluster-start factor** (1 − q)² gives its chance-cluster rate as
 
   ν_c = 60 q (1 − q)² per minute.
@@ -1059,24 +1119,27 @@ this scale, yet their first K under one per hour differs: 0.0096 Hz sits on the 
 (0.98 chance clusters per hour) and 0.01 Hz just above it, so K = 5 is the safe choice at both. At
 0.05 Hz the first K under one per hour is 8, so one fixed threshold cannot serve both backgrounds.
 
-Predicted 0.256 and 0.019 per minute at K = 3 and 4 and 0.01 Hz (measured 0.262 and 0.020); 7.97,
+The formula predicts 0.256 and 0.019 per minute at K = 3 and 4 and 0.01 Hz (measured 0.262 and 0.020); 7.97,
 3.86 and 0.284 at K = 3, 4 and 6 and 0.05 Hz (measured 7.97, 3.85 and 0.279). All lie within their
 95 % intervals. At K = 6 and 0.01 Hz the prediction is 0.2 clusters in all 100 background-only
 recordings together, so measuring none tests nothing. This explains the third failure of *1.4*.
 
-**A threshold therefore has to be set per recording from its own background.** We accept at most
-one chance cluster per hour, which is 0.33 per 20-minute window. Against a median window of one or
+**A threshold therefore has to be set per recording from its own background.** This chapter
+accepts at most one chance cluster per hour, which is 0.33 per 20-minute segment. Against a median segment of one or
 two events, that still leaves chance clusters as up to a quarter of all clusters, so it is a loose
-budget, not a strict one. The smallest threshold under it is 5 cells at 0.01 Hz and 8 at 0.05 Hz.
+budget, not a strict one. The smallest threshold under it is 5 cells at 0.01 Hz and 8 at 0.05 Hz, lower than the 6 and 12
+cells of *1.2.3* because the assessor counts in 1 s bins, not a 2 s sliding window.
 At the realistic 0.0096 Hz it is 4 cells, at 0.98 per hour, but K = 4 crosses the budget at
-b = 0.00964 Hz, so a background a few per cent busier needs 5; we recommend 5 there. K = 5 and 8
+b = 0.00964 Hz, so a background a few percent busier needs 5, and 5 is the safe choice there. K = 5 and 8
 were not simulated with events, so those values extrapolate a formula checked at K = 3, 4 and 6. The
 count detector's **event floor**, the larger of 3 cells and the smallest count that chance reaches at
-most once per hour in a 2 s sliding window under a rigid-shift null, is a related statistic and
+most once per hour in a 2 s sliding window under a rigid-shift null (each cell's train shifted as a whole, at random), is a related
+statistic and
 gives 6 and 12 cells at 0.01 and 0.05 Hz.
 
 **Real backgrounds are not flat**: some cells are silent and others busy, and the lab's baselines
-are over-dispersed in time. Simulated with the generator's fitted per-cell burstiness, the
+are over-dispersed in time (more variable from minute to minute than a Poisson process).
+Simulated with the generator's fitted per-cell burstiness, the
 chance-cluster rate at 0.0096 Hz does not change (0.99 per hour at K = 4, as for a flat background),
 because coincidences across cells depend only on each cell's rate per bin. Unequal cell rates lower
 it by about 20 % (0.79 per hour), so the flat formula is conservative for this generator. Bursts
@@ -1131,7 +1194,7 @@ events of 10 or 20 cells (bars: quartiles). Violet line: the mixture prediction,
 ν_c/(ν_c + ν_e) of clusters are chance clusters with the spread of chance clusters measured on
 background-only recordings, and the rest are event clusters. Blue dotted line: event clusters only,
 the SD of an event's onsets under a Gaussian truncated at the ±1.5 s gather, plus background onsets
-the gather catches; it levels off near 0.74 s. Dashed line: chance clusters only, the reading on
+the gather catches; it reaches 0.74 s at σ = 1 s. Dashed line: chance clusters only, the reading on
 background-only recordings. Dotted gray line: reading = planted. The chance share printed in each
 panel is the range over 45 and 15 events per recording. Where chance clusters are few (A), the
 reading follows the event-only curve up to its ceiling; where they are most clusters (B, C), it sits
@@ -1157,12 +1220,12 @@ on the chance-only level whatever was planted; at K = 6 (D) it lies between.
   which has no such selection. Wide events also split into more than one cluster.
 
 **The assessor's own null does not rescue the reading.** At the shipped 1000 surrogates on the same
-240 recordings, `jit_null` at 0.05 Hz equals the background-only chance-cluster SD within 0.01 s
-(0.727, 0.671 and 0.595 s at K = 3, 4 and 6) and does not depend on σ. So `jit_excess` is the flat
+240 recordings, its null reading at 0.05 Hz equals the background-only chance-cluster SD within 0.01 s
+(0.727, 0.671 and 0.595 s at K = 3, 4 and 6) and does not depend on σ. So its excess reading is the flat
 reading minus a constant, and stays flat: at K = 3 and 4 it moves 0.02–0.04 s as planted σ goes from
-0.05 to 1 s. The tool offers no other null-corrected jitter. Its `jit_null` is in effect the
+0.05 to 1 s. The tool offers no other null-corrected jitter. Its null reading is in effect the
 mixture's chance part, measured per recording. The repository's step that turns assessor readings
-into simulator parameters plants `jit_obs` as the simulated jitter, so at a busy background it plants
+into simulator parameters plants the jitter reading as the simulated jitter, so at the busier background it plants
 the chance clusters' spread, about 0.65–0.73 s, whatever the true jitter.
 
 ## 1.7 How close two events can be
@@ -1173,8 +1236,10 @@ raises the apparent participation. How close can they be before that happens, an
 by the tools or by what the onsets themselves can show? Three analyses answer it, each checked by
 simulation ([separation record](../learned/synthetic_validation/separation/README.md)). The closest
 precedent in hand is Mariani et al. (2025), whose latency correction is designed to disentangle
-overlapping global events; no wider search was made (super-resolution and radar range resolution are
-the obvious fields).
+overlapping global events. Radar met the same question: Finn & Johnson (1968) analyze how their
+detector resolves a pair of targets, and Trunk (1978 ⚠, not held) the range resolution of
+automatic detectors. How *1.7* relates to them has not been worked out, and super-resolution was
+not searched.
 
 The two sides are not given the same information. The **likelihood-ratio tests**, which compare how
 probable the onsets are under one event and under two, know the background rate and are handed a 12 s stretch already known to hold either one event or two; they
@@ -1182,7 +1247,7 @@ are scored at 80 % power (they call a true pair two in 80 % of trials) and 5 % f
 recording and are scored by the separation at which the chance of reporting the pair as two reaches
 half its plateau. One property of real cells matters for the tests: a cell cannot show two onsets
 closer than its shortest interval between its own events. That minimum interval, τ_min, is a
-realistic value (0.4 s fast, 3.2 s slow). The model as first stated set τ_min to one frame, which
+realistic value (0.4 s fast, 3.2 s slow). The separation analysis as first run set τ_min to one frame, which
 lets a cell that joins both events show two onsets and so reveal two events by itself.
 
 ![Figure 1.15](../learned/synthetic_validation/separation/floor/synth_recovery_plot_separation-floor-any-method_20261025.png)
@@ -1248,7 +1313,7 @@ equal probability, and assume perfect readout (every member seen, no background 
 **Reuse** is E/M, the mean number of events per assembly; below 1 there are more assemblies than
 events. The repository's **assembly test** compares two statistics, the dispersion of pair
 co-participation counts (how often each pair of cells shares an event) and the leading eigenvalue of
-the cells' co-activation matrix, against two nulls (Figure 1.4 B), with a Bonferroni correction
+the cells' co-activation matrix, against two nulls (Figure 1.5 B), with a Bonferroni correction
 (each test's significance level divided by the number of tests) within each null. The **margin-preserving null** shuffles which cells join which event while keeping
 each cell's event count and each event's size; the **uniform null** draws each event's participants
 at random.
@@ -1307,7 +1372,7 @@ across the events they share. The **score sort** orders cells by net lead count,
 summed over events: a Borda (row-sum) score, which Shah & Wainwright (2018) call Copeland counting;
 its cost grows with the square of the number of cells, with no search. F is the net agreement of the
 pair lead signs with that order, as a share of pair co-participations: 1 for a perfect sequence,
-near 0 with no order once events are many (Figure 1.4 C works one example). A **local search** then
+near 0 with no order once events are many (Figure 1.5 C works one example). A **local search** then
 moves single cells while that raises F.
 
 ![Figure 1.18](../learned/synthetic_validation/synth_recovery_plot_order-indicator-closed-forms_20261023.png)
@@ -1320,11 +1385,10 @@ asymptote 0.376/√n̄. Points are simulated; open points come from a separate 2
 small n̄. The local search's line is fitted. In the legends, F_M is the indicator with M templates
 and F₀ with none.
 
-- **One template.** F = (2/π) arctan r, with r = δ/σ. This is the population Kendall rank
-  correlation between template and observed latencies under a normal model: for a bivariate normal
-  pair with correlation ρ, τ = (2/π) arcsin ρ, which Kruskal (1958, sec. 4) derives from the
-  quadrant-probability relation as stated by Cramér (it is often credited to Greiner 1909 ⚠); here
-  ρ = r/√(1 + r²). The score sort sits on it at r = 1 and 2.5 (0.503 and 0.753).
+- **One template.** F = (2/π) arctan r, with r = δ/σ. In words: F equals the rank correlation
+  (Kendall's τ) between the template's latencies and the observed ones, a standard result for
+  normally distributed latencies, τ = (2/π) arcsin ρ for correlation ρ (Kruskal 1958, sec. 4;
+  its lineage is in Table 1.9); here ρ = r/√(1 + r²). The score sort sits on it at r = 1 and 2.5 (0.503 and 0.753).
 - **M templates.** F ≈ C/√M with C = √(2/π) · √((2/π) arcsin(r²/(1 + r²))), 0.65 at r = 2.5. This
   form is asymptotic and runs up to 10 % high at M = 2–16, checked at fixed E only.
 - **No order.** For continuous (untied) onsets, the mean of F under the score sort is exact for every
@@ -1342,7 +1406,7 @@ recordings) at 10 events of 7 cells and 0.14 ± 0.02 at 140. A null of order-fre
 same size removes the mean bias; detection then depends on the null's spread.
 
 **Power** (Figure 1.19; Table 1.7) is computed at 1–5 events per recording because the median
-recording window holds one to three (*1.3.1*); busier windows lie in the tail. Power is the share of
+baseline segment holds one or two (*1.3.1*); busier segments lie in the tail. Power is the share of
 recordings with order planted whose F exceeds the null's 95th percentile. Because F takes few values
 at small E, recordings that tie the threshold are rejected at random with the probability that makes
 the false-positive rate exactly 5 % (a randomized test). Unrounded power depends on σ and δ only
@@ -1424,15 +1488,18 @@ jitter reading, and what each window can and cannot read. It turns the three fai
 into consequences of formulas, and it yields an estimator, the joint fit, that the grid did not
 contain.
 
-The simple detectors of *1.2* show the same thing in small. Each failure in Table 1.1 is a setting
-that does not match a property of the coordination: a bin narrower than the spread of an event's
-onsets, a threshold under the chance floor, a merge gap longer than the interval between events.
-The threshold that worked, CFAR's, was itself a prediction: the chance floor from the binomial
-count, which gives the same 6 and 12 cells as the repository's simulated floor.
+The simple detectors of *1.2* show the same thing in small. Most failures in Table 1.1 are a
+setting that does not match a property of the coordination: a bin border through a jittered
+event, a fixed threshold under the chance floor of a busier background, a merge gap longer than the
+gap between events. CFAR's are of another kind, masking by nearby events and the clutter edge,
+which come from where it takes its estimate. Its threshold kept false alarms near their allowance
+only because it was itself a prediction: the chance floor from the binomial count, which gives the
+same 6 and 12 cells as the repository's simulated floor.
 
 The theory does not predict the assessor's reported participants, its recall at a threshold in a
 continuous recording (the isolated-event prediction π_K of *1.7* was not compared with it), the detectors that
-compare each moment with its recent context, clustered intervals, or bursts shared across cells.
+compare each moment with its recent context, the effect of clustered intervals between events, or
+bursts shared across cells.
 Those stay with simulation. What changes is where the grid goes: around the predicted boundaries, on
 dimensionless axes (σ/w, λw, the expected background onsets per window Nbw, and K against the
 chance-cluster rate), rather than on a uniform grid chosen in advance.
@@ -1454,17 +1521,19 @@ chance-cluster rate), rather than on a uniform grid chosen in advance.
 | The at-most-one-event term and the surrogate's dependence on the event train, for this tool | not found; Reimer et al. 2012 read in abstract only |
 | The joint fit's jittered-cluster forms (Gaussian g_n, falling factorials, event-train term, surrogates) | not found; the fitting construction is Wu & Müller's |
 | The chance-cluster rate | known in form: binomial chance floors already in the repository; accidental-coincidence rates and scan statistics (Glaz, Naus & Wallenstein 2001 ⚠); the assessor's cluster-start factor is specific to it |
-| The assessor's jitter reading as a chance/event mixture | not found; the tool's own `jit_null` measures the chance part |
+| The assessor's jitter reading as a chance/event mixture | not found; the tool's own null reading measures the chance part |
 | The membership variance ratio | the form of Kish's design effect (Kish 1995; root in Kish 1965 ⚠) |
 | One-template F = (2/π) arctan r | τ = (2/π) arcsin ρ under the bivariate normal (Kruskal 1958, via Cramér; often credited to Greiner 1909 ⚠) |
 | The score sort | a Borda score ("Copeland counting" in Shah & Wainwright 2018); net counts in Tomlinson et al. 2019; summed pairwise delays in Schneider, Havenith & Nikolić 2006 ⚠ |
 | The exact no-order mean of F, untied and tie-corrected | the covariance is Durbin's incomplete-block test in Skillings & Mack's form, and with every cell in every event F is the Kendall-τ analogue of √W (Kendall & Babington Smith 1939); Kreuz et al. 2017 describe the finite-size bias and reject an analytical null; Silva, Feng & Foster 2015 on the bias of choosing an order to fit the events; an analytical null for this indicator was not found |
-| How close two events can be | Mariani et al. 2025 disentangle overlapping events; no wider search (super-resolution and radar resolution are the obvious fields) |
+| How close two events can be | Mariani et al. 2025 disentangle overlapping events; radar's target-pair resolution (Finn & Johnson 1968; Trunk 1978 ⚠) not yet compared; super-resolution not searched |
 
 "Not found" describes the search, recorded in
 [the prior-art search](../learned/synthetic_validation/prior_art/README.md). Fields not searched in
-depth: point-process counting theory beyond the textbooks named, hydrology beyond the one rainfall
-paper, and the distribution of the normal range (relevant to g_n). Two enquiries would settle more
+depth: point-process counting theory beyond the textbooks named, including counter dead time and
+hard-core point processes, where a correction like the at-most-one-event term may already exist;
+hydrology beyond the one rainfall paper; and the distribution of the normal range (relevant to
+g_n). Two enquiries would settle more
 than any search and have not been sent: whether the Grün lab has a Gaussian or formal-fit version of
 the 2010 analysis, and why the Kreuz group anneals rather than ranks.
 
@@ -1476,7 +1545,7 @@ population-count distribution carries more. Louis, Borgelt & Grün (2010, Fig. 6
 reliably and three less clearly, and noted that groups become hard to disentangle as their sizes
 converge. Separating sources may therefore need higher orders of the population count, different
 jitters (which the joint fit might resolve), or cell-by-cell structure, which *1.8* shows needs more
-events than a median recording window holds. The test belongs to Chapter 2: the simulated sets it
+events than a median baseline segment holds. The test belongs to Chapter 2: the simulated sets it
 builds from measured parameters must hold two or more sources, because that is the dissertation's
 premise, and those sets are where this prediction is first checked.
 
@@ -1498,7 +1567,10 @@ premise, and those sets are where this prediction is first checked.
 5. **The order results** assume known events and no background onsets. With frame rounding the
    untied no-order mean no longer holds; the tie-corrected mean does, under the generator's rounding
    model (*1.8.2*). The relation to Kreuz's indicator is derived, not run.
-6. **No human has reviewed the derivations** in
+6. **The simple detectors were shown on one designed recording** (*1.2*): six events in 4 minutes,
+   far denser than real, with a busier stretch shorter than CFAR's reference span. Their rates in
+   Table 1.1 belong to that design.
+7. **No human has reviewed the derivations** in
    [the theory module](../learned/synthetic_validation/theory.py), the
    [no-order derivation](../learned/synthetic_validation/kendall_w/derivation.md) and the
    [separation record](../learned/synthetic_validation/separation/README.md).
@@ -1535,12 +1607,11 @@ and likelihood bounds on the best precision any method could reach for (λ, k, �
 Counting cells together finds coordinated events only when the counting matches the coordination:
 windows wide enough for the jitter, a threshold between the chance floor and the participation,
 and a merge gap shorter than the interval between events (*1.2*). This chapter derives what the
-tools that measure those properties return. What a realistic 20-minute window can support, for one
-source: participants, when events are large
-(13 of 33 cells from two events per window) or plentiful (7 cells, about eight events); event rate
-with a few more events than that; jitter, not at all from one window, by any tool tested; and order,
-for 13-cell events, from three events with a strong template. A window shorter than about six times
-the jitter undercounts participants, a fixed threshold drowns in chance clusters at a busier
+tools that measure those properties return. What a realistic 20-minute baseline segment can support, for one
+source: participants, when events are large (13 of 33 cells, from two events per segment) or
+plentiful (7 cells, about eight events); event rate from four events of 13 cells or sixteen of 7; jitter, not at all from one segment by the joint fit; and order,
+for 13-cell events, from three events with a strong template. For 10-cell events, a window shorter than
+about six times the jitter undercounts participants (below 0.9 of planted), a fixed threshold drowns in chance clusters at a busier
 background, and those chance clusters then set the assessor's jitter reading. Chapter 2 builds
 simulated sets from these measurements, with two or more sources, to tune and compare detectors;
 the two-source prediction of *1.5.3*, and the full count distribution rather than pairs and
@@ -1569,10 +1640,13 @@ and this chapter in three, with a follow-up pass between rounds; the run records
 
 **Revision of 2026-11-13.** After his first read, Tony asked for an opening a reader outside the
 field can follow: the problem drawn first, then the simple detectors, then the tools with their
-mathematics. Sections *1.1* to *1.4* and Figures 1.1 to 1.3 were written for that, the rest was
-renumbered, and the discussion was pointed at the dissertation's four-chapter outline. No number,
-claim or scope from the earlier version changed. The new figures are illustrations, printed by
-their own script.
+mathematics. Sections *1.1* to *1.4*, Figures 1.1, 1.2 and 1.4 and Table 1.1 were written for that;
+the prior work moved into *1.4*; the openings of *1.5* to *1.7*, *1.9.1*, *1.9.3*, *1.9.5*, a new
+limitation and *1.10* gained text; the rest was renumbered; and the discussion was pointed at the
+dissertation's four-chapter outline. The new figures are illustrations, printed by their own
+script. No number from the earlier version changed. Two earlier claims were narrowed by the
+review of the revision: the joint fit's range (both runs: 20-cell events from 0.2 s, 10-cell from
+0.5 s) and the reach of "jitter cannot be read from one segment" (shown for the joint fit only).
 
 ## Reproducing this chapter
 
@@ -1580,21 +1654,21 @@ From the repository root, with `PYTHONPATH=src` and the repository's virtual env
 
     python docs/learned/synthetic_validation/aim1_one_source.py --workers 24
     python docs/learned/synthetic_validation/theory.py                      # in-sample checks
-    python docs/learned/synthetic_validation/theory.py --from-record        # prints 1.1 and 1.4 numbers
+    python docs/learned/synthetic_validation/theory.py --from-record        # prints the 1.4 and 1.5 numbers
     python docs/learned/synthetic_validation/theory.py --train empirical    # general form
-    python docs/learned/synthetic_validation/blind_a/theory_floor.py        # event floor, 1.5.1
-    python docs/learned/synthetic_validation/ch1_followups/held_out.py      # held-out record
+    python docs/learned/synthetic_validation/blind_a/theory_floor.py        # chance floor, 1.2.3 and 1.6.1
+    python docs/learned/synthetic_validation/ch1_followups/held_out.py      # held-out rerun
     python docs/learned/synthetic_validation/ch1_followups/like_for_like.py # sign tests, residuals
     python docs/learned/synthetic_validation/ch1_followups/dependence_null.py    # dependence-aware p
     python docs/learned/synthetic_validation/ch1_followups/pooled_path.py        # shipped pooled report
     python docs/learned/synthetic_validation/ch1_followups/lab_values.py    # denser realistic trains
     python docs/learned/synthetic_validation/ch1_followups/realistic_counts.py   # pooled rates, unknown train
-    python docs/learned/synthetic_validation/ch1_followups/window_counts.py      # 20-minute windows, Table 1.5
+    python docs/learned/synthetic_validation/ch1_followups/window_counts.py      # 20-minute segments, Table 1.5
     python docs/learned/synthetic_validation/ch1_followups/correlogram_vs_joint.py
     python docs/learned/synthetic_validation/ch1_followups/correlogram_table.py  # Table 1.3
     python docs/learned/synthetic_validation/ch1_followups/chance_bursty.py      # over-dispersed background
-    python docs/learned/synthetic_validation/ch1_followups/assessor_jitter.py    # 1.5.2, Table 1.6
-    python docs/learned/synthetic_validation/ch1_followups/assessor_null.py      # jit_null, jit_excess
+    python docs/learned/synthetic_validation/ch1_followups/assessor_jitter.py    # 1.6.2, Table 1.6
+    python docs/learned/synthetic_validation/ch1_followups/assessor_null.py      # the assessor's null and excess readings, 1.6.2
     python docs/learned/synthetic_validation/ch1_followups/membership_repeat.py  # detection given a repeat
     python docs/learned/synthetic_validation/ch1_followups/order_power.py
     python docs/learned/synthetic_validation/ch1_followups/order_rounding.py     # frame rounding
@@ -1617,6 +1691,7 @@ The separation scripts and their run times are in
 
 - Cecchini G, Scaglione A, Allegra Mascaro AL, et al. (2021). Cortical propagation tracks functional recovery after stroke. *PLoS Comput Biol* 17:e1008963.
 - Coppersmith D, Fleischer L, Rudra A (2006). Ordering by weighted number of wins gives a good ranking for weighted tournaments. *Proc. SODA 2006*, 776–782; journal version *ACM Trans Algorithms* 6(3), 2010.
+- Cramér H (1946). *Mathematical Methods of Statistics*. Princeton University Press, p. 290. ⚠ (not opened; cited through Kruskal 1958)
 - Daley DJ, Vere-Jones D (2003). *An Introduction to the Theory of Point Processes*, vol. I, 2nd ed. Springer. ⚠
 - DeFazio RA, Burgess CR, Burger LL, Gibson AG, Moenter SM (2026). Arcuate kisspeptin neurons display two types of calcium events: regulation by sex, gonads, and senktide. *J Neuroendocrinol* 38:e70298.
 - Diggle PJ (1978). On parameter estimation for spatial point processes. *J R Stat Soc B* 40:178–181. ⚠
@@ -1626,7 +1701,7 @@ The separation scripts and their run times are in
 - Ehm W, Staude B, Rotter S (2007). Decomposition of neuronal assembly activity via empirical de-Poissonization. *Electron J Stat* 1:473–495. ⚠
 - Finn HM, Johnson RS (1968). Adaptive detection mode with threshold control as a function of spatially sampled clutter-level estimates. *RCA Rev* 29:414–464.
 - Glaz J, Naus J, Wallenstein S (2001). *Scan Statistics*. Springer. ⚠
-- Greiner R (1909). *Z Math Phys* 57. ⚠ (not opened; pages unverified)
+- Greiner R (1909). Über das Fehlersystem der Kollektivmaßlehre. *Z Math Phys* 57:121–158, 225–260, 337–373. ⚠ (not opened)
 - Grün S, Abeles M, Diesmann M (2008). Impact of higher-order correlations on coincidence distributions of massively parallel data. *LNCS* 5286:96–114.
 - Grün S, Diesmann M, Grammont F, Riehle A, Aertsen A (1999). Detecting unitary events without discretization of time. *J Neurosci Methods* 94:67–79.
 - Kendall MG, Babington Smith B (1939). The problem of m rankings. *Ann Math Stat* 10:275–287.
@@ -1655,13 +1730,14 @@ The separation scripts and their run times are in
 - Schneider G, Havenith MN, Nikolić D (2006). Spatiotemporal structure in large neuronal networks detected from cross-correlation. *Neural Comput* 18:2387–2413. ⚠
 - Schrader S, Grün S, Diesmann M, Gerstein GL (2008). Detecting synfire chain activity using massively parallel spike train recording. *J Neurophysiol* 100:2165–2176.
 - Shah NB, Wainwright MJ (2018). Simple, robust and optimal ranking from pairwise comparisons. *JMLR* 18(199). Read as arXiv 1512.08949.
-- Silva D, Feng T, Foster DJ (2015). Trajectory events across hippocampal place cells require previous experience. *Nat Neurosci* 18:1772.
+- Silva D, Feng T, Foster DJ (2015). Trajectory events across hippocampal place cells require previous experience. *Nat Neurosci* 18:1772–1779.
 - Skillings JH, Mack GA (1981). On the use of a Friedman-type statistic in balanced and unbalanced block designs. *Technometrics* 23:171–177.
 - Staude B, Grün S, Rotter S (2010). Higher-order correlations in non-stationary parallel spike trains: statistical modeling and inference. *Front Comput Neurosci* 4:16.
 - Staude B, Rotter S, Grün S (2008). Can spike coordination be differentiated from rate covariation? *Neural Comput* 20:1973–1999. ⚠
-- Staude B, Rotter S, Grün S (2010). CuBIC: cumulant based inference of higher-order correlations in massively parallel spike trains. *J Comput Neurosci* 29:327.
+- Staude B, Rotter S, Grün S (2010). CuBIC: cumulant based inference of higher-order correlations in massively parallel spike trains. *J Comput Neurosci* 29:327–350.
 - Thomas M (1949). A generalization of Poisson's binomial limit for use in ecology. *Biometrika* 36:18–25.
 - Tomlinson SB, Wong JN, Conrad EC, Kennedy BC, Marsh ED (2019). Reproducibility of interictal spike propagation in children with refractory epilepsy. *Epilepsia* 60:898–910.
+- Trunk GV (1978). Range resolution of targets using automatic detectors. *IEEE Trans Aerosp Electron Syst* AES-14(5):750–755. doi:10.1109/taes.1978.308625. ⚠ (not held)
 - Waagepetersen RP (2007). An estimating function approach to inference for inhomogeneous Neyman–Scott processes. *Biometrics* 63:252–258.
 - Wang Y, Degleris A, Williams AH, Linderman SW (2024). Spatiotemporal clustering with Neyman–Scott processes via connections to Bayesian nonparametric mixture models. *JASA* 119:2382–2395.
 - Williams AH, Degleris A, Wang Y, Linderman SW (2020). Point process models for sequence detection in high-dimensional neural spike trains. *NeurIPS*. Read as arXiv 2010.04875.
