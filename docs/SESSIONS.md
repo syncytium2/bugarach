@@ -3384,3 +3384,24 @@ session's work is not a sweep.
   default, `pensub` and the flagged review copy. Checked on WSMIP065 after the move: every declared role resolves
   (the five archives from `deprecated/`), an archive is still refused without `BUGARACH_REPRODUCE`, and the
   flagged copy and `PRE_ARTIFACT_KILLER` resolve by name. Holds nothing.
+
+### darkroom/bugarach/2026-11-12-tracked-cohorts-rasters-4x-and-3x/ — one combined raster page per group at each threshold, aligned at baseline end (065/tracked-cohorts-default)
+- **Claimed:** 2026-11-12, before the write. Tony: the tracked cohorts are the default dataset for now, and the first step is the one-page-per-group raster summaries, combined stream, to see how 3x and 4x differ.
+- **Writes:** `4x/` and `3x/`, two `.html` pages each (DI, MALE), from `tools/make_group_raster_summary.py --streams combined`
+  on the default folder (`tracked_cohorts`) and on `tracked_cohorts_3x`, read by name. Darkroom only.
+- **Released:** 2026-11-12, at write. `4x/` and `3x/` each hold two `.html` pages and a flat `.png` of each. Holds nothing.
+
+### darkroom/bugarach/2026-11-12-tracked-cohorts-calls-shipped-and-narrow/ — calls on the default folder's fast and slow streams at the shipped settings and at a 0.5 s window, drawn above the rasters (065/tracked-cohorts-default)
+- **Claimed:** 2026-11-12, before the write. Tony: the earlier work merged coordinated events a person can see as separate; 4x, go.
+- **Writes:** `shipped/` and `narrow/` (each `detections.csv`, `detector_settings.csv`, `run.json` from `bugarach detect`), and `pages/` (raster pages per group and stream with both sets of calls in lanes). Fast and slow only (ADR-0023). Darkroom only.
+- **Released:** 2026-11-12, at write. `shipped/` and `narrow/` hold the two detect runs, `pages/` four pages (DI and MALE, fast and slow) as `.html` and `.png`. Holds nothing.
+
+### darkroom/bugarach/2026-11-12-baseline-characterization-3x-and-4x/ — onset-timing statistics of the baselines at both thresholds, all recordings and by group (065/tracked-cohorts-default)
+- **Claimed:** 2026-11-12, before the write. Tony: step one for 3x and 4x, DI and MALE against all, baseline only.
+- **Writes:** two `.png` figures (fast, slow) from `docs/learned/runs/2026-11-12-baseline-characterization-3x-4x/characterize.py`. Darkroom only.
+- **Released:** 2026-11-12, at write. Two `.png` figures, and one page per stream (`report_roi_<stream>_baseline_...`, `.html` and `.png`) from `page.py` beside that script. Holds nothing.
+
+### darkroom/bugarach/2026-11-12-baseline-characterization-three-streams/ — the baseline onset-timing pages redrawn on the three-stream folders: fast, slow and combined (065/tracked-cohorts-default)
+- **Claimed:** 2026-11-12, before the write. Tony: rerun step 1 on the `_v2` folders for all three streams.
+- **Writes:** one page per stream (`report_roi_<stream>_baseline_...`, `.html` and `.png`) from `docs/learned/runs/2026-11-12-baseline-characterization-3x-4x/page.py`. Darkroom only.
+- **Released:** 2026-11-12, at write. Three pages (fast, slow, combined), `.html` and `.png`. Holds nothing.

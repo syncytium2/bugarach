@@ -70,7 +70,6 @@ def _bench_task(args):
 def _real_task(args):
     folder, i = args
     from bugarach import event_floor as ef
-    from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detect_folder import _region_index, folder_analysis_windows
     from bugarach.detectors.rate import stream_trains
     from bugarach.io import load_folder
@@ -78,8 +77,6 @@ def _real_task(args):
 
     s = load_folder(Path(folder))[i]
     s, windows = folder_analysis_windows(s)
-    if has_sources(s) and COMBINED not in s.streams:
-        s.streams[COMBINED] = stream_of(s, COMBINED)
     dt = s.require_dt()
     rows = []
     for w in windows:

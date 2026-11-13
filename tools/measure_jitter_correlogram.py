@@ -137,10 +137,10 @@ def _real(args):
     from bugarach.assess_folder import NoBaselineRegion, generation_window
     from bugarach.io import load_folder
 
-    from bugarach.combined import COMBINED, has_sources, only_combined
+    from bugarach.combined import COMBINED, has_combined, only_combined
 
     s = load_folder(Path(folder))[i]
-    if stream == COMBINED and has_sources(s):
+    if stream == COMBINED and has_combined(s):
         s = only_combined(s)
     if stream not in s.streams:
         return None

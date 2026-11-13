@@ -390,12 +390,6 @@ def load(role: str, stream: str, limit: int | None):
     slices = load_folder(dataset.current(role))
     if limit:
         slices = slices[:limit]
-    if stream == "combined":
-        from dataclasses import replace
-
-        from bugarach.combined import has_sources, stream_of
-        slices = [replace(s, streams={**s.streams, "combined": stream_of(s, "combined")})
-                  if has_sources(s) else s for s in slices]
     recs, skipped = ss.recordings_from_slices(slices, stream)
     declares_regions = any(getattr(s, "regions", None) for s in slices)
     if declares_regions:

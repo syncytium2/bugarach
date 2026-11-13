@@ -39,12 +39,15 @@ def test_the_record_is_of_the_slow_stream():
     assert _record()["stream"] == "slow"
 
 
-def test_the_record_was_measured_on_the_folder_the_pointer_declares_today():
+def test_the_record_was_measured_on_the_september_folder():
+    """Until 2026-11-13 this compared the record with the default. The September benches
+    are now frozen on the folder they were measured on. Tony, 2026-11-13: the September
+    bench is stale, retracking is in progress, and the old data will be replaced and never
+    touched again. So the record is not re-measured on the new default."""
     rec = _record()
-    assert rec["dataset"]["role"] == dataset.default_role()
-    assert rec["dataset"]["name"] == dataset.current_name(), (
-        "the default folder moved since the slow stream was measured: rerun "
-        "tools/measure_slow_bench.py")
+    assert rec["dataset"]["role"] == "senktide_ttx"
+    assert rec["dataset"]["name"] == dataset.current_name("senktide_ttx"), (
+        "the slow record no longer names the September folder")
 
 
 def test_the_width_table_fits_the_simulators_levels():

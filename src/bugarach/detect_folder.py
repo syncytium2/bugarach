@@ -100,7 +100,7 @@ from bugarach.emit import (
     write_detector_settings,
     write_run,
 )
-from bugarach.combined import COMBINED, has_sources, only_combined
+from bugarach.combined import COMBINED, only_combined, without_combined
 from bugarach.store import Slice, validated_dt
 
 #: Seed for every detector that draws surrogates, so a run reproduces. Written
@@ -664,13 +664,20 @@ def detect_slice(s: Slice, *, detectors=DETECTORS, stream: str | None = None,
     refusal, which made three sentences in the tree saying the same thing to the
     same producer; the todo behind PR #250 asked for exactly this deletion.
 
-    ``stream="combined"`` on a recording carrying fast and slow runs on
-    :func:`bugarach.combined.only_combined` — the merged stream **alone**, so the
-    three shared-RNG ports draw for it without moving a fast or slow draw, which
-    come from their own run.
+    A recording whose export carries a combined stream beside others is run in
+    two parts: the combined stream **alone**
+    (:func:`bugarach.combined.only_combined`), and the others without it. The three
+    shared-RNG ports draw for every stream they are given, so this keeps a fast or
+    slow call the same whether or not the export ships the combined stream.
     """
-    if stream == COMBINED and COMBINED not in s.streams and has_sources(s):
-        s = only_combined(s)
+    if COMBINED in s.streams and len(s.streams) > 1:
+        if stream is None:
+            kw = dict(detectors=detectors, frame_interval_sec=frame_interval_sec,
+                      overrides=overrides, models=models, declined=declined)
+            events, windows = detect_slice(without_combined(s), **kw)
+            more, _ = detect_slice(only_combined(s), **kw)
+            return events + more, windows
+        s = only_combined(s) if stream == COMBINED else without_combined(s)
     s, windows = folder_analysis_windows(s)
 
     names = list(s.streams)
@@ -844,10 +851,7 @@ def detect_folder(folder, *, out_dir, detectors=DETECTORS,
         windows_by_slice[s.slice_id] = rec.windows
         all_events.extend(events)
 
-        # The combined stream is built inside detect_slice, so it is not in `s.streams`.
-        ran_on = ([COMBINED] if stream == COMBINED and COMBINED not in s.streams
-                  and has_sources(s)
-                  else [n for n in s.streams if stream is None or n == stream])
+        ran_on = [n for n in s.streams if stream is None or n == stream]
         for name in detectors:
             for sname in ran_on:
                 row = dict(detector_params(name, frame_interval_sec=dt,

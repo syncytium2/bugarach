@@ -12,7 +12,7 @@ slow"*. That answers open questions 2 and 3 below: now, and **beside** the two p
 
 | settled | where |
 |---|---|
-| the stream: every fast and slow onset of a ROI, time-ordered, **nothing deduplicated**, each onset labelled with its source | `src/bugarach/combined.py` (`combine`, `only_combined`, `stream_of`) |
+| the stream: every fast and slow onset of a ROI, time-ordered, **nothing deduplicated**, each onset labelled with its source | **the producer's export, since 2026-11-12** (ADR-0023; contract revision 10). `src/bugarach/combined.py` reads it (`only_combined`, `stream_of`) and no longer builds it |
 | each event keeps its own stream's width; `width_def` names both rules | `combine` |
 | detectors run on the combined stream **alone**, never beside fast and slow, so the three shared-RNG ports do not move a fast or slow draw | `detect_folder.detect_slice`, `only_combined` |
 | a third bench, laid out like the slow bench, **provisional** until measured | `src/bugarach/bench_combined.py` — its docstring is the route |
@@ -122,8 +122,8 @@ the lane above, where this project's own claims live (sapper SAP009).
 So: fast and slow onsets on one set of ROI rows, the slow ones in the second ink, the
 coordination calls in the lane above, pointing down. What does not exist yet:
 
-- ~~Nothing in the tree combines two streams.~~ `bugarach.combined.combine` does, since
-  2026-09-23. The **width** keeps each event's own rule, and `width_def` names both; locust
+- ~~Nothing in the tree combines two streams.~~ `bugarach.combined.combine` did, from
+  2026-09-23 to 2026-11-12; the producer ships the stream now (ADR-0023). The **width** keeps each event's own rule, and `width_def` names both; locust
   reads that column, so what a mixed width does to it is something the combined search measures.
 - **ROI identity across streams is safe to assume.** FOUNDATIONS §9: an ROI verdict is
   computed once on the combined signal, precisely so that an ROI alive in the slow stream is

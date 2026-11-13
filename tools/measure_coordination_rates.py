@@ -372,12 +372,12 @@ def _real(args):
     assert abs(dt - DT) < 1e-9, f"{s.slice_id}: frame interval {dt}, this tool assumes {DT}"
     lo, hi = w
     L = int(round((hi - lo) / DT))
-    from bugarach.combined import COMBINED, has_sources, stream_of
+    from bugarach.combined import COMBINED
 
     trains = {}
     for stream in ("fast", "slow", COMBINED):
-        if stream in s.streams or (stream == COMBINED and has_sources(s)):
-            st = stream_of(s, stream)
+        if stream in s.streams:
+            st = s.streams[stream]
             trains[stream] = [np.minimum(_frames(v, lo, hi), L - 1) for v in (st.t50rise or st.locs)]
     rng = np.random.RandomState(seed + i)
     meta = getattr(s, "meta", {}) or {}
@@ -604,6 +604,8 @@ def print_group_block(stream: str, B: dict) -> None:
 
 # ---------------------------------------------------------------- main
 
+ALL_STREAMS = ("fast", "slow", "combined")
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -614,6 +616,11 @@ def main(argv=None) -> int:
                     help="also split every stream by group_id: mouse-clustered bootstrap, "
                          "leave-one-out, and placement against the bench (group_block)")
     ap.add_argument("--boot", type=int, default=1000, help="mouse bootstrap resamples per group")
+    ap.add_argument("--streams", nargs="+", default=list(ALL_STREAMS), choices=ALL_STREAMS,
+                    help="streams to measure and calibrate (default: all three). ADR-0023: "
+                         "`combined` here is bugarach's own merge of fast and slow, which is "
+                         "provisional until an export ships that stream; pass `fast slow` to "
+                         "leave it out")
     a = ap.parse_args(argv)
     a.out.mkdir(parents=True, exist_ok=True)
 
@@ -630,7 +637,7 @@ def main(argv=None) -> int:
            "streams": {}, "calibration": {}}
     with ProcessPoolExecutor(a.jobs) as ex:
         real = [r for r in ex.map(_real, [(str(folder), i, a.seed) for i in range(n)]) if r]
-        for stream in ("fast", "slow", "combined"):
+        for stream in a.streams:
             recs = [r[stream] for r in real if stream in r]
             probe_now = None
             if stream in BENCHES:
@@ -666,6 +673,8 @@ def main(argv=None) -> int:
                     rec.setdefault("by_group", {})[stream] = B
                     print_group_block(stream, B)
         for stream, bench_name in BENCHES.items():
+            if stream not in a.streams:
+                continue
             jobs = [(bench_name, g, s) for g in ("baseline_quiet", "baseline_busy") for s in SIM_SEEDS]
             res = list(ex.map(_sim, jobs))
             rec["calibration"][stream] = {f"{m}@{w}": calibrate(res, w, m) for w in WINDOWS for m in MODELS}

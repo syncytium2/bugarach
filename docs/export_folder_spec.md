@@ -28,6 +28,23 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
+> **Revision 10** (2026-11-12). **A stream pooled from other streams is the producer's, and
+> each of its rows names where the event came from.**
+>
+> No folder that conformed stops conforming. A producer whose lab analyses a pooled stream
+> — this lab's is `combined`, every fast and every slow event of a ROI — now ships it as a
+> stream of its own, with a `source_stream` column. See "A stream pooled from other
+> streams" below.
+>
+> What changed on our side: from 2026-09-22 to 2026-11-12 bugarach built that stream itself
+> from the `fast` and `slow` rows, and this contract never mentioned it. Building a stream
+> means deciding which events are in it, and that is the producer's statement to make
+> (revision 6; ADR-0023). bugarach no longer builds one. A folder without the pooled
+> stream is analysed without it.
+
+<!-- Keep this comment: it stops Python-Markdown merging this blockquote into revision 9's
+     amber panel (see the comment below revision 8). -->
+
 > ⚠ **Revision 9** (2026-08-29). **The duration you export is the duration. There is no
 > longer any way to ask bugarach for a different one.**
 >
@@ -322,6 +339,7 @@ One row per detected event, in one ROI.
 | `width_def` | text | with `width_sec` | the name of the rule that produced `width_sec`. Constant within a stream. |
 | `peak_sec` | number | **strongly asked for** | when the transient peaked. Not required, but the browser viewer's locust cannot run without it — or without a `width_sec` whose `width_def` reaches the peak. See revision 8. |
 | `amp` | number | no | how large the transient was, in the producer's own units |
+| `source_stream` | text | on a pooled stream | the stream the event came from. Required on every row of a stream pooled from others (revision 10); elsewhere it repeats `stream` or is absent. |
 
 #### An event is located at its half-rise, and that is not a matter of taste
 
@@ -425,6 +443,30 @@ responsibility and belongs in their documentation, not here.
 > whether a width may stand in for an absent `peak_sec`, and refusing one stream that
 > carries two rules. It is never interpreted, which is what the sentence means and what
 > revision 8 says instead.]*
+
+#### A stream pooled from other streams
+
+A lab may analyse a stream that pools others: this lab analyses `fast`, `slow` and
+`combined`, where `combined` holds every fast and every slow event of a ROI with nothing
+removed as a duplicate. **The producer builds such a stream and ships it as rows**, like any
+other stream. bugarach does not combine, split or de-duplicate streams (ADR-0023).
+
+- **Every row of a pooled stream names its source** in `source_stream`: the stream the event
+  came from. A row of an ordinary stream repeats its own `stream` there, or the column is
+  absent.
+- **A pooled stream holds every event of each stream it names, and no other.** `bugarach
+  check` compares the times per ROI and reports a file where they differ.
+- **Each source stream is in the same file.**
+- **A pooled event keeps the `width_sec` it has in its own stream.** `width_def` is still one
+  value per stream, so the pooled stream carries one token saying the rule is per event
+  (this lab's is `per_event_by_source_stream`), and `source_stream` says which rule applies
+  to a row.
+- **bugarach keeps `source_stream` for drawing and counting only.** No detector reads it.
+  The detectors are run on a pooled stream on its own and on the other streams without it,
+  so shipping it does not change a call on the others.
+
+A folder without a pooled stream conforms and is analysed without one. Asking bugarach for
+a stream the folder does not carry is refused.
 
 #### Sending more than is required
 
