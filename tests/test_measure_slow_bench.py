@@ -41,9 +41,12 @@ def test_the_record_is_of_the_slow_stream():
 
 def test_the_record_was_measured_on_the_september_folder():
     """Until 2026-11-13 this compared the record with the default. The September benches
-    are now frozen on the folder they were measured on. Tony, 2026-11-13 (ADR-0024): the September
+    are now frozen on the folder they were measured on. Tony, 2026-11-13: the September
     bench is stale, retracking is in progress, and the old data will be replaced and never
-    touched again. So the record is not re-measured on the new default."""
+    touched again. So the record is not re-measured on the new default.
+
+    The record: ``docs/adr/2026-11-13-43ba-the-september-bench-is-stale-and-is-not-re-measured.md``
+    """
     rec = _record()
     assert rec["dataset"]["role"] == "senktide_ttx"
     assert rec["dataset"]["name"] == dataset.current_name("senktide_ttx"), (
