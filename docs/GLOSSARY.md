@@ -716,6 +716,12 @@ Added 2026-10-23 with [`goals/synthetic-validation.md`](goals/synthetic-validati
   returned no estimate. **sharp set** and **jittered set**: the chapter's two illustration sets
   (jitter SD 0.1 and 0.5 s). The chapter calls the 0.0096 and 0.05 Hz backgrounds by their
   rates, not "quiet" and "busy", which belong to the bench.
+  Also: **cross-cell correlogram**, the chapter's name for the population cross-correlogram
+  (onset pairs between different ROIs per lag); **Aim 0**, the chapter's question (predict
+  first, simulate to check), whose first simulation is the Aim 1a record; the assessor's
+  **jitter reading**, **null reading** and **excess reading** (its `jit_obs`, `jit_null` and
+  `jit_excess`); **τ_min**, a cell's minimum interval between its own onsets; and the chapter's K
+  is always the **absolute K** above, a count of cells.
 - **order indicator F** — net agreement of pair lead signs with an order of the ROIs, as a share
   of pair co-participations (`learned/synthetic_validation/order_limit.py`); not Kreuz's
   Synfire Indicator, which is normalized by all spikes. **Score sort**: order by each ROI's net

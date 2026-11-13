@@ -16,17 +16,21 @@ one sharp and one with much jitter. These are those figures.
 repository's generator does not take, so ``plant`` below writes the chapter's model out in a few
 lines: each cell has Poisson background onsets; each event is joined by k cells chosen at random,
 each onset the event time plus Gaussian jitter of SD sigma; every onset is rounded to the 0.1 s
-frame (half away from zero, as the generator rounds), one onset per cell per frame. The
+frame (half away from zero, as the generator rounds); unlike the generator, ``plant`` keeps one
+onset per cell per frame. The
 two-sets figure uses the repository's generator (``bugarach.simulate.simulate_coordination``) at
 the first experiment's settings, so its sets are the chapter's own.
 
 **What is computed, and by what.**
 * The fixed-bin and sliding detectors are the repository's ``count_detect`` and
   ``count_sliding_detect``.
-* The CFAR detector is written here; the repository's nearest relative is CoactDetect's sliding
-  mode, whose threshold is also rate-local. Its count is the sliding count on whole frames, and its
-  calls are formed exactly as ``count_sliding_detect`` forms them: runs joined by
-  ``detectors.sliding.merge_runs`` and spanned by ``detectors.sliding.span_of``. Its threshold at
+* The CFAR detector is written here. The repository's CFAR-shaped code is the guarded context of
+  ``detectors.rate.event_rate_context`` and ``rate_detect``'s multiplicative mode, whose window
+  edges differ slightly from ``local_rate`` below. Its count is the sliding count on whole frames,
+  and its calls are formed with the sliding detector's helpers: runs joined by
+  ``detectors.sliding.merge_runs`` and spanned by ``detectors.sliding.span_of``. Two edge cases
+  differ from ``count_sliding_detect``: runs exactly the merge gap apart are joined here (whole
+  frames) and may not be there (float piece edges). Its threshold at
   each instant is the chance floor for a local background estimate made from 30 s on either side,
   leaving out 5 s nearest the instant (the guard).
 * The chance floor is the analytic up-crossing rule of
@@ -208,7 +212,7 @@ def cfar_calls(trains, S, K_t, w, merge):
     calls = []
     for a, b in sl.merge_runs(starts, ends, merge):
         # onsets that put the count up during the run: in (start - w, end - DT]
-        t0, t1, n = sl.span_of(ev, starts[a] - w + 1e-6, ends[b] - DT + 1e-6)
+        t0, t1, n = sl.span_of(ev, starts[a] - w, ends[b] - DT / 2)
         if n:
             calls.append((t0, t1))
     return calls
@@ -342,6 +346,7 @@ def fig_detectors(out):
     false_busy = {k: 0 for k in KEYS}
     false_quiet = {k: 0 for k in KEYS}
     per_draw, k_ev2, k_ev5, b_quiet = [], [], [], []
+    k_busy_lo, k_busy_hi, fa_edge = [], [], []
     for i in range(n):
         trains, fx, S, b_hat, K_t, res = detector_runs(d["seed"] + i)
         o = outcomes(res)
@@ -352,6 +357,9 @@ def fig_detectors(out):
             false_quiet[k] += sum(not lo <= x < hi for x in res[k][1][2])
         k_ev2.append(K_t[_frames_near(45.95, 0.0, 2.0)].min())
         k_ev5.append(K_t[_frames_near(211.0, 0.0, 2.0)].min())
+        k_busy_lo.append(K_t[int(lo / DT):int(hi / DT)].min())
+        k_busy_hi.append(K_t[int(lo / DT):int(hi / DT)].max())
+        fa_edge += [min(x - lo, hi - x) for x in res["cfar"][1][2] if lo <= x < hi]
         q = np.r_[np.arange(0, int(lo / DT)), np.arange(int(hi / DT), int(d["T"] / DT) + 1)]
         b_quiet.append(np.median(b_hat[q]))
     share = {k: tally[k] / n for k in KEYS}
@@ -369,6 +377,14 @@ def fig_detectors(out):
         return ", ".join(f"{a} cells in {b}" for a, b in zip(u, c))
     print(f"[detectors] CFAR threshold near event 2 (lowest over 45.95-47.95 s): {dist(k_ev2)}")
     print(f"[detectors] CFAR threshold near event 5 (lowest over 211-213 s): {dist(k_ev5)}")
+    print(f"[detectors] CFAR threshold in the busier stretch over the {n} draws: lowest "
+          f"{dist(k_busy_lo)}; highest {dist(k_busy_hi)}")
+    print(f"[detectors] CFAR false alarms in the busier stretch, distance to its nearer end: "
+          + ", ".join(f"{x:.1f} s" for x in sorted(fa_edge)))
+    lo95, hi95 = stats.chi2.ppf(0.025, 2 * false_busy['cfar']) / 2, stats.chi2.ppf(0.975, 2 * false_busy['cfar'] + 2) / 2
+    print(f"[detectors] CFAR busier-stretch false alarms: {false_busy['cfar']} in {busy_min:.0f} min, "
+          f"{60 * false_busy['cfar'] / busy_min:.1f} per hour (exact Poisson 95 % interval "
+          f"{60 * lo95 / busy_min:.1f}-{60 * hi95 / busy_min:.1f} per hour)")
     print(f"[detectors] CFAR's background estimate in the 0.0096 Hz stretches: median "
           f"{np.median(b_quiet):.4f} Hz (true 0.0096 Hz), from the events in its reference "
           f"stretches and the edges of the busier stretch")
@@ -387,6 +403,20 @@ def fig_detectors(out):
             chance4[k] += bool(score(res[k][0], [151.0])[0])
     print("[detectors] event 4 left out, a call within 1 s of 151 s anyway (chance hit): "
           + ", ".join(f"{LABEL[k]} {chance4[k] / n:.2f}" for k in KEYS))
+    # Masking control: events 1 and 3 left out, so nothing but background sits in event 2's
+    # reference stretches
+    ev_mask = [e for e in d["events"] if e[3] not in ("1", "3a", "3b")]
+    found2 = {k: 0 for k in KEYS}
+    for i in range(n):
+        res = detector_runs(d["seed"] + i, events=ev_mask)[-1]
+        for k in KEYS:
+            found2[k] += 45.95 in res[k][1][0]
+    print("[detectors] events 1 and 3 left out, event 2 found: "
+          + ", ".join(f"{LABEL[k]} {found2[k] / n:.2f}" for k in KEYS))
+    binned = [theory.chance_clusters_per_min(N, d["b_quiet"], K, bin_sec=2.0, merge_bins=0) * 60
+              for K in (5, 6)]
+    print(f"[detectors] fixed 2 s bins at {d['b_quiet']} Hz, chance calls per hour "
+          f"(theory.chance_clusters_per_min): {binned[0]:.2f} at 5 cells, {binned[1]:.2f} at 6")
     # Situation 3 with a shorter merge gap
     both3 = {k: 0 for k in KEYS}
     for i in range(n):
@@ -454,9 +484,10 @@ def fig_detectors(out):
         cnt_sl.axhline(d["K_fixed"], color=INK, ls="--", lw=1.0)
         cnt_sl.step(grid, K_t, where="post", color="#7b3294", lw=1.5)
         cnt_sl.set_ylabel("cells in the\nlast 2 s")
+        top = max(16, int(S.max()) + 2, int(K_t.max()) + 2)
         for a in (cnt_fx, cnt_sl):
             style(a)
-            a.set_ylim(0, 16)
+            a.set_ylim(0, top)
         minutes_axis(cnt_sl, 0, d["T"])
         cnt_sl.set_xlabel("time")
         for a, L in zip((pl, ras, cnt_fx, cnt_sl), "ABCD"):
@@ -520,7 +551,10 @@ def hwhm_from_zero(lags, y):
     """Half-width at half maximum of a one-sided peak at lag 0 (lags >= 0), linear
     interpolation; the same reading as the tool's ``hwhm`` applied to an excess curve."""
     q = y / y[0]
-    i = int(np.nonzero(q < 0.5)[0][0])
+    below = np.nonzero(q < 0.5)[0]
+    if below.size == 0:
+        return float("nan")
+    i = int(below[0])
     return float(lags[i - 1] + (q[i - 1] - 0.5) / (q[i - 1] - q[i]) * (lags[i] - lags[i - 1]))
 
 
@@ -576,7 +610,7 @@ def fig_twosets(out):
         far = float(np.mean(ratio1[(lags1 >= 2) & (lags1 <= 3)]))
         # predicted: chance level lowered by the pairs the hard core forbids, plus the peak
         n_on = np.mean([sum(t.size for t in tr) for tr, _ in recs])
-        deficit = (d["E"] * d["k"]) ** 2 * (1 - 1 / N) / n_on ** 2
+        deficit = (d["E"] * d["k"]) ** 2 * (1 - 1 / d["E"]) / n_on ** 2
         pmf = predicted_lag_pmf(sg, lags1[:31])
         exp1 = X.sum(0)[:31]
         peak_pred = len(recs) * d["E"] * d["k"] * (d["k"] - 1) * pmf
@@ -592,7 +626,8 @@ def fig_twosets(out):
         f2m = []
         L = int(round(d["T"] / DT))
         for w in d["windows"]:
-            vals = [mcr.excess_cumulants([np.floor(t / DT + 0.5).astype(int) for t in trains],
+            vals = [mcr.excess_cumulants([np.minimum(mcr._frames(t, 0.0, d["T"]), L - 1)
+                                          for t in trains],
                                          L, int(round(w / DT)), mcr.N_SURR, rng)[0]
                     for trains, _ in recs]
             f2m.append(np.mean(vals) / (lam * w * d["k"] * (d["k"] - 1)))
@@ -654,8 +689,8 @@ def fig_twosets(out):
             half = D["shoulder"] + (D["ratio1"][0] - D["shoulder"]) / 2
             c.plot([-D["w_tool"], D["w_tool"]], [half, half], color=SET_COL[key], lw=2.2)
             c.axhline(D["shoulder"], color=SET_COL[key], ls=":", lw=0.9)
-            c.annotate(f"HWHM {D['w_tool']:.2f} s", xy=(D["w_tool"], half),
-                       xytext=(1.25, half + (2.2 if key == "sharp" else 2.6)), fontsize=9,
+            c.annotate(f"HWHM {D['w_tool']:.2f} s", xy=(-D["w_tool"], half),
+                       xytext=(-2.9, half + (2.2 if key == "sharp" else 2.6)), fontsize=9,
                        color=SET_COL[key], arrowprops=dict(arrowstyle="-", color=SET_COL[key],
                                                            lw=0.7))
         c.axhline(1, color=base.GREY, ls="--", lw=0.9)
@@ -663,13 +698,12 @@ def fig_twosets(out):
         c.set_ylabel("onset pairs ÷ independent cells")
         c.set_xlim(-d["lag_show"], d["lag_show"])
         style(c)
+        # Two entries only: the dashed independence line and the dotted far-lag levels are
+        # named in the caption, and a longer legend lands on the sharp peak.
         c.legend(handles=[Line2D([], [], color="k", marker="o", ls="none", ms=3,
                                  label="measured"),
-                          Line2D([], [], color="k", lw=1.1, label="predicted"),
-                          Line2D([], [], color=base.GREY, ls="--", lw=0.9,
-                                 label="independent cells"),
-                          Line2D([], [], color="k", ls=":", lw=0.9, label="level at 5–10 s")],
-                 frameon=False, loc="upper left", fontsize=8.5)
+                          Line2D([], [], color="k", lw=1.1, label="predicted")],
+                 frameon=False, loc="upper right", fontsize=8.5)
         letter(c, "C", x=-0.12)
 
         w_ax = fig.add_subplot(gs[2, 1])
@@ -704,7 +738,7 @@ def fig_twosets(out):
         s_ax.set_xticks(range(1, 16))
         s_ax.set_ylim(1e-10, 1.5)
         style(s_ax)
-        s_ax.legend(frameon=False, loc="upper right")
+        s_ax.legend(frameon=True, framealpha=0.95, edgecolor="none", loc="lower right")
         letter(s_ax, "E", x=-0.06)
     title = "Two sets, sharp and jittered: correlogram width, pair counts by window, bin counts"
     return save(fig, name("sharp-and-jittered-sets-each-tool", "recovery"), title, out)
