@@ -1,5 +1,12 @@
 # Chapter 1 figures: the data, the tools and the theory
 
+**Revision of 2026-11-13.** Tony's first read asked for an opening a reader outside the field can
+follow, so a second script, `ch1_intro_figures.py`, draws three new opening figures (Figures 1.1
+to 1.3 in the chapter, first three rows below) and prints every number the chapter quotes from
+them, including Table 1.1. The chapter renumbered the older figures to make room; **the chapter
+is the authority for current figure numbers and captions**, and the draft captions further down
+keep the round-3 numbering.
+
 The first five figures were made for the first ~3,100 words of Chapter 1, which had no figure
 (committee review, `docs/reviews/chapter-1-aim0-2026-10-29-round1-roles/`, roles 8 and 9). The participant
 residuals, the joint fit against the correlogram tool and the mechanisms schematic answer the
@@ -11,6 +18,9 @@ redraws a subset, and `--out DIR` writes somewhere else.
 
 | file | what it shows | command |
 |---|---|---|
+| `synth_raster_plot_coordinated-events-on-a-noisy-background_20261113.png` | Figure 1.1: background alone, four coordinated events alone, and the two together as an analyst receives them | `PYTHONPATH=src python docs/dissertation/figures/ch1_intro_figures.py --only problem` |
+| `synth_raster_plot_three-simple-detectors-found-and-missed_20261113.png` | Figure 1.2: fixed bins, a sliding window and CFAR on one designed recording, with found, missed and false calls; prints Table 1.1 over 200 draws | `... ch1_intro_figures.py --only detectors` |
+| `synth_recovery_plot_sharp-and-jittered-sets-each-tool_20261113.png` | Figure 1.3: a sharp set and a jittered set through the correlogram (HWHM), pair counts against window width, and active-cell counts per bin against chance | `... ch1_intro_figures.py --only twosets` |
 | `synth_raster_plot_data-and-what-each-tool-sees_20261029.png` | one minute of a simulated 33-cell recording (one-ink raster), two coordinated events enlarged with their onset spread and σ, and what each tool counts | `PYTHONPATH=src python docs/dissertation/figures/ch1_new_figures.py --only data` |
 | `synth_recovery_plot_window-sharing-and-participant-bias_20261029.png` | g₂ and g₃ for Gaussian and uniform jitter; participants reported ÷ planted against σ/w, with measured medians | `... ch1_new_figures.py --only sharing` |
 | `synth_recovery_plot_chance-clusters-against-threshold_20261029.png` | predicted and measured chance clusters per minute against the assessor's threshold K | `... ch1_new_figures.py --only chance` |
@@ -18,7 +28,7 @@ redraws a subset, and `--out DIR` writes somewhere else.
 | `synth_recovery_plot_realistic-values-against-tested-grid_20261029.png` | the tested jitter × participants grid, resolved or not by the joint fit on each of the two records, with realistic parameter values (fast stream and slow stream) | `... ch1_new_figures.py --only regime` |
 | `synth_recovery_plot_participant-residuals-two-records_20261029.png` | participants (measured − predicted) ÷ planted per condition-window, ordered by σ/w, first experiment and held-out record, ±2 SE | `... ch1_new_figures.py --only residuals` |
 | `synth_recovery_plot_joint-fit-against-correlogram_20261029.png` | recovered ÷ planted jitter, joint fit against the correlogram tool, both backgrounds; per-recording joint-fit jitter at realistic values | `... ch1_new_figures.py --only jointfit` |
-| `synth_recovery_plot_surrogate-nulls-and-order-schematic_20261029.png` | schematic on toy values: the time-shift surrogate, the assembly test's two nulls, and the score sort and F | `... ch1_new_figures.py --only schematic` |
+| `synth_recovery_plot_surrogate-nulls-and-order-schematic_20261029.png` | schematic on small illustrative values: the time-shift surrogate, the assembly test's two nulls, and the score sort and F | `... ch1_new_figures.py --only schematic` |
 | `synth_recovery_plot_coordination-rates-on-real-intervals_20261029.png` | measured against predicted rate and participants on trains from the measured interval lists, hard-core and general form, at one event per mean interval and at the tabulated counts | `... ch1_new_figures.py --only intervals` |
 | `synth_recovery_plot_assessor-jitter-reading-as-mixture_20261029.png` | the assessor's jitter reading against planted σ, measured and as a mixture of chance and event clusters | `... ch1_new_figures.py --only assessor` |
 
@@ -53,8 +63,8 @@ counts on a grid offset by half a window and averages the two, which is not draw
 picked from the recording because it shows one split event and one whole one. The onsets in it are
 exactly as simulated.
 
-**Figure 1.3. Three mechanisms the tests rest on, drawn on toy values.** All values are small,
-synthetic and chosen for illustration; none comes from a run. A: the coordination-rates tool's
+**Figure 1.3. Three mechanisms the tests rest on, drawn on small illustrative values.** All values
+are small, synthetic and chosen for illustration; none comes from a run. A: the coordination-rates tool's
 time-shift surrogate. "Recording": 60 s of four cells' onsets (one mark per onset), with background
 onsets and two coordinated events of all four cells, whose planted times are marked in the lane
 above. "Surrogate": each cell's train is shifted circularly by its own offset, drawn by the tool's

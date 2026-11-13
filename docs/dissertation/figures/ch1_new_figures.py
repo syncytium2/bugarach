@@ -981,8 +981,8 @@ def fig_jointfit(out):
 SWAP_COL = "#eb6834"
 
 
-def _toy_trains(seed=8):
-    """Panel A's toy: 4 cells, 60 s, Poisson background (0.05 Hz per cell) and two events of all
+def _example_trains(seed=8):
+    """Panel A's illustration: 4 cells, 60 s, Poisson background (0.05 Hz per cell) and two events of all
     4 cells at 17 s and 41 s, jitter SD 0.2 s. Illustrative values, not a run."""
     rng = np.random.default_rng(seed)
     T, ev = 60.0, (17.0, 41.0)
@@ -1028,7 +1028,7 @@ def _tiles(ax, m, outline=(), row_ref=None):
 
 
 def fig_schematic(out):
-    """Three mechanisms the chapter explains in words, drawn on toy values: the coordination-rates
+    """Three mechanisms the chapter explains in words, drawn on small illustrative values: the coordination-rates
     tool's time-shift surrogate (A), the assembly test's two nulls (B), and the score sort and F
     (C), whose numbers come from order_limit.py's own functions."""
     import order_limit                                    # beside theory.py
@@ -1037,7 +1037,7 @@ def fig_schematic(out):
                              right=0.9, top=0.97, bottom=0.03)
 
     # A: original and time-shifted trains, each raster with its lane above
-    T, ev, trains = _toy_trains()
+    T, ev, trains = _example_trains()
     w = 2.0
     wlo, whi = ev[0] - w / 2, ev[0] + w / 2
     # the tool's own surrogate (tools/measure_coordination_rates.shifted): each cell moved
@@ -1087,7 +1087,7 @@ def fig_schematic(out):
     sec.tick_params(length=0); sec.spines["right"].set_visible(False)
     ras1.tick_params(labelbottom=False)
     minutes_axis(ras2, 0, T)
-    ras2.set_xlabel(f"time (toy recording, 60 s); surrogate: each cell's train shifted "
+    ras2.set_xlabel(f"time (a 60 s illustration); surrogate: each cell's train shifted "
                     f"circularly by a distinct multiple of {mcr_tool.SURR_SPACING} windows "
                     f"({spacing * dt:g} s), centered", fontsize=10.5)
     letter(lane1, "A", x=-0.06, y=0.85)
@@ -1184,7 +1184,7 @@ def fig_schematic(out):
              f"agree with the order: {agree}; disagree: {disagree}\n"
              f"F = ({agree} − {disagree}) ÷ {co} = {F:.2f}",
              transform=axc.transAxes, fontsize=11, va="top", linespacing=1.4)
-    title = "Three mechanisms on toy values: surrogate, assembly nulls, score sort and F"
+    title = "Three mechanisms on small illustrative values: surrogate, assembly nulls, score sort and F"
     return save(fig, name("surrogate-nulls-and-order-schematic", "recovery"), title, out)
 
 
