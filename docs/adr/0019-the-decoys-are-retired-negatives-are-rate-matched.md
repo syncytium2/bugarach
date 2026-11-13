@@ -69,6 +69,14 @@ Our decoys were the reverse: true positives scored as false.
 - **Reopening this** takes a negative that is coordination by construction and can still be
   defended as false. That is a new ADR that supersedes this one.
 
+## Notes added later (no decision changed)
+
+- **2026-11-11, implementation still diverges.** All three benches still plant 6 decoys per
+  recording, and the rate-matched negative tool is not built. `bugarach.stream_profile` reports
+  the count per stream and `StreamProfile.recording(decoys=False)` gives the recording without
+  them; no score has been re-derived. Both pieces are item 1 of what
+  [the readiness route](../pipelines/stream-readiness.md) lists as owed.
+
 ## References
 
 - Elias, J. E. & Gygi, S. P. (2007). Target-decoy search strategy for increased confidence in

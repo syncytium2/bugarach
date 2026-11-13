@@ -299,6 +299,15 @@ Unsettled, they would leave the run ending on the same list:
    every detector with a guard, LoCo included. With ruling 7's shortest context of 20 s, the
    smallest cap is 5 s. A guard that settles at 0 on the realistic bench falls under ruling 5.
 
+## Notes added later (no decision changed)
+
+- **2026-11-11.** Two later records add to the bench this one defines and replace none of it:
+  [ADR-0013](0013-the-bench-simulates-treatment-periods.md) (accepted) adds treatment recordings
+  as a second recording type, and
+  [ADR-0022](0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md) adds
+  neighbouring events planted at set separations. ADR-0012, which proposed replacing part 2's
+  measurement rule, was declined the same day, so part 2 stands.
+
 ## References
 
 - The final-parameters report: `docs/learned/runs/2026-09-25-final-parameters/README.md`.

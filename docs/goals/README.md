@@ -1,8 +1,27 @@
 # Goals — one page per thing we are trying to achieve
 
-## The current program — set by Tony on 2026-09-17, and not final
+## What work is ranked against — set by Tony on 2026-11-11
 
-**Read this before any goal page.** Tony, 2026-09-17: *"we're experiencing a lot of drift in goals
+**Readiness for the revised senktide/TTX export, by one route.** Tony, 2026-11-11: *"our goal as
+we wait for the revised senk-ttx data set is to be ready with an established pipeline"*, and then
+*"integrate the the paths first … unify all work and focus on readiness for the senk-ttx data
+set"* ([ADR-0020](../adr/0020-one-route-from-a-folder-to-calls-per-stream.md)).
+
+- **The route is [`pipelines/stream-readiness.md`](../pipelines/stream-readiness.md)**: characterize
+  the baseline, simulate from it, check recovery, tune, evaluate, detect, once each for fast, slow
+  and combined. Its *Owed* list is the work queue, in order.
+- **The goal pages below are stages of that route**, not programmes of their own:
+  [`coded-detector-optimization.md`](coded-detector-optimization.md) is its tuning stage,
+  [`combined-stream-coordination.md`](combined-stream-coordination.md) is its third stream, and
+  [`synthetic-validation.md`](synthetic-validation.md) is its recovery and evaluation stages.
+- **On hold or behind it:** the learned models (ADR-0021), the detector review document, the
+  dissertation chapter, the precursor run and the rater sheet.
+- **Unchanged from the program below:** baseline only, the fitted field as the simulation, every
+  knob. Its machine assignments and its fast-before-slow order describe September.
+
+## The program of 2026-09-17 — kept as the record of how the benches were built
+
+**Read the section above first; this one is history that still binds where it says so.** Tony, 2026-09-17: *"we're experiencing a lot of drift in goals
 across sessions."* Three goals are current, and five decisions hold for all of them **until Tony
 changes them**. **None of this is final** (Tony, the same day): *"we're still troubleshooting and
 figuring out what models/detectors to keep."* So no result under this program is a final result

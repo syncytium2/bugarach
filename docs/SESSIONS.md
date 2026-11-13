@@ -10,6 +10,12 @@ cannot travel (live process ids, that box's free disk, local scratch paths).
 
 ---
 
+### WSMIP065/synth-bench-rulings — DARKROOM claim: `bugarach/2026-11-11-separation-axis/` (NEW)
+- **Status:** ACTIVE, claimed 2026-11-11 before any write. Goal: `docs/goals/synthetic-validation.md`. One figure from
+  simulated recordings only: the separation axis of ADR-0022 on the three stream benches
+  (`tools/measure_separation_axis.py`). Released when its pull request merges.
+- **Touches:** that folder only.
+
 ### WSMIP065/synthetic-validation — DARKROOM claim: `bugarach/2026-10-23-synthetic-validation/` (NEW)
 - **Status:** ACTIVE, claimed 2026-10-23 before any write. Goal: `docs/goals/synthetic-validation.md`. Aim 1 figures from
   synthetic recordings only. Released when the goal's first PR merges.
