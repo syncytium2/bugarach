@@ -66,7 +66,12 @@ def problems(record: dict, declared_folder: str, constants: dict, acknowledged: 
 
 
 def test_the_bench_agrees_with_its_last_measurement_and_the_pointer():
-    found = problems(_record(), dataset.current_name(bench.MEASURED_ROLE),
+    # Compared with the September folder by name, not with ``bench.MEASURED_ROLE`` (the
+    # default), since 2026-11-13. The default moved to the tracked cohorts on 2026-11-12,
+    # and Tony ruled the next day that the September bench is stale: retracking is in
+    # progress, and the old data will be replaced and never touched again. So the bench is
+    # not re-measured on the new default; the edited-constant and interval checks still run.
+    found = problems(_record(), dataset.current_name("senktide_ttx"),
                      bench.measured_constants(), bench.MEASURED_OUTSIDE_INTERVAL)
     assert not found, "\n".join(found)
 
