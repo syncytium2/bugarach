@@ -40,12 +40,26 @@ two never disagree, and cross-reference them.
 | [0009](0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md) | The bench keeps its elevated-rate test in a recording of its own, and ADR-0008's floor applies unchanged | Accepted |
 | [0010](0010-tune-train-and-review-against-the-data-as-they-are.md) | Tune, train and review against the data as they are | Accepted |
 | [0011](0011-bugarach-supports-the-python-its-machines-run.md) | bugarach supports the Python its machines run, and no older one | Accepted |
-| [0014](0014-a-figure-page-is-figures-then-controls-then-text.md) | A figure page is figures, then controls, then text; a report leads with its main figure (0012 and 0013 are open proposals, #848 and #855) | Accepted |
+| [0014](0014-a-figure-page-is-figures-then-controls-then-text.md) | A figure page is figures, then controls, then text; a report leads with its main figure | Accepted |
 | [0015](0015-raster-pages-navigate-the-way-igor-does.md) | Raster pages navigate the way Igor Pro does: drag a box to zoom, down is row pitch, Shift-drag slides, Ctrl+wheel zooms | Accepted; row pitch superseded by ADR-0016 |
 | [0016](0016-a-raster-zooms-in-time-only.md) | A raster zooms in time only: the box sets the time range, and no gesture changes a panel's height or rows | Accepted |
 | [0017](0017-group-and-treatment-comparisons-default-to-fireflies.md) | Group and treatment comparisons default to fireflies; an exception is flagged and confirmed | Accepted |
 | [0018](0018-the-dataset-is-reported-not-confirmed.md) | The dataset an analysis reads is reported, not confirmed per session | Accepted |
 | [0019](0019-the-decoys-are-retired-negatives-are-rate-matched.md) | The decoys are retired; negatives are rate-matched and carry no coordination | Accepted |
+| [0020](0020-one-route-from-a-folder-to-calls-per-stream.md) | One route from a folder to calls, per stream; readiness for the revised senktide/TTX export comes first | Accepted |
+| [0021](0021-the-toolset-is-validated-on-synthetic-data-first-with-coded-detectors.md) | The toolset is general and is validated on synthetic data first, with the coded detectors (backfilled; ruled 2026-10-22/23) | Accepted |
+
+**Numbers held by a proposal that is not on `main`.** A number is taken when its file is first
+pushed, on any branch, so two proposals never share one. These two files exist only on their
+branches, which is why they have no row above (the index test requires a row to name a file):
+
+- **0012**, *The bench's inputs are extracted by the detector at its untuned defaults*:
+  Proposed, 2026-09-28, pull request #848. Waiting on Tony.
+- **0013**, *The bench simulates treatment periods*: Proposed, 2026-09-28, pull request #855.
+  Waiting on Tony.
+
+Before taking the next number, run
+`git log --all --format= --name-only --diff-filter=A -- 'docs/adr/[0-9]*.md' | sort -u`.
 
 **The habit lapsed for 25 days and restarted on 2026-09-23.** After ADR-0005 on 2026-08-29
 no ADR was written, and nothing decided to stop. Rulings went instead into bench-constant
