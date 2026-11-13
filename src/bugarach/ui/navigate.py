@@ -138,7 +138,13 @@ NAV_SCRIPT = r"""
     const xr = figs[0].x_range;
     let quiet = false;
     const snapshot = () => ({ x: [xr.start, xr.end] });
-    const same = (a, b) => a.x[0] === b.x[0] && a.x[1] === b.x[1];
+    // Equal to within a billionth of the span. Bokeh can re-emit a range it was just given
+    // a few bits off, and an exact comparison took that for a new view: after an undo the
+    // restored view went back on the stack, and the next Ctrl+Z did nothing.
+    const same = (a, b) => {
+      const tol = 1e-9 * Math.max(Math.abs(a.x[1] - a.x[0]), Math.abs(b.x[1] - b.x[0]), 1e-12);
+      return Math.abs(a.x[0] - b.x[0]) <= tol && Math.abs(a.x[1] - b.x[1]) <= tol;
+    };
     const home = snapshot();
     const stack = [home];
 

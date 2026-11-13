@@ -209,6 +209,11 @@ def test_the_gestures_in_a_browser(page):
     # still fails any real change of view (the smallest step here moves the range by percent).
     assert _view(page)["x"] == pytest.approx(slid["x"], rel=1e-9)
     page.evaluate("window.scrollTo(0, 0)")
+    # A view left alone adds nothing to the history. The same last-bits difference used to be
+    # pushed as a new view, so Ctrl+Z after a scroll could do nothing, and the depth read below
+    # went stale (CI, 2026-11-11: "assert 9 == (9 - 1)" on two branches in one afternoon).
+    page.wait_for_timeout(300)
+    assert _view(page)["depth"] == slid["depth"]
     page.keyboard.down("Control")
     page.mouse.wheel(0, -240)
     page.keyboard.up("Control")
