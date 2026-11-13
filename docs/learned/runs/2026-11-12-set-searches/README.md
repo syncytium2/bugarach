@@ -33,7 +33,7 @@ a few very slow evaluations, not the amount of work. Cross-scoring took 35.3 min
 - The sets plant no decoys (ADR-0019), so nothing here penalises a call on a near-event.
 - Every detector's search ended with at least one setting at the edge of its grid.
 - The DI sets rest on 5 recordings from 3 mice.
-- The pair counts behind the bracketed shares are small (9 to 16 pairs for some cells).
+- The pair counts behind the bracketed shares are small: 8 to 29 pairs a cell.
 - The split by group describes synthetic sets built from each group's recordings. It tests
   nothing between the groups (ADR-0017).
 - The false-alarm limits and starting settings are inherited from the September benches.
