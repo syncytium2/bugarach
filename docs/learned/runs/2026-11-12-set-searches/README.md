@@ -30,7 +30,10 @@ a few very slow evaluations, not the amount of work. Cross-scoring took 35.3 min
 
 **Limits.**
 
-- The sets plant no decoys (ADR-0019), so nothing here penalises a call on a near-event.
+- The sets plant no decoys, as ADR-0019 rules. The shipped settings were chosen in searches
+  that scored decoy calls as false alarms, which is part of why they lose to the tuned ones here.
+- The rate-matched negatives ADR-0019 calls for are not built. The only negatives scored are
+  a recording at the quiet background with nothing planted and the elevated-rate recording.
 - Every detector's search ended with at least one setting at the edge of its grid.
 - The DI sets rest on 5 recordings from 3 mice.
 - The pair counts behind the bracketed shares are small: 8 to 29 pairs a cell.
