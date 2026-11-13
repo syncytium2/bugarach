@@ -178,7 +178,7 @@ def test_the_grid_covers_every_groups_interquartile_background(stream):
     or a record that goes stale fails here rather than in a figure."""
     rec = json.loads(GROUP_RECORD.read_text(encoding="utf-8"))
     # The September benches are frozen on the folder they were measured on and no longer
-    # follow the default. Tony, 2026-11-13: the September bench is stale, retracking is in
+    # follow the default. Tony, 2026-11-13 (ADR-0024): the September bench is stale, retracking is in
     # progress, and the old data will be replaced and never touched again.
     assert rec["dataset"]["name"] == dataset.current_name("senktide_ttx"), (
         "the group record is not the September folder's: this coverage check compares "

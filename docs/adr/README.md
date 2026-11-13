@@ -53,6 +53,7 @@ two never disagree, and cross-reference them.
 | [0021](0021-the-toolset-is-validated-on-synthetic-data-first-with-coded-detectors.md) | The toolset is general and is validated on synthetic data first, with the coded detectors (backfilled; ruled 2026-10-22/23) | Accepted |
 | [0022](0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md) | Close events are a bench axis of set separations, below 2 s included; the event definition stays at the 2 s window until the revised export is re-measured | Accepted |
 | [0023](0023-bugarach-does-not-combine-streams-the-export-is-final.md) | bugarach does not combine data streams; the export is final | Accepted |
+| [0024](0024-the-september-bench-is-stale-and-is-not-re-measured.md) | The September bench is stale and is not re-measured; the old data are replaced by the retracked export and never read again | Accepted |
 
 **A number is taken when its file is first pushed, on any branch**, so two proposals never
 share one. 0012 and 0013 were held that way by open pull requests from 2026-09-28 until both

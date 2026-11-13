@@ -247,7 +247,7 @@ def test_the_september_folder_stays_stopped_while_the_pinning_census_undercounts
 
     2026-11-13: the default moved to ``tracked_cohorts`` on 2026-11-12 and the stopped
     folder is now read by name as ``senktide_ttx``. Its note did not leave the file, so
-    the stop is checked on that table. Tony, 2026-11-13: the old data will be replaced
+    the stop is checked on that table. Tony, 2026-11-13 (ADR-0024): the old data will be replaced
     by the retracked export and never touched again; delete this test with the table.
     """
     monkeypatch.delenv(ds.ACK_ENV, raising=False)
