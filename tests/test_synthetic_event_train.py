@@ -182,7 +182,7 @@ def test_default_calls_are_unchanged():
 
 
 def test_default_predictions_match_the_committed_record():
-    """predict_solve without train reproduces theory_check.json's 'exact' values exactly."""
+    """predict_solve without train reproduces theory_check.json's 'exact' values, to 1e-12."""
     out = json.loads((SV / "theory_check.json").read_text())
     rows = out["coord_rates"]
     lam_of = {15: 15 / 2700.0, 45: 45 / 2700.0}
@@ -190,4 +190,6 @@ def test_default_predictions_match_the_committed_record():
         e = th.predict_solve(r["k"], r["sigma"], r["w"], lam_of[r["n_events"]], N)
         for q in ("k", "lam", "share"):
             if np.isfinite(r["exact"][q]):
-                assert e[q] == r["exact"][q]
+                # to 1e-12, not ==: the last bit depends on the machine's maths library
+                # (CI, 2026-11-11: 0.6992777506291901 against a recorded 0.69927775062919)
+                assert e[q] == pytest.approx(r["exact"][q], rel=1e-12)

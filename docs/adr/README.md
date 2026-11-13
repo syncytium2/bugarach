@@ -17,9 +17,24 @@ two never disagree, and cross-reference them.
 
 ## Convention
 
-- One decision per file, named `NNNN-title-in-kebab-case.md`, zero-padded, incrementing.
+- One decision per file. **A new record is named `YYYY-MM-DD-<4 hex>-title-in-kebab-case.md`**,
+  and its heading carries the same ID: `# ADR YYYY-MM-DD-hhhh: Title`. The four hex characters
+  are random, so sessions on different machines cannot pick the same ID. This is the lab-wide
+  scheme of armory's ADR kit (`tools/adr/` there; Tony, 2026-11-03). Write one with
+  `python3 -X utf8 tools/adr/adr.py new "Title"`, which picks the ID and adds the index row.
+- **The kit checks the folder** (`python3 -X utf8 tools/adr/adr.py check`): in CI, in
+  `tests/test_adr_kit.py`, and in a Claude Code hook that blocks a git commit, merge, push,
+  pull or rebase while a rule fails. The copy here is vendored and is not edited; changes go
+  to armory. `.adr-kit.json` lowers four rules to warnings for records written before the kit
+  arrived (bare citations, accepted records edited in place, the `Declined` status, and one
+  supersession line the kit misreads). On Windows the `-X utf8` is required.
+- **No new numbered records** (Tony, 2026-11-13: *"numbered adrs are banned"*). Records 0001
+  to 0023 keep their numbers and are not renamed.
+- **Cite a record by a link to its file**, or by its filename in a code comment. A bare ID in
+  prose is unreadable at this length and nothing checks it.
 - **Michael Nygard template**: Title, Status, Context, Decision, Consequences.
-- **Status** is `Proposed`, `Accepted`, `Deprecated`, or `Superseded by ADR-NNNN`.
+- **Status** is `Proposed`, `Accepted`, `Declined`, `Deprecated`, or `Superseded by ADR-NNNN`.
+  A declined proposal lands on `main` with its reasons, so the number and the argument are kept.
 - Accepted ADRs are immutable. To change a decision, write a new one that supersedes it
   and update the old one's status — do not edit the history.
 - In-place amendments are allowed **only when they change no decision**: dated pointer
@@ -40,12 +55,26 @@ two never disagree, and cross-reference them.
 | [0009](0009-the-bench-keeps-its-elevated-rate-test-in-a-recording-of-its-own.md) | The bench keeps its elevated-rate test in a recording of its own, and ADR-0008's floor applies unchanged | Accepted |
 | [0010](0010-tune-train-and-review-against-the-data-as-they-are.md) | Tune, train and review against the data as they are | Accepted |
 | [0011](0011-bugarach-supports-the-python-its-machines-run.md) | bugarach supports the Python its machines run, and no older one | Accepted |
-| [0014](0014-a-figure-page-is-figures-then-controls-then-text.md) | A figure page is figures, then controls, then text; a report leads with its main figure (0012 and 0013 are open proposals, #848 and #855) | Accepted |
+| [0012](0012-the-benchs-inputs-are-extracted-by-the-detector-at-its-untuned-defaults.md) | The bench's inputs are extracted by the detector at its untuned defaults | Declined, 2026-11-11 |
+| [0013](0013-the-bench-simulates-treatment-periods.md) | The bench simulates treatment periods, with the treatment's event rates as background and baseline's coordination planted through them | Accepted as amended, 2026-11-11; five open points remain |
+| [0014](0014-a-figure-page-is-figures-then-controls-then-text.md) | A figure page is figures, then controls, then text; a report leads with its main figure | Accepted |
 | [0015](0015-raster-pages-navigate-the-way-igor-does.md) | Raster pages navigate the way Igor Pro does: drag a box to zoom, down is row pitch, Shift-drag slides, Ctrl+wheel zooms | Accepted; row pitch superseded by ADR-0016 |
 | [0016](0016-a-raster-zooms-in-time-only.md) | A raster zooms in time only: the box sets the time range, and no gesture changes a panel's height or rows | Accepted |
 | [0017](0017-group-and-treatment-comparisons-default-to-fireflies.md) | Group and treatment comparisons default to fireflies; an exception is flagged and confirmed | Accepted |
 | [0018](0018-the-dataset-is-reported-not-confirmed.md) | The dataset an analysis reads is reported, not confirmed per session | Accepted |
 | [0019](0019-the-decoys-are-retired-negatives-are-rate-matched.md) | The decoys are retired; negatives are rate-matched and carry no coordination | Accepted |
+| [0020](0020-one-route-from-a-folder-to-calls-per-stream.md) | One route from a folder to calls, per stream; readiness for the revised senktide/TTX export comes first | Accepted |
+| [0021](0021-the-toolset-is-validated-on-synthetic-data-first-with-coded-detectors.md) | The toolset is general and is validated on synthetic data first, with the coded detectors (backfilled; ruled 2026-10-22/23) | Accepted |
+| [0022](0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md) | Close events are a bench axis of set separations, below 2 s included; the event definition stays at the 2 s window until the revised export is re-measured | Accepted |
+| [0023](0023-bugarach-does-not-combine-streams-the-export-is-final.md) | bugarach does not combine data streams; the export is final | Accepted |
+| [2026-11-13-43ba](2026-11-13-43ba-the-september-bench-is-stale-and-is-not-re-measured.md) | The September bench is stale and is not re-measured; the old data are replaced by the retracked export and never read again | Accepted |
+
+**Numbers are closed.** The rule below governed 0001 to 0023 and is kept as history; a new
+record takes a date-and-hash ID (Convention, above) and needs no such check.
+A number was taken when its file was first pushed, on any branch, so two proposals never
+shared one. 0012 and 0013 were held that way by open pull requests from 2026-09-28 until both
+were ruled on 2026-11-11. The check before taking a number was
+`git log --all --format= --name-only --diff-filter=A -- 'docs/adr/[0-9]*.md' | sort -u`.
 
 **The habit lapsed for 25 days and restarted on 2026-09-23.** After ADR-0005 on 2026-08-29
 no ADR was written, and nothing decided to stop. Rulings went instead into bench-constant

@@ -131,7 +131,6 @@ def cell(got, key, rng) -> dict:
 
 def real_job(args):
     i, folder, paths = args
-    from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detect_folder import folder_analysis_windows
     from bugarach.io import load_folder
     from bugarach.score import TOL_SEC
@@ -141,8 +140,6 @@ def real_job(args):
                 if meta.get("group_id") else None,
                 mouse=str(meta.get("subject_id") or s.slice_id))
     s, windows = folder_analysis_windows(s)
-    if has_sources(s) and COMBINED not in s.streams:
-        s.streams[COMBINED] = stream_of(s, COMBINED)
     rows = []
     for w in windows:
         lo, hi = float(w.win_start), float(w.win_end)

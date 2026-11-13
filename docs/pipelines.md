@@ -17,6 +17,7 @@ which a session once read as the loop and reported the centrepiece missing.
 
 | route | use it when | cost |
 |---|---|---|
+| [**stream readiness**](pipelines/stream-readiness.md) | a new or revised export folder becomes the default and each stream (fast, slow, combined) needs calls on it at settings chosen for that folder | minutes to an hour to characterize and check recovery; one overnight per stream to tune |
 | [**learned-model evaluation**](pipelines/learned-model-evaluation.md) | a new learned architecture exists and someone needs a number for it that will be quoted, compared, or decided on | ~one overnight at `--jobs 12` |
 
 ## This index is checked, not trusted

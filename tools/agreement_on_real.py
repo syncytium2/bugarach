@@ -248,7 +248,6 @@ def tally(rows: list[dict], a: str, stream: str, *, by_group: bool) -> list[dict
 def _context_job(args):
     """Per recording: every window's rate trend, and each listed call's local rate."""
     i, folder, want = args
-    from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detect_folder import _region_index, folder_analysis_windows
     from bugarach.detectors.rate import stream_trains
     from bugarach.io import load_folder
@@ -259,8 +258,6 @@ def _context_job(args):
         s, windows = folder_analysis_windows(s)
     if s.slice_id not in want:
         return s.slice_id, {}, {}
-    if has_sources(s) and COMBINED not in s.streams:
-        s.streams[COMBINED] = stream_of(s, COMBINED)
     trend, local = {}, {}
     for w in windows:
         lo, hi = float(w.win_start), float(w.win_end)

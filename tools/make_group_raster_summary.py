@@ -370,9 +370,8 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
             combined: bool = False, all_groups: bool = False):
     """Which recordings go on which page, and what each page's extent must be.
 
-    ``combined`` adds the combined stream (``bugarach.combined``) to every recording carrying
-    fast and slow, so it gets pages of its own. Safe here and nowhere near a detector: this
-    tool draws, and draws nothing from an RNG.
+    ``combined`` asks for pages of the combined stream. The export ships that stream
+    (ADR-0023); a folder without it gets no combined page, and nothing is built here.
 
     ``all_groups`` puts every group on one page per treatment and stream, rows ordered DI,
     OVX, MALE, ORX (``bugarach.groups``) and by slice id within a group. It is for a small
@@ -381,12 +380,6 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         slices = load_folder(folder)
-    if combined:
-        from bugarach.combined import COMBINED, has_sources, stream_of
-
-        for sl in slices:
-            if has_sources(sl):
-                sl.streams[COMBINED] = stream_of(sl, COMBINED)
     manifest = {} if (unscanned or steps_excluded) else read_manifest(folder)
     if groups:
         slices = [sl for sl in slices if group_of(sl) in groups]
@@ -415,6 +408,8 @@ def measure(folder: Path, treatments: tuple[str, ...], *, unscanned: bool = Fals
             # down the page that "never pooled" exists to prevent. Split, each
             # page is one measurement of six recordings and half the height.
             for sname in sorted(sl.streams):
+                if sname == "combined" and not combined:
+                    continue
                 pages[(ALL_GROUPS if all_groups else group_of(sl), t, sname)].append(
                     (sl, anchor))
 

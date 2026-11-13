@@ -15,6 +15,30 @@ low participation. Tony: *"Treat like a phd project (except we have days not yea
 
 ## Where it stands
 
+- 2026-11-11: **the detectors can be set to separate close events from 1 s apart, on every
+  stream** ([record](../learned/runs/2026-11-11-close-events-search/README.md)). With close-event
+  test sets and a per-pair score (`bugarach.close_events`), a search of each detector's own
+  settings found that count (sliding) in a 0.5 s window with no merge gap splits 0.88 to 0.97 of
+  pairs 1 s apart, where the shipped settings split none below 5 s. It needs the narrower
+  window: no setting at 2 s splits close pairs. The count that makes a call is still the 2 s
+  floor's. CoactDetect at the same setting makes the same calls as count (sliding). At 0.5 s
+  nothing admissible splits more than 0.37. One generator, Gaussian jitter; whether a 0.5 s
+  window holds a real event is the first check on the revised export. Nothing is adopted.
+- 2026-11-11: **the separation axis ran on all three streams**
+  ([ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md);
+  [record](../learned/runs/2026-11-11-separation-axis/README.md)). At the shipped settings,
+  CoactDetect, LoCo, binned SCE and count (sliding) all join planted events 2 s apart or closer:
+  recall is 0.47 to 0.72 there against 0.90 to 1.00 at 10 s (CoactDetect on slow, 0.78). Those
+  settings were searched on a bench with no events that close, so this is what their merge gaps
+  were bound to give; the search with close events present is next.
+- 2026-11-11: **this goal is the recovery and evaluation stages of one route**
+  ([ADR-0020](../adr/0020-one-route-from-a-folder-to-calls-per-stream.md);
+  [`pipelines/stream-readiness.md`](../pipelines/stream-readiness.md)), and its conditions now
+  come from the benches. `bugarach.stream_profile` reads the fast, slow and combined benches, and
+  **Aim 1a ran at each stream's own values** (plan item 1, in part): participants and event rate
+  are recovered within a few percent at every level of 6.5 cells or more, and jitter is not
+  recovered for events of 3 to 4 cells (*Aim 1a at the lab's values*, below). The rulings this
+  goal rests on are now [ADR-0021](../adr/0021-the-toolset-is-validated-on-synthetic-data-first-with-coded-detectors.md).
 - 2026-10-23: **Aim 1a ran** (one simulated source of coordinated events, a fresh random set of
   cells per event; 240 recordings measured without the planted values). A fixed cell-count
   threshold for the assessor (the repository's cluster-finding tool) does not transfer across
@@ -122,6 +146,41 @@ Numbers below are for events of 10 or more cells, per-condition medians unless m
   5-cell event from its own cells; chance joiners lift a few to 6 (a cluster rate of 0–0.27 of
   planted at 0.01 Hz). The lab's fast stream, about 7 of 33 cells, sits between this arm and the
   10-cell one.
+
+### Aim 1a at the lab's values (2026-11-11; measured, one generator)
+
+Plan item 1 asked for the lab's regime in the grid. The conditions are read from
+`bugarach.stream_profile`, so they are the benches' own: 32 cells; jitter 0.105, 0.131 and
+0.150 s for fast, slow and combined; each bench's three participation levels; its quiet and busy
+backgrounds. The generator is Aim 1a's (one source, a fresh random set of cells per event, one
+level per recording, flat background, events at least 20 s apart, 45 min), with 15 or 45 events.
+Each row below is 20 simulated recordings (2 backgrounds × 2 event counts × 5 seeds); the joint
+fit (hard-core form) is run on each recording. Recovered ÷ planted, median [interquartile
+range], over the recordings whose fit did not stop at a bound of its jitter search.
+[`aim1_lab_regime.py`](../learned/synthetic_validation/aim1_lab_regime.py) recomputes the table
+into [`aim1_lab_regime.json`](../learned/synthetic_validation/aim1_lab_regime.json).
+
+| stream | cells per event | planted jitter (s) | fits at a bound (of 20) | jitter | participants | event rate |
+|---|---|---|---|---|---|---|
+| fast | 9.6 | 0.105 | 1 | 0.91 [0.76, 1.20] | 0.99 [0.98, 1.02] | 1.01 [0.98, 1.03] |
+| fast | 6.5 | 0.105 | 4 | 1.20 [0.50, 1.97] | 1.02 [0.99, 1.04] | 1.01 [0.96, 1.08] |
+| fast | 3.2 | 0.105 | 8 | 2.23 [1.23, 3.68] | 1.14 [1.01, 1.27] | 0.90 [0.43, 1.24] |
+| slow | 20.2 | 0.131 | 0 | 1.00 [0.94, 1.14] | 0.99 [0.99, 1.00] | 1.02 [1.01, 1.03] |
+| slow | 12.0 | 0.131 | 0 | 1.05 [0.92, 1.22] | 1.00 [0.98, 1.00] | 1.03 [1.01, 1.04] |
+| slow | 6.7 | 0.131 | 1 | 0.91 [0.66, 1.20] | 1.00 [0.98, 1.01] | 1.01 [0.98, 1.03] |
+| combined | 12.8 | 0.150 | 0 | 1.01 [0.90, 1.22] | 0.99 [0.98, 1.00] | 1.02 [0.99, 1.05] |
+| combined | 8.0 | 0.150 | 1 | 1.22 [0.75, 1.31] | 1.01 [0.97, 1.02] | 1.00 [0.96, 1.09] |
+| combined | 4.2 | 0.150 | 6 | 1.95 [0.88, 2.41] | 0.97 [0.90, 1.12] | 1.26 [1.04, 1.57] |
+
+- **Participants and event rate are recovered at the lab's values for events of 6.5 cells or
+  more**, in every stream: medians within 0.99–1.03 of planted.
+- **Jitter is recovered in the median, with a wide spread, down to 6.7 cells, and not at 3 to
+  4 cells**, where it reads about twice the planted value and 6 to 8 of 20 fits stop at a bound.
+  The fast stream's middle level (6.5 cells) is the edge: median 1.20, interquartile range 0.50
+  to 1.97.
+- **What this does not cover:** the benches' fitted, bursty backgrounds and their mix of three
+  levels in one recording; real gaps (the Palm form); the assessor and the correlogram on the same
+  recordings, which plan item 1 also asks for; and any second source.
 
 ### Aim 0, the predictions (2026-10-23; derived, checked against Aim 1a)
 
@@ -486,6 +545,8 @@ Aim 1c.
 | Coded detectors only; the learned models are on hold. | decided | Tony, 2026-10-22 (handoff) |
 | Negatives are rate-matched and carry no coordination; no decoys. A call on a weaker source is a hit for that source. | decided | [ADR-0019](../adr/0019-the-decoys-are-retired-negatives-are-rate-matched.md), ADR-0006 |
 | Our current export supplies realistic parameter values only, never truth. | decided | Tony, 2026-10-22 (*"our existing flawed data"*) |
+| **Close events are a bench axis of set separations, below 2 s included**; the event definition stays at the 2 s window until the revised export is re-measured. Tony: *"by eye separation less than 2s is detectable"* | decided | [ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md), 2026-11-11 |
+| **The bench simulates treatment periods**, at rate-course levels that span the groups, not per group | decided | [ADR-0013](../adr/0013-the-bench-simulates-treatment-periods.md), accepted as amended 2026-11-11 |
 | A fixed K does not transfer across backgrounds; the assessor reads jitter only at 0.01 Hz (lab-like) and only to a planted 0.5 s | measured (one generator) | *Aim 1a, first result* |
 | The coordination-rates tool's participants are predicted to a median residual of 0.007–0.016 for events of 10+ cells (worst 0.11); rate and share less well | derived and checked (one generator: one k, Gaussian jitter, events ≥ 20 s apart) | *Aim 0, the predictions* |
 | A joint fit across the tool's windows recovers jitter from 0.2 s up, participants within 0.94–1.14 and rate within 0.73–1.14, for events of 10+ cells; not 0.05 s, not 5-cell events, and the lab's 0.10–0.15 s and 7-cell events untested | derived and checked (same scope) | *Aim 0, the predictions* |
@@ -562,6 +623,12 @@ Nothing sweeps conditions, and nothing runs simulate → assess → `derive_spec
 
 **Scoring has no notion of a source**: `score.score_stream` reads `gt.times` and `gt.frac` only.
 
+**Added 2026-11-11: the benches are reachable from here.** `bugarach.stream_profile` gives each
+stream's planted source in this page's symbols (`profile("fast").source()`), its recording with
+or without decoys, and its detectors, settings and budgets. The scripts written before it
+(`aim1_one_source.py`, `theory.py`'s `REAL`) still type their own values, 33 cells and 0.0096 Hz
+among them; they are left as the records of their dates.
+
 ## The plan (revised from the handoff's)
 
 **Aim 0: predict first, simulate to check** (added 2026-10-23). For each question, derive what
@@ -569,8 +636,8 @@ the tools and the simpler detectors should return from the planted parameters, t
 test the prediction and measure what is left over.
 
 *Owed by results this page already states*, in order:
-1. Add the lab's regime to the Aim 1a grid (σ = 0.1 and 0.15 s; 7 cells per event; 0.0096 Hz)
-   and rerun the joint fit. Compare its jitter with the correlogram tool's on the same simulated
+1. **Half done 2026-11-11** (*Aim 1a at the lab's values*): the lab's regime is in the grid, read
+   from the benches, and the joint fit was rerun. Still owed: Compare its jitter with the correlogram tool's on the same simulated
    recordings; that tool's half-width needs its own calibration on this generator, since its
    bench calibration was made at other participation and rates.
 2. Check by simulation the two-source prediction (equal jitters leave only a combined
@@ -682,6 +749,7 @@ learned models.
 |---|---|
 | Aim 0 and Aim 1 scripts, records and figures | [`docs/learned/synthetic_validation/`](../learned/synthetic_validation/README.md) |
 | Figures for reading | also in the darkroom, `bugarach/2026-10-23-synthetic-validation/` (claimed in `docs/SESSIONS.md`) |
+| The route this goal is a stage of | [`pipelines/stream-readiness.md`](../pipelines/stream-readiness.md); the seam is `src/bugarach/stream_profile.py` |
 | The murderboard of Aim 0 | [run record](../reviews/synthetic-validation-aim0_2026-10-23.md) and its role reports |
 | Aim 0 written up as a dissertation chapter (first draft, not yet reviewed) | [`dissertation/chapter-1-aim0.md`](../dissertation/chapter-1-aim0.md) |
 

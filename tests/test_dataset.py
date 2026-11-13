@@ -235,7 +235,7 @@ def test_the_shipped_pointer_is_checked_not_assumed(monkeypatch):
             ds.refuse_if_contaminated(role)
 
 
-def test_the_default_stops_while_the_pinning_census_undercounts(monkeypatch):
+def test_the_september_folder_stays_stopped_while_the_pinning_census_undercounts(monkeypatch):
     """Tony, 2026-10-05: the pinning undercount is a known contamination and the stop
     applies now. His review of ``20260629_312`` called nine pinned ROIs where the census
     flagged four, and the default folder's exclusion follows the census.
@@ -244,11 +244,18 @@ def test_the_default_stops_while_the_pinning_census_undercounts(monkeypatch):
     an analysis makes, and the stop must come before the session confirmation: there is
     nothing to confirm while the folder cannot be read. Delete this test in the same
     change that makes the producer's corrected export the default and removes the note.
+
+    2026-11-13: the default moved to ``tracked_cohorts`` on 2026-11-12 and the stopped
+    folder is now read by name as ``senktide_ttx``. Its note did not leave the file, so
+    the stop is checked on that table. Tony, 2026-11-13: the old data will be replaced
+    by the retracked export and never touched again; delete this test with the table.
+
+    The record: ``docs/adr/2026-11-13-43ba-the-september-bench-is-stale-and-is-not-re-measured.md``
     """
     monkeypatch.delenv(ds.ACK_ENV, raising=False)
-    note = ds.contamination_note("default")
-    assert note is not None, "the default's note no longer declares the undercount"
+    note = ds.contamination_note("senktide_ttx")
+    assert note is not None, "the September folder's note no longer declares the undercount"
     assert "20260629_312" in note, "the stop must name what is contaminated"
     assert "corrected export" in note, "and what clears it"
     with pytest.raises(ds.ContaminatedExport):
-        ds.default()
+        ds.refuse_if_contaminated("senktide_ttx")

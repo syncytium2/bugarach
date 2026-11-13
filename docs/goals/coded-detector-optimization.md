@@ -47,8 +47,10 @@ level with the tuned sliding forms of LoCo and CoactDetect, and its own idea add
 F1; the gain is a 0.5 s window. ⚠ The comparison that matters came after: with planted events
 1 s apart the detectors span 0.40 to 0.66 F1 where at 10 s they sit within 0.09, and real
 baselines measured in a 0.5 s window do hold gaps under 2 s (4 to 6% of them) and nearly twice as
-many fast events. **Waiting on Tony:** whether the revised bench only adds short gaps or moves
-the event definition to a narrower window. It is not registered in any bench.
+many fast events. **Ruled 2026-11-11**
+([ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md)): close
+events become a bench axis of set separations, below 2 s included, and the event definition stays
+at the 2 s window until the revised export is re-measured. It is not registered in any bench.
 [Todo](../todo/2026-10-08-the-stack-ceiling-and-the-short-interval-bench.md);
 [record](../learned/runs/2026-10-08-stack-ceiling/README.md).
 

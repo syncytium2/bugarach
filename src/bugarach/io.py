@@ -94,6 +94,12 @@ NO_EVENT = ("", "na", "nan", "none", "null")
 WIDTH_COL, WIDTH_DEF_COL, PEAK_COL, AMP_COL = (
     "width_sec", "width_def", "peak_sec", "amp")
 
+#: The column naming the stream an event came from (``docs/export_folder_spec.md``, the
+#: combined stream). On a row of a stream the producer pooled from others it is the event's
+#: own stream; on any other row it repeats ``stream``. Kept as ``Stream.label`` for a stream
+#: in which it differs from the stream's name, and for no other.
+SOURCE_STREAM_COL = "source_stream"
+
 #: ``width_def`` values for which ``time_sec + width_sec`` happens to land on a
 #: peak.
 #:
@@ -161,7 +167,7 @@ def _aligned(src, i: int, n: int, what: str) -> np.ndarray:
 
 def _as_stream(per_roi: list, durations: list | None = None, *,
                peaks: list | None = None, amps: list | None = None,
-               width_def: str | None = None) -> Stream:
+               width_def: str | None = None, sources: list | None = None) -> Stream:
     """One Stream from per-ROI arrays, every per-event column kept aligned.
 
     Events are ordered by time and **their widths, peaks and amplitudes travel
@@ -169,18 +175,26 @@ def _as_stream(per_roi: list, durations: list | None = None, *,
     width column was read — would move each event's width onto a different
     event, which is a wrong number rather than a missing one.
     """
-    locs, width, peak, amp = [], [], [], []
+    locs, width, peak, amp, label = [], [], [], [], []
     for i, raw in enumerate(per_roi):
         t = np.asarray(raw, dtype=float).ravel()
         order = np.argsort(t, kind="stable")
         locs.append(t[order])
+        if sources is not None:
+            src = np.asarray(sources[i], dtype=object).ravel()
+            if src.size != t.size:
+                raise ValueError(
+                    f"sources has {src.size} value(s) for ROI index {i}, which has "
+                    f"{t.size} event(s). Per-event columns are index-aligned with the times.")
+            label.append(src[order])
         width.append(_aligned(durations, i, t.size, "durations")[order])
         peak.append(_aligned(peaks, i, t.size, "peaks")[order])
         amp.append(_aligned(amps, i, t.size, "amps")[order])
     return Stream(locs=locs, amp=amp, width=width,
                   t50rise=[v.copy() for v in locs],
                   width_def=width_def,
-                  peak=peak if peaks is not None else None)
+                  peak=peak if peaks is not None else None,
+                  label=label if sources is not None else None)
 
 
 def _by_stream(value, events: dict, what: str) -> dict:
@@ -207,6 +221,7 @@ def slice_from_events(
     peaks=None,
     amps=None,
     width_def=None,
+    sources=None,
     meta: dict[str, str] | None = None,
 ) -> Slice:
     """Build a Slice from per-ROI event-onset times.
@@ -230,6 +245,9 @@ def slice_from_events(
     width_def: the name of the rule that produced ``durations`` — one string
     for a single stream, or a name-keyed dict. Widths measured two ways must
     never be pooled, so a caller supplying durations should say what they are.
+    sources: optional per-event name of the stream each event came from, same
+    shape as events, for a stream the producer pooled from others. Kept as
+    ``Stream.label``.
     """
     if not isinstance(events, dict):
         events = {"events": events}
@@ -237,9 +255,11 @@ def slice_from_events(
     peaks = _by_stream(peaks, events, "peaks")
     amps = _by_stream(amps, events, "amps")
     width_def = _by_stream(width_def, events, "width_def")
+    sources = _by_stream(sources, events, "sources")
     streams = {name: _as_stream(per_roi, durations.get(name),
                                 peaks=peaks.get(name), amps=amps.get(name),
-                                width_def=width_def.get(name))
+                                width_def=width_def.get(name),
+                                sources=sources.get(name))
                for name, per_roi in events.items()}
     if not streams:
         raise ValueError("events must contain at least one stream")
@@ -305,6 +325,7 @@ class EventRow(NamedTuple):
     width_def: str = ""
     peak: float = np.nan
     amp: float = np.nan
+    source: str = ""
 
 
 def _number(raw: str | None, *, path: Path, line: int, col: str) -> float:
@@ -365,7 +386,8 @@ def _read_event_rows(path: Path, *, time_col: str, roi_col: str,
             out.append(EventRow(
                 t, row[roi_col], stream or "events", width, wdef,
                 _number(row.get(PEAK_COL), path=path, line=n, col=PEAK_COL),
-                _number(row.get(AMP_COL), path=path, line=n, col=AMP_COL)))
+                _number(row.get(AMP_COL), path=path, line=n, col=AMP_COL),
+                (row.get(SOURCE_STREAM_COL) or "").strip()))
     if not out:
         raise ValueError(f"no rows in {path}")
     return out
@@ -400,6 +422,12 @@ def _assemble(rows: list[EventRow], *, slice_id: str, dt: float | None,
     silent ROI's row has a rule and no width to apply it to, and letting that
     declare a width the stream does not have would make ``has_width`` lie about
     an all-quiet recording.
+
+    ``source_stream`` is kept for a stream whose rows name another stream (the
+    producer's combined stream), as ``Stream.label``. A fast or slow row repeats
+    its own stream there, and those streams get no label, as before the column
+    existed. A stream that names a source on some event rows and not on others is
+    refused: half a label cannot be drawn or counted.
     """
     roi_ids = sorted({r.roi for r in rows}, key=_natural)
     roi_index = {rid: i for i, rid in enumerate(roi_ids)}
@@ -408,6 +436,7 @@ def _assemble(rows: list[EventRow], *, slice_id: str, dt: float | None,
     widths = {name: [[] for _ in roi_ids] for name in names}
     peaks = {name: [[] for _ in roi_ids] for name in names}
     amps = {name: [[] for _ in roi_ids] for name in names}
+    srcs = {name: [[] for _ in roi_ids] for name in names}
     defs: dict[str, set[str]] = {name: set() for name in names}
     for r in rows:
         if r.time is None:
@@ -416,6 +445,7 @@ def _assemble(rows: list[EventRow], *, slice_id: str, dt: float | None,
         events[r.stream][i].append(r.time)
         widths[r.stream][i].append(r.width)
         amps[r.stream][i].append(r.amp)
+        srcs[r.stream][i].append(r.source)
         if r.width_def:
             defs[r.stream].add(r.width_def)
         # The peak, by the two routes the contract allows and no third. A width
@@ -447,12 +477,25 @@ def _assemble(rows: list[EventRow], *, slice_id: str, dt: float | None,
                   if any(np.isfinite(v).any() for v in peaks[n])}
     with_amps = {n: amps[n] for n in names
                  if any(np.isfinite(v).any() for v in amps[n])}
+    with_sources = {}
+    for n in names:
+        flat = [v for per_roi in srcs[n] for v in per_roi]
+        if not any(v and v != n for v in flat):
+            continue
+        if not all(flat):
+            raise ValueError(
+                f"{slice_id}: the '{n}' stream names a {SOURCE_STREAM_COL} on "
+                f"{sum(1 for v in flat if v)} of its {len(flat)} event rows. A stream "
+                f"pooled from others says where every one of its events came from "
+                f"(docs/export_folder_spec.md, the combined stream).")
+        with_sources[n] = srcs[n]
     return slice_from_events(events, dt=dt, slice_id=slice_id, roi_ids=roi_ids,
                              regions=regions, meta=meta,
                              durations=durations or None,
                              peaks=with_peaks or None,
                              amps=with_amps or None,
-                             width_def=width_def or None)
+                             width_def=width_def or None,
+                             sources=with_sources or None)
 
 
 def _read_table(path: Path, required: tuple[str, ...]) -> list[dict[str, str]]:

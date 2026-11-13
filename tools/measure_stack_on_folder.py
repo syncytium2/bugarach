@@ -97,13 +97,9 @@ def load(folder: Path, stream: str):
     from dataclasses import replace
 
     from bugarach import surrogate_stats as ss
-    from bugarach.combined import has_sources, stream_of
     from bugarach.io import load_folder
 
     slices = load_folder(folder)
-    if stream == "combined":
-        slices = [replace(s, streams={**s.streams, "combined": stream_of(s, "combined")})
-                  if has_sources(s) else s for s in slices]
     recs, skipped = ss.recordings_from_slices(slices, stream)
     refused = [r.recording_id for r in recs if not r.window_source.startswith("baseline region")]
     if refused:

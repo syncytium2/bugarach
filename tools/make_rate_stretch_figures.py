@@ -98,7 +98,6 @@ def full_curves(R, run: Path) -> dict:
     import measure_rate_stretches as mrs
 
     from bugarach import dataset
-    from bugarach.combined import COMBINED, has_sources, stream_of
     from bugarach.detectors.rate import recording_extent, stream_trains
     from bugarach.io import load_folder
     if dataset.stamp() != R["dataset"]:
@@ -108,8 +107,6 @@ def full_curves(R, run: Path) -> dict:
     for s in load_folder(dataset.default()):
         if s.slice_id not in want:
             continue
-        if has_sources(s) and COMBINED not in s.streams:
-            s.streams[COMBINED] = stream_of(s, COMBINED)
         lo, hi = recording_extent(s)
         for st in STREAMS:
             if st in s.streams:

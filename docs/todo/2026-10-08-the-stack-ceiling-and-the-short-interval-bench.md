@@ -5,7 +5,7 @@ filed: 2026-10-08
 
 # The stack ceiling detector, and the bench with short intervals it led to
 
-waiting: Rule what the revised bench is: add short gaps between 2 s events, or define events in a narrower window.
+waiting: Whether the stack ceiling goes further, and the three fast proposals of 2026-09-26. (What the revised bench is was ruled 2026-11-11, ADR-0022.)
 
 **Where this stands.** Session `bugarach-far-pennant` (Mac), 2026-10-08, ended at Tony's word:
 *"make sure this detector does not get lost."* Everything is on `main` through PR #877. Nothing
@@ -53,7 +53,10 @@ the **ceiling**. No probability is computed.
 
 ## Waiting on Tony
 
-1. **What the revised bench is.** Keep events as a 2 s window defines them and add the shorter
+1. **What the revised bench is. RULED 2026-11-11**
+   ([ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md)): close
+   events are a bench axis of set separations, below 2 s included, and the event definition
+   stays at the 2 s window until the revised export is re-measured. As asked: keep events as a 2 s window defines them and add the shorter
    gaps between them, or move the event definition to a narrower window. The second roughly
    doubles the fast events and reaches ADR-0008, which fixes the floor's window at 2 s.
 2. **Whether the stack ceiling goes further.** Options: register it and search it with the

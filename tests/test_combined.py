@@ -1,7 +1,8 @@
 """The combined stream, the combined bench, and the tools that take ``combined`` as a stream name.
 
-Tony, 2026-09-22: fast and slow onsets fed through the pipeline as one stream, labels kept for
-plotting, a third parameter set. No data needed: every recording here is built.
+The combined stream is the producer's (ADR-0023): every fast and every slow event of a ROI,
+each row naming its source in ``source_stream``. bugarach reads it and does not build it.
+No data needed: every recording here is built.
 """
 from __future__ import annotations
 
@@ -12,8 +13,10 @@ import numpy as np
 import pytest
 
 from bugarach import bench, bench_combined, bench_slow
-from bugarach.combined import (COMBINED, combine, has_sources, near_coincident, only_combined,
-                               stream_of)
+from bugarach import combined as combined_module
+from bugarach.combined import (COMBINED, has_combined, near_coincident, only_combined,
+                               stream_of, without_combined)
+from bugarach.io import load_events_csv
 from bugarach.store import Slice, Stream
 
 # Pre-ADR-0008 by construction: these pin measurements taken before the floor, or exercise detector
@@ -23,6 +26,22 @@ pytestmark = pytest.mark.usefixtures("pre_adr_0008_bench")
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools"))
+
+HEADER = "roi,time_sec,stream,width_sec,width_def,peak_sec,amp,source_stream\n"
+ROWS = (
+    "1,10.0,fast,0.9,fwhm,10.4,1,fast\n"
+    "1,50.0,fast,0.9,fwhm,50.4,1,fast\n"
+    "2,20.0,fast,0.9,fwhm,20.4,1,fast\n"
+    "1,11.0,slow,2.0,rise,13.0,1,slow\n"
+    "1,30.0,slow,2.0,rise,32.0,1,slow\n"
+    "2,NA,slow,NA,rise,NA,NA,slow\n"
+    # the producer's pooled rows, deliberately out of time order
+    "1,50.0,combined,0.9,per_event_by_source_stream,50.4,1,fast\n"
+    "1,10.0,combined,0.9,per_event_by_source_stream,10.4,1,fast\n"
+    "1,11.0,combined,2.0,per_event_by_source_stream,13.0,1,slow\n"
+    "1,30.0,combined,2.0,per_event_by_source_stream,32.0,1,slow\n"
+    "2,20.0,combined,0.9,per_event_by_source_stream,20.4,1,fast\n"
+)
 
 
 def _stream(onsets, width, wdef):
@@ -37,15 +56,50 @@ def _slice():
     return Slice(slice_id="s1", streams={"fast": fast, "slow": slow}, dt=0.1)
 
 
-def test_every_onset_of_both_streams_is_kept_in_time_order_with_its_label():
-    c = combine(_slice().fast, _slice().slow)
+def _shipped(tmp_path, rows=ROWS):
+    path = tmp_path / "s1.csv"
+    path.write_text(HEADER + rows, encoding="utf-8")
+    return load_events_csv(path, dt=0.1)
+
+
+def test_the_shipped_combined_stream_keeps_each_events_source_in_time_order(tmp_path):
+    s = _shipped(tmp_path)
+    c = s.streams[COMBINED]
     assert c.t50rise[0].tolist() == [10.0, 11.0, 30.0, 50.0]
     assert c.label[0].tolist() == ["fast", "slow", "slow", "fast"]
-    # Each event keeps its own stream's width, and the rule says so.
+    # Each event keeps its own stream's width; the label travels with it through the sort.
     assert c.width[0].tolist() == [0.9, 2.0, 2.0, 0.9]
-    assert "fast=fwhm" in c.width_def and "slow=rise" in c.width_def
+    assert c.width_def == "per_event_by_source_stream"
     assert c.t50rise[1].tolist() == [20.0] and c.label[1].tolist() == ["fast"]
     assert c.n_events == 5
+
+
+def test_a_fast_or_slow_stream_gets_no_label(tmp_path):
+    """Their rows repeat their own stream in ``source_stream``; nothing changes for them."""
+    s = _shipped(tmp_path)
+    assert s.streams["fast"].label is None and s.streams["slow"].label is None
+
+
+def test_a_pooled_stream_that_names_only_some_sources_is_refused(tmp_path):
+    rows = ROWS.replace("1,30.0,combined,2.0,per_event_by_source_stream,32.0,1,slow",
+                        "1,30.0,combined,2.0,per_event_by_source_stream,32.0,1,")
+    with pytest.raises(ValueError, match="source_stream"):
+        _shipped(tmp_path, rows)
+
+
+def test_check_reports_a_pooled_stream_that_is_not_its_sources(tmp_path):
+    """Contract revision 10: a pooled stream holds every event of each stream it names."""
+    from bugarach.conform import _pooled_stream_errors
+
+    assert _pooled_stream_errors(_shipped(tmp_path)) == []
+    short = ROWS.replace("1,30.0,combined,2.0,per_event_by_source_stream,32.0,1,slow\n", "")
+    errors = _pooled_stream_errors(_shipped(tmp_path, short))
+    assert len(errors) == 1 and "slow" in errors[0] and "1 of 2 ROI" in errors[0]
+
+
+def test_bugarach_has_no_merge():
+    """ADR-0023: the stream is the producer's. Nothing here makes one from fast and slow."""
+    assert not hasattr(combined_module, "combine")
 
 
 def test_a_slow_onset_one_frame_from_a_fast_one_is_counted_not_dropped():
@@ -54,28 +108,48 @@ def test_a_slow_onset_one_frame_from_a_fast_one_is_counted_not_dropped():
     assert near_coincident(s.fast, s.slow, 1.0) == (1, 2)
 
 
-def test_detectors_see_the_combined_stream_alone():
-    """Adding it beside fast and slow would move their shared-RNG surrogate draws."""
+def test_detectors_see_the_combined_stream_alone(tmp_path):
+    """Beside fast and slow it would move their shared-RNG surrogate draws."""
+    s = _shipped(tmp_path)
+    assert list(only_combined(s).streams) == [COMBINED]
+    assert sorted(without_combined(s).streams) == ["fast", "slow"]
+    assert sorted(s.streams) == ["combined", "fast", "slow"]      # the original is untouched
+    assert stream_of(s, "fast") is s.streams["fast"]
+
+
+def test_fast_and_slow_calls_do_not_depend_on_the_export_shipping_combined(tmp_path):
+    from bugarach.detect_folder import detect_slice
+
+    rng = np.random.default_rng(3)
+    lines, pooled = [], []
+    for roi in range(1, 9):
+        for name, n, wdef in (("fast", 40, "fwhm"), ("slow", 25, "rise")):
+            for t in np.sort(rng.uniform(5, 595, n)):
+                row = f"{roi},{t:.1f},{name},1.0,{wdef},{t + 0.5:.1f},1"
+                lines.append(f"{row},{name}")
+                pooled.append(f"{roi},{t:.1f},combined,1.0,per_event_by_source_stream,"
+                              f"{t + 0.5:.1f},1,{name}")
+    (tmp_path / "two").mkdir()
+    (tmp_path / "three").mkdir()
+    two = _shipped(tmp_path / "two", "\n".join(lines) + "\n")
+    three = _shipped(tmp_path / "three", "\n".join(lines + pooled) + "\n")
+
+    def calls(s, stream=None):
+        events, _ = detect_slice(s, detectors=("coact", "sce"), stream=stream)
+        return sorted((e.detector, e.stream, round(e.onset_sec, 3)) for e in events)
+
+    alone = calls(two)
+    both = calls(three)
+    assert [c for c in both if c[1] != COMBINED] == alone
+    assert calls(three, "fast") == [c for c in alone if c[1] == "fast"]
+    assert [c for c in both if c[1] == COMBINED] == calls(three, COMBINED)
+
+
+def test_a_recording_whose_export_has_no_combined_stream_has_none():
     s = _slice()
-    only = only_combined(s)
-    assert list(only.streams) == [COMBINED]
-    assert list(s.streams) == ["fast", "slow"]           # the original is untouched
-    assert stream_of(s, COMBINED).n_events == 5
-    assert stream_of(s, "fast") is s.fast
-
-
-def test_a_recording_missing_a_source_stream_has_no_combined_stream():
-    s = Slice(slice_id="s2", streams={"fast": _slice().fast}, dt=0.1)
-    assert not has_sources(s)
-    with pytest.raises(KeyError):
+    assert not has_combined(s)
+    with pytest.raises(KeyError, match="ADR-0023"):
         stream_of(s, COMBINED)
-
-
-def test_the_roi_counts_must_agree():
-    s = _slice()
-    short = _stream([[1.0]], 2.0, "rise")
-    with pytest.raises(ValueError):
-        combine(s.fast, short)
 
 
 COPIED = ("BENCH_RECORDING", "REGIMES", "NULL_RECORDING", "CROWDED_RECORDING",
@@ -174,11 +248,12 @@ def test_detect_runs_the_combined_stream_at_its_own_settings_and_labels_the_rows
     (folder / "regions.csv").write_text(
         "slice_id,region_idx,label,start_sec,end_sec,analysis_start_sec,analysis_end_sec\n"
         "s1,1,baseline,0,900,0,900\n")
-    rows = ["roi,time_sec,stream"]
+    rows = ["roi,time_sec,stream,source_stream"]
     for t in (150, 300, 450, 600, 750):
         for roi in range(1, 11):
-            rows.append(f"{roi},{t + roi * 0.05:.2f},fast")
-            rows.append(f"{roi},{t + 1.5 + roi * 0.1:.2f},slow")
+            for when, name in ((t + roi * 0.05, "fast"), (t + 1.5 + roi * 0.1, "slow")):
+                rows.append(f"{roi},{when:.2f},{name},{name}")
+                rows.append(f"{roi},{when:.2f},combined,{name}")     # as the producer ships it
     (folder / "s1.csv").write_text("\n".join(rows) + "\n")
 
     settings = tmp_path / "combined_settings.csv"
