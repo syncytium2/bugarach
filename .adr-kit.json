@@ -1,0 +1,15 @@
+{
+  "dir": "docs/adr",
+  "severity": {
+    "bare-citation": "warn",
+    "accepted-immutable": "warn",
+    "status": "warn",
+    "supersession": "warn"
+  },
+  "exclude": [
+    "docs/handoffs/",
+    "docs/reviews/",
+    "docs/learned/runs/",
+    "docs/exports/"
+  ]
+}

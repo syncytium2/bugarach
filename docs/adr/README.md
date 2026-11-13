@@ -20,7 +20,14 @@ two never disagree, and cross-reference them.
 - One decision per file. **A new record is named `YYYY-MM-DD-<4 hex>-title-in-kebab-case.md`**,
   and its heading carries the same ID: `# ADR YYYY-MM-DD-hhhh: Title`. The four hex characters
   are random, so sessions on different machines cannot pick the same ID. This is the lab-wide
-  scheme of armory's ADR kit (`tools/adr/` there; Tony, 2026-11-03).
+  scheme of armory's ADR kit (`tools/adr/` there; Tony, 2026-11-03). Write one with
+  `python3 -X utf8 tools/adr/adr.py new "Title"`, which picks the ID and adds the index row.
+- **The kit checks the folder** (`python3 -X utf8 tools/adr/adr.py check`): in CI, in
+  `tests/test_adr_kit.py`, and in a Claude Code hook that blocks a git commit, merge, push,
+  pull or rebase while a rule fails. The copy here is vendored and is not edited; changes go
+  to armory. `.adr-kit.json` lowers four rules to warnings for records written before the kit
+  arrived (bare citations, accepted records edited in place, the `Declined` status, and one
+  supersession line the kit misreads). On Windows the `-X utf8` is required.
 - **No new numbered records** (Tony, 2026-11-13: *"numbered adrs are banned"*). Records 0001
   to 0023 keep their numbers and are not renamed.
 - **Cite a record by a link to its file**, or by its filename in a code comment. A bare ID in
