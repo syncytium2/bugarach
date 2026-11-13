@@ -13,12 +13,22 @@ decision 2): onset times in seconds for each channel, and the recording's durati
 frame interval, no export folder. Simulated and real recordings go through the same call.
 
 **The construction** is the per-channel rigid shift. Every channel's whole train is moved by one
-offset of its own, uniform in ±``j_sec``:
+offset of its own, uniform in ±``j_sec``. It is not this project's invention: it is whole-train
+shifting from the spike-train literature (Pipa et al. 2008; Louis, Borgelt & Grün 2010; Stella et
+al. 2022) and time slides from gravitational-wave searches. ``docs/scoring_objective.md`` has the
+sources and how each was checked.
 
-* **kept:** each channel's event count and every interval between its own events, so its rate and
-  its own timing; and any change in rate that the channels share over spans much longer than
-  ``j_sec``, because a shift of seconds moves a minute-long rise by seconds;
-* **destroyed:** which channels are active within a second or two of each other.
+* **kept:** every interval between one channel's own events, so its own timing; and,
+  approximately, any change in rate that the channels share over spans longer than ``j_sec``.
+  The shared rate profile is smoothed over about ``j_sec``, so a sharp shared change is blurred;
+* **destroyed:** the timing between channels at every scale up to about ``j_sec``, not only at a
+  second or two. Shared change in rate faster than ``j_sec`` therefore counts as coordination
+  under this null;
+* **not kept exactly:** a channel's event count. Onsets moved past either end are dropped (next
+  paragraph); inside the valid window none can be missing;
+* **not fully separated:** pairs of channels. Offsets are independent, so two channels draw
+  offsets within 1.5 s of each other in about 7 % of negatives at ``j_sec`` = 20 s. Groups of
+  three or more are almost always separated.
 
 It is the null the event floor already uses (:func:`bugarach.event_floor.rigid_frames` with
 ``shared=False``, at ``j_sec`` = 20 s). That one works on frame indices for one fixed purpose;
@@ -26,15 +36,20 @@ this one works on seconds so it needs no frame interval. The two are the same co
 are not draw-for-draw identical.
 
 **The edges.** An onset moved past either end of the recording is dropped, not wrapped: wrapping
-would lay the end of a recording over its start. So the first and last ``j_sec`` of a negative
+would lay the end of a recording over its start. The published form wraps, so that chance
+coincidences are not underestimated, and notes that this needs matching rates at the two ends. So the first and last ``j_sec`` of a negative
 are thinned, and scoring should read :attr:`Negative.valid_window`, where every original onset
 is still present.
 
 **What a negative of a recording with coordinated events still holds.** Every one of those
 onsets, scattered. Its channels are therefore busier than the true background, which makes a
-false-call rate measured on it too high, never too low
-(``docs/adr/0008-the-event-floor-is-set-per-window-from-its-own-null.md``, consequences). On
-simulated data the size of that excess can be measured against a recording with nothing planted.
+false-call rate measured on it too high
+(``docs/adr/0008-the-event-floor-is-set-per-window-from-its-own-null.md``, consequences). Two
+other effects pull the other way or hide the answer: shared structure faster than ``j_sec`` is
+erased, which lowers the rate; and a detector whose participation minimum was set from this same
+shift is held near that minimum's rate by construction (Takigawa et al. 2024). So on simulated
+data the false-call rate to trust is the one on a recording with nothing planted, and this
+negative is measured against it.
 """
 from __future__ import annotations
 
