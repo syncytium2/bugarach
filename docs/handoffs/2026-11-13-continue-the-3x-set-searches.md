@@ -39,10 +39,19 @@ step writes a start line and an exit line to `queue.log` there.
 At 4x the three fast searches took 114 to 178 minutes each, and 3x searches have run slower
 than their 4x twins, so expect the chain to end late evening or after midnight.
 
-**The chain is a background task of the session that started it. If that session has ended,
-the chain may have died with it.** First thing: read `queue.log`. If the last line is not
-`chain done` and no Python processes are running, restart from the first set whose folder has no
-finished `search.json`:
+**Checked at 2:48 PM EST by the session that took over:** the session that started the chain
+has ended and the chain outlived it. Its `bash` is orphaned but still running `slow_male_3x`.
+That search logged nothing after 2:03 PM: its last line drove `sync.dt` to the edge of the grid
+(0.1 s to 0.00078 s, mean F1 0.959 to 1.000), and for 45 minutes after it 2 of the 11 workers
+ran at full CPU while 9 sat idle. That is a stall and not a hang, and it is the slow-evaluation
+suspect below seen live. Given that, and the 4x fast searches at 2 to 3 hours each, expect
+`chain done` around 3 to 5 AM, not in the evening.
+
+First thing: read `queue.log`. If the last line is not `chain done` and no Python processes are
+running, restart from the first set **with no `exit` line in `queue.log`**. Its folder having a
+`search.json` proves nothing: the search writes that file early (`slow_male_3x/search.json` was
+written at 1:56 PM, two minutes into the search). A finished search also leaves
+`full_search.png` beside it.
 
     cd <scratch-3x worktree>
     export PYTHONPATH=src PYTHONUTF8=1 PYTHONIOENCODING=utf-8
@@ -61,10 +70,15 @@ worktree, `scratch-3x`, detached at commit `c5040259` of this branch, with an **
 edit: `default = "tracked_cohorts_3x"` and that table's `use = "input"`. The committed file is
 unchanged: 4x is the default and the 3x folder is `eval`.
 
-These exist **only in the scratch worktree** and are lost if it is removed first:
+These were made in the scratch worktree:
 
 - stage 1 records: `docs/learned/runs/2026-11-13-stage1-tracked-cohorts-3x/`
 - the nine bench records: `docs/learned/bench_sets/*_3x.json`
+
+**Both are now committed to this branch** (2026-11-13, 3 PM EST), copied byte for byte except the
+dataset stamp's `use`, corrected from `input` (the scratch edit speaking) to `eval` (the committed
+table). The scratch copies still read `input`; the chain's cross-score reads those, which is
+correct for the run.
 
 The searches, logs and cross-score are in the run folder, outside any worktree.
 
@@ -75,11 +89,10 @@ The searches, logs and cross-score are in the run folder, outside any worktree.
 2. **Report to Tony**: the 3x cross-score table beside the 4x one
    ([`docs/learned/runs/2026-11-12-set-searches/`](../learned/runs/2026-11-12-set-searches/README.md)),
    naming the dataset each was run on. Lead with what differs.
-3. **Commit the 3x records to this branch (PR #929)**: copy the stage 1 folder and the nine
-   bench records into this worktree, and the searches, verdict and cross-score into
-   `docs/learned/runs/2026-11-13-set-searches-3x/` with a README modelled on the 4x one. Each
-   bench record's dataset stamp says `use: input`, which is the scratch edit speaking; the
-   committed table says `eval`. Correct the field and say so in the README. Add INDEX rows.
+3. **Commit the rest of the 3x records to this branch (PR #929)**: the stage 1 folder and the
+   nine bench records are already in (above). Still owed: the searches, verdict and cross-score
+   into `docs/learned/runs/2026-11-13-set-searches-3x/` with a README modelled on the 4x one,
+   saying that the stamps were corrected from `input` to `eval` and why. Add INDEX rows.
 4. **Then remove the scratch worktree**, after checking the copies landed.
 5. **Check `tools/cross_score_sets.py` did what it should**: in the scratch checkout the 4x sets
    also have records, with no searches in the 3x run folder, so it should print them as left out.
@@ -138,7 +151,7 @@ The 3x bench sets, as measured (events per hour; busy background):
 
 ## Still Tony's
 
-Which settings go forward; merging #928 and #929 (neither approved); the hold on learned
+Which settings go forward; merging #929 (#928 has since merged); the hold on learned
 detectors, in force since 2026-10-22; whether to start Chapter 2; the Great Lakes run
 ([run sheet](../greatlakes/RUN_2026-11-12_set_searches.md), untested, and a session cannot
 submit there).
@@ -147,11 +160,14 @@ submit there).
 
 - Close-pair search per set: `tools/search_close_events.py --benches`.
 - Find the slow evaluations: in `fast_di` at 4x three evaluations took 80 minutes. The suspect is
-  SPIKE-synch with `dt` pushed to 0.0008 s; not confirmed.
+  SPIKE-synch with `dt` pushed to 0.0008 s. Not confirmed, but `slow_male_3x` at 3x stalled the
+  same way right after its log said `sync.dt` reached 0.00078 s (above): the timing fits and no
+  profile was taken.
 - The full test suite has not been rerun on this branch since the bench-set work.
 
 ## Other sessions
 
-The local board shows a session in worktree `land-tracked-cohorts-default` making PR #928 green.
-This branch is based on that PR's branch, so its changes will arrive here by merge. Claim your
+PR #928, which this branch is based on, merged on 2026-11-13; bring `main` in before #929
+lands. The session that took this over on 2026-11-13 holds the local board block
+`065/continue-3x-set-searches`. Claim your
 own block on the local board before the first edit.
