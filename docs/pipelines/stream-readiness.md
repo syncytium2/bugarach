@@ -25,8 +25,8 @@ Every command below was checked against the tool's `--help` on 2026-11-11.
 **The rulings it rests on:** baseline only (FOUNDATIONS §9); the folder is the input and a known
 contamination stops the work (CLAUDE.md); a false alarm is coincidence the rates explain
 (ADR-0006); the floor is per window (ADR-0008); the elevated-rate test has its own recording
-(ADR-0009); events are planted at measured gaps (ADR-0010); no decoys (ADR-0019); coded
-detectors, synthetic first (ADR-0021).
+(ADR-0009); events are planted at measured gaps (ADR-0010); treatment recordings at rate levels (ADR-0013); no decoys (ADR-0019); coded
+detectors, synthetic first (ADR-0021); close events as an axis of set separations (ADR-0022).
 
 ## The route, as commands
 
@@ -57,7 +57,7 @@ Then transcribe each record into its module (`bench.py`, `bench_slow.py`, `bench
 
 **Gate: `pytest tests/test_bench_is_measured_on_the_declared_folder.py tests/test_bench_slow.py
 tests/test_combined.py`.** A constant that disagrees with its record is refused. The
-transcription is by hand, and that is the route's weakest joint (*Owed*, item 4).
+transcription is by hand, and that is the route's weakest joint (*Owed*, item 5).
 
 ### Stage 2 — the stream profile
 
@@ -120,19 +120,28 @@ None of these needs a ruling unless it says so.
    [todo](../todo/2026-10-23-rate-matched-negatives-and-the-bench-without-decoys.md)). Every
    bench still plants 6 decoys per recording. `StreamProfile.recording(decoys=False)` gives the
    recording without them; the scores have not been re-derived.
-2. **Short intervals.** The measured gaps merged events under 2 s apart, so the closest real
-   events are not planted. **Waits on Tony**
-   ([todo](../todo/2026-10-08-the-stack-ceiling-and-the-short-interval-bench.md)).
-3. **Stage 3 for the rest of Aim 1**: the assessor and the correlogram on the same recordings, a
+2. **The separation axis on all three streams**
+   ([ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md)):
+   neighbouring events planted 0.5 to 5 s apart, every detector scored at each separation.
+   **First run 2026-11-11** (`tools/measure_separation_axis.py`;
+   [record](../learned/runs/2026-11-11-separation-axis/README.md)): at the shipped settings no
+   detector on any stream separates events 2 s apart or closer. Owed: the search with close
+   events present, so merge gaps are priced, and a score per pair.
+3. **Treatment recordings**
+   ([ADR-0013](../adr/0013-the-bench-simulates-treatment-periods.md)): a rate course as a
+   generator input, courses at set multiples of the baseline rate, a null twin for each, and
+   scores by segment. Built now with synthetic courses; the measured ones wait on the export.
+   Five of its open points are still Tony's.
+4. **Stage 3 for the rest of Aim 1**: the assessor and the correlogram on the same recordings, a
    fixed assembly, and two sources ([goal page](../goals/synthetic-validation.md), *The plan*).
-4. **A profile built from the measured record**, so stage 1 ends in a file and not in an edit
+5. **A profile built from the measured record**, so stage 1 ends in a file and not in an edit
    to three modules; then the scoring path takes the profile and the three modules become one
    ([todo](../todo/2026-09-21-one-stream-aware-bench.md)).
-5. **A `--folder` route for the measuring tools and a writer for a simulated folder**, so the
+6. **A `--folder` route for the measuring tools and a writer for a simulated folder**, so the
    whole route can be rehearsed on a synthetic stand-in before the export arrives.
-6. **An evaluation stage between 6 and 7**: the capability map per detector (Aim 2), scored per
+7. **An evaluation stage between 6 and 7**: the capability map per detector (Aim 2), scored per
    source on rate-matched negatives.
-7. **Re-measuring the parameters from the calls** after stage 7 (Aim 3).
-8. **The producer's own statement of what assigns an event to fast or slow**
+8. **Re-measuring the parameters from the calls** after stage 7 (Aim 3).
+9. **The producer's own statement of what assigns an event to fast or slow**
    ([`goals/combined-stream-coordination.md`](../goals/combined-stream-coordination.md)); the
    route runs on Tony's working rule of 2026-10-07 until then.

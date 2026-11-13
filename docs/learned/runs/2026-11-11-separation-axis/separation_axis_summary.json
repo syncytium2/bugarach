@@ -1,0 +1,610 @@
+{
+ "separations_sec": [
+  0.5,
+  1.0,
+  2.0,
+  3.0,
+  5.0,
+  10.0
+ ],
+ "detectors": [
+  "coact",
+  "loco",
+  "sce",
+  "count_sliding"
+ ],
+ "by_stream": {
+  "fast": {
+   "0.5": {
+    "n_recordings": 24,
+    "n_events": 168,
+    "n_close_gaps": 77,
+    "det": {
+     "coact": {
+      "mean_f1": 0.7459677419354838,
+      "mean_recall": 0.5948717948717949,
+      "merged_calls_per_recording": 0.8333333333333334
+     },
+     "loco": {
+      "mean_f1": 0.7459677419354838,
+      "mean_recall": 0.5948717948717949,
+      "merged_calls_per_recording": 0.625
+     },
+     "sce": {
+      "mean_f1": 0.6689356435643565,
+      "mean_recall": 0.6205128205128205,
+      "merged_calls_per_recording": 0.8333333333333334
+     },
+     "count_sliding": {
+      "mean_f1": 0.7552083333333334,
+      "mean_recall": 0.6121794871794872,
+      "merged_calls_per_recording": 0.875
+     }
+    }
+   },
+   "1": {
+    "n_recordings": 24,
+    "n_events": 168,
+    "n_close_gaps": 77,
+    "det": {
+     "coact": {
+      "mean_f1": 0.7459677419354838,
+      "mean_recall": 0.5948717948717949,
+      "merged_calls_per_recording": 0.8333333333333334
+     },
+     "loco": {
+      "mean_f1": 0.7993537467302663,
+      "mean_recall": 0.6673076923076924,
+      "merged_calls_per_recording": 0.7083333333333334
+     },
+     "sce": {
+      "mean_f1": 0.6825,
+      "mean_recall": 0.6288461538461538,
+      "merged_calls_per_recording": 0.8333333333333334
+     },
+     "count_sliding": {
+      "mean_f1": 0.7802249297094658,
+      "mean_recall": 0.6461538461538461,
+      "merged_calls_per_recording": 0.875
+     }
+    }
+   },
+   "2": {
+    "n_recordings": 24,
+    "n_events": 168,
+    "n_close_gaps": 77,
+    "det": {
+     "coact": {
+      "mean_f1": 0.8347826086956522,
+      "mean_recall": 0.717948717948718,
+      "merged_calls_per_recording": 0.8333333333333334
+     },
+     "loco": {
+      "mean_f1": 0.8238510418206,
+      "mean_recall": 0.7006410256410256,
+      "merged_calls_per_recording": 0.625
+     },
+     "sce": {
+      "mean_f1": 0.6891025641025641,
+      "mean_recall": 0.6365384615384615,
+      "merged_calls_per_recording": 0.7083333333333334
+     },
+     "count_sliding": {
+      "mean_f1": 0.8225101921956901,
+      "mean_recall": 0.7051282051282051,
+      "merged_calls_per_recording": 0.8333333333333334
+     }
+    }
+   },
+   "3": {
+    "n_recordings": 24,
+    "n_events": 168,
+    "n_close_gaps": 77,
+    "det": {
+     "coact": {
+      "mean_f1": 0.8446436192915067,
+      "mean_recall": 0.7352564102564103,
+      "merged_calls_per_recording": 0.6666666666666666
+     },
+     "loco": {
+      "mean_f1": 0.9419995216455395,
+      "mean_recall": 0.8903846153846153,
+      "merged_calls_per_recording": 0.0
+     },
+     "sce": {
+      "mean_f1": 0.743009774948852,
+      "mean_recall": 0.7173076923076923,
+      "merged_calls_per_recording": 0.625
+     },
+     "count_sliding": {
+      "mean_f1": 0.8284313725490196,
+      "mean_recall": 0.7134615384615385,
+      "merged_calls_per_recording": 0.7916666666666666
+     }
+    }
+   },
+   "5": {
+    "n_recordings": 24,
+    "n_events": 168,
+    "n_close_gaps": 77,
+    "det": {
+     "coact": {
+      "mean_f1": 0.9128787878787878,
+      "mean_recall": 0.8397435897435898,
+      "merged_calls_per_recording": 0.375
+     },
+     "loco": {
+      "mean_f1": 0.9512338425381904,
+      "mean_recall": 0.907051282051282,
+      "merged_calls_per_recording": 0.0
+     },
+     "sce": {
+      "mean_f1": 0.7540160642570282,
+      "mean_recall": 0.733974358974359,
+      "merged_calls_per_recording": 0.4583333333333333
+     },
+     "count_sliding": {
+      "mean_f1": 0.9353186420488386,
+      "mean_recall": 0.8858974358974359,
+      "merged_calls_per_recording": 0.375
+     }
+    }
+   },
+   "10": {
+    "n_recordings": 24,
+    "n_events": 168,
+    "n_close_gaps": 77,
+    "det": {
+     "coact": {
+      "mean_f1": 0.9783675289919714,
+      "mean_recall": 0.9576923076923076,
+      "merged_calls_per_recording": 0.0
+     },
+     "loco": {
+      "mean_f1": 0.9490265486725664,
+      "mean_recall": 0.9032051282051282,
+      "merged_calls_per_recording": 0.0
+     },
+     "sce": {
+      "mean_f1": 0.8941328731665228,
+      "mean_recall": 0.9916666666666667,
+      "merged_calls_per_recording": 0.0
+     },
+     "count_sliding": {
+      "mean_f1": 0.9958677685950413,
+      "mean_recall": 1.0,
+      "merged_calls_per_recording": 0.0
+     }
+    }
+   }
+  },
+  "slow": {
+   "0.5": {
+    "n_recordings": 24,
+    "n_events": 408,
+    "n_close_gaps": 203,
+    "det": {
+     "coact": {
+      "mean_f1": 0.6808573443316552,
+      "mean_recall": 0.5179649758454106,
+      "merged_calls_per_recording": 3.1666666666666665
+     },
+     "loco": {
+      "mean_f1": 0.6850547730829422,
+      "mean_recall": 0.5221920289855072,
+      "merged_calls_per_recording": 3.1666666666666665
+     },
+     "sce": {
+      "mean_f1": 0.7025288477661082,
+      "mean_recall": 0.5526871980676329,
+      "merged_calls_per_recording": 3.25
+     },
+     "count_sliding": {
+      "mean_f1": 0.6808573443316552,
+      "mean_recall": 0.5179649758454106,
+      "merged_calls_per_recording": 3.1666666666666665
+     }
+    }
+   },
+   "1": {
+    "n_recordings": 24,
+    "n_events": 408,
+    "n_close_gaps": 203,
+    "det": {
+     "coact": {
+      "mean_f1": 0.6907391673746814,
+      "mean_recall": 0.5287698412698413,
+      "merged_calls_per_recording": 2.9166666666666665
+     },
+     "loco": {
+      "mean_f1": 0.7026606739868388,
+      "mean_recall": 0.5424332611832612,
+      "merged_calls_per_recording": 2.8333333333333335
+     },
+     "sce": {
+      "mean_f1": 0.7268175842382985,
+      "mean_recall": 0.5758026695526696,
+      "merged_calls_per_recording": 2.9583333333333335
+     },
+     "count_sliding": {
+      "mean_f1": 0.6907391673746814,
+      "mean_recall": 0.5287698412698413,
+      "merged_calls_per_recording": 2.9166666666666665
+     }
+    }
+   },
+   "2": {
+    "n_recordings": 24,
+    "n_events": 408,
+    "n_close_gaps": 203,
+    "det": {
+     "coact": {
+      "mean_f1": 0.7177104108496211,
+      "mean_recall": 0.5611402486402486,
+      "merged_calls_per_recording": 2.7916666666666665
+     },
+     "loco": {
+      "mean_f1": 0.7343434343434343,
+      "mean_recall": 0.5820707070707071,
+      "merged_calls_per_recording": 2.7083333333333335
+     },
+     "sce": {
+      "mean_f1": 0.7375,
+      "mean_recall": 0.5926330613830614,
+      "merged_calls_per_recording": 2.6666666666666665
+     },
+     "count_sliding": {
+      "mean_f1": 0.7177104108496211,
+      "mean_recall": 0.5611402486402486,
+      "merged_calls_per_recording": 2.7916666666666665
+     }
+    }
+   },
+   "3": {
+    "n_recordings": 24,
+    "n_events": 408,
+    "n_close_gaps": 203,
+    "det": {
+     "coact": {
+      "mean_f1": 0.7119513814823013,
+      "mean_recall": 0.5541715229215229,
+      "merged_calls_per_recording": 2.75
+     },
+     "loco": {
+      "mean_f1": 0.7914007092198582,
+      "mean_recall": 0.6551330613830614,
+      "merged_calls_per_recording": 2.5833333333333335
+     },
+     "sce": {
+      "mean_f1": 0.7906052488751161,
+      "mean_recall": 0.6586295648795648,
+      "merged_calls_per_recording": 2.4583333333333335
+     },
+     "count_sliding": {
+      "mean_f1": 0.7837750484809309,
+      "mean_recall": 0.6446678321678322,
+      "merged_calls_per_recording": 2.625
+     }
+    }
+   },
+   "5": {
+    "n_recordings": 24,
+    "n_events": 408,
+    "n_close_gaps": 203,
+    "det": {
+     "coact": {
+      "mean_f1": 0.7468312757201646,
+      "mean_recall": 0.5966862416107382,
+      "merged_calls_per_recording": 2.8333333333333335
+     },
+     "loco": {
+      "mean_f1": 0.904729956390473,
+      "mean_recall": 0.8260626398210291,
+      "merged_calls_per_recording": 1.625
+     },
+     "sce": {
+      "mean_f1": 0.8420742395334047,
+      "mean_recall": 0.7300055928411633,
+      "merged_calls_per_recording": 2.25
+     },
+     "count_sliding": {
+      "mean_f1": 0.9004817444219066,
+      "mean_recall": 0.819001677852349,
+      "merged_calls_per_recording": 1.6666666666666667
+     }
+    }
+   },
+   "10": {
+    "n_recordings": 24,
+    "n_events": 408,
+    "n_close_gaps": 203,
+    "det": {
+     "coact": {
+      "mean_f1": 0.8755861518507433,
+      "mean_recall": 0.7787247474747474,
+      "merged_calls_per_recording": 2.0833333333333335
+     },
+     "loco": {
+      "mean_f1": 1.0,
+      "mean_recall": 1.0,
+      "merged_calls_per_recording": 0.0
+     },
+     "sce": {
+      "mean_f1": 0.9982698961937716,
+      "mean_recall": 1.0,
+      "merged_calls_per_recording": 0.0
+     },
+     "count_sliding": {
+      "mean_f1": 1.0,
+      "mean_recall": 1.0,
+      "merged_calls_per_recording": 0.0
+     }
+    }
+   }
+  },
+  "combined": {
+   "0.5": {
+    "n_recordings": 24,
+    "n_events": 456,
+    "n_close_gaps": 241,
+    "det": {
+     "coact": {
+      "mean_f1": 0.6556489262371616,
+      "mean_recall": 0.488626964433416,
+      "merged_calls_per_recording": 2.375
+     },
+     "loco": {
+      "mean_f1": 0.6931226273505783,
+      "mean_recall": 0.5305004135649296,
+      "merged_calls_per_recording": 2.2916666666666665
+     },
+     "sce": {
+      "mean_f1": 0.6008864203764481,
+      "mean_recall": 0.4705334987593052,
+      "merged_calls_per_recording": 2.25
+     },
+     "count_sliding": {
+      "mean_f1": 0.6556489262371616,
+      "mean_recall": 0.488626964433416,
+      "merged_calls_per_recording": 2.375
+     }
+    }
+   },
+   "1": {
+    "n_recordings": 24,
+    "n_events": 456,
+    "n_close_gaps": 241,
+    "det": {
+     "coact": {
+      "mean_f1": 0.6471595775049958,
+      "mean_recall": 0.479319494303106,
+      "merged_calls_per_recording": 2.2083333333333335
+     },
+     "loco": {
+      "mean_f1": 0.7400594574507617,
+      "mean_recall": 0.5875604807242079,
+      "merged_calls_per_recording": 1.9583333333333333
+     },
+     "sce": {
+      "mean_f1": 0.6243756243756244,
+      "mean_recall": 0.5001170594662089,
+      "merged_calls_per_recording": 2.2083333333333335
+     },
+     "count_sliding": {
+      "mean_f1": 0.6471595775049958,
+      "mean_recall": 0.479319494303106,
+      "merged_calls_per_recording": 2.2083333333333335
+     }
+    }
+   },
+   "2": {
+    "n_recordings": 24,
+    "n_events": 456,
+    "n_close_gaps": 241,
+    "det": {
+     "coact": {
+      "mean_f1": 0.7146089204912736,
+      "mean_recall": 0.5559467918622849,
+      "merged_calls_per_recording": 1.9583333333333333
+     },
+     "loco": {
+      "mean_f1": 0.7624247410343667,
+      "mean_recall": 0.6184467918622849,
+      "merged_calls_per_recording": 1.8333333333333333
+     },
+     "sce": {
+      "mean_f1": 0.6702237878159967,
+      "mean_recall": 0.5629890453834117,
+      "merged_calls_per_recording": 1.75
+     },
+     "count_sliding": {
+      "mean_f1": 0.744975744975745,
+      "mean_recall": 0.5941901408450705,
+      "merged_calls_per_recording": 1.9583333333333333
+     }
+    }
+   },
+   "3": {
+    "n_recordings": 24,
+    "n_events": 456,
+    "n_close_gaps": 241,
+    "det": {
+     "coact": {
+      "mean_f1": 0.7506868131868132,
+      "mean_recall": 0.6012323943661972,
+      "merged_calls_per_recording": 1.9583333333333333
+     },
+     "loco": {
+      "mean_f1": 0.7843603603603604,
+      "mean_recall": 0.6497456964006261,
+      "merged_calls_per_recording": 1.7083333333333333
+     },
+     "sce": {
+      "mean_f1": 0.749086517619372,
+      "mean_recall": 0.6644170579029733,
+      "merged_calls_per_recording": 1.5416666666666667
+     },
+     "count_sliding": {
+      "mean_f1": 0.8462940066376,
+      "mean_recall": 0.7340571205007824,
+      "merged_calls_per_recording": 1.7083333333333333
+     }
+    }
+   },
+   "5": {
+    "n_recordings": 24,
+    "n_events": 456,
+    "n_close_gaps": 241,
+    "det": {
+     "coact": {
+      "mean_f1": 0.8240000000000001,
+      "mean_recall": 0.7013888888888888,
+      "merged_calls_per_recording": 1.7916666666666667
+     },
+     "loco": {
+      "mean_f1": 0.83861697350696,
+      "mean_recall": 0.7270299145299145,
+      "merged_calls_per_recording": 1.7083333333333333
+     },
+     "sce": {
+      "mean_f1": 0.7921885521885521,
+      "mean_recall": 0.719017094017094,
+      "merged_calls_per_recording": 1.375
+     },
+     "count_sliding": {
+      "mean_f1": 0.9705389786531431,
+      "mean_recall": 0.9428418803418803,
+      "merged_calls_per_recording": 0.5
+     }
+    }
+   },
+   "10": {
+    "n_recordings": 24,
+    "n_events": 456,
+    "n_close_gaps": 241,
+    "det": {
+     "coact": {
+      "mean_f1": 0.9563063063063063,
+      "mean_recall": 0.9164598842018197,
+      "merged_calls_per_recording": 0.875
+     },
+     "loco": {
+      "mean_f1": 0.9701754385964911,
+      "mean_recall": 0.9421009098428452,
+      "merged_calls_per_recording": 0.0
+     },
+     "sce": {
+      "mean_f1": 0.9503563529122634,
+      "mean_recall": 0.9742555831265509,
+      "merged_calls_per_recording": 0.0
+     },
+     "count_sliding": {
+      "mean_f1": 1.0,
+      "mean_recall": 1.0,
+      "merged_calls_per_recording": 0.0
+     }
+    }
+   }
+  }
+ },
+ "_": {
+  "what": "the separation axis of ADR-0022 on the three stream benches",
+  "close_share": 0.5,
+  "seeds": 12,
+  "first_seed": 6000,
+  "n_recordings": 432,
+  "decoys_per_recording": 0,
+  "spacing": "realistic",
+  "settings": "each stream's shipped operating point, each recording's own floor",
+  "profiles": {
+   "fast": {
+    "stream": "fast",
+    "module": "bugarach.bench",
+    "measured_record": "docs/learned/bench_measured.json",
+    "measured_role": "default",
+    "provisional": false,
+    "decoys_per_recording": 6,
+    "n_cells": 32,
+    "participants": [
+     9.6,
+     6.496,
+     3.2
+    ],
+    "jitter_sec": 0.105,
+    "bg_rate_hz": {
+     "baseline_quiet": 0.0049,
+     "baseline_busy": 0.0169
+    },
+    "detectors": [
+     "loco",
+     "cicada",
+     "sce",
+     "coact",
+     "rate",
+     "sync",
+     "count",
+     "count_sliding"
+    ]
+   },
+   "slow": {
+    "stream": "slow",
+    "module": "bugarach.bench_slow",
+    "measured_record": "docs/learned/bench_measured_slow.json",
+    "measured_role": "default",
+    "provisional": false,
+    "decoys_per_recording": 6,
+    "n_cells": 32,
+    "participants": [
+     20.16,
+     12.0,
+     6.72
+    ],
+    "jitter_sec": 0.131,
+    "bg_rate_hz": {
+     "baseline_quiet": 0.0024,
+     "baseline_busy": 0.0093
+    },
+    "detectors": [
+     "loco",
+     "cicada",
+     "sce",
+     "coact",
+     "rate",
+     "sync",
+     "count",
+     "count_sliding"
+    ]
+   },
+   "combined": {
+    "stream": "combined",
+    "module": "bugarach.bench_combined",
+    "measured_record": "docs/learned/bench_measured_combined.json",
+    "measured_role": "default",
+    "provisional": false,
+    "decoys_per_recording": 6,
+    "n_cells": 32,
+    "participants": [
+     12.8,
+     8.0,
+     4.16
+    ],
+    "jitter_sec": 0.15,
+    "bg_rate_hz": {
+     "baseline_quiet": 0.0071,
+     "baseline_busy": 0.0292
+    },
+    "detectors": [
+     "loco",
+     "cicada",
+     "sce",
+     "coact",
+     "rate",
+     "sync",
+     "count",
+     "count_sliding"
+    ]
+   }
+  },
+  "seconds": 110.7
+ }
+}

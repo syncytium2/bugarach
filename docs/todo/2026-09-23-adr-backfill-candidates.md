@@ -47,8 +47,8 @@ them).
 
 - **0012 and 0013 exist only on branches** (#848, #855), Proposed since 2026-09-28. The index
   recorded that inside ADR-0014's title cell. They now have their own paragraph under the index,
-  with the command that lists every number taken on any branch. **Both wait on Tony**, and the
-  readiness route cannot settle its bench until they are accepted or declined.
+  with the command that lists every number taken on any branch. **Both were ruled the same day**: 0012
+  declined, 0013 accepted as amended, and both files are now on `main` with index rows.
 - **ADR-0019 is Accepted and not implemented**: every bench still plants 6 decoys per recording.
   A dated note in the ADR says so and points at the work. No decision changed.
 - **ADR-0005's status line is not in the template's form** (`- **Status:** accepted 2026-08-29`,

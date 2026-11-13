@@ -15,6 +15,13 @@ low participation. Tony: *"Treat like a phd project (except we have days not yea
 
 ## Where it stands
 
+- 2026-11-11: **the separation axis ran on all three streams**
+  ([ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md);
+  [record](../learned/runs/2026-11-11-separation-axis/README.md)). At the shipped settings,
+  CoactDetect, LoCo, binned SCE and count (sliding) all join planted events 2 s apart or closer:
+  recall is 0.47 to 0.72 there against 0.90 to 1.00 at 10 s (CoactDetect on slow, 0.78). Those
+  settings were searched on a bench with no events that close, so this is what their merge gaps
+  were bound to give; the search with close events present is next.
 - 2026-11-11: **this goal is the recovery and evaluation stages of one route**
   ([ADR-0020](../adr/0020-one-route-from-a-folder-to-calls-per-stream.md);
   [`pipelines/stream-readiness.md`](../pipelines/stream-readiness.md)), and its conditions now
@@ -519,6 +526,8 @@ Aim 1c.
 | Coded detectors only; the learned models are on hold. | decided | Tony, 2026-10-22 (handoff) |
 | Negatives are rate-matched and carry no coordination; no decoys. A call on a weaker source is a hit for that source. | decided | [ADR-0019](../adr/0019-the-decoys-are-retired-negatives-are-rate-matched.md), ADR-0006 |
 | Our current export supplies realistic parameter values only, never truth. | decided | Tony, 2026-10-22 (*"our existing flawed data"*) |
+| **Close events are a bench axis of set separations, below 2 s included**; the event definition stays at the 2 s window until the revised export is re-measured. Tony: *"by eye separation less than 2s is detectable"* | decided | [ADR-0022](../adr/0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md), 2026-11-11 |
+| **The bench simulates treatment periods**, at rate-course levels that span the groups, not per group | decided | [ADR-0013](../adr/0013-the-bench-simulates-treatment-periods.md), accepted as amended 2026-11-11 |
 | A fixed K does not transfer across backgrounds; the assessor reads jitter only at 0.01 Hz (lab-like) and only to a planted 0.5 s | measured (one generator) | *Aim 1a, first result* |
 | The coordination-rates tool's participants are predicted to a median residual of 0.007–0.016 for events of 10+ cells (worst 0.11); rate and share less well | derived and checked (one generator: one k, Gaussian jitter, events ≥ 20 s apart) | *Aim 0, the predictions* |
 | A joint fit across the tool's windows recovers jitter from 0.2 s up, participants within 0.94–1.14 and rate within 0.73–1.14, for events of 10+ cells; not 0.05 s, not 5-cell events, and the lab's 0.10–0.15 s and 7-cell events untested | derived and checked (same scope) | *Aim 0, the predictions* |
