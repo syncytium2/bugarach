@@ -1,5 +1,5 @@
 [problem] 190 background onsets, 40 event onsets (4 events of 10 cells), 120 s
-C:\Users\defazio\AppData\Local\Temp\claude\6766db01802832ad\9145fa94-c896-4d5e-aae0-ea62a9caaec1\scratchpad\figs3\synth_raster_plot_coordinated-events-on-a-noisy-background_20261113.png
+synth_raster_plot_coordinated-events-on-a-noisy-background_20261113.png
 [detectors] over 200 draws (seeds 1000-1199): share found for events 1, 2, 3 (both), 4, 5; false alarms per busier-stretch minute; per quiet hour
 [detectors]   fixed bins      1.00  0.34  0.00  1.00  0.41   1.82 per min (364 in 200 min)   0.10 per h (1 in 10 h)
 [detectors]   sliding window  1.00  1.00  0.00  1.00  0.66   3.58 per min (717 in 200 min)   0.50 per h (5 in 10 h)
@@ -20,7 +20,7 @@ C:\Users\defazio\AppData\Local\Temp\claude\6766db01802832ad\9145fa94-c896-4d5e-a
 [detectors] sliding: 10 calls; found 5 of 6; false alarms at 126 s, 130 s, 138 s, 143 s, 156 s
 [detectors] cfar: 3 calls; found 3 of 6; false alarms at none
 [detectors] CFAR threshold in the draw shown: near event 2 [8] cells, in the busier stretch [10, 11, 12] cells
-C:\Users\defazio\AppData\Local\Temp\claude\6766db01802832ad\9145fa94-c896-4d5e-aae0-ea62a9caaec1\scratchpad\figs3\synth_raster_plot_three-simple-detectors-found-and-missed_20261113.png
+synth_raster_plot_three-simple-detectors-found-and-missed_20261113.png
 [twosets] sharp (sigma 0.1 s): peak 18.3 x chance (predicted 18.4); level at 2-3 s lag 0.859, at 5-10 s 0.891 (predicted 0.886); HWHM by the correlogram tool 0.177 s (bootstrap SE over recordings 0.003 s), predicted with frame rounding 0.174 s, 2 sqrt(ln 2) sigma = 0.167 s
 [twosets] sharp: excess pairs / (lambda w k(k-1)), measured at w = 0.2 s: 0.480, 0.5 s: 0.768, 1 s: 0.871, 2 s: 0.909, 4 s: 0.900, 8 s: 0.838
 [twosets] sharp: predicted (hard-core form): 0.2 s: 0.482, 0.5 s: 0.765, 1 s: 0.869, 2 s: 0.908, 4 s: 0.900, 8 s: 0.842
@@ -32,4 +32,4 @@ C:\Users\defazio\AppData\Local\Temp\claude\6766db01802832ad\9145fa94-c896-4d5e-a
 [twosets] jittered: g2: 0.2 s: 0.112, 0.5 s: 0.271, 1 s: 0.486, 2 s: 0.718, 4 s: 0.859, 8 s: 0.929
 [twosets] jittered: share of 1 s bins with >= 5 cells 0.0189, >= 8 0.0044; events reaching >= 5 cells in some 1 s bin 442/450, >= 8 cells 119/450
 [twosets] chance (background 0.0096 Hz alone): share of 1 s bins with >= 5 cells 1.51e-05, >= 8 7.79e-10
-C:\Users\defazio\AppData\Local\Temp\claude\6766db01802832ad\9145fa94-c896-4d5e-aae0-ea62a9caaec1\scratchpad\figs3\synth_recovery_plot_sharp-and-jittered-sets-each-tool_20261113.png
+synth_recovery_plot_sharp-and-jittered-sets-each-tool_20261113.png
