@@ -6,3 +6,7 @@
 # rather than "the check could not run". Pin the line endings instead.
 # (Convention adopted from syncytium2/murderboard.)
 *.sh text eol=lf
+
+# Two sessions that each add a row to the ADR index do not conflict: git keeps both lines.
+# (armory's ADR kit, tools/adr/README.md there, step 4.)
+docs/adr/README.md merge=union

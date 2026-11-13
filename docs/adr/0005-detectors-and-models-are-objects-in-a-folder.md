@@ -199,7 +199,7 @@ artifacts already answer, and **the bench can refuse an invalid comparison** rat
 silently produce one.
 
 That failure is live today:
-[`../todo/2026-08-28-the-refit-still-picks-thresholds-on-its-fitting-data.md`](../todo/2026-08-28-the-refit-still-picks-thresholds-on-its-fitting-data.md)
+`docs/todo/2026-08-28-the-refit-still-picks-thresholds-on-its-fitting-data.md` (never committed; link removed 2026-11-13)
 — settings chosen on the data they were then scored on. Two pieces already exist and
 were built for other reasons: `bugarach.provenance` (2026-08-29) records *which code*,
 and `fair_bakeoff --score-spec` (PR #398) records *which corpus was fitted on versus
