@@ -1,4 +1,4 @@
-# ADR-0024: the September bench is stale and is not re-measured; the old data are replaced
+# ADR 2026-11-13-43ba: the September bench is stale and is not re-measured; the old data are replaced
 
 ## Status
 
@@ -61,7 +61,8 @@ above.
   handoff, `docs/handoffs/2026-11-13-chapter-2-synthetic-sets-and-detector-scoring.md`, is in
   the same pull request and is not on `main` yet.
 - **The route page is now out of step, and that is open.** Stage 2 of
-  [`pipelines/stream-readiness.md`](../pipelines/stream-readiness.md) (ADR-0020) re-measures
+  [`pipelines/stream-readiness.md`](../pipelines/stream-readiness.md) (the route of
+  [the one-route record](0020-one-route-from-a-folder-to-calls-per-stream.md)) re-measures
   the three benches on a folder with the two tools named in decision 2. This record stops that
   for the September benches. Whether the stage is rewritten around bench sets, or the tools are
   kept to measure a new bench on the retracked export, waits on Tony.
