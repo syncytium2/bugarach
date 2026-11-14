@@ -1,0 +1,55 @@
+forms: true = true train (thinned renewal, general form, fixed count); page = 20 s hard core, theory.py's form (train=None); poisson = Poisson train, general form, no fixed count; poisson_fixed = Poisson train, general form, fixed count at the expected count; hardcore20 = 20 s hard core, general form (tool's surrogate)
+
+=== fast gap list (mean gap 100.58 s), thinned with p = 0.271 to 9.7 events per hour = 7.25 expected per recording; sigma 0.105 s, b 0.0096 Hz/cell, 33 cells, 2700 s, 40 recordings per k
+  planted events per recording: mean 7.28, median 6, range 2-19, recordings with < 3 events: 1 of 80
+  coordination-rates tool, ratio to planted. measured: solve() on the mean f2, f3 (bootstrap SE) | per-recording solve() median [IQR] (refused) || predicted page (hard core) | general
+  k  7 w 1 s rate        : 0.977 (SE 0.041) | 0.91 [0.79, 1.14] (0) || 0.991 | 0.989
+  k  7 w 1 s participants: 0.958 (SE 0.013) | 0.97 [0.92, 1.01] (0) || 0.946 | 0.946
+  k  7 w 2 s rate        : 1.032 (SE 0.054) | 1.05 [0.81, 1.25] (0) || 1.008 | 1.007
+  k  7 w 2 s participants: 0.958 (SE 0.015) | 0.94 [0.90, 1.02] (0) || 0.966 | 0.965
+  k  7 w 4 s rate        : 1.085 (SE 0.081) | 1.10 [0.72, 1.54] (0) || 1.034 | 1.011
+  k  7 w 4 s participants: 0.944 (SE 0.022) | 0.95 [0.84, 1.08] (0) || 0.966 | 0.977
+  k 13 w 1 s rate        : 0.997 (SE 0.008) | 1.01 [0.96, 1.04] (0) || 1.005 | 1.003
+  k 13 w 1 s participants: 0.936 (SE 0.005) | 0.94 [0.91, 0.96] (0) || 0.938 | 0.938
+  k 13 w 2 s rate        : 1.001 (SE 0.010) | 1.01 [0.94, 1.05] (0) || 1.014 | 1.012
+  k 13 w 2 s participants: 0.955 (SE 0.005) | 0.95 [0.93, 0.98] (0) || 0.962 | 0.961
+  k 13 w 4 s rate        : 1.009 (SE 0.026) | 1.01 [0.97, 1.10] (0) || 1.034 | 1.013
+  k 13 w 4 s participants: 0.964 (SE 0.016) | 0.95 [0.92, 0.97] (0) || 0.964 | 0.975
+  joint fit per recording, fitted / planted: median [IQR]; bounds = within 2 % of the fit's limits (sigma 0.005 / 5 s; k 2.001 / 33; lam 1e-6 / 1 Hz); 'in band' = within 0.8-1.25 of planted; rate is against each recording's own planted rate
+  k  7 true         : sigma 0.05 [0.05, 1.52] (bound lo 21, hi 0; band 2) | k 0.97 [0.88, 1.07] (bound 0; band 35) | lam 1.06 [0.75, 1.39] (bound 0; band 13/40) | usable 40/40
+  k  7 page         : sigma 0.23 [0.05, 1.68] (bound lo 18, hi 0; band 4) | k 0.98 [0.89, 1.08] (bound 0; band 35) | lam 1.04 [0.74, 1.37] (bound 0; band 14/40) | usable 40/40
+  k  7 poisson      : sigma 0.05 [0.05, 1.44] (bound lo 22, hi 0; band 2) | k 0.96 [0.86, 1.06] (bound 0; band 34) | lam 1.08 [0.75, 1.41] (bound 0; band 12/40) | usable 40/40
+  k  7 poisson_fixed: sigma 0.05 [0.05, 1.49] (bound lo 21, hi 0; band 2) | k 0.97 [0.86, 1.06] (bound 0; band 34) | lam 1.07 [0.75, 1.40] (bound 0; band 12/40) | usable 40/40
+  k  7 hardcore20   : sigma 0.23 [0.05, 1.69] (bound lo 18, hi 0; band 4) | k 0.98 [0.89, 1.08] (bound 0; band 35) | lam 1.04 [0.73, 1.36] (bound 0; band 14/40) | usable 40/40
+  k 13 true         : sigma 0.57 [0.05, 1.17] (bound lo 11, hi 0; band 8) | k 0.98 [0.94, 1.00] (bound 0; band 39) | lam 1.00 [0.95, 1.08] (bound 0; band 36/40) | usable 40/40
+  k 13 page         : sigma 0.80 [0.13, 1.32] (bound lo 9, hi 0; band 8) | k 0.99 [0.95, 1.02] (bound 0; band 39) | lam 0.97 [0.93, 1.06] (bound 0; band 36/40) | usable 40/40
+  k 13 poisson      : sigma 0.51 [0.05, 1.13] (bound lo 13, hi 0; band 7) | k 0.96 [0.92, 0.99] (bound 0; band 40) | lam 1.02 [0.96, 1.09] (bound 0; band 38/40) | usable 40/40
+  k 13 poisson_fixed: sigma 0.55 [0.05, 1.15] (bound lo 12, hi 0; band 8) | k 0.97 [0.93, 1.00] (bound 0; band 39) | lam 1.01 [0.95, 1.08] (bound 0; band 37/40) | usable 40/40
+  k 13 hardcore20   : sigma 0.80 [0.13, 1.31] (bound lo 9, hi 0; band 8) | k 0.99 [0.95, 1.02] (bound 0; band 39) | lam 0.97 [0.93, 1.06] (bound 0; band 36/40) | usable 40/40
+
+=== slow gap list (mean gap 51.35 s), thinned with p = 0.314 to 22.0 events per hour = 16.44 expected per recording; sigma 0.131 s, b 0.0096 Hz/cell, 33 cells, 2700 s, 40 recordings per k
+  planted events per recording: mean 16.46, median 16, range 2-35, recordings with < 3 events: 1 of 80
+  coordination-rates tool, ratio to planted. measured: solve() on the mean f2, f3 (bootstrap SE) | per-recording solve() median [IQR] (refused) || predicted page (hard core) | general
+  k  7 w 1 s rate        : 1.027 (SE 0.020) | 1.02 [0.94, 1.10] (0) || 1.001 | 1.001
+  k  7 w 1 s participants: 0.915 (SE 0.007) | 0.90 [0.89, 0.94] (0) || 0.925 | 0.924
+  k  7 w 2 s rate        : 1.074 (SE 0.025) | 1.11 [0.99, 1.18] (0) || 1.031 | 1.028
+  k  7 w 2 s participants: 0.928 (SE 0.009) | 0.93 [0.89, 0.96] (0) || 0.945 | 0.944
+  k  7 w 4 s rate        : 1.160 (SE 0.043) | 1.11 [1.01, 1.32] (0) || 1.088 | 1.081
+  k  7 w 4 s participants: 0.909 (SE 0.013) | 0.91 [0.85, 0.98] (0) || 0.933 | 0.932
+  k 13 w 1 s rate        : 1.030 (SE 0.005) | 1.03 [1.01, 1.05] (0) || 1.020 | 1.020
+  k 13 w 1 s participants: 0.909 (SE 0.003) | 0.91 [0.89, 0.93] (0) || 0.914 | 0.914
+  k 13 w 2 s rate        : 1.052 (SE 0.006) | 1.05 [1.03, 1.08] (0) || 1.037 | 1.034
+  k 13 w 2 s participants: 0.932 (SE 0.004) | 0.94 [0.92, 0.95] (0) || 0.941 | 0.940
+  k 13 w 4 s rate        : 1.107 (SE 0.010) | 1.10 [1.06, 1.15] (0) || 1.084 | 1.077
+  k 13 w 4 s participants: 0.920 (SE 0.005) | 0.92 [0.90, 0.94] (0) || 0.933 | 0.932
+  joint fit per recording, fitted / planted: median [IQR]; bounds = within 2 % of the fit's limits (sigma 0.005 / 5 s; k 2.001 / 33; lam 1e-6 / 1 Hz); 'in band' = within 0.8-1.25 of planted; rate is against each recording's own planted rate
+  k  7 true         : sigma 1.00 [0.80, 1.34] (bound lo 4, hi 0; band 18) | k 0.99 [0.94, 1.04] (bound 0; band 39) | lam 1.04 [0.93, 1.18] (bound 0; band 30/40) | usable 40/40
+  k  7 page         : sigma 0.97 [0.77, 1.30] (bound lo 4, hi 0; band 17) | k 0.98 [0.93, 1.04] (bound 0; band 39) | lam 1.03 [0.93, 1.17] (bound 0; band 31/40) | usable 40/40
+  k  7 poisson      : sigma 0.55 [0.28, 0.92] (bound lo 6, hi 0; band 11) | k 0.91 [0.86, 1.00] (bound 0; band 38) | lam 1.11 [1.02, 1.29] (bound 0; band 27/40) | usable 40/40
+  k  7 poisson_fixed: sigma 0.58 [0.30, 0.94] (bound lo 5, hi 0; band 11) | k 0.92 [0.87, 1.00] (bound 0; band 38) | lam 1.10 [1.01, 1.28] (bound 0; band 27/40) | usable 40/40
+  k  7 hardcore20   : sigma 0.98 [0.76, 1.30] (bound lo 4, hi 0; band 17) | k 0.99 [0.94, 1.04] (bound 0; band 39) | lam 1.02 [0.92, 1.16] (bound 0; band 32/40) | usable 40/40
+  k 13 true         : sigma 0.97 [0.76, 1.25] (bound lo 1, hi 0; band 16) | k 1.00 [0.98, 1.02] (bound 0; band 40) | lam 1.01 [0.98, 1.04] (bound 0; band 39/40) | usable 40/40
+  k 13 page         : sigma 0.95 [0.73, 1.22] (bound lo 2, hi 0; band 16) | k 1.00 [0.98, 1.01] (bound 0; band 40) | lam 1.00 [0.97, 1.04] (bound 0; band 39/40) | usable 40/40
+  k 13 poisson      : sigma 0.62 [0.33, 0.83] (bound lo 5, hi 0; band 9) | k 0.93 [0.92, 0.96] (bound 0; band 40) | lam 1.08 [1.06, 1.14] (bound 0; band 39/40) | usable 40/40
+  k 13 poisson_fixed: sigma 0.63 [0.35, 0.85] (bound lo 5, hi 0; band 9) | k 0.94 [0.92, 0.96] (bound 0; band 40) | lam 1.08 [1.05, 1.12] (bound 0; band 39/40) | usable 40/40
+  k 13 hardcore20   : sigma 0.95 [0.72, 1.21] (bound lo 2, hi 0; band 16) | k 1.00 [0.98, 1.02] (bound 0; band 40) | lam 0.99 [0.96, 1.03] (bound 0; band 39/40) | usable 40/40

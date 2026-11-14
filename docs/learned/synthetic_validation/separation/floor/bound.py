@@ -731,76 +731,151 @@ def finish(raw, conds_all, chk, lines, say, clean_rows, clean_curves, dgrid, sha
 
 
 def make_figure(results):
+    """Figure 1.6 (goal page Figure 6). Sized for a ~922 px page column: 12 in wide, smallest text
+    10.5 pt (about 11 px rendered). A-C share y; reference lines are labeled outside the plot
+    area (right of C, and '2σ' in the gap after each panel) so no data crosses a label."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    import matplotlib.ticker
+    from matplotlib.lines import Line2D
+    plt.rcParams.update({"font.size": 12})
     C = {"pooled": "#2a78d6", "id01": "#eb6834", "idg": "#1baf7a", "lab": "#555555"}
     floors = {0.105: (0.4, "fast"), 0.131: (3.2, "slow"), 0.5: (0.4, "fast")}
     b = 0.0096
-    fig = plt.figure(figsize=(17, 6.6))
-    lefts = (0.045, 0.285, 0.525, 0.79)
-    axs = [fig.add_axes((x, 0.30, 0.15 if i < 3 else 0.195, 0.64)) for i, x in enumerate(lefts)]
+    YFLOOR = 0.03          # bottom of the A-C y axis
+    ANY_Y = 0.036          # where a 'resolves at every separation tested' point is drawn
+    SIZE_MAX = 0.075       # test size above this is flagged † (derivation.md, Table 2)
+    fig = plt.figure(figsize=(12, 9.6))
+    w, gap, top_b, top_h = 0.205, 0.04, 0.585, 0.37
+    axs = [fig.add_axes((0.075 + i * (w + gap), top_b, w, top_h)) for i in range(3)]
+    axs.append(fig.add_axes((0.075, 0.075, 0.36, 0.36)))
     ks = np.array(KS)
-    for ax, s, letter in zip(axs[:3], SIGMAS, "abc"):
+    for ax, s, letter in zip(axs[:3], SIGMAS, "ABC"):
         g, gname = floors[s]
 
         def series(key, g_):
             return [results[(s, k, b, g_, False)][key] for k in KS]
 
-        def plotpair(v50, v80, color, marker, label):
-            for v, lw, ls, ms, mfc, pl in ((v80, 2, "-", 7, color, "80 %"), (v50, 1, "--", 5, "white", "50 %")):
-                v = np.array(v, float)
-                v = np.where(np.isfinite(v), np.maximum(v, 0.035), np.nan)   # 'any' drawn at the floor
-                ax.plot(ks, v, color=color, marker=marker, lw=lw, ls=ls, ms=ms, mfc=mfc,
-                        label=f"{label}, {pl} power")
+        def size_flags(sizekey, g_):
+            return [results[(s, k, b, g_, False)][sizekey] > SIZE_MAX for k in KS]
 
-        plotpair(series("pooled_50", 0.1), series("pooled_80", 0.1), C["pooled"], "o", "no cell identity")
+        daggers = {}     # k -> [(color, y of the 80 % point)] for size-inflated entries
+        tops = {}        # k -> highest point drawn at k by any series, so a † clears them all
+
+        def plotpair(v50, v80, color, marker, flags, dodge=0.0):
+            any80 = np.array(v80, float) == 0
+            for v, lw, ls, ms, mfc, z, skip in ((v80, 2, "-", 7, color, 3, None),
+                                                (v50, 1.2, "--", 5.5, "white", 2, any80)):
+                v = np.array(v, float)
+                pos = np.where(np.isfinite(v) & (v > 0), v, np.nan)
+                for kk, y in zip(ks, pos):
+                    if np.isfinite(y):
+                        tops[kk] = max(tops.get(kk, 0.0), y)
+                ax.plot(ks, pos, color=color, marker=marker, lw=lw, ls=ls, ms=ms, mfc=mfc, zorder=z)
+                # 'any': reached already at Δ = 0. A filled glyph (80 %) implies 50 % too, so the
+                # open one is drawn only where 80 % is not 'any'; series are dodged sideways.
+                isany = (v == 0) if skip is None else ((v == 0) & ~skip)
+                anyk = ks[isany]
+                if len(anyk):
+                    ax.plot(anyk + dodge, [ANY_Y] * len(anyk), "v", color=color, ms=ms + 1,
+                            mfc=mfc, mew=1.3, ls="none", zorder=z, clip_on=False)
+            v80 = np.array(v80, float)
+            for kk, f, y in zip(ks, flags, v80):
+                if f:
+                    daggers.setdefault(kk, []).append(
+                        (color, y if (np.isfinite(y) and y > 0) else ANY_Y))
+
+        plotpair(series("pooled_50", 0.1), series("pooled_80", 0.1), C["pooled"], "o",
+                 size_flags("size_pooled_max", 0.1))
         plotpair(series("identity_50", 0.1), series("identity_80", 0.1), C["id01"], "s",
-                 "cell identity, within-cell floor g = 0.1 s (model as stated)")
+                 size_flags("size_identity_max", 0.1), dodge=-0.4)
         plotpair(series("identity_50", g), series("identity_80", g), C["idg"], "^",
-                 "cell identity, measured within-cell floor g (0.4 s fast, 3.2 s slow)")
+                 size_flags("size_identity_max", g), dodge=0.4)
         plotpair([labelled_bound(k, s, 0.5) for k in KS], [labelled_bound(k, s, 0.8) for k in KS],
-                 C["lab"], "D", "membership known (oracle t test)")
-        # (y, label, line style, label above (True) or below (False) the line)
-        refs = [(7.1, "slow-stream 5th-pct gap 7.1 s", ":", True),
-                (3.8, "fast-stream 5th-pct gap 3.8 s", ":", True),
-                (3.0, "assessor floor 3 s", "-", False),
-                (2 * s, f"unimodal below 2σ = {2 * s:.2f} s", "-.", True),
-                (0.1, "frame 0.1 s", "-.", True)]
-        for y, lab, ls, above in refs:
+                 C["lab"], "D", [False] * len(KS))
+        # one row of daggers per k, above the highest marker at that k (flagged or not), each
+        # in its series' color
+        for kk, lst in daggers.items():
+            ytop = max([y for _, y in lst] + [tops.get(kk, 0.0)])
+            for n_, (colr, _) in enumerate(lst):
+                ax.annotate("†", (kk, ytop), textcoords="offset points",
+                            xytext=(-3 * (len(lst) - 1) + 7 * n_, 7), fontsize=12, color=colr,
+                            fontweight="bold", ha="center", va="bottom")
+        for y, ls in ((7.1, ":"), (3.8, ":"), (2.5, "-"), (0.1, "-.")):
             ax.axhline(y, color="#9a9a9a", lw=1, ls=ls, zorder=0)
-            ax.text(20.3, y * (1.04 if above else 0.96), lab, fontsize=6.5,
-                    va="bottom" if above else "top", ha="right", color="#444444")
+        ax.axhline(2 * s, color="#9a9a9a", lw=1.2, ls=(0, (6, 2, 1, 2)), zorder=0)
+        ax.text(1.015, 2 * s, "2σ", transform=ax.get_yaxis_transform(), fontsize=10.5,
+                va="center", ha="left", color="#444444")
         ax.set_yscale("log")
-        ax.set_ylim(0.03, 12)
-        ax.set_xlim(4, 20.5)
+        ax.set_ylim(YFLOOR, 12)
+        ax.set_xlim(4, 21)
         ax.set_xticks(KS)
-        ax.set_xlabel("cells per event, k (of 33 cells)")
-        ax.set_ylabel(f"resolvable Δ (s) · σ = {s} s")
-        ax.text(-0.2, 1.02, letter, transform=ax.transAxes, fontsize=14, fontweight="bold")
+        ax.set_xlabel("cells per event, k\n(of 33 cells)", fontsize=11)
+        if letter == "A":
+            ax.set_ylabel("resolvable separation Δ (s)")
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+        else:
+            ax.tick_params(labelleft=False)
+        ax.set_title(f"jitter SD σ = {s} s\n2σ = {2 * s:.2f} s", fontsize=11, loc="right")
+        ax.text(-0.04, 1.02, letter, transform=ax.transAxes, fontsize=14, fontweight="bold",
+                ha="right", va="bottom")
         ax.grid(True, which="major", color="#eeeeee", lw=0.6)
+    # shared reference-line labels, outside to the right of panel C (7.1 and 3.8 nudged apart)
+    ax = axs[2]
+    for y, ty, lab in ((7.1, 8.6, "slow-stream gap,\n5th percentile 7.1 s"),
+                       (3.8, 4.4, "fast-stream gap,\n5th percentile 3.8 s"),
+                       (2.5, 2.05, "assessor: half its split\nplateau at 2.5 s"),
+                       (0.1, 0.1, "frame 0.1 s")):
+        ax.annotate(lab, xy=(1.0, y), xycoords=ax.get_yaxis_transform(),
+                    xytext=(1.13, ty), textcoords=ax.get_yaxis_transform(), fontsize=10.5,
+                    va="center", ha="left", color="#444444", linespacing=1.0,
+                    arrowprops=dict(arrowstyle="-", color="#bbbbbb", lw=0.8))
+
     ax = axs[3]
-    for (s, k, g, ls, nm) in ((0.105, 7, 0.4, "-", "fast (σ 0.105 s, 7 cells, g 0.4 s)"),
-                              (0.131, 13, 3.2, "--", "slow (σ 0.131 s, 13 cells, g 3.2 s)")):
+    # stream by marker (and line style): A-C already spend solid/dashed on 80/50 % power and
+    # o/s/^/D/v on the methods, so D's two streams take markers not used there
+    D_MARK = {"fast": "P", "slow": "X"}
+    for (s, k, g, ls, stream) in ((0.105, 7, 0.4, "-", "fast"), (0.131, 13, 3.2, "--", "slow")):
         r = results[(s, k, b, g, False)]
         d = np.array(r["deltas"])
-        ax.plot(d, np.maximum.accumulate(r["power_pooled"]), color=C["pooled"], ls=ls, lw=2,
-                label=f"no cell identity · {nm}")
-        ax.plot(d, np.maximum.accumulate(r["power_identity"]), color=C["idg"], ls=ls, lw=2,
-                label=f"cell identity · {nm}")
+        for key, colr in (("power_pooled", C["pooled"]), ("power_identity", C["idg"])):
+            ax.plot(d, np.maximum.accumulate(r[key]), color=colr, ls=ls, lw=2,
+                    marker=D_MARK[stream], ms=10, markevery=(1 if stream == "fast" else 3, 4),
+                    mew=0)
     for y, t in ((0.05, "5 % false alarm"), (0.5, "50 % power"), (0.8, "80 % power")):
         ax.axhline(y, color="#9a9a9a", lw=1, ls=":", zorder=0)
-        ax.text(1.47, y + 0.015, t, fontsize=7, ha="right", color="#444444")
+        ax.text(1.47, y + 0.015, t, fontsize=10.5, ha="right", color="#444444")
     ax.set_xlim(0, 1.5)
     ax.set_ylim(0, 1.02)
-    ax.set_xlabel("separation between event centres Δ (s)")
-    ax.set_ylabel("power (fraction of 300 pairs called two)")
-    ax.text(-0.2, 1.02, "d", transform=ax.transAxes, fontsize=14, fontweight="bold")
-    ax.legend(fontsize=7.5, loc="upper left", bbox_to_anchor=(-0.2, -0.14), frameon=False)
+    ax.set_xlabel("separation between event centers, Δ (s)", fontsize=11)
+    ax.set_ylabel("power (fraction of\n300 pairs called two)", fontsize=11)
+    ax.text(-0.04, 1.02, "D", transform=ax.transAxes, fontsize=14, fontweight="bold",
+            ha="right", va="bottom")
     ax.grid(True, color="#eeeeee", lw=0.6)
-    h, l = axs[0].get_legend_handles_labels()
-    fig.legend(h, l, loc="lower left", ncol=2, fontsize=8, frameon=False, bbox_to_anchor=(0.03, 0.005))
-    fig.savefig(os.path.join(HERE, "synth_recovery_plot_separation-floor-any-method_20261025.png"), dpi=150)
+
+    h = [Line2D([], [], color=C["pooled"], marker="o", lw=2, label="no cell identity"),
+         Line2D([], [], color=C["id01"], marker="s", lw=2,
+                label="cell identity, within-cell minimum interval\n0.1 s (model as stated)"),
+         Line2D([], [], color=C["idg"], marker="^", lw=2,
+                label="cell identity, measured within-cell minimum\ninterval (0.4 s fast, 3.2 s slow; 0.4 s in C)"),
+         Line2D([], [], color=C["lab"], marker="D", lw=2, label="membership-known test"),
+         Line2D([], [], color="0.3", marker="o", lw=2, label="solid, filled: 80 % power"),
+         Line2D([], [], color="0.3", marker="o", lw=1.2, ls="--", mfc="white", label="dashed, open: 50 % power"),
+         Line2D([], [], color="0.3", marker="v", ls="none", ms=8,
+                label="resolves at every separation tested\n(shared cells alone), drawn at the axis floor"),
+         Line2D([], [], color="none", marker="$†$", ms=10, mec="0.3", mfc="0.3", ls="none",
+                label="test size above 7.5 % (mostly σ = 0.5 s, few cells):\nanti-conservative, value optimistic"),
+         Line2D([], [], color="0.3", lw=2, ls="-", marker="P", ms=10, mew=0,
+                label="D: fast stream (σ 0.105 s, 7 cells,\nminimum interval 0.4 s)"),
+         Line2D([], [], color="0.3", lw=2, ls="--", marker="X", ms=10, mew=0,
+                label="D: slow stream (σ 0.131 s, 13 cells,\nminimum interval 3.2 s)")]
+    fig.legend(handles=h, loc="upper left", fontsize=10.5, frameon=False,
+               bbox_to_anchor=(0.475, 0.47), labelspacing=0.55)
+    fig.savefig(os.path.join(HERE, "synth_recovery_plot_separation-floor-any-method_20261025.png"), dpi=150,
+                metadata={"Title": "Figure 6, the separation any method can resolve (Aim 0)",
+                          "Author": "bugarach synthetic validation (docs/learned/synthetic_validation)",
+                          "Creation Time": __import__("datetime").datetime.now().isoformat(timespec="seconds")})
 
 
 def figure_from_json():

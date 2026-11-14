@@ -20,15 +20,17 @@ Filled markers on solid lines give 80 % power; open markers on dashed lines give
 
 Points drawn on the bottom edge (0.035 s) mean the power is already reached at Δ = 0, from
 shared cells alone. A missing point means the power was not reached on the simulated grid.
-Grey horizontal lines, labelled at the right, mark the assessor's 3 s floor, the 5th-percentile
+Grey horizontal lines, labelled at the right, mark the assessor's half-split point (2.5 s; full split near 3 s), the 5th-percentile
 real inter-event gaps (3.8 s fast, 7.1 s slow), the 2σ unimodality boundary and the 0.1 s frame.
 Panel **d** shows power against Δ at the lab's two operating points: fast (σ 0.105 s, 7 cells,
 g 0.4 s) as solid lines and slow (σ 0.131 s, 13 cells, g 3.2 s) as dashed lines. Blue is pooled
 onsets; green is cell identity. Every curve is 300 simulated pairs per Δ. Numbers are in
 `bound_output.txt`; `bound.py` regenerates everything.
 
-**The answer.** At the lab's parameters, the smallest separation any method can resolve with
-80 % power at 5 % false alarm is:
+**The answer.** At the lab's parameters, the smallest separation these likelihood-ratio tests
+resolve with 80 % power at 5 % false alarm is below. They are particular tests, fitted by EM against
+simulated nulls, so these values bound the best achievable separation from above; an earlier
+wording here ("any method") claimed the reverse and is withdrawn (chapter 1 review, round 2):
 
 | stream | 7 cells per event | 13 cells per event |
 |---|---|---|
@@ -38,7 +40,7 @@ onsets; green is cell identity. Every curve is 300 simulated pairs per Δ. Numbe
 These use b = 0.0096 Hz and a 0.1 s frame. At 50 % power the floor is 0.19–0.58 s. In every case
 the floor is about 2–6 σ, so the jitter sets it, not the frame.
 
-That is roughly **one-fifth to one-tenth of the assessor's 3 s floor**. It is also far below the
+That is roughly **one-third to one-tenth of the assessor's 2.5 s half-split point**. It is also far below the
 real 5th-percentile inter-event gaps of 3.8 s (fast) and 7.1 s (slow). Without cell identity
 the floor is 0.61 s in both streams.
 
@@ -243,7 +245,7 @@ With the measured floors the shared-cell route only opens once Δ is past g:
 - **slow** (g = 3.2 s): Δ₈₀ is 3.43 s at 7 cells and 3.09 s at 13 cells.
 
 In the slow stream, the measured within-cell floor of 3.2 s is itself longer than the assessor's
-3 s floor.
+half-split point (2.5 s) and near its full split (about 3 s).
 
 ### 3.2 Membership differences carry no information by themselves
 

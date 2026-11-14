@@ -8,8 +8,9 @@ the identity line, so an estimator that returns a constant reads as a flat line.
 10 or more cells are plotted (5-cell events are below the event floor; the page quotes them).
 The assessor's jitter is plotted wherever it observed clusters: its `jit_defined` flag also needs
 a surrogate cluster, which the run's 120 surrogates (shipped default 1000) often lack at K = 6.
-In A-C and E-G the series are offset sideways for legibility; in D and H they sit at the planted
-jitter, so the identity line reads true.
+In A-C and E-G the series are offset sideways for legibility. In D and H the four series (assessor
+K = 3, 4, 6 and the joint fit) are dodged symmetrically about the planted jitter by a factor of
+1.15 per series (outermost about 23 %), smaller markers, so none hides another; the panels say so.
 
     PYTHONPATH=src python docs/learned/synthetic_validation/aim1_figure.py
 """
@@ -51,11 +52,12 @@ SERIES = [
 PARAMS = [  # (y label, truth key, coordination-rates key, assessor key)
     ("participants per event", "k", "k", "part"),
     ("coordinated events per min", "per_min", "lam", "per_min"),
-    ("coordinated share of onsets", "share", "share", None),
+    ("coordinated onset rate", "share", "share", None),
     ("jitter SD", "jitter", None, "jit"),
 ]
 YLIM = (0.05, 30)
 JLIM = (0.004, 3)
+DODGE = 1.15  # per-series horizontal dodge factor in the jitter panels D and H
 
 
 def value(row, series, tkey, cr_key, as_key):
@@ -119,13 +121,17 @@ def main():
                             continue
                         vals.append(v if jitter_panel else v / t)
                     if vals:
-                        xs.append(jt if jitter_panel else jt * (1.09 ** (s_i - 3)))
+                        # D/H: symmetric dodge of the four jitter series (s_i 3..6) about the
+                        # planted value; A-C/E-G: the original sideways offset.
+                        xs.append(jt * (DODGE ** (s_i - 4.5)) if jitter_panel
+                                  else jt * (1.09 ** (s_i - 3)))
                         q = np.percentile(vals, [25, 50, 75])
                         lo.append(q[0]); med.append(q[1]); hi.append(q[2])
                 if not xs:
                     continue
                 ylim = JLIM if jitter_panel else YLIM
-                ax.plot(xs, med, ls=ls, marker=mk, color=col, lw=1.8, ms=6)
+                ax.plot(xs, med, ls=ls, marker=mk, color=col, lw=1.8, ms=5 if jitter_panel else 6,
+                        alpha=0.9 if jitter_panel else 1.0, zorder=2 + s_i)
                 ax.vlines(xs, np.clip(lo, ylim[0], None), np.minimum(hi, ylim[1]), color=col, lw=1.5)
                 off = [x for x, l in zip(xs, lo) if l < ylim[0]]
                 if off:   # an interquartile bar running off the bottom is marked, not cut
@@ -139,6 +145,9 @@ def main():
                 ax.spines[sp].set_visible(False)
             ax.text(-0.02, 1.03, letters[i * len(PARAMS) + j], transform=ax.transAxes,
                     fontsize=13, fontweight="bold", va="bottom", ha="right")
+            if jitter_panel:
+                ax.text(0.97, 0.03, "markers dodged\nhorizontally\nfor visibility", transform=ax.transAxes,
+                        ha="right", va="bottom", fontsize=10, color="#444")
             if i == len(bgs) - 1:
                 ax.set_xlabel("planted jitter SD (s)")
             ax.set_ylabel(f"{label}\n" + ("recovered (s)" if jitter_panel else "recovered ÷ planted"),

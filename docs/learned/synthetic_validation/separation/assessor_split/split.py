@@ -485,7 +485,8 @@ def report(pred, sim, chk, n_pairs):
     print("\n".join(lines))
 
 
-# Which K each tool is plotted at: the assessor at its own one-per-hour chance K (5, 8), the count
+# Which K each tool is plotted at: the assessor at 5 (its one-per-hour chance K at 0.01 Hz, not at
+# 0.0096 Hz, where that K is 4; kept so the run need not be repeated) and 8 (0.05 Hz), the count
 # detector at its shipped setting, the ADR-0008 floor plus k_offset 0 (6, 12).
 PLOT_K = {("assessor", 0.0096): 5, ("assessor", 0.05): 8, ("count", 0.0096): 6, ("count", 0.05): 12}
 # colour per (tool, k); marker and line also separate the tools, so no pair rests on colour alone
@@ -498,16 +499,17 @@ def plot(res):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
-    plt.rcParams.update({"font.size": 11})
+    # Sized for a ~922 px page column: 12 in wide, so 11 pt text renders about 12 px tall.
+    plt.rcParams.update({"font.size": 12})
     combos = [tuple(c) for c in res["combos"]]
-    fig, axes = plt.subplots(2, 4, figsize=(17, 9.6), sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, 4, figsize=(12, 10), sharex=True, sharey=True)
     panels = [(s, b) for s in SIGMAS for b in BGS]
     off = {("assessor", 7): -0.09, ("assessor", 13): -0.03, ("count", 7): 0.03, ("count", 13): 0.09}
     for col, (s, b) in enumerate(panels):
         for row in (0, 1):
             ax = axes[row, col]
             ax.axvline(2 * s, color="0.55", ls=":", lw=1.2)
-            ax.axvline(3.8, color="#c0392b", ls="-.", lw=1.0)
+            ax.axvline(3.8, color="0.25", ls="-.", lw=1.1)
             for (tool, k), (colr, mk, ls) in STYLE.items():
                 K = PLOT_K[(tool, b)]
                 ci = combos.index((b, K))
@@ -535,35 +537,44 @@ def plot(res):
             ax.set_ylim(-0.03, 1.03)
             ax.grid(alpha=0.25)
             letter = "ABCDEFGH"[row * 4 + col]
-            ax.text(0.03, 0.95, letter, transform=ax.transAxes, fontweight="bold", fontsize=14,
+            ax.text(0.04, 0.95, letter, transform=ax.transAxes, fontweight="bold", fontsize=14,
                     va="top")
-            ax.set_title(f"jitter SD {s:g} s, background {b:g} Hz per cell", fontsize=10,
+            ax.set_title(f"jitter SD {s:g} s\nbackground {b:g} Hz per cell", fontsize=11,
                          loc="right")
+            ax.set_xticks([0, 2, 4, 6, 8])
             if row == 1:
-                ax.set_xlabel("realized separation, median onset B minus A (s)")
+                ax.set_xlabel("realized separation (s),\nmedian onset B − A", fontsize=11)
             else:
-                ax.set_xlabel("planned separation, centre to centre (s)")
+                ax.set_xlabel("planned separation (s),\ncenter to center", fontsize=11)
+            ax.tick_params(labelbottom=True)
             if col == 0:
                 ax.set_ylabel("P(pair reported as two clusters)")
-    h = []
-    for (tool, k), (colr, mk, ls) in STYLE.items():
-        lab = (f"assessor, {k} of 33 cells per event; K = 5 cells at 0.0096 Hz, 8 at 0.05 Hz"
-               if tool == "assessor" else
-               f"count detector, {k} of 33 cells per event; K = ADR-0008 floor, 6 cells at "
-               f"0.0096 Hz, 12 at 0.05 Hz")
-        h.append(Line2D([], [], color=colr, ls=ls, marker=mk, label=lab))
-    h += [Line2D([], [], color="0.3", ls="-", label="line: exact prediction at planned separation "
-                 "(faint in E-H)"),
+    h1 = [Line2D([], [], color=colr, ls=ls, marker=mk,
+                 label=f"{'assessor' if tool == 'assessor' else 'count detector'}, "
+                       f"{k} of 33 cells per event")
+          for (tool, k), (colr, mk, ls) in STYLE.items()]
+    h2 = [Line2D([], [], color="0.3", ls="-", label="line: exact prediction at planned separation "
+                 "(faint in E–H)"),
           Line2D([], [], color="0.3", ls="none", marker="o", label="filled: simulated, 400 pairs, "
-                 "+-1 binomial SE"),
+                 "±1 binomial SE"),
           Line2D([], [], color="0.3", ls="none", marker="o", mfc="white",
-                 label="open: simulated, binned by realized separation (bins of >= 20 pairs)"),
-          Line2D([], [], color="0.55", ls=":", label="2 x jitter SD: onset clouds unimodal below"),
-          Line2D([], [], color="#c0392b", ls="-.", label="3.8 s: 5th percentile of real fast-stream gaps")]
-    fig.legend(handles=h, loc="lower center", ncol=2, fontsize=9.5, frameon=False,
-               bbox_to_anchor=(0.5, -0.005))
-    fig.tight_layout(rect=(0, 0.15, 1, 1))
-    fig.savefig(HERE / "synth_recovery_plot_assessor-split-against-separation_20261025.png", dpi=150)
+                 label="open: simulated, binned by realized separation\n(bins of ≥ 20 pairs)"),
+          Line2D([], [], color="0.55", ls=":", label="2 × jitter SD: onset clouds unimodal below"),
+          Line2D([], [], color="0.25", ls="-.", label="3.8 s: 5th percentile of real fast-stream gaps")]
+    fig.legend(handles=h1, loc="upper left", fontsize=11, frameon=False,
+               bbox_to_anchor=(0.06, 0.235))
+    fig.legend(handles=h2, loc="upper left", fontsize=11, frameon=False,
+               bbox_to_anchor=(0.43, 0.235))
+    fig.text(0.075, 0.025,
+             "K, the cells a cluster needs: assessor 5 at 0.0096 Hz (its one-per-hour chance K at "
+             "0.01 Hz; at 0.0096 Hz it is 4)\nand 8 at 0.05 Hz (its one-per-hour chance K); "
+             "count detector 6 and 12, the event floor (the count chance first exceeds).",
+             fontsize=11, va="bottom", ha="left")
+    fig.tight_layout(rect=(0, 0.235, 1, 1))
+    fig.savefig(HERE / "synth_recovery_plot_assessor-split-against-separation_20261025.png", dpi=150, metadata={
+        "Title": "Figure 5, the assessor and count detector splitting two events against separation (Aim 0)",
+        "Author": "bugarach synthetic validation (docs/learned/synthetic_validation)",
+        "Creation Time": __import__("datetime").datetime.now().isoformat(timespec="seconds")})
 
 
 if __name__ == "__main__":

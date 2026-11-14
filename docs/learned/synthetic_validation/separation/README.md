@@ -7,7 +7,7 @@ raters' curve is the rater sheet's separation test (PR #916).
 
 | folder | question | result at the lab's parameters |
 |---|---|---|
-| `floor/` | the smallest separation **any method** could resolve from onset times and cell identity | 0.26–0.76 s at 80 % power and 5 % false alarm (σ 0.105–0.131 s, 7–13 of 33 cells, 0.0096 Hz). Jitter sets it; the 0.1 s frame does not bind |
+| `floor/` | the smallest separation **these likelihood-ratio tests** resolve from onset times and cell identity, an upper bound on the best achievable (an earlier "any method" wording is withdrawn) | 0.26–0.76 s at 80 % power and 5 % false alarm (σ 0.105–0.131 s, 7–13 of 33 cells, 0.0096 Hz). Jitter sets it; the 0.1 s frame does not bind |
 | `assessor_split/` | the chance the **assessor** and the **count detector** report a pair as two | half the plateau at about 2.5 s (assessor) and 5 s (count detector): (merge rule + ½) × bin width, almost independent of σ, k, b and K. The data set only the plateau, f² (f the chance one event reaches K) |
 | `real_intervals/` | the **coordination-rates prediction** when events can share a window | the shift surrogates still see the events' spacing (most of Aim 1a's rate excess); on real fast-stream gaps the page's form overstates rate about 13 % at the 4 s window and the joint fit reads jitter 1.5–1.65× high. A general form fixes both |
 

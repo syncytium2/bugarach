@@ -50,7 +50,7 @@ own default `min_rois=3` is not what the bench runs.)
 
 | | b = 0.0096 Hz | b = 0.05 Hz |
 |---|---|---|
-| assessor, smallest K with ≤ 1 chance cluster per hour (`theory.chance_clusters_per_min`, N = 33) | 5 (0.054/h; K = 4 gives 0.98/h) | 8 (0.53/h) |
+| assessor, smallest K with ≤ 1 chance cluster per hour (`theory.chance_clusters_per_min`, N = 33) | 4 (0.98/h); the simulations here use 5 (0.054/h), one above it | 8 (0.53/h) |
 | ADR-0008 event floor (`event_floor.window_floor` on 2 h of Poisson background, 1000 draws, 2 seeds, stable in both halves) | 6 | 12 |
 
 The assessor is reported at 5 and 8 and the count detector at its floor, 6 and 12. All four K run

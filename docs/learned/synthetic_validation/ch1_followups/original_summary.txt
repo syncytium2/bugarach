@@ -1,0 +1,188 @@
+bg 0.01 k>= 5 k    : |meas - exact| median 0.011 worst 0.057 (n=72); Poisson median 0.048
+bg 0.01 k>= 5 lam  : |meas - exact| median 0.039 worst 0.292 (n=72); Poisson median 0.121
+bg 0.01 k>= 5 share: |meas - exact| median 0.019 worst 0.295 (n=72); Poisson median 0.046
+bg 0.01 k>=10 k    : |meas - exact| median 0.007 worst 0.037 (n=48); Poisson median 0.046
+bg 0.01 k>=10 lam  : |meas - exact| median 0.032 worst 0.182 (n=48); Poisson median 0.109
+bg 0.01 k>=10 share: |meas - exact| median 0.017 worst 0.071 (n=48); Poisson median 0.041
+bg 0.05 k>= 5 k    : |meas - exact| median 0.029 worst 5.608 (n=72); Poisson median 0.063
+bg 0.05 k>= 5 lam  : |meas - exact| median 0.076 worst 5.341 (n=72); Poisson median 0.153
+bg 0.05 k>= 5 share: |meas - exact| median 0.047 worst 2.548 (n=72); Poisson median 0.076
+bg 0.05 k>=10 k    : |meas - exact| median 0.016 worst 0.106 (n=48); Poisson median 0.049
+bg 0.05 k>=10 lam  : |meas - exact| median 0.055 worst 0.384 (n=48); Poisson median 0.141
+bg 0.05 k>=10 share: |meas - exact| median 0.024 worst 0.284 (n=48); Poisson median 0.048
+
+participants, k >= 10: |z| > 2 of (median - prediction) / (1.2533 SD / sqrt(n)); null rate 0.118 at n = 5 (simulated). The three windows reuse the same recordings.
+  bg 0.01: 7 of 48 condition-windows beyond 2 SE (about 5.7 expected; binomial P(>= 7) = 0.34); measured above predicted in 14 of 48 (sign test p = 0.006); median signed residual -0.006
+    per condition (mean over windows): measured below predicted in 12 of 16 (sign test p = 0.08)
+    median |residual| by jitter: 0.05 s 0.007, 0.2 s 0.007, 0.5 s 0.006, 1 s 0.012
+    lam: measured above predicted in 43 of 48
+    share: measured above predicted in 41 of 48
+  bg 0.05: 10 of 48 condition-windows beyond 2 SE (about 5.7 expected; binomial P(>= 10) = 0.05); measured above predicted in 17 of 48 (sign test p = 0.059); median signed residual -0.005
+    per condition (mean over windows): measured below predicted in 9 of 16 (sign test p = 0.80)
+    median |residual| by jitter: 0.05 s 0.016, 0.2 s 0.020, 0.5 s 0.014, 1 s 0.011
+    lam: measured above predicted in 30 of 48
+    share: measured above predicted in 29 of 48
+
+per-condition range (median ratio to planted), k >= 10 (and 5-cell)
+  bg 0.01 w 1.0 k    : 0.34-0.96 (5-cell: 0.57-0.94)
+  bg 0.01 w 1.0 share: 0.63-1.00 (5-cell: 0.54-1.04)
+  bg 0.01 w 2.0 k    : 0.53-0.96 (5-cell: 0.66-0.97)
+  bg 0.01 w 2.0 share: 0.78-1.05 (5-cell: 0.78-1.18)
+  bg 0.01 w 4.0 k    : 0.68-0.95 (5-cell: 0.71-0.94)
+  bg 0.01 w 4.0 share: 0.88-1.11 (5-cell: 0.71-1.16)
+  bg 0.05 w 1.0 k    : 0.35-0.98 (5-cell: 0.67-4.63)
+  bg 0.05 w 1.0 share: 0.65-1.02 (5-cell: 0.22-1.11)
+  bg 0.05 w 2.0 k    : 0.54-0.98 (5-cell: 0.83-6.32)
+  bg 0.05 w 2.0 share: 0.67-1.08 (5-cell: 0.53-1.53)
+  bg 0.05 w 4.0 k    : 0.70-1.04 (5-cell: 0.66-3.22)
+  bg 0.05 w 4.0 share: 0.80-1.11 (5-cell: 0.09-3.58)
+  5-cell, bg 0.01: worst measured ratio to planted: participants 0.97 (w 2 s, sigma 0.05 s), rate 1.43
+  5-cell, bg 0.05: worst measured ratio to planted: participants 6.32 (w 2 s, sigma 1 s), rate 6.43
+solve() refused (NaN) in 17 of 720 recording-windows
+
+joint fit: sigma median [IQR] by background and planted sigma, k >= 10 vs k = 5
+  bg 0.01 sigma 0.05 k>=10: sigma 0.075 s; k ratio 1.00; rate ratio 1.01; usable 20/20; at bound 1
+  bg 0.01 sigma 0.05 k=5  : sigma 0.104 s; k ratio 1.02; rate ratio 1.03; usable 10/10; at bound 4
+  bg 0.01 sigma 0.20 k>=10: sigma 0.219 s; k ratio 1.00; rate ratio 1.03; usable 20/20; at bound 0
+  bg 0.01 sigma 0.20 k=5  : sigma 0.127 s; k ratio 0.95; rate ratio 0.89; usable 10/10; at bound 2
+  bg 0.01 sigma 0.50 k>=10: sigma 0.495 s; k ratio 1.00; rate ratio 1.02; usable 20/20; at bound 0
+  bg 0.01 sigma 0.50 k=5  : sigma 0.502 s; k ratio 1.03; rate ratio 0.94; usable 10/10; at bound 0
+  bg 0.01 sigma 1.00 k>=10: sigma 1.011 s; k ratio 1.00; rate ratio 1.02; usable 20/20; at bound 0
+  bg 0.01 sigma 1.00 k=5  : sigma 0.936 s; k ratio 1.04; rate ratio 1.11; usable 10/10; at bound 0
+  bg 0.05 sigma 0.05 k>=10: sigma 0.039 s; k ratio 0.98; rate ratio 1.01; usable 20/20; at bound 4
+  bg 0.05 sigma 0.05 k=5  : sigma 0.005 s; k ratio 0.81; rate ratio 3.11; usable 10/10; at bound 6
+  bg 0.05 sigma 0.20 k>=10: sigma 0.197 s; k ratio 1.00; rate ratio 0.99; usable 20/20; at bound 0
+  bg 0.05 sigma 0.20 k=5  : sigma 0.531 s; k ratio 1.19; rate ratio 0.82; usable 10/10; at bound 3
+  bg 0.05 sigma 0.50 k>=10: sigma 0.520 s; k ratio 0.99; rate ratio 1.04; usable 20/20; at bound 0
+  bg 0.05 sigma 0.50 k=5  : sigma 0.494 s; k ratio 1.17; rate ratio 0.89; usable 10/10; at bound 2
+  bg 0.05 sigma 1.00 k>=10: sigma 1.011 s; k ratio 1.04; rate ratio 0.97; usable 20/20; at bound 0
+  bg 0.05 sigma 1.00 k=5  : sigma 1.848 s; k ratio 3.83; rate ratio 0.33; usable 10/10; at bound 1
+  per-condition, k>=10, sigma>=0.2, bg 0.01: sigma ratio 0.91-1.13; k 0.94-1.02; rate 0.96-1.14
+  5-cell, bg 0.01: sigma ratio 0.37-2.47
+  per-condition, k>=10, sigma>=0.2, bg 0.05: sigma ratio 0.88-1.12; k 0.96-1.14; rate 0.73-1.08
+  5-cell, bg 0.05: sigma ratio 0.10-3.56
+
+chance clusters, background only: pooled rate, exact Poisson 95 % CI
+  bg 0.01 K 3: predicted 0.2558/min; pooled 1177 clusters against 1151.1 expected = 0.2616/min [0.2468-0.2769], p = 0.453
+  bg 0.01 K 4: predicted 0.0191/min; pooled 88 clusters against 85.9 expected = 0.0196/min [0.0157-0.0241], p = 0.852
+  bg 0.01 K 6: predicted 0.0001/min; pooled 0 clusters against 0.2 expected = 0.0000/min [0.0000-0.0008], p = 1.000
+  bg 0.05 K 3: predicted 7.9734/min; pooled 35885 clusters against 35880.4 expected = 7.9744/min [7.8921-8.0574], p = 0.982
+  bg 0.05 K 4: predicted 3.8602/min; pooled 17316 clusters against 17370.9 expected = 3.8480/min [3.7909-3.9057], p = 0.681
+  bg 0.05 K 6: predicted 0.2838/min; pooled 1255 clusters against 1277.2 expected = 0.2789/min [0.2637-0.2948], p = 0.545
+
+Aim 1a. Assessor jitter (s), median over recordings pooled over participation and event count, events of 10+ cells, wherever it observed clusters (n with a value / n)
+  bg 0.01 K 3: 0.05: 0.16 (20/20); 0.2: 0.26 (20/20); 0.5: 0.47 (20/20); 1: 0.71 (20/20)
+  bg 0.01 K 4: 0.05: 0.07 (20/20); 0.2: 0.23 (20/20); 0.5: 0.49 (20/20); 1: 0.72 (20/20)
+  bg 0.01 K 6: 0.05: 0.07 (20/20); 0.2: 0.23 (20/20); 0.5: 0.48 (20/20); 1: 0.71 (20/20)
+  bg 0.05 K 3: 0.05: 0.71 (20/20); 0.2: 0.71 (20/20); 0.5: 0.72 (20/20); 1: 0.73 (20/20)
+  bg 0.05 K 4: 0.05: 0.64 (20/20); 0.2: 0.65 (20/20); 0.5: 0.66 (20/20); 1: 0.69 (20/20)
+  bg 0.05 K 6: 0.05: 0.43 (20/20); 0.2: 0.46 (20/20); 0.5: 0.57 (20/20); 1: 0.68 (20/20)
+assessor cluster rate / planted event rate at K = 6, condition medians (0.01 Hz)
+  5-cell, sigma 0.05: 0.16-0.27
+  5-cell, sigma 0.2: 0.07-0.13
+  5-cell, sigma 0.5: 0.04-0.07
+  5-cell, sigma 1: 0.00-0.00
+  10-cell, sigma 0.05: 1.00-1.00
+  10-cell, sigma 0.2: 0.98-1.00
+  10-cell, sigma 0.5: 0.76-0.80
+  10-cell, sigma 1: 0.29-0.33
+ADR-0008's budget applied to the assessor's predicted chance clusters: smallest K at or below 1 per hour
+  bg 0.01: K = 5 (0.07 per hour)
+  bg 0.05: K = 8 (0.53 per hour)
+coordination-rates tool at 1 s jitter, events of 10+ cells: per-condition medians / planted
+  bg 0.01 w 1.0 k: 0.34-0.40
+  bg 0.01 w 4.0 k: 0.68-0.80
+  bg 0.01 w 1.0 lam: 1.64-2.38
+  bg 0.01 w 4.0 k, every jitter: 0.68-0.95
+  bg 0.05 w 1.0 k: 0.35-0.42
+  bg 0.05 w 4.0 k: 0.70-0.85
+  bg 0.05 w 1.0 lam: 1.86-2.19
+  bg 0.05 w 4.0 k, every jitter: 0.70-1.04
+
+=== --train empirical --from-record
+bg 0.01 k>= 5 k    : |meas - exact| median 0.009 worst 0.055 (n=72); Poisson median 0.048
+bg 0.01 k>= 5 lam  : |meas - exact| median 0.028 worst 0.297 (n=72); Poisson median 0.121
+bg 0.01 k>= 5 share: |meas - exact| median 0.012 worst 0.298 (n=72); Poisson median 0.046
+bg 0.01 k>=10 k    : |meas - exact| median 0.006 worst 0.041 (n=48); Poisson median 0.046
+bg 0.01 k>=10 lam  : |meas - exact| median 0.020 worst 0.176 (n=48); Poisson median 0.109
+bg 0.01 k>=10 share: |meas - exact| median 0.007 worst 0.065 (n=48); Poisson median 0.041
+bg 0.05 k>= 5 k    : |meas - exact| median 0.027 worst 5.609 (n=72); Poisson median 0.063
+bg 0.05 k>= 5 lam  : |meas - exact| median 0.081 worst 5.336 (n=72); Poisson median 0.153
+bg 0.05 k>= 5 share: |meas - exact| median 0.043 worst 2.544 (n=72); Poisson median 0.076
+bg 0.05 k>=10 k    : |meas - exact| median 0.015 worst 0.108 (n=48); Poisson median 0.049
+bg 0.05 k>=10 lam  : |meas - exact| median 0.059 worst 0.441 (n=48); Poisson median 0.141
+bg 0.05 k>=10 share: |meas - exact| median 0.018 worst 0.289 (n=48); Poisson median 0.048
+
+participants, k >= 10: |z| > 2 of (median - prediction) / (1.2533 SD / sqrt(n)); null rate 0.118 at n = 5 (simulated). The three windows reuse the same recordings.
+  bg 0.01: 6 of 48 condition-windows beyond 2 SE (about 5.7 expected; binomial P(>= 6) = 0.51); measured above predicted in 19 of 48 (sign test p = 0.193); median signed residual -0.002
+    per condition (mean over windows): measured below predicted in 9 of 16 (sign test p = 0.80)
+    median |residual| by jitter: 0.05 s 0.005, 0.2 s 0.007, 0.5 s 0.006, 1 s 0.009
+    lam: measured above predicted in 35 of 48
+    share: measured above predicted in 30 of 48
+  bg 0.05: 7 of 48 condition-windows beyond 2 SE (about 5.7 expected; binomial P(>= 7) = 0.34); measured above predicted in 19 of 48 (sign test p = 0.193); median signed residual -0.003
+    per condition (mean over windows): measured below predicted in 9 of 16 (sign test p = 0.80)
+    median |residual| by jitter: 0.05 s 0.014, 0.2 s 0.020, 0.5 s 0.012, 1 s 0.014
+    lam: measured above predicted in 27 of 48
+    share: measured above predicted in 22 of 48
+
+per-condition range (median ratio to planted), k >= 10 (and 5-cell)
+  bg 0.01 w 1.0 k    : 0.34-0.96 (5-cell: 0.57-0.94)
+  bg 0.01 w 1.0 share: 0.63-1.00 (5-cell: 0.54-1.04)
+  bg 0.01 w 2.0 k    : 0.53-0.96 (5-cell: 0.66-0.97)
+  bg 0.01 w 2.0 share: 0.78-1.05 (5-cell: 0.78-1.18)
+  bg 0.01 w 4.0 k    : 0.68-0.95 (5-cell: 0.71-0.94)
+  bg 0.01 w 4.0 share: 0.88-1.11 (5-cell: 0.71-1.16)
+  bg 0.05 w 1.0 k    : 0.35-0.98 (5-cell: 0.67-4.63)
+  bg 0.05 w 1.0 share: 0.65-1.02 (5-cell: 0.22-1.11)
+  bg 0.05 w 2.0 k    : 0.54-0.98 (5-cell: 0.83-6.32)
+  bg 0.05 w 2.0 share: 0.67-1.08 (5-cell: 0.53-1.53)
+  bg 0.05 w 4.0 k    : 0.70-1.04 (5-cell: 0.66-3.22)
+  bg 0.05 w 4.0 share: 0.80-1.11 (5-cell: 0.09-3.58)
+  5-cell, bg 0.01: worst measured ratio to planted: participants 0.97 (w 2 s, sigma 0.05 s), rate 1.43
+  5-cell, bg 0.05: worst measured ratio to planted: participants 6.32 (w 2 s, sigma 1 s), rate 6.43
+solve() refused (NaN) in 17 of 720 recording-windows
+
+joint fit: sigma median [IQR] by background and planted sigma, k >= 10 vs k = 5
+  bg 0.01 sigma 0.05 k>=10: sigma 0.074 s; k ratio 1.00; rate ratio 1.00; usable 20/20; at bound 1
+  bg 0.01 sigma 0.05 k=5  : sigma 0.102 s; k ratio 1.02; rate ratio 1.03; usable 10/10; at bound 4
+  bg 0.01 sigma 0.20 k>=10: sigma 0.218 s; k ratio 1.00; rate ratio 1.02; usable 20/20; at bound 0
+  bg 0.01 sigma 0.20 k=5  : sigma 0.126 s; k ratio 0.95; rate ratio 0.88; usable 10/10; at bound 2
+  bg 0.01 sigma 0.50 k>=10: sigma 0.495 s; k ratio 1.00; rate ratio 1.01; usable 20/20; at bound 0
+  bg 0.01 sigma 0.50 k=5  : sigma 0.501 s; k ratio 1.04; rate ratio 0.93; usable 10/10; at bound 0
+  bg 0.01 sigma 1.00 k>=10: sigma 1.015 s; k ratio 1.00; rate ratio 1.00; usable 20/20; at bound 0
+  bg 0.01 sigma 1.00 k=5  : sigma 0.935 s; k ratio 1.04; rate ratio 1.10; usable 10/10; at bound 0
+  bg 0.05 sigma 0.05 k>=10: sigma 0.039 s; k ratio 0.98; rate ratio 1.00; usable 20/20; at bound 4
+  bg 0.05 sigma 0.05 k=5  : sigma 0.005 s; k ratio 0.81; rate ratio 3.06; usable 10/10; at bound 5
+  bg 0.05 sigma 0.20 k>=10: sigma 0.196 s; k ratio 1.00; rate ratio 0.98; usable 20/20; at bound 0
+  bg 0.05 sigma 0.20 k=5  : sigma 0.526 s; k ratio 1.19; rate ratio 0.81; usable 10/10; at bound 3
+  bg 0.05 sigma 0.50 k>=10: sigma 0.520 s; k ratio 1.00; rate ratio 1.03; usable 20/20; at bound 0
+  bg 0.05 sigma 0.50 k=5  : sigma 0.492 s; k ratio 1.18; rate ratio 0.88; usable 10/10; at bound 1
+  bg 0.05 sigma 1.00 k>=10: sigma 1.015 s; k ratio 1.04; rate ratio 0.95; usable 20/20; at bound 0
+  bg 0.05 sigma 1.00 k=5  : sigma 1.758 s; k ratio 3.84; rate ratio 0.33; usable 10/10; at bound 1
+  per-condition, k>=10, sigma>=0.2, bg 0.01: sigma ratio 0.91-1.12; k 0.94-1.02; rate 0.96-1.14
+  5-cell, bg 0.01: sigma ratio 0.36-2.45
+  per-condition, k>=10, sigma>=0.2, bg 0.05: sigma ratio 0.88-1.12; k 0.96-1.14; rate 0.73-1.07
+  5-cell, bg 0.05: sigma ratio 0.10-3.52
+
+chance clusters, background only: pooled rate, exact Poisson 95 % CI
+  bg 0.01 K 3: predicted 0.2558/min; pooled 1177 clusters against 1151.1 expected = 0.2616/min [0.2468-0.2769], p = 0.453
+  bg 0.01 K 4: predicted 0.0191/min; pooled 88 clusters against 85.9 expected = 0.0196/min [0.0157-0.0241], p = 0.852
+  bg 0.01 K 6: predicted 0.0001/min; pooled 0 clusters against 0.2 expected = 0.0000/min [0.0000-0.0008], p = 1.000
+  bg 0.05 K 3: predicted 7.9734/min; pooled 35885 clusters against 35880.4 expected = 7.9744/min [7.8921-8.0574], p = 0.982
+  bg 0.05 K 4: predicted 3.8602/min; pooled 17316 clusters against 17370.9 expected = 3.8480/min [3.7909-3.9057], p = 0.681
+  bg 0.05 K 6: predicted 0.2838/min; pooled 1255 clusters against 1277.2 expected = 0.2789/min [0.2637-0.2948], p = 0.545
+
+general form, event train 'empirical', against the page's form; events of 10+ cells; residual = condition median of measured / planted minus predicted / planted
+     bg   qty prediction median res median |res| meas > pred  sign p | pooled f2, f3: median res, above
+   0.01   lam       page    +0.0298       0.0324    43 of 48    0.000 | +0.0217, 39 of 48
+   0.01   lam    general    +0.0129       0.0196    35 of 48    0.002 | +0.0048, 31 of 48
+   0.01     k       page    -0.0063       0.0073    14 of 48    0.006 | -0.0065, 11 of 48
+   0.01     k    general    -0.0023       0.0065    19 of 48    0.193 | -0.0027, 19 of 48
+   0.01 share       page    +0.0136       0.0175    41 of 48    0.000 | +0.0104, 40 of 48
+   0.01 share    general    +0.0027       0.0068    30 of 48    0.111 | +0.0015, 26 of 48
+   0.05   lam       page    +0.0272       0.0553    30 of 48    0.111 | +0.0228, 29 of 48
+   0.05   lam    general    +0.0124       0.0587    27 of 48    0.471 | -0.0008, 24 of 48
+   0.05     k       page    -0.0052       0.0161    17 of 48    0.059 | -0.0067, 17 of 48
+   0.05     k    general    -0.0028       0.0146    19 of 48    0.193 | -0.0047, 20 of 48
+   0.05 share       page    +0.0045       0.0238    29 of 48    0.193 | +0.0033, 27 of 48
+   0.05 share    general    -0.0029       0.0175    22 of 48    0.665 | -0.0041, 19 of 48

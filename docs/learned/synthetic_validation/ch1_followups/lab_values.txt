@@ -1,0 +1,44 @@
+
+=== fast gap list (174 gaps, mean 100.58 s): sigma 0.105 s, b 0.0096 Hz/cell, 33 cells, 2700 s, 40 recordings per k; lam = 1/mean gap = 0.00994 Hz = 35.8 per hour (planted 0.00944 Hz, 25.5 events per recording)
+  coordination-rates tool, ratio to planted. measured: solve() on the mean f2, f3 | per-recording solve() median [IQR] (refused) || predicted page | general | palm
+  k  7 w 1 s rate        : 1.005 | 1.00 [0.97, 1.04] (0) || 1.017 | 1.003 | 1.007
+  k  7 w 1 s participants: 0.933 | 0.93 [0.91, 0.96] (0) || 0.931 | 0.933 | 0.931
+  k  7 w 2 s rate        : 1.026 | 1.03 [0.97, 1.09] (0) || 1.064 | 1.045 | 1.052
+  k  7 w 2 s participants: 0.940 | 0.94 [0.92, 0.96] (0) || 0.934 | 0.937 | 0.933
+  k  7 w 4 s rate        : 0.989 | 1.00 [0.86, 1.10] (0) || 1.158 | 1.029 | 1.037
+  k  7 w 4 s participants: 0.966 | 0.96 [0.93, 1.01] (0) || 0.902 | 0.957 | 0.952
+  k 13 w 1 s rate        : 1.006 | 1.01 [0.98, 1.02] (0) || 1.030 | 1.015 | 1.019
+  k 13 w 1 s participants: 0.928 | 0.93 [0.92, 0.94] (0) || 0.923 | 0.926 | 0.924
+  k 13 w 2 s rate        : 1.026 | 1.02 [0.99, 1.05] (0) || 1.066 | 1.046 | 1.052
+  k 13 w 2 s participants: 0.941 | 0.94 [0.93, 0.96] (0) || 0.932 | 0.935 | 0.931
+  k 13 w 4 s rate        : 0.998 | 1.01 [0.92, 1.08] (0) || 1.148 | 1.027 | 1.034
+  k 13 w 4 s participants: 0.967 | 0.95 [0.93, 1.00] (0) || 0.904 | 0.957 | 0.953
+  joint fit per recording, fitted / planted: median [IQR]; at bound = within 2 % of the fit's limits (sigma 0.005 or 5 s; k 2.001 or 33; lam 1e-6 or 1 Hz)
+  k  7 page   : sigma 1.62 [1.07, 2.04] (range 0.048-2.85); k 1.06 [1.01, 1.10]; lam 0.90 [0.82, 0.94] | usable 40/40; sigma at lower bound 4, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 3/40
+  k  7 general: sigma 1.06 [0.39, 1.53] (range 0.048-2.41); k 1.01 [0.97, 1.04]; lam 0.98 [0.86, 1.02] | usable 40/40; sigma at lower bound 8, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 10/40
+  k  7 palm   : sigma 1.10 [0.50, 1.58] (range 0.048-2.44); k 1.02 [0.98, 1.05]; lam 0.97 [0.85, 1.01] | usable 40/40; sigma at lower bound 6, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 11/40
+  k 13 page   : sigma 1.43 [1.08, 1.93] (range 0.406-3.08); k 1.04 [1.01, 1.11]; lam 0.92 [0.86, 0.96] | usable 40/40; sigma at lower bound 0, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 10/40
+  k 13 general: sigma 0.88 [0.40, 1.48] (range 0.048-2.62); k 0.99 [0.97, 1.05]; lam 0.98 [0.90, 1.03] | usable 40/40; sigma at lower bound 2, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 9/40
+  k 13 palm   : sigma 0.90 [0.41, 1.52] (range 0.048-2.64); k 1.00 [0.97, 1.06]; lam 0.97 [0.90, 1.02] | usable 40/40; sigma at lower bound 1, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 9/40
+
+=== slow gap list (440 gaps, mean 51.35 s): sigma 0.131 s, b 0.0096 Hz/cell, 33 cells, 2700 s, 40 recordings per k; lam = 1/mean gap = 0.01947 Hz = 70.1 per hour (planted 0.01985 Hz, 53.6 events per recording)
+  coordination-rates tool, ratio to planted. measured: solve() on the mean f2, f3 | per-recording solve() median [IQR] (refused) || predicted page | general | palm
+  k  7 w 1 s rate        : 1.052 | 1.05 [1.01, 1.08] (0) || 1.053 | 1.046 | 1.058
+  k  7 w 1 s participants: 0.892 | 0.89 [0.88, 0.91] (0) || 0.896 | 0.897 | 0.891
+  k  7 w 2 s rate        : 1.141 | 1.12 [1.08, 1.19] (0) || 1.145 | 1.121 | 1.149
+  k  7 w 2 s participants: 0.881 | 0.88 [0.87, 0.90] (0) || 0.887 | 0.889 | 0.878
+  k  7 w 4 s rate        : 1.365 | 1.37 [1.20, 1.44] (0) || 1.366 | 1.306 | 1.381
+  k  7 w 4 s participants: 0.803 | 0.81 [0.78, 0.84] (0) || 0.816 | 0.823 | 0.801
+  k 13 w 1 s rate        : 1.056 | 1.06 [1.03, 1.07] (0) || 1.069 | 1.061 | 1.073
+  k 13 w 1 s participants: 0.887 | 0.89 [0.88, 0.90] (0) || 0.887 | 0.887 | 0.882
+  k 13 w 2 s rate        : 1.104 | 1.10 [1.05, 1.14] (0) || 1.142 | 1.116 | 1.143
+  k 13 w 2 s participants: 0.892 | 0.89 [0.88, 0.92] (0) || 0.885 | 0.889 | 0.878
+  k 13 w 4 s rate        : 1.235 | 1.21 [1.12, 1.31] (0) || 1.334 | 1.273 | 1.339
+  k 13 w 4 s participants: 0.841 | 0.85 [0.82, 0.89] (0) || 0.820 | 0.830 | 0.808
+  joint fit per recording, fitted / planted: median [IQR]; at bound = within 2 % of the fit's limits (sigma 0.005 or 5 s; k 2.001 or 33; lam 1e-6 or 1 Hz)
+  k  7 page   : sigma 0.83 [0.52, 1.10] (range 0.038-1.67); k 0.99 [0.97, 1.01]; lam 0.98 [0.94, 0.99] | usable 40/40; sigma at lower bound 1, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 15/40
+  k  7 general: sigma 0.90 [0.69, 1.20] (range 0.131-1.78); k 1.00 [0.97, 1.01]; lam 1.01 [0.97, 1.03] | usable 40/40; sigma at lower bound 0, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 17/40
+  k  7 palm   : sigma 0.97 [0.77, 1.28] (range 0.221-1.85); k 1.02 [0.99, 1.03]; lam 0.98 [0.94, 0.99] | usable 40/40; sigma at lower bound 0, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 19/40
+  k 13 page   : sigma 1.00 [0.78, 1.22] (range 0.451-1.72); k 1.02 [0.99, 1.04]; lam 0.95 [0.90, 0.98] | usable 40/40; sigma at lower bound 0, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 23/40
+  k 13 general: sigma 1.10 [0.84, 1.26] (range 0.533-1.79); k 1.01 [0.99, 1.03]; lam 0.98 [0.93, 1.01] | usable 40/40; sigma at lower bound 0, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 19/40
+  k 13 palm   : sigma 1.17 [0.91, 1.30] (range 0.601-1.84); k 1.03 [1.01, 1.05]; lam 0.95 [0.90, 0.98] | usable 40/40; sigma at lower bound 0, upper 0; k at bound 0+0; lam at bound 0; sigma within 0.8-1.25x: 16/40
