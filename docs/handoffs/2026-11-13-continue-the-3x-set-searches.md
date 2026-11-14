@@ -4,6 +4,12 @@
 build bench sets, search detector settings, cross-score), or you want to know what state that
 run was left in on 2026-11-13.
 
+> **Spent, 2026-11-13 9:45 PM EST.** The chain ended at 9:28 PM (`chain done`), all nine searches
+> pass the verdict, and the records are committed with a README that leads with how 3x differs
+> from 4x: [`learned/runs/2026-11-13-set-searches-3x/`](../learned/runs/2026-11-13-set-searches-3x/README.md).
+> The scratch worktree is removed. What remains open is under *Offered to Tony*, *Still Tony's*
+> and *Owed and not started* below; the rest is history.
+>
 > Working material, not murderboarded. Written 2026-11-13 at 2:45 PM EST by the session that
 > started the run, **while the run was still going**. Check every statement about progress
 > against the queue log before relying on it. **A linked file wins** where this page disagrees.
