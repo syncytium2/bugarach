@@ -40,8 +40,10 @@ the first experiment's settings, so its sets are the chapter's own.
   at 0.01 Hz, 12 at 0.05 Hz).
 * Scoring: a planted event is found when a call's span, widened by 1 s, contains it; one call finds
   at most one event. The repository's scorer (``bugarach.score.score_detections``) gives the same
-  numbers on these draws (review round 1, role 7); its rule that events under the floor are
-  "don't care" is deliberately not applied, so that event 5 can be shown.
+  counts on these draws; which event of a merged pair a call credits can differ (time order here,
+  nearest midpoint there), so Figure 1.2's lanes may colour 3a and 3b the other way round. Its rule
+  that events under the floor are "don't care" is deliberately not applied, so that event 5 can be
+  shown.
 * The correlogram is the repository's correlogram tool's statistic
   (``tools/measure_jitter_correlogram.py``: ``pairs`` and ``hwhm``, which subtracts the mean
   excess at 5-10 s lag and takes the half-width of what is left), summed over recordings, with a
