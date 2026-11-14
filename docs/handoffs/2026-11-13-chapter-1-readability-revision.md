@@ -3,6 +3,11 @@
 **Use this page when** you are the session asked to make Chapter 1 of the dissertation exercise
 easier to read, or you want to know what that revision may and may not change.
 
+> **Spent, 2026-11-13.** The revision was done the same day, to Tony's own outline rather than
+> this page's diagnosis, and murderboarded in three rounds: run record
+> [`docs/reviews/chapter-1-aim0-2026-11-13.md`](../reviews/chapter-1-aim0-2026-11-13.md), whose
+> *Residual ⚠* lists what is still open. Kept for its notes on what the revision may change.
+>
 > Working material, not murderboarded. Written 2026-11-13 by a session that did not write the
 > chapter and has not revised it. It is a brief for work that has **not started**, so it sits
 > here and not at the repository root. **A linked file wins** where this page and it disagree.
