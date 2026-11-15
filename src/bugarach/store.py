@@ -238,7 +238,13 @@ class Slice:
     producer wrote, which is what ``bugarach check`` reports on. ``dt`` is that
     column *read*; ``meta`` is that column *carried*. The two are kept apart so
     a conformance check can still name a producer's typo after the loader has
-    declined to turn it into a number."""
+    declined to turn it into a number.
+
+    ``imaging`` lists the stretches of the recording that were actually imaged, as
+    ``(start_sec, end_sec)`` pairs on the recording's clock, when the producer sent
+    ``imaging.csv``. ``None`` means one continuous stretch, which is every recording
+    this lab makes. A recording with gaps is spliced for detection and mapped back
+    by :mod:`bugarach.imaging`, never by a detector of its own accord."""
 
     slice_id: str
     streams: dict[str, Stream]
@@ -246,6 +252,7 @@ class Slice:
     regions: list[Region] = field(default_factory=list)
     roi_ids: list[str] | None = None
     meta: dict[str, str] = field(default_factory=dict)
+    imaging: list[tuple[float, float]] | None = None
 
     def __post_init__(self) -> None:
         self.dt = validated_dt(self.dt, what=f"slice {self.slice_id!r}")

@@ -190,6 +190,16 @@ def check_folder(folder) -> FolderReport:
         if missing:
             rep.errors.append(f"{name}: missing column(s) {', '.join(missing)}")
 
+    # imaging.csv: only for a recording imaged in stretches (spec revision 11). Absent is
+    # the normal case and needs no note; an event outside its stretches fails the load
+    # below, which is where the check reports it.
+    p = folder / "imaging.csv"
+    if p.is_file():
+        missing = [c for c in ("slice_id", "stretch_idx", "start_sec", "end_sec")
+                   if c not in _header(p)]
+        if missing:
+            rep.errors.append(f"imaging.csv: missing column(s) {', '.join(missing)}")
+
     if rep.errors:
         return rep
 
