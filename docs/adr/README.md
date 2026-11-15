@@ -68,6 +68,7 @@ two never disagree, and cross-reference them.
 | [0022](0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md) | Close events are a bench axis of set separations, below 2 s included; the event definition stays at the 2 s window until the revised export is re-measured | Accepted |
 | [0023](0023-bugarach-does-not-combine-streams-the-export-is-final.md) | bugarach does not combine data streams; the export is final | Accepted |
 | [2026-11-13-43ba](2026-11-13-43ba-the-september-bench-is-stale-and-is-not-re-measured.md) | The September bench is stale and is not re-measured; the old data are replaced by the retracked export and never read again | Accepted |
+| [2026-11-14-7a3a](2026-11-14-7a3a-a-recording-imaged-in-stretches-says-so-in-imaging-csv-detec.md) | A recording imaged in stretches says so in imaging.csv; detection splices it and reports on the real clock | Accepted |
 
 **Numbers are closed.** The rule below governed 0001 to 0023 and is kept as history; a new
 record takes a date-and-hash ID (Convention, above) and needs no such check.

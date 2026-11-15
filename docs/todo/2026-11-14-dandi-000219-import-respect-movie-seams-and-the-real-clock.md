@@ -57,14 +57,23 @@ the two rigs differ by about 28%.
 
 ## Done when
 
-- `import_dandi.py` splits runs at movie seams, and the export keeps the real time of each
-  event alongside or instead of the spliced one. Which of those two is a contract question
-  ([`export_folder_spec.md`](../export_folder_spec.md)): `time_sec` is defined as a time on
-  the recording's clock.
-- Detection on this corpus runs on spliced time and reports in real time.
-- The size of the seam-merge effect on `assessment_cossart.json` is measured, and the
-  transfer README says whether any of its numbers moved.
-
-A seam-aware adapter (`movies()`, `runs()`, `to_real()`) has already been written outside
-this repository. It repaints the published raster bit for bit on four sessions. Ask Tony for
-it before writing a new one.
+- ✅ **2026-11-14.** `import_dandi.py` splits runs at movie seams and writes real
+  timestamps, and `imaging.csv` declares the movies. The contract question was settled by
+  [ADR 2026-11-14-7a3a](../adr/2026-11-14-7a3a-a-recording-imaged-in-stretches-says-so-in-imaging-csv-detec.md)
+  and revision 11 of [`export_folder_spec.md`](../export_folder_spec.md): `time_sec` stays
+  real, and the stretches go in a new optional table. Tony asked for the import to be
+  fixed in this repository, so `movies()`, `runs()` and `bugarach.imaging` were written
+  here rather than taken from the outside adapter.
+- ⬜ **The folder on disk is re-imported.** Not done in that change, on purpose: four of its
+  sessions are reserved for a timed task outside this repository, and nothing may compute
+  on them before that task runs. Re-import after it has run, or re-import with those four
+  left out if Tony says so.
+- ⬜ **Detection on this corpus runs on spliced time and reports in real time.** The helper
+  exists (`imaging.splice`, with a pad stated per detector, and `to_real`). The route from a
+  folder to calls ([ADR-0020](../adr/0020-one-route-from-a-folder-to-calls-per-stream.md)) does not call it yet; wire it there, then check that every
+  detector's pad is at least its window.
+- ⬜ The size of the seam-merge effect on `assessment_cossart.json` is measured after the
+  re-import, and the transfer README says whether any of its numbers moved.
+- ⬜ locust's painter floors frame-aligned onsets one frame early
+  ([todo](2026-11-14-locust-repaint-floors-frame-aligned-onsets-one-early.md)). Fix that
+  before comparing locust with CICADA on this corpus.
