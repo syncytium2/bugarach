@@ -86,3 +86,14 @@ lowers the threshold. CICADA itself runs on the spliced raster, the movies back 
   time ([todo](../todo/2026-11-14-locust-repaint-floors-frame-aligned-onsets-one-early.md)).
   Splicing a frame-aligned corpus feeds it exactly such onsets, so that fix is a prerequisite
   for an exact CICADA comparison on this corpus.
+
+## Amendments
+
+**2026-11-14, a correction to decision 5 (no decision changed).** The pad stops a coincidence
+window from reaching across a seam. It does not stop a run merge: CoactDetect joins called runs
+closer than 8 s and the counts closer than 3 s, so with a 2 s pad a call at the end of one movie
+still merged with a call at the start of the next. The task-1 runner found it on synthetic data
+(3 of 26 count calls in a small field, and the one whole-session span in the large ones). Decision
+6 already cuts a *drawn* span at the gaps. The same cut is needed for *counting*: after mapping a
+call back, split it at the gaps and count each piece as a call, or set the pad to at least the
+merge gap. `bugarach.imaging` says so in its module docstring.
