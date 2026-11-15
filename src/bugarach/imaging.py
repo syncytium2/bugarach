@@ -23,7 +23,12 @@ reproduces their convention. A detector that counts coincidence in a window (Coa
 LoCo, the counts, binned SCE) **does** pair across it: a 2 s window at a seam joins the
 last second of one movie to the first second of the next. ``pad_sec`` inserts that much
 empty time at each seam, and it must be at least the detector's window to stop the
-pairing. Empty time dilutes the null a little (four seams of 3 s in a 20-minute
+pairing. **The pad does not stop a run merge.** A detector that joins called runs closer
+than ``merge_gap_sec`` (CoactDetect 8 s, the counts 3 s) will still join a call at the end
+of one movie to a call at the start of the next when the pad is shorter than the merge gap.
+So cut every call at the gaps after mapping it back (:func:`pieces`, one call per piece),
+or make the pad at least the merge gap. The second dilutes a wide context null with more
+blank time. Empty time dilutes the null a little (four seams of 3 s in a 20-minute
 recording is 1%), which is the price of not inventing coincidence. The caller states the
 pad, because the right one depends on the detector and a default would be a guess
 (docs/adr/2026-11-14-7a3a-a-recording-imaged-in-stretches-says-so-in-imaging-csv-detec.md).
