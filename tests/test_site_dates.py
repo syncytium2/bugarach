@@ -205,14 +205,29 @@ def test_the_stamp_prefix_is_the_one_the_viewer_page_writes_by_hand():
                              cwd=ROOT, capture_output=True, text=True).stdout.strip()
     if shallow != "false":
         pytest.skip("shallow clone: cannot tell when the page last changed")
-    page_changed = subprocess.run(
-        ["git", "log", "-1", "--format=%cs", "--", str(viewer.relative_to(ROOT))],
+    epoch = subprocess.run(
+        ["git", "log", "-1", "--format=%ct", "--", str(viewer.relative_to(ROOT))],
         cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    if not page_changed:
+    if not epoch:
         pytest.skip("no history for the viewer page here")
-    assert stamp.group(1) == page_changed, (
+    # Any date that moment carries in some timezone, not the committer's alone: a
+    # GitHub squash merge commits in UTC, so an evening edit lands dated tomorrow.
+    page_changed = bs.dates_a_commit_can_carry(int(epoch))
+    assert stamp.group(1) in page_changed, (
         f"the viewer page says it was last changed on {stamp.group(1)}, but git "
-        f"says {page_changed} — edit the page and its stamp in the same commit")
+        f"says {' or '.join(sorted(page_changed))} — edit the page and its stamp "
+        f"in the same commit")
+
+
+def test_an_evening_edit_in_michigan_passes_after_a_utc_merge():
+    """The case that reddened `main` on 2026-11-14 (#941): the page stamped with the
+    editor's own day, 21:00 EST, then squash-merged by GitHub at 02:00 UTC the next
+    day. Both days are honest; a day either side of that span is not."""
+    import datetime as dt  # noqa: PLC0415
+    merged = dt.datetime(2026, 11, 15, 2, 0, tzinfo=dt.timezone.utc)
+    ok = bs.dates_a_commit_can_carry(int(merged.timestamp()))
+    assert {"2026-11-14", "2026-11-15"} <= ok
+    assert "2026-11-13" not in ok and "2026-11-16" not in ok
 
 
 @pytest.mark.parametrize("page", STAMPED)

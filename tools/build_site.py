@@ -813,6 +813,21 @@ shapes cannot verify all of them.
 """
 
 
+def dates_a_commit_can_carry(epoch: int) -> set[str]:
+    """Every calendar date (ISO) that the moment ``epoch`` falls on somewhere.
+
+    For checking a date written **by hand** against git. A person stamps a page with
+    their own day; git reports the commit in the committer's timezone, and a GitHub
+    squash merge commits in UTC. An evening edit in Michigan (after 7 pm EST) is
+    stamped one day and merged the next, and an exact match then fails on ``main``
+    with nothing wrong (#941, 2026-11-14). Civil time runs from UTC−12 to UTC+14, so
+    a stamp is honest when it names any date in that span, and no wider.
+    """
+    import datetime as _dt  # noqa: PLC0415
+    moment = _dt.datetime.fromtimestamp(int(epoch), _dt.timezone.utc)
+    return {(moment + _dt.timedelta(hours=h)).date().isoformat() for h in (-12, 14)}
+
+
 def _version_name(commit: str) -> str:
     """What to call this version to a reader: the release, not the sha.
 
