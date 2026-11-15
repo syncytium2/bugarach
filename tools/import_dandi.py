@@ -199,6 +199,51 @@ def read_session(path: Path):
     )
 
 
+#: The NWB series the published raster lives in, as `dandi-cache slice --preset
+#: cossart-raster` flattens it into an .npz key ("/" becomes "__"). The series name
+#: carries a version string ("raster dur v26_5_v37_6"), so it is matched by prefix.
+NPZ_RASTER_PREFIX = "processing__ophys__fluorescence_all_cells__raster"
+
+
+def read_npz_session(path: Path, *, slice_id: str, subject: str = "", age: str = ""):
+    """One session sliced from the NWB by `dandi-cache slice` -> the fields this producer
+    needs. The slice holds the raster, its frame timestamps and the ROI ids and nothing
+    else, so identity comes from the caller (the manifest), not from the file.
+
+    The frame interval is the median step between timestamps: the four or so gaps
+    between movies are outliers among about 12,500 steps and do not move it."""
+    z = np.load(path, allow_pickle=False)
+    series = sorted({k.rsplit("__", 1)[0] for k in z.files
+                     if k.startswith(NPZ_RASTER_PREFIX)})
+    if len(series) != 1:
+        raise ValueError(f"{path.name}: expected one raster series, found {series}")
+    s = series[0]
+    raster = np.atleast_2d(z[f"{s}__data"])
+    t = np.atleast_1d(np.asarray(z[f"{s}__timestamps"], dtype=float))
+    if raster.shape[0] != t.size and raster.shape[1] == t.size:
+        raster = raster.T
+    rois = z[f"{s}__rois"] if f"{s}__rois" in z.files else np.arange(raster.shape[1])
+    return dict(slice_id=slice_id, raster=raster, dt=float(np.median(np.diff(t))), t=t,
+                roi_ids=[str(x) for x in np.atleast_1d(rois)], age=age, subject=subject)
+
+
+def read_manifest(path: Path) -> list[dict]:
+    """An explicit list of sessions to import, one row each: ``npz``, ``slice_id``, and
+    optionally ``subject_id``, ``age`` and ``analysis_hold``.
+
+    Explicit on purpose. Scanning a directory imports whatever happens to be in it, and a
+    session left out for a reason is then one stray file away from coming back in. A
+    relative ``npz`` path is read against the manifest's own folder."""
+    with path.open(newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    if not rows or not {"npz", "slice_id"} <= set(rows[0]):
+        raise ValueError(f"{path.name}: a manifest needs columns npz and slice_id")
+    for r in rows:
+        p = Path(r["npz"]).expanduser()
+        r["npz"] = p if p.is_absolute() else path.parent / p
+    return rows
+
+
 def write_recording(out: Path, sess: dict) -> tuple[int, int, int]:
     """Write one ``<slice_id>.csv``. Returns (n_roi, n_events, n_silent_rois)."""
     onsets, widths = runs(sess["raster"], sess["t"], sess["dt"])
@@ -233,14 +278,16 @@ def write_sidecar(out: Path, rows: list[dict]) -> None:
     """``slices.csv`` — the per-recording sidecar the contract asks for."""
     with (out / "slices.csv").open("w", newline="") as fh:
         w = csv.writer(fh)
+        holds = any(r.get("hold") for r in rows)
         w.writerow(["slice_id", "frame_interval_sec", "age", "subject_id",
-                    "n_roi_recorded"])
+                    "n_roi_recorded"] + (["analysis_hold"] if holds else []))
         for r in rows:
             w.writerow([r["slice_id"], f"{r['dt']:.6f}", r["age"],
-                        r["subject"], r["n_roi"]])
+                        r["subject"], r["n_roi"]]
+                       + ([r.get("hold", "")] if holds else []))
 
 
-def write_provenance(out: Path, rows: list[dict], src: Path) -> None:
+def write_provenance(out: Path, rows: list[dict], src: Path, note: str = "") -> None:
     """What the CSVs cannot say about themselves."""
     n_ev = sum(r["n_events"] for r in rows)
     n_roi = sum(r["n_roi"] for r in rows)
@@ -314,26 +361,57 @@ Deliberately **outside** `exports/bugarach/`. `dataset.resolve()` searches that
 directory for bare names, and a foreign corpus sitting there is one typo from
 being read as this lab's data. It is not named in `current_export.toml`. Pass it
 by path.
-""")
+""" + (f"\n## Note from whoever ran this import\n\n{note}\n" if note else "")
+        + ("\n## Recordings on hold\n\n`slices.csv` carries an `analysis_hold` column. A "
+           "recording with text there is in the folder and must not be analysed until "
+           "that text says otherwise.\n" if any(r.get("hold") for r in rows) else ""))
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         description="Build a bugarach export folder from extracted DANDI:000219 "
                     "sessions.")
-    ap.add_argument("--src", required=True, type=Path,
-                    help="directory of extracted .mat sessions")
+    given = ap.add_mutually_exclusive_group(required=True)
+    given.add_argument("--src", type=Path,
+                       help="directory of extracted .mat sessions (every one is imported)")
+    given.add_argument("--manifest", type=Path,
+                       help="CSV listing exactly the sessions to import, as .npz files "
+                            "from `dandi-cache slice --preset cossart-raster` (columns "
+                            "npz, slice_id; optional subject_id, age, analysis_hold)")
     ap.add_argument("--out", type=Path, default=None,
                     help="destination folder (default: <data root>/"
                          + "/".join(DEFAULT_OUT_SUBPATH) + ")")
     ap.add_argument("--limit", type=int, default=0,
                     help="import only the first N sessions (a smoke run)")
+    ap.add_argument("--note", default="",
+                    help="a paragraph added to PROVENANCE.md, e.g. why sessions were "
+                         "left out")
     args = ap.parse_args(argv)
 
-    src = args.src.expanduser()
-    if not src.is_dir():
-        print(f"import_dandi: no such directory: {src}", file=sys.stderr)
-        return 2
+    if args.src is not None:
+        src = args.src.expanduser()
+        if not src.is_dir():
+            print(f"import_dandi: no such directory: {src}", file=sys.stderr)
+            return 2
+        files = sorted(src.glob("*.mat"))
+        if not files:
+            print(f"import_dandi: no .mat sessions in {src}", file=sys.stderr)
+            return 2
+        jobs = [(f, lambda f=f: read_session(f), "") for f in files]
+    else:
+        src = args.manifest.expanduser()
+        listed = read_manifest(src)
+        missing = [str(r["npz"]) for r in listed if not Path(r["npz"]).is_file()]
+        if missing:
+            print(f"import_dandi: {len(missing)} manifest file(s) not found, e.g. "
+                  f"{missing[0]}", file=sys.stderr)
+            return 2
+        jobs = [(r["npz"], lambda r=r: read_npz_session(
+                    Path(r["npz"]), slice_id=r["slice_id"],
+                    subject=r.get("subject_id", ""), age=r.get("age", "")),
+                 r.get("analysis_hold", "")) for r in listed]
+    if args.limit:
+        jobs = jobs[:args.limit]
 
     out = args.out
     if out is None:
@@ -344,30 +422,29 @@ def main(argv=None) -> int:
                   f"${dataset.ENV_VAR} or pass --out.", file=sys.stderr)
             return 2
         out = root.joinpath(*DEFAULT_OUT_SUBPATH)
+    if out.is_dir() and any(out.glob("*.csv")):
+        # A recording left over from an earlier import would load beside the new ones,
+        # on the old clock, and nothing would say so.
+        print(f"import_dandi: {out} already holds CSVs. Write to an empty folder and "
+              f"replace the old one yourself.", file=sys.stderr)
+        return 2
     out.mkdir(parents=True, exist_ok=True)
 
-    files = sorted(src.glob("*.mat"))
-    if args.limit:
-        files = files[:args.limit]
-    if not files:
-        print(f"import_dandi: no .mat sessions in {src}", file=sys.stderr)
-        return 2
-
     rows = []
-    for i, f in enumerate(files, 1):
-        sess = read_session(f)
+    for i, (where, load, hold) in enumerate(jobs, 1):
+        sess = load()
         n_roi, n_events, n_silent = write_recording(out, sess)
         rows.append(dict(slice_id=sess["slice_id"], dt=sess["dt"], age=sess["age"],
                          subject=sess["subject"], n_roi=n_roi, n_events=n_events,
-                         n_silent=n_silent, t=sess["t"],
+                         n_silent=n_silent, t=sess["t"], hold=hold,
                          n_movies=len(movies(sess["t"], sess["dt"]))))
-        print(f"[{i}/{len(files)}] {sess['slice_id'][:46]:<46} "
+        print(f"[{i}/{len(jobs)}] {sess['slice_id'][:46]:<46} "
               f"{n_roi:>5} ROI  {n_events:>7} events  {n_silent:>4} silent  "
               f"{rows[-1]['n_movies']} movies", flush=True)
 
     write_sidecar(out, rows)
     write_imaging(out, rows)
-    write_provenance(out, rows, src)
+    write_provenance(out, rows, src, note=args.note)
     print(f"\n{len(rows)} recordings -> {out}")
     print(f"  {sum(r['n_events'] for r in rows)} events, "
           f"{sum(r['n_silent'] for r in rows)} zero-event ROIs kept as NA rows")

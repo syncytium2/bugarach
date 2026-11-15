@@ -194,3 +194,57 @@ def test_the_folder_is_not_written_where_a_bare_name_would_resolve_it():
     this lab's data — the hazard `current_export.toml` exists to close."""
     assert import_dandi.DEFAULT_OUT_SUBPATH[:2] == ("exports", "external")
     assert "bugarach" not in import_dandi.DEFAULT_OUT_SUBPATH
+
+
+# ---- sliced .npz input and an explicit manifest (2026-11-14) -------------------
+
+SERIES = "processing__ophys__fluorescence_all_cells__raster dur vX"
+
+
+def _npz(path, raster, t):
+    np.savez(path, **{f"{SERIES}__data": raster.astype(np.int8),
+                      f"{SERIES}__timestamps": t,
+                      f"{SERIES}__rois": np.arange(raster.shape[1], dtype=np.int32)})
+
+
+def test_a_manifest_imports_exactly_the_sessions_it_lists(tmp_path):
+    """A file sitting beside the listed ones is not imported: the list is the input,
+    never the directory it points into."""
+    src = tmp_path / "slices"
+    src.mkdir()
+    t = _clock(30, dt=0.1, movie=10)
+    r = np.zeros((30, 2), dtype=np.int8)
+    r[8:13, 0] = 1
+    _npz(src / "a.npz", r, t)
+    _npz(src / "b.npz", r, t)
+    _npz(src / "not_listed.npz", r, t)
+    with (tmp_path / "manifest.csv").open("w", newline="") as fh:
+        csv.writer(fh).writerows([
+            ["npz", "slice_id", "subject_id", "age", "analysis_hold"],
+            ["slices/a.npz", "sess_a", "s1", "P7D", ""],
+            ["slices/b.npz", "sess_b", "s2", "P9D", "hold until cleared"]])
+    out = tmp_path / "out"
+
+    assert import_dandi.main(["--manifest", str(tmp_path / "manifest.csv"),
+                              "--out", str(out), "--note", "two sessions left out"]) == 0
+
+    assert sorted(p.stem for p in out.glob("*.csv")
+                  if p.name not in ("slices.csv", "imaging.csv")) == ["sess_a", "sess_b"]
+    meta = {r["slice_id"]: r for r in csv.DictReader((out / "slices.csv").open())}
+    assert meta["sess_b"]["analysis_hold"] == "hold until cleared"
+    assert meta["sess_a"]["frame_interval_sec"] == "0.100000"
+    assert "two sessions left out" in (out / "PROVENANCE.md").read_text()
+    s = {x.slice_id: x for x in load_folder(out)}["sess_a"]
+    assert len(s.imaging) == 3
+    assert next(iter(s.streams.values())).locs[0] == pytest.approx([0.8, 18.5])
+
+
+def test_an_import_refuses_a_folder_that_already_holds_recordings(tmp_path):
+    src = tmp_path / "a.npz"
+    _npz(src, np.zeros((5, 1), dtype=np.int8), _clock(5))
+    (tmp_path / "manifest.csv").write_text("npz,slice_id\na.npz,a\n")
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "old.csv").write_text("roi,time_sec\n1,0.5\n")
+    assert import_dandi.main(["--manifest", str(tmp_path / "manifest.csv"),
+                              "--out", str(out)]) == 2

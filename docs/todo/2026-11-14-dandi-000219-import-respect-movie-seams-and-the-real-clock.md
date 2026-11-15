@@ -64,10 +64,25 @@ the two rigs differ by about 28%.
   real, and the stretches go in a new optional table. Tony asked for the import to be
   fixed in this repository, so `movies()`, `runs()` and `bugarach.imaging` were written
   here rather than taken from the outside adapter.
-- ⬜ **The folder on disk is re-imported.** Not done in that change, on purpose: four of its
-  sessions are reserved for a timed task outside this repository, and nothing may compute
-  on them before that task runs. Re-import after it has run, or re-import with those four
-  left out if Tony says so.
+- ✅ **Re-imported 2026-11-14, with the four reserved sessions left out** (Tony's call).
+  The input was `dandi-cache slice --preset cossart-raster`, which streams only the raster,
+  its timestamps and the ROI ids. The 58 sessions total 69 GB as NWB files and were not
+  downloaded. They were read through an explicit manifest (`import_dandi.py --manifest`).
+  The result is 54 recordings: 863,353 events, 1,255 zero-event ROIs, five movies each, and
+  every recording loads and validates against its `imaging.csv`. It sits in a local folder on
+  the Mac mini (`~/data/exports/external/dandi_000219_20261114`), not under a data root,
+  because that machine has none. **Six recordings carry `analysis_hold` in `slices.csv`**:
+  they share an animal with a reserved session, and nothing analyses them until the hold is
+  cleared.
+  **Four sessions could not be imported as they stand.** `sub-190921-190927-1_ses-190927-a000`
+  has 11,873 raster frames against 12,500 timestamps, and nothing says which frames the
+  times belong to. `sub-200108-200117-1_ses-200117-a001`, `sub-210226-210307-1_ses-210307-a000`
+  and `sub-210226-210308-1_ses-210308-a000` have no raster under
+  `processing/ophys/fluorescence_all_cells`. DANDI lists 62 sessions; the first import had
+  59, which probably means it skipped the same three.
+- ⬜ **The reserved four go in once their hold ends**, and the folder replaces the old one
+  on the machine that holds the data root. Nothing has run on the new folder; the transfer
+  re-measure waits for Tony.
 - ⬜ **Detection on this corpus runs on spliced time and reports in real time.** The helper
   exists (`imaging.splice`, with a pad stated per detector, and `to_real`). The route from a
   folder to calls ([ADR-0020](../adr/0020-one-route-from-a-folder-to-calls-per-stream.md)) does not call it yet; wire it there, then check that every
