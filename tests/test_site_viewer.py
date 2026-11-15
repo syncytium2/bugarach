@@ -441,13 +441,17 @@ def test_the_version_date_is_the_date_this_page_last_changed():
                     "a merge ref built at test time whose date is a clock "
                     "reading rather than a fact about the page")
 
-    when = git("log", "-1", "--no-merges", "--format=%cs", "--", rel)
-    if not when:
+    # Any date the commit's moment carries in some timezone: a GitHub squash merge
+    # commits in UTC, so an evening edit here lands dated tomorrow (#941).
+    from build_site import dates_a_commit_can_carry  # noqa: PLC0415
+    epoch = git("log", "-1", "--no-merges", "--format=%ct", "--", rel)
+    if not epoch:
         pytest.skip("no non-merge history for the page here — a depth-1 "
                     "checkout does this, and guessing would be worse")
-    assert said == when, (
+    when = dates_a_commit_can_carry(int(epoch))
+    assert said in when, (
         f"the page says it was last revised {said}; the last commit to write it "
-        f"was dated {when}. Bump data-bugarach-version-date, the "
+        f"was dated {' or '.join(sorted(when))}, depending on timezone. Bump data-bugarach-version-date, the "
         f"bugarach:version-date meta and the readable line at the bottom of "
         f"docs/site/raster_viewer.html when you edit the page — a version date "
         f"nobody maintains is worse than none, because it still reads as a fact.")
