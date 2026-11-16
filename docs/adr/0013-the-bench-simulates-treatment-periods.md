@@ -154,7 +154,10 @@ not a property of coordination.
 4. **Rate courses per group, or pooled?** **Answered at acceptance: neither. Levels that span
    the groups** (decision 2). As proposed: per group, since OVX and ORX surge far
    more than DI and MALE, and pooling would hide exactly the failure this ADR exists to catch.
-5. **High K⁺.** The last period of some recordings (e.g. 20250912_225) has its own surge.
+5. **High K⁺.** *(Answered 2026-11-16, pointer: high K⁺ is a positive control, not measured for
+   comparison or mechanism, and no synthetic set is built from it;
+   [ADR 2026-11-16-e860](2026-11-16-e860-treat1-is-apv-plus-cnqx-treat2-is-gz-and-high-k-is-a-positiv.md).)*
+   The last period of some recordings (e.g. 20250912_225) has its own surge.
    Proposed default: out of scope for now, since it is a positive control, not a treatment the
    analysis compares.
 6. **How far each axis goes.** Proposed defaults, as multiples of baseline:
