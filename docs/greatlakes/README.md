@@ -1,7 +1,7 @@
 # Great Lakes — access for bugarach
 
 **Use this page when** a bugarach job is too long for a workstation: the detector-settings
-searches are about one overnight each on 12 cores, and nine of them are wanted at once.
+searches took 130 minutes on 11 workers for the one timed here, and nine of them are wanted at once.
 **What is on the cluster and what is not:** [`TOOLS.md`](TOOLS.md).
 
 > Working material, not murderboarded. Written 2026-11-12. Nothing from bugarach has run on
@@ -73,8 +73,10 @@ Each of these was earned in interface2 and is taken over as it stands.
 - **Which Python the cluster has today, and whether a login node reaches PyPI.** ARC documents
   how to build an environment and gives 2021 versions as examples ([`TOOLS.md`](TOOLS.md)).
   These are the first lines of bugarach's first run sheet.
-- **How long a search takes on a cluster node.** The one-overnight figure is from a 12-core
-  workstation; a `standard` node has 36 cores.
+- **How long a search takes on a cluster node, and how much memory.** Measured on a
+  workstation, 2026-11-12: the `fast_di` search, 358 evaluations, 129.8 minutes on 11 workers
+  (about 24 core-hours). A `standard` node has 36 cores. Peak memory was not measured; the
+  job asks for 64 GB and 8 hours, and the first cluster run replaces both guesses.
 - **Whether a search resumes after being killed.** ARC provides no checkpointing.
 
 ## bugarach does not act in interface2

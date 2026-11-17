@@ -93,6 +93,16 @@ BENCH_ENV = "BUGARACH_BENCH"
 #: ``main`` — a value left in the shell cannot redirect a run silently.
 BENCHES = {"fast": "bugarach.bench", "slow": "bugarach.bench_slow",
            "combined": "bugarach.bench_combined"}
+#: A bench set (``fast_di``: one stream's bench built from one set of recordings' measured
+#: record, :mod:`bugarach.bench_sets`) is a bench like the three, taken by its name.
+from bugarach import bench_sets as _sets  # noqa: E402
+
+BENCHES.update({name: _sets.module_name(name) for name in _sets.names()})
+
+
+def bench_stream(which: str) -> str:
+    """The stream a ``--bench`` value belongs to: itself, or a set's stream."""
+    return which if which in ("fast", "slow", "combined") else _sets.stream_of(which)
 
 
 def _load_bench():
@@ -1226,7 +1236,7 @@ def main(argv=None) -> int:
     # a run's rulings silently. `realistic()` reads it.
     _b.use_spacing(a.spacing)
     if a.seeds is None:
-        a.seeds = 48 * _b.seed_factor(a.bench)       # the one place: 96 on fast, realistic
+        a.seeds = 48 * _b.seed_factor(bench_stream(a.bench))   # the one place: 96 on fast, realistic
     if realistic() and not a.no_crowded_veto:
         # ADR-0010 part 4: the close-events recording and its allowance are retired on the
         # realistic bench, whose scored recordings carry close events themselves.

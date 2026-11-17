@@ -1,0 +1,11 @@
+VERDICT: PASS
+9 of 9 sets passed; written 2026-11-13T21:29:25
+slow_all_3x      PASS           8 detectors, 442 evaluations, 108.4 min, best held-out mean F1 0.979 to 1.000
+combined_all_3x  PASS           8 detectors, 432 evaluations, 32.3 min, best held-out mean F1 0.965 to 1.000
+combined_male_3x PASS           8 detectors, 445 evaluations, 24.2 min, best held-out mean F1 0.965 to 1.000
+slow_di_3x       PASS           8 detectors, 462 evaluations, 76.0 min, best held-out mean F1 0.973 to 1.000
+combined_di_3x   PASS           8 detectors, 534 evaluations, 111.8 min, best held-out mean F1 0.886 to 1.000
+slow_male_3x     PASS           8 detectors, 401 evaluations, 73.9 min, best held-out mean F1 0.987 to 1.000
+fast_all_3x      PASS           8 detectors, 378 evaluations, 225.0 min, best held-out mean F1 0.974 to 1.000
+fast_di_3x       PASS           8 detectors, 385 evaluations, 77.5 min, best held-out mean F1 0.971 to 1.000
+fast_male_3x     PASS           8 detectors, 368 evaluations, 41.3 min, best held-out mean F1 0.959 to 1.000

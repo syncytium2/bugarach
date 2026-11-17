@@ -1,0 +1,189 @@
+{
+ "dataset": {
+  "role": "tracked_cohorts_3x",
+  "name": "export_roi_apv+cnqx-then-gz-then-hik_di+male_thr3x_rigid_blanked_20261112_v2",
+  "recordings": 12,
+  "use": "eval"
+ },
+ "groups": [
+  "DI",
+  "MALE"
+ ],
+ "rules": {
+  "grid": "each recording's frame interval",
+  "window_sec": 2.0,
+  "coactivity": "event_floor.coactive_counts: ROIs with an onset in a 2 s window",
+  "floor": "event_floor.window_floor, the baseline window's own, counted in the same 2 s window, 1000 draws",
+  "event": "a maximal run of count >= floor, at its peak",
+  "merge": "events less than 2 s apart merged, keeping the higher",
+  "windows": "baseline windows only (FOUNDATIONS section 9)",
+  "caveat": "gaps within one recording are not independent; the tests treat them as if they were, so their p values are optimistic"
+ },
+ "summary": {
+  "fast": {
+   "all": {
+    "n_gaps": 116,
+    "n_events": 128,
+    "hours": 4.0,
+    "events_per_hour": 32.0,
+    "p5": 3.5,
+    "p25": 20.175000000000068,
+    "p50": 42.799999999999955,
+    "p75": 109.42499999999998,
+    "p95": 250.72499999999997,
+    "share_under_10_sec": 0.11206896551724138,
+    "share_under_120_sec": 0.7672413793103449
+   },
+   "groups": {
+    "DI": {
+     "n_gaps": 59,
+     "n_events": 64,
+     "hours": 1.6666666666666665,
+     "events_per_hour": 38.400000000000006,
+     "p5": 3.3000000000000105,
+     "p25": 15.799999999999955,
+     "p50": 38.60000000000002,
+     "p75": 118.89999999999998,
+     "p95": 257.9299999999998,
+     "share_under_10_sec": 0.13559322033898305,
+     "share_under_120_sec": 0.7457627118644068,
+     "recordings": 5,
+     "vs_rest": {
+      "mann_whitney_p": 0.3724449126017205,
+      "ks_p": 0.25426338248300856,
+      "median_rest_sec": 45.39999999999998
+     }
+    },
+    "MALE": {
+     "n_gaps": 57,
+     "n_events": 64,
+     "hours": 2.333333333333333,
+     "events_per_hour": 27.42857142857143,
+     "p5": 4.920000000000004,
+     "p25": 23.600000000000023,
+     "p50": 45.39999999999998,
+     "p75": 104.60000000000002,
+     "p95": 213.79999999999984,
+     "share_under_10_sec": 0.08771929824561403,
+     "share_under_120_sec": 0.7894736842105263,
+     "recordings": 7,
+     "vs_rest": {
+      "mann_whitney_p": 0.3724449126017205,
+      "ks_p": 0.25426338248300856,
+      "median_rest_sec": 38.60000000000002
+     }
+    }
+   }
+  },
+  "slow": {
+   "all": {
+    "n_gaps": 254,
+    "n_events": 266,
+    "hours": 4.0,
+    "events_per_hour": 66.5,
+    "p5": 7.129999999999993,
+    "p25": 14.749999999999993,
+    "p50": 25.25,
+    "p75": 46.94999999999993,
+    "p95": 125.12499999999996,
+    "share_under_10_sec": 0.1220472440944882,
+    "share_under_120_sec": 0.9409448818897638
+   },
+   "groups": {
+    "DI": {
+     "n_gaps": 126,
+     "n_events": 131,
+     "hours": 1.6666666666666665,
+     "events_per_hour": 78.60000000000001,
+     "p5": 7.750000000000028,
+     "p25": 14.0,
+     "p50": 22.599999999999966,
+     "p75": 42.87499999999997,
+     "p95": 141.775,
+     "share_under_10_sec": 0.14285714285714285,
+     "share_under_120_sec": 0.9444444444444444,
+     "recordings": 5,
+     "vs_rest": {
+      "mann_whitney_p": 0.1254657315984026,
+      "ks_p": 0.05528774598108386,
+      "median_rest_sec": 28.100000000000023
+     }
+    },
+    "MALE": {
+     "n_gaps": 128,
+     "n_events": 135,
+     "hours": 2.333333333333333,
+     "events_per_hour": 57.85714285714286,
+     "p5": 6.834999999999972,
+     "p25": 16.475000000000023,
+     "p50": 28.100000000000023,
+     "p75": 49.17500000000002,
+     "p95": 122.14999999999999,
+     "share_under_10_sec": 0.1015625,
+     "share_under_120_sec": 0.9375,
+     "recordings": 7,
+     "vs_rest": {
+      "mann_whitney_p": 0.1254657315984026,
+      "ks_p": 0.05528774598108386,
+      "median_rest_sec": 22.599999999999966
+     }
+    }
+   }
+  },
+  "combined": {
+   "all": {
+    "n_gaps": 270,
+    "n_events": 282,
+    "hours": 4.0,
+    "events_per_hour": 70.5,
+    "p5": 6.1450000000000085,
+    "p25": 13.325000000000138,
+    "p50": 23.349999999999994,
+    "p75": 43.225000000000094,
+    "p95": 126.51999999999983,
+    "share_under_10_sec": 0.15925925925925927,
+    "share_under_120_sec": 0.9444444444444444
+   },
+   "groups": {
+    "DI": {
+     "n_gaps": 143,
+     "n_events": 148,
+     "hours": 1.6666666666666665,
+     "events_per_hour": 88.80000000000001,
+     "p5": 5.649999999999995,
+     "p25": 12.200000000000017,
+     "p50": 19.10000000000001,
+     "p75": 41.14999999999998,
+     "p95": 95.34000000000003,
+     "share_under_10_sec": 0.1958041958041958,
+     "share_under_120_sec": 0.951048951048951,
+     "recordings": 5,
+     "vs_rest": {
+      "mann_whitney_p": 0.052267341684023555,
+      "ks_p": 0.037767998201371104,
+      "median_rest_sec": 25.600000000000023
+     }
+    },
+    "MALE": {
+     "n_gaps": 127,
+     "n_events": 134,
+     "hours": 2.333333333333333,
+     "events_per_hour": 57.42857142857144,
+     "p5": 6.400000000000011,
+     "p25": 15.150000000000006,
+     "p50": 25.600000000000023,
+     "p75": 49.500000000000014,
+     "p95": 127.77999999999986,
+     "share_under_10_sec": 0.11811023622047244,
+     "share_under_120_sec": 0.937007874015748,
+     "recordings": 7,
+     "vs_rest": {
+      "mann_whitney_p": 0.052267341684023555,
+      "ks_p": 0.037767998201371104,
+      "median_rest_sec": 19.10000000000001
+     }
+    }
+   }
+  }
+ }
+}
