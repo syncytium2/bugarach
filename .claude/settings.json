@@ -67,6 +67,12 @@
             "command": "bash .claude/hooks/the-folder-is-the-input.sh",
             "timeout": 10,
             "statusMessage": "Checking this reads the export folder, not a store…"
+          },
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/tools/adr/adr.py\"; [ -f \"$f\" ] && exec python3 -X utf8 \"$f\" hook || exit 0",
+            "timeout": 120,
+            "statusMessage": "Checking the decision records before this git command…"
           }
         ]
       }

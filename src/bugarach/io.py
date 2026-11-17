@@ -67,7 +67,12 @@ FRAME_INTERVAL_COL = "frame_interval_sec"
 #: ``metric_dictionary.csv`` is here because it belongs to the OUTPUT contract:
 #: unreserved it would be read as a recording called "metric_dictionary" and
 #: fail on its columns, which is a confusing way to learn you shipped it.
-RESERVED = ("slices.csv", "regions.csv", "metric_dictionary.csv")
+RESERVED = ("slices.csv", "regions.csv", "imaging.csv", "metric_dictionary.csv")
+
+#: The optional table of imaged stretches, for a recording that was not imaged without a
+#: break (spec revision 11;
+#: docs/adr/2026-11-14-7a3a-a-recording-imaged-in-stretches-says-so-in-imaging-csv-detec.md).
+IMAGING_FILE = "imaging.csv"
 
 #: Files a RUN writes back, which can end up in the folder it was run on. Not
 #: recordings, and not evidence of an export folder either — which is why they are
@@ -511,6 +516,35 @@ def _read_table(path: Path, required: tuple[str, ...]) -> list[dict[str, str]]:
     return rows
 
 
+def _read_imaging(path: Path) -> dict[str, list[tuple[float, float]]]:
+    """``imaging.csv``: the stretches each recording was actually imaged, in order.
+
+    Absent, or no rows for a recording, means one continuous stretch. ``stretch_idx`` is
+    the ordering and must run 1, 2, 3 ... within a recording, as ``region_idx`` does."""
+    out: dict[str, list[tuple[int, float, float]]] = {}
+    rows = _read_table(path, ("slice_id", "stretch_idx", "start_sec", "end_sec"))
+    for n, r in enumerate(rows, start=2):
+        try:
+            idx = int(r["stretch_idx"])
+            a, b = float(r["start_sec"]), float(r["end_sec"])
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"{path.name} line {n}: stretch_idx must be a 1-based integer and "
+                f"start_sec and end_sec numbers of seconds (got {r['stretch_idx']!r}, "
+                f"{r['start_sec']!r}, {r['end_sec']!r})") from None
+        out.setdefault(r["slice_id"], []).append((idx, a, b))
+    result = {}
+    for sid, got in out.items():
+        got.sort()
+        order = [i for i, _, _ in got]
+        if order != list(range(1, len(got) + 1)):
+            raise ValueError(
+                f"{path.name}, {sid}: stretch_idx runs {order}; it is the "
+                f"chronological ordering and must run 1, 2, 3 ...")
+        result[sid] = [(a, b) for _, a, b in got]
+    return result
+
+
 #: Spellings a producer may already use for the reserved subject column. Accepting
 #: them costs nothing and means a lab that has written `mouse_id` for years does not
 #: have to rename a column to be conforming (spec revision 4).
@@ -645,11 +679,14 @@ def load_folder(folder, *, dt: float | None = None,
 
     meta = {r.get("slice_id", ""): _identity(dict(r))
             for r in _read_table(folder / "slices.csv", ("slice_id",))}
+    imaging = _read_imaging(folder / IMAGING_FILE)
 
     for name, table, present in (("regions.csv", regions,
                                   (folder / "regions.csv").is_file()),
                                  ("slices.csv", meta,
-                                  (folder / "slices.csv").is_file())):
+                                  (folder / "slices.csv").is_file()),
+                                 (IMAGING_FILE, imaging,
+                                  (folder / IMAGING_FILE).is_file())):
         if not present:
             continue                      # absent is a choice, not a mistake
         missed = [p.stem for p in files if p.stem not in table]
@@ -667,6 +704,13 @@ def load_folder(folder, *, dt: float | None = None,
                         meta=meta.get(p.stem))
         for p in files
     ]
+    # A recording's imaged stretches, checked against its own events: an event in a gap,
+    # or one that runs across a seam, is refused at load rather than drawn or detected.
+    from bugarach.imaging import validate
+    for s in slices:
+        if s.slice_id in imaging:
+            s.imaging = imaging[s.slice_id]
+            validate(s)
 
     if require_width:
         bare = [f"{s.slice_id}/{name}" for s in slices

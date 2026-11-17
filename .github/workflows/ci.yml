@@ -92,6 +92,11 @@ jobs:
       - name: Install PySpike (optional cross-check dependency)
         # source build; if unavailable on this Python the cross-check test skips
         run: pip install pyspike || echo "pyspike unavailable — cross-check test will skip"
+      - name: Check the decision records
+        # armory's ADR kit, vendored at tools/adr/adr.py. It needs the full history fetched
+        # above: on a shallow clone the immutability rule fails by design and the collision
+        # rule sees one branch. Which rules fail and which only warn: .adr-kit.json.
+        run: python3 -X utf8 tools/adr/adr.py check
       - name: Test
         # real-slice tests skip without BUGARACH_DATA_ROOT; everything else
         # (incl. all MATLAB-parity fixtures) runs on the committed synthetics

@@ -53,3 +53,10 @@ needs no real recording was also the only one available.
   there.
 - Taking the learned models off hold, or adding a detector to the first map, is a new ruling
   recorded as an ADR that amends this one.
+
+## Amendments
+
+2026-11-16: decision 5 is amended by
+[ADR 2026-11-16-4feb](2026-11-16-4feb-the-learned-models-are-off-hold-on-the-reviewed-tracked-coho.md):
+the learned models are off hold, on the reviewed tracked cohorts. Decisions 1 to 4 and 6 to 8
+are unchanged.

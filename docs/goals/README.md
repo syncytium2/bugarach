@@ -14,8 +14,10 @@ set"* ([ADR-0020](../adr/0020-one-route-from-a-folder-to-calls-per-stream.md)).
   [`coded-detector-optimization.md`](coded-detector-optimization.md) is its tuning stage,
   [`combined-stream-coordination.md`](combined-stream-coordination.md) is its third stream, and
   [`synthetic-validation.md`](synthetic-validation.md) is its recovery and evaluation stages.
-- **On hold or behind it:** the learned models (ADR-0021), the detector review document, the
-  dissertation chapter, the precursor run and the rater sheet.
+- **On hold or behind it:** the detector review document, the dissertation chapter, the
+  precursor run and the rater sheet. The learned models came off hold on 2026-11-16, on the
+  reviewed tracked cohorts
+  ([ADR 2026-11-16-4feb](../adr/2026-11-16-4feb-the-learned-models-are-off-hold-on-the-reviewed-tracked-coho.md)).
 - **Unchanged from the program below:** baseline only, the fitted field as the simulation, every
   knob. Its machine assignments and its fast-before-slow order describe September.
 
