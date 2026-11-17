@@ -85,6 +85,6 @@ without a new ADR as long as the four points above hold.*
 
 ## Amendments
 
-2026-11-17: decision 1's route is revised, Proposed, by
+2026-11-17: decision 1's route is revised by
 [ADR 2026-11-17-b16b](2026-11-17-b16b-the-route-to-calls-has-three-human-reviews-and-a-treatment-l.md):
 three human reviews and a treatment half. Decisions 2 to 4 are unchanged.

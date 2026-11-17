@@ -2,8 +2,9 @@
 
 ## Status
 
-Proposed, 2026-11-17. Drafted at Tony's request. The sequence of steps is his, given on
-2026-11-16:
+Accepted as amended, 2026-11-17, by Tony: *"we will run 3x and 4x in parallel. the rest is fine"*.
+The one amendment is written into decision 3, marked where it falls. Drafted at Tony's request; the
+sequence of steps is his, given on 2026-11-16:
 
 > *"characterize the three streams (corellograms, etc). build synthetic data. human review of
 > synthetic data and real data side by side. optimize and train select/all detectors on synthetic
@@ -18,9 +19,10 @@ Two rulings from the same afternoon are already recorded:
 - the learned models are off hold, so "train" in step 4 includes them
   ([ADR 2026-11-16-4feb](2026-11-16-4feb-the-learned-models-are-off-hold-on-the-reviewed-tracked-coho.md)).
 
-**What is proposed, and Tony's to accept or change**, is marked *(proposed)* below: keeping the
-machine check in front of the first review, deciding the threshold at that review, the rule for
-step 10, where the loop goes back to and when it stops, and a closing check after detection.
+Five points were the session's, drafted as proposals and accepted with the rest: keeping the
+machine check in front of the first review, the rule for step 10, where the loop goes back to and
+when it stops, freezing the settings before any comparison, and a closing check after detection.
+A sixth, picking one threshold at the first review, was replaced at acceptance (decision 3).
 
 It revises the route of [ADR-0020](0020-one-route-from-a-folder-to-calls-per-stream.md)
 (decision 1) and does not supersede it: ADR-0020's other three decisions stand.
@@ -49,14 +51,16 @@ The route, per stream (fast, slow, combined):
 
 1. **Characterize the baseline**: correlograms, event rates, participation, jitter, intervals.
 2. **Build synthetic sets** from what step 1 measured.
-   - *(proposed)* **The machine check stays between 2 and 3**: the measuring tools are run blind
+   - **The machine check stays between 2 and 3**: the measuring tools are run blind
      on the synthetic sets and must recover what was planted (route stage 3). A review by eye
      tests whether the sets look like the data; this tests whether the numbers they were built
      from can be trusted, which the eye cannot.
 3. **Human review: synthetic beside real.** One page per stream draws simulated recordings and
    real ones the same way, with the same correlograms.
-   - *(proposed)* **The threshold is decided here.** Where two thresholds exist (4× and 3×), the
-     review shows both on the same real recordings and Tony picks one before step 4 uses it.
+   - **Both thresholds run in parallel (amended at acceptance).** Where a folder exists at two
+     thresholds (the tracked cohorts at 4× and 3× sigma_est), each is carried through the whole
+     route as its own walk, and the review shows both on the same real recordings. Proposed was
+     to pick one here; Tony chose to run both.
 4. **Optimize and train detectors on synthetic data**: coded detectors searched, learned models
    trained (ADR 2026-11-16-4feb), on the selected detectors or all of them.
 5. **Human review on synthetic data.** What is reviewed is a capability map per detector: what
@@ -64,7 +68,7 @@ The route, per stream (fast, slow, combined):
    on rate-matched negatives (ADR-0019). Until those negatives exist, the map shows false calls
    against background only, and says so. Adopting a setting stays Tony's word.
 6. **Detect on real data**, whole recordings, with the adopted settings.
-   - *(proposed)* **A closing check follows**: the step 1 quantities are re-measured from the
+   - **A closing check follows**: the step 1 quantities are re-measured from the
      calls on real baseline and compared with step 1 (Aim 3 of
      [`goals/synthetic-validation.md`](../goals/synthetic-validation.md)). If they disagree, the
      loop has not closed, whatever the reviews said.
@@ -75,15 +79,15 @@ The route, per stream (fast, slow, combined):
 9. **Human review** of those calls. The high K⁺ period is shown, labelled as the positive control,
    and left out of every comparison.
 10. **Revise the synthetic sets if a treatment breaks the detectors.**
-    - *(proposed)* **Treatment-shaped sets test before they tune.** The sets are rebuilt with
+    - **Treatment-shaped sets test before they tune.** The sets are rebuilt with
       treatment backgrounds (ADR-0013: treatment rates as background, baseline's coordination
       planted through them, swept). The baseline-tuned settings are scored on them first. Only
       settings that fail there are retuned, and the retune is scored on baseline sets as well.
       Tuning on sets shaped by a treatment's effect, and then measuring that effect with the
       tuned detectors, would make the measurement depend on what it measures.
-    - *(proposed)* **The loop goes back to step 2**, then 3, 4, 5, with step 1's baseline record
+    - **The loop goes back to step 2**, then 3, 4, 5, with step 1's baseline record
       held fixed. It stops when the settings pass on the treatment-shaped sets and on baseline.
-    - *(proposed)* **The settings are frozen before anything compares treatment with
+    - **The settings are frozen before anything compares treatment with
       baseline**, and that comparison is fireflies' by default
       ([ADR-0017](0017-group-and-treatment-comparisons-default-to-fireflies.md)).
 
