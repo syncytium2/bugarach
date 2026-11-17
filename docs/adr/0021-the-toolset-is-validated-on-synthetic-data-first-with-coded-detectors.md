@@ -10,11 +10,6 @@ which holds his words in full) and in the *Settled* table of
 [`goals/synthetic-validation.md`](../goals/synthetic-validation.md). Nothing here is new; where
 this record and those two disagree, they are the source and this is the error.
 
-> **Pointer, 2026-11-16:** decision 5 is amended by
-> [ADR 2026-11-16-4feb](2026-11-16-4feb-the-learned-models-are-off-hold-on-the-reviewed-tracked-coho.md):
-> the learned models are off hold, on the reviewed tracked cohorts. Decisions 1 to 4 and 6 to 8
-> are unchanged.
-
 ## Context
 
 Until 2026-10-22 every tuning and comparison in this repository was aimed at this lab's
@@ -58,3 +53,10 @@ needs no real recording was also the only one available.
   there.
 - Taking the learned models off hold, or adding a detector to the first map, is a new ruling
   recorded as an ADR that amends this one.
+
+## Amendments
+
+2026-11-16: decision 5 is amended by
+[ADR 2026-11-16-4feb](2026-11-16-4feb-the-learned-models-are-off-hold-on-the-reviewed-tracked-coho.md):
+the learned models are off hold, on the reviewed tracked cohorts. Decisions 1 to 4 and 6 to 8
+are unchanged.
