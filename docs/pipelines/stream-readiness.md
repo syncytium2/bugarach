@@ -28,6 +28,15 @@ contamination stops the work (CLAUDE.md); a false alarm is coincidence the rates
 (ADR-0009); events are planted at measured gaps (ADR-0010); treatment recordings at rate levels (ADR-0013); no decoys (ADR-0019); coded
 detectors, synthetic first (ADR-0021); close events as an axis of set separations (ADR-0022).
 
+**Revised 2026-11-17, accepted by Tony the same day**
+([ADR 2026-11-17-b16b](../adr/2026-11-17-b16b-the-route-to-calls-has-three-human-reviews-and-a-treatment-l.md)):
+Tony's ten-step route adds three reviews by eye (after stages 3, 5 and 8b below) and a treatment
+half after stage 7. Treat1 is APV with CNQX, treat2 is GZ, high K⁺ is a positive control
+([ADR 2026-11-16-e860](../adr/2026-11-16-e860-treat1-is-apv-plus-cnqx-treat2-is-gz-and-high-k-is-a-positiv.md));
+learned models are trained in stage 5 beside the coded search
+([ADR 2026-11-16-4feb](../adr/2026-11-16-4feb-the-learned-models-are-off-hold-on-the-reviewed-tracked-coho.md)).
+Tony's step numbers are given beside each stage.
+
 ## The route, as commands
 
 `<run>` is one dated folder under `docs/learned/runs/`. `<stream>` is `fast`, `slow` or
@@ -85,6 +94,13 @@ per row) the two larger levels of every stream pass on participants and rate; ji
 6.7 cells and above and fails at 3 to 4 cells, where it reads about twice the planted value
 ([goal page](../goals/synthetic-validation.md), *Aim 1a at the lab's values*).
 
+### Review A — synthetic beside real (Tony's step 3)
+
+**Gate: Tony looks.** One page per stream draws simulated recordings and real ones the same way,
+with the same correlograms. Where the folder exists at two thresholds (the tracked cohorts: 4×
+and 3× sigma_est), the page draws each real recording at both. **Both thresholds run in
+parallel** through the whole route (Tony, 2026-11-17), each as its own walk. **No tool builds this page yet** (*Owed*, item 10).
+
 ### Stage 4 — budgets
 
     python tools/measure_slow_budgets.py --bench slow
@@ -102,6 +118,16 @@ Realistic spacing is the default (ADR-0010); `--spacing bench` reproduces older 
 2026-09-25 night produced nine rulings that are still open
 ([report](../learned/runs/2026-09-25-final-parameters/README.md)).
 
+The learned models are trained on the same synthetic sets in this stage (Tony's step 4); their
+labels are rebuilt without decoys first (ADR-0019).
+
+### Review B — the detectors on synthetic data (Tony's step 5)
+
+**Gate: Tony looks, then adopts.** What is reviewed is the capability map per detector (*Owed*,
+item 7): what it finds and misses across separation, participation and background. Until the
+rate-matched negatives exist (*Owed*, item 1), false calls are shown against background only and
+the page says so.
+
 ### Stage 6 — the settings file
 
     python tools/settings_from_bench.py --bench <stream> --out <run>/detector_settings_<stream>.csv
@@ -111,6 +137,29 @@ Realistic spacing is the default (ADR-0010); `--spacing bench` reproduces older 
     bugarach detect <folder> --stream <stream> --settings <run>/detector_settings_<stream>.csv
 
 Every analysis names the dataset it read, on stderr and in its record (ADR-0018).
+
+**Then the closing check:** the stage 1 quantities are re-measured from the calls on
+real baseline and compared with the stage 1 record (*Owed*, item 8). A disagreement means the
+loop has not closed, whatever the reviews said.
+
+## The treatment half (Tony's steps 7 to 10)
+
+Treat1 is APV with CNQX and treat2 is GZ. High K⁺ is shown as the positive control and never
+measured, compared or used to build a set. Every output here answers *do the detectors cope with
+this period*, not *what does the drug do*; the second is fireflies' by default (ADR-0017).
+
+- **Stage 8a — assess the treatment periods** (step 7): each ROI's event rate and its course over
+  the period, by stream. Backgrounds only; coordination properties still come from baseline
+  (FOUNDATIONS §9, ADR-0013). No tool takes a period yet (*Owed*, item 3).
+- **Stage 8b — the baseline-tuned detectors through treat1 and treat2** (step 8): stage 7's calls,
+  read by period. Nothing is retuned.
+- **Review C** (step 9). **Gate: Tony looks** at the calls through each period, with high K⁺
+  labelled.
+- **Stage 9 — treatment-shaped sets test before they tune** (step 10): rebuild the
+  sets with treatment backgrounds (ADR-0013), score the baseline-tuned settings on them, and
+  retune only the settings that fail, scoring any retune on baseline sets too. The loop returns to
+  stage 2 with stage 1's record fixed and stops when the settings pass on both. The settings are
+  frozen before anything compares treatment with baseline.
 
 ## Owed, in the order the route needs it
 
@@ -151,3 +200,6 @@ None of these needs a ruling unless it says so.
 9. **The producer's own statement of what assigns an event to fast or slow**
    ([`goals/combined-stream-coordination.md`](../goals/combined-stream-coordination.md)); the
    route runs on Tony's working rule of 2026-10-07 until then.
+10. **The Review A page**: simulated and real recordings drawn alike, with correlograms, and the
+    real ones at each threshold the folder has. The raster stays black and white; anything else
+    goes in a lane above it.

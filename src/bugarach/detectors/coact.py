@@ -96,8 +96,12 @@ def coact_detect(
     ``window_mode="sliding"`` counts in a window that slides instead of fixed bins and
     computes the null exactly instead of sampling it (:mod:`bugarach.detectors.sliding`),
     so the calls do not move when the recording is shifted. ``"binned"`` is the MATLAB
-    port and what the parity fixtures pin. Sliding supports threshold mode without a
-    guard; ``n_surrogates`` and ``rng_seed`` do not apply to it.
+    port and what the parity fixtures pin. Sliding supports threshold mode only, and it
+    **does** apply the guard (``guard_sec``, ``guard_norm``), computed exactly rather than
+    sampled; ``n_surrogates`` and ``rng_seed`` do not apply to it. (This line used to say
+    sliding ran "without a guard". It was stale: ``_coact_sliding`` has applied the guard
+    since it was written, and a session on 2026-11-14 set ``guard_sec=0`` on the strength of
+    the old wording. On synthetic trains, guards of 0, 1 and 4 s give different z.)
     """
     if window_mode not in ("binned", "sliding"):
         raise ValueError('window_mode must be "binned" or "sliding"')

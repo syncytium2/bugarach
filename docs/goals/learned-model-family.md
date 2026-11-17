@@ -46,7 +46,17 @@ cross-validation.
 
 ## Where it stands
 
-**2026-10-22: on hold.** Tony: *"the deep learning models are on hold for now."* No training,
+**2026-11-16: off hold** (Tony: *"RELEASE THE HOLD"*;
+[ADR 2026-11-16-4feb](../adr/2026-11-16-4feb-the-learned-models-are-off-hold-on-the-reviewed-tracked-coho.md)).
+The hold was for artifacts in the recordings, the field steps first, and then for the retracking
+of the senktide and TTX recordings. The tracked DI and MALE cohorts (APV with CNQX, then GZ) have
+been reviewed for those artifacts, so training, bake-offs and write-ups resume on them and on
+synthetic sets built from them. Senktide and TTX wait for their retracked export. Labels are
+rebuilt without the decoy case
+([ADR-0019](../adr/0019-the-decoys-are-retired-negatives-are-rate-matched.md)), and the results
+below were scored on the September benches, which are stale: history, not a baseline to beat.
+
+**2026-10-22: on hold** (lifted 2026-11-16, above). Tony: *"the deep learning models are on hold for now."* No training,
 bake-off or write-up on this goal until he lifts it. The detector document leaves chorus out of
 its main text for this reason ([`detector-review-document.md`](detector-review-document.md)).
 

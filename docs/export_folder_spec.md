@@ -28,6 +28,24 @@ Everything is CSV, UTF-8, newline-only endings, one header row. Times are
 this project's MATLAB exporter, another lab's Python, a spreadsheet exported by
 hand.
 
+> **Revision 11** (2026-11-14). **A recording that was not imaged without a break says
+> where the breaks are, in `imaging.csv`.**
+>
+> No folder that conformed stops conforming. A recording with no `imaging.csv` rows is one
+> continuous stretch, as every recording was assumed to be until now. A producer whose
+> recording was imaged in stretches (several movies, say, with time between them) lists
+> them, keeps every `time_sec` on the recording's real clock, and splits any event that
+> would run across a gap. See "`imaging.csv` — optional" below.
+>
+> Why: the first outside corpus, DANDI:000219, is five movies per session with 17–18 s
+> gaps, and nothing here could say so. Its importer closed the gaps, so later events landed
+> up to about 70 s early, and it joined events across them. bugarach splices the stretches
+> for detection and reports calls on the real clock
+> ([ADR 2026-11-14-7a3a](adr/2026-11-14-7a3a-a-recording-imaged-in-stretches-says-so-in-imaging-csv-detec.md)).
+
+<!-- Keep this comment: it stops Python-Markdown merging this blockquote into revision 10's
+     (see the comment below revision 8). -->
+
 > **Revision 10** (2026-11-12). **A stream pooled from other streams is the producer's, and
 > each of its rows names where the event came from.**
 >
@@ -302,10 +320,11 @@ my_export/
   ...
   slices.csv          one row per recording: the frame interval, plus identity
   regions.csv         one row per treatment window
+  imaging.csv         one row per imaged stretch, only for recordings with gaps
 ```
 
-**Every `.csv` is a recording except three reserved names**: `slices.csv` and
-`regions.csv`, the two input tables shown above, and `metric_dictionary.csv` — not
+**Every `.csv` is a recording except four reserved names**: `slices.csv`,
+`regions.csv` and `imaging.csv`, the input tables shown above, and `metric_dictionary.csv` — not
 shown, because it belongs to the *output* contract further down. It is reserved
 anyway, so that shipping it alongside the input does not read as a recording called
 "metric_dictionary".
@@ -702,6 +721,39 @@ animal — and never their *values*. It does not know what `ORX` means, what a m
 is, or which group is a control. It knows only that rows sharing a `subject_id` came
 from one animal and that rows differing in `group_id` belong to different groups.
 Every other column, including the values in these two, is carried and not read.
+
+### `imaging.csv` — optional
+
+One row per stretch of a recording that was imaged without a break. **This is how a
+recording says it has gaps in imaging.** Leave it out, or leave a recording out of it, and
+that recording is one continuous stretch, which is what most recordings are.
+
+| column | type | meaning |
+|---|---|---|
+| `slice_id` | text | which recording |
+| `stretch_idx` | integer | **1-based, chronological**, running 1, 2, 3 ... within the recording |
+| `start_sec` | number | the time of the stretch's first frame, on the recording's clock |
+| `end_sec` | number | the time of its last frame **plus one frame interval** |
+
+**Three rules come with it.**
+
+- **`time_sec` stays on the real clock.** Do not close the gaps yourself. An event in
+  the third movie is reported at the time it happened, after the two gaps before it.
+- **Every event lies inside one stretch.** An event that starts in a gap, or whose
+  `width_sec` runs past the end of its stretch, is refused at load. A run that is active
+  at the last frame of one stretch and the first frame of the next is **two events**,
+  each closing with its own stretch: the frames are adjacent in the file and seconds
+  apart in time.
+- **`regions.csv` keeps the real clock too.** A region boundary that falls in a gap is
+  fine. For detection it moves to the nearest imaged time on its side.
+
+**What bugarach does with it.** Every null in the package builds its grid over the
+recording's extent, and a gap read as recording time is time in which the data hold no
+events but a shuffle places some. So detection runs on a **spliced** clock, the stretches
+back to back, and every call is mapped back to the real clock before it is reported or
+drawn. A detector that counts coincidence in a window gets a short blank stretch at each
+seam, at least as long as its window, so the window cannot join two movies. A drawn call
+is cut at the gaps. `bugarach.imaging` does all of this, and no detector knows about gaps.
 
 ### `metric_dictionary.csv` — optional
 

@@ -38,7 +38,9 @@ the roles what the previous round found.
 ## Where it stands
 
 **2026-10-22: four rulings from Tony on the reply draft, and two of them wait on him.**
-- **The deep learning models are on hold** (Tony, 2026-10-22). Chorus is one of them, so it does
+- **The deep learning models are on hold** (Tony, 2026-10-22; **lifted 2026-11-16**,
+  [ADR 2026-11-16-4feb](../adr/2026-11-16-4feb-the-learned-models-are-off-hold-on-the-reviewed-tracked-coho.md).
+  Whether chorus now returns to the main text is this document's decision). Chorus is one of them, so it does
   not get the main-text figure and paragraph the reply draft planned. The draft keeps CoactDetect
   in the main text, and chorus waits with the other learned models.
 - **The combined list.** Interface2 assigns events to fast and slow, and the 2 s working rule of

@@ -48,7 +48,7 @@ ENV_VAR = "BUGARACH_DATA_ROOT"
 #: here is *not* evidence of an export folder, which is the mistake that produced
 #: the detector_settings.csv error above. Written out rather than imported so that
 #: resolving a dataset does not pull in numpy.
-_NOT_A_RECORDING = {"slices.csv", "regions.csv", "metric_dictionary.csv",
+_NOT_A_RECORDING = {"slices.csv", "regions.csv", "imaging.csv", "metric_dictionary.csv",
                     "detections.csv", "detector_settings.csv", "calls.csv",
                     "windows.csv", "PROVENANCE.md", "README.md"}
 

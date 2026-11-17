@@ -20,7 +20,14 @@ two never disagree, and cross-reference them.
 - One decision per file. **A new record is named `YYYY-MM-DD-<4 hex>-title-in-kebab-case.md`**,
   and its heading carries the same ID: `# ADR YYYY-MM-DD-hhhh: Title`. The four hex characters
   are random, so sessions on different machines cannot pick the same ID. This is the lab-wide
-  scheme of armory's ADR kit (`tools/adr/` there; Tony, 2026-11-03).
+  scheme of armory's ADR kit (`tools/adr/` there; Tony, 2026-11-03). Write one with
+  `python3 -X utf8 tools/adr/adr.py new "Title"`, which picks the ID and adds the index row.
+- **The kit checks the folder** (`python3 -X utf8 tools/adr/adr.py check`): in CI, in
+  `tests/test_adr_kit.py`, and in a Claude Code hook that blocks a git commit, merge, push,
+  pull or rebase while a rule fails. The copy here is vendored and is not edited; changes go
+  to armory. `.adr-kit.json` lowers four rules to warnings for records written before the kit
+  arrived (bare citations, accepted records edited in place, the `Declined` status, and one
+  supersession line the kit misreads). On Windows the `-X utf8` is required.
 - **No new numbered records** (Tony, 2026-11-13: *"numbered adrs are banned"*). Records 0001
   to 0023 keep their numbers and are not renamed.
 - **Cite a record by a link to its file**, or by its filename in a code comment. A bare ID in
@@ -61,6 +68,10 @@ two never disagree, and cross-reference them.
 | [0022](0022-close-events-are-a-bench-axis-the-event-definition-stays-at-2-s.md) | Close events are a bench axis of set separations, below 2 s included; the event definition stays at the 2 s window until the revised export is re-measured | Accepted |
 | [0023](0023-bugarach-does-not-combine-streams-the-export-is-final.md) | bugarach does not combine data streams; the export is final | Accepted |
 | [2026-11-13-43ba](2026-11-13-43ba-the-september-bench-is-stale-and-is-not-re-measured.md) | The September bench is stale and is not re-measured; the old data are replaced by the retracked export and never read again | Accepted |
+| [2026-11-14-7a3a](2026-11-14-7a3a-a-recording-imaged-in-stretches-says-so-in-imaging-csv-detec.md) | A recording imaged in stretches says so in imaging.csv; detection splices it and reports on the real clock | Accepted |
+| [2026-11-16-4feb](2026-11-16-4feb-the-learned-models-are-off-hold-on-the-reviewed-tracked-coho.md) | The learned models are off hold, on the reviewed tracked cohorts; amends ADR-0021 decision 5 | Accepted |
+| [2026-11-16-e860](2026-11-16-e860-treat1-is-apv-plus-cnqx-treat2-is-gz-and-high-k-is-a-positiv.md) | Treat1 is APV plus CNQX, treat2 is GZ, and high K is a positive control; answers ADR-0013 point 5 | Accepted |
+| [2026-11-17-b16b](2026-11-17-b16b-the-route-to-calls-has-three-human-reviews-and-a-treatment-l.md) | The route to calls has three human reviews and a treatment loop that tests before it retunes; revises ADR-0020's route | Accepted |
 
 **Numbers are closed.** The rule below governed 0001 to 0023 and is kept as history; a new
 record takes a date-and-hash ID (Convention, above) and needs no such check.
