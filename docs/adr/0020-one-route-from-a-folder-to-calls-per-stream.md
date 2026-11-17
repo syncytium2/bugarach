@@ -82,3 +82,9 @@ without a new ADR as long as the four points above hold.*
 - **The transcription step is the route's weakest joint.** A measured record still reaches the
   bench by a person editing constants. A profile built from the record is owed.
 - **Nothing here reads data.** The stop on the default folder is unchanged.
+
+## Amendments
+
+2026-11-17: decision 1's route is revised by
+[ADR 2026-11-17-b16b](2026-11-17-b16b-the-route-to-calls-has-three-human-reviews-and-a-treatment-l.md):
+three human reviews and a treatment half. Decisions 2 to 4 are unchanged.
