@@ -25,3 +25,10 @@ Two pieces of work, in this order:
 This is part of the general-toolset direction Tony set out on 2026-10-22: unlabelled event
 times in, measured parameters, synthetic data, detectors chosen and tuned, and then a run on the
 original data.
+
+**2026-11-13, piece 1 is built in its first form.** `bugarach.negatives` takes onset times per channel and a
+duration and returns per-channel rigid shifts at *J* = 20 s. Its tests show planted events stop being co-active
+(37 to 40 crowded 2 s windows become 0 to 2 per draw) and a shared slow change in rate survives (the
+count-variance ratio at 60 s bins goes from 30.8 to 30.0; an even scatter of each channel's onsets takes it to 0.7).
+Still open: a command line, the second construction, and the same two checks on the simulator once it can plant a
+shared slow change. Piece 2 is untouched.
