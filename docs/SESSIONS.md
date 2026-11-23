@@ -3405,3 +3405,8 @@ session's work is not a sweep.
 - **Claimed:** 2026-11-12, before the write. Tony: rerun step 1 on the `_v2` folders for all three streams.
 - **Writes:** one page per stream (`report_roi_<stream>_baseline_...`, `.html` and `.png`) from `docs/learned/runs/2026-11-12-baseline-characterization-3x-4x/page.py`. Darkroom only.
 - **Released:** 2026-11-12, at write. Three pages (fast, slow, combined), `.html` and `.png`. Holds nothing.
+
+### darkroom/bugarach/2026-11-23-di-male-apv-cnqx-then-gz-rasters/ — raster pages for the full DI and MALE study, with copies in deliverables/di-male_apv+cnqx-then-gz/ (064/di-male-full-study)
+- **Claimed:** 2026-11-23, before the write. Tony, through 064 interface2 ROIs: raster figures for the full study, saved to the darkroom with a copy in the deliverables folder.
+- **Writes:** `4x/` and `3x/`, one page per group (DI, MALE) and stream (fast, slow, combined) as `.html` and `.pdf`, from `tools/make_group_raster_summary.py` on `full_study` and `full_study_3x`, read by name. The same files are copied to `deliverables/di-male_apv+cnqx-then-gz/4x/` and `3x/`. Darkroom only: real recordings.
+- **Released:** 2026-11-23, at write. `4x/` and `3x/` each hold 6 pages as `.html` and `.pdf`, 24 files in all, with the same 24 in the deliverables folder. The `.png` renders were replaced by lossless `.pdf` copies at Tony's request. Holds nothing.

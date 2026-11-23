@@ -741,8 +741,12 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
                 *, stream: str = "", unscanned: bool = False, ran=(), not_run=(),
                 excluded=(), note=None, removed: dict | None = None,
                 detections: Path | None = None, roi_px: int | None = None,
-                floors: dict | None = None, figure: int | None = None) -> str:
+                floors: dict | None = None, figure: int | None = None,
+                hand_reviewed: bool = False) -> str:
     """The key, and the provenance. Outside every plot, per the conventions.
+
+    ``hand_reviewed`` is a finished page of a reviewed folder: its key names only what is
+    drawn, so no chip for a red mark that cannot occur and no note about detectors not run.
 
     ``floors`` (from :func:`read_floors`) adds each recording's own floor per window, in
     co-active ROIs, as a header line: a floor is a number about the window, and nothing is drawn
@@ -804,6 +808,8 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
             red_key += f"<div style='margin:3px 0 0'>{scan_key}</div>"
     elif scan_key:
         red_key = scan_key
+    elif hand_reviewed:
+        red_key = ""
     from bugarach.ui.app import COLORS, TITLES
 
     if ran:
@@ -828,6 +834,8 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
                 "persists a trained model, so these rows are grey rather than empty, "
                 "because an empty lane would say the detector ran and found nothing")
         det_key += "</div>"
+    elif hand_reviewed:
+        det_key = ""
     else:
         det_key = ("<div style='margin:4px 0 0;color:#444'>no detector was run — "
                    "pass <code>--detections</code> to draw the calls</div>")
@@ -848,7 +856,7 @@ def header_html(group: str, treatment: str, members, ext, folder: Path,
         f"<div style='font:13px system-ui,sans-serif;color:#111;margin:0 0 6px'>"
         f"<b style='font-size:16px'>{fig}{page_title(group, members)} · {treatment} · "
         f"{stream}</b> &nbsp;—&nbsp; "
-        f"{len(members)} recording(s), each row one recording, "
+        f"{len(members)} recording{'' if len(members) == 1 else 's'}, each row one recording, "
         f"<b>t = 0 is the end of that recording's baseline</b>"
         f"<div style='margin:5px 0 0;color:#444'>"
         f"{event_key} &nbsp; "
@@ -1050,7 +1058,8 @@ def main(argv=None) -> int:
                                           not_run=not_run, excluded=a.exclude,
                                           detections=a.detections, note=a.note,
                                           removed=removed, roi_px=a.roi_px,
-                                          floors=floors, figure=figure))]
+                                          floors=floors, figure=figure,
+                                          hand_reviewed=a.hand_reviewed))]
         for sl, panels in blocks:
             # THE ID, ROTATED, IN ITS OWN COLUMN — an HTML block and not the
             # raster's y-label. As a y-label it is clipped to the plot's height:

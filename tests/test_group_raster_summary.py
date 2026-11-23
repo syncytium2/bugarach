@@ -229,6 +229,20 @@ def test_a_hand_reviewed_folder_is_drawn_without_the_no_scan_warning(tmp_path):
         mod.main(args + ["--hand-reviewed", "--unscanned"])
 
 
+def test_a_hand_reviewed_page_keys_only_what_it_draws(tmp_path):
+    """Tony, 2026-11-23: a finished study page carries no caveat text. A reviewed folder has
+    no red mark to explain and no detector lane to apologise for, so neither is in its key."""
+    d = _folder(tmp_path, manifest=None)
+    pages, _, _ = mod.measure(d, ("TTX",), unscanned=True)
+    page = pages[("MALE", "TTX", "fast")]
+    head = mod.header_html("MALE", "TTX", page["members"], page["ext"], d, stream="fast",
+                           hand_reviewed=True)
+    assert "field-step artifact" not in head
+    assert "no detector was run" not in head
+    plain = mod.header_html("MALE", "TTX", page["members"], page["ext"], d, stream="fast")
+    assert "field-step artifact" in plain and "no detector was run" in plain
+
+
 def test_the_steps_excluded_folder_is_drawn_with_no_red_and_counts_the_removal(tmp_path):
     """The analysis dataset (Tony, 2026-09-15): artifacts already removed, so no
     red — and the header says what was removed from THIS page's recordings on
