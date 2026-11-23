@@ -109,6 +109,33 @@ blank windows and rulings, and the same three streams (`_v2`). 451 ROIs (DI 188,
 thresholds. Checked on arrival, 2026-11-12: all 12 CONFORMING.
 """
 
+[full_study]
+use = "eval"
+name = "export_roi_apv+cnqx-then-gz-then-hik_di+male_thr4x_rigid_blanked_20261123"
+signal = "roi"
+win = "win20min"
+recordings = 14
+note = """
+The full DI and MALE study, one folder, built by interface2 on 2026-11-23: 7 DI and 7 MALE
+recordings. Protocol: baseline, APV+CNQX, gabazine, high K+. Rigid motion correction, threshold
+4 x sigma_est, streams fast, slow and combined. It adds `20261117_472` and `20261117_475` to
+`tracked_cohorts`; the other 12 recordings' files and regions are byte-identical to that folder.
+`bugarach check`: 14 of 14 CONFORMING (producer, 2026-11-23). Declared `eval` and read by name
+until Tony moves the default.
+"""
+
+[full_study_3x]
+use = "eval"
+name = "export_roi_apv+cnqx-then-gz-then-hik_di+male_thr3x_rigid_blanked_20261123"
+signal = "roi"
+win = "win20min"
+recordings = 14
+note = """
+The sibling of `full_study` at threshold 3 x sigma_est: the same 14 recordings and periods, and
+the other 12 recordings byte-identical to `tracked_cohorts_3x`. `bugarach check`: 14 of 14
+CONFORMING (producer, 2026-11-23).
+"""
+
 [senktide_ttx]
 use = "eval"         # was the default, and "input", until 2026-11-12; its stop below still holds
 # The producer's 2026-09-23 export. The default from 2026-09-23 to 2026-11-12; `tracked_cohorts` is now.
