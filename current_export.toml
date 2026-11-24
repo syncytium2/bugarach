@@ -122,6 +122,9 @@ recordings. Protocol: baseline, APV+CNQX, gabazine, high K+. Rigid motion correc
 `tracked_cohorts`; the other 12 recordings' files and regions are byte-identical to that folder.
 `bugarach check`: 14 of 14 CONFORMING (producer, 2026-11-23). Declared `eval` and read by name
 until Tony moves the default.
+NOT FINAL. On 2026-11-24 Tony put the study under final revision, with extraction and a re-export
+under way; this folder and `full_study_3x` are to be superseded by that export. Do not move the
+default here and do not build a result on this folder that is meant to stand.
 """
 
 [full_study_3x]
@@ -133,7 +136,7 @@ recordings = 14
 note = """
 The sibling of `full_study` at threshold 3 x sigma_est: the same 14 recordings and periods, and
 the other 12 recordings byte-identical to `tracked_cohorts_3x`. `bugarach check`: 14 of 14
-CONFORMING (producer, 2026-11-23).
+CONFORMING (producer, 2026-11-23). NOT FINAL, for the reason given under `full_study`.
 """
 
 [senktide_ttx]
