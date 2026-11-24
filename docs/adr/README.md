@@ -102,3 +102,4 @@ it while it did not exist, because it was written and green on
 `parity-was-the-inheritance` when PR #298 was closed without merging and nobody knew
 whether that was deliberate. Tony answered it on 2026-08-30 by asking for the branch to
 be merged. The nine citations resolve; the question that held the number is closed.
+- [The benches cover the range the recordings show: a twin for every recording and a sweep along every feature](2026-11-24-1063-the-benches-cover-the-range-the-recordings-show-a-twin-for-e.md) — Proposed, 2026-11-24

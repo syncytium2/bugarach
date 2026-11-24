@@ -202,4 +202,14 @@ None of these needs a ruling unless it says so.
    route runs on Tony's working rule of 2026-10-07 until then.
 10. **The Review A page**: simulated and real recordings drawn alike, with correlograms, and the
     real ones at each threshold the folder has. The raster stays black and white; anything else
-    goes in a lane above it.
+    goes in a lane above it. **Built 2026-11-17** (`tools/make_review_a_pages.py`, #944). Its
+    pooled correlogram weights recordings by their pair counts, so it is to be rebuilt per
+    recording with each recording's twin (item 11, decision 6).
+11. **Benches that cover the range the recordings show** (proposed:
+    [ADR 2026-11-24-1063](../adr/2026-11-24-1063-the-benches-cover-the-range-the-recordings-show-a-twin-for-e.md);
+    evidence: [`learned/runs/2026-11-24-bench-coverage/`](../learned/runs/2026-11-24-bench-coverage/README.md)).
+    Each bench set today is one median recording at two backgrounds. The record proposes a twin
+    for every recording, sweeps along every feature, a coverage gate at stage 1 and scores
+    reported per twin and per level. Five open points are Tony's; nothing is built until it is
+    accepted. It changes stages 1 to 5 and both reviews, so it comes before items 1 and 7 are
+    finished on the present benches.
