@@ -696,6 +696,12 @@ in for a stranger's data.
 
 ## Waiting on Tony
 
+- **Accepting [ADR 2026-11-24-1063](../adr/2026-11-24-1063-the-benches-cover-the-range-the-recordings-show-a-twin-for-e.md)**,
+  and its five open points: benches that cover the range the recordings show (a twin per
+  recording, sweeps per feature), because within each group the recordings spread widely and the
+  groups spread on different features
+  ([evidence](../learned/runs/2026-11-24-bench-coverage/README.md)). Drafted at his request,
+  2026-11-24.
 - **Has the lab asked Kreuz (or Mulansky)** whether a fast sort or an analytical null for the
   Synfire Indicator exists? The repository's correspondence with Kreuz does not cover it: his
   letter of 2026-04-23 (paraphrased in
