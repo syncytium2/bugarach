@@ -1,8 +1,14 @@
 # Papers this project needs and could not fetch
 
-**A session that needs a paper it cannot download adds a line here and tells Tony.** He can get
-any of these; grab the PDF, drop it on the shelf under the naming convention below, and tick the
-box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism since 2026-08-22.
+**A session that needs a paper it cannot download adds a line to `01-lit/_NEEDED.md` and tells
+Tony.** That list, at the top of the master library ([below](#where-the-shelf-is)), is the one he
+works from across every project, and he calls it the lit todo. Copy its line format, the date
+first and a `bugarach:` note saying what the paper is for. He grabs the PDF, files it, and ticks
+the box.
+
+This file came first. It holds bugarach's asks from 2026-09-10 to 2026-10-29, with what was tried
+for each, and stays as the record of them. Lines still open here are still wanted; a session that
+gets one ticks it here.
 
 > **Why this file did not exist until 2026-09-10.** The murderboard's paper-fetch tool writes that
 > list automatically when a fetch fails, and it is **deliberately not vendored here** — it hardcodes
@@ -45,13 +51,21 @@ box. Modelled on `murderboard-lit/_NEEDED.md`, which has had this mechanism sinc
 
 ## Where the shelf is
 
-`<darkroom>/bugarach/archive/2026-08/lit/<topic>/<first-author>_<year>_<slug>.pdf` — resolve the darkroom with
-`bugarach.paths.darkroom()` or `python -m bugarach.paths`. **Never hardcode it**: the path carries
-a person's name and this repo is public (SAP004).
+**`01-lit/bugarach/<topic>/<first-author>_<year>_<slug>.pdf`**, in the master library. `01-lit` is a
+top-level folder of the same Dropbox as the darkroom, so from code it is
+`bugarach.paths.darkroom().parent.parent / "01-lit"`. **Never hardcode it**: the path carries a
+person's name and this repo is public (SAP004).
 
-Topics in use: `radar/`, `coordination/`, `DL/`, `surrogates/`, `ml/`. As of 2026-09-12 the shelf
-holds **40 PDFs** — twelve of them papers on surrogate methods, a topic the shelf held nothing on
-before 2026-09-10.
+Tony made `01-lit` the master library on 2026-10-29 (*"01-lit is the master"*). Every file on the
+old shelf, `<darkroom>/bugarach/archive/2026-08/lit/`, was copied across and checked identical by
+MD5. **The old copy stays in place, so the many dated records here that link into it still resolve,
+but nothing new goes there**: its `MOVED.md` says so. Until 2026-11-26 this section still sent new
+papers to the old shelf.
+
+Topics in use: `coordination/`, `DL/`, `ml/`, `optimization/`, `radar/`, `recombination/`,
+`surrogates/`, `synchrony/`, `synthetic_validation/`. Each has a `README.md` with one entry per
+paper: author, year, where it came from, and the decision it bears on. `01-lit/bugarach/README.md`
+lists the folders and gives the rule. On 2026-11-26 the folder held **161 PDFs**.
 
 **Check the shelf before fetching, and shelve what you fetch.** Both halves, because on 2026-09-12
 only the first half was running: a single blind review round had two roles hunting the same unshelved
@@ -63,12 +77,10 @@ its findings**, and it is the adjudicating thread's job. `surrogates/README.md` 
 were themselves missing until 2026-09-12, so fourteen PDFs sat in the state the shelf's own top-level
 README calls "indistinguishable from a PDF someone downloaded and forgot".
 
-⚠ **There is no master library.** Checked 2026-09-10: `murderboard-lit/` is its own repo of 206
-papers but on a different subject entirely — agentic reproducibility, paper-code consistency —
-and `draughtsman/lit` and `clamor/lit` hold one and two papers respectively (von der Malsburg, on
-binding). Nothing is shared, nothing is indexed across them, and no project can see another's
-shelf. Filed as an open question rather than fixed unilaterally, since three of those four
-locations belong to other projects.
+**The master library answered an old open question.** On 2026-09-10 this section said *"there is
+no master library"*: the papers were spread across `murderboard-lit/` (206 papers on another subject),
+`draughtsman/lit` and `clamor/lit`, with nothing shared between projects. Tony's `01-lit` is that
+library now, with a folder per project and one `_NEEDED.md` list for all of them.
 
 ---
 
